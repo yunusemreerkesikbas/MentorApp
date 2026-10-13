@@ -113,10 +113,8 @@ export function SessionTodayCard({
     .map((s) => ({ id: s.id, minutes: Math.max(1, Math.round(s.actualFocusSeconds / 60)) }))
     .reverse();
   const abandoned = sessions.filter((s) => s.status === "ABANDONED").length;
-  // The goal's minutes come from `/coaching/today`, the segments from the session list. If the
-  // list failed (or lags), the minutes still draw, as one segment, and still read as progress.
-  const segments =
-    completed.length > 0 ? completed : focused > 0 ? [{ id: "today", minutes: focused }] : [];
+  // The session just finished, if it is in today's list: the bar grows from before it to now.
+  const freshMinutes = completed.find((s) => s.id === freshSessionId)?.minutes ?? null;
   const stripLabel =
     completed.length === 0 && focused > 0
       ? t("today_strip_aria_minutes", { goal: goalMinutes ?? 0, minutes: focused })
@@ -188,8 +186,8 @@ export function SessionTodayCard({
             <GoalStrip
               label={stripLabel}
               goal={goalMinutes}
-              segments={segments}
-              freshId={freshGrown ? null : freshSessionId}
+              focused={focused}
+              freshMinutes={freshGrown ? null : freshMinutes}
               onFreshGrown={() => setFreshGrown(true)}
               reached={reached}
             />
@@ -248,48 +246,50 @@ export function SessionTodayCard({
 }
 
 /**
- * The goal as a track, filled by one segment per completed session. Scaled to the goal, or to
- * the day's total once it runs past the goal, so an over-achieving day fills rather than spills.
- * Segments grow by their minutes and a spacer takes what is left of the goal, so the 3px gaps
- * come out of the track instead of pushing the last segment (often the fresh one) out of view.
- * The session just finished grows in from the left, once, as the lights come back up.
+ * The goal as one track and one fill: the day's minutes against the goal, full once it is
+ * reached. The fill reads the same number as the card's big figure (`/coaching/today`), so it
+ * draws even when the session list fails. The session just finished grows the fill from where
+ * the day stood before it, once, as the lights come back up.
  */
 function GoalStrip({
   label,
   goal,
-  segments,
-  freshId,
+  focused,
+  freshMinutes,
   onFreshGrown,
   reached,
 }: {
   label: string;
   goal: number;
-  segments: { id: string; minutes: number }[];
-  freshId: string | null;
+  focused: number;
+  /** Minutes of the session just finished; null once grown or when there is none. */
+  freshMinutes: number | null;
   onFreshGrown: () => void;
   reached: boolean;
 }) {
-  const left = goal - segments.reduce((sum, s) => sum + s.minutes, 0);
+  const to = Math.min(1, focused / Math.max(1, goal));
+  const from = freshMinutes == null ? to : Math.min(1, Math.max(0, focused - freshMinutes) / Math.max(1, goal));
+  const [shown, setShown] = useState(from);
+  useEffect(() => {
+    if (shown === to) return;
+    const frame = requestAnimationFrame(() => setShown(to));
+    return () => cancelAnimationFrame(frame);
+  }, [shown, to]);
   return (
     <div
       role="img"
       aria-label={label}
-      className="flex h-3 gap-[3px] overflow-hidden rounded-full bg-[var(--play-track)]"
+      className="h-3 overflow-hidden rounded-full bg-[var(--play-track)]"
     >
-      {segments.map((segment) => (
-        <span
-          key={segment.id}
-          data-fresh={segment.id === freshId || undefined}
-          onAnimationEnd={segment.id === freshId ? onFreshGrown : undefined}
-          className={`block h-full min-w-1.5 basis-0 rounded-full ${reached ? "bg-[var(--color-success)]" : "bg-[var(--play-cta)]"}${
-            segment.id === freshId
-              ? " origin-left animate-[session-strip-grow_0.45s_cubic-bezier(0.25,1,0.5,1)_0.2s_both] motion-reduce:animate-none"
-              : ""
-          }`}
-          style={{ flexGrow: segment.minutes }}
-        />
-      ))}
-      {left > 0 ? <span aria-hidden className="basis-0" style={{ flexGrow: left }} /> : null}
+      <span
+        data-fresh={freshMinutes != null || undefined}
+        onTransitionEnd={freshMinutes != null ? onFreshGrown : undefined}
+        className={`relative block h-full rounded-full transition-[width] duration-[450ms] ease-[cubic-bezier(0.25,1,0.5,1)] motion-reduce:transition-none ${reached ? "bg-[var(--color-success)]" : "bg-[var(--play-cta)]"}`}
+        style={{ width: `${shown * 100}%`, minWidth: focused > 0 ? "0.75rem" : 0 }}
+      >
+        {/* The onboarding's play bar (`PlayProgress`): the same upper shine on the fill. */}
+        <span aria-hidden className="absolute inset-x-2 top-[3px] h-[3px] rounded-full bg-[var(--play-cta-shine)]" />
+      </span>
     </div>
   );
 }

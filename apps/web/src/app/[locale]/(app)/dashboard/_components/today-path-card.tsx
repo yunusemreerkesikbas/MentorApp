@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Play, Plus } from "lucide-react";
+import { PlayIcon as Play } from "@solar-icons/react/bold/play";
+import { AddIcon as Plus } from "@solar-icons/react/linear/add";
 import type {
   PlanTaskDto,
   PlanTaskStatus,
@@ -123,7 +124,7 @@ export function TodayPathCard({
               className={`${LEDGE} ${LEDGE_FILLED} w-full sm:w-auto sm:max-w-md`}
               data-testid="today-path-cta"
             >
-              <Play className="size-[18px] shrink-0 fill-current" aria-hidden />
+              <Play size={18} className="size-[18px] shrink-0 fill-current" aria-hidden />
               <span className="truncate">{cta.task.title}</span>
               <span className="shrink-0">
                 {cta.minutes === null ? t("cta_stopwatch") : t("cta_start_minutes", { minutes: cta.minutes })}
@@ -136,7 +137,7 @@ export function TodayPathCard({
               className={`${LEDGE} ${LEDGE_FILLED} w-full sm:w-auto`}
               data-testid="today-path-cta"
             >
-              <Plus className="size-5 shrink-0" strokeWidth={2.5} aria-hidden />
+              <Plus size={20} className="size-5 shrink-0" strokeWidth={2.5} aria-hidden />
               {t("cta_add_task")}
             </Link>
           ) : (
@@ -146,7 +147,7 @@ export function TodayPathCard({
               className={`${LEDGE} ${LEDGE_OUTLINE} w-full sm:w-auto`}
               data-testid="today-path-cta"
             >
-              <Play className="size-[18px] shrink-0 fill-current" aria-hidden />
+              <Play size={18} className="size-[18px] shrink-0 fill-current" aria-hidden />
               {t("cta_free_study")}
             </Link>
           )}

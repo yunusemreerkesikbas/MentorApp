@@ -4,6 +4,7 @@ import { I18nContext } from "nestjs-i18n";
 import {
   type ForumFeed,
   type ForumFeedItem,
+  type ForumFeedSort,
   type ForumFeaturedAdminView,
   type ForumHubView,
   type ForumPublicPerson,
@@ -143,7 +144,13 @@ export class ForumDiscoveryService {
   ): Promise<ForumFeed> {
     await this.assertEnabled();
     const cursor = query.cursor ? decodeForumFeedCursor(query.cursor) : undefined;
-    if (query.cursor && (!cursor || cursor.sort !== query.sort)) {
+    // A trending feed that fell back to recent keeps paging with its recent cursor, even from a
+    // client that never read `effectiveSort`.
+    const continuesFallback = query.sort === "trending" && cursor?.sort === "recent";
+    // Waiting questions all score alike, and a trending/top window would hide the oldest ones, the
+    // ones that need a hand most: they are always newest first, whatever tab the client is on.
+    let sort: ForumFeedSort = query.unanswered || continuesFallback ? "recent" : query.sort;
+    if (query.cursor && (!cursor || cursor.sort !== sort)) {
       throw new DomainError(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST);
     }
     const [profile, settings, authorIds] = await Promise.all([
@@ -151,27 +158,38 @@ export class ForumDiscoveryService {
       this.settings(),
       query.scope === "following" ? this.follow.getFolloweeIds(actor.id) : Promise.resolve(undefined),
     ]);
-    const rows = await this.repo.listDiscoveryThreads({
-      viewerId: actor.id,
-      examType: profile.examType,
-      authorIds,
-      sort: query.sort,
-      tag: query.tag,
-      zoneType: query.contentType === "questions" ? ZoneType.QA : query.contentType ? undefined : query.zoneType,
-      zoneTypes: query.contentType === "posts" ? [ZoneType.CHAT, ZoneType.ANNOUNCEMENT] : undefined,
-      cursor: cursor ?? undefined,
-      limit: query.limit + 1,
-      trendingWindowHours: settings.trendingWindowHours,
-      topWindowDays: settings.topWindowDays,
-      weights: settings.weights,
-    });
+    const list = (rankBy: ForumFeedSort) =>
+      this.repo.listDiscoveryThreads({
+        viewerId: actor.id,
+        examType: profile.examType,
+        authorIds,
+        sort: rankBy,
+        tag: query.tag,
+        zoneType: query.contentType === "questions" ? ZoneType.QA : query.contentType ? undefined : query.zoneType,
+        zoneTypes: query.contentType === "posts" ? [ZoneType.CHAT, ZoneType.ANNOUNCEMENT] : undefined,
+        unanswered: query.unanswered,
+        cursor: cursor ?? undefined,
+        limit: query.limit + 1,
+        trendingWindowHours: settings.trendingWindowHours,
+        topWindowDays: settings.topWindowDays,
+        weights: settings.weights,
+      });
+    let rows = await list(sort);
+    // ponytail: trending is a hard time window, so a quiet community (nothing active in the last
+    // `trending_window_hours`) would show an empty feed and hide the panel card while rooms are
+    // full. The first page falls back to recent; a decayed score would remove the cliff, add it if
+    // a mostly-recent "Öne çıkan" ever reads wrong.
+    if (rows.length === 0 && sort === "trending" && !cursor) {
+      sort = "recent";
+      rows = await list(sort);
+    }
     const hasMore = rows.length > query.limit;
     const visibleRows = rows.slice(0, query.limit);
     const items = await this.decorateThreads(visibleRows, actor, this.locale(locale), settings);
     const last = hasMore ? visibleRows.at(-1) : undefined;
     const nextCursor = last
       ? encodeForumFeedCursor({
-          sort: query.sort,
+          sort,
           score: last.score,
           createdAt: last.createdAt.toISOString(),
           lastActivityAt: last.lastActivityAt.toISOString(),
@@ -182,6 +200,7 @@ export class ForumDiscoveryService {
     return {
       items,
       nextCursor,
+      effectiveSort: sort,
       context: {
         activeThreads: [...summaries]
           .sort((left, right) => right.commentCount - left.commentCount)

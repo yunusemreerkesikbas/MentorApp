@@ -13,6 +13,7 @@ const pendingCheckoutUrl = "https://payment.test.local/hosted/checkout?token=sto
 
 interface MockOptions {
   phone?: Partial<PhoneStatusDto>;
+  phoneEmpty?: boolean;
   unknownSend?: boolean;
   lifetimeMs?: number;
   coach?: boolean;
@@ -20,6 +21,7 @@ interface MockOptions {
   pendingTrial?: "known" | "unknown";
   pendingPaid?: "known" | "unknown";
   unknownCheckout?: boolean;
+  trialUsed?: boolean;
 }
 
 async function mockApi(page: Page, options: MockOptions = {}) {
@@ -55,7 +57,10 @@ async function mockApi(page: Page, options: MockOptions = {}) {
       status = { ...status, reauthenticationRequired: false };
       return json({ accessToken: "test-token", expiresIn: 3600, user: principal });
     }
-    if (path === "/v1/users/me/phone") { phoneReads++; return json(status); }
+    if (path === "/v1/users/me/phone") {
+      phoneReads++;
+      return options.phoneEmpty ? route.fulfill({ status: 204, headers }) : json(status);
+    }
     if (path === "/v1/users/me/phone/verifications") {
       sent++;
       requestedPhone = (request.postDataJSON() as { phoneNumber: string }).phoneNumber;
@@ -78,7 +83,7 @@ async function mockApi(page: Page, options: MockOptions = {}) {
       id: "pending-subscription", planId: "premium-monthly", status: "INCOMPLETE", startedAt: "2026-10-01T12:00:00.000Z",
       trialEndsAt: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false, sponsored: false,
     } : null, entitlement: { tier: "FREE", isPremium: false, validUntil: null, reason: options.pendingTrial || pendingPaid ? "INCOMPLETE" : "NONE" }, features: {}, discount: null,
-      trialEligibility: { eligible: !options.pendingTrial && status.verified, reason: options.pendingTrial ? "PENDING" : status.verified ? "AVAILABLE" : "PHONE_REQUIRED" },
+      trialEligibility: { eligible: !options.pendingTrial && !options.trialUsed && status.verified, reason: options.pendingTrial ? "PENDING" : options.trialUsed ? "ACCOUNT_USED" : status.verified ? "AVAILABLE" : "PHONE_REQUIRED" },
       pendingTrialCheckoutUrl: options.pendingTrial === "known" ? pendingCheckoutUrl : null,
       pendingCheckoutUrl: options.pendingTrial === "known" || pendingPaid === "known" ? pendingCheckoutUrl : null,
     });
@@ -160,6 +165,14 @@ test("unavailable SMS has a clear state and no verification bypass", async ({ pa
   expect(api.sent).toBe(0);
 });
 
+test("an empty phone status degrades to a retry instead of crashing settings", async ({ page }) => {
+  const api = await mockApi(page, { phoneEmpty: true });
+  await page.goto("/ayarlar");
+  await expect(page.getByRole("button", { name: "Yeniden dene" })).toBeVisible();
+  await expect(page.getByText("This page couldn't load")).toHaveCount(0);
+  expect(api.sent).toBe(0);
+});
+
 test("number changes carry a safe localized settings return through Google sign-in", async ({ page }) => {
   const api = await mockApi(page, { coach: true, phone: { verified: true, maskedPhoneNumber: "+90 5** *** **11", reauthenticationRequired: true } });
   await page.goto("/ayarlar");
@@ -189,8 +202,8 @@ test("password reauthentication returns a coach to settings without treating ref
   expect(api.sent).toBe(0);
 });
 
-test("paid checkout never asks for SMS and sends an explicit paid choice", async ({ page }) => {
-  const api = await mockApi(page);
+test("paid checkout after a used trial never asks for SMS and sends useTrial false", async ({ page }) => {
+  const api = await mockApi(page, { trialUsed: true });
   await page.goto("/abonelik");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Ücretli aboneliği başlat" }).click();
@@ -202,18 +215,21 @@ test("paid checkout never asks for SMS and sends an explicit paid choice", async
 test("trial waits for SMS and the refreshed server eligibility before checkout", async ({ page }) => {
   const api = await mockApi(page);
   await page.goto("/en/subscription");
-  await page.getByRole("radio", { name: "Start with a 7-day trial" }).check();
+  await expect(page.getByText("A 7-day free trial is automatically included with your subscription.")).toBeVisible();
+  await expect(page.getByRole("radio")).toHaveCount(0);
   await expect(page.getByText("kept for 12 months", { exact: false })).toBeVisible();
   await expect(page.getByText("It does not give marketing consent.", { exact: false })).toBeVisible();
   await expect(page.getByRole("link", { name: "Personal data protection notice" })).toBeVisible();
   await page.goto("/abonelik");
-  await page.getByRole("radio", { name: "7 gün denemeyle başla" }).check();
+  await expect(page.getByText("7 gün ücretsiz deneme aboneliğine otomatik eklenir.")).toBeVisible();
   await expect(page.getByText("Deneme başladığında telefonunun denemede kullanıldığına dair kayıt 12 ay saklanır.", { exact: false })).toBeVisible();
   await page.getByRole("checkbox").check();
   await expect(page.getByRole("button", { name: "Denemeyi başlat" })).toBeDisabled();
   await sendCode(page);
   await page.getByLabel("SMS doğrulama kodu").fill("123456");
   await page.getByRole("button", { name: "Telefonu doğrula" }).click();
+  await expect(page.getByRole("checkbox")).not.toBeChecked();
+  await page.getByRole("checkbox").check();
   await expect(page.getByRole("button", { name: "Denemeyi başlat" })).toBeEnabled();
   await page.getByRole("button", { name: "Denemeyi başlat" }).click();
   await expect.poll(() => api.checkout).toEqual({ planId: "premium-monthly", useTrial: true });
@@ -241,7 +257,7 @@ test("paywall trial phone verification controls remain reachable within the dial
     return bounds !== null && bounds.y >= 0 && bounds.y + bounds.height <= viewport.height;
   }).toBe(true);
 
-  await page.getByRole("radio", { name: "7 gün denemeyle başla" }).check();
+  await expect(page.getByText("7 gün ücretsiz deneme aboneliğine otomatik eklenir.")).toBeVisible();
   await expect(body).toHaveCSS("overflow-y", "auto");
   expect(await body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
   await page.getByLabel("Cep telefonu numaran").fill("0532 123 45 67");
@@ -332,7 +348,7 @@ for (const surface of ["subscription", "paywall"] as const) {
   });
 
   test(`${surface} reads the pending server state after an ambiguous checkout failure`, async ({ page }) => {
-    const api = await mockApi(page, { unknownCheckout: true });
+    const api = await mockApi(page, { unknownCheckout: true, trialUsed: true });
     await openPendingSurface(page);
     await page.getByRole("checkbox").check();
     await page.getByRole("button", { name: "Ücretli aboneliği başlat" }).click();

@@ -3,6 +3,8 @@
 import { useState, type KeyboardEvent, type MouseEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ForumFeedItem } from "@mentor/types";
+import { Button } from "@mentor/ui";
+import { PANEL_QUIET_LINK } from "@/components/panel/panel-styles";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { Link, useRouter } from "@/i18n/navigation";
 import { relativeTime } from "@/lib/relative-time";
@@ -25,6 +27,11 @@ import { ReactionBar } from "../../_components/reaction-bar";
 import { useCommunityQuickReply } from "../../_components/community-quick-reply";
 import { ForumPollCard } from "../../_components/forum-poll-card";
 import { HelpfulButton } from "../../_components/helpful-button";
+import { questionStatus } from "../../_components/question-status";
+import { QuestionStatusLabel } from "../../_components/question-status-label";
+import { useConfirmDelete } from "../../_components/use-confirm-delete";
+import { ZoneTypeIcon } from "../../_components/zone-type-icon";
+import { COMMUNITY_FIELD } from "../../_components/community-row";
 import { isFeedInteractiveTarget } from "./feed-interactive-target";
 import { questionMarkdownToPlainText } from "./question-composer-state";
 
@@ -41,6 +48,7 @@ export function DiscoveryFeedCard({
   const locale = useLocale();
   const router = useRouter();
   const { openQuickReply } = useCommunityQuickReply();
+  const confirmDelete = useConfirmDelete();
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(item.title ?? "");
@@ -137,37 +145,22 @@ export function DiscoveryFeedCard({
         <div className="flex min-w-0 items-center gap-3">
           <AuthorAvatar name={item.author.displayName} src={item.author.avatarUrl} size={40} />
           <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-1.5 text-sm">
-              <span className="truncate font-bold text-[var(--color-main)]">{item.author.displayName}</span>
-              <span className="truncate text-[var(--color-secondary)]">@{item.author.username}</span>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-body-sm font-extrabold text-[var(--color-main)]">{item.author.displayName}</span>
+              <span className="truncate text-caption font-semibold text-[var(--color-secondary)]">@{item.author.username}</span>
             </div>
-            <div className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-[var(--color-secondary)]">
-              <Link
-                href={{ pathname: "/community/[slug]", params: { slug: item.zone.slug } }}
-                className="truncate font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              >
-                {item.zone.title}
-              </Link>
-              {isQa ? (
-                <span className="rounded-full border border-[var(--community-coral)] px-2 py-0.5 text-[11px] font-bold text-[var(--community-coral)]">
-                  {t("feed_question_badge")}
-                </span>
-              ) : (
-                <>
-                  <span>·</span>
-                  <span>{item.zone.type === "ANNOUNCEMENT" ? t("type_announcement") : t("type_chat")}</span>
-                </>
-              )}
-            </div>
+            {/* The room as meta, its type told by the glyph alone (no chip, no colour). */}
+            <Link
+              href={{ pathname: "/community/[slug]", params: { slug: item.zone.slug } }}
+              className="mt-0.5 flex min-w-0 items-center gap-1 text-caption font-bold text-[var(--color-secondary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            >
+              <ZoneTypeIcon type={item.zone.type} size={14} strokeWidth={2} className="shrink-0" aria-hidden />
+              <span className="truncate">{item.zone.title}</span>
+            </Link>
           </div>
-          {item.status === "ANSWERED" && (
-            <span className="text-[11px] font-bold text-[var(--color-success)]">
-              {t("answered")}
-            </span>
-          )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <span className="whitespace-nowrap px-1 text-xs text-[var(--color-secondary)]">{date}</span>
+          <span className="whitespace-nowrap px-1 text-caption font-semibold text-[var(--color-secondary)]">{date}</span>
           {(item.capabilities.canEdit || item.capabilities.canDelete || item.capabilities.canModerate) && (
             <PopoverMenu
               align="right"
@@ -206,9 +199,9 @@ export function DiscoveryFeedCard({
                 <PopoverMenuItem
                   danger
                   onClick={() => {
-                    if (window.confirm(t("delete_confirm"))) {
-                      void deleteThread(item.id).then(() => onChange?.(null));
-                    }
+                    void confirmDelete().then((confirmed) => {
+                      if (confirmed) void deleteThread(item.id).then(() => onChange?.(null));
+                    });
                   }}
                 >
                   {t("delete")}
@@ -225,56 +218,56 @@ export function DiscoveryFeedCard({
 
       {editing ? (
         <div className="mt-4 grid gap-3">
-          <label className="grid gap-1 text-sm font-semibold">
+          <label className="grid gap-1 text-caption font-bold text-[var(--color-secondary)]">
             {t("composer_title")}
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               maxLength={200}
-              className="min-h-11 rounded-xl border px-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              className={COMMUNITY_FIELD}
             />
           </label>
-          <label className="grid gap-1 text-sm font-semibold">
+          <label className="grid gap-1 text-caption font-bold text-[var(--color-secondary)]">
             {t("composer_content")}
             <textarea
               value={body}
               onChange={(event) => setBody(event.target.value)}
               maxLength={4000}
               rows={5}
-              className="rounded-xl border p-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              className={`${COMMUNITY_FIELD} py-3`}
             />
           </label>
-          <div className="flex justify-end gap-2">
-            <button type="button" className="min-h-11 rounded-xl border px-4" onClick={() => setEditing(false)}>
+          <div className="flex items-center justify-end gap-[18px]">
+            <button type="button" className={PANEL_QUIET_LINK} onClick={() => setEditing(false)}>
               {t("cancel")}
             </button>
-            <button
-              type="button"
-              disabled={busyAction === "edit" || !body.trim()}
-              className="min-h-11 rounded-xl px-4 font-bold text-[var(--color-btn-label)] disabled:opacity-50"
-              style={{ background: "var(--color-btn)" }}
-              onClick={() => void saveEdit()}
-            >
+            <Button size="sm" disabled={busyAction === "edit" || !body.trim()} onClick={() => void saveEdit()}>
               {t("save")}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
-        <Link href={detailHref} className="mt-2 block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
+        <Link href={detailHref} className="mt-2 block rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
           {item.title && (
             <h2
-              className={compact || isQa ? "text-lg font-bold leading-snug text-[var(--color-main)]" : "text-[22px] font-extrabold leading-[1.2] tracking-[-0.025em] text-[var(--color-main)] sm:text-[24px]"}
+              className={`${compact || isQa ? "text-base" : "text-lg"} font-extrabold leading-snug text-[var(--color-main)]`}
             >
               {item.title}
             </h2>
           )}
           <p
-            className={`${item.title ? "mt-1" : ""} ${compact ? "line-clamp-2" : "line-clamp-3"} whitespace-pre-line text-[15px] leading-[1.55] ${item.title ? "text-[var(--color-secondary)]" : "text-[var(--color-body-text)]"}`}
+            className={`${item.title ? "mt-1" : ""} ${compact ? "line-clamp-2" : "line-clamp-3"} whitespace-pre-line text-body-sm font-semibold ${item.title ? "text-[var(--color-secondary)]" : "text-[var(--color-body)]"}`}
           >
             {isQa ? questionMarkdownToPlainText(item.body) : item.body}
           </p>
         </Link>
       )}
+
+      {!editing && isQa ? (
+        <div className="mt-2">
+          <QuestionStatusLabel status={questionStatus(item)} />
+        </div>
+      ) : null}
 
       {!editing && item.poll ? (
         <ForumPollCard poll={item.poll} onChange={(poll) => patch({ poll })} />
@@ -309,7 +302,7 @@ export function DiscoveryFeedCard({
             className="community-post-action flex min-h-11 min-w-11 items-center justify-center gap-1 text-sm text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           >
             <CommentIcon />
-            {item.commentCount > 0 ? <span className="text-[13px]">{item.commentCount}</span> : null}
+            {item.commentCount > 0 ? <span className="text-caption font-extrabold">{item.commentCount}</span> : null}
           </Link>
         ) : (
           <button
@@ -336,7 +329,7 @@ export function DiscoveryFeedCard({
             }}
           >
             <CommentIcon />
-            {item.commentCount > 0 ? <span className="text-[13px]">{item.commentCount}</span> : null}
+            {item.commentCount > 0 ? <span className="text-caption font-extrabold">{item.commentCount}</span> : null}
           </button>
         )}
         <SendButton href={detailHref} />

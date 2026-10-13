@@ -1,10 +1,13 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
+import { ConfigRegistryService } from "../../../../common/config/config-registry.service";
+import { FeatureFlag } from "../../../../common/config/config.catalog";
 import { DRIZZLE } from "../../../../database/database.constants";
 import type { Database } from "../../../../database/drizzle";
 import { withServiceContext } from "../../../../database/rls";
 import { EMAIL_PORT, type EmailPort } from "../../../../shared/ports/email.port";
 import { UsersService } from "../../../identity/application/users.service";
+import { AuthService } from "../../../identity/application/auth.service";
 import { MentorshipFollowupService } from "../../../mentorship/application/mentorship-followup.service";
 import { followupToday } from "../../../mentorship/domain/mentorship-followup";
 import { EmailTemplate } from "../../domain/notifications.constants";
@@ -15,6 +18,7 @@ const sendEmailPayloadSchema = z.object({
   to: z.string().email(),
   template: z.string().min(1),
   variables: z.record(z.unknown()).optional(),
+  executionGuard: z.object({ type: z.literal("identity-email-token"), tokenHash: z.string().regex(/^[a-f0-9]{64}$/) }).optional(),
 });
 
 const followupDuePayloadSchema = z.object({
@@ -37,6 +41,8 @@ export class SendEmailHandler {
     private readonly preferences: NotificationPreferencesRepository,
     private readonly deliveries: NotificationDeliveryRepository,
     private readonly users: UsersService,
+    private readonly auth: AuthService,
+    private readonly config: ConfigRegistryService,
   ) {}
 
   async handle(payload: unknown, now = new Date()): Promise<void> {
@@ -46,16 +52,23 @@ export class SendEmailHandler {
       return;
     }
     const data = sendEmailPayloadSchema.parse(payload);
+    if (data.template === EmailTemplate.DAILY_REMINDER &&
+        await this.config.get(FeatureFlag.DAILY_REMINDER_EMAIL_ENABLED) !== true) return;
     // This template must never fall through to delivery without its access guard.
     if (data.template === EmailTemplate.MENTORSHIP_FOLLOWUP_DUE) {
       followupDuePayloadSchema.parse(payload);
       return;
     }
-    await this.email.sendTransactional({
+    const deliver = () => this.email.sendTransactional({
       to: data.to,
       template: data.template as EmailTemplate,
       variables: data.variables,
     });
+    if (data.executionGuard) {
+      await this.auth.deliverCurrentEmailToken(data.executionGuard.tokenHash, data.to, async () => { await deliver(); });
+    } else {
+      await deliver();
+    }
   }
 
   private async sendFollowupDue(

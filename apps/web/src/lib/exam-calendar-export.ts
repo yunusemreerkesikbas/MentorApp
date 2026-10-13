@@ -28,7 +28,7 @@ export function buildExamCalendarIcs(
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Mentor//Bilgi Merkezi//EN",
+    "PRODID:-//PuhuKoc//Bilgi Merkezi//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${escapeIcsText(copy.calendarName)}`,

@@ -1,4 +1,4 @@
-// Mentor admin menu (W6). Trimmed from the Duralux CRM demo to the lean admin surface (§9):
+// PuhuKoç admin menu (W6). Trimmed from the Duralux CRM demo to the lean admin surface (§9):
 // the demo CRM/applications pages still exist in the repo as UX reference but are off-menu.
 // `roles` gates visibility (Menus filters by the signed-in user's roles); omitted = everyone in.
 export interface MenuItem {

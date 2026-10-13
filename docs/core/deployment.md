@@ -1,0 +1,167 @@
+# Production deployment
+
+> Source preparation only. PR #156 does not provision services, change DNS, accept billing
+> terms, deploy production or merge itself. Domain ownership and an existing Postmark account
+> are confirmed; production infrastructure and live acceptance remain outstanding.
+
+## Domains
+
+| Surface | Production URL | Resource |
+|---|---|---|
+| Web | `https://puhukoc.com` | `mentor-web` |
+| Single API | `https://api.puhukoc.com/v1` | `mentor-api` |
+| Admin | `https://admin.puhukoc.com` | `mentor-admin` |
+| Public media | `https://media.puhukoc.com` | Public EU R2 bucket |
+
+Use first-level subdomains for Universal SSL coverage. Keep existing host-only Secure,
+HttpOnly, SameSite=Lax cookies; do not add a shared cookie Domain attribute. Web canonical
+URLs and sitemap use the apex; admin sends `X-Robots-Tag: noindex, nofollow, noarchive`.
+Noindex does not replace authentication or Cloudflare Access.
+
+## 1. Release prerequisites and budget
+
+Permanent staging is not a prerequisite. Local/CI tests use isolated test databases and fake
+providers. Full CI must pass on the exact reviewed commit before publication. An optional
+temporary rehearsal can validate provider integration before the first release or critical
+auth/payment/migration/storage changes; see [deferred-staging.md](./deferred-staging.md).
+
+Resolve these items before authorizing production provisioning:
+
+- Approve the Render service/cron/domain/build/traffic budget, Neon compute/storage limits and
+  provider usage budgets. `render.yaml` includes three paid web services and four cron jobs.
+  Manual deploy settings do not prevent billing or an initial Blueprint deployment.
+- Obtain dedicated production runtime/migration DB URLs and JWT, rate-limit, edge, cron and
+  VAPID secrets. Supply production OpenAI, Gemini, R2, Turnstile, Postmark and Sentry settings.
+  A Gemini credential is currently missing. Never promote `.env.staging` credentials to prod.
+- Resolve admin Access activation: the observed Cloudflare Free checkout required permission
+  to charge a card for quota overage. The owner declined it. Do not accept those terms or
+  weaken existing Access guards. Admin publication remains blocked pending an acceptable setup.
+- Verify the Postmark sending domain, DNS/TLS, storage permissions and actual provider flows.
+  Domain purchase alone does not enable hosting, mail delivery, payments or ads.
+- Confirm `info@mentor.com` is operational for support/legal contact. Keep that address until
+  the owner decides otherwise; `noreply@puhukoc.com` is a separate proposed sending identity.
+
+## 2. Render and database
+
+1. Follow the existing [security release checklist](./security-release-checklist.md) and
+   [integration guide](./integrations.md). Connect only this repository to Render. The actual
+   release branch is `master`; changing the default/protected branch is a separate task.
+2. After budget and release approval, apply `render.yaml`. Every service has
+   `autoDeployTrigger: off`. Initial provisioning or Blueprint sync can still deploy; do not
+   treat this setting as a provisioning approval gate.
+3. Native Node services use Frankfurt/EU and Node 22.22.0. Frozen installs include dev build
+   tools; Turbo builds each app's workspace dependencies. Web/admin `start:prod` bind to
+   `0.0.0.0` and consume Render's `PORT`. Local starts retain their original ports.
+4. Create the production Neon EU database with pgvector. `DATABASE_URL` is the pooled restricted
+   runtime connection; `DATABASE_MIGRATION_URL` is the direct migration-owner connection used
+   by the existing pre-deploy migration command. The runtime role must not own DB objects,
+   bypass RLS, inherit privileged roles or create roles/databases. Startup inspection rejects
+   unsafe roles. Keep both URLs out of Git and public environment variables.
+5. Create a restore point and run the existing forward-only migration chain with the owner
+   connection before starting the API. Never seed demo accounts or run local fixtures against
+   production. No new schema or endpoint is part of this preparation.
+6. Supply `sync: false` values in provider secret settings and maintain them there after setup.
+   Independently generated API secrets must not be shared with staging. Keep
+   `NODE_ENV=production` and `APP_ENV=production`; runtime production checks stay enabled.
+7. Verify `/v1/health/ready`, restricted-role startup and pool usage. The four existing cron
+   services reference `mentor-api` and its `CRON_SECRET`; preserve their UTC schedules.
+
+Web/admin Render subdomains are disabled to prevent duplicate public URLs and Access bypass.
+The API Render hostname remains enabled for secret-authenticated cron calls; ordinary direct
+traffic must be rejected by the origin middleware. Verify missing/forged-header denials.
+
+## 3. Cloudflare DNS and TLS
+
+Cloudflare is the confirmed registrar/DNS provider. Review existing records, mail routing,
+DNSSEC and CAA before changing anything. Preserve unrelated records and enable account MFA
+and renewal. Use each actual generated Render host, not an inferred name.
+
+| DNS name | Type | Target | Final proxy state |
+|---|---|---|---|
+| `@`, `www` | CNAME | Actual web Render host | Proxied |
+| `api` | CNAME | Actual API Render host | Proxied |
+| `admin` | CNAME | Actual admin Render host | Proxied |
+| `media` | R2 managed | Public bucket custom domain | R2 managed |
+| Email records | Provider TXT/CNAME/MX | Exact provider values | DNS only |
+
+Begin Render records with DNS only, verify domain ownership and certificate issuance, then
+enable proxying and Full (strict), plus HTTPS redirects. Do not use Flexible SSL. Remove
+conflicting A/AAAA records only on those names. Render handles the `www` redirect for its
+apex custom domain; verify it after setup. The API rejects normal unproxied requests during
+bootstrap by design; health endpoints remain available. Do not weaken the origin check.
+
+## 4. Production environment and edge security
+
+`render.yaml` contains public settings, not actual credentials:
+
+| API setting | Value |
+|---|---|
+| `APP_URL` | `https://puhukoc.com` |
+| `ADMIN_APP_URL` | `https://admin.puhukoc.com` |
+| `CORS_ORIGINS` | `https://puhukoc.com,https://admin.puhukoc.com` |
+| `TURNSTILE_EXPECTED_HOSTNAME` | `puhukoc.com` |
+| `R2_PUBLIC_BASE_URL` | `https://media.puhukoc.com` |
+| R2 buckets / jurisdiction | `puhu-prod-public`, `puhu-prod-private` / `eu` |
+| Optional OAuth callback | `https://api.puhukoc.com/v1/auth/google/callback` |
+| `POSTMARK_FROM` / `VAPID_SUBJECT` | `noreply@puhukoc.com` / `https://puhukoc.com` |
+
+- Overwrite `x-mentor-origin-secret` in a Request Header Transform Rule scoped only to
+  `api.puhukoc.com`, using production `EDGE_ORIGIN_SECRET`. Preserve `CF-Connecting-IP`.
+  Never expose that secret in browsers, response headers, logs or docs.
+- Protect the admin hostname and API `/v1/admin/*` and `/v1/auth/admin/*` with the same Access
+  audience and an allowlist/MFA policy. Supply `CLOUDFLARE_ACCESS_TEAM_DOMAIN` and
+  `CLOUDFLARE_ACCESS_AUD`. Verify credentialed preflights without bypassing admin methods.
+  Do not put an interactive login on the entire API. The billing prerequisite above still applies.
+- Create a production Turnstile widget for the exact hostname; use the matching server secret
+  and web public key. Verify each operation's action, including login/recovery/phone checks.
+- Apply endpoint-specific WAF/rate limits preserving SSE and OAuth callbacks. Bypass CDN
+  caching for API/admin/web HTML and RSC; deliberately cache only public static/media assets.
+- Create scoped production EU R2 credentials and separate public/private buckets. Attach the
+  media domain only to the public bucket; keep private/public-development `r2.dev` access off.
+  Restrict upload/read CORS to production origins and run `storage:check`.
+- Set web `WEB_CSP_STORAGE_ORIGINS` to exact public-media and EU R2 origins used by signed URLs.
+  No wildcards or paths. Validate uploads, private downloads and CSP in browsers.
+
+Follow [storage-r2.md](./storage-r2.md) for storage permissions and release checks.
+
+## 5. Email and other integrations
+
+- Verify `puhukoc.com` in Postmark with the exact DKIM TXT and Return-Path CNAME records.
+  Keep CNAME DNS-only and one coherent SPF/DMARC policy compatible with existing mail routing.
+  Sender verification does not create an inbox. Decide how replies to `noreply` are handled.
+- Configure Google OAuth's three variables together if enabled; register the exact callback
+  and check authorized domains/consent-screen status before public signup.
+- Payments remain disabled; SMS and sponsorship stay behind existing acceptance gates. Do not
+  select fake providers in production. AI uses real provider wiring with central feature flags
+  and the existing monthly cost cap; configuration does not grant unconditional Free AI.
+- Supply API Sentry DSN and verify scrubbed events, readiness alerts and retention. API Sentry
+  tags incidents by `APP_ENV`. The web DSN slot alone does not initialize a browser SDK;
+  browser reporting remains a separate launch item.
+- Configure analytics/ads only after provider and consent review. Domain ownership is not
+  Google approval; keep existing ad rollout gates and publish only a verified real seller ID.
+
+## 6. Verification, release and rollback
+
+1. Run `pnpm check:deployment`: production domains/CORS, exact dependency builds, port-aware
+   starts, migration configuration, cron references and Turbo cache inputs must pass. This
+   check does not certify credentials, provider permissions, live DNS or the full Render schema.
+2. Require full CI on the exact reviewed commit: lint, typecheck, builds, tests, browser checks,
+   dependency audit and secret scan. Keep the three approved historical false-positive
+   fingerprints only; do not disable or broaden scanning. Protect `master` with review/CI gates.
+3. Use an optional temporary isolated rehearsal when useful. Before authorizing production,
+   record provider evidence, restore/rollback procedure and budget. Before public traffic,
+   verify signup, verification/reset, login/refresh/logout, admin Access, uploads/downloads,
+   SSE, cron delivery, production canonical/sitemap, admin noindex and origin denials.
+4. An authorized release deploys the exact reviewed commit to API, web/admin, then cron.
+   Monitor readiness/errors/authentication, DB/pool use, queue backlog and AI spend. Keep
+   risky feature flags off until their acceptance evidence is recorded.
+5. Disable relevant flags or roll back apps to a known-good commit, then recheck critical flows.
+   Code rollback does not revert migrations. Use a reviewed forward fix or tested Neon recovery
+   for schema/data recovery; keep migrations backward-compatible.
+
+Provider references: [Render Blueprint](https://render.com/docs/blueprint-spec),
+[deployments](https://render.com/docs/deploys),
+[Cloudflare DNS for Render](https://render.com/docs/configure-cloudflare-dns),
+[Universal SSL coverage](https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/),
+[Full (strict)](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/),
+[Postmark verification](https://postmarkapp.com/support/article/how-do-i-verify-a-domain).

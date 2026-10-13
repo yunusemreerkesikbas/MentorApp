@@ -1,3 +1,4 @@
+import { disableAuthRateLimits } from "./app-harness";
 import { JobRunnerService } from "../src/modules/notifications/application/job-runner.service";
 import { SubscriptionsService } from "../src/modules/payments/application/subscriptions.service";
 import type { INestApplication } from "@nestjs/common";
@@ -5,7 +6,7 @@ import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
 import * as express from "express";
 import { Pool } from "pg";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UserRole } from "@mentor/types";
 import { signFakeWebhook } from "../src/modules/payments/infrastructure/adapters/fake-payments.adapter";
@@ -63,6 +64,7 @@ describe("economy invite (e2e)", () => {
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    disableAuthRateLimits(moduleRef);
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());

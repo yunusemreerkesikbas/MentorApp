@@ -1,6 +1,6 @@
 interface TurnstileOptions {
   sitekey: string;
-  action: "signup" | "phone-verification";
+  action: "signup" | "login" | "forgot-password" | "phone-verification";
   callback: (token: string) => void;
   "expired-callback": () => void;
   "error-callback": () => void;
@@ -23,6 +23,7 @@ export function loadTurnstile(): Promise<TurnstileApi> {
   if (pending) return pending;
   pending = new Promise((resolve, reject) => {
     const script = document.createElement("script");
+    script.nonce = document.querySelector<HTMLScriptElement>("script[nonce]")?.nonce ?? "";
     script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
     script.async = true;
     script.onload = () => {

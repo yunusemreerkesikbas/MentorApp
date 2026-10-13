@@ -50,7 +50,7 @@ const article: InfoArticleDto = {
   featuredUntil: null,
   family: "KPSS",
   category: "APPLICATION",
-  metaTitle: "KPSS Başvuru Süreci | Mentor Blog",
+  metaTitle: "KPSS Başvuru Süreci | PuhuKoç Blog",
   metaDescription: "KPSS başvuru rehberi.",
   publishedAt: "2026-01-01T12:00:00.000Z",
   source: "ÖSYM",
@@ -202,7 +202,7 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   const api = await mockKnowledgeApi(page, { authenticated: false });
   await page.goto(`/en/blog/${article.slug}`);
 
-  await expect(page.getByRole("link", { name: "Mentor" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "PuhuKoç" })).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Sign in to ask the Coach" }),
   ).toHaveAttribute("href", "/en/login");
@@ -216,7 +216,7 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   );
   await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute(
     "content",
-    "Mentor",
+    "PuhuKoç",
   );
   await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute(
     "content",
@@ -250,7 +250,7 @@ test("oturumlu ziyaretçi de public chrome görür ve panel bağlantısı alır"
 
   await page.goto(`/blog/${article.slug}`);
 
-  await expect(page.getByRole("link", { name: "Mentor" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "PuhuKoç" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Panele dön" })).toHaveAttribute(
     "href",
     "/panel",
@@ -301,7 +301,8 @@ test("anonim makale reklamı doğrulanmış slug ile limited ayarları display �
     (window as unknown as { __mentorGptLog: string[] }).__mentorGptLog,
   );
   expect(log.indexOf("privacy:limited")).toBeLessThan(log.indexOf("display"));
-  expect(log).toContain("sizes:320x100,728x90");
+  // The article column is narrower than 728px, even on this desktop viewport.
+  expect(log).toContain("sizes:320x100");
   expect(api.unexpected).toEqual([]);
 });
 
@@ -325,7 +326,7 @@ test("contextual no-fill alanı çöker; Premium kullanıcı GPT indirmez", asyn
       ),
     )
     .toBe(true);
-  await adSlot.evaluate((element) => element.scrollIntoView({ block: "center" }));
+  await page.getByRole("region", { name: "Bu konu kafanı mı kurcalıyor?" }).scrollIntoViewIfNeeded();
   await expect(adSlot).toBeHidden();
 
   const premiumPage = await context.newPage();
@@ -605,6 +606,7 @@ async function installDisplayGpt(page: Page, empty: boolean): Promise<void> {
       },
     };
     const googletag = {
+      setConfig() {},
       cmd: { push(callback: () => void) { callback(); return 1; } },
       enums: { OutOfPageFormat: { REWARDED: "REWARDED" } },
       defineSlot(_path: string, sizes: number[][]) {

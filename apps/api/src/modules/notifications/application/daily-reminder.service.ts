@@ -1,4 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { FeatureFlag } from "../../../common/config/config.catalog";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -24,10 +26,12 @@ export class DailyReminderService {
     private readonly preferences: NotificationPreferencesRepository,
     private readonly deliveries: NotificationDeliveryRepository,
     private readonly notifications: NotificationsService,
+    private readonly config: ConfigRegistryService,
   ) {}
 
   async dispatchForToday(): Promise<{ enqueued: number; skipped: number }> {
     const dateIso = todayIso();
+    const reminderEmailEnabled = await this.config.get(FeatureFlag.DAILY_REMINDER_EMAIL_ENABLED);
     const candidates = await this.coaching.listDailyReminderCandidates(dateIso);
     let enqueued = 0;
     let skipped = 0;
@@ -36,7 +40,7 @@ export class DailyReminderService {
       const prefs = await withServiceContext(this.db, async (tx) =>
         this.preferences.findByUserIdService(tx, user.userId),
       );
-      const emailOn = prefs?.emailEnabled ?? true;
+      const emailOn = reminderEmailEnabled === true && (prefs?.emailEnabled ?? true);
       const pushOn = prefs?.pushEnabled ?? true;
 
       const dedupeKey = `daily-reminder:${dateIso}`;

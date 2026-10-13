@@ -40,7 +40,7 @@ describe("separate web and admin refresh cookies", () => {
     expect(response.clearCookie).toHaveBeenCalledWith("mentor_refresh", { path: "/v1/auth" });
     response.cookie.mockClear();
 
-    await controller.adminLogin({} as never, response as never);
+    await controller.adminLogin({} as never, response as never, { cloudflareAccessEmail: "admin@test.local" } as never);
     expect(response.cookie).toHaveBeenCalledWith(
       "mentor_admin_refresh", "secret", expect.objectContaining({ path: "/v1/auth/admin", httpOnly: true }),
     );
@@ -54,7 +54,7 @@ describe("separate web and admin refresh cookies", () => {
     await controller.refresh({ cookies } as never, response as never);
     await controller.adminRefresh({ cookies } as never, response as never);
     expect(auth.refresh).toHaveBeenCalledWith("web");
-    expect(auth.refreshAdmin).toHaveBeenCalledWith("admin");
+    expect(auth.refreshAdmin).toHaveBeenCalledWith("admin", undefined);
 
     await controller.adminLogout({ cookies } as never, response as never);
     expect(auth.logout).toHaveBeenCalledWith("admin");
@@ -67,7 +67,7 @@ describe("separate web and admin refresh cookies", () => {
     await controller.refresh({ cookies: { mentor_refresh: "old" } } as never, response as never);
     await controller.adminRefresh({ cookies: { mentor_refresh: "old" } } as never, response as never);
     expect(auth.refresh).toHaveBeenCalledWith("");
-    expect(auth.refreshAdmin).toHaveBeenCalledWith("");
+    expect(auth.refreshAdmin).toHaveBeenCalledWith("", undefined);
   });
 
   it("web logout leaves the admin cookie untouched", async () => {

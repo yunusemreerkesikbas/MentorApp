@@ -15,6 +15,7 @@ import {
   UserRole,
   type AdminCoachApplicationDto,
   type MentorshipApplicationDto,
+  type Paginated,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Roles } from "../../../common/auth/roles.decorator";
@@ -23,7 +24,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { MentorshipApplicationService } from "../../mentorship/application/mentorship-application.service";
 import { toAdminDto } from "../../mentorship/application/coach-registry.mappers";
 import type { MentorshipApplicationRow } from "../../mentorship/infrastructure/mentorship-application.repository";
-import { AdminUsersService } from "../application/admin-users.service";
+import { AdminUsersService, type AdminUserView } from "../application/admin-users.service";
 import { AuditAction, AuditTargetType } from "../domain/admin.constants";
 import { AdminAuditInterceptor } from "./admin-audit.interceptor";
 import {
@@ -40,6 +41,22 @@ interface CoachIdentity {
   displayName: string;
   email: string;
   hasCoachRole: boolean;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+}
+
+function identityOf(person: AdminUserView | undefined): CoachIdentity {
+  return {
+    displayName: person?.displayName ?? "",
+    email: person?.email ?? "",
+    // Reported, not inferred from `status`: the standing and the role are two writes without a
+    // shared transaction, so a crash between them is only recoverable if it is visible here.
+    hasCoachRole: person?.roles.includes(UserRole.COACH) ?? false,
+    // Registration asks for neither, so an ACTIVE row says nothing about them. These are what
+    // tell a coach who can reach a student from a row that can do nothing.
+    emailVerified: person?.emailVerified ?? false,
+    phoneVerified: person?.phoneVerified ?? false,
+  };
 }
 
 /**
@@ -68,20 +85,21 @@ export class AdminCoachApplicationsController {
     private readonly users: AdminUsersService,
   ) {}
 
-  /** The registry, one standing at a time. W8 supplies the rows, admin puts the people back on them. */
+  /**
+   * The registry, one standing and one page at a time, oldest first. W8 supplies the rows, admin
+   * puts the people back on them.
+   */
   @Get()
-  async list(@Query() query: ListCoachesQueryDto): Promise<AdminCoachApplicationDto[]> {
-    const rows = await this.applications.listForReview(query.status);
+  async list(@Query() query: ListCoachesQueryDto): Promise<Paginated<AdminCoachApplicationDto>> {
+    const { status, page, pageSize } = query;
+    const { rows, total } = await this.applications.listForReview(status, page, pageSize);
     const people = await this.users.listByIds(rows.map((row) => row.userId));
-    return rows.map((row) =>
-      toAdminDto(row, {
-        displayName: people.get(row.userId)?.displayName ?? "",
-        email: people.get(row.userId)?.email ?? "",
-        // Reported, not inferred from `status`: the standing and the role are two writes without a
-        // shared transaction, so a crash between them is only recoverable if it is visible here.
-        hasCoachRole: people.get(row.userId)?.roles.includes(UserRole.COACH) ?? false,
-      }),
-    );
+    return {
+      items: rows.map((row) => toAdminDto(row, identityOf(people.get(row.userId)))),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   /**
@@ -172,12 +190,7 @@ export class AdminCoachApplicationsController {
     row: MentorshipApplicationRow | null,
     fallback: MentorshipApplicationDto,
   ): Promise<AdminCoachApplicationDto> {
-    const person = (await this.users.listByIds([userId])).get(userId);
-    const identity: CoachIdentity = {
-      displayName: person?.displayName ?? "",
-      email: person?.email ?? "",
-      hasCoachRole: person?.roles.includes(UserRole.COACH) ?? false,
-    };
+    const identity = identityOf((await this.users.listByIds([userId])).get(userId));
     return row ? toAdminDto(row, identity) : { ...fallback, userId, ...identity };
   }
 }

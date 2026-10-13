@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { CONFIG_CATALOG } from "../../../common/config/config.catalog";
 import { EmailTemplate, JobName } from "../../../shared/notifications/constants";
 import { DailyReminderService } from "./daily-reminder.service";
 
@@ -15,6 +16,7 @@ describe("DailyReminderService", () => {
     emailEnabled?: boolean;
     pushEnabled?: boolean;
     emailDedupeOk?: boolean;
+    dailyEmailEnabled?: boolean;
   } = {}) {
     const coaching = {
       listDailyReminderCandidates: vi.fn().mockResolvedValue(
@@ -37,6 +39,9 @@ describe("DailyReminderService", () => {
       createFromTemplate: vi.fn().mockResolvedValue(undefined),
       resolveCopy: vi.fn().mockReturnValue({ title: "t", body: "b" }),
     };
+    const registry = { get: vi.fn().mockResolvedValue(
+      overrides.dailyEmailEnabled ?? CONFIG_CATALOG["notifications.daily_reminder.email_enabled"].default,
+    ) };
 
     const service = new DailyReminderService(
       db,
@@ -45,8 +50,9 @@ describe("DailyReminderService", () => {
       preferences as never,
       deliveries as never,
       notificationsService as never,
+      registry as never,
     );
-    return { service, queue, deliveries, preferences };
+    return { service, queue, deliveries, preferences, notificationsService, registry };
   }
 
   it("skips users with both channels disabled", async () => {
@@ -75,5 +81,28 @@ describe("DailyReminderService", () => {
     const { service, queue } = makeService({ emailDedupeOk: false, pushEnabled: false });
     await service.dispatchForToday();
     expect(queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it("pauses reminder email while preserving the inbox and push", async () => {
+    const { service, queue, deliveries, notificationsService } = makeService({ dailyEmailEnabled: false });
+    expect(await service.dispatchForToday()).toEqual({ enqueued: 1, skipped: 0 });
+    expect(notificationsService.createFromTemplate).toHaveBeenCalledOnce();
+    expect(deliveries.tryRecord).not.toHaveBeenCalled();
+    expect(queue.enqueue).toHaveBeenCalledOnce();
+    expect(queue.enqueue).toHaveBeenCalledWith(JobName.SEND_PUSH, expect.objectContaining({ userId: "u1" }));
+  });
+
+  it("retains an inbox reminder when email is paused and the user declined push", async () => {
+    const { service, queue, notificationsService } = makeService({ dailyEmailEnabled: false, pushEnabled: false });
+    expect(await service.dispatchForToday()).toEqual({ enqueued: 0, skipped: 1 });
+    expect(notificationsService.createFromTemplate).toHaveBeenCalledOnce();
+    expect(queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it("reads the reminder email setting once for the whole dispatch", async () => {
+    const { service, registry } = makeService({ candidates: [], dailyEmailEnabled: false });
+    await service.dispatchForToday();
+    expect(registry.get).toHaveBeenCalledOnce();
+    expect(registry.get).toHaveBeenCalledWith("notifications.daily_reminder.email_enabled");
   });
 });

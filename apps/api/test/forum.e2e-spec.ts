@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { createTestApp } from "./app-harness";
 import { ThrottlerStorage } from "@nestjs/throttler";
 import { Pool } from "pg";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FORUM_LIKE_EMOJI, UserRole, ZoneJoinPolicy, ZoneMemberStatus, ZoneType } from "@mentor/types";
 
@@ -85,7 +85,7 @@ describe("forum zones (e2e)", () => {
         increment: async () => ({ totalHits: 1, timeToExpire: 0, isBlocked: false, timeToBlockExpire: 0 }),
       })
       .compile();
-    app = createTestApp(moduleRef);
+    app = createTestApp(moduleRef, { authRateLimits: false });
     await app.init();
 
     const admin = await signup("admin");
@@ -153,6 +153,10 @@ describe("forum zones (e2e)", () => {
       .set(asAdmin());
     expect(pending.status).toBe(200);
     expect(pending.body.map((m: { userId: string }) => m.userId)).toContain(user.user.id);
+    // A moderator approves a person: the row carries their public name, not just an id.
+    expect(
+      pending.body.find((m: { userId: string }) => m.userId === user.user.id).displayName,
+    ).toBeTruthy();
 
     const approved = await request(app.getHttpServer())
       .post(`/v1/forum/zones/${zoneId}/members/${user.user.id}/approve`)
@@ -998,6 +1002,10 @@ describe("forum zones (e2e)", () => {
       .get(`/v1/forum/zones/${zoneId}/reports?status=OPEN`)
       .set(asAdmin());
     expect(zoneQueue.body.items.map((r: { targetId: string }) => r.targetId)).toContain(threadId);
+    // The queue carries the start of what was reported, so a moderator can judge it in place.
+    expect(
+      zoneQueue.body.items.find((r: { targetId: string }) => r.targetId === threadId).excerpt,
+    ).toBe("şikayet edilecek mesaj");
 
     // A non-moderator cannot resolve.
     const forbidden = await request(app.getHttpServer())
@@ -1327,6 +1335,61 @@ describe("forum zones (e2e)", () => {
     const secondIds = secondPage.body.items.map((item: { id: string }) => item.id);
     expect(firstIds.filter((id: string) => secondIds.includes(id))).toEqual([]);
     expect(new Set([...firstIds, ...secondIds])).toEqual(new Set(threadIds));
+  });
+
+  it("Discovery feed falls back to recent in a quiet community and lists waiting questions", async () => {
+    await setForumEnabled(true);
+    const tag = await createDiscoveryTag("discovery-quiet");
+    const asker = await signup("discovery-waiting-asker");
+    const helper = await signup("discovery-waiting-helper");
+    const asAsker = { Authorization: `Bearer ${asker.accessToken}` };
+    const asHelper = { Authorization: `Bearer ${helper.accessToken}` };
+    const zoneId = await createZone(ZoneType.QA, "Discovery Bekleyenler");
+    for (const auth of [asAsker, asHelper]) {
+      await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(auth).expect(201);
+    }
+    const ask = async (label: string, auth: Record<string, string>): Promise<string> => {
+      const created = await request(app.getHttpServer())
+        .post(`/v1/forum/zones/${zoneId}/threads`)
+        .set(auth)
+        .send({ title: `Bekleyen soru ${label}`, body: `Cevap bekleyen soru içeriği ${label}.`, tagIds: [tag.id] })
+        .expect(201);
+      return created.body.id as string;
+    };
+    const answer = (threadId: string) =>
+      request(app.getHttpServer())
+        .post(`/v1/forum/threads/${threadId}/answers`)
+        .set(asHelper)
+        .send({ body: "Adım adım şöyle düşünebilirsin." })
+        .expect(201);
+
+    const waiting = await ask("bekliyor", asAsker);
+    const answered = await ask("cevaplı", asAsker);
+    const deletedAnswer = await ask("silinmiş-cevap", asAsker);
+    const own = await ask("kendi", asHelper);
+    await answer(answered);
+    await answer(deletedAnswer);
+    await pool.query("update forum_posts set deleted_at = now() where thread_id = $1", [deletedAnswer]);
+    const allIds = [waiting, answered, deletedAnswer, own];
+    await pool.query(
+      "update forum_threads set last_activity_at = now() - interval '30 days' where id = any($1::uuid[])",
+      [allIds],
+    );
+
+    const trending = await request(app.getHttpServer())
+      .get(`/v1/forum/feed?scope=relevant&sort=trending&tag=${tag.slug}`)
+      .set(asHelper)
+      .expect(200);
+    expect(trending.body.effectiveSort).toBe("recent");
+    expect(new Set(trending.body.items.map((item: { id: string }) => item.id))).toEqual(new Set(allIds));
+
+    const waitingFeed = await request(app.getHttpServer())
+      .get(`/v1/forum/feed?scope=relevant&sort=recent&tag=${tag.slug}&unanswered=true`)
+      .set(asHelper)
+      .expect(200);
+    expect(new Set(waitingFeed.body.items.map((item: { id: string }) => item.id))).toEqual(
+      new Set([waiting, deletedAnswer]),
+    );
   });
 
   it("Discovery V2 rejects inactive tags", async () => {

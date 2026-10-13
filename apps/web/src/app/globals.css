@@ -224,13 +224,6 @@ body {
   }
 }
 
-/* `/seans` Bugün card: the session you just finished grows into the day's strip from the left. */
-@keyframes session-strip-grow {
-  from {
-    transform: scaleX(0);
-  }
-}
-
 @keyframes popover-enter {
   from {
     opacity: 0;

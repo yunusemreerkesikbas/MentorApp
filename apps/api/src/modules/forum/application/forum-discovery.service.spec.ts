@@ -2,6 +2,7 @@ import { HttpStatus } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import { encodeForumFeedCursor } from "../domain/forum-discovery.policy";
 import { ForumDiscoveryService } from "./forum-discovery.service";
 
 const repo = {
@@ -177,6 +178,112 @@ describe("ForumDiscoveryService mutations", () => {
       expect.objectContaining({ zoneType: undefined, zoneTypes: ["CHAT", "ANNOUNCEMENT"] }),
     );
   });
+
+  it("falls back to recent when the trending window is empty on the first page", async () => {
+    users.getDiscoveryProfile.mockResolvedValue({ examType: "KPSS" });
+    repo.listDiscoveryThreads.mockResolvedValue([]);
+
+    const feed = await service().getFeed(
+      { id: "viewer", roles: ["STUDENT"] },
+      { scope: "relevant", sort: "trending", limit: 20 },
+      "tr",
+    );
+
+    expect(repo.listDiscoveryThreads.mock.calls.map(([opts]) => opts.sort)).toEqual([
+      "trending",
+      "recent",
+    ]);
+    expect(feed.effectiveSort).toBe("recent");
+  });
+
+  it("keeps the requested sort when it is not trending or a page is already open", async () => {
+    users.getDiscoveryProfile.mockResolvedValue({ examType: "KPSS" });
+    repo.listDiscoveryThreads.mockResolvedValue([]);
+
+    const feed = await service().getFeed(
+      { id: "viewer", roles: ["STUDENT"] },
+      { scope: "relevant", sort: "top", limit: 20 },
+      "tr",
+    );
+
+    expect(repo.listDiscoveryThreads).toHaveBeenCalledTimes(1);
+    expect(feed.effectiveSort).toBe("top");
+  });
+
+  it("continues a fallback feed when a trending request carries a recent cursor", async () => {
+    users.getDiscoveryProfile.mockResolvedValue({ examType: "KPSS" });
+    repo.listDiscoveryThreads.mockResolvedValue([]);
+    const cursor = encodeForumFeedCursor({
+      sort: "recent",
+      score: 0,
+      createdAt: "2026-10-01T10:00:00.000Z",
+      lastActivityAt: "2026-10-01T10:00:00.000Z",
+      id: "00000000-0000-4000-8000-000000000001",
+    });
+
+    const feed = await service().getFeed(
+      { id: "viewer", roles: ["STUDENT"] },
+      { scope: "relevant", sort: "trending", cursor, limit: 20 },
+      "tr",
+    );
+
+    expect(repo.listDiscoveryThreads).toHaveBeenCalledTimes(1);
+    expect(repo.listDiscoveryThreads).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sort: "recent", cursor: expect.objectContaining({ sort: "recent" }) }),
+    );
+    expect(feed.effectiveSort).toBe("recent");
+  });
+
+  it("still rejects a cursor that belongs to another sort", async () => {
+    users.getDiscoveryProfile.mockResolvedValue({ examType: "KPSS" });
+    const cursor = encodeForumFeedCursor({
+      sort: "top",
+      score: 3,
+      createdAt: "2026-10-01T10:00:00.000Z",
+      lastActivityAt: "2026-10-01T10:00:00.000Z",
+      id: "00000000-0000-4000-8000-000000000001",
+    });
+
+    await expect(
+      service().getFeed(
+        { id: "viewer", roles: ["STUDENT"] },
+        { scope: "relevant", sort: "recent", cursor, limit: 20 },
+        "tr",
+      ),
+    ).rejects.toMatchObject({ code: ErrorCode.BAD_REQUEST, httpStatus: HttpStatus.BAD_REQUEST });
+  });
+
+  it("passes the waiting-questions filter to the repository", async () => {
+    users.getDiscoveryProfile.mockResolvedValue({ examType: "KPSS" });
+    repo.listDiscoveryThreads.mockResolvedValue([]);
+
+    await service().getFeed(
+      { id: "viewer", roles: ["STUDENT"] },
+      { scope: "relevant", sort: "recent", unanswered: true, limit: 3 },
+      "tr",
+    );
+
+    expect(repo.listDiscoveryThreads).toHaveBeenLastCalledWith(
+      expect.objectContaining({ unanswered: true, viewerId: "viewer" }),
+    );
+  });
+
+  it.each(["trending", "top"] as const)(
+    "ranks waiting questions newest first even on the %s tab, with no time window",
+    async (requested) => {
+      users.getDiscoveryProfile.mockResolvedValue({ examType: "KPSS" });
+      repo.listDiscoveryThreads.mockResolvedValue([]);
+
+      const feed = await service().getFeed(
+        { id: "viewer", roles: ["STUDENT"] },
+        { scope: "relevant", sort: requested, unanswered: true, limit: 20 },
+        "tr",
+      );
+
+      expect(repo.listDiscoveryThreads.mock.calls.map(([opts]) => opts.sort)).toEqual(["recent"]);
+      expect(feed.effectiveSort).toBe("recent");
+    },
+  );
 
   it("returns exam-aware trends with the configured activity window", async () => {
     users.getDiscoveryProfile.mockResolvedValue({ examType: "KPSS" });

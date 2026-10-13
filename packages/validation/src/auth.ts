@@ -35,7 +35,7 @@ export const signupSchema = z.object({
   /** Self-declared minimum age; no birth date is collected. */
   ageEligibilityConfirmed: z.literal(true),
   /** Cloudflare Turnstile token (enforced when the secret is configured). */
-  turnstileToken: z.string().optional(),
+  turnstileToken: z.string().max(2048).optional(),
   /**
    * Who is signing up (APP-089). This is the ONE field a client may use to influence its own roles,
    * and it is safe for a specific reason: COACH on its own opens nothing.
@@ -54,6 +54,7 @@ export type SignupInput = z.infer<typeof signupSchema>;
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1).max(128),
+  turnstileToken: z.string().max(2048).optional(),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
@@ -63,7 +64,7 @@ export const googleOAuthStartQuerySchema = z
     locale: z.enum(["tr", "en"]).default("tr"),
     returnTo: z
       .string()
-      .regex(/^\/(?!\/)[a-z0-9/_-]*$/i)
+      .regex(/^\/(?!\/)[a-z0-9/_-]*(?:\?section=phone)?$/i)
       .default("/panel"),
     kvkkAccepted: z.enum(["true"]).optional(),
     termsAccepted: z.enum(["true"]).optional(),
@@ -90,7 +91,7 @@ export const googleOAuthCallbackQuerySchema = z.object({
 });
 export type GoogleOAuthCallbackQuery = z.infer<typeof googleOAuthCallbackQuerySchema>;
 
-export const forgotPasswordSchema = z.object({ email: emailSchema });
+export const forgotPasswordSchema = z.object({ email: emailSchema, turnstileToken: z.string().max(2048).optional() });
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
 export const resetPasswordSchema = z.object({

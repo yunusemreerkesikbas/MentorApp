@@ -217,6 +217,9 @@ export class ForumService {
     const rows = await this.repo.listMembers(zoneId, status);
     return rows.map((m) => ({
       userId: m.userId,
+      displayName: m.displayName,
+      username: m.username,
+      avatarUrl: m.avatarStorageKey ? this.storage.getPublicUrl(m.avatarStorageKey) : null,
       role: m.role as ZoneRole,
       status: m.status as ZoneMemberStatus,
       createdAt: m.createdAt.toISOString(),

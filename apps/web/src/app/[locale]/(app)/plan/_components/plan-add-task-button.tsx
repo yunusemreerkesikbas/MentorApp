@@ -1,5 +1,5 @@
 "use client";
-import { Plus } from "lucide-react";
+import { AddIcon as Plus } from "@solar-icons/react/linear/add";
 
 import { useTranslations } from "next-intl";
 
@@ -33,7 +33,7 @@ export function PlanAddTaskButton({
         <span className="flex size-9 shrink-0 items-center justify-center cursor-pointer">
           <Plus
             size={20}
-            strokeWidth={2.5}
+            strokeWidth={1.75}
             aria-hidden
             className="transition-transform duration-200 ease-out group-hover:rotate-90 group-focus-visible:rotate-90 motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-focus-visible:rotate-0"
           />

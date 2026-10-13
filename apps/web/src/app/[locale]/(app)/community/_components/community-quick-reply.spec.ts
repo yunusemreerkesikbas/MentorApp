@@ -29,7 +29,7 @@ describe("community quick reply contract", () => {
     expect(comment).toContain('targetType: "post"');
   });
 
-  it("uses the trends rail instead of the participants rail and mirrors new copy", () => {
+  it("rails the post's room and presence instead of participants, and mirrors new copy", () => {
     const detail = read(
       resolve(COMMUNITY_DIR, "message", "[threadId]", "_components", "message-shell.tsx"),
     );
@@ -40,7 +40,8 @@ describe("community quick reply contract", () => {
       community: Record<string, string>;
     };
 
-    expect(detail).toContain("<CommunityTrendRail />");
+    expect(detail).toContain("<ZoneMiniCard zone={zone} />");
+    expect(detail).toContain("<CommunityPresenceCard />");
     expect(detail).not.toContain("detail_participants");
     expect(tr.community.quick_reply_title).toBeTruthy();
     expect(en.community.quick_reply_title).toBeTruthy();

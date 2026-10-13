@@ -40,6 +40,7 @@ export function NotebookFunnelCard({ analysis }: { analysis: CoachingAnalysisDto
               </span>
             </span>
             <ProgressLine
+              appearance="play"
               label={row.label}
               value={row.value}
               max={stats.savedCount}

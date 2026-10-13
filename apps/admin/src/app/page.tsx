@@ -7,7 +7,7 @@ import SponsorshipCards from './SponsorshipCards'
 import EconomyCards from './EconomyCards'
 import CoachFeedbackCards from './CoachFeedbackCards'
 
-// Mentor admin home. Replaces the Duralux CRM demo dashboard with a lean landing: a read-only KPI
+// PuhuKoç admin home. Replaces the Duralux CRM demo dashboard with a lean landing: a read-only KPI
 // snapshot (ADMIN only) on top, then role-gated feature links (HomeCards) so EDITOR sees only what
 // it can use.
 const Home = () => {

@@ -6,10 +6,11 @@ import type {
   NewAdRewardSession,
 } from "../infrastructure/ad-reward-session.repository";
 
-const CONFIG: Record<string, number | boolean> = {
+const CONFIG: Record<string, number | boolean | string> = {
   "economy.enabled": true,
   "ads.enabled": true,
   "ads.display.enabled": true,
+  "ads.display.allowed_countries": "TR",
   "ads.rewarded.enabled": true,
   "ads.placement.knowledge_article_end.enabled": true,
   "ads.placement.dashboard_rewarded_coin.enabled": true,
@@ -200,6 +201,22 @@ describe("AdsService", () => {
     );
 
     expect(replay.id).toBe(first.id);
+    expect(sessions).toHaveLength(1);
+    expect(economy.reserveCoinGrantInServiceTx).toHaveBeenCalledTimes(1);
+  });
+
+  it("replays creation when a concurrent request commits while the offer is being checked", async () => {
+    const { service, economy, sessions } = setup();
+    const key = "11111111-1111-4111-8111-111111111111";
+    const user = { id: "user-1", roles: [], orgId: null };
+    const getOffer = service.getRewardOffer.bind(service);
+    vi.spyOn(service, "getRewardOffer").mockImplementationOnce(async (...args) => {
+      await service.createRewardSession(AdPlacementId.DASHBOARD_REWARDED_COIN, user, "TR", key);
+      return getOffer(...args);
+    });
+
+    const replay = await service.createRewardSession(AdPlacementId.DASHBOARD_REWARDED_COIN, user, "TR", key);
+    expect(replay.id).toBe(sessions[0]!.id);
     expect(sessions).toHaveLength(1);
     expect(economy.reserveCoinGrantInServiceTx).toHaveBeenCalledTimes(1);
   });

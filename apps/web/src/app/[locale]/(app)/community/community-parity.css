@@ -1,174 +1,126 @@
+/* Topluluk speaks the panel's language (DESIGN.md §1): app tokens, no palette of its own. The
+   `--community-*` names stay as aliases while the screens converge; new code uses the app tokens. */
 .community-workspace {
   --color-body-text: var(--color-body);
   --color-secondary-light: var(--color-border);
   --color-soft: var(--color-surface-container);
-  --color-accent: var(--community-blue-ink);
-  --color-chip: var(--color-progress-track);
-  --color-chip-text: var(--community-blue-ink);
-  --community-blue: var(--color-progress);
-  --community-blue-hover: var(--color-focus-ring);
-  --community-blue-soft: color-mix(in srgb, var(--color-progress-track) 42%, var(--color-surface));
-  --community-blue-border: var(--color-progress-track);
-  --community-blue-ink: var(--color-focus-ring);
-  --community-coral: #dc5c49;
-  --community-coral-soft: color-mix(in srgb, #dc5c49 16%, var(--color-surface));
+  --color-accent: var(--play-selected-ink);
+  --color-chip: var(--play-selected);
+  --color-chip-text: var(--play-selected-ink);
+  --community-blue: var(--play-cta);
+  --community-blue-hover: var(--play-cta-edge);
+  --community-blue-soft: var(--play-selected);
+  --community-blue-border: var(--play-line);
+  --community-blue-ink: var(--play-selected-ink);
+  /* Room types are told apart by their glyph, not by colour (canvas revision, 2026-10-07). */
+  --community-coral: var(--color-secondary);
+  --community-coral-soft: var(--color-surface-container);
   --community-green: var(--color-success);
-  --community-green-soft: color-mix(in srgb, var(--color-success) 16%, var(--color-surface));
+  --community-green-soft: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
   --community-canvas: var(--color-bg);
-  --community-sidebar: var(--color-surface-container);
-  --radius-card: 13px;
+  --community-sidebar: var(--color-surface);
   min-height: 100vh;
   background: var(--community-canvas);
   color: var(--color-main);
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* X-inspired light workspace: cool neutrals, crisp separators, flat surfaces. */
+/* Cool neutrals in light mode: the app's warm #f0edec reads dirty beside feeds (user, 2026-10-07).
+   Scoped here; changing `--color-surface-container` app-wide is a separate decision. Feed rows
+   need a visible hairline, so the light border is not the app's white. */
 html:not(.dark) .community-workspace {
-  --color-main: #0f1419;
-  --color-body: #0f1419;
-  --color-body-text: #0f1419;
-  --color-secondary: #536471;
-  --color-surface-container: #f7f9f9;
-  --color-border: #eff3f4;
-  --color-btn: #1d9bf0;
-  --color-btn-label: #ffffff;
-  --color-progress: #1d9bf0;
-  --color-progress-track: #cfd9de;
-  --color-focus-ring: #1d9bf0;
-  --color-accent: #1d9bf0;
-  --color-soft: #f7f9f9;
-  --color-chip: #e8f5fd;
-  --color-chip-text: #0f6fae;
-  --community-blue: #1d9bf0;
-  --community-blue-hover: #1a8cd8;
-  --community-blue-soft: #e8f5fd;
-  --community-blue-border: #c5e5f8;
-  --community-blue-ink: #0f6fae;
-  --community-canvas: #ffffff;
-  --community-sidebar: #ffffff;
-  --shadow-card: none;
-  --shadow-card-hover: none;
+  --color-surface-container: #f4f7fb;
+  --color-border: #e9eef4;
+  --play-track: #eaeff5;
+  --play-line: #e2e8f0;
 }
 
-.community-workspace :where(button, input, textarea, select) {
-  font: inherit;
+/* In Tailwind's base layer: unlayered, this reset outranked every `font-*` utility on buttons. */
+@layer base {
+  .community-workspace :where(button, input, textarea, select) {
+    font: inherit;
+  }
 }
 
+/* Chrome: one sticky left column on desktop (title and search over the rooms) and a 64 px bar on
+   phones (close, rooms drawer, title, search). The app rail already carries the wordmark and the
+   person, so the community does not repeat them. */
 .community-header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  display: grid;
-  grid-template-columns: 248px minmax(260px, 620px) 1fr;
-  align-items: center;
-  min-height: 72px;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.community-header__brand,
-.community-header__actions,
-.community-header__profile,
-.community-header__search {
   display: flex;
-  align-items: center;
-}
-
-.community-header__brand {
+  flex-direction: column;
   gap: 12px;
-  padding: 0 20px;
+  padding: 20px 12px 8px;
 }
 
-.community-header__wordmark {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+.community-header .community-header__close,
+.community-header__menu { display: none; }
+
+.community-header__title {
+  margin: 0;
+  padding: 0 10px;
   color: var(--color-main);
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 800;
-  letter-spacing: -0.025em;
+  line-height: 1.3;
 }
 
-.community-header .community-header__close { display: none; }
-
-.community-header__wordmark--mobile { display: none; }
-
-.community-header__wordmark--mobile {
+.community-header__menu {
   width: 44px;
   height: 44px;
-  justify-content: center;
+  place-items: center;
+  border: 0;
   border-radius: 10px;
+  background: none;
+  color: var(--color-main);
   cursor: pointer;
-  transition: background-color 180ms ease-out, box-shadow 180ms ease-out;
 }
 
-.community-header__wordmark--mobile:hover,
-.community-header__wordmark--mobile[aria-expanded="true"] {
-  background: var(--community-blue-soft);
+.community-header__menu[aria-expanded="true"] {
+  background: var(--play-selected);
+  color: var(--play-selected-ink);
 }
 
-.community-header__wordmark--mobile:focus-visible {
+.community-header__menu:focus-visible {
   outline: 0;
   box-shadow: 0 0 0 2px var(--color-focus-ring);
 }
 
-.community-header__wordmark--mobile .community-header__mark {
-  width: 44px;
-  height: 44px;
-}
-
-.community-header__mark {
-  display: grid;
-  width: 24px;
-  height: 32px;
-  place-items: center;
-  color: var(--community-blue-ink);
-}
-
 .community-header__search {
+  display: flex;
+  align-items: center;
   width: 100%;
   min-width: 0;
   gap: 10px;
-  height: 42px;
-  margin-left: 14px;
-  padding: 0 15px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1.5px solid var(--color-border);
   border-radius: 10px;
-  background: var(--color-surface-container);
+  background: var(--color-surface);
   color: var(--color-secondary);
-  border: 0;
   cursor: text;
   text-align: left;
-  transition: box-shadow 180ms ease-out, background-color 180ms ease-out;
+  transition: border-color 180ms ease-out, box-shadow 180ms ease-out;
 }
 
 .community-header__search-placeholder {
   min-width: 0;
   flex: 1;
   font-size: 14px;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.community-header__search:hover,
+.community-header__search:hover { border-color: var(--play-line); }
+
 .community-header__search:focus-visible {
-  background: var(--color-surface);
-  box-shadow: 0 0 0 2px var(--community-blue-ink);
   outline: 0;
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
 }
 
-.community-header__search-shortcut {
-  flex: none;
-  padding: 3px 7px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-secondary);
-  font-size: 11px;
-  line-height: 1.2;
-  box-shadow: 0 1px 2px rgb(18 24 39 / 5%);
-}
+/* The 224 px field cannot hold the placeholder and the shortcut; ⌘/Ctrl K still opens search. */
+.community-header__search-shortcut { display: none; }
 
 .community-search-dialog {
   width: 100%;
@@ -545,23 +497,6 @@ html:not(.dark) .community-workspace {
 
 .community-search-panel__footer span { display: flex; align-items: center; gap: 3px; }
 
-.community-header__actions {
-  justify-content: flex-end;
-  gap: 13px;
-  padding: 0 24px;
-}
-
-.community-header__profile {
-  min-height: 44px;
-  gap: 9px;
-  padding: 5px 10px 5px 6px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  color: var(--color-main);
-  font-size: 14px;
-  font-weight: 700;
-}
-
 .community-post-action {
   border-radius: 9999px;
   transition: background-color 160ms ease-out;
@@ -575,124 +510,68 @@ html:not(.dark) .community-workspace {
 .community-workspace__body {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
-  min-height: calc(100vh - 72px);
+  min-height: 100vh;
+}
+
+.community-workspace__rail {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  border-right: 1px solid var(--color-border);
+  background: var(--community-sidebar);
 }
 
 .community-workspace__sidebar {
-  position: sticky;
-  top: 72px;
-  height: calc(100vh - 72px);
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
   overflow-y: auto;
-  border-right: 1px solid var(--color-border);
-  background: var(--community-sidebar);
-  padding: 20px 0 28px;
+  padding: 8px 0 16px;
 }
 
 .community-workspace__content { min-width: 0; }
 
-.profile-hero__media {
-  position: absolute;
-  inset: 0 0 auto;
-  height: calc(60% + 8px);
-  overflow: hidden;
-}
-
-.profile-hero__identity {
-  border-top: 1px solid var(--color-border);
-}
-
-.profile-hero__image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 28%;
-}
-
-.profile-hero__image--ambient {
-  opacity: 0.42;
-  filter: blur(20px);
-  transform: scale(1.08);
-}
-
-.profile-hero__image--primary { z-index: 1; }
-
-.profile-hero__fallback {
-  display: grid;
-  place-items: center;
-  padding-bottom: 24px;
-  background:
-    radial-gradient(circle at 30% 20%, var(--color-progress-track) 0%, transparent 42%),
-    radial-gradient(circle at 75% 35%, var(--color-thumb-violet) 0%, transparent 46%),
-    color-mix(in srgb, var(--color-progress-track) 65%, var(--color-surface));
-}
-
-.profile-progress-mobile {
-  position: relative;
-  isolation: isolate;
-}
-
-/* Light surface, not `--color-btn`: that token is the CTA fill, and white ink over it tops out
-   at 3.0:1 — below WCAG AA for every text size this panel uses. */
-.profile-progress-panel {
-  position: relative;
-  background: var(--color-soft);
-  color: var(--color-main);
-}
-
-@media (min-width: 1280px) {
-  .profile-header {
-    position: relative;
-  }
-
-  .profile-hero__media {
-    height: 180px;
-    background: color-mix(in srgb, var(--color-soft) 72%, var(--color-secondary-light));
-  }
-
-  .profile-hero__image {
-    display: none;
-  }
-
-  .profile-hero__media > span {
-    display: none;
-  }
-
-  .profile-hero__identity {
-    border-top: 0;
-  }
-
-  .profile-header__action-row {
-    position: absolute;
-    top: 194px;
-    right: 20px;
-    z-index: 30;
-  }
-
-}
 
 @media (max-width: 1023px) {
+  .community-workspace__body { display: block; min-height: 100vh; }
+  .community-workspace__rail { display: contents; }
+  .community-workspace__sidebar { display: none; }
+
   .community-header {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    min-height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    flex-direction: row;
+    align-items: center;
+    gap: 2px;
+    height: 64px;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
   }
 
-  .community-header__brand { padding: 0 10px; }
-  .community-header .community-header__close { display: grid; }
-  .community-header__wordmark--desktop { display: none; }
-  .community-header__wordmark--mobile { display: flex; }
-  .community-header__search { height: 40px; margin: 0; }
+  .community-header .community-header__close,
+  .community-header__menu { display: grid; }
+  .community-header__title { flex: 1; padding: 0 0 0 4px; font-size: 17px; }
+
+  .community-header__search {
+    width: 44px;
+    flex: none;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-main);
+  }
+
+  .community-header__search-placeholder,
   .community-header__search-shortcut { display: none; }
-  .community-header__actions { padding: 0 10px; }
-  .community-header__profile span { display: none; }
-  .community-header__profile { border: 0; padding: 4px; }
-  .community-workspace__body { display: block; min-height: calc(100vh - 64px); }
-  .community-workspace__sidebar { display: none; }
 }
 
 @media (max-width: 560px) {
-  .community-header__search { padding: 0 11px; }
 
   .community-search-panel {
     width: 100%;

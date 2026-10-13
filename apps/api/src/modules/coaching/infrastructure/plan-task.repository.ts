@@ -446,6 +446,26 @@ export class PlanTaskRepository {
     return existing;
   }
 
+  /** The task an accepted community-origin coach action already created (retry safety). */
+  async findCommunityCoachTaskForMessage(
+    tx: DatabaseTx,
+    userId: string,
+    coachMessageId: string,
+  ): Promise<PlanTaskRow | null> {
+    const [row] = await tx
+      .select()
+      .from(planTasks)
+      .where(
+        and(
+          eq(planTasks.userId, userId),
+          eq(planTasks.originType, "COMMUNITY_COACH"),
+          sql`${planTasks.originMeta}->>'coachMessageId' = ${coachMessageId}`,
+        ),
+      )
+      .limit(1);
+    return row ?? null;
+  }
+
   /** Outcome-only AI task evidence. Titles and descriptions are intentionally not selected. */
   async aiCoachOutcomeSummary(
     tx: DatabaseTx,
@@ -457,9 +477,10 @@ export class PlanTaskRepository {
     observedAt: Date | null;
     pendingTaskId: string | null;
   }> {
+    // A community-origin chat's task is still an AI proposal the student accepted.
     const where = and(
       eq(planTasks.userId, userId),
-      eq(planTasks.originType, "AI_COACH"),
+      inArray(planTasks.originType, ["AI_COACH", "COMMUNITY_COACH"]),
     );
     const [aggregate, latest, pending] = await Promise.all([
       tx

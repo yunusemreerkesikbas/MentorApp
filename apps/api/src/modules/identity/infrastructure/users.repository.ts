@@ -3,7 +3,9 @@ import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, notInArray, sql } f
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { users } from "../../../database/schema";
+import { emailTokens, users } from "../../../database/schema";
+import { lockUser, revoke } from "./auth-session.repository";
+import { requireRecentAuthentication } from "./recent-authentication";
 import { phoneVerifications } from "../../../database/schema-phone";
 
 export type UserRow = typeof users.$inferSelect;
@@ -49,11 +51,12 @@ export class UsersRepository {
   }
 
   /** Durable fence shares checkout's account lock; no provider work runs in this transaction. */
-  async beginAccountErasure(id: string): Promise<Date | "conflict" | undefined> {
+  async beginAccountErasure(id: string, recentAuth?: { sessionId: string; seconds: number }): Promise<Date | "conflict" | undefined> {
     return withServiceContext(this.db, async (tx) => {
       const [row] = await tx.select({ erasureStartedAt: users.erasureStartedAt }).from(users)
         .where(eq(users.id, id)).for("no key update");
       if (!row) return undefined;
+      if (recentAuth) await requireRecentAuthentication(tx, id, recentAuth.sessionId, recentAuth.seconds);
       if (row.erasureStartedAt) return "conflict";
       const startedAt = new Date();
       await tx.update(users).set({ erasureStartedAt: startedAt }).where(eq(users.id, id));
@@ -310,7 +313,25 @@ export class UsersRepository {
   }
 
   /** Self update — user-scoped RLS. */
-  async updateSelf(userId: string, patch: Partial<NewUser>): Promise<UserRow | undefined> {
+  async updateSelf(userId: string, patch: Partial<NewUser>, recentAuth?: { sessionId: string; seconds: number }): Promise<UserRow | undefined> {
+    if (patch.email !== undefined) {
+      return withServiceContext(this.db, async (tx) => {
+        const current = await lockUser(tx, userId);
+        if (!current || current.status !== "ACTIVE" || current.erasureStartedAt) return undefined;
+        const changed = patch.email !== current.email;
+        if (changed) {
+          await requireRecentAuthentication(tx, userId, recentAuth?.sessionId, recentAuth?.seconds ?? 0);
+          await tx.update(emailTokens).set({ usedAt: sql`now()` }).where(and(
+            eq(emailTokens.userId, userId), isNull(emailTokens.usedAt),
+            inArray(emailTokens.type, ["VERIFY_EMAIL", "RESET_PASSWORD"])));
+          await revoke(tx, userId);
+        }
+        const [updated] = await tx.update(users).set({ ...patch,
+          emailVerifiedAt: changed ? null : current.emailVerifiedAt,
+        }).where(eq(users.id, userId)).returning();
+        return updated;
+      });
+    }
     return withUserContext(this.db, { userId }, async (tx) => {
       const rows = await tx.update(users).set(patch).where(eq(users.id, userId)).returning();
       return rows[0];

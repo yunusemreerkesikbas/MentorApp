@@ -18,11 +18,14 @@ export function BadgeStrip({
   detailed = false,
   compact = false,
   onDark = false,
+  ownerView = true,
 }: {
   badges: CommunityBadgeId[];
   detailed?: boolean;
   compact?: boolean;
   onDark?: boolean;
+  /** Someone else's profile says "Rozetleri", not "Rozetlerin". */
+  ownerView?: boolean;
 }) {
   const t = useTranslations("community");
 
@@ -32,7 +35,7 @@ export function BadgeStrip({
         className="text-xs font-bold"
         style={{ color: onDark ? "color-mix(in srgb, var(--color-btn-label) 82%, transparent)" : "var(--color-secondary)" }}
       >
-        {t("badges_title")}
+        {ownerView ? t("badges_title") : t("badges_title_other")}
       </p>
       <div className={detailed ? `grid ${compact ? "gap-1" : "gap-2"}` : "flex flex-wrap gap-1.5"}>
         {badges.map((id) => {
@@ -54,7 +57,7 @@ export function BadgeStrip({
               {detailed ? (
                 <span className="min-w-0">
                   <span className={`block text-xs font-bold ${onDark ? "text-[var(--color-btn-label)]" : "text-[var(--color-main)]"}`}>{t(meta.key as "badge_marathon")}</span>
-                  <span className={`mt-0.5 block text-[11px] leading-4 ${onDark ? "text-[color-mix(in_srgb,var(--color-btn-label)_55%,transparent)]" : "text-[var(--color-secondary)]"}`}>{t(meta.descriptionKey as "badge_marathon_description")}</span>
+                  <span className={`mt-0.5 block text-[11px] leading-4 ${onDark ? "text-[color-mix(in_srgb,var(--color-btn-label)_55%,transparent)]" : "text-[var(--color-secondary)]"}`}>{t((ownerView ? meta.descriptionKey : `${meta.descriptionKey}_other`) as "badge_marathon_description")}</span>
                 </span>
               ) : t(meta.key as "badge_marathon")}
             </span>

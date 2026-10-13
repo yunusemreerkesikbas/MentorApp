@@ -262,6 +262,7 @@ export function CommunitySearch() {
         className="community-header__search"
         onClick={openSearch}
         aria-haspopup="dialog"
+        aria-label={t("search_dialog_title")}
         whileTap={reduceMotion ? undefined : { scale: 0.99 }}
         transition={{ duration: 0.12 }}
       >

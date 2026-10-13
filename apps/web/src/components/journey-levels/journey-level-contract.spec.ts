@@ -18,12 +18,10 @@ function flattenKeys(value: unknown, prefix = ""): string[] {
 }
 
 describe("journey-level rendering contract", () => {
-  it("uses the backend progress object on all three level surfaces", () => {
+  // The community stat snapshot left with the unused effort-board drawer (Topluluk Tur 2, 2026-10-08).
+  it("uses the backend progress object on both level surfaces", () => {
     const profile = source(
-      "src/app/[locale]/(app)/community/member/[username]/_components/profile-header.tsx",
-    );
-    const communitySnapshot = source(
-      "src/app/[locale]/(app)/community/_components/stat-snapshot.tsx",
+      "src/app/[locale]/(app)/community/member/[username]/_components/profile-progress-panel.tsx",
     );
     const economyBalance = source(
       "src/app/[locale]/(app)/profile/_components/economy-balance-card.tsx",
@@ -33,11 +31,10 @@ describe("journey-level rendering contract", () => {
     );
 
     expect(profile).toContain("<JourneyLevelProfile");
-    expect(communitySnapshot).toContain("<JourneyLevelCompact");
     expect(economyBalance).toContain("<JourneyLevelCompact");
     expect(progressBar).toContain("progress.percent");
 
-    for (const surface of [profile, communitySnapshot, economyBalance]) {
+    for (const surface of [profile, economyBalance]) {
       expect(surface).not.toMatch(/level\.xp\s*\/\s*level\.nextAt/);
       expect(surface).not.toContain("Math.round");
     }

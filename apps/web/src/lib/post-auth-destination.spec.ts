@@ -125,6 +125,10 @@ describe("postAuthDestination for a coach (APP-090)", () => {
     expect(postAuthDestination(user(coach), "//evil.example/settings")).toBe("/students");
   });
 
+  it("returns a coach to the profile after account reauthentication", () => {
+    expect(postAuthDestination(user(coach), "/profile")).toBe("/profile");
+  });
+
   it("still onboards a coach whose profile is unfinished", () => {
     // The role does not skip the gate: `(app)` and `(coach)` both need a username.
     expect(postAuthDestination(user({ roles: ["STUDENT", "COACH"] }))).toBe("/onboarding");

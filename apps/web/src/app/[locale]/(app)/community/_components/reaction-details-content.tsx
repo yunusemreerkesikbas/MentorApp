@@ -209,7 +209,7 @@ export function ReactionDetailsContent({
 
             {items.map((user) => (
               <div key={user.userId} className="flex min-h-14 items-center gap-3 py-2">
-                <AuthorLink username={user.username}>
+                <AuthorLink decorative username={user.username}>
                   <AuthorAvatar name={user.displayName} size={40} src={user.avatarUrl} />
                 </AuthorLink>
                 <AuthorLink username={user.username} className="min-w-0 flex-1">

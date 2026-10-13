@@ -186,6 +186,12 @@ export const forumFeedQuerySchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     .optional(),
   zoneType: z.nativeEnum(ZoneType).optional(),
+  /** "Cevap bekleyenler": other people's QA questions with no answer yet. Query string, so
+   *  `z.coerce.boolean` would read "false" as true. */
+  unanswered: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true")
+    .optional(),
   cursor: z.string().trim().min(1).max(1000).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });

@@ -18,6 +18,7 @@ import {
   MentorshipApplicationRepository,
   type MentorshipApplicationRow,
 } from "../infrastructure/mentorship-application.repository";
+import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repository";
 import {
   assertNoContact,
   gateError,
@@ -25,9 +26,6 @@ import {
   toPublicProfile,
   toStatus,
 } from "./coach-registry.mappers";
-
-/** Registry page size. A coach registry that needs paging is a good problem; it is not this one. */
-const QUEUE_LIMIT = 200;
 
 /**
  * The coach registry — self-service registration, and the admin's reverse power over it.
@@ -59,6 +57,7 @@ export class MentorshipApplicationService {
     private readonly applications: MentorshipApplicationRepository,
     private readonly config: ConfigRegistryService,
     private readonly users: UsersService,
+    private readonly links: MentorshipLinkRepository,
   ) {}
 
   /**
@@ -77,11 +76,19 @@ export class MentorshipApplicationService {
       throw new DomainError(ErrorCode.MENTORSHIP_APPLICATIONS_CLOSED, HttpStatus.FORBIDDEN);
     }
 
-    const existing = await this.applications.findByUser(userId);
-    const gate = canRegister(existing ? { status: toStatus(existing.status) } : null);
+    const [existing, link] = await Promise.all([
+      this.applications.findByUser(userId),
+      this.links.findActiveByStudent(userId),
+    ]);
+    const gate = canRegister(
+      existing ? { status: toStatus(existing.status) } : null,
+      link !== undefined,
+    );
     if (!("allowed" in gate)) throw gateError(gate);
     assertNoContact(input.headline, input.bio);
-    await this.assertVerifiedContact(userId);
+    // No verified email or phone is asked for here, on purpose. Both were for a while, and that
+    // made becoming a coach wait on a mail and an SMS provider while protecting nothing: the row
+    // and the role open no door. `evaluateInvite` checks both where they are needed.
 
     const row = await this.applications.register(
       userId,
@@ -114,17 +121,19 @@ export class MentorshipApplicationService {
    * the profile list; not survivable now that signup routes people here on purpose.
    */
   async getRegistrationState(userId: string): Promise<MentorshipCoachRegistrationStateDto> {
-    const [open, row, emailVerified, phoneVerified] = await Promise.all([
+    const [open, row, emailVerified, phoneVerified, link] = await Promise.all([
       this.config.get("mentorship.applications.open"),
       this.applications.findByUser(userId),
       this.users.isEmailVerified(userId),
       this.users.isPhoneVerified(userId),
+      this.links.findActiveByStudent(userId),
     ]);
     return {
       registrationOpen: open,
       registration: row ? toDto(row) : null,
       emailVerified,
       phoneVerified,
+      hasCoach: link !== undefined,
     };
   }
 
@@ -184,22 +193,13 @@ export class MentorshipApplicationService {
     return "OK";
   }
 
-  private async assertVerifiedContact(userId: string): Promise<void> {
-    const [emailVerified, phoneVerified] = await Promise.all([
-      this.users.isEmailVerified(userId),
-      this.users.isPhoneVerified(userId),
-    ]);
-    if (!emailVerified) {
-      throw new DomainError(ErrorCode.MENTORSHIP_EMAIL_NOT_VERIFIED, HttpStatus.FORBIDDEN);
-    }
-    if (!phoneVerified) {
-      throw new DomainError(ErrorCode.AUTH_PHONE_REQUIRED, HttpStatus.FORBIDDEN);
-    }
-  }
-
-  /** The registry read for the admin panel. Identity and role are joined by the caller. */
-  async listForReview(status: string): Promise<MentorshipApplicationRow[]> {
-    return this.applications.listByStatus(status, QUEUE_LIMIT);
+  /** One page of the registry for the admin panel. Identity and role are joined by the caller. */
+  async listForReview(
+    status: string,
+    page: number,
+    pageSize: number,
+  ): Promise<{ rows: MentorshipApplicationRow[]; total: number }> {
+    return this.applications.listByStatus(status, page, pageSize);
   }
 
   /**
@@ -218,7 +218,6 @@ export class MentorshipApplicationService {
     now = new Date(),
   ): Promise<MentorshipApplicationRow | null> {
     const active = verdict.status === MentorshipApplicationStatus.ACTIVE;
-    if (active) await this.assertVerifiedContact(userId);
     if (!active) await this.users.removeRole(userId, UserRole.COACH);
 
     const row = await this.applications.setStatus(

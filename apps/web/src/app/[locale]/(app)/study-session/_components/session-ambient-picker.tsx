@@ -2,11 +2,7 @@
 import { ChevronDown, Music2, Volume2, VolumeX } from "lucide-react";
 
 import { useTranslations } from "next-intl";
-import {
-  AMBIENT_TRACK_IDS,
-  type AmbientTrackId,
-  isAmbientTrackId,
-} from "@/lib/ambient-tracks";
+import { AMBIENT_TRACK_IDS, type AmbientTrackId } from "@/lib/ambient-tracks";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import {
   SESSION_CHROME_PILL_CLASS,
@@ -21,14 +17,16 @@ export interface SessionAmbientPickerProps {
 }
 
 const TRACK_LABEL_KEYS: Record<AmbientTrackId, string> = {
+  scene: "track_scene",
+  library: "track_library",
+  cafe: "track_cafe",
+  home: "track_home",
   off: "track_off",
-  soft: "track_soft",
-  rain: "track_rain",
-  warm: "track_warm",
 };
 
 /**
- * Pill dropdown for ambient track + mute (idle and focus).
+ * Pill dropdown for the room sound + mute (idle and focus). "Sahneye uygun" follows the scene;
+ * a room's name pins that room's sound wherever you sit.
  */
 export function SessionAmbientPicker({
   trackId,
@@ -71,9 +69,8 @@ export function SessionAmbientPicker({
         <PopoverMenuItem
           key={id}
           selected={trackId === id}
-          onClick={() => {
-            if (isAmbientTrackId(id)) onTrackIdChange(id);
-          }}
+          onClick={() => onTrackIdChange(id)}
+          className={id === "off" ? "border-t border-[var(--play-line)]" : undefined}
         >
           {translate(TRACK_LABEL_KEYS[id])}
         </PopoverMenuItem>

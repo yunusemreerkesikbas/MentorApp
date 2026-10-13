@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DomainError } from "../../../common/errors/domain-error";
-import { addDays, todayInIstanbul } from "../domain/date.util";
+import { addDays, todayInIstanbul, todayIso } from "../domain/date.util";
 import { PlanService } from "./plan.service";
 
 const USER = "u1";
+const UTC_TODAY = todayIso();
 const TODAY = todayInIstanbul();
 
 interface TaskRow {
@@ -138,20 +139,20 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
   it("marking a task DONE bumps daily_activity.tasks_done", async () => {
     const created = await service.create(USER, { title: "Paragraf 20 soru" });
     await service.update(USER, created.id, { status: "DONE" });
-    expect(activity.days.get(TODAY)?.tasksDone).toBe(1);
+    expect(activity.days.get(UTC_TODAY)?.tasksDone).toBe(1);
   });
 
   it("toggling a task back to PENDING decrements the day's count", async () => {
     const created = await service.create(USER, { title: "Matematik tekrar" });
     await service.update(USER, created.id, { status: "DONE" });
     await service.update(USER, created.id, { status: "PENDING" });
-    expect(activity.days.get(TODAY)?.tasksDone).toBe(0);
+    expect(activity.days.get(UTC_TODAY)?.tasksDone).toBe(0);
   });
 
   it("editing only the title does NOT touch daily_activity", async () => {
     const created = await service.create(USER, { title: "Tarih notları" });
     await service.update(USER, created.id, { title: "Tarih — İnkılap notları" });
-    expect(activity.days.has(TODAY)).toBe(false);
+    expect(activity.days.has(UTC_TODAY)).toBe(false);
   });
 
   it("deleting a DONE task recomputes the day's count", async () => {
@@ -159,9 +160,9 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
     const b = await service.create(USER, { title: "B" });
     await service.update(USER, a.id, { status: "DONE" });
     await service.update(USER, b.id, { status: "DONE" });
-    expect(activity.days.get(TODAY)?.tasksDone).toBe(2);
+    expect(activity.days.get(UTC_TODAY)?.tasksDone).toBe(2);
     await service.remove(USER, a.id);
-    expect(activity.days.get(TODAY)?.tasksDone).toBe(1);
+    expect(activity.days.get(UTC_TODAY)?.tasksDone).toBe(1);
   });
 
   it("keeps a task all-day when no time is given", async () => {
@@ -326,17 +327,17 @@ describe("PlanService.createMany", () => {
   it("creates every task in one pass (dates default to today)", async () => {
     const out = await service.createMany(USER, [
       { title: "Matematik: 20 soru", subject: "Matematik" },
-      { title: "Paragraf: 15 soru", subject: "Türkçe", taskDate: TODAY },
+      { title: "Paragraf: 15 soru", subject: "Türkçe", taskDate: UTC_TODAY },
     ]);
     expect(out).toHaveLength(2);
     expect(planRepo.rows).toHaveLength(2);
-    expect(planRepo.rows.every((r) => r.taskDate === TODAY)).toBe(true);
+    expect(planRepo.rows.every((r) => r.taskDate === UTC_TODAY)).toBe(true);
   });
 
   it("writes NOTHING when any date is in the past (all-or-nothing)", async () => {
     await expect(
       service.createMany(USER, [
-        { title: "Geçerli", taskDate: TODAY },
+        { title: "Geçerli", taskDate: UTC_TODAY },
         { title: "Geçmiş", taskDate: "2020-01-01" },
       ]),
     ).rejects.toBeInstanceOf(DomainError);
@@ -364,7 +365,7 @@ describe("PlanService.getTodaySummary", () => {
       planRepo.rows.push({
         id: `t${i}`,
         userId: USER,
-        taskDate: TODAY,
+        taskDate: UTC_TODAY,
         title: `Task ${i}`,
         subject: null,
         status: i <= 2 ? "DONE" : "PENDING",
@@ -387,7 +388,7 @@ describe("PlanService.getTodaySummary", () => {
       planRepo.rows.push({
         id: `t${i}`,
         userId: USER,
-        taskDate: TODAY,
+        taskDate: UTC_TODAY,
         title: `Task ${i}`,
         subject: null,
         status: "PENDING",

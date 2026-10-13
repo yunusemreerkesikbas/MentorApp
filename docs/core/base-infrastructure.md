@@ -53,6 +53,22 @@ pnpm db:up && pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-09 · Release dependency audit repairs.** The production audit identified
+  [proxy-addr IP spoofing](https://github.com/advisories/GHSA-jqcg-44mw-7w3h),
+  [source-map-js denial of service](https://github.com/advisories/GHSA-68fv-2mgg-jv7q), and
+  [sharp's vulnerable librsvg](https://github.com/advisories/GHSA-wq5f-xc86-pv6w).
+  Workspace overrides pin fixes at 2.0.8, 1.2.2 and 0.35.5 respectively; the web's direct sharp
+  requirement follows 0.35.5. Usage: install the authoritative pnpm lockfile with
+  `pnpm install --frozen-lockfile`, then run the production audit and CI checks. The frozen
+  offline install and high-severity audit pass; existing moderate findings and the documented
+  development-only braces exception remain. Also replaced four hardcoded Google API key
+  occurrences in vendor YouTube documentation demos with explicit placeholders. No key validity
+  check or provider account action was performed; old Git history is unchanged. Related:
+  `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `apps/web/package.json`,
+  `apps/admin/Documentation/{assets/Youtube-Channels-Playlist/index.html,js/main.js}`,
+  [`release verification`](../plans/2026-10-09-blog-ads-release-verification.md).
+
+
 - **CI hiç koşmuyormuş: sır taraması, build ve tip kapıları (APP-084, 2026-09-06)** — Amaç iki
   karanlık yüzeyi açmaktı ve `security-release-checklist.md`'nin ilk kapısı "Tam CI … yeşil" diyor.
   Yerelde altı test kırıktı, oradan başlandı; sonra **asıl bulgu** çıktı.

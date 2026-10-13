@@ -28,9 +28,9 @@ export class TokenService {
     private readonly sessions: AuthSessionRepository,
   ) {}
 
-  async issue(user: { id: string; roles: string[]; organizationId: string | null }, expectedPasswordHash?: string): Promise<IssuedTokens> {
+  async issue(user: { id: string; roles: string[]; organizationId: string | null }, expectedPasswordHash?: string, expectedEmail?: string): Promise<IssuedTokens> {
     const refresh = this.newRefresh();
-    const principal = await this.sessions.create(user.id, randomUUID(), refresh.record, expectedPasswordHash);
+    const principal = await this.sessions.create(user.id, randomUUID(), refresh.record, expectedPasswordHash, expectedEmail);
     if (!principal) throw new UnauthorizedError();
     return this.sign(principal, refresh);
   }

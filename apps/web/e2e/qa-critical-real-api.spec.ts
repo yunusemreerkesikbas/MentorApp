@@ -75,7 +75,7 @@ test("admin shell sends restrictive CSP and rejects a student session", async ({
   expect(csp).toContain("object-src 'none'");
   expect(csp).toContain("frame-ancestors 'none'");
   expect(csp).not.toContain("'unsafe-eval'");
-  await expect(page.getByRole("heading", { name: "Mentor Admin" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "PuhuKoç Admin" })).toBeVisible();
 
   const forged = await request.get(`${qaApi}/admin/users`, {
     headers: { "Cf-Access-Jwt-Assertion": "forged" },

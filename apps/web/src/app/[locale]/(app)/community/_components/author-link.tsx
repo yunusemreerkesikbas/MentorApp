@@ -13,9 +13,15 @@ export function AuthorLink({
   username,
   children,
   className,
+  decorative = false,
 }: {
   username: string | null;
   className?: string;
+  /**
+   * The avatar beside the name link: still clickable, but hidden from screen readers and the tab
+   * order, since the avatar's initials are aria-hidden and the link would otherwise have no name.
+   */
+  decorative?: boolean;
   children: ComponentProps<typeof Link>["children"];
 }) {
   if (!username) return <>{children}</>;
@@ -27,6 +33,7 @@ export function AuthorLink({
       }}
       onClick={(e) => e.stopPropagation()}
       className={className}
+      {...(decorative && { "aria-hidden": true, tabIndex: -1 })}
     >
       {children}
     </Link>

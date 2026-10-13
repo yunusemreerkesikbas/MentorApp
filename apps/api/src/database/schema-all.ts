@@ -6,3 +6,4 @@ export * from "./schema-sessions";
 export * from "./schema-uploads";
 export * from "./schema-phone";
 export * from "./schema-phone-trials";
+export * from "./schema-auth-rate-limits";

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronRight, ShieldCheck } from "lucide-react";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 import type { MentorshipDataScopeKey } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
@@ -60,15 +60,6 @@ export function CoachScopeCard() {
           aria-haspopup="dialog"
           className="flex min-h-14 w-full cursor-pointer items-center gap-3.5 rounded-[var(--radius-card)] px-5 py-3 text-left outline-none transition-colors hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <span
-            className="grid size-10 flex-none place-items-center rounded-[var(--radius-card)]"
-            style={{
-              backgroundColor: "var(--color-surface-container)",
-              color: "var(--color-secondary)",
-            }}
-          >
-            <ShieldCheck aria-hidden size={20} strokeWidth={2} />
-          </span>
           <span className="min-w-0 flex-1">
             <span
               className="block text-[15px] font-semibold"
@@ -83,7 +74,7 @@ export function CoachScopeCard() {
           <ChevronRight
             aria-hidden
             size={18}
-            strokeWidth={2}
+            strokeWidth={1.75}
             className="flex-none"
             style={{ color: "var(--color-secondary)" }}
           />

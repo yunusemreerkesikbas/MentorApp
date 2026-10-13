@@ -19,9 +19,9 @@ const ROLE_SAFETY_SQL = `
     WHERE pg_has_role(current_user, oid, 'MEMBER') OR pg_has_role(session_user, oid, 'MEMBER')
   )
   SELECT
-    current_role.rolsuper AS "superuser",
-    current_role.rolbypassrls AS "bypassRls",
-    current_role.rolcreaterole AS "canCreateRoles",
+    inspected_role.rolsuper AS "superuser",
+    inspected_role.rolbypassrls AS "bypassRls",
+    inspected_role.rolcreaterole AS "canCreateRoles",
     EXISTS (SELECT 1 FROM accessible_roles WHERE rolsuper OR rolbypassrls OR rolcreaterole) AS "canAssumePrivilegedRole",
     (
       EXISTS (
@@ -37,7 +37,7 @@ const ROLE_SAFETY_SQL = `
         SELECT 1 FROM pg_database WHERE datname = current_database() AND datdba IN (SELECT oid FROM accessible_roles)
       )
     ) AS "ownsTables"
-  FROM pg_roles current_role WHERE current_role.rolname = current_user
+  FROM pg_roles inspected_role WHERE inspected_role.rolname = current_user
 `;
 
 /** Only production connects during boot inspection. Unit tests inject a query stub. */

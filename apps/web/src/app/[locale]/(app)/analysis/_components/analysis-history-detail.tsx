@@ -1,6 +1,9 @@
 "use client";
 
-import { MoreHorizontal, Pencil, Sparkles, Trash2 } from "lucide-react";
+import { StarsIcon as Sparkles } from "@solar-icons/react/bold/stars";
+import { MenuDotsIcon as MoreHorizontal } from "@solar-icons/react/linear/menu-dots";
+import { Pen2Icon as Pencil } from "@solar-icons/react/linear/pen-2";
+import { TrashBinTrashIcon as Trash2 } from "@solar-icons/react/linear/trash-bin-trash";
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ExamSubjectDto, MockExamDto, MockExamSubjectDto } from "@mentor/types";
@@ -169,6 +172,7 @@ export function AnalysisHistoryDetail({
                 className={PANEL_TEXT_LINK}
               >
                 <Sparkles
+                  size={14}
                   className="size-3.5 fill-current text-[var(--premium-ring-from)]"
                   aria-hidden
                 />
@@ -186,19 +190,19 @@ export function AnalysisHistoryDetail({
                       onClick={() => setOpen(!open)}
                       className="grid size-11 cursor-pointer place-items-center rounded-[var(--radius-card)] text-[var(--color-main)] hover:bg-[var(--play-track)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                     >
-                      <MoreHorizontal className="size-5" aria-hidden />
+                      <MoreHorizontal size={20} strokeWidth={1.75} className="size-5" aria-hidden />
                     </button>
                   )}
                 >
                   <PopoverMenuItem onClick={startEditing}>
                     <span className="flex items-center gap-2">
-                      <Pencil className="size-4" aria-hidden />
+                      <Pencil size={16} strokeWidth={1.75} className="size-4" aria-hidden />
                       {t("edit")}
                     </span>
                   </PopoverMenuItem>
                   <PopoverMenuItem danger onClick={() => void handleDelete()}>
                     <span className="flex items-center gap-2">
-                      <Trash2 className="size-4" aria-hidden />
+                      <Trash2 size={16} strokeWidth={1.75} className="size-4" aria-hidden />
                       {t("delete")}
                     </span>
                   </PopoverMenuItem>

@@ -1,17 +1,36 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { StudyRoomTheme } from "@mentor/types";
 import {
+  type AmbientLayers,
   type AmbientTrackId,
-  ambientTrackSrc,
-  isAmbientTrackId,
+  ambientLayers,
+  migrateAmbientTrackId,
 } from "@/lib/ambient-tracks";
 import type { SessionPhase } from "./use-session-timer";
 
 const STORAGE_KEY = "mentor.session.ambientSound";
-/** Fixed app gain — user adjusts loudness via system volume. */
-const PLAYBACK_VOLUME = 0.35;
+/**
+ * Fixed app gains — the user sets loudness with the device. The room leads; the music is a bed
+ * under it, there to be felt rather than listened to.
+ */
+const LAYER_VOLUME: Record<keyof AmbientLayers, number> = {
+  ambience: 0.35,
+  music: 0.16,
+};
+const LAYER_KEYS = Object.keys(LAYER_VOLUME) as (keyof AmbientLayers)[];
 const PREVIEW_DURATION_MS = 5000;
+
+type LayerAudio = Partial<Record<keyof AmbientLayers, HTMLAudioElement>>;
+
+function playAll(audio: LayerAudio): Promise<unknown> {
+  return Promise.all(Object.values(audio).map((el) => el.play()));
+}
+
+function pauseAll(audio: LayerAudio): void {
+  for (const el of Object.values(audio)) el.pause();
+}
 
 interface AmbientSoundPreference {
   trackId: AmbientTrackId;
@@ -36,16 +55,17 @@ function readPreference(): AmbientSoundPreference {
     const parsed = JSON.parse(raw) as Partial<AmbientSoundPreference> &
       LegacyAmbientSoundPreference;
 
-    if (parsed.trackId && isAmbientTrackId(parsed.trackId)) {
+    const stored = parsed.trackId ? migrateAmbientTrackId(parsed.trackId) : null;
+    if (stored) {
       return {
-        trackId: parsed.trackId,
+        trackId: stored,
         muted: parsed.muted === true,
       };
     }
 
     if (typeof parsed.enabled === "boolean") {
       return {
-        trackId: parsed.enabled ? "soft" : "off",
+        trackId: parsed.enabled ? "scene" : "off",
         muted: false,
       };
     }
@@ -91,10 +111,12 @@ function hasStoredPreference(): boolean {
 export interface UseSessionAmbientSoundOptions {
   phase: SessionPhase;
   isPaused: boolean;
+  /** The room on screen: what `scene` sounds like, and what it switches to when the room does. */
+  sceneTheme: StudyRoomTheme;
   /**
-   * Track a study room's theme suggests (library → soft, café → warm, home → rain). Only fills
-   * a preference the user has never set: an explicit "Sessiz" is a real choice and must survive
-   * walking into a room. Nothing is persisted until the user acts on it.
+   * Track a study room suggests (`scene`). Only fills a preference the user has never set: an
+   * explicit "Sessiz" is a real choice and must survive walking into a room. Nothing is
+   * persisted until the user acts on it.
    */
   suggestedTrackId?: AmbientTrackId | null;
 }
@@ -109,10 +131,11 @@ export interface UseSessionAmbientSoundResult {
 export function useSessionAmbientSound({
   phase,
   isPaused,
+  sceneTheme,
   suggestedTrackId = null,
 }: UseSessionAmbientSoundOptions): UseSessionAmbientSoundResult {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const loadedSrcRef = useRef<string | null>(null);
+  const audioRef = useRef<LayerAudio>({});
+  const sceneThemeRef = useRef(sceneTheme);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewActiveRef = useRef(false);
   const phaseRef = useRef(phase);
@@ -133,9 +156,13 @@ export function useSessionAmbientSound({
       ? suggestedTrackId
       : preference.trackId;
 
+  /** Changes when the scene does (for `scene`), so the effects below swap the loops. */
+  const layersKey = ambientLayers(trackId, sceneTheme)?.ambience ?? null;
+
   useEffect(() => {
     phaseRef.current = phase;
-  }, [phase]);
+    sceneThemeRef.current = sceneTheme;
+  }, [phase, sceneTheme]);
 
   const clearPreview = useCallback(() => {
     if (previewTimerRef.current) {
@@ -146,31 +173,31 @@ export function useSessionAmbientSound({
   }, []);
 
   const syncAudioSrc = useCallback((trackId: AmbientTrackId) => {
-    const src = ambientTrackSrc(trackId);
-    let audio = audioRef.current;
+    const layers = ambientLayers(trackId, sceneThemeRef.current);
+    const audio = audioRef.current;
 
-    if (!src) {
-      if (audio) {
-        audio.pause();
-        audio.src = "";
+    for (const key of LAYER_KEYS) {
+      const src = layers?.[key] ?? null;
+      let el = audio[key];
+      if (!src) {
+        if (el) {
+          el.pause();
+          el.removeAttribute("src");
+        }
+        continue;
       }
-      loadedSrcRef.current = null;
-      return;
-    }
-
-    if (!audio) {
-      audio = new Audio();
-      audio.loop = true;
-      audio.preload = "auto";
-      audioRef.current = audio;
-    }
-
-    audio.volume = PLAYBACK_VOLUME;
-
-    if (loadedSrcRef.current !== src) {
-      audio.pause();
-      audio.src = src;
-      loadedSrcRef.current = src;
+      if (!el) {
+        el = new Audio();
+        el.loop = true;
+        el.preload = "auto";
+        el.volume = LAYER_VOLUME[key];
+        audio[key] = el;
+      }
+      // `el.src` reads back absolute; compare resolved URLs so an unchanged layer keeps playing.
+      if (el.src !== new URL(src, window.location.href).href) {
+        el.pause();
+        el.src = src;
+      }
     }
   }, []);
 
@@ -181,10 +208,9 @@ export function useSessionAmbientSound({
 
       syncAudioSrc(trackId);
       const audio = audioRef.current;
-      if (!audio) return;
 
       previewActiveRef.current = true;
-      void audio.play().catch(() => {
+      void playAll(audio).catch(() => {
         previewActiveRef.current = false;
       });
 
@@ -192,7 +218,7 @@ export function useSessionAmbientSound({
         previewActiveRef.current = false;
         previewTimerRef.current = null;
         if (phaseRef.current === "idle") {
-          audio.pause();
+          pauseAll(audio);
         }
       }, PREVIEW_DURATION_MS);
     },
@@ -202,13 +228,11 @@ export function useSessionAmbientSound({
   useEffect(() => {
     return () => {
       clearPreview();
-      const audio = audioRef.current;
-      if (audio) {
-        audio.pause();
-        audio.src = "";
+      for (const el of Object.values(audioRef.current)) {
+        el.pause();
+        el.removeAttribute("src");
       }
-      audioRef.current = null;
-      loadedSrcRef.current = null;
+      audioRef.current = {};
     };
   }, [clearPreview]);
 
@@ -220,14 +244,14 @@ export function useSessionAmbientSound({
 
   useEffect(() => {
     syncAudioSrc(trackId);
-  }, [trackId, syncAudioSrc]);
+  }, [trackId, layersKey, syncAudioSrc]);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !ambientTrackSrc(trackId)) return;
+    if (!layersKey) return;
 
     if (shouldPlayAudio(phase, isPaused, trackId, preference.muted)) {
-      void audio.play().catch(() => {
+      void playAll(audio).catch(() => {
         // Autoplay blocked without gesture — Başla click should unlock
       });
       return;
@@ -235,8 +259,8 @@ export function useSessionAmbientSound({
 
     if (previewActiveRef.current) return;
 
-    audio.pause();
-  }, [phase, isPaused, trackId, preference.muted]);
+    pauseAll(audio);
+  }, [phase, isPaused, trackId, layersKey, preference.muted]);
 
   const setTrackId = useCallback(
     (trackId: AmbientTrackId) => {
@@ -250,7 +274,7 @@ export function useSessionAmbientSound({
         if (phaseRef.current === "idle") {
           if (trackId === "off") {
             clearPreview();
-            audioRef.current?.pause();
+            pauseAll(audioRef.current);
           } else {
             queueMicrotask(() => startIdlePreview(trackId));
           }
@@ -270,13 +294,8 @@ export function useSessionAmbientSound({
       const next = { trackId, muted: !prev.muted };
       writePreference(next);
 
-      const audio = audioRef.current;
-      if (
-        audio &&
-        !next.muted &&
-        shouldPlayAudio(phase, isPaused, next.trackId, next.muted)
-      ) {
-        void audio.play().catch(() => {
+      if (!next.muted && shouldPlayAudio(phase, isPaused, next.trackId, next.muted)) {
+        void playAll(audioRef.current).catch(() => {
           // Ignore
         });
       }

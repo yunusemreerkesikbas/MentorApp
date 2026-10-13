@@ -1,3 +1,4 @@
+import { AuthRateLimitService } from "../../identity/application/auth-rate-limit.service";
 import { Controller, Post, UseGuards } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { Public } from "../../../common/auth/public.decorator";
@@ -23,6 +24,7 @@ export class CronController {
     private readonly mentorshipRiskDigest: MentorshipRiskDigestService,
     private readonly followupDue: MentorshipFollowupDueService,
     private readonly phone: PhoneVerificationService,
+    private readonly authRates: AuthRateLimitService,
     private readonly phoneTrials: PhoneTrialService,
   ) {}
 
@@ -36,6 +38,7 @@ export class CronController {
     const [result] = await Promise.all([
       this.dailyReminders.dispatchForToday(),
       this.phone.purgeExpired(),
+      this.authRates.purgeExpired(),
       this.phoneTrials.purgeExpired(),
     ]);
     return result;

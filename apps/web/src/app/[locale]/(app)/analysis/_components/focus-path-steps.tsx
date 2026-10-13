@@ -2,15 +2,12 @@
 
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import {
-  CalendarCheck,
-  Check,
-  Lightbulb,
-  PencilLine,
-  Play,
-  RotateCcw,
-  type LucideIcon,
-} from "lucide-react";
+import { ClipboardCheckIcon as Plan } from "@solar-icons/react/bold/clipboard-check";
+import { CheckCircleIcon as Done } from "@solar-icons/react/bold/check-circle";
+import { LightbulbIcon as Signal } from "@solar-icons/react/bold/lightbulb";
+import { Pen2Icon as Measure } from "@solar-icons/react/bold/pen-2";
+import { PlayIcon as Play } from "@solar-icons/react/bold/play";
+import { RestartIcon as Review } from "@solar-icons/react/bold/restart";
 import type { FocusStep, FocusStepKey, FocusStepState } from "./focus-path-model";
 
 /** Node sizes and tones are the panel's path (DESIGN.md §6.1), so both screens draw one language. */
@@ -25,11 +22,11 @@ const NODE_TONE: Record<FocusStepState, string> = {
 const NODE_DASHED =
   "size-12 border-2 border-dashed border-[color-mix(in_srgb,var(--color-secondary)_45%,transparent)] bg-[var(--color-surface)] text-[var(--color-secondary)] sm:size-14";
 
-const STEP_ICON: Record<FocusStepKey, LucideIcon> = {
-  signal: Lightbulb,
-  planned: CalendarCheck,
-  practiced: RotateCcw,
-  measured: PencilLine,
+const STEP_ICON: Record<FocusStepKey, typeof Signal> = {
+  signal: Signal,
+  planned: Plan,
+  practiced: Review,
+  measured: Measure,
 };
 
 /**
@@ -50,7 +47,7 @@ export function FocusPathSteps({
       {steps.map((step, index) => {
         const Icon =
           step.state === "done"
-            ? Check
+            ? Done
             : step.state === "current" && step.key === "practiced"
               ? Play
               : STEP_ICON[step.key];
@@ -68,8 +65,7 @@ export function FocusPathSteps({
                 {step.state === "current" ? <NextTip label={t("next")} /> : null}
                 <Icon
                   className={step.state === "current" ? "size-7" : "size-6"}
-                  strokeWidth={step.state === "done" ? 3 : 2.2}
-                  fill={step.state === "current" && Icon === Play ? "currentColor" : "none"}
+                  size={step.state === "current" ? 28 : 24}
                 />
               </span>
             }
@@ -96,7 +92,7 @@ export function EmptyFocusPath() {
         state={t("state_current")}
         node={
           <span className={`${NODE_BASE} ${NODE_DASHED}`} aria-hidden>
-            <PencilLine className="size-6" strokeWidth={2.2} />
+            <Measure size={24} className="size-6" />
           </span>
         }
       />
@@ -113,7 +109,7 @@ export function EmptyFocusPath() {
             state={t("state_upcoming")}
             node={
               <span className={`${NODE_BASE} ${NODE_TONE.upcoming}`} aria-hidden>
-                <Icon className="size-6" strokeWidth={2.2} />
+                <Icon size={24} className="size-6" />
               </span>
             }
           />

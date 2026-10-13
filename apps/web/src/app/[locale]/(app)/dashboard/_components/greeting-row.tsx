@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowRight } from "lucide-react";
+import { ArrowRightIcon as ArrowRight } from "@solar-icons/react/linear/arrow-right";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { firstName, greetingKeyForHour } from "@/lib/greeting";
@@ -111,7 +111,7 @@ export function GreetingRow({
           className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-progress-track)] bg-[var(--color-surface)] px-4 py-3 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         >
           {t("coach_adaptation_mood_cta")}
-          <ArrowRight className="size-4 shrink-0" aria-hidden />
+          <ArrowRight size={16} className="size-4 shrink-0" aria-hidden />
         </Link>
       ) : null}
     </div>

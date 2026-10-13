@@ -31,7 +31,7 @@ describe("TokenService", () => {
 
   it("passes a password snapshot into atomic session creation", async () => {
     await service.issue({ id: USER.id, roles: USER.roles, organizationId: null }, "old-hash");
-    expect(sessions.create).toHaveBeenCalledWith(USER.id, expect.any(String), expect.any(Object), "old-hash");
+    expect(sessions.create).toHaveBeenCalledWith(USER.id, expect.any(String), expect.any(Object), "old-hash", undefined);
   });
 
   it("rotates atomically through the repository", async () => {

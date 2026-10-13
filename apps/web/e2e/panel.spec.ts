@@ -380,13 +380,11 @@ for (const scenario of [
     await expect(completedFill).toHaveCSS("background-color", scenario.dark ? "rgb(107, 196, 154)" : "rgb(46, 125, 84)");
     expect(await completedFill.evaluate((element) => element.getBoundingClientRect().width / element.parentElement!.getBoundingClientRect().width)).toBeCloseTo(1, 2);
     expect(await questBars.first().evaluate((element) => element.firstElementChild!.getBoundingClientRect().width / element.getBoundingClientRect().width)).toBeCloseTo(scenario.percent === 37 ? 0.33 : 0, 2);
-    const slots = quests.locator("li > span[aria-hidden]").or(vision.locator("div > span[aria-hidden]")).or(
-      page.getByTestId("premium-perks-card").locator("li a > span.grid"),
-    );
-    await expect(slots).toHaveCount(scenario.premium ? 5 : 3);
+    const slots = page.getByTestId("premium-perks-card").locator("li a > span.grid");
+    await expect(slots).toHaveCount(scenario.premium ? 2 : 0);
     for (const slot of await slots.all()) {
       await expect(slot).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-      await expect(slot.locator("svg")).toHaveAttribute("stroke-width", "1.75");
+      await expect(slot.locator("svg")).toHaveClass(/\bsolar-.*-bold\b/);
       await expect(slot.locator("svg")).toHaveCSS("width", "20px");
     }
     const compact = page.locator("[data-journey-level-compact]");
@@ -416,7 +414,7 @@ test("untimed dashboard task opens a stopwatch", async ({page}) => {
   const card = page.getByTestId("today-path-card");
   await expect(card).toContainText("Kendi temponda ba\u015fla");
   const cta = page.getByTestId("today-path-cta");
-  await expect(cta).toHaveAccessibleName("Review \u00b7 S\u00fcresiz ba\u015fla");
+  await expect(cta).toHaveAccessibleName("Review \u00b7 Ba\u015fla");
   await expect(cta).toHaveAttribute("href", /preset=stopwatch/);
   await expect(cta).not.toHaveAttribute("href", /minutes=/);
 });

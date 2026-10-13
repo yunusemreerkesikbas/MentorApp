@@ -1,7 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ArrowDownRight, ArrowUpRight, Star } from "lucide-react";
+import { ArrowRightDownIcon as ArrowDownRight } from "@solar-icons/react/linear/arrow-right-down";
+import { ArrowRightUpIcon as ArrowUpRight } from "@solar-icons/react/linear/arrow-right-up";
+import { StarIcon as Star } from "@solar-icons/react/bold/star";
 import { useLocale, useTranslations } from "next-intl";
 import type { CoachingAnalysisDto } from "@mentor/types";
 import { Skeleton } from "@mentor/ui";
@@ -65,9 +67,9 @@ export function NetTrendCard({ analysis }: { analysis: CoachingAnalysisDto }) {
                 className={`inline-flex items-center gap-0.5 text-body-sm font-extrabold tabular-nums ${delta > 0 ? "text-[var(--color-success)]" : "text-[var(--color-secondary)]"}`}
               >
                 {delta > 0 ? (
-                  <ArrowUpRight className="size-4" strokeWidth={2.6} aria-hidden />
+                  <ArrowUpRight size={16} className="size-4" strokeWidth={1.75} aria-hidden />
                 ) : delta < 0 ? (
-                  <ArrowDownRight className="size-4" strokeWidth={2.6} aria-hidden />
+                  <ArrowDownRight size={16} className="size-4" strokeWidth={1.75} aria-hidden />
                 ) : null}
                 {ghost.previousDelta}
               </span>
@@ -80,7 +82,7 @@ export function NetTrendCard({ analysis }: { analysis: CoachingAnalysisDto }) {
         {ghost ? (
           ghost.isNewRecord ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--color-streak-core)_30%,var(--color-surface))] px-2.5 py-1 text-xs font-extrabold text-[var(--color-main)]">
-              <Star className="size-3.5 fill-current text-[var(--color-star)]" aria-hidden />
+              <Star size={14} className="size-3.5 fill-current text-[var(--color-star)]" aria-hidden />
               {t("new_record")}
             </span>
           ) : record ? (

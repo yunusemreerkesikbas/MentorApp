@@ -724,6 +724,12 @@ export interface AdminCoachApplicationDto extends MentorshipApplicationDto {
    * is visible, so the queue reports the truth instead of trusting the status column.
    */
   hasCoachRole: boolean;
+  /**
+   * Registration asks for neither, so an ACTIVE row says nothing about them. Both are needed for
+   * an invite code, which is the only road to a student.
+   */
+  emailVerified: boolean;
+  phoneVerified: boolean;
 }
 
 /**
@@ -766,4 +772,6 @@ export interface MentorshipCoachRegistrationStateDto {
   emailVerified: boolean;
   /** Coach activation and invitations require verified phone on an ACTIVE identity account. */
   phoneVerified: boolean;
+  /** An active link as somebody's student. Registration is refused until it ends. */
+  hasCoach: boolean;
 }

@@ -1,9 +1,10 @@
+import { disableAuthRateLimits } from "./app-harness";
 import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
 import { Pool } from "pg";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 import { MentorshipFollowupService } from "../src/modules/mentorship/application/mentorship-followup.service";
@@ -55,6 +56,7 @@ describe("mentorship followups HTTP and database", () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
+    disableAuthRateLimits(module);
     app = module.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());

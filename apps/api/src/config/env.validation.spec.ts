@@ -4,11 +4,14 @@ import { isDevToolingAllowed, validateEnv } from "./env.validation";
 const REQUIRED = {
   DATABASE_URL: "postgres://u:p@localhost:5432/db",
   JWT_ACCESS_SECRET: "a".repeat(32),
+  AUTH_RATE_LIMIT_SECRET: "r".repeat(32),
   PAYMENTS_WEBHOOK_SECRET: "b".repeat(16),
 };
 
 const PRODUCTION_SECURITY = {
   APP_URL: "https://app.mentor.test",
+  ADMIN_APP_URL: "https://admin.mentor.test",
+  EDGE_ORIGIN_SECRET: "e".repeat(32),
   CORS_ORIGINS: "https://app.mentor.test,https://admin.mentor.test",
   TURNSTILE_SECRET_KEY: "turnstile-secret",
   TURNSTILE_EXPECTED_HOSTNAME: "app.mentor.test",
@@ -188,6 +191,10 @@ describe("validateEnv", () => {
   });
 
   it.each([
+    { ADMIN_APP_URL: "http://admin.mentor.test" }, { ADMIN_APP_URL: "https://localhost" },
+    { EDGE_ORIGIN_SECRET: undefined }, { EDGE_ORIGIN_SECRET: "short" },
+    { AUTH_RATE_LIMIT_SECRET: "a".repeat(32) }, { AUTH_RATE_LIMIT_SECRET: "e".repeat(32) },
+    { EDGE_ORIGIN_SECRET: "a".repeat(32) },
     { APP_URL: "http://app.mentor.test" }, { APP_URL: "https://localhost" },
     { APP_URL: "https://127.0.0.1" }, { APP_URL: "https://[::1]" },
     { CORS_ORIGINS: undefined }, { CORS_ORIGINS: "" }, { CORS_ORIGINS: "*" },

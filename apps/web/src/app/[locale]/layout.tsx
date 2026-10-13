@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
@@ -27,19 +28,19 @@ const sans = Nunito({
   variable: "--font-nunito",
 });
 
-export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
-}
+// Keep localized HTML request-scoped and route-level static parameter generation disabled.
+// Explicit data-fetch revalidation remains available independently of document rendering.
+export const revalidate = 0;
 
 const META = {
   tr: {
-    title: "Mentor: Sınav Yoldaşın",
+    title: "PuhuKoç: Sınav Yoldaşın",
     description:
       "Sınav hazırlığında seni anlayan, devam ettiren ve yalnız bırakmayan AI koç + topluluk.",
     ogLocale: "tr_TR" as const,
   },
   en: {
-    title: "Mentor: Your Exam Companion",
+    title: "PuhuKoç: Your Exam Companion",
     description:
       "An AI coach + community that understands you, keeps you going, and never leaves you alone on the road to your exam.",
     ogLocale: "en_US" as const,
@@ -58,7 +59,7 @@ export async function generateMetadata({
   const socialImage = `${origin}/mascot/puhu/puhu-default.png`;
   return {
     metadataBase: new URL(origin),
-    applicationName: "Mentor",
+    applicationName: "PuhuKoç",
     title: m.title,
     description: m.description,
     icons: {
@@ -69,10 +70,10 @@ export async function generateMetadata({
       title: m.title,
       description: m.description,
       locale: m.ogLocale,
-      siteName: "Mentor",
+      siteName: "PuhuKoç",
       type: "website",
       url: origin,
-      images: [{ url: socialImage, alt: "Mentor" }],
+      images: [{ url: socialImage, alt: "PuhuKoç" }],
     },
     twitter: {
       card: "summary_large_image",
@@ -86,7 +87,7 @@ export async function generateMetadata({
 
 /**
  * Root document layout (the `[locale]` segment owns `<html>`/`<body>` so `lang` is set
- * from the awaited param — no dynamic `getLocale()` that would force every page dynamic).
+ * from the awaited param). All documents render dynamically for per-request CSP nonces.
  * Wraps all pages with NextIntlClientProvider + AuthProvider.
  */
 export default async function LocaleLayout({
@@ -99,6 +100,8 @@ export default async function LocaleLayout({
   const { locale } = await params;
   // Reject unknown first segments (e.g. /xyz) instead of rendering them as the default locale.
   if (!hasLocale(routing.locales, locale)) notFound();
+  const nonce = (await headers()).get("x-nonce");
+  if (!nonce) throw new Error("Document CSP nonce is missing");
   setRequestLocale(locale);
   const messages = pickMessages(await getMessages(), ROUTE_MESSAGE_SCOPES.root);
 
@@ -109,8 +112,8 @@ export default async function LocaleLayout({
       className={sans.variable}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: APP_SIDEBAR_BOOTSTRAP_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: APP_SIDEBAR_BOOTSTRAP_SCRIPT }} />
       </head>
       {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject body
           attributes pre-hydration; this silences only attribute diffs on <body>. */}
@@ -120,7 +123,7 @@ export default async function LocaleLayout({
           <ToastProviderShell>
             <DialogProviderShell>
               <BottomSheetProviderShell>
-                <AnalyticsConsentProvider>
+                <AnalyticsConsentProvider nonce={nonce}>
                   <WebVitalsReporter />
                   <AuthProvider>
                     <CloudTransitionProvider>{children}</CloudTransitionProvider>

@@ -70,105 +70,120 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("tanışmayı bir kez gösterir; hata, odak ve scroll davranışlarını korur", async ({
-  page,
-}) => {
-  const api = await mockJourneyCelebrationApi(page, introduction);
-  await page.goto("/profil");
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test.describe(`hareket: ${reducedMotion}`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.emulateMedia({ reducedMotion });
+    });
 
-  const dialog = page.getByRole("dialog", { name: "Seviye 4 · Döngü" });
-  const continueButton = dialog.getByRole("button", {
-    name: "Devam et",
-  });
-  const closeButton = dialog.getByRole("button", { name: "Kapat" });
+    test("tanışmayı bir kez gösterir; hata, odak ve scroll davranışlarını korur", async ({
+      page,
+    }) => {
+      const api = await mockJourneyCelebrationApi(page, introduction);
+      await page.goto("/profil");
 
-  await expect(dialog).toBeVisible();
-  await expect(continueButton).toBeFocused({ timeout: 10_000 });
-  await expect
-    .poll(() => page.evaluate(() => document.body.style.overflow))
-    .toBe("hidden");
+      const dialog = page.getByRole("dialog", {
+        name: reducedMotion === "reduce" ? "Seviye 4 · Döngü" : "Döngü",
+        exact: true,
+      });
+      const continueButton = dialog.getByRole("button", {
+        name: "Devam et",
+      });
+      const closeButton = dialog.getByRole("button", { name: "Kapat" });
 
-  await page.keyboard.press("Tab");
-  await expect(closeButton).toBeFocused();
-  await page.keyboard.press("Shift+Tab");
-  await expect(continueButton).toBeFocused();
+      await expect(dialog).toBeVisible();
+      await expect(continueButton).toBeFocused({ timeout: 10_000 });
+      await expect
+        .poll(() => page.evaluate(() => document.body.style.overflow))
+        .toBe("hidden");
 
-  api.failAcknowledgement = true;
-  await continueButton.click();
-  await expect(dialog).toBeVisible();
-  await expect(
-    dialog.getByText(
-      "Kutlamayı şimdilik kapatamadık. Tekrar deneyebilirsin.",
-    ),
-  ).toBeVisible();
+      await page.keyboard.press("Tab");
+      await expect(closeButton).toBeFocused();
+      await page.keyboard.press("Shift+Tab");
+      await expect(continueButton).toBeFocused();
 
-  api.failAcknowledgement = false;
-  await continueButton.click();
-  await expect(dialog).toHaveCount(0);
-  await expect
-    .poll(() => page.evaluate(() => document.body.style.overflow))
-    .toBe("");
+      api.failAcknowledgement = true;
+      await continueButton.click();
+      await expect(dialog).toBeVisible();
+      await expect(
+        dialog.getByText(
+          "Kutlamayı şimdilik kapatamadık. Tekrar deneyebilirsin.",
+        ),
+      ).toBeVisible();
 
-  await page.reload();
-  await expect(dialog).toHaveCount(0);
-  expect(api.acknowledgementCalls).toBe(2);
-});
+      api.failAcknowledgement = false;
+      await continueButton.click();
+      await expect(dialog).toHaveCount(0);
+      await expect
+        .poll(() => page.evaluate(() => document.body.style.overflow))
+        .toBe("");
 
-test("canlı SSE sinyali seviyeyi açar ve kapanınca önceki odağı geri verir", async ({
-  page,
-}) => {
-  const api = await mockJourneyCelebrationApi(page, null);
-  await page.goto("/ayarlar");
-  await expect.poll(() => page.evaluate(() => {
-    const testWindow = window as typeof window & { __journeyEventSources?: EventSource[] };
-    return testWindow.__journeyEventSources?.length ?? 0;
-  })).toBeGreaterThan(0);
+      await page.reload();
+      await expect(dialog).toHaveCount(0);
+      expect(api.acknowledgementCalls).toBe(2);
+    });
 
-  const previousFocus = page.getByRole("button", { name: /temaya geç/ });
-  await expect(previousFocus).toBeVisible();
-  await previousFocus.focus();
-  await expect(previousFocus).toBeFocused();
+    test("canlı SSE sinyali seviyeyi açar ve kapanınca önceki odağı geri verir", async ({
+      page,
+    }) => {
+      const api = await mockJourneyCelebrationApi(page, null);
+      await page.goto("/ayarlar");
+      await expect.poll(() => page.evaluate(() => {
+        const testWindow = window as typeof window & { __journeyEventSources?: EventSource[] };
+        return testWindow.__journeyEventSources?.length ?? 0;
+      })).toBeGreaterThan(0);
 
-  api.celebration = levelUp;
-  await page.evaluate(() => {
-    const testWindow = window as typeof window & {
-      __journeyEventSources?: Array<{
-        onmessage: ((event: MessageEvent) => void) | null;
-      }>;
-    };
-    testWindow.__journeyEventSources?.forEach((source) =>
-      source.onmessage?.(
-        new MessageEvent("message", {
-          data: JSON.stringify({ event: "journey_level_unlocked" }),
+      const previousFocus = page.getByRole("button", { name: /temaya geç/ });
+      await expect(previousFocus).toBeVisible();
+      await previousFocus.focus();
+      await expect(previousFocus).toBeFocused();
+
+      api.celebration = levelUp;
+      await page.evaluate(() => {
+        const testWindow = window as typeof window & {
+          __journeyEventSources?: Array<{
+            onmessage: ((event: MessageEvent) => void) | null;
+          }>;
+        };
+        testWindow.__journeyEventSources?.forEach((source) =>
+          source.onmessage?.(
+            new MessageEvent("message", {
+              data: JSON.stringify({ event: "journey_level_unlocked" }),
+            }),
+          ),
+        );
+      });
+
+      const dialog = page.getByRole("dialog", {
+        name: reducedMotion === "reduce" ? "Seviye 5 · Nabız" : "Nabız",
+        exact: true,
+      });
+      await expect(dialog).toBeVisible();
+      await expect(
+        dialog.getByRole("button", { name: "Devam et" }),
+      ).toBeFocused({ timeout: 10_000 });
+      await expect(page.getByRole("dialog")).toHaveCount(1);
+
+      await dialog.getByRole("button", { name: "Devam et" }).click();
+      await expect(dialog).toHaveCount(0);
+      await expect(previousFocus).toBeFocused();
+    });
+
+    test("kaçırılan canlı sinyali sonraki açılışta kalıcı kaynaktan toparlar", async ({
+      page,
+    }) => {
+      await mockJourneyCelebrationApi(page, levelUp);
+      await page.goto("/profil");
+
+      await expect(
+        page.getByRole("dialog", {
+          name: reducedMotion === "reduce" ? "Seviye 5 · Nabız" : "Nabız",
+          exact: true,
         }),
-      ),
-    );
+      ).toBeVisible();
+    });
   });
-
-  const dialog = page.getByRole("dialog", {
-    name: "Seviye 5 · Nabız",
-  });
-  await expect(dialog).toBeVisible();
-  await expect(
-    dialog.getByRole("button", { name: "Devam et" }),
-  ).toBeFocused({ timeout: 10_000 });
-  await expect(page.getByRole("dialog")).toHaveCount(1);
-
-  await dialog.getByRole("button", { name: "Devam et" }).click();
-  await expect(dialog).toHaveCount(0);
-  await expect(previousFocus).toBeFocused();
-});
-
-test("kaçırılan canlı sinyali sonraki açılışta kalıcı kaynaktan toparlar", async ({
-  page,
-}) => {
-  await mockJourneyCelebrationApi(page, levelUp);
-  await page.goto("/profil");
-
-  await expect(
-    page.getByRole("dialog", { name: "Seviye 5 · Nabız" }),
-  ).toBeVisible();
-});
+}
 
 test("başarım kutlamasını gerektiğinde yükler ve bir kez gösterir", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -234,7 +249,7 @@ test("panel rozeti sahneyi tıklayınca yükler ve odağı geri verir", async ({
   await opener.focus();
   await expect(opener).toBeFocused();
   await opener.click();
-  const dialog = page.getByRole("dialog", { name: "Seviye 4 · Döngü" });
+  const dialog = page.getByRole("dialog", { name: "Döngü", exact: true });
   await expect(dialog).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);

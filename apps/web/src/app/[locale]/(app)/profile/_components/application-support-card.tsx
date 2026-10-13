@@ -1,12 +1,4 @@
 "use client";
-import {
-  HelpCircle,
-  Languages,
-  MessageSquare,
-  Moon,
-  Share2,
-  Sun,
-} from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
 import { useTransition } from "react";
@@ -75,9 +67,6 @@ export function ApplicationSupportCard() {
       <div className="flex flex-col gap-0.5">
         <div className="flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-[calc(var(--radius-card)-2px)] px-3 py-1.5 transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)]">
           <span className="flex min-w-0 items-center gap-3">
-            <span className="flex size-7 shrink-0 items-center justify-center text-[var(--color-secondary)]">
-              <Languages size={18} aria-hidden />
-            </span>
             <span
               className="truncate text-sm font-medium text-[var(--color-main)]"
               style={{ fontFamily: "var(--font-body)" }}
@@ -112,13 +101,6 @@ export function ApplicationSupportCard() {
         </div>
         <div className="flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-[calc(var(--radius-card)-2px)] px-3 py-1.5 transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)]">
           <span className="flex min-w-0 items-center gap-3">
-            <span className="flex size-7 shrink-0 items-center justify-center text-[var(--color-secondary)]">
-              {theme === "dark" ? (
-                <Moon size={18} aria-hidden />
-              ) : (
-                <Sun size={18} aria-hidden />
-              )}
-            </span>
             <span
               className="truncate text-sm font-medium text-[var(--color-main)]"
               style={{ fontFamily: "var(--font-body)" }}
@@ -152,19 +134,17 @@ export function ApplicationSupportCard() {
         </div>
 
         <ListRow
-          icon={<Share2 size={18} aria-hidden />}
           onClick={() => void handleShare()}
           showChevron={false}
         >
           {t("recommend")}
         </ListRow>
-        <ListRow href="/knowledge" icon={<HelpCircle size={18} aria-hidden />}>
+        <ListRow href="/knowledge">
           {t("help")}
         </ListRow>
         {links.feedbackUrl ? (
           <ListRow
             externalHref={links.feedbackUrl}
-            icon={<MessageSquare size={18} aria-hidden />}
           >
             {t("feedback")}
           </ListRow>

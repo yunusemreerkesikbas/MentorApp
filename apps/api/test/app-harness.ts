@@ -3,6 +3,16 @@ import type { INestApplication } from "@nestjs/common";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import type { TestingModule } from "@nestjs/testing";
 import { configureBodyParsers } from "../src/common/http/body-parsers";
+import { ConfigService } from "@nestjs/config";
+import { edgeOriginMiddleware } from "../src/common/http/edge-origin";
+import { AuthRateLimitService } from "../src/modules/identity/application/auth-rate-limit.service";
+
+/** Lifecycle suites isolate their own behavior; durable quotas have dedicated real-DB tests. */
+export function disableAuthRateLimits(moduleRef: TestingModule): void {
+  const rates = moduleRef.get(AuthRateLimitService);
+  rates.consumeIp = async () => ({ allowed: true, retryAfter: 0 });
+  rates.consumeAccount = async () => ({ allowed: true, retryAfter: 0 });
+}
 
 /**
  * An e2e app wired like `main.ts`, by calling the same code rather than describing it again.
@@ -25,12 +35,14 @@ import { configureBodyParsers } from "../src/common/http/body-parsers";
  * A spec that needs something extra can still do it: this returns the app UNINITIALIZED so the
  * caller stays in control of `app.init()`.
  */
-export function createTestApp(moduleRef: TestingModule): INestApplication {
+export function createTestApp(moduleRef: TestingModule, options?: { authRateLimits: boolean }): INestApplication {
+  if (options?.authRateLimits === false) disableAuthRateLimits(moduleRef);
   const app = moduleRef.createNestApplication<NestExpressApplication>({
     logger: false,
     bodyParser: false,
   });
   app.setGlobalPrefix("v1");
+  app.use(edgeOriginMiddleware(app.get(ConfigService)));
   app.use(cookieParser());
   configureBodyParsers(app.getHttpAdapter().getInstance());
   return app;

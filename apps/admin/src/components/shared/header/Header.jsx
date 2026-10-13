@@ -4,7 +4,7 @@ import { FiAlignLeft, FiArrowRight, FiMaximize, FiMinimize, FiMoon, FiSun } from
 import AdminProfile from './AdminProfile';
 import { NavigationContext } from '@/contentApi/navigationProvider';
 
-// Mentor admin header. Trimmed from the Duralux demo: removed the fake search / languages /
+// PuhuKoç admin header. Trimmed from the Duralux demo: removed the fake search / languages /
 // notifications / timesheets / mega-menu. Kept: nav toggles, fullscreen, theme, admin profile.
 const Header = () => {
     const { navigationOpen, setNavigationOpen } = useContext(NavigationContext)

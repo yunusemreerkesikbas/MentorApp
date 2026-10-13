@@ -2,45 +2,35 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import type { ThreadView } from "@mentor/types";
-import { Chip } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "../../_components/author-avatar";
+import { questionStatus } from "../../_components/question-status";
+import { QuestionStatusLabel } from "../../_components/question-status-label";
 import { questionMarkdownToPlainText } from "../../feed/_components/question-composer-state";
 
+/** One question row in a QA room: title and its one status, the excerpt, then who asked and when. */
 export function QuestionListItem({ question }: { question: ThreadView }) {
   const t = useTranslations("community");
   const locale = useLocale();
   return (
     <Link
-      href={{
-        pathname: "/community/question/[threadId]",
-        params: { threadId: question.id },
-      }}
-      className="block rounded-2xl bg-[var(--color-surface)] px-5 py-4 transition-shadow duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-      style={{ border: "1px solid var(--color-border)" }}
+      href={{ pathname: "/community/question/[threadId]", params: { threadId: question.id } }}
+      className="flex flex-col gap-1.5 px-5 py-4 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
     >
-      <div className="flex items-start justify-between gap-3">
-        <h3
-          className="text-sm font-semibold leading-snug"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-        >
+      <span className="flex items-start justify-between gap-3">
+        <span className="text-base font-extrabold leading-snug text-[var(--color-main)]">
           {question.title ?? question.body.slice(0, 80)}
-        </h3>
-        {question.status === "ANSWERED" ? <Chip>{t("answered")}</Chip> : null}
-      </div>
-      <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed" style={{ color: "var(--color-secondary)" }}>
+        </span>
+        <QuestionStatusLabel status={questionStatus(question)} />
+      </span>
+      <span className="line-clamp-2 text-body-sm font-semibold text-[var(--color-secondary)]">
         {questionMarkdownToPlainText(question.body)}
-      </p>
-      <div className="mt-3 flex items-center gap-2">
-        <AuthorAvatar name={question.authorName} size={20} src={question.authorAvatarUrl} />
-        <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-          {question.authorName || t("unknown_author")}
-        </span>
-        <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-          · {relativeTime(question.createdAt, locale)}
-        </span>
-      </div>
+      </span>
+      <span className="flex items-center gap-2 text-caption font-semibold text-[var(--color-secondary)]">
+        <AuthorAvatar name={question.authorName} size={24} src={question.authorAvatarUrl} />
+        {question.authorName || t("unknown_author")} · {relativeTime(question.createdAt, locale)}
+      </span>
     </Link>
   );
 }

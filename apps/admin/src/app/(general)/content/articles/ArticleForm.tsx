@@ -1,7 +1,5 @@
 'use client'
 
-/* eslint-disable @next/next/no-img-element -- admin preview uses storage-provided dimensions */
-
 import dynamic from "next/dynamic";
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -270,7 +268,7 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
                 <div className="row g-3">
                     <div className="col-12"><label className="form-label">Meta başlık <span className="text-muted">{form.metaTitle.length}/60</span></label><input className="form-control" value={form.metaTitle} onChange={set("metaTitle")} maxLength={60} /></div>
                     <div className="col-12"><label className="form-label">Meta açıklama <span className="text-muted">{form.metaDescription.length}/160</span></label><textarea className="form-control" rows={3} value={form.metaDescription} onChange={set("metaDescription")} maxLength={160} /></div>
-                    <div className="col-12"><div className="border rounded p-3"><div className="text-primary fs-5">{form.metaTitle || form.title || "Makale başlığı"}</div><div className="text-success fs-12">mentor.app/blog/{form.slug || "makale-slug"}</div><p className="mb-0 text-muted">{form.metaDescription || "Arama ve sosyal paylaşım açıklaması burada görünür."}</p></div></div>
+                    <div className="col-12"><div className="border rounded p-3"><div className="text-primary fs-5">{form.metaTitle || form.title || "Makale başlığı"}</div><div className="text-success fs-12">puhukoc.com/blog/{form.slug || "makale-slug"}</div><p className="mb-0 text-muted">{form.metaDescription || "Arama ve sosyal paylaşım açıklaması burada görünür."}</p></div></div>
                 </div>
             </FormSection>
 

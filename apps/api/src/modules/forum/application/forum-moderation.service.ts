@@ -14,7 +14,7 @@ import { canModerateZone, isPlatformStaff, type ForumActor } from "../domain/for
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
 import { ForumThreadRepository } from "../infrastructure/forum-thread.repository";
 import { ForumPostRepository } from "../infrastructure/forum-post.repository";
-import { ForumReportRepository, type ReportRow } from "../infrastructure/forum-report.repository";
+import { ForumReportRepository, type ReportListRow } from "../infrastructure/forum-report.repository";
 import type { ThreadActor } from "./forum-thread.service";
 
 /**
@@ -184,11 +184,11 @@ export class ForumModerationService {
     return thread.zoneId;
   }
 
-  private toPage(rows: ReportRow[], total: number, q: ReportsQuery): Paginated<ReportView> {
+  private toPage(rows: ReportListRow[], total: number, q: ReportsQuery): Paginated<ReportView> {
     return { items: rows.map((r) => this.toView(r)), total, page: q.page, pageSize: q.pageSize };
   }
 
-  private toView(r: ReportRow): ReportView {
+  private toView(r: ReportListRow): ReportView {
     return {
       id: r.id,
       targetType: r.targetType as ReportView["targetType"],
@@ -197,6 +197,7 @@ export class ForumModerationService {
       reporterId: r.reporterId,
       reason: r.reason as ReportView["reason"],
       note: r.note,
+      excerpt: r.excerpt,
       status: r.status as ReportView["status"],
       createdAt: r.createdAt.toISOString(),
     };

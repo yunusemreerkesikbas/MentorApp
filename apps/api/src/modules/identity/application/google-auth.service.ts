@@ -22,6 +22,7 @@ import { AuthAccountRepository } from "../infrastructure/auth-account.repository
 import { UsersRepository, type UserRow } from "../infrastructure/users.repository";
 import { TokenService } from "./token.service";
 import { GoogleLinkingService } from "./google-linking.service";
+import { assertSignupAdmission } from "./signup-admission";
 import { signGoogleOAuthState, verifyGoogleOAuthState, type GoogleOAuthState, type GoogleLinkState } from "./google-oauth-state";
 export { signGoogleOAuthState, verifyGoogleOAuthState, type GoogleOAuthState } from "./google-oauth-state";
 
@@ -134,6 +135,7 @@ export class GoogleAuthService {
       throw new DomainError(ErrorCode.AUTH_GOOGLE_ACCOUNT_NOT_FOUND, HttpStatus.UNAUTHORIZED);
     }
 
+    await assertSignupAdmission(this.configRegistry, this.config, profile.email);
     const passwordHash = await argon2.hash(randomBytes(32).toString("base64url"));
     let user: UserRow;
     try {
@@ -292,10 +294,10 @@ export class GoogleAuthService {
 }
 
 function sanitizeReturnTo(value: string): string {
-  return /^\/(?!\/)[a-z0-9/_-]*$/i.test(value) ? value : "/dashboard";
+  return /^\/(?!\/)[a-z0-9/_-]*(?:\?section=phone)?$/i.test(value) ? value : "/dashboard";
 }
 
 function displayNameFromGoogle(name: string | undefined, email: string): string {
-  const value = (name ?? email.split("@")[0] ?? "Mentor").trim().slice(0, 64);
-  return value.length >= 2 ? value : "Mentor";
+  const value = (name ?? email.split("@")[0] ?? "Yoldaş").trim().slice(0, 64);
+  return value.length >= 2 ? value : "Yoldaş";
 }

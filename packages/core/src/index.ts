@@ -19,7 +19,7 @@ export const NET_PENALTY_DIVISOR: Record<ExamType, number> = {
   [ExamType.LGS]: 3,
 };
 
-export const APP_NAME = "Mentor" as const;
+export const APP_NAME = "PuhuKoç" as const;
 
 export const STREAK_MILESTONES = [7, 14, 30, 100, 365] as const;
 export type StreakMilestoneValue = (typeof STREAK_MILESTONES)[number];

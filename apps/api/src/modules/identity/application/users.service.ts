@@ -20,6 +20,7 @@ import {
 } from "../domain/avatar";
 import { UsersRepository } from "../infrastructure/users.repository";
 import { AuthService, toAuthUser } from "./auth.service";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 
 /** Public display identity for cross-module people lists. Never contains an object-storage key. */
 export interface DisplayIdentity {
@@ -49,6 +50,7 @@ export class UsersService {
     private readonly events: EventEmitter2,
     @Optional() private readonly authService?: AuthService,
     @Optional() private readonly phoneEnv?: ConfigService<Env, true>,
+    @Optional() private readonly registry?: ConfigRegistryService,
   ) {}
 
   /** Resolve @mention handles → `lowercase-username → userId` map (used by the forum mention notifier). */
@@ -151,8 +153,11 @@ export class UsersService {
     return this.usersRepo.lockActiveAccount(userId, tx);
   }
 
-  async beginAccountErasure(userId: string): Promise<Date> {
-    const startedAt = await this.usersRepo.beginAccountErasure(userId);
+  async beginAccountErasure(userId: string, sessionId?: string): Promise<Date> {
+    const recentAuth = sessionId !== undefined ? {
+      sessionId, seconds: await this.registry!.get("identity.auth.reauthentication_seconds"),
+    } : undefined;
+    const startedAt = await this.usersRepo.beginAccountErasure(userId, recentAuth);
     if (!startedAt) throw new NotFoundError();
     if (startedAt === "conflict") throw new DomainError(ErrorCode.CONFLICT, HttpStatus.CONFLICT);
     return startedAt;
@@ -278,7 +283,7 @@ export class UsersService {
   }
 
   /** Minimal onboarding profile (display name + exam selection); deep diagnosis is W2. */
-  async updateMe(userId: string, patch: UpdateMeInput): Promise<AuthUser> {
+  async updateMe(userId: string, patch: UpdateMeInput, sessionId?: string): Promise<AuthUser> {
     // The variant only makes sense next to a family, so a lone variant change needs the stored
     // one to decide. Everything else keeps the single-write path it had.
     const needsCurrent =
@@ -316,14 +321,15 @@ export class UsersService {
         }),
         ...(patch.bio !== undefined && { bio: patch.bio }),
         ...(patch.website !== undefined && { website: patch.website }),
-        ...(emailChanged && { email: patch.email!.trim().toLowerCase(), emailVerifiedAt: null }),
+        ...(patch.email !== undefined && { email: patch.email.trim().toLowerCase() }),
         ...(patch.examType !== undefined && { examType: patch.examType }),
         ...examVariantPatch,
         ...(patch.examDate !== undefined && { examDate: patch.examDate }),
         ...(patch.dailyFocusGoalMinutes !== undefined && {
           dailyFocusGoalMinutes: patch.dailyFocusGoalMinutes,
         }),
-      });
+      }, ...(patch.email !== undefined ? [{ sessionId: sessionId ?? "",
+        seconds: await this.registry!.get("identity.auth.reauthentication_seconds") }] as const : [] as const));
     } catch (err) {
       if (isUniqueViolation(err)) {
         const constraint = uniqueConstraint(err);
@@ -340,9 +346,7 @@ export class UsersService {
     if (emailChanged && this.authService) {
       const auth = this.authService;
       // Quota applies, and the old link dies even when the new send is refused.
-      void auth
-        .invalidateOutstandingVerification(userId)
-        .then(() => auth.resendVerificationEmail(userId))
+      void auth.resendVerificationEmail(userId)
         .catch((err) => this.logger.warn(`verification email failed for ${user.id}: ${String(err)}`));
     }
     const oldKey = current?.avatarStorageKey;

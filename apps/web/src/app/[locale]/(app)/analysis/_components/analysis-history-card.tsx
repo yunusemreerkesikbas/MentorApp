@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { AltArrowDownIcon as ChevronDown } from "@solar-icons/react/linear/alt-arrow-down";
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -152,8 +152,9 @@ export function AnalysisHistoryCard({
                   </span>
                   <span className="sr-only">{t("net", { net: item.totalNet })}</span>
                   <ChevronDown
+                    size={18}
                     className={`size-[18px] shrink-0 text-[var(--color-secondary)] transition-transform duration-200 motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`}
-                    strokeWidth={2.25}
+                    strokeWidth={1.75}
                     aria-hidden
                   />
                 </button>

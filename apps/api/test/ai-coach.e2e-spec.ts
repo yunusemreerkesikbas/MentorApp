@@ -1,8 +1,9 @@
+import { disableAuthRateLimits } from "./app-harness";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
 import { Pool } from "pg";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UserRole } from "@mentor/types";
 import { buildSystemPrompt } from "../src/modules/ai/domain/ai.constants";
@@ -195,6 +196,7 @@ describe("ai coach chat (e2e)", () => {
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    disableAuthRateLimits(moduleRef);
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
@@ -444,12 +446,81 @@ describe("ai coach chat (e2e)", () => {
     expect(await aiUsageCount(premiumId)).toBe(usageBeforeTask);
     expect(await coinBalance(premiumId)).toBe(coinsBeforeTask);
 
+    // Accepting the coach's own "Plana ekle" in this chat keeps the community source (F-04).
+    const proposal = (history.body.items as Array<{ id: string; role: string; action?: { type: string } | null }>)
+      .find((message) => message.role === "COACH" && message.action?.type === "CREATE_PLAN_TASK");
+    expect(proposal, "fake coach proposes a plan task").toBeTruthy();
+    const accepted = await request(app.getHttpServer())
+      .post(`/v1/coach/messages/${proposal!.id}/action`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ decision: "ACCEPT" });
+    expect(accepted.status).toBe(201);
+    expect(accepted.body).not.toHaveProperty("conversationId");
+    const acceptedTask = await pool.query(
+      "select origin_type, origin_ref_id, origin_meta from plan_tasks where id=$1",
+      [accepted.body.resultRefId],
+    );
+    expect(acceptedTask.rows[0]).toMatchObject({
+      origin_type: "COMMUNITY_COACH",
+      origin_ref_id: sent.body.conversationId,
+      origin_meta: { threadId, intent: "PLAN", zoneType: "CHAT", coachMessageId: proposal!.id },
+    });
+    const retried = await request(app.getHttpServer())
+      .post(`/v1/coach/messages/${proposal!.id}/action`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ decision: "ACCEPT" });
+    expect(retried.body.resultRefId).toBe(accepted.body.resultRefId);
+
     const updatedTask = await request(app.getHttpServer())
       .patch(`/v1/plan-tasks/${createdTask.body.id}`)
       .set({ Authorization: `Bearer ${premiumToken}` })
       .send({ title: "Bugün 25 soru", status: "DONE" });
     expect(updatedTask.status).toBe(200);
     expect(updatedTask.body.origin).toEqual(createdTask.body.origin);
+
+    // Approving the AI's own "Plana ekle" card in this community chat files a COMMUNITY_COACH task.
+    const seed = await pool.connect();
+    let actionMessageId: string;
+    try {
+      await seed.query("begin");
+      await seed.query("select set_config('app.role','SERVICE',true)");
+      const inserted = await seed.query(
+        `insert into coach_messages (user_id, conversation_id, role, content, action, action_status)
+         values ($1, $2, 'COACH', 'Planına ekleyelim mi?', $3::jsonb, 'PROPOSED') returning id`,
+        [
+          premiumId,
+          sent.body.conversationId,
+          JSON.stringify({
+            type: "CREATE_PLAN_TASK",
+            label: "Plana ekle",
+            payload: { title: "Onaydan gelen görev", subject: "Türkçe" },
+          }),
+        ],
+      );
+      actionMessageId = inserted.rows[0].id;
+      await seed.query("commit");
+    } finally {
+      seed.release();
+    }
+    const approved = await request(app.getHttpServer())
+      .post(`/v1/coach/messages/${actionMessageId}/action`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ decision: "ACCEPT" });
+    expect(approved.status).toBe(201);
+    expect(approved.body).not.toHaveProperty("conversationId");
+    const plan = await request(app.getHttpServer())
+      .get("/v1/plan-tasks")
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    const approvedTask = (plan.body.items as { id: string; origin: Record<string, unknown> }[]).find(
+      (t) => t.id === approved.body.resultRefId,
+    );
+    expect(approvedTask?.origin).toEqual({
+      type: "COMMUNITY_COACH",
+      conversationId: sent.body.conversationId,
+      threadId,
+      intent: "PLAN",
+      zoneType: "CHAT",
+    });
 
     await request(app.getHttpServer())
       .post(`/v1/coach/conversations/${sent.body.conversationId}/plan-tasks`)

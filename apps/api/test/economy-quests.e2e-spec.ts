@@ -1,8 +1,9 @@
+import { disableAuthRateLimits } from "./app-harness";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
 import { Pool } from "pg";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UserRole } from "@mentor/types";
 import { randomBytes } from "node:crypto";
@@ -24,6 +25,7 @@ describe("economy onboarding quests (e2e)", () => {
   let adminToken = "";
   let questerToken = "";
   let questerId = "";
+  let questerEmail = "";
 
   const signup = async (label: string) => {
     const email = `eq-${label}-${RUN}@test.local`;
@@ -79,6 +81,7 @@ describe("economy onboarding quests (e2e)", () => {
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    disableAuthRateLimits(moduleRef);
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
@@ -88,6 +91,7 @@ describe("economy onboarding quests (e2e)", () => {
     const quester = await signup("quester");
     questerToken = quester.accessToken;
     questerId = quester.user.id;
+    questerEmail = quester.email;
 
     await grantRole(admin.user.id, UserRole.ADMIN);
     const login = await request(app.getHttpServer())
@@ -203,7 +207,7 @@ describe("economy onboarding quests (e2e)", () => {
   it("verified email grants its own ten Coin exactly once", async () => {
     const token = randomBytes(32).toString("hex");
     await app.get(EmailTokenRepository).create({ userId: questerId, type: EmailTokenType.VERIFY_EMAIL,
-      tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 60_000) });
+      tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 60_000) }, questerEmail, async () => undefined);
     await request(app.getHttpServer()).post("/v1/auth/verify-email").send({ token }).expect(200);
     expect((await balance()).coinConfirmed).toBe(20);
     await request(app.getHttpServer()).post("/v1/auth/verify-email").send({ token }).expect(400);
