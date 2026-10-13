@@ -69,6 +69,60 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **Paywall benefits follow what is live on the web (2026-10-13).** A code audit found the
+  "Fotoğraftan konu" row promising a feature with no screen: `photo.categorize` still has its API
+  and a premium quota, but nothing on the web calls it since the notebook stopped pre-labelling
+  (see [ai.md](./ai.md), 2026-09-18), and no surface opens the paywall with that id. The four rows
+  are now `coach` (coach chat), `daily` (daily greeting, mood reflection, session reflection),
+  `analysis` (weekly narration, deep analysis, ghost narration) and `plan` (plan adaptation,
+  vision note); `headline_photo` and the `benefit_photo_*` keys are gone. Usage: a row is added
+  only for something a student can reach today, and `FEATURE_BENEFIT` decides which row a locked
+  feature lifts. Gotchas: if photo categorize gets a screen again it needs its row and headline
+  back; "ad-free" is not a claim to make, ads are off by default for everyone; "koç" on the
+  paywall means the AI coach while `/kocum` is a human one. Same day, on request: the icon tiles
+  and the lifted row's wash were removed (the hue now lives in the glyph only, so the lifted row is
+  told by coming first), the four glyphs moved from lucide to the panel's Solar Bold set (Chat Round
+  Dots, Sun 2, Chart 2, Clipboard Check) and the close, coupon and checkbox controls to Solar Linear
+  (Close, Tag, Check), so the paywall modal no longer imports lucide,
+  and `paywall.brand` reads "PuhuKoç" for the puhukoc.com domain. The rest
+  of the app still says "Mentor". Related: `lib/paywall-benefits.ts`
+  (+ spec), `premium-paywall-benefits.tsx`, `premium-paywall-modal.tsx`, `messages/{tr,en}.json`.
+
+- **Paywall benefits made prominent (2026-10-13).** The four benefit lines became rows with a
+  tinted icon tile, a bold title and a one-line description (`paywall.benefit_<id>_title` /
+  `_desc`; the single-sentence `benefit_<id>` keys are gone). The row matching the locked feature
+  that opened the paywall moves first and is highlighted; the mapping lives in
+  `orderPaywallBenefits` and a feature with no row (coach-side `mentorship.*`, or no feature)
+  keeps the default order. A trial-eligible account sees a `subscription.trial_days` badge under
+  the headline, on the same condition as the trial notice. Usage: add a student premium feature →
+  map it in `FEATURE_BENEFIT`, or it opens the paywall without a highlight. Gotchas: the plan
+  picker now sits in the pinned footer with the checkout controls, so the price never scrolls out
+  and only the benefits (and the trial/phone block) scroll; the decorative crown hides below
+  820px viewport height to give its room to the rows; descriptions are written to stay on one
+  line at the 480px desktop width (about 50 characters), longer copy wraps and costs a row.
+  Related: `premium-paywall-benefits.tsx`, `premium-paywall-modal.tsx`,
+  `premium-paywall-plan-picker.tsx`, `lib/paywall-benefits.ts` (+ spec), `messages/{tr,en}.json`.
+
+- **Paywall design pass (2026-10-13).** Four decisions on top of the benefit rows. (1) Every plan
+  card speaks per month: a multi-month plan shows `priceMinor / periodMonths` as the large figure
+  and the charged total underneath (`paywall.total_for_months`); display only, the consent line
+  and checkout still carry the server total. (2) The paywall opens on the recommended plan (the
+  longest period when there is a choice, `featuredPlanId`), so the badge and the selection are the
+  same card. (3) The CTA is no longer disabled for a missing consent: pressed without it, checkout
+  does not start, the checkbox takes focus with a danger outline and `paywall.consent_needed`
+  shows; every other disabling condition (no plan, already Premium, phone not verified) is
+  unchanged. (4) The crown left the body and joined the brand lockup in the header; the
+  short-viewport hide from the entry above went with it. Also: each benefit tile takes one hue the
+  sheet already owns, the lifted row is a wash of its hue instead of a dark slab that read as a
+  plan tile, consent copy went from 10px to 12px with a styled checkbox, and the scroll area fades
+  out at its bottom edge. Later the same day `/abonelik` plan cards took the same live-CTA rule
+  (`subscription-plan-card.tsx`), so the copy key is the shared `subscription.consent_needed`; the
+  card keeps its native checkbox and shows a danger outline. Gotchas: the per-month figure is rounded to the kuruş, so
+  three times it can be one kuruş off the total (599,01 vs 599,00), which is why the total is
+  printed; `paywall.per_months` is gone. Related: `lib/paywall-plans.ts` (+ spec),
+  `use-premium-paywall.ts`, `premium-paywall-footer.tsx`, `premium-paywall-plan-picker.tsx`,
+  `e2e/{subscription-trial,promotions}.spec.ts`.
+
 - **Browser coverage aligned with automatic trials (2026-10-10).** Phone verification and
   promotion fixtures now use `ACCOUNT_USED` for paid purchases and the automatic trial
   disclosure for eligible accounts. Usage: run `phone-verification.spec.ts` and

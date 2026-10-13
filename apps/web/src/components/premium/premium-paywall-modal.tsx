@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useId, useSyncExternalStore, type ComponentType } from "react";
+import { useEffect, useId, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { CalendarDays, Camera, MessageCircle, Sparkles, X } from "lucide-react";
+import { CloseIcon } from "@solar-icons/react/linear/close";
 import type { PremiumFeatureId } from "@mentor/types";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
-import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { FormError } from "@/components/form";
+import { PremiumPaywallBenefits } from "./premium-paywall-benefits";
 import { SubscriptionTrialNotice } from "./subscription-trial-notice";
 import { PremiumPaywallFooter } from "./premium-paywall-footer";
 import { PremiumPaywallPlanPicker } from "./premium-paywall-plan-picker";
@@ -18,8 +18,6 @@ function headlineKey(feature: PremiumFeatureId | undefined): string {
   switch (feature) {
     case "coach.chat":
       return "headline_coach";
-    case "photo.categorize":
-      return "headline_photo";
     case "plan.ai":
       return "headline_plan";
     case "vision.note":
@@ -40,20 +38,6 @@ function headlineKey(feature: PremiumFeatureId | undefined): string {
   }
 }
 
-const BENEFITS = [
-  { key: "benefit_coach", Icon: MessageCircle },
-  { key: "benefit_analysis", Icon: Sparkles },
-  { key: "benefit_photo", Icon: Camera },
-  { key: "benefit_plan", Icon: CalendarDays },
-] as const satisfies readonly {
-  key: "benefit_coach" | "benefit_analysis" | "benefit_photo" | "benefit_plan";
-  Icon: ComponentType<{
-    size?: number;
-    strokeWidth?: number;
-    "aria-hidden"?: boolean;
-  }>;
-}[];
-
 const subscribeToClientMount = () => () => {};
 const getClientMountedSnapshot = () => true;
 const getServerMountedSnapshot = () => false;
@@ -71,6 +55,7 @@ export function PremiumPaywallModal({
   onClose,
 }: PremiumPaywallModalProps) {
   const t = useTranslations("paywall");
+  const tSub = useTranslations("subscription");
   const titleId = useId();
   const reduceMotion = useReducedMotion();
   const mounted = useSyncExternalStore(
@@ -97,6 +82,8 @@ export function PremiumPaywallModal({
   }, [onClose]);
 
   if (!mounted) return null;
+
+  const showTrial = !loading && purchaseEnabled && !pendingCheckout && selected && purchase.includesTrial;
 
   const panel = (
     <div
@@ -154,6 +141,16 @@ export function PremiumPaywallModal({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element -- animated SVG mark */}
+          <img
+            src="/img/upgrade-premium-2.svg"
+            alt=""
+            width={28}
+            height={28}
+            className="size-7 object-contain"
+            draggable={false}
+            aria-hidden
+          />
           <p
             className="text-base font-bold"
             style={{
@@ -181,29 +178,12 @@ export function PremiumPaywallModal({
           aria-label={t("close")}
           style={{ color: "var(--color-main)" }}
         >
-          <X size={22} aria-hidden />
+          <CloseIcon size={22} strokeWidth={1.75} aria-hidden />
         </button>
       </header>
 
-      <div data-testid="premium-paywall-body" className="mentor-scrollarea relative z-[1] flex min-h-0 flex-1 flex-col overflow-y-auto px-5 pt-4 lg:px-8 lg:pt-2">
+      <div data-testid="premium-paywall-body" className="mentor-scrollarea relative z-[1] flex min-h-0 flex-1 flex-col overflow-y-auto px-5 pb-4 pt-3 [mask-image:linear-gradient(to_bottom,black_calc(100%-16px),transparent)] lg:px-8 lg:pt-5">
         <div className="flex flex-col items-center gap-3 text-center">
-          <motion.div
-            className="grid size-[120px] place-items-center lg:size-24"
-            initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element -- animated SVG hero */}
-            <img
-              src="/img/upgrade-premium-2.svg"
-              alt=""
-              width={120}
-              height={120}
-              className={`size-[120px] object-contain lg:size-24 ${reduceMotion ? "" : "mentor-puhu-bounce"}`}
-              draggable={false}
-              aria-hidden
-            />
-          </motion.div>
           <motion.h2
             id={titleId}
             className="max-w-[18ch] text-balance text-[32px] font-bold leading-[1.2]"
@@ -213,39 +193,34 @@ export function PremiumPaywallModal({
             }}
             initial={reduceMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.12, ease: "easeOut" }}
+            transition={{ duration: 0.25, delay: 0.06, ease: "easeOut" }}
           >
             {t(headlineKey(sourceFeature))}
           </motion.h2>
+          {showTrial ? (
+            <p
+              data-testid="premium-paywall-trial-badge"
+              className="rounded-[var(--radius-card)] px-3 py-1 text-sm font-bold"
+              style={{
+                backgroundColor: "var(--color-success)",
+                color: "var(--color-btn-label)",
+              }}
+            >
+              {tSub("trial_days", { days: selected.trialDays })}
+            </p>
+          ) : null}
           <motion.p
-            className="max-w-[36ch] text-pretty text-sm leading-relaxed"
+            className="text-pretty text-sm leading-relaxed"
             style={{ color: "var(--color-body)" }}
             initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.16, ease: "easeOut" }}
+            transition={{ duration: 0.25, delay: 0.1, ease: "easeOut" }}
           >
             {t("subtitle")}
           </motion.p>
         </div>
 
-        <motion.ul
-          className="mt-5 flex flex-col gap-3 lg:mt-4 lg:gap-2"
-          variants={reduceMotion ? undefined : staggerListVariants}
-          initial={reduceMotion ? false : "hidden"}
-          animate="show"
-        >
-          {BENEFITS.map(({ key, Icon }) => (
-            <motion.li
-              key={key}
-              variants={reduceMotion ? undefined : staggerItemVariants}
-              className="flex items-center gap-3 text-left text-sm leading-relaxed"
-              style={{ color: "var(--color-main)" }}
-            >
-              <Icon size={24} strokeWidth={1.75} aria-hidden />
-              {t(key)}
-            </motion.li>
-          ))}
-        </motion.ul>
+        <PremiumPaywallBenefits sourceFeature={sourceFeature} />
 
         {loadError ? (
           <div className="mt-6">
@@ -253,26 +228,23 @@ export function PremiumPaywallModal({
           </div>
         ) : null}
 
-        {!loading && purchaseEnabled && !pendingCheckout && selected && purchase.includesTrial ? (
+        {showTrial ? (
           <div className="mt-5">
             <SubscriptionTrialNotice eligibility={view?.trialEligibility} trialDays={selected.trialDays} onPhoneVerified={() => void refreshEligibility()} />
           </div>
         ) : null}
 
-        <div className="min-h-8 flex-1 lg:hidden" aria-hidden />
-
-        {loading ? (
-          <SkeletonGroup label={t("loading")} className="mt-5 grid grid-cols-2 gap-3 lg:mt-4">
-            <Skeleton className="h-28 rounded-[var(--paywall-plan-radius)]" />
-            <Skeleton className="h-28 rounded-[var(--paywall-plan-radius)]" />
-          </SkeletonGroup>
-        ) : null}
-
-        <PremiumPaywallPlanPicker purchase={purchase} />
-
       </div>
 
-      <div className="relative z-[1] shrink-0 px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 lg:px-8 lg:pb-6 lg:pt-4">
+      {/* Plans stay pinned with the checkout controls: the price never scrolls out, only the benefits do. */}
+      <div className="relative z-[1] flex shrink-0 flex-col gap-2 px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-1 lg:gap-3 lg:px-8 lg:pb-6 lg:pt-2">
+        {loading ? (
+          <SkeletonGroup label={t("loading")} className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-20 rounded-[var(--paywall-plan-radius)]" />
+            <Skeleton className="h-20 rounded-[var(--paywall-plan-radius)]" />
+          </SkeletonGroup>
+        ) : null}
+        <PremiumPaywallPlanPicker purchase={purchase} />
         <PremiumPaywallFooter purchase={purchase} />
       </div>
     </div>

@@ -213,7 +213,9 @@ for (const trialUsed of [false, true]) {
       ? /İlk ödeme[\s\S]*₺199,20[\s\S]*₺249,00/
       : /7 gün deneme sonrası ilk ödeme[\s\S]*₺199,20[\s\S]*₺249,00/);
     await expect(paywall.getByRole("radio")).toHaveCount(0);
-    await expect(paywall.getByRole("button", { name: trialUsed ? "Ücretli aboneliği başlat" : "Denemeyi başlat", exact: true })).toBeDisabled();
+    // Live CTA: pressed without consent it asks for the box and no checkout starts.
+    await paywall.getByRole("button", { name: trialUsed ? "Ücretli aboneliği başlat" : "Denemeyi başlat", exact: true }).click();
+    await expect(paywall.getByText("Başlamadan önce bir onayın gerekiyor.")).toBeVisible();
   });
 }
 

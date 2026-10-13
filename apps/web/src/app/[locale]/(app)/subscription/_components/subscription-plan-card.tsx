@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { PlanDto, PromotionOfferView, SubscriptionView } from "@mentor/types";
 import { Button, Card } from "@mentor/ui";
@@ -39,6 +39,19 @@ export function SubscriptionPlanCard({ plan, view, mode, offer, busy, onCheckout
       })
     : includesTrial ? t("trial_consent_days", { days: plan.trialDays }) : t("paid_consent", { price });
   const consent = acceptedConsent === consentText;
+  const consentRef = useRef<HTMLInputElement>(null);
+  const consentHintId = useId();
+  // Same as the paywall: the CTA stays live and, pressed without consent, points at the box.
+  const [consentAsked, setConsentAsked] = useState(false);
+  const consentMissing = consentAsked && !consent;
+  function start() {
+    if (!consent) {
+      setConsentAsked(true);
+      consentRef.current?.focus();
+      return;
+    }
+    onCheckout(plan, includesTrial);
+  }
   return (
     <Card className="flex h-full flex-col gap-3">
       <p className="text-lg font-extrabold text-[var(--color-main)]">{plan.name}</p>
@@ -49,7 +62,7 @@ export function SubscriptionPlanCard({ plan, view, mode, offer, busy, onCheckout
         <>
           <SubscriptionTrialNotice eligibility={view?.trialEligibility} trialDays={plan.trialDays} onPhoneVerified={() => { setAcceptedConsent(null); onPhoneVerified(); }} />
           <label className="flex min-h-11 items-start gap-3 text-sm leading-relaxed text-[var(--color-body)]">
-            <input type="checkbox" checked={consent} onChange={(event) => setAcceptedConsent(event.target.checked ? consentText : null)} className="mt-0.5 size-5 shrink-0 accent-[var(--color-btn)]" />
+            <input ref={consentRef} type="checkbox" checked={consent} onChange={(event) => { setAcceptedConsent(event.target.checked ? consentText : null); setConsentAsked(false); }} aria-describedby={consentMissing ? consentHintId : undefined} className={`mt-0.5 size-5 shrink-0 accent-[var(--color-btn)] ${consentMissing ? "outline-2 outline-offset-2 outline-[var(--color-danger)]" : ""}`} />
             <span>
               {consentText}
               <span className="mt-2 block text-[var(--color-secondary)]">
@@ -58,7 +71,8 @@ export function SubscriptionPlanCard({ plan, view, mode, offer, busy, onCheckout
               </span>
             </span>
           </label>
-          <Button disabled={!view || !consent || (includesTrial && !view.trialEligibility.eligible)} busy={busy} onClick={() => onCheckout(plan, includesTrial)} className="!min-h-11 !px-4 !py-2 !text-sm">
+          {consentMissing ? <p id={consentHintId} role="alert" className="text-sm font-semibold text-[var(--color-danger)]">{t("consent_needed")}</p> : null}
+          <Button disabled={!view || (includesTrial && !view.trialEligibility.eligible)} busy={busy} onClick={start} className="!min-h-11 !px-4 !py-2 !text-sm">
             {t(includesTrial ? "start_trial" : "start_paid")}
           </Button>
         </>

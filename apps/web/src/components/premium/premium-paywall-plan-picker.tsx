@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
+import { featuredPlanId, monthlyEquivalentMinor } from "@/lib/paywall-plans";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import type { PremiumPaywallState } from "./use-premium-paywall";
 
@@ -17,15 +18,14 @@ export function PremiumPaywallPlanPicker({ purchase }: { purchase: PremiumPaywal
   const locale = useLocale();
   const reduceMotion = useReducedMotion();
   const { loading, pendingCheckout, plans, selected, offers, selectPlan } = purchase;
-  const featuredPeriod = Math.max(0, ...plans.map((plan) => plan.periodMonths));
-  const showValueBadge = plans.length > 1 && featuredPeriod > 1;
+  const featuredId = featuredPlanId(plans);
 
   if (loading || pendingCheckout || plans.length === 0) return null;
 
   return (
     <motion.div
       // One plan must not sit in a half-width column (the catalog is monthly-only today).
-      className={`mt-5 grid gap-3 lg:mt-4 ${plans.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
+      className={`grid gap-3 ${plans.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
       variants={reduceMotion ? undefined : staggerListVariants}
       initial={reduceMotion ? false : "hidden"}
       animate="show"
@@ -35,12 +35,11 @@ export function PremiumPaywallPlanPicker({ purchase }: { purchase: PremiumPaywal
         const cardOffer = offers?.offers[plan.id];
         const planOffer =
           cardOffer && cardOffer.discountMinor > 0 ? cardOffer : undefined;
-        const isFeatured =
-          showValueBadge && plan.periodMonths === featuredPeriod;
-        const periodLabel =
-          plan.periodMonths === 1
-            ? t("per_month")
-            : t("per_months", { months: plan.periodMonths });
+        const isFeatured = plan.id === featuredId;
+        const chargedMinor = planOffer?.chargedPriceMinor ?? plan.priceMinor;
+        // Every card speaks per month; a longer plan adds the total it is actually charged.
+        const perMonth = (minor: number) =>
+          formatPrice(monthlyEquivalentMinor(minor, plan.periodMonths), locale);
         return (
           <motion.button
             key={plan.id}
@@ -86,7 +85,7 @@ export function PremiumPaywallPlanPicker({ purchase }: { purchase: PremiumPaywal
                   className="tabular-nums"
                   style={{ color: "var(--color-secondary)" }}
                 >
-                  {formatPrice(planOffer.listPriceMinor, locale)}
+                  {perMonth(planOffer.listPriceMinor)}
                 </s>
               </p>
             ) : null}
@@ -97,14 +96,25 @@ export function PremiumPaywallPlanPicker({ purchase }: { purchase: PremiumPaywal
                 fontFamily: "var(--font-heading)",
               }}
             >
-              {formatPrice(planOffer?.chargedPriceMinor ?? plan.priceMinor, locale)}
+              {perMonth(chargedMinor)}
               <span
                 className="text-sm font-semibold"
                 style={{ color: "var(--color-secondary)" }}
               >
-                {periodLabel}
+                {t("per_month")}
               </span>
             </p>
+            {plan.periodMonths > 1 ? (
+              <p
+                className="mt-0.5 text-xs font-semibold tabular-nums"
+                style={{ color: "var(--color-secondary)" }}
+              >
+                {t("total_for_months", {
+                  months: plan.periodMonths,
+                  price: formatPrice(chargedMinor, locale),
+                })}
+              </p>
+            ) : null}
             {planOffer?.promotion ? (
               <p
                 className="mt-1 text-xs font-semibold"

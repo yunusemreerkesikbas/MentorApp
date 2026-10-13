@@ -32,7 +32,10 @@ for (const surface of ["paywall", "subscription"] as const) {
     await openPurchase(page, surface);
     await expect(page.getByText("7 gün ücretsiz deneme aboneliğine otomatik eklenir.")).toBeVisible();
     await expect(page.getByText("7 gün deneme sonrası plan ücreti otomatik alınır; istediğim an iptal edebilirim.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Denemeyi başlat", exact: true })).toBeDisabled();
+    // The CTA stays live on both surfaces: without consent it points at the box and starts nothing.
+    await page.getByRole("button", { name: "Denemeyi başlat", exact: true }).click();
+    await expect(page.getByText("Başlamadan önce bir onayın gerekiyor.")).toBeVisible();
+    await expect(page.getByRole("checkbox")).toBeFocused();
     await expectCheckout(page, true);
   });
 
@@ -87,10 +90,15 @@ test("paywall: plan değişiminde otomatik deneme korunur", async ({ page }) => 
     eligibility: { eligible: true, reason: "AVAILABLE" },
   });
   await openPurchase(page, "paywall");
+  // The recommended (longest) plan opens selected and speaks per month, with its charged total.
+  const quarterlyCard = page.getByRole("button", { name: /Premium 3 Aylık/ });
+  await expect(quarterlyCard).toHaveAttribute("aria-pressed", "true");
+  await expect(quarterlyCard).toContainText("₺199,67/ay");
+  await expect(quarterlyCard).toContainText("3 ayda ₺599,00");
   await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: /Premium 3 Aylık/ }).click();
+  await page.getByRole("button", { name: /Premium Aylık/ }).click();
   await expect(page.getByRole("checkbox")).not.toBeChecked();
-  await expectCheckout(page, true, "premium-quarterly");
+  await expectCheckout(page, true, "premium-monthly");
 });
 
 test("paywall: denemesiz plan ücretli başlar", async ({ page }) => {

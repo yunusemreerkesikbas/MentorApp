@@ -1,8 +1,10 @@
 "use client";
 
+import { useId, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import { Tag } from "lucide-react";
+import { CheckIcon } from "@solar-icons/react/linear/check";
+import { TagIcon } from "@solar-icons/react/linear/tag";
 import { Button } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
@@ -30,6 +32,21 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
     pendingCheckout, view, pendingTrial, purchaseEnabled, consent, setConsent, mode,
     error, busy, checkout,
   } = purchase;
+
+  const consentRef = useRef<HTMLInputElement>(null);
+  const consentHintId = useId();
+  // The CTA stays live; pressed without consent it points at the box instead of starting checkout.
+  const [consentAsked, setConsentAsked] = useState(false);
+  const consentMissing = consentAsked && !consent;
+
+  function start() {
+    if (!consent) {
+      setConsentAsked(true);
+      consentRef.current?.focus();
+      return;
+    }
+    void checkout();
+  }
 
   const trialDays = includesTrial ? selected?.trialDays ?? 0 : 0;
   /**
@@ -65,7 +82,7 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
         className="flex items-center gap-2 font-semibold"
         style={{ color: "var(--color-main)" }}
       >
-        <Tag size={16} aria-hidden />
+        <TagIcon size={16} strokeWidth={1.75} aria-hidden />
         {t("coupon_applied")}: {appliedCode}
       </span>
       <button
@@ -121,14 +138,14 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
       className="flex min-h-11 items-center gap-2 self-start text-xs font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       style={{ color: "var(--color-secondary)" }}
     >
-      <Tag size={16} aria-hidden />
+      <TagIcon size={16} strokeWidth={1.75} aria-hidden />
       {t("coupon_toggle")}
     </button>
   );
 
   const footer = pendingCheckout ? <PendingCheckout checkoutUrl={view?.pendingCheckoutUrl ?? view?.pendingTrialCheckoutUrl ?? null} isTrial={pendingTrial} /> : (
     <motion.div
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-2 lg:gap-3"
       initial={reduceMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }}
@@ -137,19 +154,40 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
 
       {purchaseEnabled ? (
         <label
-          className="flex min-h-11 items-start gap-3 text-[10px] leading-relaxed"
+          className="flex min-h-11 cursor-pointer items-start gap-3 text-xs leading-relaxed"
           style={{ color: "var(--color-body)" }}
         >
-          <input
-            type="checkbox"
-            checked={consent}
-            onChange={(event) => setConsent(event.target.checked)}
-            className="mt-1 size-5 shrink-0 rounded accent-[var(--color-btn)]"
-          />
+          <span className="relative mt-0.5 grid size-5 shrink-0 place-items-center">
+            <input
+              ref={consentRef}
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => {
+                setConsent(event.target.checked);
+                setConsentAsked(false);
+              }}
+              aria-describedby={consentMissing ? consentHintId : undefined}
+              className="peer size-5 cursor-pointer appearance-none rounded-md border-2 transition-colors duration-150 checked:border-[var(--color-main)] checked:bg-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] motion-reduce:transition-none"
+              style={{
+                borderColor: consent
+                  ? undefined
+                  : consentMissing
+                    ? "var(--color-danger)"
+                    : "var(--color-secondary)",
+              }}
+            />
+            <CheckIcon
+              size={14}
+              strokeWidth={3}
+              aria-hidden
+              className="pointer-events-none absolute opacity-0 peer-checked:opacity-100"
+              style={{ color: "var(--color-bg)" }}
+            />
+          </span>
           <span>
             {consentText}
             <span
-              className="mt-2 block text-xs"
+              className="mt-1 block"
               style={{ color: "var(--color-secondary)" }}
             >
               <LegalLink slug="mesafeli-satis-sozlesmesi" tone="plain">
@@ -169,15 +207,26 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
         </p>
       )}
 
+      {consentMissing ? (
+        <p
+          id={consentHintId}
+          role="alert"
+          className="text-xs font-semibold"
+          style={{ color: "var(--color-danger)" }}
+        >
+          {tSub("consent_needed")}
+        </p>
+      ) : null}
+
       <FormError message={error} />
 
       {purchaseEnabled ? (
         <Button
           fullWidth
           className="min-h-[60px]"
-          disabled={!view || !selected || !consent || !selected.purchaseEnabled || view.entitlement.isPremium || (includesTrial && !view.trialEligibility.eligible)}
+          disabled={!view || !selected || !selected.purchaseEnabled || view.entitlement.isPremium || (includesTrial && !view.trialEligibility.eligible)}
           busy={busy}
-          onClick={() => void checkout()}
+          onClick={start}
         >
           {tSub(includesTrial ? "start_trial" : "start_paid")}
         </Button>
