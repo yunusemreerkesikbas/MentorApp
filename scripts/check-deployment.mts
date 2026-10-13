@@ -16,6 +16,7 @@ interface Service {
   branch: string;
   region: string;
   plan: string;
+  numInstances?: number;
   autoDeployTrigger: string;
   domains?: string[];
   renderSubdomainPolicy?: string;
@@ -23,6 +24,7 @@ interface Service {
   startCommand: string;
   preDeployCommand?: string;
   healthCheckPath?: string;
+  schedule?: string;
   envVars: EnvVariable[];
 }
 
@@ -40,8 +42,9 @@ const allNames = new Map<string, string>();
 const allDomains = new Map<string, string>();
 for (const config of blueprints) {
   const blueprint = load(readFileSync(new URL(config.file, root), "utf8")) as Blueprint;
-  assert.equal(blueprint.services.length, 7, `${config.file}: incorrect service count`);
-  assert.equal(blueprint.services.filter((item) => item.type === "cron").length, 4);
+  assert.equal(blueprint.services.length, 6, `${config.file}: incorrect service count`);
+  assert.equal(blueprint.services.filter((item) => item.type === "cron").length, 3);
+  assert.ok(!blueprint.services.some((item) => item.name === "mentor-process-jobs"), "The paid API already polls the job queue");
   assert.equal(new Set(blueprint.services.map((item) => item.name)).size, blueprint.services.length);
   const byName = new Map(blueprint.services.map((service) => [service.name, service]));
   const service = (suffix: string) => {
@@ -55,12 +58,18 @@ for (const config of blueprints) {
   const api = service("api");
   const web = service("web");
   const admin = service("admin");
+  const cronPolicies: Record<string, { schedule: string; endpoint: string }> = {
+    "mentor-daily-reminders": { schedule: "0 6 * * *", endpoint: "dispatch-daily-reminders" },
+    "mentor-mentorship-risk-digest": { schedule: "0 7 * * *", endpoint: "dispatch-mentorship-risk-digest" },
+    "mentor-expire-subscriptions": { schedule: "30 3 * * *", endpoint: "expire-subscriptions" },
+  };
 
   for (const item of blueprint.services) {
     assert.ok(!allNames.has(item.name) || allNames.get(item.name) === config.environment, `${item.name}: reused service across environments`);
     allNames.set(item.name, config.environment);
     assert.equal(item.region, "frankfurt", `${item.name}: expected EU region`);
-    assert.equal(item.plan, config.plan, `${item.name}: incorrect compute plan`);
+    assert.equal(item.plan, item.name === admin.name ? "free" : config.plan, `${item.name}: incorrect compute plan`);
+    assert.ok(!("scaling" in item), `${item.name}: automatic scaling is outside the launch budget`);
     assert.equal(item.branch, "master", `${item.name}: expected the current release branch`);
     assert.equal(item.autoDeployTrigger, config.trigger, `${item.name}: incorrect release gate`);
     assert.equal(new Set(item.envVars.map((env) => env.key)).size, item.envVars.length, `${item.name}: duplicate env key`);
@@ -70,14 +79,21 @@ for (const config of blueprints) {
       assert.ok(domain === "puhukoc.com" || /^[a-z0-9-]+\.puhukoc\.com$/.test(domain), `${domain}: outside Universal SSL coverage`);
     }
     if (item.type === "cron") {
+      const policy = cronPolicies[item.name];
+      assert.ok(policy, `${item.name}: unexpected daily cron`);
+      assert.equal(item.schedule, policy.schedule, `${item.name}: changed UTC schedule`);
       assert.deepEqual(item.envVars.find((env) => env.key === "API_HOST")?.fromService,
         { type: "web", name: api.name, property: "host" }, `${item.name}: cron points to another environment`);
       assert.deepEqual(item.envVars.find((env) => env.key === "CRON_SECRET")?.fromService,
         { type: "web", name: api.name, envVarKey: "CRON_SECRET" }, `${item.name}: wrong cron credentials`);
-      assert.ok(item.startCommand.includes("https://${API_HOST}/v1/internal/cron/"), `${item.name}: insecure cron target`);
+      const expectedCommand = 'curl --fail --show-error --silent --connect-timeout 10 --max-time 60 --request POST "https://${API_HOST}/v1/internal/cron/'
+        + policy.endpoint + '" --header "x-cron-secret:${CRON_SECRET}"';
+      assert.equal(item.startCommand, expectedCommand, `${item.name}: incorrect or unbounded cron request`);
       continue;
     }
     assert.equal(item.type, "web", `${item.name}: unexpected service type`);
+    if (item.name !== admin.name) assert.equal(item.numInstances, 1, `${item.name}: paid service must use one instance`);
+    else assert.equal(item.numInstances ?? 1, 1, "Free admin must stay on a single instance");
     assert.equal(value(item, "NODE_ENV"), "production", `${item.name}: runtime security locks must remain enabled`);
     assert.equal(value(item, "APP_ENV"), config.environment, `${item.name}: deployment environment mismatch`);
     assert.equal(value(item, "NODE_VERSION"), "22.22.0", `${item.name}: unpinned runtime`);

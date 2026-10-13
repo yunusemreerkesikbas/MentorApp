@@ -100,6 +100,13 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-13 · Free admin launch compute.** The owner-selected low-cost profile keeps
+  web/API always on and uses Free compute only for admin. Usage: let the operator UI wake
+  before signing in; verify sessions after a restart. Gotchas: cold starts and shared Free
+  hour limits are accepted, while Cloudflare Access and existing admin guards still gate
+  publication. No automatic paid upgrade. Related: `render.yaml`,
+  `scripts/check-deployment.mts`, `docs/core/deployment.md`.
+
 - **2026-10-03 · Safe phone conflicts when reactivating an account (APP-114).**
   `PATCH /v1/admin/users/:id/status` returns localized `AUTH_PHONE_UNAVAILABLE` (409) when
   another active account has verified the suspended user's former phone. The failed update
