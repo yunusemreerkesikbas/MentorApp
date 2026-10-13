@@ -425,7 +425,7 @@ export const verifyCoachClaimsSchema = z
   }));
 export type VerifyCoachClaimsInput = z.infer<typeof verifyCoachClaimsSchema>;
 
-export const listCoachesQuerySchema = z.object({
+export const listCoachesQuerySchema = paginationQuerySchema.extend({
   status: z.enum(["ACTIVE", "PENDING", "SUSPENDED"]).default("ACTIVE"),
 });
 export type ListCoachesQuery = z.infer<typeof listCoachesQuerySchema>;

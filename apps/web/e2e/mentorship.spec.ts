@@ -558,12 +558,25 @@ test.describe("koç tarafı", () => {
     const api = await mockApi(page, { roles: ["STUDENT"], myCoach: null });
     await page.goto("/koc-ol");
 
+    // The switch is one-way, so what it closes is said before anything is asked for.
+    await expect(page.getByRole("heading", { name: "Koç hesabına geçiyorsun." })).toBeVisible();
+    await expect(page.getByText("Bu geçişi kendin geri alamazsın.", { exact: false })).toBeVisible();
+    await expect(page.getByLabel("Tek cümlede sen")).toHaveCount(0);
+    await page.getByRole("button", { name: "Devam et" }).click();
+
+    // Email and phone are verified already, so that step is never shown.
     await page.getByLabel("Tek cümlede sen").fill("KPSS Türkçe koçu");
     await page
       .getByLabel("Kendini anlat")
       .fill("On yıldır KPSS adaylarıyla çalışıyorum, paragraf ağırlıklı.");
     await page.getByLabel("Kurum").fill("Ankara Üniversitesi");
-    await page.getByRole("button", { name: "Koç hesabımı aç" }).click();
+    await page.getByRole("button", { name: "Koç hesabıma geç" }).click();
+
+    // Asked once more at the moment it happens. Nothing is written until the answer is yes.
+    const confirm = page.getByRole("dialog");
+    await expect(confirm.getByText("Geri dönmek için bize yazman gerekir.", { exact: false })).toBeVisible();
+    expect(api.application).toBeNull();
+    await confirm.getByRole("button", { name: "Koç hesabıma geç" }).click();
 
     // No waiting room: the account is open, and the coach is handed to the profile they just
     // wrote. Since APP-090 that profile lives on the coach surface, not in the student shell —
@@ -594,6 +607,44 @@ test.describe("koç tarafı", () => {
     // whole form and reading the 403 back, which is not a thing to do to somebody signup sent here.
     await expect(page.getByText("Koç kaydı şu an kapalı")).toBeVisible();
     await expect(page.getByLabel("Tek cümlede sen")).toHaveCount(0);
+  });
+
+  test("koçu olan öğrenci önce bağını bitirmeye yönlendiriliyor", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT"], myCoach: MY_COACH });
+    await page.goto("/koc-ol");
+
+    // A coach cannot open Koçum, so the link would go on carrying their data unseen. The API
+    // refuses the registration; the screen says so before there is a form to fill in.
+    await expect(page.getByRole("heading", { name: "Önce koçunla bağını bitir" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Devam et" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Koçum'a git" })).toHaveAttribute("href", "/kocum");
+  });
+
+  test("doğrulanmamış e-posta ve telefon geçişi bekletmiyor", async ({ page }) => {
+    await mockApi(page, {
+      roles: ["STUDENT"],
+      myCoach: null,
+      emailVerified: false,
+      phone: { verified: false, available: false },
+    });
+    await page.goto("/koc-ol");
+    await page.getByRole("button", { name: "Devam et" }).click();
+
+    // Both open the invite code, not the account, and the coach's panel asks for them there.
+    // So the switch has no verification step: what changes, then the profile.
+    await expect(page.getByLabel("Tek cümlede sen")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "E-posta doğrulaması" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Telefon doğrulaması" })).toHaveCount(0);
+  });
+
+  test("admin'in rol verdiği koç doğrudan profilini yazıyor", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
+    await page.goto("/koc-ol");
+
+    // Nothing closes for somebody who is already a coach, so nothing is announced or confirmed.
+    await expect(page.getByLabel("Tek cümlede sen")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Koç hesabına geçiyorsun." })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Koç hesabımı aç" })).toBeVisible();
   });
 
   test("doğrulanmamış e-posta koça neyin eksik olduğunu söylüyor", async ({
@@ -1140,6 +1191,8 @@ async function mockApi(
     applicationsClosed?: boolean;
     /** Unverified email keeps the invite code shut (APP-089). Defaults to verified. */
     emailVerified?: boolean;
+    /** `GET /v1/users/me/phone`. Defaults to verified, with SMS on. */
+    phone?: { verified: boolean; available: boolean };
     /** The coach's vetted profile as the student sees it; null = granted the role by hand. */
     coachProfile?: Record<string, unknown> | null;
     /** The accept's refusal (seats full, already linked…), as the API words it. */
@@ -1402,9 +1455,18 @@ async function mockApi(
       // in, and the panel needs the email flag to explain a locked invite code.
       return json(route, {
         registrationOpen: !options.applicationsClosed,
-        phoneVerified: true,
+        phoneVerified: options.phone?.verified ?? true,
         registration: application,
         emailVerified: options.emailVerified ?? true,
+        hasCoach: myCoach !== null,
+      });
+    }
+    if (method === "GET" && path === "/v1/users/me/phone") {
+      return json(route, {
+        verified: options.phone?.verified ?? true,
+        maskedPhoneNumber: null,
+        available: options.phone?.available ?? true,
+        reauthenticationRequired: false,
       });
     }
     if (method === "PUT" && path === "/v1/mentorship/coach-registration/mine") {

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import type { MentorshipClaimId } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
@@ -152,15 +152,26 @@ export class MentorshipApplicationRepository {
   }
 
   /** The registry, filtered to one standing, oldest first. */
-  listByStatus(status: string, limit: number): Promise<MentorshipApplicationRow[]> {
-    return withServiceContext(this.db, (tx) =>
-      tx
-        .select()
-        .from(mentorshipCoachApplications)
-        .where(eq(mentorshipCoachApplications.status, status))
-        .orderBy(asc(mentorshipCoachApplications.submittedAt))
-        .limit(limit),
-    );
+  listByStatus(
+    status: string,
+    page: number,
+    pageSize: number,
+  ): Promise<{ rows: MentorshipApplicationRow[]; total: number }> {
+    const where = eq(mentorshipCoachApplications.status, status);
+    return withServiceContext(this.db, async (tx) => {
+      const [rows, totals] = await Promise.all([
+        tx
+          .select()
+          .from(mentorshipCoachApplications)
+          .where(where)
+          // `id` breaks ties: two rows submitted in the same instant must not swap between pages.
+          .orderBy(asc(mentorshipCoachApplications.submittedAt), asc(mentorshipCoachApplications.id))
+          .limit(pageSize)
+          .offset((page - 1) * pageSize),
+        tx.select({ total: count() }).from(mentorshipCoachApplications).where(where),
+      ]);
+      return { rows, total: totals[0]?.total ?? 0 };
+    });
   }
 
   /**

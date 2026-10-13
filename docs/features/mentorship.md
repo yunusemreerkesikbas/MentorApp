@@ -239,6 +239,58 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-13 — `/koc-ol` is an honest account switch, as a full-screen wizard.** The old screen
+  sat in the app shell without a page frame, drew a form whose button could never enable while SMS
+  was off, never asked for the email the API requires, and did not say the one thing that matters:
+  registering grants COACH, the web then closes the student's own screens on that account
+  (`lib/coach-surface.ts`), and nobody can undo it themselves. Decisions (user, 2026-10-13):
+  self-service stays; no self-service way back ("bize yaz"; an admin suspending removes the role);
+  a coach's student must end the link first; onboarding-style wizard.
+  **What changed:** (1) API: `canRegister(existing, hasCoach)` adds `HAS_COACH` → 409
+  `MENTORSHIP_REGISTRATION_HAS_COACH`; `GET coach-registration/mine` carries `hasCoach`. The admin's
+  `setStatus` is not under this rule. (2) Web: the route moved from `(app)` to `(onboarding)` (same
+  URL), built from the onboarding kit: ① what changes (closes / opens / stays + the one-way line),
+  ② verify (shown only when the email or the phone is missing on arrival; only the email holds the
+  way on shut), ③ the profile (`CoachProfileStep`, now with `saveLabel` and
+  `beforeSave`), then a confirm dialog. Somebody who already holds COACH without a row
+  (admin-designated) skips ① and the dialog. (3) Every reason there is no form is a notice that
+  arrives with the page: PENDING / SUSPENDED with the admin's note, intake shut, has a coach
+  (→ Koçum), read failure (retry). (4) The settings row carries a hint ("Öğrenci takip ediyorsan").
+  **(5) The email and the phone left the registration gate (same day, two user decisions; reverses
+  that part of the 2026-10-02 entry and restores APP-089's shape).** `register()` and the admin's
+  `setStatus(ACTIVE)` ask for neither. Both are still required where they buy something: issuing
+  and redeeming an invite code (`evaluateInvite`, email reported first), every coach read behind
+  it, sponsored seats. Why: the row and the role open no door, while requiring them made becoming
+  a coach depend on a mail landing, on Netgsm being up and on `identity.phone.enabled` (default
+  off), and locked a `/kayit?rol=koc` coach out of the whole app, because the unskippable coach
+  step comes before the username step. The wizard's verify step (②) was then deleted outright: it
+  had become an offer the coach home already makes, so `/koc-ol` is ① what changes → ③ the
+  profile. The onboarding coach step lost its phone card the same way (and `CoachProfileStep` its
+  `phoneCard` prop). The coach home's EMAIL and PHONE invite locks are where both get asked for. The completion line names both ("Davet kodun doğrulanmış e-posta ve telefonla açılır").
+  **Usage:** Ayarlar → Koç ol, or `/koc-ol`. After the switch the coach lands on `/kocluk/profil`.
+  **Gotchas:** (c) An ACTIVE row without the role in this tab (stale principal, or a crash between the two
+  writes) reads "Sayfayı yenileyince açılır". (d) An admin-designated coach who is also somebody's
+  student is stuck on the has-coach notice, because `/kocum` bounces a coach: end the link before
+  granting the role. (e) A refusal that races the form (intake shut mid-way) shows the API's own
+  message above the button. (f) The progress bar's label still says "Onboarding adımı".
+  (g) An ACTIVE registry row no longer implies a verified email or phone, so the admin registry
+  says it: `AdminCoachApplicationDto` carries `emailVerified` / `phoneVerified` (from
+  `AdminUserView`, which now has both) and "Koçlar" shows them as a "Hesap doğrulaması" column
+  ("E-posta yok" / "Telefon yok" in the warning tone). A row missing one cannot issue an invite
+  code. (h) A registry row can now belong to an account with an unverified email, so the
+  registry fills faster with rows that can do nothing. It is paged for that reason:
+  `GET /v1/admin/coaches?status&page&pageSize` returns `Paginated<AdminCoachApplicationDto>`
+  (was a bare array capped at the first 200 rows, with no way to the rest), oldest first with `id`
+  as the tie-breaker, `pageSize` ≤ 100. "Koçlar" shows 20 a page with Önceki / Sonraki. The array →
+  envelope change is breaking, and the admin app is the only caller.
+  (i) A provider outage is invisible to `available` (it reads config, not health): the coach sees
+  "gönderim sonucu belli değil" or "kullanılamıyor" on the card and moves on without it.
+  **Related:** `modules/mentorship/{domain/coach-registration.ts,application/mentorship-application.service.ts,application/coach-registry.mappers.ts}` ·
+  `packages/types/src/mentorship.ts` · `(onboarding)/coach-application/**` ·
+  `(onboarding)/_components/steps/coach-profile-step.tsx` ·
+  `(app)/profile/_components/account-links-card.tsx` · `apps/web/e2e/mentorship.spec.ts` ·
+  `test/mentorship-applications.e2e-spec.ts`
+
 - **2026-10-09 — Coach plan browser regression:** The grouped-task removal test targets the current
   “Çıkar” action inside its task detail dialog. Confirmation, completed-student history and explicit
   recurring-event cancellation scope remain asserted. Usage: run `coach-plan.spec.ts` with Playwright.
@@ -2612,6 +2664,14 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
 
 ## Backlog
 
+- **Leaving coaching by yourself ("Koçluğu bırak").** Decided against for now (2026-10-13): the
+  switch at `/koc-ol` is one-way and the copy says to write to us. Build it when support requests
+  show the need; it has to end links, release seats and settle the coach plan before the role goes.
+- ~~A coach signup can dead-end on SMS~~ — fixed at the root 2026-10-13: registration no longer
+  needs the phone (see the timeline). Tying coach signup to SMS availability is not needed.
+- **SMS failures reach nobody on the team.** The Netgsm adapter deliberately logs nothing and only
+  records the send status; an outage is learned from users. An alert on consecutive non-SENT sends,
+  then an audited admin "verify by hand" for outages and foreign numbers, then a second provider.
 - ~~AI "smart brief"~~ — shipped (APP-078). The rules stayed as the floor, as planned.
 - **Whole-cohort risk ranking — not needed yet, and here is why.** Today a page is sorted, not the
   cohort. But `mentorship.coach.max_active_students` defaults to 25 against a page size of 100, so

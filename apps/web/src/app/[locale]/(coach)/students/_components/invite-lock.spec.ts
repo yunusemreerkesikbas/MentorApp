@@ -5,6 +5,7 @@ import { inviteLockOf } from "./invite-lock";
 it("offers email first, then phone verification before invite creation", () => {
   const state: MentorshipCoachRegistrationStateDto = {
     registrationOpen: true, registration: null, emailVerified: false, phoneVerified: false,
+    hasCoach: false,
   };
   expect(inviteLockOf(state)).toBe("EMAIL");
   expect(inviteLockOf({ ...state, emailVerified: true })).toBe("PHONE");
