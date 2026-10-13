@@ -145,6 +145,14 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-13 · PR #161 conflict resolution.** Updated the notebook branch with current
+  `master`, preserving both the notebook page-transfer/mobile Puhu notes and the session
+  layout, sound, and sharing notes. Usage is unchanged: notebook items still move between
+  facing pages, and the reading Puhu remains visible on phones. Gotcha: keep both branches'
+  timeline entries when resolving this shared documentation file. Related:
+  `docs/features/coaching.md`, `notebook-shell.tsx`, `use-notebook-page-transfer.ts`,
+  `notebook-desk.css`, `e2e/notebook.spec.ts`.
+
 - **2026-10-10 · Plan test fixtures follow each feature's day policy.** Task CRUD,
   daily activity and today's summary use UTC fixtures; plan adaptations retain Istanbul
   calendar dates. Usage: run `plan.service.spec.ts`, including between Istanbul and UTC
