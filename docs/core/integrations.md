@@ -123,7 +123,8 @@ Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
 - Create/select AdSense with the owner's chosen Google account, add the owned live domain, and
   obtain site approval. Create Ad Manager and connect **actual Google demand** to the article ad
   unit; an empty Ad Manager network does not earn revenue. Disable AdSense Auto ads to preserve
-  the single article slot. The intended domain is `puhukoc.com`, currently unpurchased (2026-10-09).
+  the single article slot. The domain `puhukoc.com` is now owned (owner-confirmed, 2026-10-12).
+  Ownership does not prove DNS, hosting or Google approval; follow [deployment.md](./deployment.md).
 - Set web server `GOOGLE_ADS_PUBLISHER_ID` to the real `pub-` + 16-digit seller ID from AdSense.
   `/ads.txt` returns the Google DIRECT entry without locale redirection; blank configuration
   returns 404, malformed configuration fails visibly. Never publish a placeholder ID. Verify
@@ -163,7 +164,10 @@ Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
   sweep; AdsModule does not create a second in-process scheduler.
 
 ### Render (hosting)
-- Dockerized service, single region **Frankfurt/EU**. Env variables go into the Render dashboard.
+- Native Node services, single region **Frankfurt/EU**. Production uses `render.yaml` with manual
+  deployments and separately supplied credentials. Follow [deployment.md](./deployment.md) for
+  domains, provisioning and release gates. Permanent staging is deferred; retained resources
+  and optional rehearsals are recorded in [deferred-staging.md](./deferred-staging.md).
 - Cost shield (§8): Neon max-CU + budget alert + Cloudflare edge rate-limit.
 
 > ⚠️ **Phase 0 prerequisites (pre-launch, §7):** company setup, iyzico application, legal web pages

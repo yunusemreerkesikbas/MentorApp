@@ -12,6 +12,7 @@
     "assets:check:achievements": "node scripts/validate-achievement-assets.mjs",
     "test:assets:achievements": "node --test scripts/achievement-asset-validator.spec.mjs",
     "start": "next start --port 3000",
+    "start:prod": "next start --hostname 0.0.0.0",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "node --test scripts/dev-command.spec.mjs scripts/web-performance-budgets.spec.mjs && vitest run",

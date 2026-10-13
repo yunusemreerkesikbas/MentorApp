@@ -24,6 +24,8 @@ describe("web security headers", () => {
   it("enforces HTTPS in production without applying a blanket policy to other subdomains", () => {
     const production = Object.fromEntries(webSecurityHeaders(true).map(({ key, value }) => [key, value]));
     expect(production["Strict-Transport-Security"]).toBe("max-age=31536000");
+    expect(production["X-Robots-Tag"]).toBeUndefined();
     expect(webSecurityHeaders(false).some(({ key }) => key === "Strict-Transport-Security")).toBe(false);
   });
+
 });
