@@ -10,6 +10,7 @@ import {
 } from "@mentor/api-client";
 import { trackProductEvent } from "@/lib/analytics";
 import { buildBeginCheckoutParams } from "@/lib/checkout-analytics";
+import { featuredPlanId } from "@/lib/paywall-plans";
 import { fetchAutoPromotionOffers, fetchPromotionOffers } from "@/lib/promotions";
 import { getStoreLinks, plansForAudience, purchaseMode } from "@/lib/purchase-mode";
 import { includesSubscriptionTrial } from "@/lib/subscription-trial";
@@ -63,7 +64,7 @@ export function usePremiumPaywall(initialCode?: string) {
           setAppliedCode(promotionOffers.applied);
           setCouponOpen(true);
         }
-        setSelectedId(nextPlans[0]?.id ?? null);
+        setSelectedId(featuredPlanId(nextPlans) ?? nextPlans[0]?.id ?? null);
       })
       .catch((err: unknown) => {
         if (!active) return;

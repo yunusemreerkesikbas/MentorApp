@@ -187,6 +187,7 @@ describe("mentorship coach registry (e2e)", () => {
       registration: null,
       emailVerified: false,
       phoneVerified: false,
+      hasCoach: false,
     });
   });
 
@@ -229,22 +230,16 @@ describe("mentorship coach registry (e2e)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("requires verified email and phone before registering an ACTIVE, unbadged coach", async () => {
-    const missingEmail = await http().post("/v1/mentorship/coach-registration").set(auth("coach")).send(REGISTRATION);
-    expect(missingEmail.status).toBe(403);
-    expect(missingEmail.body.code).toBe("MENTORSHIP_EMAIL_NOT_VERIFIED");
-    await verifyEmail("coach");
-    const missingPhone = await http().post("/v1/mentorship/coach-registration").set(auth("coach")).send(REGISTRATION);
-    expect(missingPhone.status).toBe(403);
-    expect(missingPhone.body.code).toBe("AUTH_PHONE_REQUIRED");
-    await verifyPhone("coach");
+  it("registers an ACTIVE, unbadged coach with nothing verified yet", async () => {
+    // No verified email, no phone. The account opens anyway: becoming a coach must not wait on a
+    // mail or an SMS provider, and the row and the role open no door by themselves.
     const created = await http()
       .post("/v1/mentorship/coach-registration")
       .set(auth("coach"))
       .send(REGISTRATION);
     expect(created.status).toBe(201);
     expect(created.body.status).toBe("ACTIVE");
-    // Contact verification activates coaching; profile claims still require independent review.
+    // Registration activates coaching; profile claims still require independent review.
     expect(created.body.verifiedClaims).toEqual([]);
 
     // The admin registry has a fixed 200-row cap and oldest-first ordering; repeated runs need
@@ -252,10 +247,27 @@ describe("mentorship coach registry (e2e)", () => {
     const state = await http().get("/v1/mentorship/coach-registration/mine").set(auth("coach"));
     expect(state.body).toMatchObject({
       registration: { id: created.body.id, status: "ACTIVE" },
-      emailVerified: true,
-      phoneVerified: true,
+      emailVerified: false,
+      phoneVerified: false,
     });
     expect(await rolesOf("coach")).toContain(UserRole.COACH);
+  });
+
+  it("keeps the invite code shut until the email and then the phone are verified", async () => {
+    // Where both are actually needed: the code is the only road to a student's data. Email is
+    // reported first, because it is the one a coach clears with a single click.
+    const noEmail = await http().post("/v1/mentorship/invite-code").set(auth("coach"));
+    expect(noEmail.status).toBe(403);
+    expect(noEmail.body.code).toBe("MENTORSHIP_EMAIL_NOT_VERIFIED");
+
+    await verifyEmail("coach");
+    const locked = await http().post("/v1/mentorship/invite-code").set(auth("coach"));
+    expect(locked.status).toBe(403);
+    expect(locked.body.code).toBe("AUTH_PHONE_REQUIRED");
+    expect((await http().get("/v1/mentorship/overview").set(auth("coach"))).body.inviteCode).toBeNull();
+
+    await verifyPhone("coach");
+    expect((await http().post("/v1/mentorship/invite-code").set(auth("coach"))).status).toBe(200);
   });
 
   it("still refuses the invite code until the email is verified", async () => {
@@ -345,6 +357,20 @@ describe("mentorship coach registry (e2e)", () => {
       expect(accepted.status).toBe(200);
       expect(accepted.body.coachStatus).toBe("ACTIVE");
     });
+
+    it("refuses that student a coach account while the link stands", async () => {
+      // A coach cannot open `/kocum`, so the link would carry their data where they cannot see it.
+      const state = await http().get("/v1/mentorship/coach-registration/mine").set(auth("student"));
+      expect(state.body.hasCoach).toBe(true);
+
+      const res = await http()
+        .post("/v1/mentorship/coach-registration")
+        .set(auth("student"))
+        .send(REGISTRATION);
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("MENTORSHIP_REGISTRATION_HAS_COACH");
+      expect(await rolesOf("student")).toEqual([UserRole.STUDENT]);
+    });
   });
 
   describe("an admin taking it back", () => {
@@ -430,6 +456,52 @@ describe("mentorship coach registry (e2e)", () => {
       // admin checked earlier.
       expect(res.body.verifiedClaims.sort()).toEqual(["BRANCH", "INSTITUTION"]);
       expect((await http().get("/v1/mentorship/overview").set(auth("coach"))).status).toBe(200);
+    });
+
+    it("tells the admin whether the account behind a row is verified", async () => {
+      // An ACTIVE row no longer implies either: registration asks for neither, so the registry
+      // has to say which rows can actually reach a student.
+      const verified = await setStatus("coach", "ACTIVE", null);
+      expect(verified.body).toMatchObject({ emailVerified: true, phoneVerified: true });
+
+      await svc(async (c) => {
+        await c.query("update users set phone_verified_at = null where id = $1", [userId.coach]);
+      });
+      try {
+        const noPhone = await setStatus("coach", "ACTIVE", null);
+        expect(noPhone.body).toMatchObject({ emailVerified: true, phoneVerified: false });
+      } finally {
+        await svc(async (c) => {
+          await c.query("update users set phone_verified_at = now() where id = $1", [userId.coach]);
+        });
+      }
+    });
+
+    it("pages the registry, so no row sits beyond what an admin can open", async () => {
+      // It used to be the first 200 rows, oldest first, with no way to the rest: a coach who
+      // registered late could not be found, so could not be suspended from this screen.
+      const first = await http().get("/v1/admin/coaches?status=ACTIVE&pageSize=1").set(auth("admin"));
+      expect(first.status).toBe(200);
+      expect(first.body).toMatchObject({ page: 1, pageSize: 1 });
+      expect(first.body.items).toHaveLength(1);
+      expect(first.body.total).toBeGreaterThanOrEqual(1);
+
+      const seen: string[] = [];
+      for (let page = 1; seen.length < first.body.total; page += 1) {
+        const res = await http()
+          .get(`/v1/admin/coaches?status=ACTIVE&pageSize=100&page=${page}`)
+          .set(auth("admin"));
+        if (res.body.items.length === 0) break;
+        seen.push(...res.body.items.map((row: { userId: string }) => row.userId));
+      }
+      expect(seen).toContain(userId.coach);
+      // Stable order: a row on two pages would mean another one was skipped.
+      expect(new Set(seen).size).toBe(seen.length);
+
+      // The shared ceiling, like every other list.
+      expect(
+        (await http().get("/v1/admin/coaches?pageSize=101").set(auth("admin"))).status,
+      ).toBe(400);
     });
 
     it("has no standing to move for somebody who never registered", async () => {

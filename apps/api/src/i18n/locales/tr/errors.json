@@ -179,5 +179,6 @@
   "MENTORSHIP_ASSIGNMENT_NOT_EDITABLE": "Bu ödev artık beklemede değil ya da bu bağlantıya ait değil.",
   "MENTORSHIP_ASSIGNMENT_STALE": "Bu görev sen açtıktan sonra değişti. Güncel planı açıp bir daha deneyelim.",
   "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "Etkinliği oluşturan kişi katılımcı listesine eklenemez.",
-  "MENTORSHIP_EVENT_ATTENDEE_LIMIT": "Bir etkinliğe en fazla {max} öğrenci eklenebilir."
+  "MENTORSHIP_EVENT_ATTENDEE_LIMIT": "Bir etkinliğe en fazla {max} öğrenci eklenebilir.",
+  "MENTORSHIP_REGISTRATION_HAS_COACH": "Bir koç seni takip ederken koç hesabına geçemezsin. Önce Koçum'dan bağlantını sonlandır."
 }

@@ -6,7 +6,6 @@ import { ApiClientError } from "@mentor/api-client";
 import { Button, TextAreaField, TextField } from "@mentor/ui";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PuhuBubble } from "@/components/onboarding-play/play-heading";
-import { PhoneVerificationCard } from "@/components/phone-verification-card";
 import { registerCoach } from "@/lib/mentorship";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
 
@@ -19,6 +18,9 @@ const FORM_ID = "onboarding-coach-profile-form";
  * COACH off the back of it. So it cannot be skippable the way the goal step is — a coach who
  * skipped would land on a panel with a locked invite code and no explanation.
  *
+ * Which is also why nothing outside this form may hold the button shut. The email and the phone
+ * are asked for where they are needed, at the invite code on the coach's panel.
+ *
  * The two required fields are the two a STUDENT reads on the consent screen. Nobody reviews them
  * before that happens any more, which is why `headline` and `bio` are refused if they carry contact
  * details (the API checks; this screen shows what it says). The three claims stay optional: a claim
@@ -29,10 +31,15 @@ export function CoachProfileStep({
   progress,
   onSaved,
   onBack,
+  saveLabel,
+  beforeSave,
 }: {
   progress: { done: number; total: number } | null;
   onSaved: () => void;
   onBack: () => void;
+  saveLabel?: string;
+  /** Asked right before the write. False leaves the form as it is. */
+  beforeSave?: () => Promise<boolean>;
 }) {
   const t = useTranslations("onboarding.coach_profile");
   const mentorship = useTranslations("mentorship");
@@ -43,13 +50,13 @@ export function CoachProfileStep({
   const [years, setYears] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [phoneVerified, setPhoneVerified] = useState(false);
 
   const trimmed = (value: string) => (value.trim() === "" ? null : value.trim());
-  const canSave = phoneVerified && headline.trim() !== "" && bio.trim() !== "" && !saving;
+  const canSave = headline.trim() !== "" && bio.trim() !== "" && !saving;
 
   async function handleSave() {
     if (!canSave) return;
+    if (beforeSave && !(await beforeSave())) return;
     setError(null);
     setSaving(true);
     try {
@@ -81,12 +88,11 @@ export function CoachProfileStep({
       footer={
         <PlayFooter error={error}>
           <Button type="submit" form={FORM_ID} fullWidth busy={saving} disabled={!canSave}>
-            {t("save")}
+            {saveLabel ?? t("save")}
           </Button>
         </PlayFooter>
       }
     >
-      <PhoneVerificationCard onStatusChange={(phone) => setPhoneVerified(phone.verified)} />
       <form
         id={FORM_ID}
         className="flex w-full flex-col gap-4"

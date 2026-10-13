@@ -9,6 +9,7 @@ import { DataTableShell } from "@/components/shared/admin/DataTableShell";
 import { IconAction } from "@/components/shared/admin/IconAction";
 import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
+import type { Paginated } from "@mentor/types";
 import type { AdminCoachApplicationView } from "@/lib/types";
 
 const STATUSES = [
@@ -23,7 +24,9 @@ const CLAIMS = [
     { value: "YEARS", label: "Deneyim" },
 ] as const;
 
-const statusTone = (status: string) => status === "ACTIVE" ? "success" as const : status === "SUSPENDED" ? "danger" as const : "warning" as const;
+const PAGE_SIZE = 20;
+
+const statusTone =(status: string) => status === "ACTIVE" ? "success" as const : status === "SUSPENDED" ? "danger" as const : "warning" as const;
 const statusLabel = (status: string) => STATUSES.find((s) => s.value === status)?.label ?? status;
 
 /**
@@ -41,17 +44,23 @@ const statusLabel = (status: string) => STATUSES.find((s) => s.value === status)
  */
 export default function CoachRegistryPage() {
     const [rows, setRows] = useState<AdminCoachApplicationView[]>([]);
+    const [total, setTotal] = useState(0);
     const [status, setStatus] = useState<string>("ACTIVE");
+    const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const [busyId, setBusyId] = useState<string | null>(null);
 
-    const load = useCallback(async (next: string) => {
+    const load = useCallback(async (next: string, nextPage: number) => {
         setLoading(true);
         setError(false);
         try {
-            const { data } = await apiClient.get<AdminCoachApplicationView[]>("/admin/coaches", { params: { status: next } });
-            setRows(data);
+            const { data } = await apiClient.get<Paginated<AdminCoachApplicationView>>("/admin/coaches", { params: { status: next, page: nextPage, pageSize: PAGE_SIZE } });
+            // Moving the last row of the last page to another standing empties it: step back
+            // rather than show "no coaches" over a registry that still has some.
+            if (data.items.length === 0 && nextPage > 1) { setPage(nextPage - 1); return; }
+            setRows(data.items);
+            setTotal(data.total);
         } catch {
             setRows([]);
             setError(true);
@@ -60,13 +69,13 @@ export default function CoachRegistryPage() {
         }
     }, []);
 
-    useEffect(() => { void load(status); }, [load, status]);
+    useEffect(() => { void load(status, page); }, [load, status, page]);
 
     const act = async (row: AdminCoachApplicationView, run: () => Promise<unknown>, done: string) => {
         setBusyId(row.userId);
         try {
             await run();
-            await load(status);
+            await load(status, page);
             await Swal.fire({ icon: "success", title: done, timer: 1200, showConfirmButton: false });
         } catch (requestError) {
             const message = (requestError as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "İşlem başarısız.";
@@ -126,18 +135,22 @@ export default function CoachRegistryPage() {
         await act(row, () => apiClient.post(`/admin/coaches/${row.userId}/verified-claims`, result.value), "Kaydedildi");
     };
 
-    const state = loading ? <AsyncState status="loading" title="Koçlar yükleniyor" /> : error ? <AsyncState status="error" title="Koçlar yüklenemedi" description="Bağlantıyı kontrol edip yeniden deneyin." onRetry={() => void load(status)} /> : rows.length === 0 ? <AsyncState status="empty" title={status === "ACTIVE" ? "Açık koç hesabı yok" : "Bu durumda koç yok"} /> : undefined;
+    const state = loading ? <AsyncState status="loading" title="Koçlar yükleniyor" /> : error ? <AsyncState status="error" title="Koçlar yüklenemedi" description="Bağlantıyı kontrol edip yeniden deneyin." onRetry={() => void load(status, page)} /> : rows.length === 0 ? <AsyncState status="empty" title={status === "ACTIVE" ? "Açık koç hesabı yok" : "Bu durumda koç yok"} /> : undefined;
 
     return <>
         <AdminPageHeader title="Koçlar" breadcrumbs={[{ label: "Panel", href: "/" }, { label: "Koçlar" }]} />
-        <div className="main-content"><DataTableShell state={state} toolbar={<div className="admin-table-toolbar-content"><div><h2 className="h6 mb-1">Koç sicili</h2><span className="text-muted fs-12">Kayıt self servis. Buradan durdurabilir, açabilir ve iddiaları doğrulayabilirsin. {rows.length} kayıt.</span></div><div className="admin-table-search"><label className="visually-hidden" htmlFor="coach-status">Duruma göre süz</label><select id="coach-status" className="form-select" value={status} onChange={(event) => setStatus(event.target.value)}>{STATUSES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div></div>}>
-            <table className="table table-hover mb-0"><thead><tr><th>Koç</th><th>Beyanlar</th><th>Durum</th><th>Doğrulanan</th><th className="text-end">İşlemler</th></tr></thead><tbody>{rows.map((row) => <tr key={row.userId}>
+        <div className="main-content"><DataTableShell state={state} toolbar={<div className="admin-table-toolbar-content"><div><h2 className="h6 mb-1">Koç sicili</h2><span className="text-muted fs-12">Kayıt self servis. Buradan durdurabilir, açabilir ve iddiaları doğrulayabilirsin. {total} kayıt.</span></div><div className="admin-table-search"><label className="visually-hidden" htmlFor="coach-status">Duruma göre süz</label><select id="coach-status" className="form-select" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>{STATUSES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div></div>}>
+            <table className="table table-hover mb-0"><thead><tr><th>Koç</th><th>Beyanlar</th><th>Durum</th><th>Hesap doğrulaması</th><th>Doğrulanan beyan</th><th className="text-end">İşlemler</th></tr></thead><tbody>{rows.map((row) => <tr key={row.userId}>
                 <td><div className="admin-table-primary">{row.displayName || "İsimsiz"}<span>{row.email}</span></div><div className="text-muted fs-12">{row.headline}</div></td>
                 <td className="fs-12">{[row.institution, row.branch, row.years !== null ? `${row.years} yıl` : null].filter(Boolean).join(" · ") || <span className="text-muted">—</span>}</td>
                 <td><StatusBadge tone={statusTone(row.status)}>{statusLabel(row.status)}</StatusBadge>
                     {/* The two-transaction gap, made visible instead of trusted. */}
                     {row.status === "ACTIVE" && !row.hasCoachRole && <StatusBadge tone="danger"><FiAlertTriangle aria-hidden="true" /> Rol verilmemiş</StatusBadge>}
                     {row.status !== "ACTIVE" && row.hasCoachRole && <StatusBadge tone="danger"><FiAlertTriangle aria-hidden="true" /> Rol hâlâ duruyor</StatusBadge>}</td>
+                {/* Registration asks for neither. A row missing one cannot issue an invite code, so
+                    it cannot reach a student: said in words, because the standing does not say it. */}
+                <td>{([["E-posta", row.emailVerified], ["Telefon", row.phoneVerified]] as const).map(([label, verified]) =>
+                    <StatusBadge key={label} tone={verified ? "success" : "warning"}>{label}{verified ? "" : " yok"}</StatusBadge>)}</td>
                 <td>{row.verifiedClaims.length === 0 ? <span className="text-muted">—</span> : row.verifiedClaims.map((claim) => <StatusBadge key={claim} tone="info">{CLAIMS.find((c) => c.value === claim)?.label ?? claim}</StatusBadge>)}</td>
                 <td className="text-end"><div className="d-inline-flex gap-2">
                     <IconAction label="İddiaları doğrula" icon={<FiTag aria-hidden="true" />} tone="neutral" busy={busyId === row.userId} onClick={() => void verifyClaims(row)} />
@@ -149,6 +162,14 @@ export default function CoachRegistryPage() {
                         : <IconAction label="Aç ve COACH rolünü ver" icon={<FiCheck aria-hidden="true" />} tone="success" busy={busyId === row.userId} onClick={() => void setStandingOf(row, "ACTIVE")} />}
                 </div></td>
             </tr>)}</tbody></table>
+            {/* Oldest first, a page at a time. Hidden while one page holds everything. */}
+            {total > PAGE_SIZE && <nav aria-label="Sayfalar" className="d-flex align-items-center justify-content-between gap-2 p-3 border-top">
+                <span className="text-muted fs-12">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} / {total}</span>
+                <div className="d-inline-flex gap-2">
+                    <button type="button" className="btn btn-sm btn-light" disabled={page === 1} onClick={() => setPage(page - 1)}>Önceki</button>
+                    <button type="button" className="btn btn-sm btn-light" disabled={page * PAGE_SIZE >= total} onClick={() => setPage(page + 1)}>Sonraki</button>
+                </div>
+            </nav>}
         </DataTableShell></div>
     </>;
 }

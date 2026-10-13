@@ -35,6 +35,8 @@ export interface AdminCoachApplicationView {
     submittedAt: string;
     reviewedAt: string | null;
     hasCoachRole: boolean;
+    emailVerified: boolean;
+    phoneVerified: boolean;
 }
 
 export interface AdminUserDetail extends AdminUserView {

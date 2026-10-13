@@ -29,6 +29,8 @@ export function gateError(gate: { reason: string }): DomainError {
       return new DomainError(ErrorCode.MENTORSHIP_ALREADY_COACH, HttpStatus.CONFLICT);
     case "PENDING":
       return new DomainError(ErrorCode.MENTORSHIP_APPLICATION_PENDING, HttpStatus.CONFLICT);
+    case "HAS_COACH":
+      return new DomainError(ErrorCode.MENTORSHIP_REGISTRATION_HAS_COACH, HttpStatus.CONFLICT);
     default:
       return new DomainError(ErrorCode.MENTORSHIP_COACH_SUSPENDED, HttpStatus.FORBIDDEN);
   }
@@ -55,7 +57,7 @@ export function toDto(row: MentorshipApplicationRow): MentorshipApplicationDto {
 /** One registry row for admin. Identity and `hasCoachRole` come from W6; W8 never reads `users`. */
 export function toAdminDto(
   row: MentorshipApplicationRow,
-  person: { displayName: string; email: string; hasCoachRole: boolean },
+  person: Omit<AdminCoachApplicationDto, keyof MentorshipApplicationDto | "userId">,
 ): AdminCoachApplicationDto {
   return { ...toDto(row), userId: row.userId, ...person };
 }

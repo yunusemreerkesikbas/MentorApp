@@ -45,6 +45,7 @@ function setup(
     existing?: MentorshipApplicationRow | null;
     emailVerified?: boolean;
     phoneVerified?: boolean;
+    hasCoach?: boolean;
   } = {},
 ) {
   const applications = {
@@ -56,7 +57,7 @@ function setup(
     setVerifiedClaims: vi.fn(async (_id: string, verifiedClaims: string[]) =>
       row({ verifiedClaims, reviewedAt: NOW }),
     ),
-    listByStatus: vi.fn(async () => []),
+    listByStatus: vi.fn(async () => ({ rows: [], total: 0 })),
     updateProfile: vi.fn(async (_id: string, fields: { headline: string; bio: string }) =>
       row({ ...fields }),
     ),
@@ -73,10 +74,14 @@ function setup(
     isEmailVerified: vi.fn(async () => options.emailVerified ?? true),
     isPhoneVerified: vi.fn(async () => options.phoneVerified ?? true),
   };
+  const links = {
+    findActiveByStudent: vi.fn(async () => (options.hasCoach ? { id: "link-1" } : undefined)),
+  };
   const service = new MentorshipApplicationService(
     applications as never,
     config as never,
     users as never,
+    links as never,
   );
   return { service, applications, users };
 }
@@ -91,14 +96,13 @@ const codeOf = async (fn: () => Promise<unknown>): Promise<string> => {
 };
 
 describe("MentorshipApplicationService.register", () => {
-  it.each([
-    [{ phoneVerified: false }, "AUTH_PHONE_REQUIRED"],
-    [{ emailVerified: false }, ErrorCode.MENTORSHIP_EMAIL_NOT_VERIFIED],
-  ] as const)("requires verified contact before activation: %j", async (options, code) => {
-    const { service, applications, users } = setup(options);
-    await expect(service.register(USER, INPUT, NOW)).rejects.toMatchObject({ code });
-    expect(applications.register).not.toHaveBeenCalled();
-    expect(users.addRole).not.toHaveBeenCalled();
+  it("registers with neither email nor phone verified: both gate the invite code, not the account", async () => {
+    // The row and the role open nothing by themselves. Refusing them here made becoming a coach
+    // wait on a mail and an SMS provider; `assertCanInvite` is where both are actually needed.
+    const { service, users } = setup({ emailVerified: false, phoneVerified: false });
+    await expect(service.register(USER, INPUT, NOW)).resolves.toMatchObject({ status: "ACTIVE" });
+    expect(users.addRole).toHaveBeenCalledWith(USER, "COACH");
+    await expect(service.canInvite(USER)).resolves.toBe(false);
   });
 
   it("writes an ACTIVE row and grants COACH", async () => {
@@ -172,6 +176,16 @@ describe("MentorshipApplicationService.register", () => {
     expect(users.addRole).not.toHaveBeenCalled();
   });
 
+  it("refuses a coach's student, before the row and the role", async () => {
+    // A coach cannot open `/kocum`, so this link would go on carrying their data unseen.
+    const { service, applications, users } = setup({ hasCoach: true });
+    expect(await codeOf(() => service.register(USER, INPUT, NOW))).toBe(
+      ErrorCode.MENTORSHIP_REGISTRATION_HAS_COACH,
+    );
+    expect(applications.register).not.toHaveBeenCalled();
+    expect(users.addRole).not.toHaveBeenCalled();
+  });
+
   it("reports a lost race as ALREADY_COACH rather than granting the role", async () => {
     // `DO NOTHING` returned nothing: a concurrent registration won. The answer is the one the loser
     // would have got a millisecond earlier, and the role must not be granted off a row we did not
@@ -232,11 +246,12 @@ describe("MentorshipApplicationService.assertCanInvite", () => {
 });
 
 describe("MentorshipApplicationService.setStatus", () => {
-  it("cannot activate an unverified phone through the admin registry", async () => {
-    const { service, applications, users } = setup({ existing: row({ status: "SUSPENDED" }), phoneVerified: false });
-    await expect(service.setStatus(USER, { status: "ACTIVE", reviewNote: null }, ADMIN, NOW)).rejects.toMatchObject({ code: "AUTH_PHONE_REQUIRED" });
-    expect(applications.setStatus).not.toHaveBeenCalled();
-    expect(users.addRole).not.toHaveBeenCalled();
+  it("reinstates a coach with nothing verified, the same bar registration sets", async () => {
+    // Otherwise a coach who registered before verifying anything could be suspended but never put
+    // back. The invite code stays shut for them either way.
+    const { service, users } = setup({ existing: row({ status: "SUSPENDED" }), emailVerified: false, phoneVerified: false });
+    await expect(service.setStatus(USER, { status: "ACTIVE", reviewNote: null }, ADMIN, NOW)).resolves.toMatchObject({ status: "ACTIVE" });
+    expect(users.addRole).toHaveBeenCalledWith(USER, "COACH");
   });
 
   it("revokes COACH before writing a non-active standing", async () => {
@@ -299,7 +314,13 @@ describe("MentorshipApplicationService.getRegistrationState", () => {
       registration: null,
       emailVerified: true,
       phoneVerified: false,
+      hasCoach: false,
     });
+  });
+
+  it("says so when the person is somebody's student, so the screen can explain before the form", async () => {
+    const { service } = setup({ hasCoach: true });
+    await expect(service.getRegistrationState(USER)).resolves.toMatchObject({ hasCoach: true });
   });
 });
 

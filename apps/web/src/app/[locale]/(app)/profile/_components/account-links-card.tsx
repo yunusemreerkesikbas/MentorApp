@@ -302,10 +302,12 @@ export function AccountLinksCard({
         </ListRow>
         {/* The other direction: becoming one. Follows `mentorship.applications.open`, so the
             feature disappears with its flag; hidden for somebody who already coaches. A suspended
-            coach can still open the screen by URL to read the admin's reason. */}
+            coach can still open the screen by URL to read the admin's reason. The hint is for the
+            student who is only curious: the switch closes their own screens. */}
         {coachSignupOpen && !isCoach(user) && (
           <ListRow
             href="/coach-application"
+            description={tMentorship("become_row_hint")}
           >
             {tMentorship("application_title")}
           </ListRow>
