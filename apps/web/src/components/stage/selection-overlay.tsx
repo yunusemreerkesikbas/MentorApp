@@ -79,6 +79,8 @@ export function SelectionOverlay({
         <button
           key={corner}
           type="button"
+          // Pointer-only: a handle does nothing on a key press, so it is not a tab stop.
+          tabIndex={-1}
           aria-label={`${resizeLabel} (${corner})`}
           {...resizeHandlers(corner)}
           style={{
@@ -114,6 +116,7 @@ export function SelectionOverlay({
 
       <button
         type="button"
+        tabIndex={-1}
         aria-label={rotateLabel}
         {...rotateHandlers}
         style={{

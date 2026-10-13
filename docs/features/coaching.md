@@ -153,6 +153,129 @@ pnpm --filter @mentor/api test
   `docs/features/coaching.md`, `notebook-shell.tsx`, `use-notebook-page-transfer.ts`,
   `notebook-desk.css`, `e2e/notebook.spec.ts`.
 
+- **2026-10-13 · Vision board: opening a saved board is no longer an edit.** Found by a pass
+  against the real API. The editor starts on an empty placeholder and swaps the server's board in
+  when it arrives; that swap went through `replace`, which is an edit, so the placeholder sat on
+  the undo stack. One Ctrl+Z on a freshly opened board brought the placeholder back, marked
+  dirty, for autosave to write over the real board two seconds later. The load now dispatches its
+  own `load` action (`use-board-reducer.ts`), which starts the history over and leaves nothing to
+  save. Guarded by a reducer test and VB-25, both written first and seen failing. The same pass
+  checked autosave, a photo upload, a real community post and the panel's "Hedefin" card with
+  nothing mocked; results in
+  [`docs/qa/2026-10-13-vision-board-editor.md`](../qa/2026-10-13-vision-board-editor.md).
+  Usage: `replace` stays for edits that swap the whole document (a template). Gotcha: in an
+  environment with an empty `WEB_CSP_STORAGE_ORIGINS` the page refuses the storage hosts, so a
+  board photo shows broken after a reload and exports as the placeholder grey; that is the
+  environment, not the board.
+
+- **2026-10-13 · Vision board editor QA: 24 browser scenarios, each seen failing.** The editor's
+  scenarios moved out of `vision-board.spec.ts` (back to its committed state) into
+  `e2e/vision-board-editor.spec.ts` with their own `vision-board-editor.fixture.ts`
+  (`mockBoardApi`: goal, board PUT, photo upload, a served photo, forum rooms, upload and post, a
+  refusal). VB-01…VB-24 cover the chrome on both viewports, keyboard access, autosave and
+  publish, photo upload, the export's size and pixels, system share, copy, and the community
+  step's rooms, refusal and empty state. Because they were written after the code, each was then
+  proved able to fail: 28 deliberate breaks of the production code, restored byte for byte
+  afterwards. The weight fallback for a community post moved from the component to
+  `renderBoardWithinBytes` (`board-export.ts`) so it could have a unit test, written first.
+  Results, the three defects the scenarios now guard, and what a mocked API cannot show:
+  [`docs/qa/2026-10-13-vision-board-editor.md`](../qa/2026-10-13-vision-board-editor.md).
+  Usage: `PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @mentor/web exec playwright
+  test vision-board-editor` against a running dev server. Gotcha: a new scenario goes in the
+  editor's spec, not in `vision-board.spec.ts`, which is the goal map's.
+
+- **2026-10-13 · Vision board: share to a community room.** Fifth and last stop of the collage
+  editor redesign. The share window has a second step, "Toplulukta paylaş"
+  (`board-share-community.tsx`): pick a room, write a short note, and the framed board goes up
+  as the post's picture. No server change: the picture is a JPEG uploaded through the forum's
+  own attachment flow (`uploadForumImage`) and the post is an ordinary `postThread`, so a room's
+  rules and moderation apply unchanged, and the composer's `forum_thread_created` event fires
+  with `mode: "share"`. Rooms are the ones `eligibleComposerZones(zones, "share")` allows (chat
+  rooms the viewer is in, announcement rooms they moderate); with exactly one it is already
+  chosen, with none the step points to Topluluk. On success the window closes and a toast leads
+  to the post. Usage: `playwright test vision-board -g "toplulukta paylaşılır"`. Gotchas: the
+  row is offered only once `listZones()` has answered, so it stays out when the forum is off
+  (`FORUM_DISABLED`) or the read fails; `renderBoardToBlob(doc, { type: "image/jpeg" })` paints
+  white under the frame's rounded corners (JPEG has no transparency) and falls back to 1× if the
+  2× file passes `FORUM_IMAGE_MAX_BYTES`; the privacy line ("Panodaki fotoğraflar odadaki
+  herkese görünür") sits under the note, before the post, on purpose; the post always carries the
+  board, never the wallpaper. Related: `board-share-sheet.tsx`, `lib/forum.ts`,
+  `lib/forum-attachments.ts`, `community/_components/composer-audience.ts`.
+
+- **2026-10-13 · Vision board: framed PNG, phone wallpaper and a share window.** Fourth stop of
+  the collage editor redesign. The export now draws the board's own frame (it used to stop at
+  the board's edge, so a wood-framed board downloaded bare): `renderBoardToBlob` paints the
+  moulding and the mat around a clipped board, at the shares in `BOARD_FRAME_METRICS`
+  (`board-export-layout.ts`), the one table `BoardFrame` reads too. New
+  `renderBoardWallpaperBlob`: 1170×2532, the framed board hung from a nail on the editor's light
+  wall, placed by `wallpaperLayout` under a lock screen's clock. The top bar's download and
+  share icons became one "Paylaş" control that opens `BoardShareSheet` (`next/dynamic`, the kit's
+  `Modal placement="sheet"`): a preview of the picture that will leave, Pano or Duvar kâğıdı,
+  then the system share sheet with "İndir" beside it where files can be shared, or "İndir" and
+  "Görseli kopyala" elsewhere. Usage: `pnpm --filter @mentor/web exec vitest run
+  board-export-layout`, `playwright test vision-board -g "paylaşım penceresi"` (checks both
+  pictures' pixel sizes and file names). Gotchas: a wood-framed PNG is 3584×2504, not 3240×2160;
+  a picture is never themed (light wall, opaque gallery moulding); the window draws each format
+  the first time it is looked at; failures speak inside the window, a toast would sit under the
+  dialog's top layer; the editor's shortcuts ignore keys pressed inside a `dialog`, or Delete in
+  the share window would remove the item selected behind it. `shareOrDownloadBoard` is gone.
+  Related: `components/vision-board/board-export{,-layout}.ts`, `board-frame.tsx`,
+  `board-share-sheet.tsx`, `board-editor-topbar.tsx`.
+
+- **2026-10-13 · Vision board: pictured options, keyboard, and a frame that scales.** Third stop
+  of the collage editor redesign. The board panel picks a frame and a texture from pictured
+  tiles (`Tile` in `board-side-panel.tsx`), drawn by `BoardFrame` and `BOARD_TEXTURE_STYLES`
+  themselves, and "Çerçevesiz" is a choice of its own (it used to be a second tap on the active
+  frame); solid colours sit under their own "Düz renk" label; the eleven fonts are a two-column
+  grid. A placed item is a tab stop (`role="group"`, named by its kind and, for a text, its
+  words): focus selects it, the arrows move it by `NUDGE_STEP` canvas units (`NUDGE_STEP_LARGE`
+  with Shift, one undo step per press), Enter opens a text for typing; the resize and rotate
+  handles left the tab order because they only answer a pointer. Fix: `BoardFrame`'s moulding
+  was 2.2% of the *window*, not of the board (a size container's own `cqw` resolves against the
+  container above it), so the frame was too heavy on a desktop editor and on the panel card;
+  the container is now a wrapper of its own and the frame is true to the board everywhere.
+  Usage: `pnpm --filter @mentor/web exec vitest run gesture-math` and
+  `playwright test vision-board -g "pano editörü"`. Gotchas: the frame picker passes
+  `thickness={3}` because a true-to-scale moulding on an 80 px tile is a hairline; step sizes are
+  constants in `components/stage/gesture-math.ts`, tune them there. Related:
+  `components/vision-board/board-{frame,stage}.tsx`, `components/stage/selection-overlay.tsx`,
+  `use-board-shortcuts.ts`.
+
+- **2026-10-13 · Vision board editor takes the notebook's chrome.** Second stop of the collage
+  editor redesign. From `lg` a stadium rail and a titled 320 px panel float at the left and the
+  board steps aside for the open panel instead of being covered; below `lg` the rail is a dock
+  under the board, the panel a non-modal sheet behind it (at most half the screen, starts shut)
+  and the selection's toolbar sits over the dock. The board hangs on a wall of
+  `--color-surface-container`. An untouched board (only the goal's seeded lines, or nothing)
+  shows Puhu's welcome under it with "Görsel yükle" and "Şablonla başla"; the first thing added
+  or rewritten removes it, with no stored flag. "Yayınla" reads "Panelimde göster"; a draft keeps
+  that ledge as its filled action, a published board keeps "Kaydet". The 860-line shell is split
+  (379 lines left, orchestration only): `use-board-persistence.ts` (load, save, publish, autosave,
+  flush), `use-board-images.ts`, `use-board-shortcuts.ts`,
+  `board-editor-{rail,panel,topbar,stage}.tsx`, `board-welcome.tsx`. Usage:
+  `pnpm --filter @mentor/web exec playwright test vision-board -g "pano editörü"` (both
+  projects). Gotchas: the panel is the one scroller, so a category body must not scroll itself;
+  selecting an item opens its panel only from `lg` (on a phone it would cover the board on every
+  tap); a draft's ledge wraps the top bar to a second row on a 375 px phone by design; the rail's
+  category toggle no longer lives inside a state updater (Strict Mode ran it twice and it
+  cancelled itself). Related: DESIGN.md §11 "Editor chrome", `e2e/vision-board.spec.ts`.
+
+- **2026-10-13 · Vision board editor chrome leaves `--color-btn`.** First stop of the
+  collage editor redesign (canvas: https://claude.ai/artifact/WSy39Y2fcSzxSdyft9f8vC). The
+  selected rail item, panel pills, pressed context-toolbar buttons and the colour-name tip
+  wear DESIGN.md's selected chip (`--play-selected`, `--play-cta` rim, `--play-selected-ink`);
+  "Görsel yükle", "Metin ekle" and "Yayınla" are the `@mentor/ui` play ledge; the hard-coded
+  `rgba(17,17,17,.08)` hairlines follow `--color-main`, and swatches get a visible rim (the
+  white one used to vanish on the light surface). Usage:
+  `pnpm --filter @mentor/web exec playwright test vision-board -g "seçili çip"`; against a
+  running dev server set `PLAYWRIGHT_BASE_URL=http://localhost:3000`. Gotcha: the rail fill is
+  the notebook's `NotebookRailActiveFill`, imported as is (move it to `components/stage/` when
+  a third editor needs it); `mockVisionApi(page, vision)` now takes an optional goal fixture.
+  Next stops: notebook-style floating rail and panel, texture and frame previews, framed PNG
+  and wallpaper export, community share. Related: `vision-board/board/_components/`
+  (`board-editor-shell.tsx`, `board-side-panel.tsx`, `board-swatch.tsx`,
+  `board-context-toolbar.tsx`), `e2e/vision-board.spec.ts`.
+
 - **2026-10-10 · Plan test fixtures follow each feature's day policy.** Task CRUD,
   daily activity and today's summary use UTC fixtures; plan adaptations retain Istanbul
   calendar dates. Usage: run `plan.service.spec.ts`, including between Istanbul and UTC

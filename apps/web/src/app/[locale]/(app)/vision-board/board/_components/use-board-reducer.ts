@@ -34,6 +34,8 @@ export type BoardAction =
   | { type: "setBackground"; background: VisionBoardDoc["background"] }
   | { type: "setStatus"; status: VisionBoardDoc["status"] }
   | { type: "replace"; doc: VisionBoardDoc }
+  /** The server's board arriving. Not an edit: it starts the history over and leaves nothing to save. */
+  | { type: "load"; doc: VisionBoardDoc }
   | { type: "undo" }
   | { type: "redo" }
   | { type: "saved" };
@@ -146,6 +148,14 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
 
     case "replace":
       return commit(state, action.doc);
+
+    /*
+     * `replace` is for an edit that swaps the whole document (a template). Loading used it too,
+     * which put the editor's empty placeholder on the undo stack: one Ctrl+Z on a freshly opened
+     * board brought the placeholder back, dirty, for autosave to write over the real board.
+     */
+    case "load":
+      return initialBoardState(action.doc);
 
     case "undo": {
       const previous = state.past[state.past.length - 1];

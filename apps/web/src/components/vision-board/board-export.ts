@@ -1,6 +1,7 @@
 import {
   VISION_BOARD_CANVAS,
   type VisionBoardDoc,
+  type VisionBoardFrame,
   type VisionBoardImageItem,
   type VisionBoardItem,
   type VisionBoardTextItem,
@@ -8,15 +9,23 @@ import {
 import { appFontFamily } from "@/lib/app-font";
 import { FONT_FAMILIES } from "./board-font-families";
 import {
+  BOARD_FRAME_MAT,
+  BOARD_WALLPAPER,
+  GALLERY_MOULDING,
+  WOOD_GRAIN,
   alignAnchorX,
   boardImageSrc,
   canvasTextAlign,
   coverRect,
+  cssGradientLine,
   frameHasPlate,
   frameInsets,
+  framedBoardLayout,
   needsCrossOrigin,
   textBlockTop,
+  wallpaperLayout,
   wrapText,
+  type FramedBoardLayout,
 } from "./board-export-layout";
 import { STICKER_ART } from "./board-stickers";
 
@@ -301,56 +310,213 @@ async function drawItem(ctx: CanvasRenderingContext2D, item: VisionBoardItem): P
   ctx.restore();
 }
 
-/**
- * Draw the whole board and hand back a PNG blob.
- *
- * Throws {@link BoardExportTaintedError} when the canvas cannot be read back — that happens when a
- * board photo was served without CORS headers, and it is deliberately loud: silently returning a
- * blank image would look like a bug in the user's board rather than a storage misconfiguration.
- */
-export async function renderBoardToBlob(doc: VisionBoardDoc): Promise<Blob> {
-  const canvas = document.createElement("canvas");
-  canvas.width = VISION_BOARD_CANVAS.width * EXPORT_SCALE;
-  canvas.height = VISION_BOARD_CANVAS.height * EXPORT_SCALE;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("board_export_no_context");
-  ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+/** The board's own frame: the moulding, then the mat over it. Drawn at the origin, in board units. */
+function paintFrame(
+  ctx: CanvasRenderingContext2D,
+  frame: VisionBoardFrame,
+  layout: FramedBoardLayout,
+): void {
+  if (frame === "none") return;
+  const { width, height, border, radius } = layout;
 
-  // Web fonts load asynchronously; measuring before they land wraps the text against a fallback
-  // face and the PNG comes out laid out differently from the screen.
-  if (typeof document !== "undefined" && document.fonts?.ready) await document.fonts.ready;
+  if (frame === "wood") {
+    const line = cssGradientLine(width, height, WOOD_GRAIN.angle);
+    const grain = ctx.createLinearGradient(line.x0, line.y0, line.x1, line.y1);
+    for (const [at, color] of WOOD_GRAIN.stops) grain.addColorStop(at, color);
+    ctx.fillStyle = grain;
+  } else {
+    ctx.fillStyle = GALLERY_MOULDING;
+  }
+  roundedPath(ctx, 0, 0, width, height, radius);
+  ctx.fill();
 
+  ctx.fillStyle = BOARD_FRAME_MAT[frame];
+  roundedPath(ctx, border, border, width - 2 * border, height - 2 * border, radius / 2);
+  ctx.fill();
+}
+
+/** The framed board, at the origin and in board units: frame first, then the board inside it. */
+async function paintFramedBoard(
+  ctx: CanvasRenderingContext2D,
+  doc: VisionBoardDoc,
+  layout: FramedBoardLayout,
+): Promise<void> {
+  paintFrame(ctx, doc.frame, layout);
+
+  const inset = layout.border + layout.mat;
+  ctx.save();
+  ctx.translate(inset, inset);
+  // The stage hides whatever hangs over its edge. A bare canvas did the same at its own edge;
+  // inside a frame that edge has to be drawn.
+  ctx.beginPath();
+  ctx.rect(0, 0, VISION_BOARD_CANVAS.width, VISION_BOARD_CANVAS.height);
+  ctx.clip();
   paintBackground(ctx, doc);
   for (const item of [...doc.items].sort((a, b) => a.z - b.z)) {
     await drawItem(ctx, item);
   }
+  ctx.restore();
+}
 
+function createCanvas(width: number, height: number) {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(width);
+  canvas.height = Math.round(height);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("board_export_no_context");
+  return { canvas, ctx };
+}
+
+/**
+ * Web fonts load asynchronously; measuring before they land wraps the text against a fallback
+ * face and the picture comes out laid out differently from the screen.
+ */
+async function fontsReady(): Promise<void> {
+  if (typeof document !== "undefined" && document.fonts?.ready) await document.fonts.ready;
+}
+
+type PictureType = "image/png" | "image/jpeg";
+
+/** Light enough for a photo-heavy board to stay well under a forum's limit, with no visible loss. */
+const JPEG_QUALITY = 0.9;
+
+/**
+ * Throws {@link BoardExportTaintedError} when the canvas cannot be read back — that happens when a
+ * board photo was served without CORS headers, and it is deliberately loud: silently returning a
+ * blank image would look like a bug in the user's board rather than a storage misconfiguration.
+ */
+function canvasToBlob(canvas: HTMLCanvasElement, type: PictureType = "image/png"): Promise<Blob> {
   return new Promise<Blob>((resolve, reject) => {
     try {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error("board_export_failed"));
-      }, "image/png");
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error("board_export_failed"));
+        },
+        type,
+        JPEG_QUALITY,
+      );
     } catch {
       reject(new BoardExportTaintedError());
     }
   });
 }
 
-/** Native share sheet when the platform has one, plain download when it does not. */
-export async function shareOrDownloadBoard(blob: Blob, fileName: string): Promise<"shared" | "downloaded"> {
-  const file = new File([blob], fileName, { type: "image/png" });
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file] });
-      return "shared";
-    } catch (error) {
-      // Dismissing the sheet is a normal outcome, not a failure to report.
-      if (error instanceof DOMException && error.name === "AbortError") return "shared";
-    }
+export interface BoardRenderOptions {
+  /**
+   * PNG keeps the frame's rounded corners transparent. JPEG is for a place that caps a picture's
+   * weight (a community post); it has no transparency, so the corners sit on white.
+   */
+  type?: PictureType;
+  /** Pixels per canvas unit. 2 by default: sharp on retina, still a sane file for sharing. */
+  scale?: number;
+}
+
+/** The board as a picture, in the frame it wears on screen. */
+export async function renderBoardToBlob(
+  doc: VisionBoardDoc,
+  { type = "image/png", scale = EXPORT_SCALE }: BoardRenderOptions = {},
+): Promise<Blob> {
+  const layout = framedBoardLayout(doc.frame);
+  const { canvas, ctx } = createCanvas(layout.width * scale, layout.height * scale);
+  ctx.scale(scale, scale);
+  await fontsReady();
+  if (type === "image/jpeg") {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, layout.width, layout.height);
   }
-  downloadBlob(blob, fileName);
-  return "downloaded";
+  await paintFramedBoard(ctx, doc, layout);
+  return canvasToBlob(canvas, type);
+}
+
+/**
+ * The board as a JPEG no heavier than `maxBytes`, for a place that caps a picture's weight: the
+ * full picture when it fits, else one drawn at half the pixels (a quarter of the weight).
+ * `render` is the board's own renderer unless a test hands in another.
+ * ponytail: one fallback step. Add a quality ladder if a board ever outgrows the half-size picture too.
+ */
+export async function renderBoardWithinBytes(
+  doc: VisionBoardDoc,
+  maxBytes: number,
+  render: (doc: VisionBoardDoc, options?: BoardRenderOptions) => Promise<Blob> = renderBoardToBlob,
+): Promise<Blob> {
+  const full = await render(doc, { type: "image/jpeg" });
+  if (full.size <= maxBytes) return full;
+  return render(doc, { type: "image/jpeg", scale: 1 });
+}
+
+/** The wall a wallpaper hangs the board on: the editor's light wall. A picture is not themed. */
+const WALL = "#f0edec";
+
+/**
+ * The board as a phone wallpaper: hung on the wall from a nail, clear of a lock screen's clock.
+ * Everything is placed by `wallpaperLayout`; this only paints.
+ */
+export async function renderBoardWallpaperBlob(doc: VisionBoardDoc): Promise<Blob> {
+  const { width, height } = BOARD_WALLPAPER;
+  const { canvas, ctx } = createCanvas(width, height);
+  await fontsReady();
+  const hang = wallpaperLayout(doc.frame);
+
+  ctx.fillStyle = WALL;
+  ctx.fillRect(0, 0, width, height);
+  // Light from above, falling off before the board: an ellipse wider than the wall is tall.
+  const reach = height * 0.45;
+  ctx.save();
+  ctx.translate(width / 2, 0);
+  ctx.scale((width * 1.1) / reach, 1);
+  const light = ctx.createRadialGradient(0, 0, 0, 0, 0, reach);
+  light.addColorStop(0, "rgba(255, 255, 255, 0.75)");
+  light.addColorStop(0.7, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = light;
+  ctx.fillRect(-reach, 0, reach * 2, reach);
+  ctx.restore();
+
+  // The cord runs behind the board, so it ends a little way inside the top edge.
+  const cordEndY = hang.y + hang.height * 0.02;
+  ctx.strokeStyle = "#8a6a45";
+  ctx.lineWidth = width * 0.004;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(hang.cordLeftX, cordEndY);
+  ctx.lineTo(hang.nail.x, hang.nail.y);
+  ctx.lineTo(hang.cordRightX, cordEndY);
+  ctx.stroke();
+  ctx.fillStyle = "#9a7440";
+  ctx.beginPath();
+  ctx.arc(hang.nail.x, hang.nail.y, width * 0.0115, 0, Math.PI * 2);
+  ctx.fill();
+
+  // The shadow the board throws on the wall. The rect that casts it is painted over next.
+  ctx.save();
+  ctx.shadowColor = "rgba(37, 73, 150, 0.24)";
+  ctx.shadowBlur = hang.width * 0.084;
+  ctx.shadowOffsetY = hang.width * 0.048;
+  ctx.fillStyle = WALL;
+  ctx.fillRect(hang.x, hang.y, hang.width, hang.height);
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(hang.x, hang.y);
+  ctx.scale(hang.scale, hang.scale);
+  await paintFramedBoard(ctx, doc, hang.framed);
+  ctx.restore();
+
+  return canvasToBlob(canvas);
+}
+
+/**
+ * Whether this browser can hand an image file to the system share sheet.
+ * ponytail: the same probe as `session-share-sheet.tsx`; give them one helper when a third image share appears.
+ */
+export function canShareImageFile(): boolean {
+  if (typeof navigator === "undefined" || typeof navigator.canShare !== "function") return false;
+  try {
+    return navigator.canShare({ files: [new File([""], "board.png", { type: "image/png" })] });
+  } catch {
+    return false;
+  }
 }
 
 export function downloadBlob(blob: Blob, fileName: string): void {

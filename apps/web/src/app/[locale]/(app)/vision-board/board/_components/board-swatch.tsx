@@ -45,7 +45,10 @@ export function Swatch({ color, label, active, size = "sm", onClick }: SwatchPro
         className={`block ${dot} rounded-full`}
         style={{
           backgroundColor: color,
-          outline: active ? "2px solid var(--color-accent)" : "1px solid var(--color-border)",
+          // `--color-border` is white in the light theme, which left the white swatch invisible.
+          outline: active
+            ? "2px solid var(--play-cta)"
+            : "1px solid color-mix(in srgb, var(--color-main) 14%, transparent)",
           outlineOffset: "2px",
         }}
       />
@@ -53,8 +56,8 @@ export function Swatch({ color, label, active, size = "sm", onClick }: SwatchPro
         <span
           className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold"
           style={{
-            backgroundColor: "var(--color-btn)",
-            color: "var(--color-btn-label)",
+            backgroundColor: "var(--play-selected)",
+            color: "var(--play-selected-ink)",
           }}
         >
           {name}

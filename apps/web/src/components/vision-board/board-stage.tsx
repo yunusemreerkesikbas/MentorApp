@@ -19,8 +19,11 @@ import { BoardItemView, cq } from "./board-item-view";
  * Layout is `container-type: inline-size` plus `cqw` lengths, so nothing here measures anything.
  */
 
-/** Board backgrounds. Procedural on purpose — the canvas exporter has to reproduce each one. */
-const BACKGROUNDS: Record<string, CSSProperties> = {
+/**
+ * Board backgrounds. Procedural on purpose — the canvas exporter has to reproduce each one.
+ * Exported for the editor's picker, which shows each texture as itself rather than by name.
+ */
+export const BOARD_TEXTURE_STYLES: Record<string, CSSProperties> = {
   cork: {
     backgroundColor: "#d8b083",
     backgroundImage:
@@ -56,9 +59,9 @@ const BACKGROUNDS: Record<string, CSSProperties> = {
   },
 };
 
-function backgroundStyle(background: VisionBoardDoc["background"]): CSSProperties {
+export function boardBackgroundStyle(background: VisionBoardDoc["background"]): CSSProperties {
   if (background.kind === "color") return { backgroundColor: background.value };
-  return BACKGROUNDS[background.value] ?? BACKGROUNDS.paper!;
+  return BOARD_TEXTURE_STYLES[background.value] ?? BOARD_TEXTURE_STYLES.paper!;
 }
 
 /**
@@ -70,6 +73,7 @@ function backgroundStyle(background: VisionBoardDoc["background"]): CSSPropertie
  */
 const StageItem = memo(function StageItem({
   item,
+  label,
   selected,
   interactive,
   hideContent,
@@ -79,6 +83,8 @@ const StageItem = memo(function StageItem({
   overlay,
 }: {
   item: VisionBoardItem;
+  /** What a screen reader calls the item. A string, not a callback, so the memo still holds. */
+  label?: string;
   selected: boolean;
   interactive: boolean;
   /** True while an overlay (e.g. the inline text editor) fully replaces the item's own render. */
@@ -92,6 +98,25 @@ const StageItem = memo(function StageItem({
   return (
     <div
       data-board-item={item.id}
+      /*
+       * In the editor an item is a tab stop: focus selects it, the arrows then move it (the
+       * shell's shortcuts) and Enter opens a text item for typing. A labelled group, not a button:
+       * the selection's handles are buttons, and a button cannot hold buttons. The selection
+       * outline is the focus indicator, so the browser's own ring is off.
+       */
+      role={interactive ? "group" : undefined}
+      aria-label={interactive ? label : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onFocus={interactive ? () => onSelect?.(item.id) : undefined}
+      onKeyDown={
+        interactive
+          ? (event) => {
+              if (event.key !== "Enter" || event.target !== event.currentTarget) return;
+              event.preventDefault();
+              onItemDoubleClick?.(item);
+            }
+          : undefined
+      }
       onPointerDown={
         interactive
           ? (event) => {
@@ -126,6 +151,7 @@ const StageItem = memo(function StageItem({
         opacity: item.opacity,
         cursor: interactive ? (selected ? "move" : "pointer") : undefined,
         touchAction: interactive ? "none" : undefined,
+        outline: interactive ? "none" : undefined,
       }}
     >
       {hideContent ? null : <BoardItemView item={item} />}
@@ -148,6 +174,8 @@ export interface BoardStageProps {
   contentHiddenId?: string | null;
   /** Selection outline + resize/rotate handles, rendered by the editor for the selected item. */
   renderOverlay?: (item: VisionBoardItem) => ReactNode;
+  /** The editor's name for an item, read by a screen reader when it takes focus. */
+  itemLabel?: (item: VisionBoardItem) => string;
   className?: string;
 }
 
@@ -161,6 +189,7 @@ export function BoardStage({
   selectedId = null,
   contentHiddenId = null,
   renderOverlay,
+  itemLabel,
   className,
 }: BoardStageProps) {
   const interactive = Boolean(onSelect || onItemPointerDown);
@@ -186,13 +215,14 @@ export function BoardStage({
         aspectRatio: `${VISION_BOARD_CANVAS.width} / ${VISION_BOARD_CANVAS.height}`,
         overflow: "hidden",
         touchAction: interactive ? "none" : undefined,
-        ...backgroundStyle(doc.background),
+        ...boardBackgroundStyle(doc.background),
       }}
     >
       {ordered.map((item) => (
         <StageItem
           key={item.id}
           item={item}
+          label={itemLabel?.(item)}
           selected={item.id === selectedId}
           interactive={interactive}
           hideContent={item.id === contentHiddenId}

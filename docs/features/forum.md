@@ -1018,3 +1018,11 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
   - **İdempotency:** `origin_meta.coachMessageId` ile mesaj başına tek `COMMUNITY_COACH` görev olur.
     `findCommunityCoachTaskForMessage` bunu user lock altında yapar. Aynı kartın tekrar onayı aynı
     görevi döner.
+
+- **2026-10-13 — Vizyon panosu toplulukta paylaşılabiliyor (yeni çağıran, sunucu değişikliği yok).**
+  Pano editörünün paylaşım penceresi (`vision-board/board/_components/board-share-community.tsx`)
+  panoyu JPEG olarak `POST /v1/forum/attachments/upload-url` + PUT ile yükleyip
+  `POST /v1/forum/zones/:id/threads` ile sıradan bir gönderi açıyor (başlık yok, tek ek, etiket yok).
+  Oda listesi `eligibleComposerZones(zones, "share")`: üye olunan CHAT odaları ve yönetilen
+  ANNOUNCEMENT odaları. `forum_thread_created` olayı `mode: "share"` ile atılıyor. Forum kapalıysa
+  (`FORUM_DISABLED`) giriş hiç gösterilmiyor. Ayrıntı: `docs/features/coaching.md` 2026-10-13.
