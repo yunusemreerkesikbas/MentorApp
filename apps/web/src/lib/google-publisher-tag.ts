@@ -1,5 +1,4 @@
 import type { AdAudienceTreatment } from "@mentor/types";
-import { readAdvertisingConsent } from "./advertising-consent-storage";
 
 type GptSlot = object;
 type GptEvent = { slot: GptSlot; isEmpty?: boolean; makeRewardedVisible?: () => void };
@@ -26,9 +25,8 @@ declare global { interface Window { googletag?: GoogleTag } }
 const LIMITED_GPT_URL = "https://pagead2.googlesyndication.com/tag/js/gpt.js";
 let loader: Promise<GoogleTag> | null = null;
 
-/** The limited-ads build is the only GPT script PuhuKoç loads. */
+/** Callers must obtain backend eligibility before loading this limited-only tag. */
 export function loadLimitedGpt(): Promise<GoogleTag> {
-  if (readAdvertisingConsent() !== "accepted") return Promise.reject(new Error("Advertising consent required"));
   if (loader) return loader;
   loader = new Promise((resolve, reject) => {
     window.googletag ??= { cmd: [] } as unknown as GoogleTag;
@@ -50,7 +48,6 @@ export async function withGpt<T>(run: (gpt: GoogleTag) => T): Promise<T> {
   const gpt = await loadLimitedGpt();
   return new Promise<T>((resolve, reject) => gpt.cmd.push(() => {
     try {
-      if (readAdvertisingConsent() !== "accepted") throw new Error("Advertising consent required");
       resolve(run(gpt));
     } catch (error) { reject(error); }
   }));

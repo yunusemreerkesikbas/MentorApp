@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { useAdvertisingConsent } from "@/lib/advertising-consent";
 import { isPublicConsentBannerPath } from "@/lib/consent-banner-path";
 import type { ConsentContextValue } from "@/lib/analytics-consent";
 
@@ -12,18 +11,14 @@ export function CookieConsentBanner({ analytics, analyticsHydrated, analyticsEna
   analyticsEnabled: boolean;
 }) {
   const t = useTranslations("consentBanner");
-  const ads = useAdvertisingConsent();
   const pathname = usePathname();
   const showAnalytics = analyticsEnabled && analyticsHydrated && analytics.consent === null && isPublicConsentBannerPath(pathname);
-  const showAdvertising = ads.hydrated && ads.consent === null && pathname.startsWith("/knowledge/");
-  if (!showAnalytics && !showAdvertising) return null;
+  if (!showAnalytics) return null;
 
   return (
-    <section role="dialog" aria-label={t(showAdvertising ? "choices_title" : "title")} className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-2xl rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-lg">
-      <h2 className="font-bold text-[var(--color-main)] font-[family-name:var(--font-heading)]">{t(showAdvertising ? "choices_title" : "title")}</h2>
-      {showAnalytics && <Choice title={t("analytics_title")} body={t("body")} accept={analytics.accept} reject={analytics.reject} />}
-      {showAdvertising && <Choice title={t("advertising_title")} body={t("advertising_body")} accept={ads.accept} reject={ads.reject} />}
-      {ads.saveFailed && <p role="alert" className="mt-2 text-sm text-[var(--color-secondary)]">{t("save_failed")}</p>}
+    <section role="dialog" aria-label={t("title")} className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-2xl rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-lg">
+      <h2 className="font-bold text-[var(--color-main)] font-[family-name:var(--font-heading)]">{t("title")}</h2>
+      <Choice title={t("analytics_title")} body={t("body")} accept={analytics.accept} reject={analytics.reject} />
       <Link className="mt-3 inline-block text-sm text-[var(--color-main)] underline" href="/cookie-preferences">{t("details")}</Link>
     </section>
   );

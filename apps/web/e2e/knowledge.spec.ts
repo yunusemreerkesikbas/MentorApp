@@ -278,7 +278,6 @@ test("refresh oturumu yoksa public header giriş bağlantısını korur", async 
 test("anonim makale reklamı doğrulanmış slug ile limited ayarları display öncesi uygular", async ({
   page,
 }) => {
-  await page.addInitScript(() => localStorage.setItem("mentor.advertising-consent.v1", "accepted"));
   await page.setViewportSize({ width: 1280, height: 240 });
   await installDisplayGpt(page, false);
   const api = await mockKnowledgeApi(page, { authenticated: false });
@@ -311,7 +310,6 @@ test("contextual no-fill alanı çöker; Premium kullanıcı GPT indirmez", asyn
   page,
   context,
 }) => {
-  await context.addInitScript(() => localStorage.setItem("mentor.advertising-consent.v1", "accepted"));
   await installDisplayGpt(page, true);
   const api = await mockKnowledgeApi(page, { authenticated: false });
   await page.route(

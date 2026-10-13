@@ -9,28 +9,24 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("eski analitik izni reklam izni değildir; reddetmek okumayı engellemez", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("mentor.analytics-consent.v1", "accepted"));
-  await page.route("https://www.googletagmanager.com/gtag/js**", (route) => route.fulfill({ contentType: "application/javascript", body: "" }));
-  const api = await mockBlogAds(page);
-  await page.goto(ARTICLE_PATH);
-  const choice = page.getByRole("region", { name: "Reklam verisi", exact: true });
-  await expect(choice).toBeVisible();
-  await approachAd(page);
-  expect(api.scriptRequests).toBe(0);
-  expect(api.placementCalls).toHaveLength(0);
-  await choice.getByRole("button", { name: "Reddet" }).click();
-  await expect(page.getByRole("dialog", { name: "Çerez tercihlerin" })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "KPSS Başvuru Süreci", exact: true })).toBeVisible();
-  expect(await page.evaluate((key) => localStorage.getItem(key), ANALYTICS_KEY)).toBe("accepted");
-  expect(await page.evaluate((key) => localStorage.getItem(key), AD_CONSENT_KEY)).toBe("rejected");
-  expect(api.scriptRequests).toBe(0);
-});
+for (const legacyChoice of [null, "rejected", "accepted"] as const) {
+  test(`reklam otomatik gösterilir; eski tercih etkisizdir (${legacyChoice})`, async ({ page }) => {
+    if (legacyChoice) await page.addInitScript(({ key, value }) => localStorage.setItem(key, value), { key: AD_CONSENT_KEY, value: legacyChoice });
+    if (legacyChoice === "accepted") await page.addInitScript((key) => localStorage.setItem(key, "accepted"), ANALYTICS_KEY);
+    const api = await mockBlogAds(page);
+    await page.goto(ARTICLE_PATH);
+    await expect(page.getByRole("region", { name: "Reklam verisi", exact: true })).toHaveCount(0);
+    await approachAd(page);
+    await expect(page.getByRole("complementary", { name: "Reklam", exact: true })).toContainText("Test inventory");
+    expect(api.scriptRequests).toBe(1);
+    expect(await page.evaluate((key) => localStorage.getItem(key), ANALYTICS_KEY)).toBe(legacyChoice === "accepted" ? "accepted" : "rejected");
+    expect(await page.evaluate((key) => localStorage.getItem(key), AD_CONSENT_KEY)).toBe(legacyChoice);
+  });
+}
 
-test("kabul sonrası tek reklam yüklenir, analitik reddi korunur ve sınırlı ayarlar önce uygulanır", async ({ page }) => {
+test("tek reklam otomatik yüklenir, analitik reddi korunur ve sınırlı ayarlar önce uygulanır", async ({ page }) => {
   const api = await mockBlogAds(page);
   await page.goto(ARTICLE_PATH);
-  await page.getByRole("region", { name: "Reklam verisi", exact: true }).getByRole("button", { name: "Kabul et" }).click();
   await approachAd(page);
   const ad = page.getByRole("complementary", { name: "Reklam", exact: true });
   await expect(ad).toHaveCount(1);
@@ -48,32 +44,23 @@ test("kabul sonrası tek reklam yüklenir, analitik reddi korunur ve sınırlı 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-test("tercihler ayrı değişir; başka sekmede geri alma aktif reklamı kaldırıp belgeyi yeniler", async ({ page, context }) => {
-  const api = await mockBlogAds(page);
-  await page.goto(ARTICLE_PATH);
-  await page.getByRole("region", { name: "Reklam verisi", exact: true }).getByRole("button", { name: "Kabul et" }).click();
-  await approachAd(page);
-  await expect(page.getByRole("complementary", { name: "Reklam" })).toContainText("Test inventory");
-  const settings = await context.newPage();
-  await mockBlogAds(settings);
-  await settings.goto("/cerez-tercihleri");
-  const ads = settings.getByRole("region", { name: "İsteğe bağlı reklam verisi" });
-  await expect(ads).toContainText("Kabul edildi");
-  await expect(settings.getByRole("region", { name: "İsteğe bağlı analitik" })).toContainText("Reddedildi");
-  const reload = page.waitForEvent("load");
-  await ads.getByRole("button", { name: "Reddet" }).click();
-  await reload;
-  expect(await page.evaluate(() => sessionStorage.getItem("test-ad-destroyed"))).toBe("true");
-  await approachAd(page);
-  await expect(page.getByRole("complementary", { name: "Reklam" })).toHaveCount(0);
-  expect(api.scriptRequests).toBe(1);
-  expect(await page.evaluate((key) => localStorage.getItem(key), ANALYTICS_KEY)).toBe("rejected");
+test("reklam bilgisi izin düğmesi sunmaz; yalnız analitik tercihi değiştirilebilir", async ({ page }) => {
+  await mockBlogAds(page);
+  await page.goto("/cerez-tercihleri");
+  const ads = page.getByRole("region", { name: "Ücretsiz kullanımda reklamlar" });
+  await expect(ads).toContainText("otomatik");
+  await expect(ads.getByRole("button")).toHaveCount(0);
+  const analytics = page.getByRole("region", { name: "İsteğe bağlı analitik" });
+  await expect(analytics).toContainText("Reddedildi");
+  await analytics.getByRole("button", { name: "Kabul et" }).click();
+  await expect(analytics).toContainText("Kabul edildi");
+  await analytics.getByRole("button", { name: "Reddet" }).click();
+  await expect(analytics).toContainText("Reddedildi");
 });
 
 test("Free → Premium yenilemesi aktif slotu temizler ve yeni Google isteğini durdurur", async ({ page }) => {
   const api = await mockBlogAds(page, { authenticated: true });
   await page.goto(ARTICLE_PATH);
-  await page.getByRole("region", { name: "Reklam verisi", exact: true }).getByRole("button", { name: "Kabul et" }).click();
   await approachAd(page);
   await expect(page.getByRole("complementary", { name: "Reklam" })).toContainText("Test inventory");
   const originalCalls = api.placementCalls.length;
@@ -90,40 +77,22 @@ test("Free → Premium yenilemesi aktif slotu temizler ve yeni Google isteğini 
   expect(api.scriptRequests).toBe(1);
 });
 
-test("geri alma kaydedilemezse reklam durur; başarılı tekrar belgeyi yeniler", async ({ page }) => {
-  await mockBlogAds(page);
+test("analitik seçilmeden de reklam gösterilir; analitik reddi reklamı durdurmaz", async ({ page }) => {
+  await page.addInitScript(() => localStorage.removeItem("mentor.analytics-consent.v1"));
+  const api = await mockBlogAds(page);
   await page.goto(ARTICLE_PATH);
-  await page.getByRole("region", { name: "Reklam verisi", exact: true }).getByRole("button", { name: "Kabul et" }).click();
   await approachAd(page);
   await expect(page.getByRole("complementary", { name: "Reklam" })).toContainText("Test inventory");
-  // Client navigation preserves the loaded GPT runtime in this document.
-  await page.getByRole("link", { name: "Çerez tercihleri", exact: true }).click();
-  const ads = page.getByRole("region", { name: "İsteğe bağlı reklam verisi" });
-  await expect(ads).toContainText("Kabul edildi");
-  await page.evaluate(() => {
-    const save = Storage.prototype.setItem;
-    let failOnce = true;
-    Storage.prototype.setItem = function(key, value) {
-      if (key === "mentor.advertising-consent.v1" && failOnce) { failOnce = false; throw new Error("Storage blocked"); } // gitleaks:allow -- public storage key
-      return save.call(this, key, value);
-    };
-    (window as unknown as { __documentMarker: string }).__documentMarker = "loaded";
-  });
-  await ads.getByRole("button", { name: "Reddet" }).click();
-  await expect(ads.getByRole("alert")).toContainText("Tercihin kaydedilemedi");
-  expect(await page.evaluate((key) => localStorage.getItem(key), AD_CONSENT_KEY)).toBe("accepted");
-  const reload = page.waitForEvent("load");
-  await ads.getByRole("button", { name: "Reddet" }).click();
-  await reload;
-  expect(await page.evaluate((key) => localStorage.getItem(key), AD_CONSENT_KEY)).toBe("rejected");
-  expect(await page.evaluate(() => (window as unknown as { __documentMarker?: string }).__documentMarker)).toBeUndefined();
-  await expect(page.getByRole("region", { name: "İsteğe bağlı reklam verisi" })).toContainText("Reddedildi");
+  await page.getByRole("dialog", { name: "Analitik çerez tercihin" }).getByRole("button", { name: "Reddet" }).click();
+  await expect(page.getByRole("complementary", { name: "Reklam" })).toContainText("Test inventory");
+  expect(api.analyticsRequests).toBe(0);
+  expect(api.scriptRequests).toBe(1);
+  expect((await log(page)).filter((event) => event === "display")).toHaveLength(1);
 });
 
 test("hesap değişimi oturum sinyaliyle uygunluğu yeniden sorgular", async ({ page }) => {
   const api = await mockBlogAds(page, { authenticated: true });
   await page.goto(ARTICLE_PATH);
-  await page.getByRole("region", { name: "Reklam verisi", exact: true }).getByRole("button", { name: "Kabul et" }).click();
   await approachAd(page);
   await expect(page.getByRole("complementary", { name: "Reklam" })).toContainText("Test inventory");
   api.userId = "44444444-4444-4444-8444-444444444444";
@@ -145,11 +114,28 @@ test("hesap değişimi oturum sinyaliyle uygunluğu yeniden sorgular", async ({ 
   expect((await log(page)).filter((event) => event === "display")).toHaveLength(1);
 });
 
+test("geciken Google etiketi Premium geçişinden sonra reklam göstermez", async ({ page }) => {
+  const api = await mockBlogAds(page, { authenticated: true });
+  let releaseScript!: () => void;
+  api.scriptHold = new Promise<void>((resolve) => { releaseScript = resolve; });
+  await page.goto(ARTICLE_PATH);
+  await approachAd(page);
+  await expect.poll(() => api.scriptRequests).toBe(1);
+  const originalCalls = api.placementCalls.length;
+  api.premium = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("mentor:subscription-changed")));
+  await expect.poll(() => api.placementCalls.length).toBeGreaterThan(originalCalls);
+  await expect(page.getByRole("complementary", { name: "Reklam" })).toBeHidden();
+  releaseScript();
+  await expect.poll(async () => await log(page)).toEqual([]);
+  await page.waitForFunction(() => Boolean(document.querySelector<HTMLScriptElement>('script[src="https://pagead2.googlesyndication.com/tag/js/gpt.js"]')?.dataset.loaded));
+  expect((await log(page)).filter((event) => event === "display")).toHaveLength(0);
+});
+
 for (const mode of ["empty", "blocked", "denied"] as const) {
   test(`${mode}: reklam gelmezse makale okunur`, async ({ page }) => {
     const api = await mockBlogAds(page, { [mode]: true });
     await page.goto(ARTICLE_PATH);
-    await page.getByRole("region", { name: "Reklam verisi", exact: true }).getByRole("button", { name: "Kabul et" }).click();
     await approachAd(page);
     await expect.poll(() => api.placementCalls.length).toBeGreaterThanOrEqual(1);
     await expect(page.getByRole("complementary", { name: "Reklam" })).toBeHidden();
@@ -158,10 +144,13 @@ for (const mode of ["empty", "blocked", "denied"] as const) {
   });
 }
 
-test("İngilizce reklam tercihi bağımsızdır", async ({ page }) => {
+test("İngilizce otomatik reklam ve bilgilendirme", async ({ page }) => {
   await mockBlogAds(page);
   await page.goto(`/en${ARTICLE_PATH}`);
-  await expect(page.getByRole("region", { name: "Advertising data" })).toBeVisible();
-  await page.getByRole("region", { name: "Advertising data" }).getByRole("button", { name: "Reject" }).click();
-  await expect(page.getByRole("dialog", { name: "Your cookie choices" })).toHaveCount(0);
+  await page.getByRole("region", { name: "Want to explore this topic?" }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole("complementary", { name: "Advertisement", exact: true })).toContainText("Test inventory");
+  await page.goto("/en/cookie-preferences");
+  const ads = page.getByRole("region", { name: "Ads in free access" });
+  await expect(ads).toContainText("automatically");
+  await expect(ads.getByRole("button")).toHaveCount(0);
 });

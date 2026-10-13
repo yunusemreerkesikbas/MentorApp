@@ -20,9 +20,16 @@ export async function mockBlogAds(page: Page, options: { empty?: boolean; blocke
     userId: user.id,
     placementCalls: [] as string[],
     scriptRequests: 0,
+    analyticsRequests: 0,
     refreshCalls: 0,
     refreshHold: null as Promise<void> | null,
+    scriptHold: null as Promise<void> | null,
   };
+  // Acceptance tests must never load the site's real analytics provider.
+  await page.route("https://www.googletagmanager.com/gtag/js**", (route) => {
+    state.analyticsRequests++;
+    return route.fulfill({ contentType: "application/javascript", body: "" });
+  });
   await page.route(`${apiUrl}/**`, async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (route.request().method() === "OPTIONS") return json(route, null, 204);
@@ -49,6 +56,7 @@ export async function mockBlogAds(page: Page, options: { empty?: boolean; blocke
   });
   await page.route("https://pagead2.googlesyndication.com/tag/js/gpt.js", async (route) => {
     state.scriptRequests++;
+    await state.scriptHold;
     if (options.blocked) return route.abort();
     return route.fulfill({ contentType: "application/javascript", body: `(${displayGpt.toString()})(${Boolean(options.empty)});` });
   });

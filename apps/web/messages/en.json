@@ -2772,11 +2772,7 @@
     "gallery_slide": "Image {current} / {total}"
   },
   "consentBanner": {
-    "choices_title": "Your cookie choices",
     "analytics_title": "Analytics",
-    "advertising_title": "Advertising data",
-    "advertising_body": "Blog posts may show non-personalized Google ads. Google may use your IP address to deliver ads, and cookies and browser storage to detect abuse. Your advertising choice is independent of analytics. You can keep reading if you reject.",
-    "save_failed": "Your choice could not be saved. Check browser storage and try again.",
     "title": "Your analytics cookie choice",
     "body": "We measure anonymous usage data only with your permission to improve PuhuKoç.",
     "details": "View details and preferences",
@@ -2787,12 +2783,12 @@
     "reject": "Reject",
     "accept": "Accept",
     "back": "Back to home",
-    "page_title": "Cookie, analytics and advertising preferences",
+    "page_title": "Cookie preferences and advertising information",
     "page_body": "GA4 loads only after you accept. In blog posts we measure views, read completion, source links, and Coach calls to action; no user identity or personal information is sent. You can change your choice at any time.",
     "essential_heading": "Essential cookies",
     "essential_body": "mentor_web_refresh is an HttpOnly cookie sent only to /v1/auth to renew a secure session. mentor_google_oauth carries secure Google sign-in state for at most 10 minutes. mentor-theme and mentor-sidebar remember theme and sidebar choices for up to one year. These cookies support the service and the interface you selected.",
     "storage_heading": "Browser storage",
-    "storage_body": "Your analytics and advertising choices are stored separately, alongside plan view and some device-only interface preferences in localStorage or sessionStorage. These values are not cookies sent with every request and are removed when you reset the feature or clear browser data.",
+    "storage_body": "Your analytics choice, plan view and some device-only interface preferences are stored in localStorage or sessionStorage. These values are not cookies sent with every request and are removed when you reset the feature or clear browser data.",
     "analytics_heading": "Optional analytics",
     "analytics_body": "Google Analytics loads only after you choose Accept. Google analytics cookies beginning with _ga may then be created. If you reject analytics, PuhuKoç attempts to remove them and sends no new analytics event.",
     "current": "Current choice: {value}",
@@ -2800,10 +2796,9 @@
     "rejected": "Rejected",
     "unset": "Not chosen yet"
   },
-  "advertisingConsent": {
-    "heading": "Optional advertising data",
-    "body": "The Google ad tag loads only after you accept advertising data and are eligible for ads. A blog post may show one non-personalized ad at its end. Google may use your IP address to deliver ads, cookies and local storage to detect invalid traffic and abuse, and process data abroad. Analytics consent does not grant this permission. Premium and STAFF stay ad-free. Rejecting does not affect access. Withdrawing permission removes the ad and reloads the page.",
-    "save_failed": "Your choice could not be saved. Check browser storage and try again."
+  "advertisingDisclosure": {
+    "heading": "Ads in free access",
+    "body": "Eligible anonymous and Free visitors in Turkey may automatically see one non-personalized ad at the end of a blog article. Premium and STAFF stay ad-free. Your analytics choice does not change ad delivery. Google may use IP addresses for delivery and, when programmatic limited ads are enabled, cookies and local storage for invalid traffic and abuse detection, with processing abroad. Personalized ads and behavioral targeting are disabled."
   },
   "onboarding": {
     "loading": "Loading…",
