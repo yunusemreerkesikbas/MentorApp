@@ -1,4 +1,9 @@
-import type { VisionBoardTextItem, VisionImageFrame } from "@mentor/types";
+import {
+  VISION_BOARD_CANVAS,
+  type VisionBoardFrame,
+  type VisionBoardTextItem,
+  type VisionImageFrame,
+} from "@mentor/types";
 import { resolveApiUrl } from "@/lib/api-base";
 
 /**
@@ -24,6 +29,129 @@ export function boardImageSrc(url: string): string {
 /** True when the browser must be told to make a CORS request to read these pixels back. */
 export function needsCrossOrigin(url: string): boolean {
   return !url.startsWith("blob:") && !url.startsWith("data:");
+}
+
+/**
+ * The board's own frame, as shares of the framed board's whole width: the moulding, the mat
+ * inside it and the corner radius. One table for both renderers: `BoardFrame` writes a share as
+ * `cqw`, the exporter multiplies it out, so the PNG's frame is the one on screen.
+ */
+export const BOARD_FRAME_METRICS: Record<
+  VisionBoardFrame,
+  { border: number; mat: number; radius: number }
+> = {
+  wood: { border: 0.022, mat: 0.026, radius: 0.005 },
+  // The DOM rounds the gallery frame by the card radius, a fixed 10px; this is that corner on a
+  // board drawn at desk size.
+  gallery: { border: 0.006, mat: 0.034, radius: 0.008 },
+  none: { border: 0, mat: 0, radius: 0 },
+};
+
+/**
+ * The wood moulding: alternating stops of one hue read as grain at a glance; a photographic wood
+ * texture scaled down to a 20px moulding just looks like noise.
+ */
+export const WOOD_GRAIN = {
+  angle: 100,
+  stops: [
+    [0, "#c99a5f"],
+    [0.18, "#e0b782"],
+    [0.42, "#c08a4c"],
+    [0.68, "#dcb17c"],
+    [1, "#b8813f"],
+  ],
+} as const;
+
+export const BOARD_FRAME_MAT = { wood: "#fbfaf8", gallery: "#ffffff" } as const;
+
+/** The gallery moulding as a picture has to paint it: the DOM's 12% ink over a white wall, made opaque. */
+export const GALLERY_MOULDING = "#e2e2e2";
+
+export interface FramedBoardLayout {
+  /** The whole framed board, in the board's own canvas units. */
+  width: number;
+  height: number;
+  border: number;
+  mat: number;
+  radius: number;
+}
+
+/** The box a frame adds around a board, with the board's own size left exactly as it was. */
+export function framedBoardLayout(
+  frame: VisionBoardFrame,
+  boardWidth: number = VISION_BOARD_CANVAS.width,
+  boardHeight: number = VISION_BOARD_CANVAS.height,
+): FramedBoardLayout {
+  const metrics = BOARD_FRAME_METRICS[frame];
+  // The shares are of the outer width, so the outer width is what the board's is divided up to.
+  const width = boardWidth / (1 - 2 * (metrics.border + metrics.mat));
+  const border = width * metrics.border;
+  const mat = width * metrics.mat;
+  return {
+    width,
+    height: boardHeight + 2 * (border + mat),
+    border,
+    mat,
+    radius: width * metrics.radius,
+  };
+}
+
+/**
+ * A CSS `linear-gradient(<angle>deg, …)` across a box, as the two end points a canvas gradient
+ * wants. CSS measures the angle clockwise from "to top" and stretches the line until its ends
+ * reach the box's far corners; canvas has to be told both of those.
+ */
+export function cssGradientLine(
+  width: number,
+  height: number,
+  angleDeg: number,
+): { x0: number; y0: number; x1: number; y1: number } {
+  const rad = (angleDeg * Math.PI) / 180;
+  const dx = Math.sin(rad);
+  const dy = -Math.cos(rad);
+  const half = (Math.abs(width * dx) + Math.abs(height * dy)) / 2;
+  return {
+    x0: width / 2 - dx * half,
+    y0: height / 2 - dy * half,
+    x1: width / 2 + dx * half,
+    y1: height / 2 + dy * half,
+  };
+}
+
+/**
+ * The phone wallpaper: 9:19.5, a tall modern screen. On a 9:16 phone only wall is cropped away,
+ * top and bottom; a 9:16 picture on a tall phone would lose the board's sides instead.
+ */
+export const BOARD_WALLPAPER = { width: 1170, height: 2532 } as const;
+
+/** How wide the framed board hangs, as a share of the wallpaper's width. */
+const WALLPAPER_BOARD_WIDTH = 0.856;
+/** Where its top edge sits, as a share of the height: under a lock screen's clock. */
+const WALLPAPER_BOARD_TOP = 0.38;
+/** How far above the board the nail is, as a share of the height. */
+const WALLPAPER_NAIL_RISE = 0.07;
+/** Where the cord meets the board's top edge, in from each side, as a share of its width. */
+const WALLPAPER_CORD_INSET = 0.19;
+
+/** Where the framed board, its nail and its cord go on the wallpaper. */
+export function wallpaperLayout(frame: VisionBoardFrame) {
+  const framed = framedBoardLayout(frame);
+  const width = BOARD_WALLPAPER.width * WALLPAPER_BOARD_WIDTH;
+  const scale = width / framed.width;
+  const x = (BOARD_WALLPAPER.width - width) / 2;
+  const y = BOARD_WALLPAPER.height * WALLPAPER_BOARD_TOP;
+  return {
+    framed,
+    x,
+    y,
+    width,
+    height: framed.height * scale,
+    /** Framed-board units → wallpaper pixels. */
+    scale,
+    nail: { x: BOARD_WALLPAPER.width / 2, y: y - BOARD_WALLPAPER.height * WALLPAPER_NAIL_RISE },
+    cordLeftX: x + width * WALLPAPER_CORD_INSET,
+    cordRightX: x + width * (1 - WALLPAPER_CORD_INSET),
+  };
 }
 
 /** Inner insets a frame preset eats out of the item box, in canvas units. */

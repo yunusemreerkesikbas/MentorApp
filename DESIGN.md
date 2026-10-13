@@ -698,6 +698,19 @@ moment, not a second desk: ease-out throughout, nothing overshoots, the deal is 
   community keep this collapsed rail visible (do not hide AppNav).
 - Single-column → multi-column (main + right rail) at **1280 px** (§4 page frame); between 1024 and
   1279 the sidebar is there and content stays one column.
+- **Editor chrome (notebook and collage editor, 2026-10-13):** tools are a stadium rail (4.5 rem,
+  `--color-surface`, `shadow-card`), the selected one a `--play-selected` chip with a `--play-cta`
+  rim; a category opens a 320 px panel card with its title and the collapse control in one header
+  row. From `lg` both float at the stage's left edge. The collage editor's board steps aside for
+  the open panel (it is never covered) and hangs on a wall of `--color-surface-container`, which
+  follows the theme while the board's canvas does not (§2.5). Below `lg` the collage editor's rail
+  is a dock under the board and the panel a non-modal sheet behind it (28 px top corners, 40×5
+  handle, at most half the screen); the selection's toolbar keeps a row over the dock so the board
+  stays at the top. Options that are chosen by eye (a frame, a texture) are pictured tiles, three
+  to a row, the picture drawn by the code that draws the board, the chosen one in the selected
+  chip; a list of names stays for what has no picture. A placed item is a tab stop: focus selects
+  it, the arrows move it (Shift for the larger step) and Enter opens a text for typing.
+  Code: `vision-board/board/_components/board-editor-{rail,panel,topbar,stage}.tsx`.
 - **Greeting lives once:** on desktop it is the page title ("Günaydın, {ad}" + date); on phones the
   top bar greets and the page keeps the heading for screen readers only. The sidebar never greets.
 - Hover: `shadow-card-hover` on interactive elevated cards; focus: `focus-ring`.

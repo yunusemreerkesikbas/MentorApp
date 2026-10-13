@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { VisionBoardFrame } from "@mentor/types";
+import { BOARD_FRAME_MAT, BOARD_FRAME_METRICS, WOOD_GRAIN } from "./board-export-layout";
 
 /**
  * The frame the board hangs in. Pure CSS, three presets — no image asset, so it stays sharp at
@@ -8,6 +9,10 @@ import type { VisionBoardFrame } from "@mentor/types";
  *
  * Sizes are in `cqw` so the frame keeps its proportions against the board rather than against the
  * viewport: a thumbnail in the panel card gets a thumbnail-sized frame, not a hairline.
+ *
+ * That only holds because the size container is a wrapper of its own. A container's `cqw` lengths
+ * on itself resolve against the container *above* it, and with none above, against the viewport:
+ * while the moulding sat on the container element, it was 2.2% of the window, not of the board.
  */
 
 interface FramePreset {
@@ -21,22 +26,31 @@ interface FramePreset {
   background: string;
 }
 
+/** A share of the framed board's width, as the `cqw` length that draws it. */
+function cqw(share: number): string {
+  return `${Number((share * 100).toFixed(3))}cqw`;
+}
+
+/*
+ * Thicknesses, the wood grain and the mat colours come from `board-export-layout.ts`, the table
+ * the exporter reads too. What stays here is what only the screen has: a shadow, and for the
+ * gallery frame a moulding and a corner that follow the theme.
+ */
 const PRESETS: Record<VisionBoardFrame, FramePreset> = {
   wood: {
-    border: "2.2cqw",
-    mat: "2.6cqw",
-    matColor: "#fbfaf8",
-    radius: "0.5cqw",
+    border: cqw(BOARD_FRAME_METRICS.wood.border),
+    mat: cqw(BOARD_FRAME_METRICS.wood.mat),
+    matColor: BOARD_FRAME_MAT.wood,
+    radius: cqw(BOARD_FRAME_METRICS.wood.radius),
     shadow: "0 1.2cqw 2.6cqw rgba(37, 73, 150, 0.18)",
-    // Alternating stops of one hue read as grain at a glance; a photographic wood texture scaled
-    // down to a 20px moulding just looks like noise.
-    background:
-      "linear-gradient(100deg, #c99a5f 0%, #e0b782 18%, #c08a4c 42%, #dcb17c 68%, #b8813f 100%)",
+    background: `linear-gradient(${WOOD_GRAIN.angle}deg, ${WOOD_GRAIN.stops
+      .map(([at, color]) => `${color} ${at * 100}%`)
+      .join(", ")})`,
   },
   gallery: {
-    border: "0.6cqw",
-    mat: "3.4cqw",
-    matColor: "#ffffff",
+    border: cqw(BOARD_FRAME_METRICS.gallery.border),
+    mat: cqw(BOARD_FRAME_METRICS.gallery.mat),
+    matColor: BOARD_FRAME_MAT.gallery,
     radius: "var(--radius-card)",
     shadow: "var(--shadow-card)",
     background: "color-mix(in srgb, var(--color-main) 12%, transparent)",
@@ -56,30 +70,34 @@ export interface BoardFrameProps {
   children: ReactNode;
   className?: string;
   style?: CSSProperties;
+  /**
+   * Multiplies the moulding and the mat. The editor's frame picker draws them heavier than scale:
+   * true to scale, a 2% moulding on an 80px tile is a hairline nobody can tell from its neighbour.
+   */
+  thickness?: number;
 }
 
-export function BoardFrame({ frame, children, className, style }: BoardFrameProps) {
+export function BoardFrame({ frame, children, className, style, thickness = 1 }: BoardFrameProps) {
   const preset = PRESETS[frame];
   return (
-    <div
-      className={className}
-      style={{
-        containerType: "inline-size",
-        padding: preset.border,
-        borderRadius: preset.radius,
-        background: preset.background,
-        boxShadow: preset.shadow,
-        ...style,
-      }}
-    >
+    <div className={className} style={{ containerType: "inline-size", ...style }}>
       <div
         style={{
-          padding: preset.mat,
-          backgroundColor: preset.matColor,
-          borderRadius: `calc(${preset.radius} / 2)`,
+          padding: `calc(${preset.border} * ${thickness})`,
+          borderRadius: preset.radius,
+          background: preset.background,
+          boxShadow: preset.shadow,
         }}
       >
-        {children}
+        <div
+          style={{
+            padding: `calc(${preset.mat} * ${thickness})`,
+            backgroundColor: preset.matColor,
+            borderRadius: `calc(${preset.radius} / 2)`,
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

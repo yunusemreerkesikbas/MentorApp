@@ -168,7 +168,7 @@ function Divider() {
     <span
       aria-hidden
       className="mx-0.5 h-6 w-px shrink-0"
-      style={{ backgroundColor: "rgba(17, 17, 17, 0.08)" }}
+      style={{ backgroundColor: "color-mix(in srgb, var(--color-main) 10%, transparent)" }}
     />
   );
 }
@@ -242,10 +242,8 @@ function ToolBtn({
       onClick={onClick}
       className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       style={{
-        backgroundColor: pressed
-          ? "var(--color-surface-container)"
-          : "transparent",
-        color: "var(--color-main)",
+        backgroundColor: pressed ? "var(--play-selected)" : "transparent",
+        color: pressed ? "var(--play-selected-ink)" : "var(--color-main)",
       }}
     >
       {children}

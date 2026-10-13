@@ -52,6 +52,30 @@ export function applyMove(
 }
 
 /**
+ * Arrow-key steps, in canvas units: a couple of screen pixels on a board drawn at desk size, and
+ * ten times that with Shift. Tune here if a step feels too fine or too coarse on a real board.
+ */
+export const NUDGE_STEP = 4;
+export const NUDGE_STEP_LARGE = 40;
+
+/** The move an arrow key asks for, or null for any other key. */
+export function nudgeDelta(key: string, large: boolean): { dx: number; dy: number } | null {
+  const step = large ? NUDGE_STEP_LARGE : NUDGE_STEP;
+  switch (key) {
+    case "ArrowLeft":
+      return { dx: -step, dy: 0 };
+    case "ArrowRight":
+      return { dx: step, dy: 0 };
+    case "ArrowUp":
+      return { dx: 0, dy: -step };
+    case "ArrowDown":
+      return { dx: 0, dy: step };
+    default:
+      return null;
+  }
+}
+
+/**
  * Resize from a corner: the opposite corner stays put, which is what makes a drag feel anchored.
  * `lockRatio` keeps photos from being squashed — the exporter honours whatever ratio is stored,
  * so a stretched box stays stretched in the PNG too.

@@ -12,8 +12,13 @@ import {
   type VisionBoardItem,
 } from "@mentor/types";
 import { useTranslations } from "next-intl";
-import { ProgressBar } from "@mentor/ui";
+import { Button, ProgressBar } from "@mentor/ui";
 import { RangeSlider } from "@/components/range-slider";
+import { BoardFrame } from "@/components/vision-board/board-frame";
+import {
+  BOARD_TEXTURE_STYLES,
+  boardBackgroundStyle,
+} from "@/components/vision-board/board-stage";
 import {
   FONT_DISPLAY_NAMES,
   FONT_STACKS,
@@ -79,26 +84,34 @@ export function BoardSidePanel({
   if (category === "board") {
     return (
       <Panel>
+        {/* Frames and textures are picked by looking at them: each tile is drawn by the same code
+            that draws the board, around or with the board's own background. */}
         <Field label={t("board_frame")}>
-          <Row>
-            {VISION_BOARD_FRAMES.filter((frame) => frame !== "none").map(
-              (frame) => (
-                <Pill
-                  key={frame}
-                  active={doc.frame === frame}
-                  label={t(`frame_${frame}`)}
-                  onClick={() =>
-                    onSetFrame(doc.frame === frame ? "none" : frame)
-                  }
-                />
-              ),
-            )}
-          </Row>
+          <div className="grid grid-cols-3 gap-1.5">
+            {VISION_BOARD_FRAMES.map((frame) => (
+              <Tile
+                key={frame}
+                active={doc.frame === frame}
+                label={t(`frame_${frame}`)}
+                onClick={() => onSetFrame(frame)}
+              >
+                <BoardFrame frame={frame} thickness={3} style={{ width: "100%" }}>
+                  <span
+                    className="block"
+                    style={{
+                      aspectRatio: `${VISION_BOARD_CANVAS.width} / ${VISION_BOARD_CANVAS.height}`,
+                      ...boardBackgroundStyle(doc.background),
+                    }}
+                  />
+                </BoardFrame>
+              </Tile>
+            ))}
+          </div>
         </Field>
         <Field label={t("background")}>
-          <Row>
+          <div className="grid grid-cols-3 gap-1.5">
             {VISION_BOARD_TEXTURES.map((texture) => (
-              <Pill
+              <Tile
                 key={texture}
                 active={
                   doc.background.kind === "texture" &&
@@ -108,9 +121,16 @@ export function BoardSidePanel({
                 onClick={() =>
                   onSetBackground({ kind: "texture", value: texture })
                 }
-              />
+              >
+                <span
+                  className="block h-11 w-full rounded-[6px] border border-[color-mix(in_srgb,var(--color-main)_10%,transparent)]"
+                  style={BOARD_TEXTURE_STYLES[texture]}
+                />
+              </Tile>
             ))}
-          </Row>
+          </div>
+        </Field>
+        <Field label={t("background_color")}>
           <Row>
             {BOARD_COLORS.map((color) => (
               <Swatch
@@ -133,11 +153,9 @@ export function BoardSidePanel({
   if (category === "image") {
     return (
       <Panel>
-        <PrimaryAction
-          label={uploadProgress ? t("image_uploading") : t("add_image_cta")}
-          busy={uploadProgress != null}
-          onClick={onUploadImage}
-        />
+        <Button size="sm" fullWidth busy={uploadProgress != null} onClick={onUploadImage}>
+          {uploadProgress ? t("image_uploading") : t("add_image_cta")}
+        </Button>
         {uploadProgress && uploadProgress.total > 1 ? (
           <ProgressBar
             value={(uploadProgress.done / uploadProgress.total) * 100}
@@ -239,11 +257,13 @@ export function BoardSidePanel({
   if (category === "text") {
     return (
       <Panel>
-        <PrimaryAction label={t("add_text_cta")} onClick={onAddText} />
+        <Button size="sm" fullWidth onClick={onAddText}>
+          {t("add_text_cta")}
+        </Button>
         {selected?.kind === "text" ? (
           <>
             <Field label={t("font")}>
-              <div className="flex flex-col gap-1">
+              <div className="grid grid-cols-2 gap-1.5">
                 {VISION_TEXT_FONTS.map((font) => (
                   <Pill
                     key={font}
@@ -438,34 +458,9 @@ function TemplatePreview({ id }: { id: BoardTemplateId }) {
   );
 }
 
+/** A category's body. The panel around it owns the header and the scrolling. */
 function Panel({ children }: { children: ReactNode }) {
-  return (
-    <div className="mentor-scrollarea h-full min-h-0 overflow-y-auto">
-      <div className="flex flex-col gap-3 px-3 pb-3 pt-8">{children}</div>
-    </div>
-  );
-}
-
-function PrimaryAction({
-  label,
-  busy,
-  onClick,
-}: {
-  label: string;
-  busy?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={onClick}
-      className="min-h-11 w-full rounded-[var(--radius-card)] px-3 text-sm font-semibold text-[var(--color-btn-label)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-      style={{ backgroundColor: "var(--color-btn)" }}
-    >
-      {label}
-    </button>
-  );
+  return <div className="flex flex-col gap-3 px-4 pb-4 pt-1">{children}</div>;
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -486,6 +481,38 @@ function Row({ children }: { children: ReactNode }) {
   return <div className="flex flex-wrap items-center gap-1">{children}</div>;
 }
 
+/** A pictured option: the thing itself over its name, in DESIGN.md's selected chip when chosen. */
+function Tile({
+  active,
+  label,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+  /** The picture. Decorative: the button is named by `label`. */
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`flex min-h-11 min-w-0 cursor-pointer flex-col items-stretch gap-1.5 rounded-[var(--radius-card)] px-1.5 pb-2 pt-1.5 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${
+        active
+          ? "bg-[var(--play-selected)] font-extrabold text-[var(--play-selected-ink)] shadow-[inset_0_0_0_1.5px_var(--play-cta)]"
+          : "font-bold text-[var(--color-body)] hover:bg-[var(--color-surface-container)]"
+      }`}
+    >
+      <span aria-hidden className="flex flex-1 items-center">
+        <span className="block w-full">{children}</span>
+      </span>
+      <span className="truncate text-center leading-tight">{label}</span>
+    </button>
+  );
+}
+
 function Pill({
   active,
   label,
@@ -503,10 +530,12 @@ function Pill({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className="min-h-9 rounded-full px-2.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+      className="min-h-11 cursor-pointer truncate rounded-full px-2.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       style={{
-        backgroundColor: active ? "var(--color-btn)" : "var(--color-surface)",
-        color: active ? "var(--color-btn-label)" : "var(--color-body)",
+        // DESIGN.md's selected chip, the same one the rail wears.
+        backgroundColor: active ? "var(--play-selected)" : "var(--color-surface-container)",
+        boxShadow: active ? "inset 0 0 0 1.5px var(--play-cta)" : undefined,
+        color: active ? "var(--play-selected-ink)" : "var(--color-body)",
         fontFamily,
       }}
     >
