@@ -101,6 +101,12 @@ usage in the allocation; do not silently upgrade it or create another organizati
 | R2 / Cloudflare / monitoring | Within verified free allowances; otherwise metered | Same; confirm shared usage |
 | AI during initial acceptance | Scope/cap pending | USD 0 until separately agreed |
 
+The USD 0 AI row is an allocation, not a config value: the current default
+`ai.budget.monthly_cap_usd_cents=0` means **no cap**. Keep `ai.enabled=false` during initial
+acceptance; agree entitlements and a finite positive application/provider allocation before
+enabling AI. No AI flag/cap was applied by this task. The Neon estimate assumes a single
+production compute with min=max 0.25 CU; raising its ceiling requires a new cost/load profile.
+
 The lean profile's expected base is approximately USD 37–38 before tax/usage extras. Allocate
 USD 38 to hosting/DB/domains, leaving USD 12 for tax, transfer/build/storage overage, monitoring
 and domain renewal. A later AI allocation must reduce that reserve, not increase the USD 50
