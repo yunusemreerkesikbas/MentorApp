@@ -14,6 +14,8 @@
   "AUTH_REAUTHENTICATION_REQUIRED": "Sign in again to continue with this action.",
   "AUTH_INVALID_CREDENTIALS": "Incorrect email or password.",
   "AUTH_EMAIL_IN_USE": "An account with this email already exists.",
+  "AUTH_SIGNUP_CLOSED": "New registrations are currently closed. You can still sign in to your existing account.",
+  "AUTH_PILOT_INVITATION_REQUIRED": "We are currently welcoming an invited group. Use your invited email address to register.",
   "AUTH_USERNAME_IN_USE": "This username is already taken.",
   "AUTH_TOKEN_INVALID": "This link is not valid. Request a new one.",
   "AUTH_TOKEN_EXPIRED": "This link has expired. Request a new one.",

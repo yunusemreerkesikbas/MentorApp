@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { validateProductionSecurity } from "./env-production-locks";
+import { pilotInvitedEmailsSchema } from "./pilot-invited-emails";
 
 /**
  * Environment variable schema (§8/§10).
@@ -40,6 +41,8 @@ const envSchema = z.object({
   GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
   GOOGLE_OAUTH_REDIRECT_URI: z.string().url().optional(),
+  /** Exact invited addresses, private to the API; blank means no invitations. */
+  PILOT_INVITED_EMAILS: pilotInvitedEmailsSchema,
 
   // AI (§8): chat + vision providers are BOTH selectable (openai | gemini) — whichever provider +
   // key is set in env runs. `fake` is the dev/test default. Gotcha: switching AI_PROVIDER changes

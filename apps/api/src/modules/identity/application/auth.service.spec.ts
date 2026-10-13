@@ -63,7 +63,11 @@ describe("AuthService coach signup gate", () => {
       createService: vi.fn(),
     };
     const configRegistry = {
-      get: vi.fn(async (key: string) => (key === "mentorship.applications.open" ? open : 0)),
+      get: vi.fn(async (key: string) => {
+        if (key === "signup.enabled") return true;
+        if (key === "signup.pilot.enabled") return false;
+        return key === "mentorship.applications.open" ? open : 0;
+      }),
     };
     const service = new AuthService(
       usersRepo as never,

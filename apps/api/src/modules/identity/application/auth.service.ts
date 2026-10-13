@@ -32,6 +32,7 @@ import { UsersRepository, type UserRow } from "../infrastructure/users.repositor
 import { hashToken, TokenService, type IssuedTokens } from "./token.service";
 import { TurnstileService } from "./turnstile.service";
 import { AuthRateLimitService } from "./auth-rate-limit.service";
+import { assertSignupAdmission } from "./signup-admission";
 
 export interface AuthResult {
   user: AuthUser;
@@ -61,6 +62,7 @@ export class AuthService {
 
   async signup(input: SignupInput): Promise<AuthResult> {
     await this.turnstile.assertValid(input.turnstileToken);
+    await assertSignupAdmission(this.configRegistry, this.config, input.email);
 
     // A shut intake must not mint half a coach: COACH without the registry row that
     // `POST /v1/mentorship/coach-registration` refuses to write, stuck on the last onboarding step.

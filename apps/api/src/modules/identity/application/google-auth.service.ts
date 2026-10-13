@@ -22,6 +22,7 @@ import { AuthAccountRepository } from "../infrastructure/auth-account.repository
 import { UsersRepository, type UserRow } from "../infrastructure/users.repository";
 import { TokenService } from "./token.service";
 import { GoogleLinkingService } from "./google-linking.service";
+import { assertSignupAdmission } from "./signup-admission";
 import { signGoogleOAuthState, verifyGoogleOAuthState, type GoogleOAuthState, type GoogleLinkState } from "./google-oauth-state";
 export { signGoogleOAuthState, verifyGoogleOAuthState, type GoogleOAuthState } from "./google-oauth-state";
 
@@ -134,6 +135,7 @@ export class GoogleAuthService {
       throw new DomainError(ErrorCode.AUTH_GOOGLE_ACCOUNT_NOT_FOUND, HttpStatus.UNAUTHORIZED);
     }
 
+    await assertSignupAdmission(this.configRegistry, this.config, profile.email);
     const passwordHash = await argon2.hash(randomBytes(32).toString("base64url"));
     let user: UserRow;
     try {
