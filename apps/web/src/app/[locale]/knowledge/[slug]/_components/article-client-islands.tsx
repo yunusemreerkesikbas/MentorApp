@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRightUpIcon } from "@solar-icons/react/linear/arrow-right-up";
 import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { trackArticleEvent, type ArticleAnalyticsParams } from "@/lib/analytics";
@@ -55,10 +55,10 @@ export function ArticleSourceLink({
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => trackArticleEvent("article_source_click", analyticsParams)}
-      className="inline-flex items-center gap-0.5 font-extrabold text-[var(--play-selected-ink)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      className="inline-flex items-center gap-0.5 font-extrabold text-[var(--color-main)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
     >
       {source}
-      <ArrowUpRight className="size-3.5" aria-hidden />
+      <ArrowRightUpIcon size={14} strokeWidth={2} />
     </a>
   );
 }

@@ -78,6 +78,29 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-14 — Blog sadeleştirme (düz zemin, tek mürekkep, üyeye uygulama menüsü)** — Hub ve yazı artık
+  `BlogShell`'de (`knowledge/_components/blog-shell.tsx`), `PublicChrome` yalnız yasal sayfalarda. Zemin opak
+  `--color-bg` (blob'lar blogda görünmez). **Ziyaretçi**: ince bar, PuhuKoç + "Giriş yap" ("Blog" linki kalktı).
+  **Üye** (oturumlu + onboarding bitmiş): üst bar gizlenir, `(app)`'in `AppNav`'ı (kenar menü, telefonda üst bar +
+  alt sekme, zil, koç FAB) sayfanın yanına takılır. `BlogMemberChrome` `next/dynamic` + `ssr:false` ile yalnız üyeye
+  iner ve dil kataloğunu istemcide bir kez yükler, yazının mesaj bütçesi (6 KiB) değişmez. Hangi kabuğun görüneceği
+  `html[data-blog-member]` (globals.css): sayfadaki nonce'lu bootstrap betiği son ziyaretin `localStorage`
+  ipucundan (`mentor.blog-member`) boyamadan önce tahmin eder, oturum cevap verince `BlogShell` düzeltir. Böylece
+  üyenin yenilemesinde menü yeri baştan ayrılır, içerik kaymaz. Filtreler `SlidingTabs`: sınav pill, konu underline
+  (`blog-tabs.tsx`, iyimser seçim + `router.push`, URL yine kaynak). Sekmeler link olmadığı için sitemap artık
+  KPSS/YKS/LGS hub'larını tek tek listeler. Metin rengi tek mürekkep: kategori, breadcrumb, "Yazıyı oku",
+  "Takvime ekle", kaynak linki siyah (`blog-ui.ts`: `BLOG_ACTION`, `BLOG_INLINE_LINK`); renk yalnız yeşil doğrulama
+  kalkanında, "Koçla konuş" ledge'inde ve aktif menüde. Güven satırı yeşil blok değil, iki hairline arası.
+  "Sınava N gün kaldı" rozet değil sakin satır. İkonlar Solar Linear (1.75), kapaksız yazıda renkli kuyu yerine
+  40 px yuvada çıplak kategori glifi (Başvuru pano, Sınav süreci takvim, Genel kitap). Gotcha'lar: (1) Üye kabuğu
+  `EconomySync` takmaz (ödülleri kutlamadan tüketirdi); pill'ler için yalnız `refreshEconomySnapshot`. (2) Kabuk
+  çocukları **sarmaz**, yanına konur: oturum çözülünce yazının adacıkları (görüntülenme, reklam) yeniden takılmaz.
+  (3) `SlidingTabs` underline çizgisi `--tabs-pill-bg`'ye düşüyordu (global beyaz), bildirim çekmecesinde de
+  görünmüyordu; artık `--tabs-underline-bg` (varsayılan `--color-main`). `@mentor/ui` `dist`'ten okunur:
+  değişince `pnpm --filter @mentor/ui build`. (4) Önizleme bölmesi gizliyken `innerWidth` 0 olur, padding geçişi
+  takılı görünür; gerçek tarayıcıda (Playwright) ilk boyama 240 px. Tuval:
+  https://claude.ai/artifact/4S4Nn5CvsnK53Ai29i7yPx. İlgili: `knowledge/**`, `public-chrome.tsx`, `globals.css`,
+  `sitemap.ts`, `sliding-tabs.tsx`, `e2e/knowledge.spec.ts`.
 - **2026-09-23 — Bilgi → Blog redesign (public SSR hub + post in the panel language)** — Bölüm artık **Blog**:
   `/blog`, `/blog/[slug]`, EN `/en/blog/...`; `/bilgi*` ve `/en/knowledge*` `next.config.ts` redirect'leriyle 308
   (query korunur). Hub `(app)` dışına çıktı ve **herkese açık, sunucuda render** ediliyor
@@ -254,7 +277,8 @@ pnpm --filter @mentor/api-client generate
   won't auto-apply it (drizzle applies `when > last`) — apply `0006_info_articles.sql` once by hand.
 - **The blog is public: hub `/blog` and posts `/blog/[slug]` both render on the server, no auth** (until
   2026-09-23 the hub was `(app)/bilgi`, members only). The hub's family comes from `?family=` (default KPSS),
-  never from the session. Landing fetches `family=KPSS` (first seed); section hidden if API down or empty.
+  never from the session. Since 2026-10-14 a member sees the app's own navigation there (`BlogShell`), but the
+  server render is the same for everyone: only the client decides which chrome shows. Landing fetches `family=KPSS` (first seed); section hidden if API down or empty.
 - **Invalid `family` query → 400** (`VALIDATION_ERROR`); missing `family` → 400. Invalid/oversize slug
   → 400; unpublished draft → 404 (`CONTENT_ARTICLE_NOT_FOUND`). Invalid `category` on upsert → 400.
 - **No vector index yet** — seq scan is exact + fast at MVP article counts; HNSW/ivfflat = backlog

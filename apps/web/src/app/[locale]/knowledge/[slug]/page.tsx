@@ -20,7 +20,8 @@ import {
   buildBreadcrumbStructuredData,
 } from "@/lib/structured-data";
 import { ArticleContent } from "./_components/article-content";
-import { PublicChrome } from "@/components/public-chrome";
+import { BlogShell } from "../_components/blog-shell";
+import { BLOG_MEMBER_BOOTSTRAP_SCRIPT } from "../_components/blog-ui";
 import { PublicFooter } from "@/components/public-footer";
 
 export const revalidate = 3600;
@@ -118,6 +119,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
     3,
   );
   const canonical = infoArticleUrl(article.slug);
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   const origin = siteUrl();
   const articleJsonLd = buildArticleStructuredData({
@@ -138,19 +140,16 @@ export default async function PublicArticlePage({ params }: PageProps) {
     <NextIntlClientProvider
       messages={pickMessages(messages, ROUTE_MESSAGE_SCOPES.article)}
     >
-      <PublicChrome
-        loginLabel={translate("login")}
-        panelLabel={translate("panel")}
-        blogLabel={translate("blog")}
-      >
-      <script
-        nonce={(await headers()).get("x-nonce") ?? undefined}
-        type="application/ld+json"
+      <script nonce={nonce} dangerouslySetInnerHTML={{ __html: BLOG_MEMBER_BOOTSTRAP_SCRIPT }} />
+      <BlogShell loginLabel={translate("login")} panelLabel={translate("panel")}>
+        <script
+          nonce={nonce}
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdHtml(articleJsonLd) }}
         />
-      <script
-        nonce={(await headers()).get("x-nonce") ?? undefined}
-        type="application/ld+json"
+        <script
+          nonce={nonce}
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbJsonLd) }}
         />
         <ArticleContent
@@ -163,7 +162,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
           readingMinutes={readingMinutes(article.body, article.bodyFormat)}
         />
         <PublicFooter wide />
-      </PublicChrome>
+      </BlogShell>
     </NextIntlClientProvider>
   );
 }

@@ -1,10 +1,7 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AltArrowLeftIcon } from "@solar-icons/react/linear/alt-arrow-left";
+import { AltArrowRightIcon } from "@solar-icons/react/linear/alt-arrow-right";
 import { getTranslations } from "next-intl/server";
-import {
-  PANEL_CARD,
-  PANEL_CARD_TITLE,
-  PANEL_TEXT_LINK,
-} from "@/components/panel/panel-styles";
+import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 import { getPathname, Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import {
@@ -15,6 +12,7 @@ import {
   type BlogQuery,
 } from "@/lib/blog-url";
 import { fetchFeaturedArticle, fetchInfoArticlesByFamily } from "@/lib/content-api";
+import { BLOG_ACTION } from "./blog-ui";
 import { FeaturedPost } from "./featured-post";
 import { PostRows } from "./post-rows";
 
@@ -36,7 +34,7 @@ export async function PostsSection({ query, locale }: { query: BlogQuery; locale
         {/* A full reload, not a soft navigation: the failed request is the one to repeat. */}
         <a
           href={getPathname({ locale: locale as Locale, href: blogHref(query) })}
-          className={PANEL_TEXT_LINK}
+          className={BLOG_ACTION}
         >
           {t("retry")}
         </a>
@@ -62,10 +60,10 @@ export async function PostsSection({ query, locale }: { query: BlogQuery; locale
           <Link
             href={blogHref({ family: query.family, category: pastEnd ? query.category : null })}
             scroll={false}
-            className={PANEL_TEXT_LINK}
+            className={BLOG_ACTION}
           >
             {t(pastEnd ? "first_page_link" : "all_topics_link")}
-            <ChevronRight className="size-4" aria-hidden />
+            <AltArrowRightIcon size={16} strokeWidth={1.75} />
           </Link>
         ) : null}
       </section>
@@ -79,8 +77,8 @@ export async function PostsSection({ query, locale }: { query: BlogQuery; locale
       {pages > 1 ? (
         <nav aria-label={t("pagination_label")} className="flex items-center justify-center gap-4">
           {query.page > 1 ? (
-            <Link href={blogHref({ ...query, page: query.page - 1 })} className={PANEL_TEXT_LINK}>
-              <ChevronLeft className="size-4" aria-hidden />
+            <Link href={blogHref({ ...query, page: query.page - 1 })} className={BLOG_ACTION}>
+              <AltArrowLeftIcon size={16} strokeWidth={1.75} />
               {t("pagination_prev")}
             </Link>
           ) : null}
@@ -88,9 +86,9 @@ export async function PostsSection({ query, locale }: { query: BlogQuery; locale
             {t("pagination_page", { page: query.page, pages })}
           </p>
           {query.page < pages ? (
-            <Link href={blogHref({ ...query, page: query.page + 1 })} className={PANEL_TEXT_LINK}>
+            <Link href={blogHref({ ...query, page: query.page + 1 })} className={BLOG_ACTION}>
               {t("pagination_next")}
-              <ChevronRight className="size-4" aria-hidden />
+              <AltArrowRightIcon size={16} strokeWidth={1.75} />
             </Link>
           ) : null}
         </nav>

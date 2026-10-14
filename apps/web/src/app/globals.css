@@ -60,6 +60,32 @@ html[data-app-sidebar="collapsed"] .mentor-app-sidebar-expanded {
   }
 }
 
+/* Public blog for a member (knowledge/_components/blog-shell.tsx): the app chrome's offsets
+   (MOBILE_TAB_BAR_PADDING_CLASS, .mentor-app-shell) instead of the visitor bar. */
+html[data-blog-member] .blog-shell-bar {
+  display: none;
+}
+
+html[data-blog-member] .blog-shell {
+  padding-top: 4rem;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 1024px) {
+  html[data-blog-member] .blog-shell {
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: var(--app-sidebar-width);
+    transition: padding-left 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-blog-member] .blog-shell {
+    transition: none;
+  }
+}
+
 html.mentor-dialog-open {
   overflow: hidden;
 }
@@ -1000,6 +1026,10 @@ html.mentor-sheet-open {
   margin: 0;
 }
 /* --play-selected-ink, not --color-accent: the accent is ~2.4:1 on white (DESIGN §2.3). */
+/* The blog reads in one ink (2026-10-14); legal pages keep the link blue. */
+.blog-shell .mentor-article-body a {
+  color: var(--color-main);
+}
 .mentor-article-body a {
   color: var(--play-selected-ink);
   font-weight: 800;

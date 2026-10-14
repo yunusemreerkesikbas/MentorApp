@@ -1,15 +1,14 @@
 import { getTranslations } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
 import { blogHref, type BlogQuery } from "@/lib/blog-url";
 import { ARTICLE_CATEGORIES, EXAM_FAMILIES } from "@/lib/content-api";
+import { BlogTabs } from "./blog-tabs";
 
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
-
-/** The page speaks for itself (analysis header pattern): title, exam switch, topic chips over the list. */
+/**
+ * The page speaks for itself (analysis header pattern): title and the exam switch, then the topics
+ * over the list. Both filters are `SlidingTabs`: a pill for the exam, an underline for the topic.
+ */
 export async function BlogHeader({ query }: { query: BlogQuery }) {
   const t = await getTranslations("knowledge");
-  const topics = [null, ...ARTICLE_CATEGORIES];
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
@@ -22,53 +21,29 @@ export async function BlogHeader({ query }: { query: BlogQuery }) {
             {t("subtitle")}
           </p>
         </div>
-        <nav
-          aria-label={t("families_label")}
-          className="flex gap-1 rounded-[var(--play-radius)] bg-[var(--color-surface-container)] p-1 sm:shrink-0"
-        >
-          {EXAM_FAMILIES.map((family) => {
-            const on = family === query.family;
-            return (
-              <Link
-                key={family}
-                href={blogHref({ family, category: query.category })}
-                scroll={false}
-                aria-current={on ? "page" : undefined}
-                className={`flex min-h-11 flex-1 items-center justify-center rounded-[var(--radius-card)] px-5 text-body-sm font-extrabold sm:flex-none ${FOCUS} ${
-                  on
-                    ? "bg-[var(--color-surface)] text-[var(--color-main)] shadow-[0_2px_0_var(--play-line)]"
-                    : "text-[var(--color-secondary)] hover:text-[var(--color-main)]"
-                }`}
-              >
-                {t(`families.${family.toLowerCase()}`)}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="sm:shrink-0">
+          <BlogTabs
+            variant="pill"
+            ariaLabel={t("families_label")}
+            value={query.family}
+            tabs={EXAM_FAMILIES.map((family) => ({
+              id: family,
+              label: t(`families.${family.toLowerCase()}`),
+              href: blogHref({ family, category: query.category }),
+            }))}
+          />
+        </div>
       </div>
-      <nav
-        aria-label={t("topics_label")}
-        className="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0"
-      >
-        {topics.map((category) => {
-          const on = category === query.category;
-          return (
-            <Link
-              key={category ?? "all"}
-              href={blogHref({ family: query.family, category })}
-              scroll={false}
-              aria-current={on ? "page" : undefined}
-              className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-[var(--radius-card)] border px-4 text-sm font-extrabold ${FOCUS} ${
-                on
-                  ? "border-transparent bg-[var(--play-selected)] text-[var(--play-selected-ink)] shadow-[inset_0_0_0_2px_var(--play-cta)]"
-                  : "border-[var(--play-line)] bg-[var(--color-surface)] text-[var(--color-main)] hover:border-[var(--color-secondary)]"
-              }`}
-            >
-              {category ? t(`categories.${category.toLowerCase()}`) : t("all_topics")}
-            </Link>
-          );
-        })}
-      </nav>
+      <BlogTabs
+        variant="underline"
+        ariaLabel={t("topics_label")}
+        value={query.category ?? "ALL"}
+        tabs={[null, ...ARTICLE_CATEGORIES].map((category) => ({
+          id: category ?? "ALL",
+          label: category ? t(`categories.${category.toLowerCase()}`) : t("all_topics"),
+          href: blogHref({ family: query.family, category }),
+        }))}
+      />
     </div>
   );
 }

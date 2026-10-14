@@ -7,12 +7,12 @@ export function formatPostDate(iso: string, locale: string, month: "short" | "lo
   );
 }
 
-/** "Başvuru · 1 Haz 2026": the category is the only colour in a row's text. */
+/** "Başvuru · 1 Haz 2026": the category leads in ink, the date follows in grey (no colour). */
 export async function PostMeta({ article, locale }: { article: InfoArticleSummaryDto; locale: string }) {
   const t = await getTranslations("knowledge");
   return (
     <p className="flex flex-wrap items-center gap-x-1.5 text-caption font-bold text-[var(--color-secondary)]">
-      <span className="font-extrabold text-[var(--play-selected-ink)]">
+      <span className="font-extrabold text-[var(--color-main)]">
         {t(`categories.${article.category.toLowerCase()}`)}
       </span>
       {article.publishedAt ? (

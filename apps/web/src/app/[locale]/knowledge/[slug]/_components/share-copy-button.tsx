@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Link2 } from "lucide-react";
+import { CheckCircleIcon } from "@solar-icons/react/linear/check-circle";
+import { LinkIcon } from "@solar-icons/react/linear/link";
 
 export function ShareCopyButton({
   url,
@@ -28,7 +29,11 @@ export function ShareCopyButton({
 
   return (
     <button type="button" onClick={handleCopy} aria-label={copied ? copiedLabel : label} className={className}>
-      {copied ? <Check className="size-5" aria-hidden /> : <Link2 className="size-5" aria-hidden />}
+      {copied ? (
+        <CheckCircleIcon size={20} strokeWidth={1.75} />
+      ) : (
+        <LinkIcon size={20} strokeWidth={1.75} />
+      )}
     </button>
   );
 }

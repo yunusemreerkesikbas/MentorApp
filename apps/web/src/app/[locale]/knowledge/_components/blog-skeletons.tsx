@@ -12,8 +12,9 @@ export function PostsSkeleton() {
   const t = useTranslations("knowledge");
   return (
     <SkeletonGroup label={t("loading")} className="flex flex-col gap-5">
-      <div className={`${PANEL_CARD} flex flex-col gap-4 sm:flex-row sm:gap-6`}>
-        <Skeleton className={`aspect-video w-full sm:aspect-4/3 sm:w-5/12 sm:max-w-80 ${BONE}`} />
+      {/* Most posts have no cover: the category glyph's 40 px slot leads the text. */}
+      <div className={`${PANEL_CARD} flex items-start gap-4`}>
+        <Skeleton className={`size-10 shrink-0 ${BONE}`} />
         <div className="flex flex-1 flex-col gap-3">
           <Skeleton className={`h-3.5 w-28 ${BONE}`} />
           <Skeleton className={`h-6 w-4/5 ${BONE}`} />
@@ -28,7 +29,7 @@ export function PostsSkeleton() {
             className="flex items-center gap-4 border-t border-[var(--color-border)] py-4 first:border-t-0"
             style={{ animationDelay: `${row * 60}ms` }}
           >
-            <Skeleton className={`size-18 shrink-0 sm:h-18 sm:w-24 ${BONE}`} />
+            <Skeleton className={`size-10 shrink-0 ${BONE}`} />
             <div className="flex flex-1 flex-col gap-2">
               <Skeleton className={`h-3 w-32 ${BONE}`} />
               <Skeleton className={`h-4 w-3/4 ${BONE}`} />
@@ -47,7 +48,7 @@ export function ExamDaySkeleton() {
     <SkeletonGroup label={t("loading")} className={`${PANEL_CARD} flex flex-col gap-3`}>
       <Skeleton className={`h-4 w-24 ${BONE}`} />
       <Skeleton className={`h-6 w-44 ${BONE}`} />
-      <Skeleton className="h-8 w-40 rounded-full" />
+      <Skeleton className={`h-4 w-40 ${BONE}`} />
       <Skeleton className={`h-3.5 w-full ${BONE}`} />
     </SkeletonGroup>
   );

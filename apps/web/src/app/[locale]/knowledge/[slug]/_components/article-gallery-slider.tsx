@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AltArrowLeftIcon } from "@solar-icons/react/linear/alt-arrow-left";
+import { AltArrowRightIcon } from "@solar-icons/react/linear/alt-arrow-right";
 import type { InfoArticleCoverImageDto } from "@mentor/types";
 
 export function ArticleGallerySlider({
@@ -34,7 +35,7 @@ export function ArticleGallerySlider({
             onClick={() => setIndex((value) => (value === 0 ? images.length - 1 : value - 1))}
             className="absolute left-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-main)_55%,transparent)] text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <AltArrowLeftIcon size={20} strokeWidth={1.75} />
           </button>
           <button
             type="button"
@@ -42,7 +43,7 @@ export function ArticleGallerySlider({
             onClick={() => setIndex((value) => (value === images.length - 1 ? 0 : value + 1))}
             className="absolute right-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-main)_55%,transparent)] text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2"
           >
-            <ChevronRight className="h-5 w-5" />
+            <AltArrowRightIcon size={20} strokeWidth={1.75} />
           </button>
           <p className="sr-only">{t("gallery_slide", { current: index + 1, total: images.length })}</p>
         </>
