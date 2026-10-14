@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { ArticleCover } from "../../_components/article-cover";
 import { PostMeta } from "../../_components/post-meta";
 
-/** Rail list rows (DESIGN §6.1): cover or category well, title, category · date. */
+/** Rail list rows (DESIGN §6.1): cover or category glyph, title, category · date. */
 export async function RelatedPosts({
   related,
   locale,
@@ -29,7 +29,7 @@ export async function RelatedPosts({
               href={{ pathname: "/knowledge/[slug]", params: { slug: article.slug } }}
               className="group flex items-center gap-3 rounded-[var(--radius-card)] py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             >
-              <ArticleCover article={article} className="size-12" iconClassName="size-5" />
+              <ArticleCover article={article} className="size-12" />
               <div className="min-w-0">
                 <h3 className="text-body-sm font-extrabold leading-snug text-[var(--color-main)] underline-offset-4 group-hover:underline">
                   {article.title}

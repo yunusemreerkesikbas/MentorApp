@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { AltArrowRightIcon } from "@solar-icons/react/linear/alt-arrow-right";
 import type { InfoArticleSummaryDto } from "@mentor/types";
 import { Link } from "@/i18n/navigation";
 import { ArticleCover } from "./article-cover";
@@ -20,11 +20,7 @@ export function PostRows({
             href={{ pathname: "/knowledge/[slug]", params: { slug: article.slug } }}
             className="group flex items-center gap-3 rounded-[var(--radius-card)] py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] sm:gap-4 sm:py-4"
           >
-            <ArticleCover
-              article={article}
-              className="size-18 sm:h-18 sm:w-24"
-              iconClassName="size-6"
-            />
+            <ArticleCover article={article} className="size-18 sm:h-18 sm:w-24" />
             <div className="min-w-0 flex-1">
               <PostMeta article={article} locale={locale} />
               <h3 className="mt-1 text-balance text-base font-extrabold leading-snug text-[var(--color-main)] underline-offset-4 group-hover:underline">
@@ -36,7 +32,11 @@ export function PostRows({
                 </p>
               ) : null}
             </div>
-            <ChevronRight className="size-5 shrink-0 text-[var(--color-secondary)]" aria-hidden />
+            <AltArrowRightIcon
+              size={20}
+              strokeWidth={1.75}
+              className="shrink-0 text-[var(--color-secondary)]"
+            />
           </Link>
         </li>
       ))}

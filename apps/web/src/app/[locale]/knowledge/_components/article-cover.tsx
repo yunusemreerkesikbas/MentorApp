@@ -1,22 +1,28 @@
-import { BookOpen, CalendarClock, ClipboardList, type LucideIcon } from "lucide-react";
+import { Book2Icon } from "@solar-icons/react/linear/book-2";
+import { CalendarMarkIcon } from "@solar-icons/react/linear/calendar-mark";
+import { ClipboardListIcon } from "@solar-icons/react/linear/clipboard-list";
 import type { InfoArticleSummaryDto } from "@mentor/types";
 
-const WELLS: Record<string, { fill: string; Icon: LucideIcon }> = {
-  APPLICATION: { fill: "bg-[var(--play-well-blue)]", Icon: ClipboardList },
-  EXAM_PROCESS: { fill: "bg-[var(--play-well-peri)]", Icon: CalendarClock },
-  GENERAL: { fill: "bg-[var(--play-well-violet)]", Icon: BookOpen },
+const GLYPHS: Record<string, typeof Book2Icon> = {
+  APPLICATION: ClipboardListIcon,
+  EXAM_PROCESS: CalendarMarkIcon,
+  GENERAL: Book2Icon,
 };
 
-/** The editor's cover, or the category's well + icon when there is none (never an empty grey box). */
+/**
+ * The editor's cover, or the category's bare Solar glyph in a 40 px slot when there is none: no
+ * coloured well behind it (2026-10-14), the category label beside it carries the rest.
+ */
 export function ArticleCover({
   article,
   className,
-  iconClassName = "size-11",
+  glyphSize = 22,
   priority = false,
 }: {
   article: InfoArticleSummaryDto;
+  /** Sizes the cover image; the glyph slot is always 40 px. */
   className: string;
-  iconClassName?: string;
+  glyphSize?: number;
   priority?: boolean;
 }) {
   if (article.coverImage) {
@@ -33,13 +39,10 @@ export function ArticleCover({
       />
     );
   }
-  const { fill, Icon } = WELLS[article.category] ?? WELLS.GENERAL!;
+  const Glyph = GLYPHS[article.category] ?? Book2Icon;
   return (
-    <div
-      aria-hidden
-      className={`flex shrink-0 items-center justify-center rounded-[var(--radius-card)] text-[var(--play-selected-ink)] ${fill} ${className}`}
-    >
-      <Icon className={iconClassName} strokeWidth={1.75} />
-    </div>
+    <span aria-hidden className="grid size-10 shrink-0 place-items-center text-[var(--color-secondary)]">
+      <Glyph size={glyphSize} strokeWidth={1.75} />
+    </span>
   );
 }

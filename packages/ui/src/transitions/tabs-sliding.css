@@ -108,7 +108,7 @@
   height: 2px;
   border-radius: 0;
   box-shadow: none;
-  background: var(--tabs-pill-bg, var(--color-main));
+  background: var(--tabs-underline-bg, var(--color-main));
 }
 
 @media (prefers-reduced-motion: reduce) {

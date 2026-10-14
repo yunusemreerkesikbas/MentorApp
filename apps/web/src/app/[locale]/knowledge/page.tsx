@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import { PublicChrome } from "@/components/public-chrome";
 import { PublicFooter } from "@/components/public-footer";
 import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 import { setRequestLocale } from "@/i18n/locale";
 import { blogUrl, parseBlogQuery } from "@/lib/blog-url";
 import { BlogHeader } from "./_components/blog-header";
+import { BlogShell } from "./_components/blog-shell";
+import { BLOG_MEMBER_BOOTSTRAP_SCRIPT } from "./_components/blog-ui";
 import { ExamDaySkeleton, PostsSkeleton } from "./_components/blog-skeletons";
 import { ExamDayCard } from "./_components/exam-day-card";
 import { PostsSection } from "./_components/posts-section";
@@ -34,33 +36,35 @@ export default async function BlogPage({ params, searchParams }: PageProps) {
   const [{ locale }, raw] = await Promise.all([params, searchParams]);
   setRequestLocale(locale);
   const query = parseBlogQuery(raw);
-  const chrome = await getTranslations("article");
+  const [chrome, requestHeaders] = await Promise.all([getTranslations("article"), headers()]);
 
   return (
-    <PublicChrome
-      loginLabel={chrome("login")}
-      panelLabel={chrome("panel")}
-      blogLabel={chrome("blog")}
-    >
-      <main className={PANEL_MAIN_CLASS}>
-        <div className={PANEL_GRID_CLASS}>
-          <div className="flex min-w-0 flex-col gap-5">
-            <BlogHeader query={query} />
-            <Suspense
-              key={`${query.family}-${query.category}-${query.page}`}
-              fallback={<PostsSkeleton />}
-            >
-              <PostsSection query={query} locale={locale} />
-            </Suspense>
+    <>
+      <script
+        nonce={requestHeaders.get("x-nonce") ?? undefined}
+        dangerouslySetInnerHTML={{ __html: BLOG_MEMBER_BOOTSTRAP_SCRIPT }}
+      />
+      <BlogShell loginLabel={chrome("login")} panelLabel={chrome("panel")}>
+        <main className={PANEL_MAIN_CLASS}>
+          <div className={PANEL_GRID_CLASS}>
+            <div className="flex min-w-0 flex-col gap-5">
+              <BlogHeader query={query} />
+              <Suspense
+                key={`${query.family}-${query.category}-${query.page}`}
+                fallback={<PostsSkeleton />}
+              >
+                <PostsSection query={query} locale={locale} />
+              </Suspense>
+            </div>
+            <aside className="min-w-0 xl:sticky xl:top-6">
+              <Suspense key={query.family} fallback={<ExamDaySkeleton />}>
+                <ExamDayCard family={query.family} locale={locale} />
+              </Suspense>
+            </aside>
           </div>
-          <aside className="min-w-0 xl:sticky xl:top-6">
-            <Suspense key={query.family} fallback={<ExamDaySkeleton />}>
-              <ExamDayCard family={query.family} locale={locale} />
-            </Suspense>
-          </aside>
-        </div>
-      </main>
-      <PublicFooter wide />
-    </PublicChrome>
+        </main>
+        <PublicFooter wide />
+      </BlogShell>
+    </>
   );
 }

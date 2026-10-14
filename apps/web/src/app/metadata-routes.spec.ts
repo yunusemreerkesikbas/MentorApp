@@ -26,9 +26,11 @@ describe("metadata routes", () => {
     });
   });
 
-  it("lists the public blog hub, and not the noindex welcome page", async () => {
+  it("lists each exam's blog hub, and not the noindex welcome page", async () => {
     expect(await sitemap()).toEqual([
       { url: "https://mentor.example/blog", changeFrequency: "weekly", priority: 0.6 },
+      { url: "https://mentor.example/blog?family=YKS", changeFrequency: "weekly", priority: 0.6 },
+      { url: "https://mentor.example/blog?family=LGS", changeFrequency: "weekly", priority: 0.6 },
     ]);
   });
 });

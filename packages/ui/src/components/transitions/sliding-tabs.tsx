@@ -185,8 +185,10 @@ export function SlidingTabs({
         }
         aria-hidden
         style={{
+          // Its own token: `--tabs-pill-bg` is the pill's surface (white) and is always defined, so
+          // the underline never fell back to ink and drew white on white.
           background: underline
-            ? "var(--tabs-pill-bg, var(--color-main))"
+            ? "var(--tabs-underline-bg, var(--color-main))"
             : "var(--tabs-pill-bg, var(--color-surface))",
         }}
       />

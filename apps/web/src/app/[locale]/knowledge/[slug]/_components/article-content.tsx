@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { AltArrowRightIcon } from "@solar-icons/react/linear/alt-arrow-right";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import type { ExamType, InfoArticleDto, InfoArticleSummaryDto } from "@mentor/types";
@@ -19,7 +19,7 @@ import { RelatedPosts } from "./related-posts";
 import { ShareRow } from "./share-row";
 
 const CRUMB =
-  "inline-flex min-h-11 items-center text-[var(--play-selected-ink)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
+  "inline-flex min-h-11 items-center underline-offset-4 hover:text-[var(--color-main)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
 
 /**
  * A blog post in the panel frame: reading column on the left (breadcrumb → title → provenance →
@@ -64,7 +64,7 @@ export async function ArticleContent({
             <Link href={blogHref({ family })} className={CRUMB}>
               {t("blog")}
             </Link>
-            <ChevronRight className="size-3.5" aria-hidden />
+            <AltArrowRightIcon size={14} strokeWidth={1.75} />
             <Link href={blogHref({ family, category })} className={CRUMB}>
               {k(`categories.${category.toLowerCase()}`)}
             </Link>

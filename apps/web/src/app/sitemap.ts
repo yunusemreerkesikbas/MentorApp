@@ -15,8 +15,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly" as const,
       priority: 0.3,
     })),
-    // The public blog hub (TR); topic and page views canonicalise to it.
-    { url: blogUrl(), changeFrequency: "weekly" as const, priority: 0.6 },
+    // The public blog hub per exam (TR); topic and page views canonicalise to them. Listed because the
+    // exam switch is a tab bar now, not links a crawler follows.
+    ...(["KPSS", "YKS", "LGS"] as const).map((family) => ({
+      url: blogUrl(family),
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    })),
   ];
   try {
     const [questions, ...articlePages] = await Promise.allSettled([
