@@ -78,6 +78,13 @@ Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs 
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-14 · PR #168 conflict resolution.** Synced the local Google display preview
+  branch with `master`, retaining the isolated SDK/creative findings and the normal local
+  application follow-up. Usage: follow the existing opt-in local preview steps; production
+  rollout and publisher validation gates still apply. Gotcha: the smoke report covers two
+  different backend setups, so keep their evidence and limitations distinct. Related:
+  `docs/features/ads.md`, `docs/qa/2026-10-14-google-display-smoke.md`.
+
 - **2026-10-14 · Google test ads in the normal local application.** Added opt-in API
   `ADS_LOCAL_TEST_ENABLED=true` for development with an HTTP loopback `APP_URL`. The existing
   article placement uses Google's official sample inventory, overrides display rollout switches
