@@ -16,7 +16,16 @@ function useFocusOnChange(key: string) {
 }
 
 /** Puhu asks the question: mouth moves while the words stream in, then one blink. */
-export function PuhuBubble({ title, sub }: { title: string; sub?: string }) {
+export function PuhuBubble({
+  title,
+  sub,
+  idleFrame = PUHU_MOTION_FRAMES.default,
+}: {
+  title: string;
+  sub?: string;
+  /** The frame Puhu holds between lines. The plan's waiting scene turns his eyes to its board. */
+  idleFrame?: string;
+}) {
   const reduceMotion = useReducedMotion();
   const titleRef = useFocusOnChange(title);
   /** The title that has finished streaming. The sub line waits for it, so Puhu says one thing at a time. */
@@ -52,9 +61,11 @@ export function PuhuBubble({ title, sub }: { title: string; sub?: string }) {
 
   const src = blinking
     ? PUHU_MOTION_FRAMES.blink
-    : speaking && mouthClosed
-      ? PUHU_MOTION_FRAMES.talkClosed
-      : PUHU_MOTION_FRAMES.default;
+    : speaking
+      ? mouthClosed
+        ? PUHU_MOTION_FRAMES.talkClosed
+        : PUHU_MOTION_FRAMES.default
+      : idleFrame;
 
   return (
     <div className="flex items-center gap-3">

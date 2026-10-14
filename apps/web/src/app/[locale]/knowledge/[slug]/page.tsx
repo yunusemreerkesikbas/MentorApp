@@ -42,7 +42,7 @@ export async function generateMetadata({
   const description = article.metaDescription ?? undefined;
   const canonical = infoArticleUrl(article.slug);
   const origin = siteUrl();
-  const fallbackImage = `${origin}/mascot/puhu/puhu-default.png`;
+  const fallbackImage = `${origin}/img/brand/puhukoc-og-${locale === "en" ? "en" : "tr"}.png`;
   const image = article.coverImage
     ? {
         url: article.coverImage.url,
@@ -126,7 +126,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
     article,
     canonical,
     siteOrigin: origin,
-    publisherLogoUrl: `${origin}/mascot/puhu/puhu-default.png`,
+    publisherLogoUrl: `${origin}/img/brand/puhukoc-apple-icon.png`,
   });
   const breadcrumbJsonLd = buildBreadcrumbStructuredData({
     homeName: "PuhuKoç",

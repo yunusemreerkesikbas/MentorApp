@@ -17,9 +17,9 @@ const NavigationManu = () => {
             <div className="navbar-wrapper">
                 <div className="m-header">
                     <Link href="/" className="b-brand">
-                        {/* PuhuKoç admin brand (text — no Duralux logo asset). */}
-                        <span className="logo logo-lg fw-bolder fs-4 text-primary">PuhuKoç</span>
-                        <span className="logo logo-sm fw-bolder fs-4 text-primary">P</span>
+                        {/* PuhuKoç logo (DESIGN.md §8.7), rendered from the web's Logo; the eye when collapsed. */}
+                        <img src="/images/puhukoc/puhukoc-wordmark.png" alt="PuhuKoç" height="28" className="logo logo-lg" />
+                        <img src="/images/puhukoc/puhukoc-icon.svg" alt="PuhuKoç" width="32" height="32" className="logo logo-sm" />
                     </Link>
                 </div>
 

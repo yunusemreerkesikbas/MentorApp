@@ -1245,3 +1245,23 @@ eklendi.
   (`docs/core/deployment.md`); "Mentor V2" is the AI engine's name, not the brand, and stays; the
   seed only renames `metaTitle` on a fresh database, existing article rows keep theirs;
   `NETGSM_MSGHEADER` is an operator-registered value and does not follow this rename.
+
+- **2026-10-14 — PuhuKoç logo.** The plain-text wordmark is now `@mentor/ui` `Logo`: Nunito 1000 with
+  the o of Koç drawn as an inline SVG eye (DESIGN.md §8.7). `cut="small"` is the default, for the
+  text-lg/xl spots; the desktop sidebar (text-2xl) uses `cut="large"`. Call sites: `app-nav.tsx`
+  (mobile top bar + sidebar), `public-chrome.tsx`, `blog-shell.tsx`, the forum question page and
+  `room-join-shell.tsx`. Tokens `--logo-pupil` (dark flips to #55acee) and `--logo-glint` in
+  `theme.css`. The favicon (`public/img/brand/puhukoc-icon.svg`) and the apple icon
+  (`puhukoc-apple-icon.png`, 180px, made from the same geometry with the sharp in `apps/web`)
+  replaced the Puhu mascot PNG in the root metadata. Design canvas (directions, refinement, final
+  sheet): https://claude.ai/artifact/8MKL7cdhW7VUgchN8nHAbk.
+  Gotchas: the logo takes its size from the caller's font-size class and its ink from `color`, so
+  don't add `font-*`/`tracking-*` classes around it; the brand files live under `/img/` because a
+  new top-level `public/` folder would go through the locale proxy (see 2026-10-10).
+  Same day, share images and admin: the site OG/Twitter image and the forum/article fallback are
+  `public/img/brand/puhukoc-og-{tr,en}.png` (1200×630: logo, slogan, puhukoc.com, picked by
+  locale); the article JSON-LD `publisherLogoUrl` is the apple icon. The admin sidebar shows
+  `apps/admin/public/images/puhukoc/puhukoc-wordmark.png` and, collapsed, the eye SVG. These PNGs
+  were screenshotted from the dev server with Playwright so they use the real Nunito; redraw
+  them the same way if the logo changes. Gotcha: Duralux's dark navigation theme inverts
+  `.logo-lg`, which turns the blue pupil orange there. The mascot PNG remains only as Puhu art.

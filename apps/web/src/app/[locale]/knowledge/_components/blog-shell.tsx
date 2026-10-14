@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { Suspense, useLayoutEffect, type ReactNode } from "react";
 import { useLocale, type AbstractIntlMessages } from "next-intl";
+import { Logo } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
@@ -74,9 +75,9 @@ export function BlogShell({
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8 lg:h-18 lg:px-10">
           <Link
             href="/"
-            className="inline-flex min-h-11 items-center text-lg font-black tracking-[-0.01em] text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] sm:text-xl"
+            className="inline-flex min-h-11 items-center text-lg text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] sm:text-xl"
           >
-            PuhuKoç
+            <Logo />
           </Link>
           {status === "loading" ? (
             <span className="min-h-11 min-w-20" aria-hidden="true" />

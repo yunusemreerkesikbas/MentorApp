@@ -484,6 +484,28 @@ Flat files under `public/visuals/`, WebP preferred, e.g. `plan-empty.webp`, `ana
 - A second filled ledge, or a second commercial ask, on the same screen
 - Looping animated art inside a card (static art; motion belongs to moments, §9.1)
 
+### 8.7 Logo (2026-10-14)
+
+The logo is typographic: **PuhuKoç** set in Nunito 1000, where the o of Koç is drawn as an eye.
+There is no separate symbol and no mascot in it; Puhu stays in the art (§8.1). Component:
+`@mentor/ui` `Logo`. Never retype the name as styled text where the logo belongs.
+
+- **The eye:** a ring whose stroke matches the letter stem, a pupil tangent to the ring that looks
+  up and ahead, and a white glint. Pupil `--logo-pupil` (#1A5FA3 light, 6.5:1; #55ACEE dark),
+  glint `--logo-glint`. The ring and letters take the text colour (`--color-main`).
+- **Two drawings:** `cut="large"` at 24px and up (eye 0.52em, tracking -0.03em, glint);
+  `cut="small"` (the default) below 24px: eye 0.56em, pupil larger in the ring, tracking
+  +0.005em, no glint. The caller's class sets the type size.
+- **Minimum** 13px. Below that only the eye is used: the favicon
+  (`/img/brand/puhukoc-icon.svg`) and the app icon (`/img/brand/puhukoc-apple-icon.png`) are the
+  eye in `--play-cta-ink` on a `--play-cta` tile.
+- **Share image:** `/img/brand/puhukoc-og-{tr,en}.png`, 1200×630, the logo with the slogan on
+  the white blob canvas. The admin sidebar uses a PNG of the logo (`apps/admin/public/images/puhukoc/`).
+- **Clear space:** one eye diameter on every side.
+- **Written** "PuhuKoç": capital P and K, and the ç keeps its cedilla.
+- Lockups, dark and single-ink versions: the design canvas linked from
+  `docs/features/web-shell.md`.
+
 ---
 
 ## 9. Motion scale (rich, guarded)
@@ -569,6 +591,24 @@ squashes and stretches, and the film runs about 6 s with sound. Everything else 
 
 Existing exception: `.mentor-puhu-bounce` (globals.css) loops a 2 s idle bob for the mascot — a
 deliberate presence cue, disabled under reduced motion.
+
+**The hung board (2026-10-14): the sway decision.** On the panel's "Hedefin" card a published
+vision board hangs from a nail by a cord, and a hung thing swings. Decided with the product owner
+and scoped to `HungBoard` only: it may rotate about its nail past rest (a damped spring, never more
+than 3°) and take longer than the `Moment` budget to come to rest (it reads as settled at about
+1.3 s). Everything else in §9 stands, and so does §8: it is pushed, it never loops.
+
+| Cause | What the student sees | Push |
+| --- | --- | --- |
+| Arrival | The first sight of a board the editor has just saved: it swings and settles, once. The flag is spent on that sight, so a refresh does not repeat it | 42°/s, just under 3° |
+| Mouse | The pointer comes in over the card and the board is pushed from that side | 22°/s, about 1.5° |
+| Rehang | The full-size preview shuts and the board settles back on its nail (the one sway a phone gets from touching it) | 16°/s, about 1° |
+
+- **Reduced motion:** it does not move. The arrival flag is still spent.
+- **Not built, on purpose:** an idle loop (§8), a sway tied to scrolling, a sway on the day's
+  progress. The last two are open ideas, each its own decision.
+- **Source of truth:** `components/vision-board/hung-board-sway.ts` (spring, pushes, the flag);
+  the component is `hung-board.tsx`.
 
 **The coach's screens (2026-09-26, Durak F).** `/kocluk` is a Measured work surface with two
 Progress moments of its own. Classes live in `(coach)/_components/coach-theme.css`; framer defaults
@@ -683,11 +723,45 @@ moment, not a second desk: ease-out throughout, nothing overshoots, the deal is 
   `FAN_TIMING`), the hand in `(app)/notebook/_components/notebook-review-list.tsx`, one card in
   `notebook-review-fan-card.tsx`.
 
+**The plan's waiting scene (2026-10-14, "Hafta kuruluyor"): the loop decision.** "Koçla planla"
+asks a model for a preview and the answer takes seconds. That wait is the one place a full-screen
+scene loops: decided with the product owner and scoped to this scene, it keeps moving for as long
+as the request is out. §9's "no orchestrated full-page load shows" and the "never loop" rule above
+stand everywhere else. It is the wizard's last step, not a new screen: the wizard stays open
+underneath, and its bar, which always held one segment back, fills when the answer lands.
+
+| Beat | What happens | Time |
+| --- | --- | --- |
+| Deal | The student's own answers come onto the week as blocks: the picked days are the lit tracks, the picked subjects the colours | 500 ms, 40 ms apart |
+| Wait | Half the blocks change days on every beat, Puhu's eyes follow the one that leads, and the bubble says what the coach read: each line once, the last one stays | 900 ms a beat, 3.6 s a line |
+| Long wait | The bubble says the coach is still at it and that "Vazgeç" is there | from 12 s |
+| Arrival | The blocks gather and drop out, the bar fills, the scene closes and the preview sheet rises | 450 ms |
+
+- **True, not theatre:** nothing on it is a made-up figure. With the wizard the blocks are the
+  student's answers: two to a picked day, in the picked subjects' colours. Without it they are the
+  tasks already waiting in the week, one block each (twelve at most), so a week with one waiting
+  task shows one block trying the days. The lines are the brief's own evidence, and the bar never
+  claims more than it knows. The blocks carry no labels and never come to rest, so the board
+  cannot be read as the plan.
+- **Leaving:** "Vazgeç" and Escape are there from the first frame (the request can run 30 s). They
+  return to the wizard's note step with every answer in place, and a late answer opens nothing. A
+  failed request does the same; the wizard says the error above its own button, since a toast sits
+  under a native dialog.
+- **Without the wizard** (the mood and session invitations, "Yeniden hazırla"): the same scene opens
+  by itself, with no bar.
+- **Reduced motion:** the blocks stand in their first arrangement, the lines still change, and the
+  preview opens the moment the answer lands. No sound.
+- **Source of truth:** timings and the arrangement in
+  `(app)/plan/_components/plan-coach-stage-scene.ts` (`STAGE_TIMING`, `stageBeat`), the scene in
+  `plan-coach-adaptation-stage.tsx`, the board in `plan-coach-stage-board.tsx`.
+
 ---
 
 ## 10. Empty & loading
 
 - **Loading:** page-specific `*-content-skeleton.tsx` using `@mentor/ui` `Skeleton` / `SkeletonGroup` + global shimmer classes — **only while auth settles**. After that the layout paints at once and each section fills in on its own (its own placeholder, or nothing until it has something true to say); no `if (!data) return` gate over a whole page. Data a screen needs goes out in one parallel wave (panel: `use-panel-data.ts`).
+- **A wait on a model** is not a skeleton. "Koçla planla" plays its own scene (§9.1, "Hafta
+  kuruluyor"); the other AI waits keep their one-line status until each is its own decision.
 - **Empty:** teach the next action (`EmptyState`) — not “nothing here.” The panel's empty day is
   the pattern: one dashed "İlk adım" node, one ledge ("Planına görev ekle"), Puhu saying the first
   step can be small.

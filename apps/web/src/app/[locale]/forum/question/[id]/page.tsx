@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { Logo } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { fetchPublicQuestion, questionUrl, siteUrl } from "@/lib/forum-public";
 import { jsonLdHtml } from "@/lib/json-ld";
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `${q.title} | PuhuKoç Topluluk`;
   const description = q.body.replace(/\s+/g, " ").trim().slice(0, 155);
   const canonical = questionUrl(id);
-  const fallbackImage = `${siteUrl()}/mascot/puhu/puhu-default.png`;
+  const fallbackImage = `${siteUrl()}/img/brand/puhukoc-og-${locale === "en" ? "en" : "tr"}.png`;
   return {
     title,
     description,
@@ -71,10 +72,10 @@ export default async function PublicQuestionPage({ params }: PageProps) {
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link
             href="/"
-            className="text-lg font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+            className="text-lg transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            style={{ color: "var(--color-main)" }}
           >
-            PuhuKoç
+            <Logo />
           </Link>
           <Link
             href="/login"
