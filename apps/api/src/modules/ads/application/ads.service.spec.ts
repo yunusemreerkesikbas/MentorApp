@@ -6,10 +6,11 @@ import type {
   NewAdRewardSession,
 } from "../infrastructure/ad-reward-session.repository";
 
-const CONFIG: Record<string, number | boolean> = {
+const CONFIG: Record<string, number | boolean | string> = {
   "economy.enabled": true,
   "ads.enabled": true,
   "ads.display.enabled": true,
+  "ads.display.allowed_countries": "TR",
   "ads.rewarded.enabled": true,
   "ads.placement.knowledge_article_end.enabled": true,
   "ads.placement.dashboard_rewarded_coin.enabled": true,
@@ -22,7 +23,15 @@ const CONFIG: Record<string, number | boolean> = {
 
 function setup(
   isPremium = false,
-  options: { profileExamType?: ExamType; articleFamily?: ExamType; nodeEnv?: string } = {},
+  options: {
+    profileExamType?: ExamType;
+    articleFamily?: ExamType;
+    nodeEnv?: string;
+    localTest?: boolean;
+    appEnv?: string;
+    appUrl?: string;
+    adsDisabled?: boolean;
+  } = {},
 ) {
   const sessions: AdRewardSessionRow[] = [];
   const rewardedCountSince = vi.fn(async () => sessions.filter((row) => row.status === "REWARDED").length);
@@ -68,14 +77,15 @@ function setup(
   };
   const service = new AdsService(
     repo as never,
-    { get: async (key: string) => CONFIG[key] } as never,
+    { get: async (key: string) => options.adsDisabled && key.endsWith("enabled") ? false : CONFIG[key] } as never,
     {
-      get: (key: string) =>
-        key === "NODE_ENV"
-          ? options.nodeEnv
-          : key.includes("KNOWLEDGE")
-            ? "/network/article"
-            : "/network/reward",
+      get: (key: string) => {
+        if (key === "NODE_ENV") return options.nodeEnv ?? "development";
+        if (key === "APP_ENV") return options.appEnv;
+        if (key === "APP_URL") return options.appUrl ?? "http://localhost:3000";
+        if (key === "ADS_LOCAL_TEST_ENABLED") return options.localTest ? "true" : "false";
+        return key.includes("KNOWLEDGE") ? "/network/article" : "/network/reward";
+      },
     } as never,
     { getEntitlement: async () => ({ isPremium }) } as never,
     { getDiscoveryProfile: async () => ({ examType: options.profileExamType ?? ExamType.LGS }) } as never,
@@ -88,6 +98,46 @@ function setup(
 }
 
 describe("AdsService", () => {
+  it("uses only official test inventory locally without enabling database flags", async () => {
+    const view = await setup(false, { localTest: true, adsDisabled: true }).service.getPublicPlacement(
+      AdPlacementId.KNOWLEDGE_ARTICLE_END, "lgs-guide", null, null,
+    );
+    expect(view).toMatchObject({ enabled: true, adUnitPath: "/6355419/Travel/Europe/France/Paris", limitedAds: true, audienceTreatment: "CHILD" });
+  });
+
+  it.each([
+    { nodeEnv: "production" },
+    { appEnv: "staging" },
+    { appEnv: "production" },
+    { appUrl: "https://puhukoc.com" },
+    { localTest: false },
+  ])("cannot override normal policy outside local development (%j)", async (guard) => {
+    const view = await setup(false, { localTest: true, adsDisabled: true, ...guard }).service.getPublicPlacement(
+      AdPlacementId.KNOWLEDGE_ARTICLE_END, "lgs-guide", null, null,
+    );
+    expect(view).toMatchObject({ enabled: false, reason: "GLOBAL_DISABLED", adUnitPath: "/network/article" });
+  });
+
+  it("keeps Premium ad-free even in local test mode", async () => {
+    const view = await setup(true, { localTest: true }).service.getPlacement(
+      AdPlacementId.KNOWLEDGE_ARTICLE_END, "user-1", ["STAFF"], "lgs-guide", null,
+    );
+    expect(view).toMatchObject({ enabled: false, reason: "PREMIUM_AD_FREE" });
+  });
+
+  it("still requires verified content and respects explicit country restrictions locally", async () => {
+    const { service } = setup(false, { localTest: true });
+    expect(await service.getPublicPlacement(AdPlacementId.KNOWLEDGE_ARTICLE_END, null, null, null))
+      .toMatchObject({ enabled: false, reason: "CONTEXT_UNVERIFIED", adUnitPath: null });
+    expect(await service.getPublicPlacement(AdPlacementId.KNOWLEDGE_ARTICLE_END, "lgs-guide", null, "DE"))
+      .toMatchObject({ enabled: false, reason: "REGION_REQUIRES_CONSENT" });
+    expect(await service.getPublicPlacement(AdPlacementId.KNOWLEDGE_ARTICLE_END, "lgs-guide", null, "US"))
+      .toMatchObject({ enabled: false, reason: "REGION_NOT_ENABLED" });
+    const disabledRewards = setup(false, { localTest: true, adsDisabled: true }).service;
+    expect(await disabledRewards.getRewardOffer(AdPlacementId.DASHBOARD_REWARDED_COIN, "user-1", [], null))
+      .toMatchObject({ enabled: false, reason: "GLOBAL_DISABLED", adUnitPath: "/network/reward" });
+  });
+
   it("returns an ineligible placement for Premium without weakening child treatment rules", async () => {
     const view = await setup(true).service.getPlacement(
       AdPlacementId.KNOWLEDGE_ARTICLE_END,
@@ -200,6 +250,22 @@ describe("AdsService", () => {
     );
 
     expect(replay.id).toBe(first.id);
+    expect(sessions).toHaveLength(1);
+    expect(economy.reserveCoinGrantInServiceTx).toHaveBeenCalledTimes(1);
+  });
+
+  it("replays creation when a concurrent request commits while the offer is being checked", async () => {
+    const { service, economy, sessions } = setup();
+    const key = "11111111-1111-4111-8111-111111111111";
+    const user = { id: "user-1", roles: [], orgId: null };
+    const getOffer = service.getRewardOffer.bind(service);
+    vi.spyOn(service, "getRewardOffer").mockImplementationOnce(async (...args) => {
+      await service.createRewardSession(AdPlacementId.DASHBOARD_REWARDED_COIN, user, "TR", key);
+      return getOffer(...args);
+    });
+
+    const replay = await service.createRewardSession(AdPlacementId.DASHBOARD_REWARDED_COIN, user, "TR", key);
+    expect(replay.id).toBe(sessions[0]!.id);
     expect(sessions).toHaveLength(1);
     expect(economy.reserveCoinGrantInServiceTx).toHaveBeenCalledTimes(1);
   });

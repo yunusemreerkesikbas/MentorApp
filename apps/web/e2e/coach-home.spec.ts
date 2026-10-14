@@ -308,9 +308,9 @@ test.describe("koçun kendi dünyası", () => {
     await expect(page.getByRole("link", { name: "Öğrencilerim" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Bildirimler", exact: false })).toBeVisible();
     await expect(
-      page.getByTestId("app-sidebar").getByRole("link", { name: "Mentor" }),
+      page.getByTestId("app-sidebar").getByRole("link", { name: "PuhuKoç" }),
     ).toHaveAttribute("href", "/kocluk");
-    await expect(page.locator("header").getByText("Mentor", { exact: true })).toHaveCount(0);
+    await expect(page.locator("header").getByText("PuhuKoç", { exact: true })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
   });
 

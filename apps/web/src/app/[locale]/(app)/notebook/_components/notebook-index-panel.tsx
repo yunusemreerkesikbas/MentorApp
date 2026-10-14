@@ -13,6 +13,7 @@ import type {
 import { NOTEBOOK_ERROR_TYPES } from "@mentor/types";
 import { TaxonomyCascadeSelect } from "@/components/taxonomy-cascade-select";
 import { FormError } from "@/components/form";
+import { ENTRY_DRAG_TYPE } from "@/lib/notebook-drop";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
 import { fetchNotebookEntries } from "@/lib/notebook";
 import {
@@ -322,6 +323,15 @@ export function NotebookIndexPanel({
         </p>
       ) : null}
 
+      {visibleItems.length > 0 ? (
+        <p
+          className="hidden text-xs sm:block"
+          style={{ color: "var(--color-secondary)" }}
+        >
+          {t("index_drag_hint")}
+        </p>
+      ) : null}
+
       <div className="flex flex-col">
         {visibleItems.map((entry) => (
           <IndexRow
@@ -446,7 +456,16 @@ function IndexRow({
   const label = entry.topicName ?? entry.subjectName ?? t("card_unlabelled");
 
   return (
-    <div className="flex items-center gap-2">
+    <div
+      className="flex items-center gap-2"
+      // Dragged onto a page, the card lands where it is let go. One already on an open page stays
+      // put, the same rule the place button below follows.
+      draggable={!placed}
+      onDragStart={(event) => {
+        event.dataTransfer.setData(ENTRY_DRAG_TYPE, JSON.stringify(entry));
+        event.dataTransfer.effectAllowed = "copy";
+      }}
+    >
       {/* A real checkbox, not a styled div: it is the one control here that has to announce a
           checked state, and the platform already does that in every screen reader. */}
       <input

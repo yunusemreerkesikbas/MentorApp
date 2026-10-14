@@ -169,6 +169,8 @@ async function pickOption(page: Page, field: string, option: string) {
 
 /** Mobile collapses the page-tool rail to a pen circle; expand it before tapping Ekle/Çiz/…. */
 async function ensureNotebookToolsOpen(page: Page) {
+  const coachHint = page.getByTestId("desktop-coach-fab").getByRole("button", { name: "Kapat", exact: true });
+  if (await coachHint.isVisible()) await coachHint.click();
   const show = page.getByRole("button", { name: "Araçları göster" });
   if (await show.isVisible()) await show.click();
 }
@@ -729,6 +731,8 @@ test("sidebar sticker ekler, sayfaya yapıştırır ve otomatik kaydeder", async
   await openToFirstSpread(page);
   await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Sticker" }).click();
+  // The panel opens on its Puhu tab; the star is a shape.
+  await page.getByRole("tab", { name: "Şekil" }).click();
 
   // The full vision-board sticker set, not a shortlist — each one keeps its own translated name.
   // `exact` because that set holds "Yıldız", "Yıldız (1)" and "Yıldız (2)", and role-name matching
@@ -768,6 +772,16 @@ test("not: tıklayınca sayfa üzerinde düzenlenebilir alan açılır; boş bı
   await openToFirstSpread(page);
 
   // No sidebar form: the note lands directly on the page, already in edit mode.
+  const header = page.locator("header[data-app-chrome]");
+  if (await header.isVisible()) {
+    const theme = header.getByRole("button", { name: "Koyu temaya geç" });
+    await theme.click();
+    await expect(header.getByRole("button", { name: "Açık temaya geç" })).toHaveAttribute("aria-pressed", "true");
+    const headerBox = await header.boundingBox();
+    const themeBox = await header.getByRole("button", { name: "Açık temaya geç" }).boundingBox();
+    expect(headerBox).not.toBeNull();
+    expect(themeBox!.y + themeBox!.height).toBeLessThanOrEqual(headerBox!.y + headerBox!.height);
+  }
   await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Not" }).click();
   const editor = page.getByLabel("Not metni");
@@ -1294,11 +1308,45 @@ test("kart önizlemesinden hata tipi düzeltilir", async ({ page }) => {
   await page.getByText("Problemler").dblclick();
 
   await page.getByRole("button", { name: "Kartı düzenle" }).click();
+  await expect(page.getByRole("dialog", { name: "Tekrar zamanı" })).toBeHidden();
   await page.getByRole("button", { name: "Bilmiyordum" }).click();
   await page.getByRole("button", { name: "Değişiklikleri kaydet" }).click();
 
   await expect.poll(() => api.patches.length).toBe(1);
   expect(api.patches[0]?.body).toMatchObject({ errorType: "UNKNOWN_TOPIC" });
+  await expect(page.getByRole("dialog", { name: "Tekrar zamanı" })).toBeVisible();
+});
+
+test("kart ayarları iptal edilince kaydedilmiş çözüm korunur", async ({ page }) => {
+  const entry = makeEntry({ reviewCount: 2, solutionNote: "Önceki çözüm." });
+  const api = await mockNotebookApi(page, { pages: { 0: seededEntryPage(entry) } });
+  await page.goto("/yanlis-defteri");
+  await openToFirstSpread(page);
+  await page.getByText("Problemler").dblclick();
+  await page.getByRole("button", { name: "Çevir" }).click();
+  await page.getByRole("button", { name: "Çözümü düzenle" }).click();
+  await page.getByLabel("Çözümü düzenle").fill("Paydaları eşitle.");
+  await page.getByRole("button", { name: "Notu kaydet" }).click();
+  await expect.poll(() => api.patches.length).toBe(1);
+  await page.getByRole("button", { name: "Soruya dön" }).click();
+  await page.getByRole("button", { name: "Kartı düzenle" }).click();
+  await page.getByRole("button", { name: "Vazgeç", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Tekrar zamanı" })).toBeVisible();
+  await page.getByRole("button", { name: "Çevir" }).click();
+  await expect(page.getByText("Paydaları eşitle.", { exact: true })).toBeVisible();
+});
+
+test("ders bilgisi alınamazsa kart önizlemesi okunabilir kalır", async ({ page }) => {
+  const entry = makeEntry({ reviewCount: 2 });
+  await mockNotebookApi(page, { pages: { 0: seededEntryPage(entry) } });
+  await page.route("**/v1/content/exams/by-type/KPSS**", (route) => json(route, {}, 503));
+  await page.goto("/yanlis-defteri");
+  await openToFirstSpread(page);
+  await page.getByText("Problemler").dblclick();
+  await expect(page.getByRole("dialog", { name: "Tekrar zamanı" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Kartı düzenle" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Çevir" }).click();
+  await expect(page.getByRole("button", { name: "Soruya dön" })).toHaveAttribute("aria-pressed", "true");
 });
 
 test("denemeden gelen öğrenci ekleme formunu deneme bağlı bulur", async ({
@@ -1475,4 +1523,138 @@ test("fotoğrafı açılmayan kart boş kalmaz; Space kartı çevirir", async ({
   await expect(
     page.getByRole("button", { name: "Soruya dön" }),
   ).toHaveAttribute("aria-pressed", "true");
+});
+
+/** The entry cards a page was last saved with, or -1 if that page was never saved. */
+function savedEntryCount(
+  savedPages: Array<{ index: number; doc: unknown }>,
+  index: number,
+): number {
+  const last = [...savedPages].reverse().find((p) => p.index === index);
+  const doc = last?.doc as { items: Array<{ kind: string }> } | undefined;
+  return doc?.items.filter((item) => item.kind === "entry").length ?? -1;
+}
+
+test("kart karşı sayfaya sürüklenince oraya geçer; telefonda kenara sürüklemek sayfayı çevirir", async ({
+  page,
+}, testInfo) => {
+  const singleLeaf = testInfo.project.name === "mobile-chromium";
+  const entry = makeEntry({ reviewCount: 2 });
+  const api = await mockNotebookApi(page, {
+    pages: { 0: seededEntryPage(entry) },
+  });
+  await page.goto("/yanlis-defteri");
+  await openToFirstSpread(page);
+
+  const card = page.locator('[data-notebook-page="left"] [data-notebook-item]');
+  const from = await card.boundingBox();
+  expect(from).not.toBeNull();
+  await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2);
+  await page.mouse.down();
+
+  if (singleLeaf) {
+    // One leaf on screen: its right edge stands in for the facing page, and says so.
+    const leaf = await page.locator('[data-notebook-page="left"]').boundingBox();
+    await page.mouse.move(leaf!.x + leaf!.width - 6, from!.y + from!.height / 2, {
+      steps: 12,
+    });
+    await expect(page.getByText("Bırak, sağ sayfaya geçsin")).toBeVisible();
+  } else {
+    const right = await page.locator('[data-notebook-page="right"]').boundingBox();
+    await page.mouse.move(right!.x + right!.width / 2, right!.y + right!.height / 2, {
+      steps: 12,
+    });
+  }
+  await page.mouse.up();
+
+  if (singleLeaf) await expect(page.getByText("Sayfa 2", { exact: true })).toBeVisible();
+  await expect(
+    page.locator('[data-notebook-page="right"] [data-notebook-item]'),
+  ).toHaveCount(1);
+  // Both pages save their half of the move: the card leaves one and arrives on the other.
+  await expect.poll(() => savedEntryCount(api.savedPages, 1), { timeout: 5_000 }).toBe(1);
+  await expect.poll(() => savedEntryCount(api.savedPages, 0), { timeout: 5_000 }).toBe(0);
+  expect(api.pageErrors).toEqual([]);
+});
+
+test("kalabalık sayfa da kart alır: 'sayfa doldu' yok, kart sayfanın içinde kalır", async ({
+  page,
+}) => {
+  const entries = Array.from({ length: 5 }, (_, i) =>
+    makeEntry({ id: `cccccccc-1111-4111-8111-11111111111${i}`, topicName: `Konu ${i}` }),
+  );
+  const crowded: NotebookPageDto = {
+    pageIndex: 0,
+    doc: {
+      version: 1,
+      paper: "ruled",
+      ink: [],
+      items: entries.slice(0, 4).map((entry, i) => ({
+        id: `dddddddd-1111-4111-8111-11111111111${i}`,
+        kind: "entry" as const,
+        entryId: entry.id,
+        x: 170,
+        y: 90 + i * 340,
+        width: 800,
+        height: 300,
+        rotation: 0,
+        opacity: 1,
+        z: i + 1,
+      })),
+    },
+    entries: entries.slice(0, 4),
+  };
+  const api = await mockNotebookApi(page, {
+    pages: { 0: crowded },
+    indexEntries: entries,
+  });
+  await page.goto("/yanlis-defteri");
+  await openToFirstSpread(page);
+  await ensureNotebookToolsOpen(page);
+  await page.getByRole("button", { name: "Ara", exact: true }).click();
+  await page.getByRole("button", { name: "Sayfaya yerleştir" }).click();
+
+  await expect(page.getByText("Bu sayfa doldu", { exact: false })).toHaveCount(0);
+  await expect.poll(() => savedEntryCount(api.savedPages, 0), { timeout: 5_000 }).toBe(5);
+  const last = [...api.savedPages].reverse().find((p) => p.index === 0)!;
+  const added = (last.doc as { items: Array<{ y: number; height: number }> }).items.at(-1)!;
+  expect(added.y + added.height).toBeLessThanOrEqual(1527);
+});
+
+test("sticker ve dizin kartı sürüklenip istenen sayfaya bırakılır", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name === "mobile-chromium",
+    "Native drag and drop is a pointer-and-mouse thing; on a phone the panel places with a tap.",
+  );
+  const entry = makeEntry({ id: "eeeeeeee-1111-4111-8111-111111111111" });
+  const api = await mockNotebookApi(page, { indexEntries: [entry] });
+  await page.goto("/yanlis-defteri");
+  await openToFirstSpread(page);
+
+  const right = page.locator('[data-notebook-page="right"]');
+  await page.getByRole("button", { name: "Sticker" }).click();
+  await page.getByRole("tab", { name: "Şekil" }).click();
+  await page
+    .getByRole("button", { name: "Yıldız", exact: true })
+    .dragTo(right, { targetPosition: { x: 200, y: 300 } });
+  await expect
+    .poll(
+      () => {
+        const last = [...api.savedPages].reverse().find((p) => p.index === 1);
+        const doc = last?.doc as { items: Array<{ kind: string }> } | undefined;
+        return doc?.items.filter((item) => item.kind === "sticker").length ?? -1;
+      },
+      { timeout: 5_000 },
+    )
+    .toBe(1);
+
+  await page.getByRole("button", { name: "Ara", exact: true }).click();
+  await page.getByText("Problemler").first().dragTo(right, {
+    targetPosition: { x: 200, y: 150 },
+  });
+  await expect.poll(() => savedEntryCount(api.savedPages, 1), { timeout: 5_000 }).toBe(1);
+  // Nothing went to the left page the panel would have used for a tap.
+  expect(savedEntryCount(api.savedPages, 0)).toBe(-1);
 });

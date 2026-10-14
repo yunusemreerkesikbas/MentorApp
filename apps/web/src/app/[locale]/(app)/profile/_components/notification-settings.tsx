@@ -1,8 +1,6 @@
 "use client";
-import { Bell, Mail, Smartphone, Tag } from "lucide-react";
 
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Card, Skeleton, SkeletonGroup, Toggle } from "@mentor/ui";
 import type { NotificationPreferencesDto } from "@mentor/types";
@@ -123,7 +121,6 @@ export function NotificationSettings() {
         >
           {t("title")}
         </h2>
-        <Bell size={16} className="text-[var(--color-secondary)]" aria-hidden />
       </div>
       {error ? <FormError message={error} /> : null}
       <div className="flex flex-col gap-0.5">
@@ -131,7 +128,6 @@ export function NotificationSettings() {
           checked={emailEnabled}
           description={t("email_desc")}
           disabled={saving || loading}
-          icon={<Mail size={18} aria-hidden />}
           label={t("email")}
           onChange={(next) => {
             const prev = emailEnabled;
@@ -146,7 +142,6 @@ export function NotificationSettings() {
           checked={pushEnabled}
           description={t("push_desc")}
           disabled={saving || loading || pushSupport !== "ready"}
-          icon={<Smartphone size={18} aria-hidden />}
           label={t("push")}
           onChange={(next) => void togglePush(next)}
         />
@@ -172,7 +167,6 @@ export function NotificationSettings() {
           checked={campaignsEnabled}
           description={t("campaigns_desc")}
           disabled={saving || loading}
-          icon={<Tag size={18} aria-hidden />}
           label={t("campaigns")}
           onChange={(next) => {
             const prev = campaignsEnabled;
@@ -203,26 +197,21 @@ function ToggleRow({
   checked,
   description,
   disabled,
-  icon,
   label,
   onChange,
 }: {
   checked: boolean;
   description: string;
   disabled: boolean;
-  icon: ReactNode;
   label: string;
   onChange: (checked: boolean) => void;
 }) {
   return (
     <div className="flex min-h-11 min-w-0 items-center justify-between gap-3 rounded-[calc(var(--radius-card)-2px)] px-3 py-1.5 transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)]">
       <span className="flex min-w-0 items-center gap-3">
-        <span className="flex size-7 shrink-0 items-center justify-center text-[var(--color-secondary)]">
-          {icon}
-        </span>
         <span className="min-w-0">
           <span
-            className="block truncate text-sm font-medium leading-5 text-[var(--color-main)]"
+            className="block truncate text-md font-medium leading-5 text-[var(--color-main)]"
             style={{ fontFamily: "var(--font-body)" }}
           >
             {label}
@@ -233,6 +222,7 @@ function ToggleRow({
         </span>
       </span>
       <Toggle
+        className="[--toggle-on-bg:var(--play-cta)]"
         checked={checked}
         disabled={disabled}
         onChange={onChange}

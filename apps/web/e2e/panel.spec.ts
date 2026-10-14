@@ -8,6 +8,7 @@ import type {
   CommunityLevelView,
 } from "@mentor/types";
 import { IDLE_STREAK } from "./streak.fixture";
+import { visionWithBoard } from "./vision-board-editor.fixture";
 
 /**
  * The "Bugün" panel (APP-103 Faz 2): one tap on the greeting row checks in, a path node opens a
@@ -380,13 +381,11 @@ for (const scenario of [
     await expect(completedFill).toHaveCSS("background-color", scenario.dark ? "rgb(107, 196, 154)" : "rgb(46, 125, 84)");
     expect(await completedFill.evaluate((element) => element.getBoundingClientRect().width / element.parentElement!.getBoundingClientRect().width)).toBeCloseTo(1, 2);
     expect(await questBars.first().evaluate((element) => element.firstElementChild!.getBoundingClientRect().width / element.getBoundingClientRect().width)).toBeCloseTo(scenario.percent === 37 ? 0.33 : 0, 2);
-    const slots = quests.locator("li > span[aria-hidden]").or(vision.locator("div > span[aria-hidden]")).or(
-      page.getByTestId("premium-perks-card").locator("li a > span.grid"),
-    );
-    await expect(slots).toHaveCount(scenario.premium ? 5 : 3);
+    const slots = page.getByTestId("premium-perks-card").locator("li a > span.grid");
+    await expect(slots).toHaveCount(scenario.premium ? 2 : 0);
     for (const slot of await slots.all()) {
       await expect(slot).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-      await expect(slot.locator("svg")).toHaveAttribute("stroke-width", "1.75");
+      await expect(slot.locator("svg")).toHaveClass(/\bsolar-.*-bold\b/);
       await expect(slot.locator("svg")).toHaveCSS("width", "20px");
     }
     const compact = page.locator("[data-journey-level-compact]");
@@ -416,7 +415,131 @@ test("untimed dashboard task opens a stopwatch", async ({page}) => {
   const card = page.getByTestId("today-path-card");
   await expect(card).toContainText("Kendi temponda ba\u015fla");
   const cta = page.getByTestId("today-path-cta");
-  await expect(cta).toHaveAccessibleName("Review \u00b7 S\u00fcresiz ba\u015fla");
+  await expect(cta).toHaveAccessibleName("Review \u00b7 Ba\u015fla");
   await expect(cta).toHaveAttribute("href", /preset=stopwatch/);
   await expect(cta).not.toHaveAttribute("href", /minutes=/);
+});
+
+/**
+ * The published board on "Hedefin" hangs from a nail and sways about it (DESIGN.md §9.1, the sway
+ * decision): once when a board the editor has just saved is first seen, when a mouse comes in over
+ * it, when its preview shuts. It is pushed; it never moves by itself.
+ */
+const HUNG_FLAG = "mentor.visionBoardHung";
+
+async function mockPanelWithHungBoard(page: Page, justSaved: boolean) {
+  await mockPanel(page, []);
+  await page.route("**/v1/coaching/vision", (route) =>
+    json(route, visionWithBoard({ status: "PUBLISHED" })),
+  );
+  if (!justSaved) return;
+  // Once per tab, as the editor would have left it: an init script runs again on a reload.
+  await page.addInitScript((flag) => {
+    if (window.sessionStorage.getItem("test.hung-once")) return;
+    window.sessionStorage.setItem("test.hung-once", "1");
+    window.sessionStorage.setItem(flag, "1");
+  }, HUNG_FLAG);
+}
+
+/** The board's tilt in degrees, read off its transform. */
+function tilt(page: Page) {
+  return page.getByTestId("hung-board-swing").evaluate((element) => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+    return (Math.atan2(matrix.b, matrix.a) * 180) / Math.PI;
+  });
+}
+
+/**
+ * How far the board leans each way over the next stretch of time. Sampled in the page, every
+ * frame: a swing peaks for a tenth of a second, and a poll from outside walks straight past it.
+ */
+function tiltRange(page: Page, forMs: number) {
+  return page.getByTestId("hung-board-swing").evaluate(
+    (element, duration) =>
+      new Promise<{ min: number; max: number; first: number }>((resolve) => {
+        // `first` is the first lean seen: which way it was pushed, whatever frames a busy
+        // machine drops after that.
+        const range = { min: 0, max: 0, first: 0 };
+        const started = performance.now();
+        const sample = () => {
+          const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+          const degrees = (Math.atan2(matrix.b, matrix.a) * 180) / Math.PI;
+          if (range.first === 0 && Math.abs(degrees) > 0.05) range.first = degrees;
+          range.min = Math.min(range.min, degrees);
+          range.max = Math.max(range.max, degrees);
+          if (performance.now() - started < duration) requestAnimationFrame(sample);
+          else resolve(range);
+        };
+        sample();
+      }),
+    forMs,
+  );
+}
+
+test("a board that was just saved sways once on arrival and a refresh does not repeat it", async ({ page }) => {
+  await mockPanelWithHungBoard(page, true);
+  await page.goto("/panel");
+  const arrival = tiltRange(page, 2500);
+  await page.getByTestId("hung-board-swing").scrollIntoViewIfNeeded();
+
+  // Pushed clockwise, never past 3 degrees, and past rest on the way back: a swing, not a slide.
+  const swung = await arrival;
+  expect(swung.first).toBeGreaterThan(0);
+  expect(swung.max).toBeGreaterThan(1);
+  expect(swung.max).toBeLessThanOrEqual(3);
+  expect(swung.min).toBeLessThan(-0.2);
+  await expect.poll(() => tilt(page), { timeout: 8000 }).toBe(0);
+  expect(await page.evaluate((flag) => window.sessionStorage.getItem(flag), HUNG_FLAG)).toBeNull();
+
+  await page.reload();
+  const again = tiltRange(page, 1500);
+  await page.getByTestId("hung-board-swing").scrollIntoViewIfNeeded();
+  expect(await again).toEqual({ min: 0, max: 0, first: 0 });
+});
+
+test("a board nobody touched hangs still, and a mouse from the left pushes its bottom to the right", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) < 1024, "a mouse is a desktop thing");
+  await mockPanelWithHungBoard(page, false);
+  await page.goto("/panel");
+  const swing = page.getByTestId("hung-board-swing");
+  await swing.scrollIntoViewIfNeeded();
+  expect(await tiltRange(page, 800)).toEqual({ min: 0, max: 0, first: 0 });
+
+  const box = (await swing.boundingBox())!;
+  await page.mouse.move(box.x - 60, box.y + box.height / 2);
+  const pushed = tiltRange(page, 1500);
+  await page.mouse.move(box.x + 30, box.y + box.height / 2, { steps: 4 });
+
+  // Clockwise is positive and carries the bottom left; pushed from the left it goes the other way.
+  const range = await pushed;
+  expect(range.first).toBeLessThan(0);
+  expect(range.min).toBeLessThan(-0.3);
+});
+
+test("the board sways back onto its nail when its preview shuts", async ({ page }) => {
+  await mockPanelWithHungBoard(page, false);
+  await page.goto("/panel");
+  await page.getByTestId("hung-board-swing").scrollIntoViewIfNeeded();
+  await page.getByRole("button", { name: "Panonu büyük görüntüle" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  // The click brought a mouse in over the card, which is a push of its own. Take the mouse away
+  // and let that one die down, so what is measured is the preview shutting.
+  await page.mouse.move(2, 2);
+  await expect.poll(() => tilt(page), { timeout: 8000 }).toBe(0);
+
+  const rehung = tiltRange(page, 1500);
+  await page.keyboard.press("Escape");
+
+  expect((await rehung).first).toBeGreaterThan(0);
+});
+
+test("with reduced motion the board does not move, and the just-saved flag is still spent", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await mockPanelWithHungBoard(page, true);
+  await page.goto("/panel");
+  const still = tiltRange(page, 1500);
+  await page.getByTestId("hung-board-swing").scrollIntoViewIfNeeded();
+
+  expect(await still).toEqual({ min: 0, max: 0, first: 0 });
+  expect(await page.evaluate((flag) => window.sessionStorage.getItem(flag), HUNG_FLAG)).toBeNull();
 });

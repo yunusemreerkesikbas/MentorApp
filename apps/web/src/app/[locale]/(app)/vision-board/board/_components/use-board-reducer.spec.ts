@@ -40,6 +40,25 @@ describe("boardReducer", () => {
   });
 
   /**
+   * The editor starts on a placeholder and swaps the server's board in when it arrives. That swap
+   * is not an edit. While it sat on the undo stack, one Ctrl+Z on a freshly opened board put the
+   * placeholder back and marked it dirty, for autosave to write over the real board.
+   */
+  it("loading a board leaves nothing to undo and nothing to save", () => {
+    const placeholder = stateWith([]);
+
+    const loaded = boardReducer(placeholder, {
+      type: "load",
+      doc: { ...EMPTY_BOARD, items: [text(1)] },
+    });
+
+    expect(loaded.doc.items).toHaveLength(1);
+    expect(loaded.past).toHaveLength(0);
+    expect(loaded.dirty).toBe(false);
+    expect(boardReducer(loaded, { type: "undo" })).toBe(loaded);
+  });
+
+  /**
    * The reason `transient` exists: a drag emits a patch per pointer move, and recording each one
    * would spend the whole 30-step history on one gesture.
    */

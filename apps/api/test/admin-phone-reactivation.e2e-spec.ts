@@ -1,9 +1,10 @@
+import { disableAuthRateLimits } from "./app-harness";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ThrottlerStorage } from "@nestjs/throttler";
 import { UserRole } from "@mentor/types";
 import { eq } from "drizzle-orm";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { withServiceContext } from "../src/database/rls";
 import { users } from "../src/database/schema";
@@ -37,6 +38,7 @@ describe("admin phone collision on reactivation (e2e)", () => {
         increment: async () => ({ totalHits: 1, timeToExpire: 0, isBlocked: false, timeToBlockExpire: 0 }),
       })
       .compile();
+    disableAuthRateLimits(module);
     app = module.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     await app.init();

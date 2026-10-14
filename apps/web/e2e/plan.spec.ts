@@ -77,11 +77,10 @@ const weakLine =
   "Denemelerinde en çok desteğe ihtiyaç duyan dersler (ortalama net): Matematik (9,6).";
 const rhythmLine = "Son 28 günde 20 gün, 24 seansta 1030 dakika çalıştın. Seansların ortalama 43 dakika.";
 
-/** ISO weekday (1 = Monday) `offset` days from the browser's today, as the wizard lists them. */
+/** Match the wizard's Istanbul day even when the CI runner is still on the previous UTC day. */
 function weekdayIn(offset: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + offset);
-  return ((date.getDay() + 6) % 7) + 1;
+  const date = new Date(`${istanbulDay(offset)}T12:00:00Z`);
+  return ((date.getUTCDay() + 6) % 7) + 1;
 }
 
 const brief: CoachPlanAdaptationBriefDto = {
@@ -116,17 +115,21 @@ const groundedPreview: CoachPlanAdaptationDto = {
 };
 
 /** Walks the four wizard steps on their defaults and asks for the preview. */
-async function generateFromWizard(page: Page) {
+const noteStep = "Bu hafta için notun (isteğe bağlı)";
+const stageName = "Haftanı kuruyoruz.";
+
+async function generateFromWizard(page: Page, note?: string) {
   const wizard = page.getByRole("dialog", { name: "Bu hafta hangi günler çalışacaksın?" });
   await expect(wizard).toBeVisible();
   for (const next of [
     "Günde yaklaşık kaç dakika?",
     "Ağırlık vermek istediğin dersler",
-    "Bu hafta için notun (isteğe bağlı)",
+    noteStep,
   ]) {
     await page.getByRole("button", { name: "Devam" }).click();
     await expect(page.getByRole("dialog", { name: next })).toBeVisible();
   }
+  if (note) await page.getByRole("textbox", { name: noteStep }).fill(note);
   await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
 }
 
@@ -167,7 +170,7 @@ test("görev süresi: düzenlerken yükler, değiştirir ve temizler", async ({ 
   }
 });
 
-test("Koçla planla beklerken sayfada yüklenir ve sonuç doğrudan önizlemeye geçer", async ({ page }) => {
+test("Koçla planla beklerken sahne oynar ve sonuç önizlemeye geçer", async ({ page }) => {
   let finish!: () => void;
   const gate = new Promise<void>((resolve) => { finish = resolve; });
   const api = await mockPlanApi(page, {
@@ -180,29 +183,145 @@ test("Koçla planla beklerken sayfada yüklenir ve sonuç doğrudan önizlemeye 
   await trigger.click();
   await generateFromWizard(page);
   await expect.poll(() => api.previewCalls).toBe(1);
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(trigger).toHaveAttribute("aria-busy", "true");
+  const stage = page.getByRole("dialog", { name: stageName });
+  await expect(stage).toBeVisible();
+  await expect(stage).toHaveAttribute("aria-busy", "true");
+  // The bar waits one segment short of full, and the bubble says what the coach read.
+  await expect(stage.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "4");
+  await expect(stage).toContainText(coverageLine);
   finish();
   const preview = page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" });
   await expect(preview).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
   await preview.getByRole("button", { name: "Kapat", exact: true }).click();
   await expect(trigger).toBeFocused();
   expect(api.previewCalls).toBe(1);
+});
+
+test("Koçla planla beklerken Vazgeç sihirbaza döndürür ve geç yanıt önizleme açmaz", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  const api = await mockPlanApi(page, {
+    preview: readyPreview,
+    previewResponse: async (route) => { await gate; await json(route, readyPreview); },
+  });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  const stage = page.getByRole("dialog", { name: stageName });
+  await stage.getByRole("button", { name: "Vazgeç" }).click();
+  await expect(stage).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: noteStep })).toBeVisible();
+  const response = page.waitForResponse((response) => response.url().endsWith("/v1/coach/plan-adaptation"));
+  finish();
+  await response;
+  const preview = page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" });
+  await expect(preview).toHaveCount(0);
+  // Asking again starts over, and that answer does land.
+  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+  await expect(preview).toBeVisible();
+  expect(api.previewCalls).toBe(2);
+});
+
+test("Koçla planla isteği düşerse sihirbaz cevaplarla yerinde kalır", async ({ page }) => {
+  const api = await mockPlanApi(page, {
+    preview: readyPreview,
+    previewResponse: (route, call) =>
+      call === 1
+        ? json(route, { code: "AI_UNAVAILABLE", message: "Koç şu an yanıt veremedi." }, 500)
+        : json(route, readyPreview),
+  });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page, "Cuma hafif olsun");
+  const wizard = page.getByRole("dialog", { name: noteStep });
+  await expect(wizard.getByRole("alert")).toHaveText("Koç şu an yanıt veremedi.");
+  await expect(wizard.getByRole("textbox", { name: noteStep })).toHaveValue("Cuma hafif olsun");
+  await expect(page.getByRole("dialog", { name: stageName })).toHaveCount(0);
+  await wizard.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
+  expect(api.previewBodies.at(-1)).toMatchObject({ note: "Cuma hafif olsun" });
+});
+
+test("Koçla planla sahnesi öğrencinin cevaplarından kurulur ve beklerken yer değiştirir", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  await mockPlanApi(page, {
+    preview: groundedPreview,
+    brief,
+    previewResponse: async (route) => { await gate; await json(route, groundedPreview); },
+  });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  const days = page.getByRole("dialog", { name: "Bu hafta hangi günler çalışacaksın?" });
+  await expect(days).toBeVisible();
+  for (const index of [0, 1, 5]) await days.getByRole("checkbox").nth(index).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  const subjects = page.getByRole("dialog", { name: "Ağırlık vermek istediğin dersler" });
+  for (const name of ["Türkçe", "Tarih", "Coğrafya"]) await subjects.getByRole("checkbox", { name }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+  const stage = page.getByRole("dialog", { name: stageName });
+  // The board is the student's own answers: five lit days, and the caption says so.
+  await expect(stage).toContainText("5 gün · günde 60 dk · 4 ders");
+  // While it waits the blocks keep changing places.
+  const blocks = () =>
+    stage.evaluate((node) =>
+      [...node.querySelectorAll<HTMLElement>("[aria-hidden] span[style*='translate']")].map((block) => block.style.transform),
+    );
+  await expect.poll(async () => (await blocks()).every((place) => place.endsWith("scale(1)"))).toBe(true);
+  const before = await blocks();
+  expect(before).toHaveLength(10);
+  await expect.poll(blocks).not.toEqual(before);
+  finish();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
+});
+
+test("Koçla planla sahnesi azaltılmış harekette yerinde durur, satırını yine söyler", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  await mockPlanApi(page, {
+    preview: readyPreview,
+    brief,
+    previewResponse: async (route) => { await gate; await json(route, readyPreview); },
+  });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  const stage = page.getByRole("dialog", { name: stageName });
+  await expect(stage).toContainText(coverageLine);
+  // Two beats later nothing on the board has moved.
+  const blocks = () =>
+    stage.evaluate((node) =>
+      [...node.querySelectorAll<HTMLElement>("[aria-hidden] span[style*='translate']")].map((block) => block.style.transform),
+    );
+  await expect.poll(async () => (await blocks()).every((place) => place.endsWith("scale(1)"))).toBe(true);
+  const before = await blocks();
+  expect(before.length).toBeGreaterThan(0);
+  await page.waitForTimeout(2000);
+  expect(await blocks()).toEqual(before);
+  finish();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
 });
 
 test("Plan isteğinin geç yanıtı sayfadan ayrıldıktan sonra önizleme açmaz", async ({ page }) => {
   let finish!: () => void;
   const gate = new Promise<void>((resolve) => { finish = resolve; });
   await mockPlanApi(page, { preview: readyPreview, previewResponse: async (route) => { await gate; await json(route, readyPreview); } });
-  await page.goto("/plan");
+  await page.goto("/panel");
+  await page.getByRole("link", { name: "Plan", exact: true }).first().click();
   await page.getByRole("button", { name: "Koçla planla" }).click();
   await generateFromWizard(page);
-  await page.getByRole("link", { name: "Anasayfa", exact: true }).first().click();
+  await expect(page.getByRole("dialog", { name: stageName })).toBeVisible();
+  // The scene covers the page, so the way out is the browser's own.
+  await page.goBack();
   await expect(page).toHaveURL(/\/panel$/);
   const response = page.waitForResponse((response) => response.url().endsWith("/v1/coach/plan-adaptation"));
   finish();
   await response;
-  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 test("Plan önizleme sonrası yenileme sürerken başka sayfanın penceresini kapatmaz", async ({ page }) => {
@@ -342,6 +461,55 @@ test("stale preview seçimlerini korur ve ikinci çağrıyı yalnız manuel yeni
 
   await page.getByRole("button", { name: "Yeniden hazırla" }).click();
   await expect.poll(() => api.previewCalls).toBe(2);
+});
+
+test("Mood çağrısı sahneyi sihirbazsız ve çubuksuz açar, sonra önizlemeye geçer", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  const api = await mockPlanApi(page, {
+    preview: readyPreview,
+    previewResponse: async (route) => { await gate; await json(route, readyPreview); },
+  });
+  await page.goto("/plan?coach=adapt&source=mood");
+  const stage = page.getByRole("dialog", { name: "Planını hafifletiyoruz." });
+  await expect(stage).toBeVisible();
+  // No wizard on the way, so no bar to carry on from; "Vazgeç" is still the way out.
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(stage.getByRole("progressbar")).toHaveCount(0);
+  await expect(stage.getByRole("button", { name: "Vazgeç" })).toBeVisible();
+  await expect.poll(() => api.previewBodies).toEqual([{ source: "MOOD" }]);
+  // Without answers the board is the week's own: one block for its one waiting task.
+  await expect(stage).toContainText("bu hafta 1 bekleyen görev");
+  await expect(stage.locator("[aria-hidden] span[style*='translate']")).toHaveCount(1);
+  finish();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
+  await expect(stage).toHaveCount(0);
+});
+
+test("Yeniden hazırla sahneyi sihirbazsız geri getirir ve yeni önizlemeyi açar", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  const api = await mockPlanApi(page, {
+    preview: readyPreview,
+    staleApplyOnce: true,
+    previewResponse: async (route, call) => { if (call > 1) await gate; await json(route, readyPreview); },
+  });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
+  await page.getByRole("button", { name: "Yeniden hazırla" }).click();
+  const stage = page.getByRole("dialog", { name: stageName });
+  await expect(stage).toBeVisible();
+  // The wizard closed with the first preview: the scene stands alone, without its bar.
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(stage.getByRole("progressbar")).toHaveCount(0);
+  finish();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
+  await expect(stage).toHaveCount(0);
+  // The second ask repeats the first one's answers.
+  expect(api.previewBodies).toHaveLength(2);
+  expect(api.previewBodies[1]).toEqual(api.previewBodies[0]);
 });
 
 test("Koçla planla sihirbazı koçun baktıklarıyla açılır, ritmi ve zayıf dersi önerir", async ({

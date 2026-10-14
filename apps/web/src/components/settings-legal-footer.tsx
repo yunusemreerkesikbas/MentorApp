@@ -21,6 +21,7 @@ export function SettingsLegalFooter() {
             </li>
           ))}
           <li><Link href="/settings/cookie-preferences" className="underline decoration-transparent underline-offset-4 transition-colors hover:text-[var(--color-main)] hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none">{translate("footer_cookie")}</Link></li>
+          <li><a href="/icon-credits.txt" className="underline decoration-transparent underline-offset-4 transition-colors hover:text-[var(--color-main)] hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none">{translate("footer_icon_credits")}</a></li>
         </ul>
       </div>
     </footer>

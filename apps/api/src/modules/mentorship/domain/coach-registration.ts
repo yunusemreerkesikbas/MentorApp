@@ -24,12 +24,19 @@ export type RegistrationGate =
   /** An admin pulled them back for a look. Reversible, but not by them. */
   | { reason: "PENDING" }
   /** An admin removed them. Only an admin reinstates; there is no self-service road back. */
-  | { reason: "SUSPENDED" };
+  | { reason: "SUSPENDED" }
+  /**
+   * Somebody's student right now. The web closes `/kocum` to a coach, so registering with a live
+   * link would leave them watched through a link they can neither see nor end.
+   */
+  | { reason: "HAS_COACH" };
 
 export function canRegister(
   existing: { status: MentorshipApplicationStatusId } | null,
+  hasCoach = false,
 ): RegistrationGate {
-  if (existing === null) return { allowed: true };
+  // The row's verdict first: an admin's decision is the more specific answer.
+  if (existing === null) return hasCoach ? { reason: "HAS_COACH" } : { allowed: true };
 
   switch (existing.status) {
     case MentorshipApplicationStatus.ACTIVE:

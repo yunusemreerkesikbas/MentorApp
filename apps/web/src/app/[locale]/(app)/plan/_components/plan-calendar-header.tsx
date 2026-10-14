@@ -1,5 +1,6 @@
 "use client";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AltArrowLeftIcon as ChevronLeft } from "@solar-icons/react/linear/alt-arrow-left";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 
 import { useLocale, useTranslations } from "next-intl";
 import { SegmentPillControl } from "@/components/segment-pill-control";
@@ -87,10 +88,10 @@ export function PlanCalendarHeader({
             {t("go_today")}
           </button>
           <PlanWeekNavButton label={t(`calendar_prev_${scale}`)} compact onClick={() => onStep(-1)}>
-            <ChevronLeft size={18} strokeWidth={2} aria-hidden />
+            <ChevronLeft size={18} strokeWidth={1.75} aria-hidden />
           </PlanWeekNavButton>
           <PlanWeekNavButton label={t(`calendar_next_${scale}`)} compact onClick={() => onStep(1)}>
-            <ChevronRight size={18} strokeWidth={2} aria-hidden />
+            <ChevronRight size={18} strokeWidth={1.75} aria-hidden />
           </PlanWeekNavButton>
         </div>
       </div>

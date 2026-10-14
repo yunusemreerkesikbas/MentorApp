@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Logo } from "@mentor/ui";
 import { LEDGE, LEDGE_FILLED, PANEL_QUIET_LINK } from "@/components/panel/panel-styles";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -137,8 +138,8 @@ export function RoomJoinShell() {
           style={{ backgroundColor: "var(--blob-pink)", opacity: "var(--blob-pink-opacity)" }}
         />
       </div>
-      <p aria-hidden className="absolute left-5 top-6 text-xl font-black tracking-[-0.01em] text-[var(--color-main)] lg:left-10 lg:top-8">
-        Mentor
+      <p aria-hidden className="absolute left-5 top-6 text-xl text-[var(--color-main)] lg:left-10 lg:top-8">
+        <Logo />
       </p>
 
       {failure === null ? (

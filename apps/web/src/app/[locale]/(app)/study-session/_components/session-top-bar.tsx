@@ -48,7 +48,7 @@ export interface SessionTopBarProps {
 }
 
 /**
- * Top scenery and context controls: subject, scene, sound, in one row.
+ * Top scenery and context controls: subject, scene, sound, as segments of one glass strip.
  *
  * From `sm` up the scene is the arrows-and-name pill (one tap to the next room) with the plain
  * view toggle beside it. A phone has no room for that: three pills overflowed and a centred row
@@ -79,15 +79,19 @@ export function SessionTopBar({
       data-room-theme={isPlain ? undefined : activeTheme}
     >
       {seatedRoom ? <PlanTaskContextChip title={seatedRoom.name} /> : null}
-      {/* `justify-center-safe`: centred while it fits, start-aligned (and scrollable) when not. */}
-      <div className="flex max-w-full flex-nowrap items-center justify-center-safe gap-2 overflow-x-auto py-0.5 mentor-scrollarea">
+      {/* One glass strip with three segments. `justify-center-safe` on the row: centred while it
+          fits, start-aligned (and the strip scrolls) when not, so "Ders seç" is never cut off. */}
+      <div className="flex w-full justify-center-safe">
+      <div className="flex max-w-full flex-nowrap items-center gap-1 overflow-x-auto rounded-full p-1 session-liquid-pill mentor-scrollarea">
         <SessionSubjectPicker
           value={subject ?? ""}
           onChange={(v) => onSubjectChange(v.trim() ? v.trim() : null)}
           readOnly={readOnlySubject}
         />
 
-        <div className="hidden shrink-0 items-center gap-1 rounded-full py-0.5 pr-0.5 pl-1 session-liquid-pill sm:flex">
+        <SegmentDivider />
+
+        <div className="hidden shrink-0 items-center gap-0.5 sm:flex">
           <RoomThemeSwitcher
             theme={activeTheme}
             canChange={canChange}
@@ -100,8 +104,8 @@ export function SessionTopBar({
             aria-label={tRoom(isPlain ? "plain_view_off" : "plain_view_on")}
             title={tRoom(isPlain ? "plain_view_off" : "plain_view_on")}
             onClick={onTogglePlain}
-            className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-opacity duration-200 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--room-accent)] motion-reduce:transition-none"
-            style={{ color: "var(--room-ink-soft)", opacity: 0.8 }}
+            className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--room-accent)] motion-reduce:transition-none"
+            style={{ color: "var(--room-ink-soft)" }}
           >
             {isPlain ? (
               <Wallpaper className="size-[18px]" strokeWidth={2} aria-hidden />
@@ -120,6 +124,8 @@ export function SessionTopBar({
           onTogglePlain={onTogglePlain}
         />
 
+        <SegmentDivider />
+
         <SessionAmbientPicker
           trackId={ambientTrackId}
           muted={ambientMuted}
@@ -127,8 +133,13 @@ export function SessionTopBar({
           onToggleMute={onAmbientToggleMute}
         />
       </div>
+      </div>
     </div>
   );
+}
+
+function SegmentDivider() {
+  return <span aria-hidden className="h-6 w-px shrink-0 bg-[var(--play-line)]" />;
 }
 
 /** The phone's scene control: one chip, the rooms and the plain view in its menu. */

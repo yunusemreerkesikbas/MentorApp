@@ -1,8 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Logo } from "@mentor/ui";
 import { PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
-import { Link, usePathname } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { blogHref } from "@/lib/blog-href";
 
@@ -10,9 +11,9 @@ const FOCUS =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
 
 /**
- * Chrome for public pages (blog, legal documents): wordmark, the Blog link and a way back in, no app
- * shell. Labels arrive as props so the component stays free of any single i18n namespace (it used to
- * read `article.login`, which legal pages have no business depending on).
+ * Chrome for the legal documents: wordmark, the Blog link and a way back in, no app shell. The blog
+ * has its own (`knowledge/_components/blog-shell.tsx`). Labels arrive as props so the component stays
+ * free of any single i18n namespace.
  */
 export function PublicChrome({
   children,
@@ -26,8 +27,6 @@ export function PublicChrome({
   blogLabel: string;
 }) {
   const { status, user } = useAuth();
-  const pathname = usePathname();
-  const onBlog = pathname === "/knowledge" || pathname.startsWith("/knowledge/");
 
   return (
     // No background here: `body` paints `--color-bg`, and an opaque wrapper would hide the layout's
@@ -38,18 +37,13 @@ export function PublicChrome({
           <nav className="flex items-center gap-5 sm:gap-8">
             <Link
               href="/"
-              className={`inline-flex min-h-11 items-center text-lg font-black tracking-[-0.01em] text-[var(--color-main)] sm:text-xl ${FOCUS}`}
+              className={`inline-flex min-h-11 items-center text-lg text-[var(--color-main)] sm:text-xl ${FOCUS}`}
             >
-              Mentor
+              <Logo />
             </Link>
             <Link
               href={blogHref({ family: user?.examType ?? undefined })}
-              aria-current={onBlog ? "page" : undefined}
-              className={`inline-flex min-h-11 items-center text-body-sm font-extrabold ${FOCUS} ${
-                onBlog
-                  ? "text-[var(--color-main)] shadow-[inset_0_-3px_0_var(--play-cta)]"
-                  : "text-[var(--color-secondary)] hover:text-[var(--color-main)]"
-              }`}
+              className={`inline-flex min-h-11 items-center text-body-sm font-extrabold text-[var(--color-secondary)] hover:text-[var(--color-main)] ${FOCUS}`}
             >
               {blogLabel}
             </Link>

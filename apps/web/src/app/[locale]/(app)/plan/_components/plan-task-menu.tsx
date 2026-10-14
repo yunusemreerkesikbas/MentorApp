@@ -1,5 +1,5 @@
 "use client";
-import { EllipsisVertical } from "lucide-react";
+import { MenuDotsIcon as EllipsisVertical } from "@solar-icons/react/linear/menu-dots";
 
 import { useTranslations } from "next-intl";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
@@ -37,7 +37,7 @@ export function PlanTaskMenu({
           className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
           style={{ color: "var(--color-secondary)" }}
         >
-          <EllipsisVertical size={20} strokeWidth={2} aria-hidden />
+          <EllipsisVertical size={20} strokeWidth={1.75} aria-hidden />
         </button>
       )}
     >

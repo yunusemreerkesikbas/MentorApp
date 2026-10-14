@@ -120,6 +120,13 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-09 · Verified-email reward fixture follows the serialized token contract.** The
+  quest test supplies the expected current email and an enqueue callback when creating its
+  verification token. Usage: run `test/economy-quests.e2e-spec.ts`; verification grants ten Coin
+  once and replay stays rejected. Gotcha: production token creation still checks the locked
+  user's current address and queues delivery atomically; the test intentionally queues nothing.
+  Related: that spec, identity's `email-token.repository.ts`.
+
 ### 2026-09-17 — XP / Coin launch integration
 
 - Action-driven quests, durable first-positive-payment rewards, self-scoped unread receipts and a shared web balance store implement the launch model above. Usage: complete an action; no quests-page visit is required. Historical ledger rows remain intact and do not generate new notifications. Related: quest-trigger.service.ts, payment-reward-events.service.ts, invite.service.ts, reward-receipt.repository.ts, economy-store.ts, economy-sync.tsx, migration 0114.

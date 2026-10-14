@@ -5,11 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type AchievementCollectionDto, type ForumActivityItem, type PublicProfile } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Skeleton, SkeletonGroup } from "@mentor/ui";
+import { useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
-import { AchievementCollection } from "@/components/achievements/achievement-collection";
+import { PANEL_CARD, PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 import { getProfileAchievements, getPublicProfile } from "@/lib/community";
 import { sendBuddyRequest } from "@/lib/buddy";
 import { followUser, unfollowUser } from "@/lib/follow";
@@ -25,11 +25,11 @@ import {
   unreactPost,
   unreactThread,
 } from "@/lib/forum";
-import { CommentRow } from "../../../_components/comment-row";
-import { CommunityPostCard } from "../../../_components/community-post-card";
-import { SavedShell } from "../../../saved/_components/saved-shell";
+import { COMMUNITY_CARD_FLUSH } from "../../../_components/community-row";
 import { FollowListPanel } from "./follow-list-panel";
-import { ProfileHeader, ProfileProgressPanel } from "./profile-header";
+import { ProfileActivity, type ProfileTab } from "./profile-activity";
+import { ProfileIdentityCard } from "./profile-identity-card";
+import { ProfileProgressPanel } from "./profile-progress-panel";
 
 type Ready = {
   status: "ready";
@@ -46,7 +46,10 @@ type State =
   | { status: "error"; message: string }
   | Ready;
 
-/** A user's public forum profile — header (identity + gamification) + their activity feed. */
+/**
+ * A member's profile on the panel frame: the identity card, the journey (under it on phones, in the
+ * rail on desktop), then their posts or achievements. Saved items live on /community/saved.
+ */
 export function ProfileShell({ username }: { username: string }) {
   const t = useTranslations("community");
   const searchParams = useSearchParams();
@@ -55,19 +58,20 @@ export function ProfileShell({ username }: { username: string }) {
   const { user } = useAuth();
   const isOwn = !!user?.username && user.username === username;
   const tabParam = searchParams.get("tab");
-  const requestedTab = tabParam === "achievements"
-    ? "achievements"
-    : ["bookmarks", "saved"].includes(tabParam ?? "")
-      ? "bookmarks"
-      : "posts";
+  const requestedTab = tabParam === "achievements" ? "achievements" : "posts";
+  // Saved items have their own page since Topluluk Tur 2; old `?tab=bookmarks` links land there.
+  const savedLink = ["bookmarks", "saved"].includes(tabParam ?? "");
+  useEffect(() => {
+    if (savedLink) router.replace("/community/saved");
+  }, [router, savedLink]);
   const [listView, setListView] = useState<"followers" | "following" | null>(null);
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
+    if (savedLink) return; // the redirect above takes it; no profile to load
     let active = true;
     getPublicProfile(username).then(async (profile) => {
-      const effectiveTab = (requestedTab === "achievements" && !profile.achievementsEnabled)
-        || (requestedTab === "bookmarks" && !isOwn)
+      const effectiveTab = requestedTab === "achievements" && !profile.achievementsEnabled
         ? "posts"
         : requestedTab;
       const [feed, achievements] = await Promise.all([
@@ -87,9 +91,9 @@ export function ProfileShell({ username }: { username: string }) {
     return () => {
       active = false;
     };
-  }, [isOwn, requestedTab, username, t]);
+  }, [requestedTab, savedLink, username, t]);
 
-  const selectTab = (nextTab: "posts" | "achievements" | "bookmarks") => {
+  const selectTab = (nextTab: "posts" | "achievements") => {
     router.push({
       pathname: "/community/member/[username]",
       params: { username },
@@ -243,40 +247,25 @@ export function ProfileShell({ username }: { username: string }) {
   if (state.status === "notfound") return <Centered>{t("profile_not_found")}</Centered>;
   if (state.status === "error") {
     return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-6 lg:px-8">
+      <main className={PANEL_MAIN_CLASS}>
         <FormError message={state.message} />
       </main>
     );
   }
 
-  const loading = state.status === "loading";
   const ready = state.status === "ready" ? state : null;
   const profile = ready?.profile ?? null;
-  const items = ready?.items ?? [];
-  const nextCursor = ready?.nextCursor ?? null;
-  const loadingMore = ready?.loadingMore ?? false;
-  const achievements = ready?.achievements ?? null;
-  const tab =
-    profile == null
-      ? "posts"
-      : (requestedTab === "achievements" && !profile.achievementsEnabled) ||
-          (requestedTab === "bookmarks" && !isOwn)
-        ? "posts"
-        : requestedTab;
-  const profileTabs: Array<"posts" | "achievements" | "bookmarks"> =
-    profile == null
-      ? ["posts"]
-      : isOwn
-        ? ["posts", ...(profile.achievementsEnabled ? ["achievements" as const] : []), "bookmarks"]
-        : ["posts", ...(profile.achievementsEnabled ? ["achievements" as const] : [])];
+  const tab: ProfileTab =
+    profile && requestedTab === "achievements" && profile.achievementsEnabled ? "achievements" : "posts";
+  const profileTabs: ProfileTab[] = profile?.achievementsEnabled ? ["posts", "achievements"] : ["posts"];
 
   const readyBody =
-    profile == null ? (
+    ready === null || profile === null ? (
       <div className="min-h-[28rem]" aria-hidden />
     ) : (
-      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[600px_300px]">
-        <section className="min-w-0 bg-[var(--color-surface)]">
-          <ProfileHeader
+      <div className={PANEL_GRID_CLASS}>
+        <div className="flex min-w-0 flex-col gap-5">
+          <ProfileIdentityCard
             key={profile.userId}
             profile={profile}
             isOwn={isOwn}
@@ -285,182 +274,76 @@ export function ProfileShell({ username }: { username: string }) {
             onOpenFollowers={() => setListView("followers")}
             onOpenFollowing={() => setListView("following")}
           />
-
-          <div className="profile-progress-mobile px-4 pb-4 xl:hidden">
-            <div className="relative z-10">
-              <ProfileProgressPanel profile={profile} isOwner={isOwn} />
-            </div>
+          {/* Phones and tablets: the journey sits under the card, where the rail would be off-screen. */}
+          <div className="profile-progress-mobile xl:hidden">
+            <ProfileProgressPanel profile={profile} isOwner={isOwn} />
           </div>
-
           {listView ? (
-            <FollowListPanel
-              key={listView}
-              username={username}
-              kind={listView}
-              onBack={() => setListView(null)}
-            />
+            <div className={COMMUNITY_CARD_FLUSH}>
+              <FollowListPanel key={listView} username={username} kind={listView} onBack={() => setListView(null)} />
+            </div>
           ) : (
-            <>
-              {/* Achievements are public; saved items remain private to the profile owner. */}
-              <div
-                className="flex gap-1 border-b px-4 lg:px-6"
-                style={{ borderColor: "var(--color-border)" }}
-              >
-                {profileTabs.map((k) => {
-                  const active = tab === k;
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => selectTab(k)}
-                      aria-current={active ? "page" : undefined}
-                      className="relative -mb-px px-3 py-3 text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                      style={{
-                        color: active ? "var(--color-main)" : "var(--color-secondary)",
-                      }}
-                    >
-                      {k === "posts"
-                        ? t("profile_tab_posts")
-                        : k === "achievements"
-                          ? t("profile_tab_achievements")
-                          : t("saved_nav")}
-                      {active && (
-                        <span
-                          aria-hidden="true"
-                          className="absolute inset-x-2 -bottom-px h-0.5 rounded-full"
-                          style={{ background: "var(--color-accent)" }}
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {isOwn && tab === "bookmarks" ? (
-                <SavedShell embedded />
-              ) : tab === "achievements" && achievements ? (
-                <AchievementCollection collection={achievements} />
-              ) : items.length === 0 ? (
-                <p
-                  className="px-4 py-12 text-center text-sm"
-                  style={{ color: "var(--color-secondary)" }}
-                >
-                  {t("profile_activity_empty")}
-                </p>
-              ) : (
-                <>
-                  <div className="divide-y divide-[var(--color-border)]">
-                    {items.map((it) => {
-                      const key = it.type === "thread" ? `t-${it.thread.id}` : `c-${it.comment.id}`;
-                      return (
-                        <div key={key}>
-                          {it.zone.title && (
-                            <Link
-                              href={{
-                                pathname: "/community/[slug]",
-                                params: { slug: it.zone.slug },
-                              }}
-                              className="inline-block px-3 pt-3 text-[11px] font-semibold hover:underline"
-                              style={{ color: "var(--color-accent)" }}
-                            >
-                              {it.zone.title}
-                            </Link>
-                          )}
-                          {it.type === "thread" ? (
-                            <CommunityPostCard
-                              thread={it.thread}
-                              onToggleReaction={(nextEmoji, previousEmoji) =>
-                                onToggleReaction(it.thread.id, nextEmoji, previousEmoji)
-                              }
-                              onToggleBookmark={(adding) =>
-                                onToggleThreadBookmark(it.thread.id, adding)
-                              }
-                              onReplyCountChange={(delta) =>
-                                onReplyCountChange("thread", it.thread.id, delta)
-                              }
-                              clickable
-                            />
-                          ) : (
-                            // A reply opens its PARENT post with itself highlighted — so its context shows,
-                            // not the reply stranded on its own detail page.
-                            <CommentRow
-                              comment={it.comment}
-                              onToggleReaction={onToggleCommentReaction}
-                              onToggleBookmark={onToggleCommentBookmark}
-                              onReplyCountChange={(delta) =>
-                                onReplyCountChange("comment", it.comment.id, delta)
-                              }
-                              rowHref={
-                                it.comment.parentPostId
-                                  ? {
-                                      pathname: "/community/comment/[postId]",
-                                      params: { postId: it.comment.parentPostId },
-                                      query: { highlight: it.comment.id },
-                                    }
-                                  : {
-                                      pathname: "/community/message/[threadId]",
-                                      params: { threadId: it.comment.threadId },
-                                      query: { highlight: it.comment.id },
-                                    }
-                              }
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {nextCursor && (
-                    <div className="my-6 flex justify-center">
-                      <Button variant="secondary" busy={loadingMore} onClick={loadMore}>
-                        {t("saved_load_more")}
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
-            </>
+            <ProfileActivity
+              tab={tab}
+              tabs={profileTabs}
+              onTab={selectTab}
+              items={ready.items}
+              achievements={ready.achievements}
+              nextCursor={ready.nextCursor}
+              loadingMore={ready.loadingMore}
+              onLoadMore={loadMore}
+              onToggleReaction={onToggleReaction}
+              onToggleThreadBookmark={onToggleThreadBookmark}
+              onToggleCommentReaction={onToggleCommentReaction}
+              onToggleCommentBookmark={onToggleCommentBookmark}
+              onReplyCountChange={onReplyCountChange}
+            />
           )}
-        </section>
-
-        <aside className="sticky top-20 hidden xl:block">
-          <ProfileProgressPanel profile={profile} isOwner={isOwn} />
+        </div>
+        <aside className="hidden min-w-0 xl:block" aria-label={t("profile_progress_title")}>
+          <div className="sticky top-6">
+            <ProfileProgressPanel profile={profile} isOwner={isOwn} />
+          </div>
         </aside>
       </div>
     );
 
   return (
-    <main className="mx-auto w-full min-w-0 max-w-[924px]">
-      <SkeletonGroup label={t("loading")} loading={loading} revealed={readyBody}>
+    <main className={PANEL_MAIN_CLASS}>
+      <SkeletonGroup label={t("loading")} loading={state.status === "loading"} revealed={readyBody}>
         <ProfileSkeletonBlocks />
       </SkeletonGroup>
     </main>
   );
 }
 
+/** Mirrors the loaded profile: the identity card, the activity card, the journey in the rail. */
 function ProfileSkeletonBlocks() {
   return (
-    <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[600px_300px]">
-      <div className="overflow-hidden bg-[var(--color-surface)] sm:border-x sm:border-[var(--color-border)]">
-        <Skeleton className="h-[min(52dvh,440px)] w-full rounded-none sm:h-[420px]" />
-        <div className="flex justify-center gap-3 px-4 py-5">
-          <Skeleton className="size-11 rounded-full" />
-          <Skeleton className="h-11 w-40 rounded-full" />
-          <Skeleton className="size-11 rounded-full" />
+    <div className={PANEL_GRID_CLASS}>
+      <div className="flex min-w-0 flex-col gap-5">
+        <div className={`${PANEL_CARD} flex flex-col gap-4 sm:p-6`}>
+          <div className="flex items-center gap-4">
+            <Skeleton className="size-18 shrink-0 rounded-full" />
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <Skeleton className="h-6 w-48 max-w-full rounded-full" />
+              <Skeleton className="h-4 w-64 max-w-full rounded-full" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-full rounded-full" />
+          <Skeleton className="h-11 w-36 rounded-[var(--radius-card)]" />
         </div>
-        <div className="border-t border-[var(--color-border)] px-4 py-4">
-          <Skeleton className="h-4 w-36 rounded-full" />
-        </div>
+        <Skeleton className="h-64 w-full rounded-[var(--radius-card)]" />
       </div>
-      <Skeleton className="hidden h-[360px] rounded-[var(--radius-card)] xl:block" />
+      <Skeleton className="hidden h-80 rounded-[var(--radius-card)] xl:block" />
     </div>
   );
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto flex min-h-[40vh] w-full max-w-2xl items-center justify-center px-5 py-8">
-      <p style={{ color: "var(--color-secondary)" }}>{children}</p>
+    <main className={PANEL_MAIN_CLASS}>
+      <p className={`${PANEL_CARD} text-center text-body-sm font-semibold text-[var(--color-secondary)]`}>{children}</p>
     </main>
   );
 }

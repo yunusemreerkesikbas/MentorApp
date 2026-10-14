@@ -63,6 +63,50 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-10 · PR #154 conflict resolution.** The proxy matcher tests retain the blog
+  pilot's `/ads.txt` bypass and master's protected `/images` regression. Member-profile
+  browser fixtures use the CSP-allowed API origin from master, retaining its loaded-content
+  accessibility regression. Usage: run `proxy.spec.ts` and `community-member-profile.spec.ts`.
+  Gotcha: this updates test fixtures, not the production CSP allowlist. Before browser checks,
+  build web with its workspace dependencies (`turbo run build --filter=@mentor/web`) to avoid
+  testing stale `@mentor/ui` output. Validation: 10 proxy tests, all 36 mobile/desktop profile
+  cases, touched-file lint and all five web/dependency build tasks passed. Hosted CI reruns
+  after the PR branch update. Related:
+  `src/proxy.spec.ts`, `e2e/community-member-profile.spec.ts`.
+
+- **2026-10-10 · Mobile theme hit area stays inside the header.** The decorative lamp and owl
+  retain their hanging layout, but the pointer tracking wrapper passes through clicks and the
+  theme button ends at the header boundary. Usage: theme switching remains available in the
+  top bar; notebook note/drawing controls below it receive touches. Added a browser regression
+  that switches theme before editing a note and checks the button's boundary. Gotcha: the
+  illustration below the bar is decorative, so tapping it does not change theme. Related:
+  `src/components/theme-lamp/theme-lamp.tsx`, `e2e/notebook.spec.ts`.
+
+- **2026-10-09 · Dashboard bundle budget restored.** The signed-in shell's notebook cache cleanup
+  no longer eagerly imports the notebook client and its shared upload schemas. Contents fetches
+  load that client on demand; in-flight deduplication, failed-read retry and account-change cache
+  clearing stay intact. Usage: no configuration change; the notebook desk/editor still prefetches
+  contents before opening. Production-build dashboard JS dropped from 843.3 to 739.2 KiB for
+  route chunks (760 KiB limit) and from 1382.7 to 1278.6 KiB including runtime (1295 KiB limit).
+  All eight existing budget gates pass without raising limits. Four cache tests and a fresh
+  independent review passed. Gotchas: the public article remains close to its total JS limit;
+  these are uncompressed chunk sizes, not field load-time measurements. Related:
+  `src/lib/notebook-contents-cache.ts`, `scripts/check-web-performance-budgets.mjs`,
+  [`release verification`](../plans/2026-10-09-blog-ads-release-verification.md).
+
+- **Web document CSP (2026-10-08)**: enforced one nonce-based script policy on public/authenticated TR/EN documents; the proxy replaces spoofed headers and preserves next-intl rewrites. Root HTML is request-scoped (`revalidate=0`), bootstrap/JSON-LD/consent scripts and provider loaders carry nonces, and HTML/CDN responses use no-store. Production blocks inline handlers and JavaScript eval; inline CSS and separate WASM permissions preserve existing rendering. Token documents use no-referrer; GPT uses SafeFrame. **Usage:** configure the runtime `WEB_CSP_STORAGE_ORIGINS` with exact public CDN and signed R2 origins; production also requires `NEXT_PUBLIC_API_URL`. **Gotchas:** public HTML loses static/CDN caching; validate real provider compatibility and SSR capacity before release. Removed obsolete legal-page static parameter generation after QA reproduced a 500; sitemap publication preserves the FINAL placeholder build guard. **Validation:** 19 unit checks, 112 distinct mobile/desktop Chromium cases, targeted lint/type checks and an isolated webpack production build passed. Full CI/live deployment validation remain pending. **Files:** `src/proxy.ts`, `src/lib/content-security-policy{,.spec}.ts`, `[locale]/layout.tsx`, `src/lib/{analytics-consent,turnstile,google-publisher-tag,legal}`, legal page routes, `e2e/browser-security.spec.ts`, `.env.example`, `render.yaml`, CI; [QA details](../plans/2026-10-08-web-browser-security-qa.md), [design](../plans/2026-10-08-web-browser-security-design.md).
+
+- **2026-10-08 — Browser security response-header foundation.** Every web route response
+  now declares framing denial, content-type sniffing protection, an origin-limited external
+  referrer policy and restricted microphone/geolocation/USB permissions. Production uses
+  host-scoped HSTS; Next's framework-identifying header is disabled. Usage: rebuild/deploy
+  web and verify response headers on documents and static files. Camera capture, clipboard
+  and native sharing remain available. Gotchas: no subdomain/preload HSTS policy was added;
+  this does not implement strict CSP yet. Three targeted tests and targeted TypeScript/ESLint
+  checks passed in isolation; a full app/browser/edge run remains pending. See the CSP and
+  public-cache/navigation decisions in `docs/plans/2026-10-08-web-browser-security-design.md`.
+  Related: `apps/web/next.config.ts`, `src/lib/security-headers{,.spec}.ts`.
+
 ### 2026-09-25 — Subscription read timeout and panel probe sequencing
 
 A hung `GET /v1/subscription` left `subscriptionLoading` true, so the panel hero stayed on
@@ -1142,3 +1186,82 @@ eklendi.
   -> notebook upload constants import. Phone form/paywall chunks are absent from the initial
   dashboard manifest. Article JS remains unchanged at 436,851 route-attributable and 989,223
   total bytes. The remaining notebook import issue is outside the SMS change.
+
+- **2026-10-06 — Solar navigation icon trial.** App navigation uses Solar Linear for inactive
+  destinations and Bold Duotone for the selected destination; sidebar expand/collapse also uses
+  Solar Linear. Usage: browse the student or coach menu on mobile, expanded desktop sidebar or
+  collapsed rail; selected state, role filtering, labels, colour tokens and motion stay intact.
+  Gotchas: this is navigation-only, not a global migration; coin/XP glyphs keep their semantics.
+  Individual icon imports avoid loading the catalogue. Solar artwork is CC BY 4.0 by 480 Design,
+  credited through Settings → icon credits and `public/icon-credits.txt`. Related:
+  `components/{app-nav,app-nav-icon,settings-legal-footer}.tsx`, `messages/{tr,en}.json`,
+  `apps/web/package.json`, `pnpm-lock.yaml`, `e2e/profile.spec.ts`, `DESIGN.md` §7.
+  Validation: web typecheck, touched-file lint and 10 sidebar/i18n unit cases pass. Browser
+  checks cover mobile/desktop route selection, expanded/collapsed rail, light/dark themes,
+  English coach navigation and the Settings credit link. Development-only checks hide the
+  Next.js indicator because it covers the collapsed rail's lamp; no app CSS was changed for it.
+
+- **2026-10-06 — Navigation semantics and selected palette refinement.** Home now uses Home 2,
+  analysis an unframed Chart 2, Blog a Document Text page (distinct from the spiral Notebook),
+  and settings a full gear. Usage: the selected destination uses Solar Bold in
+  `--play-selected-ink` on `--play-selected` across expanded/collapsed sidebar and mobile,
+  including the raised student/coach home. Sidebar labels keep the main ink. Gotcha: this
+  replaces the trial's muted duotone selection and overrides the monochrome mobile circle;
+  no role, destination or other screen changes. Related: `components/{app-nav,app-nav-icon}.tsx`,
+  `DESIGN.md` §7. Validation: web typecheck, touched-component lint, 10 sidebar/i18n unit cases
+  and four temporary browser checks passed. The browser checks cover TR student / EN coach,
+  active/inactive glyph changes, expanded/collapsed sidebar, mobile (including raised home),
+  light/dark selection and computed icon-to-selection-surface contrast of at least 3:1.
+
+- **2026-10-08 — Empty phone status no longer crashes settings.** `PhoneVerificationCard` treats an
+  empty status response (the client returns `undefined` for a 204) like a failed load: it shows
+  the existing "Yeniden dene" button and never hands `undefined` to `onStatusChange`, so profile,
+  coach activation, trial and sponsored Premium callers stay alive. Gotcha: a catch-all 204 mock
+  in an e2e spec used to take `/ayarlar` down with "This page couldn't load"; any spec that opens
+  settings or a phone card must mock `GET /v1/users/me/phone` with a real `PhoneStatusDto`.
+  Usage: `e2e/community-member-profile.spec.ts` now mocks it; `e2e/phone-verification.spec.ts`
+  covers the empty-body case. Related: `components/phone-verification-card.tsx`.
+
+- **2026-10-10 — Proxy matcher no longer skips dotted paths.** Since the browser-security work
+  (`docs/plans/2026-10-08-web-browser-security-design.md`) only the explicit static namespaces in
+  `src/proxy.ts` (`img`, `mascot`, `visuals`, ... plus a few root files) bypass the proxy; any other
+  path, `/images/logo.svg` included, gets the CSP/security headers. There is no `public/images`.
+  Gotcha: a new top-level folder under `public/` goes through the proxy until you add it to the
+  matcher; `src/proxy.spec.ts` pins both sides.
+
+- **2026-10-13 — Display name is "PuhuKoç".** The product moves to `puhukoc.com`; every user-facing
+  "Mentor" became "PuhuKoç": web copy (`messages/{tr,en}.json`, paywall `brand` included), nav and
+  public wordmarks, metadata/OG/JSON-LD, tab titles, both share cards, the push fallback title in
+  `public/sw.js`, API email subjects and Google-auth errors, blog seed meta titles and the admin
+  wordmark/title. Display name only: `@mentor/*`, `mentor-*` classes, storage keys and env vars are
+  unchanged. Usage: write `PuhuKoç` in copy (PuhuKoç'ta, PuhuKoç'un, PuhuKoç'u); `puhukoc` only in
+  domains and addresses; the Netgsm OTP text says `PuhuKoc` because the SMS stays ASCII (a `ç`
+  switches it to Unicode and shortens the segment). "Puhu" stays the mascot, never the product.
+  The six legal texts (`src/lib/legal.ts`, `updatedAt` 2026-10-13), the AI system prompts, the
+  Swagger/OpenAPI title and the ICS `PRODID` (`PuhuKoc`) follow the name too; the fallback display
+  name for an account with no name is now `"Yoldaş"` (`google-auth.service.ts`, the two community
+  composers), because the brand as a person's name reads like an official account.
+  Gotchas: the legal contact stays `info@mentor.com` until the owner names a new mailbox
+  (`docs/core/deployment.md`); "Mentor V2" is the AI engine's name, not the brand, and stays; the
+  seed only renames `metaTitle` on a fresh database, existing article rows keep theirs;
+  `NETGSM_MSGHEADER` is an operator-registered value and does not follow this rename.
+
+- **2026-10-14 — PuhuKoç logo.** The plain-text wordmark is now `@mentor/ui` `Logo`: Nunito 1000 with
+  the o of Koç drawn as an inline SVG eye (DESIGN.md §8.7). `cut="small"` is the default, for the
+  text-lg/xl spots; the desktop sidebar (text-2xl) uses `cut="large"`. Call sites: `app-nav.tsx`
+  (mobile top bar + sidebar), `public-chrome.tsx`, `blog-shell.tsx`, the forum question page and
+  `room-join-shell.tsx`. Tokens `--logo-pupil` (dark flips to #55acee) and `--logo-glint` in
+  `theme.css`. The favicon (`public/img/brand/puhukoc-icon.svg`) and the apple icon
+  (`puhukoc-apple-icon.png`, 180px, made from the same geometry with the sharp in `apps/web`)
+  replaced the Puhu mascot PNG in the root metadata. Design canvas (directions, refinement, final
+  sheet): https://claude.ai/artifact/8MKL7cdhW7VUgchN8nHAbk.
+  Gotchas: the logo takes its size from the caller's font-size class and its ink from `color`, so
+  don't add `font-*`/`tracking-*` classes around it; the brand files live under `/img/` because a
+  new top-level `public/` folder would go through the locale proxy (see 2026-10-10).
+  Same day, share images and admin: the site OG/Twitter image and the forum/article fallback are
+  `public/img/brand/puhukoc-og-{tr,en}.png` (1200×630: logo, slogan, puhukoc.com, picked by
+  locale); the article JSON-LD `publisherLogoUrl` is the apple icon. The admin sidebar shows
+  `apps/admin/public/images/puhukoc/puhukoc-wordmark.png` and, collapsed, the eye SVG. These PNGs
+  were screenshotted from the dev server with Playwright so they use the real Nunito; redraw
+  them the same way if the logo changes. Gotcha: Duralux's dark navigation theme inverts
+  `.logo-lg`, which turns the blue pupil orange there. The mascot PNG remains only as Puhu art.

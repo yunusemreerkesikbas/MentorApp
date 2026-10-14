@@ -38,6 +38,13 @@ describe("forum discovery request contracts", () => {
     expect(forumFeedQuerySchema.safeParse({ contentType: "other" }).success).toBe(false);
   });
 
+  it("reads the waiting-questions flag from the query string literally", () => {
+    expect(forumFeedQuerySchema.parse({ unanswered: "true" }).unanswered).toBe(true);
+    expect(forumFeedQuerySchema.parse({ unanswered: "false" }).unanswered).toBe(false);
+    expect(forumFeedQuerySchema.parse({}).unanswered).toBeUndefined();
+    expect(forumFeedQuerySchema.safeParse({ unanswered: "1" }).success).toBe(false);
+  });
+
   it("limits global search input and rejects blank queries", () => {
     expect(forumSearchQuerySchema.parse({ q: "  geometri " })).toEqual({ q: "geometri" });
     expect(forumSearchQuerySchema.safeParse({ q: " " }).success).toBe(false);

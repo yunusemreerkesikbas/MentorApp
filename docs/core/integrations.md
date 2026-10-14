@@ -210,24 +210,78 @@ Sources checked 2026-10-05: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms
 ### Google Ad Manager (web v1)
 - Ad unit paths: `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT` and
   `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT`. Test and production units must be separate.
+- Local manual preview: set `ADS_LOCAL_TEST_ENABLED=true` in `apps/api/.env`, restart the API,
+  and open `http://localhost:3000/blog/kpss-basvuru-sureci` anonymously or on Free. Scroll to
+  the article end. This uses the real local content/eligibility endpoints and Google's actual
+  SDK, without browser API mocks or changing DB flags. Only development with an HTTP loopback
+  `APP_URL` is allowed; staging/production fail startup if this flag is set. Missing local country
+  is treated as TR for the forced official test unit only. Premium/STAFF and content/age checks
+  still apply. Ad blockers may hide the sample. Set the flag to false and restart to leave preview.
+  Test ads do not demonstrate production approval, fill or revenue.
 - Staging smoke uses Google's official test inventory only:
   `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT=/6355419/Travel/Europe/France/Paris` and
   `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT=/22639388115/rewarded_web_example`. Staging may use rewarded
   rollout `%100`; production stays `%0` until the separate GAM/domain/legal operation is complete.
-- Verify the production domain and publish the real network's `ads.txt`; do not ship a placeholder
-  publisher id. Keep all `ads.*` flags off until this is complete.
-- In **Admin → Global settings → Network settings**, turn off Programmatic limited ads. Block adult,
+  The article catalog includes `300x250`, `320x100` and `728x90`; the reading column filters out
+  widths it cannot fit. In the 2026-10-14 live SDK rehearsal the official sample returned no-fill
+  for `320x100` but filled `300x250`. Keep a supported rectangle in the test request; never infer
+  broken integration from a sample unit that has no creative for the requested size. Reserve 250px
+  before loading. CSP allows the observed `ep1.adtrafficquality.google` configuration/pixel in
+  `connect-src`/`img-src` and `ep2.adtrafficquality.google` in `frame-src`; script trust remains
+  nonce-based. See [live Google smoke evidence](../qa/2026-10-14-google-display-smoke.md).
+- Create/select AdSense with the owner's chosen Google account, add the owned live domain, and
+  obtain site approval. Create Ad Manager and connect **actual Google demand** to the article ad
+  unit; an empty Ad Manager network does not earn revenue. Disable AdSense Auto ads to preserve
+  the single article slot. The domain `puhukoc.com` is now owned (owner-confirmed, 2026-10-12).
+  Ownership does not prove DNS, hosting or Google approval; follow [deployment.md](./deployment.md).
+- Set web server `GOOGLE_ADS_PUBLISHER_ID` to the real `pub-` + 16-digit seller ID from AdSense.
+  `/ads.txt` returns the Google DIRECT entry without locale redirection; blank configuration
+  returns 404, malformed configuration fails visibly. Never publish a placeholder ID. Verify
+  `https://puhukoc.com/ads.txt` after domain/DNS/hosting setup and Google's Authorized/Ready status.
+  Match the seller ID to the connected demand account. Keep production ad flags off meanwhile.
+- In **Admin → Global settings → Network settings**, keep Programmatic limited ads off until
+  the actual data processing, lawful basis for automatic serving in Turkey and updated
+  privacy/foreign-transfer copy have passed review. This source change is not a consent signal
+  or legal approval. If the configured processing requires consent, do not activate automatic
+  programmatic delivery without a reviewed alternative. After review, enable contextual Google
+  demand for this pilot: limited ads disables
+  personalization but programmatic mode may use IVT-only cookies and local storage. Block adult,
   gambling, dating, alcohol/tobacco, violent and other age-inappropriate categories; apply child
   treatment to LGS inventory.
-- The web loads Google's limited-ads GPT URL only after backend eligibility. EEA/UK/Switzerland stays
+- The web automatically loads Google's limited-ads GPT URL after backend eligibility, when the
+  article end approaches the viewport. There is no visitor advertising accept/reject switch.
+  Optional analytics is still opt-in; rejecting it does not disable ads or grant ad-free access.
+  The retired advertising choice is not read, rewritten or promoted to consent. Account changes
+  and subscription reads recheck eligibility; Premium/STAFF remove existing slots.
+  `ads.display.allowed_countries` defaults to `TR` (uppercase comma-separated country codes);
+  empty allowlist or unknown `cf-ipcountry` denies display. Ensure Cloudflare overwrites country
+  headers and the API origin cannot bypass that trusted edge. EEA/UK/Switzerland stays
   off until a compatible CMP and legal review exist. Update privacy/cookie/foreign-transfer copy
   before rollout; limited ads is not synonymous with “no data processing.”
+- Rehearsal: use the official test article inventory above in an isolated environment; check
+  mobile/desktop, absent/rejected/accepted legacy advertising values, optional analytics choices,
+  automatic display, login/account switch, Free→Premium,
+  no-fill and ad-blocking. Local browser suites stub GPT and do not prove a real Google fill.
+- Production gate: require account/site approval, correct ads.txt, separate production inventory,
+  connected demand, policy/category and privacy review, full CI, and a restricted production smoke
+  with a real impression visible in Ad Manager before wider exposure. Only enable `ads.enabled`,
+  `ads.display.enabled`, `ads.placement.knowledge_article_end.enabled`; keep rewarded flags/rollout
+  off (web has no server verification). Roll back by disabling `ads.enabled`.
+- Run a 14-day exploratory pilot from the first real impression. Record daily Ad Manager fill,
+  impressions, viewability, revenue, eCPM, and serving restriction=Limited ads. Record article read
+  completion and Web Vitals only among analytics-consenting visitors; these are a biased subset.
+  Use the reporting timezone consistently, allow for reporting delay, and avoid revenue sufficiency
+  conclusions at low traffic. Technical success is real eligible fill/revenue and zero Google
+  requests for excluded visitors. No per-user ad reporting is stored in Mentor.
 - Render Cron (or an operator) calls `POST /v1/internal/cron/expire-ad-reward-sessions` with
   `X-Cron-Secret` every five minutes. The endpoint runs a bounded, idempotent and multi-instance-safe
   sweep; AdsModule does not create a second in-process scheduler.
 
 ### Render (hosting)
-- Dockerized service, single region **Frankfurt/EU**. Env variables go into the Render dashboard.
+- Native Node services, single region **Frankfurt/EU**. Production uses `render.yaml` with manual
+  deployments and separately supplied credentials. Follow [deployment.md](./deployment.md) for
+  domains, provisioning and release gates. Permanent staging is deferred; retained resources
+  and optional rehearsals are recorded in [deferred-staging.md](./deferred-staging.md).
 - Cost shield (§8): Neon max-CU + budget alert + Cloudflare edge rate-limit.
 
 > ⚠️ **Phase 0 prerequisites (pre-launch, §7):** company setup, iyzico application, legal web pages

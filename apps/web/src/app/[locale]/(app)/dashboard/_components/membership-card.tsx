@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
-import { BarChart3, ChevronRight, Coins, MessageCircle, type LucideIcon } from "lucide-react";
+import { Coins } from "lucide-react";
+import { Chart2Icon as Chart } from "@solar-icons/react/bold/chart-2";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
+import { ChatRoundDotsIcon as Chat } from "@solar-icons/react/bold/chat-round-dots";
 import type { AdRewardOfferView, PromotionOffersView } from "@mentor/types";
 import { PremiumBadge } from "@/components/premium/premium-badge";
 import { TopBanner, type TopBannerItem } from "@/components/top-banner";
@@ -135,13 +138,13 @@ function PremiumPerks() {
       <ul className="flex flex-col">
         <PerkLink
           href="/analysis"
-          icon={BarChart3}
+          icon={Chart}
           title={t("perks_analysis")}
           caption={t("perks_analysis_caption")}
         />
         <PerkLink
           href="/coach"
-          icon={MessageCircle}
+          icon={Chat}
           title={t("perks_coach")}
           caption={t("perks_coach_caption")}
         />
@@ -160,7 +163,7 @@ function PerkLink({
   caption,
 }: {
   href: "/analysis" | "/coach";
-  icon: LucideIcon;
+  icon: typeof Chart;
   title: string;
   caption: string;
 }) {
@@ -171,7 +174,7 @@ function PerkLink({
         className="flex min-h-14 items-center gap-3 rounded-[var(--radius-card)] py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       >
         <span className="grid size-10 shrink-0 place-items-center text-[var(--premium-ring-from)]">
-          <Icon className="size-5" strokeWidth={1.75} aria-hidden />
+          <Icon size={20} className="size-5" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-extrabold text-[var(--color-main)]">
@@ -181,7 +184,7 @@ function PerkLink({
             {caption}
           </span>
         </span>
-        <ChevronRight className="size-4 shrink-0 text-[var(--color-secondary)]" aria-hidden />
+        <ChevronRight size={16} className="size-4 shrink-0 text-[var(--color-secondary)]" aria-hidden />
       </Link>
     </li>
   );

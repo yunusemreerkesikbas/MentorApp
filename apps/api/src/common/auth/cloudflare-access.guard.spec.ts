@@ -56,4 +56,28 @@ describe("CloudflareAccessGuard", () => {
     await expect(guard.canActivate(context("/v1/admin/users"))).resolves.toBe(true);
     expect(verify).not.toHaveBeenCalled();
   });
+
+  it.each(["login", "refresh", "logout"])("requires Access on production admin auth %s", async (action) => {
+    const { guard } = setup();
+    await expect(guard.canActivate(context(`/v1/auth/admin/${action}`))).rejects.toMatchObject({ httpStatus: 401 });
+  });
+
+  it("verifies public admin auth and passes only the signed identity to identity", async () => {
+    const { guard, verify } = setup();
+    const request = {
+      originalUrl: "/v1/auth/admin/login",
+      headers: { "cf-access-jwt-assertion": "signed-assertion" },
+      cloudflareAccessEmail: undefined as string | undefined,
+    };
+    const ctx = { switchToHttp: () => ({ getRequest: () => request }) } as never;
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    expect(verify).toHaveBeenCalledWith("signed-assertion");
+    expect(request.cloudflareAccessEmail).toBe("admin@mentor.test");
+  });
+
+  it("fails closed when Access validation fails", async () => {
+    const { guard, verify } = setup();
+    verify.mockRejectedValueOnce(new Error("provider unavailable"));
+    await expect(guard.canActivate(context("/v1/auth/admin/refresh", "invalid"))).rejects.toMatchObject({ httpStatus: 401 });
+  });
 });

@@ -28,6 +28,16 @@ describe("canRegister", () => {
     expect(gate("SUSPENDED")).toEqual({ reason: "SUSPENDED" });
   });
 
+  it("refuses somebody who is a coach's student right now", () => {
+    expect(canRegister(null, true)).toEqual({ reason: "HAS_COACH" });
+  });
+
+  it("answers with the admin's verdict before the link", () => {
+    expect(canRegister({ status: MentorshipApplicationStatus.SUSPENDED }, true)).toEqual({
+      reason: "SUSPENDED",
+    });
+  });
+
   it("never returns allowed for a row that exists", () => {
     for (const status of ["ACTIVE", "PENDING", "SUSPENDED"] as const) {
       expect(gate(status)).not.toHaveProperty("allowed");

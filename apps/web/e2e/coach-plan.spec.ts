@@ -160,7 +160,8 @@ test("group mutations keep done students historical and series cancel requires s
   });
 
   await page.getByRole("button", { name: /Paragraf/ }).first().click();
-  await page.getByRole("button", { name: "Kaldır" }).click();
+  await page.getByRole("dialog", { name: "Paragraf" })
+    .getByRole("button", { name: "Çıkar", exact: true }).click();
   await page.getByRole("button", { name: "Görevi kaldır" }).click();
   await expect.poll(() => api.groupDeletes.length).toBe(1);
   expect(api.groupDeletes[0]).toEqual({

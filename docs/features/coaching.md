@@ -145,6 +145,304 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-14 · "Koçla planla" waits in a scene of its own ("Hafta kuruluyor").** Between
+  "Önizlemeyi hazırla" and the preview sheet the wizard used to close and only the button's spinner
+  showed. Now the wizard stays open and `PlanCoachAdaptationStage` opens over it as its last step:
+  the student's answers are dealt onto seven day tracks as blocks that change days every 900 ms,
+  Puhu follows them and says what the coach read (the brief's `groundingLine` and `evidence`), and
+  the bar's held-back segment fills when the answer lands; 450 ms later the scene and the wizard
+  close and the sheet opens. The loop is a product-owner exception scoped to this scene (DESIGN.md
+  §9.1, "the loop decision"). Usage: `generatePreview(input, progress)` in
+  `plan-coach-adaptation-action.tsx` owns the request and the stage's state; the mood and session
+  invitations and "Yeniden hazırla" pass no `progress` and get the scene without a bar. `runRef`
+  is bumped by every request and by "Vazgeç", so only the answer still waited for may open the
+  preview. Timings and the arrangement are pure, in `plan-coach-stage-scene.ts`. Gotchas: an error
+  while the wizard is open is said by the wizard (`submitError`, above its button), because a
+  toast renders under a native `<dialog>`; a premium-required error still closes the wizard and
+  opens the paywall. The stage does not lock body scroll (the wizard underneath already does).
+  `PlayProgress` took a `from` so the stage's bar does not replay the segment the wizard already
+  drew, and `PuhuBubble` an `idleFrame`; both default to what they did. The blocks are placed with
+  container units (`cqw`), so the board has to stay inside its `@container`. The page under the
+  scene can only be left by the browser's back: two browser tests that asserted the old behaviour
+  (no dialog while waiting, leaving by a nav link) were rewritten. `OnboardingStepLayout` took a
+  `center` for a body with no footer under it. Not built: a true abort of the request, sound, the
+  "Koçun masası" video, and the same scene on the other AI waits. Tests: 8 unit
+  (`plan-coach-stage-scene.spec.ts`, the no-two-blocks-in-one-place case seen failing under a
+  deliberate break), 8 browser scenarios in `e2e/plan.spec.ts` on both viewports (scene then
+  preview, "Vazgeç", a failed request keeps the answers, the board is built from the answers and
+  moves, reduced motion stands still, a late answer after leaving opens nothing, the mood
+  invitation opens the scene with no wizard and no bar, "Yeniden hazırla" brings it back alone and
+  repeats the first ask). Looked at in the browser on a phone and a desktop width in the light
+  theme (the wizard, the mood invitation and "Yeniden hazırla"), and on a desktop width in the
+  dark theme with reduced motion. Without the wizard the board shows one block per task waiting in
+  the week (twelve at most, none when nothing waits), a product-owner call after seeing twelve
+  blocks over "1 bekleyen görev"; with the wizard it stays two blocks to a picked day, so the main
+  flow never plays on an empty board. Not settled: on some of Puhu's frame swaps the picture reports no
+  current source for a sample (the same swap the wizard's talk and blink frames already do); a
+  4 fps pixel check saw no blank, which is too coarse to rule a one-frame blink out.
+
+- **2026-10-14 · Panel "Hedefin" card hangs the board on the wall, and it sways.** A published
+  board in the card is drawn as the phone wallpaper draws it: framed, on a wall of
+  `--color-surface-container`, hung from a nail by a cord (`HungBoard`,
+  `components/vision-board/hung-board.tsx`). The proportions are `wallpaperLayout`'s, restated
+  against the board's width: cord 19% in from each side, nail 17.7% of the width above. It swings
+  about the nail and comes to rest, on three causes and never by itself: the first sight of a
+  board the editor has just saved (a session flag set by every successful save of a published
+  board, spent on that sight), a mouse coming in over the card (pushed from that side), and the
+  full-size preview shutting. The overshoot and the ~1.3 s settle are a product-owner exception
+  scoped to this component (DESIGN.md §9.1, "the sway decision"); reduced motion keeps it still.
+  Usage: the spring, the three pushes and the flag live in `hung-board-sway.ts`; whoever has a
+  reason to push the board owns `useBoardSway()` and hands it to `HungBoard`. The full-size
+  preview is unchanged (frame only, no wall). Gotchas: the cord and nail keep the wallpaper's
+  browns in both themes, like the wood frame; a click brings a mouse in, so on desktop opening
+  the preview also pushes the board; when measuring the sway in a test, sample every frame inside
+  the page (`tiltRange` in `e2e/panel.spec.ts`), an outside poll walks past the peak. Tests: 4
+  unit (`hung-board-sway.spec.ts`), 4 browser scenarios in `panel.spec.ts` on both viewports,
+  each seen failing under a deliberate break. Looked at in the browser in the light theme only.
+  Not built: a sway on scroll, a sway on the day's progress.
+
+- **2026-10-13 · PR #161 conflict resolution.** Updated the notebook branch with current
+  `master`, preserving both the notebook page-transfer/mobile Puhu notes and the session
+  layout, sound, and sharing notes. Usage is unchanged: notebook items still move between
+  facing pages, and the reading Puhu remains visible on phones. Gotcha: keep both branches'
+  timeline entries when resolving this shared documentation file. Related:
+  `docs/features/coaching.md`, `notebook-shell.tsx`, `use-notebook-page-transfer.ts`,
+  `notebook-desk.css`, `e2e/notebook.spec.ts`.
+
+- **2026-10-13 · Vision board: opening a saved board is no longer an edit.** Found by a pass
+  against the real API. The editor starts on an empty placeholder and swaps the server's board in
+  when it arrives; that swap went through `replace`, which is an edit, so the placeholder sat on
+  the undo stack. One Ctrl+Z on a freshly opened board brought the placeholder back, marked
+  dirty, for autosave to write over the real board two seconds later. The load now dispatches its
+  own `load` action (`use-board-reducer.ts`), which starts the history over and leaves nothing to
+  save. Guarded by a reducer test and VB-25, both written first and seen failing. The same pass
+  checked autosave, a photo upload, a real community post and the panel's "Hedefin" card with
+  nothing mocked; results in
+  [`docs/qa/2026-10-13-vision-board-editor.md`](../qa/2026-10-13-vision-board-editor.md).
+  Usage: `replace` stays for edits that swap the whole document (a template). Gotcha: in an
+  environment with an empty `WEB_CSP_STORAGE_ORIGINS` the page refuses the storage hosts, so a
+  board photo shows broken after a reload and exports as the placeholder grey; that is the
+  environment, not the board.
+
+- **2026-10-13 · Vision board editor QA: 24 browser scenarios, each seen failing.** The editor's
+  scenarios moved out of `vision-board.spec.ts` (back to its committed state) into
+  `e2e/vision-board-editor.spec.ts` with their own `vision-board-editor.fixture.ts`
+  (`mockBoardApi`: goal, board PUT, photo upload, a served photo, forum rooms, upload and post, a
+  refusal). VB-01…VB-24 cover the chrome on both viewports, keyboard access, autosave and
+  publish, photo upload, the export's size and pixels, system share, copy, and the community
+  step's rooms, refusal and empty state. Because they were written after the code, each was then
+  proved able to fail: 28 deliberate breaks of the production code, restored byte for byte
+  afterwards. The weight fallback for a community post moved from the component to
+  `renderBoardWithinBytes` (`board-export.ts`) so it could have a unit test, written first.
+  Results, the three defects the scenarios now guard, and what a mocked API cannot show:
+  [`docs/qa/2026-10-13-vision-board-editor.md`](../qa/2026-10-13-vision-board-editor.md).
+  Usage: `PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm --filter @mentor/web exec playwright
+  test vision-board-editor` against a running dev server. Gotcha: a new scenario goes in the
+  editor's spec, not in `vision-board.spec.ts`, which is the goal map's.
+
+- **2026-10-13 · Vision board: share to a community room.** Fifth and last stop of the collage
+  editor redesign. The share window has a second step, "Toplulukta paylaş"
+  (`board-share-community.tsx`): pick a room, write a short note, and the framed board goes up
+  as the post's picture. No server change: the picture is a JPEG uploaded through the forum's
+  own attachment flow (`uploadForumImage`) and the post is an ordinary `postThread`, so a room's
+  rules and moderation apply unchanged, and the composer's `forum_thread_created` event fires
+  with `mode: "share"`. Rooms are the ones `eligibleComposerZones(zones, "share")` allows (chat
+  rooms the viewer is in, announcement rooms they moderate); with exactly one it is already
+  chosen, with none the step points to Topluluk. On success the window closes and a toast leads
+  to the post. Usage: `playwright test vision-board -g "toplulukta paylaşılır"`. Gotchas: the
+  row is offered only once `listZones()` has answered, so it stays out when the forum is off
+  (`FORUM_DISABLED`) or the read fails; `renderBoardToBlob(doc, { type: "image/jpeg" })` paints
+  white under the frame's rounded corners (JPEG has no transparency) and falls back to 1× if the
+  2× file passes `FORUM_IMAGE_MAX_BYTES`; the privacy line ("Panodaki fotoğraflar odadaki
+  herkese görünür") sits under the note, before the post, on purpose; the post always carries the
+  board, never the wallpaper. Related: `board-share-sheet.tsx`, `lib/forum.ts`,
+  `lib/forum-attachments.ts`, `community/_components/composer-audience.ts`.
+
+- **2026-10-13 · Vision board: framed PNG, phone wallpaper and a share window.** Fourth stop of
+  the collage editor redesign. The export now draws the board's own frame (it used to stop at
+  the board's edge, so a wood-framed board downloaded bare): `renderBoardToBlob` paints the
+  moulding and the mat around a clipped board, at the shares in `BOARD_FRAME_METRICS`
+  (`board-export-layout.ts`), the one table `BoardFrame` reads too. New
+  `renderBoardWallpaperBlob`: 1170×2532, the framed board hung from a nail on the editor's light
+  wall, placed by `wallpaperLayout` under a lock screen's clock. The top bar's download and
+  share icons became one "Paylaş" control that opens `BoardShareSheet` (`next/dynamic`, the kit's
+  `Modal placement="sheet"`): a preview of the picture that will leave, Pano or Duvar kâğıdı,
+  then the system share sheet with "İndir" beside it where files can be shared, or "İndir" and
+  "Görseli kopyala" elsewhere. Usage: `pnpm --filter @mentor/web exec vitest run
+  board-export-layout`, `playwright test vision-board -g "paylaşım penceresi"` (checks both
+  pictures' pixel sizes and file names). Gotchas: a wood-framed PNG is 3584×2504, not 3240×2160;
+  a picture is never themed (light wall, opaque gallery moulding); the window draws each format
+  the first time it is looked at; failures speak inside the window, a toast would sit under the
+  dialog's top layer; the editor's shortcuts ignore keys pressed inside a `dialog`, or Delete in
+  the share window would remove the item selected behind it. `shareOrDownloadBoard` is gone.
+  Related: `components/vision-board/board-export{,-layout}.ts`, `board-frame.tsx`,
+  `board-share-sheet.tsx`, `board-editor-topbar.tsx`.
+
+- **2026-10-13 · Vision board: pictured options, keyboard, and a frame that scales.** Third stop
+  of the collage editor redesign. The board panel picks a frame and a texture from pictured
+  tiles (`Tile` in `board-side-panel.tsx`), drawn by `BoardFrame` and `BOARD_TEXTURE_STYLES`
+  themselves, and "Çerçevesiz" is a choice of its own (it used to be a second tap on the active
+  frame); solid colours sit under their own "Düz renk" label; the eleven fonts are a two-column
+  grid. A placed item is a tab stop (`role="group"`, named by its kind and, for a text, its
+  words): focus selects it, the arrows move it by `NUDGE_STEP` canvas units (`NUDGE_STEP_LARGE`
+  with Shift, one undo step per press), Enter opens a text for typing; the resize and rotate
+  handles left the tab order because they only answer a pointer. Fix: `BoardFrame`'s moulding
+  was 2.2% of the *window*, not of the board (a size container's own `cqw` resolves against the
+  container above it), so the frame was too heavy on a desktop editor and on the panel card;
+  the container is now a wrapper of its own and the frame is true to the board everywhere.
+  Usage: `pnpm --filter @mentor/web exec vitest run gesture-math` and
+  `playwright test vision-board -g "pano editörü"`. Gotchas: the frame picker passes
+  `thickness={3}` because a true-to-scale moulding on an 80 px tile is a hairline; step sizes are
+  constants in `components/stage/gesture-math.ts`, tune them there. Related:
+  `components/vision-board/board-{frame,stage}.tsx`, `components/stage/selection-overlay.tsx`,
+  `use-board-shortcuts.ts`.
+
+- **2026-10-13 · Vision board editor takes the notebook's chrome.** Second stop of the collage
+  editor redesign. From `lg` a stadium rail and a titled 320 px panel float at the left and the
+  board steps aside for the open panel instead of being covered; below `lg` the rail is a dock
+  under the board, the panel a non-modal sheet behind it (at most half the screen, starts shut)
+  and the selection's toolbar sits over the dock. The board hangs on a wall of
+  `--color-surface-container`. An untouched board (only the goal's seeded lines, or nothing)
+  shows Puhu's welcome under it with "Görsel yükle" and "Şablonla başla"; the first thing added
+  or rewritten removes it, with no stored flag. "Yayınla" reads "Panelimde göster"; a draft keeps
+  that ledge as its filled action, a published board keeps "Kaydet". The 860-line shell is split
+  (379 lines left, orchestration only): `use-board-persistence.ts` (load, save, publish, autosave,
+  flush), `use-board-images.ts`, `use-board-shortcuts.ts`,
+  `board-editor-{rail,panel,topbar,stage}.tsx`, `board-welcome.tsx`. Usage:
+  `pnpm --filter @mentor/web exec playwright test vision-board -g "pano editörü"` (both
+  projects). Gotchas: the panel is the one scroller, so a category body must not scroll itself;
+  selecting an item opens its panel only from `lg` (on a phone it would cover the board on every
+  tap); a draft's ledge wraps the top bar to a second row on a 375 px phone by design; the rail's
+  category toggle no longer lives inside a state updater (Strict Mode ran it twice and it
+  cancelled itself). Related: DESIGN.md §11 "Editor chrome", `e2e/vision-board.spec.ts`.
+
+- **2026-10-13 · Vision board editor chrome leaves `--color-btn`.** First stop of the
+  collage editor redesign (canvas: https://claude.ai/artifact/WSy39Y2fcSzxSdyft9f8vC). The
+  selected rail item, panel pills, pressed context-toolbar buttons and the colour-name tip
+  wear DESIGN.md's selected chip (`--play-selected`, `--play-cta` rim, `--play-selected-ink`);
+  "Görsel yükle", "Metin ekle" and "Yayınla" are the `@mentor/ui` play ledge; the hard-coded
+  `rgba(17,17,17,.08)` hairlines follow `--color-main`, and swatches get a visible rim (the
+  white one used to vanish on the light surface). Usage:
+  `pnpm --filter @mentor/web exec playwright test vision-board -g "seçili çip"`; against a
+  running dev server set `PLAYWRIGHT_BASE_URL=http://localhost:3000`. Gotcha: the rail fill is
+  the notebook's `NotebookRailActiveFill`, imported as is (move it to `components/stage/` when
+  a third editor needs it); `mockVisionApi(page, vision)` now takes an optional goal fixture.
+  Next stops: notebook-style floating rail and panel, texture and frame previews, framed PNG
+  and wallpaper export, community share. Related: `vision-board/board/_components/`
+  (`board-editor-shell.tsx`, `board-side-panel.tsx`, `board-swatch.tsx`,
+  `board-context-toolbar.tsx`), `e2e/vision-board.spec.ts`.
+
+- **2026-10-10 · Plan test fixtures follow each feature's day policy.** Task CRUD,
+  daily activity and today's summary use UTC fixtures; plan adaptations retain Istanbul
+  calendar dates. Usage: run `plan.service.spec.ts`, including between Istanbul and UTC
+  midnight. Gotcha: production date policies are unchanged. Related:
+  `plan.service.spec.ts`, `plan.service.ts`, `date.util.ts`.
+
+- **2026-10-10 · Notebook card editing hides the review overlay.** Opening a card's edit
+  dialog temporarily hides its review preview, so the preview portal cannot intercept edit
+  or delete controls. Closing/saving the edit restores the current review. Usage: open a
+  card preview, choose edit, change the error type and save. Browser coverage asserts that
+  the preview disappears during editing and returns after saving. Related:
+  `notebook/_components/notebook-shell.tsx`, `e2e/notebook.spec.ts`.
+
+- **2026-10-07 · Plan icon consistency, first pass.** Student plan task menus, add controls,
+  week/month navigation, calendar task/event chips and event detail actions now use direct
+  Solar imports. Coach provenance uses an academic cap and community links use Chat Round Dots;
+  functional controls use Linear and semantic marks use Bold. Usage: Plan → list or calendar,
+  task menu and event details. Gotchas: the compact completion tick remains unchanged, existing
+  icon sizes and surfaces stay intact, and no task or calendar behavior changed. Related:
+  `plan/_components/{plan-task-row,plan-task-menu,plan-week-strip,plan-calendar-header,
+  plan-week-mini-calendar,plan-add-task-button,plan-calendar-fab,plan-event-chip,plan-event-details}.tsx`.
+  Validation: touched-file lint, direct Solar export checks and eight existing mobile/desktop
+  task creation/edit, coach-note and month-navigation scenarios passed. The first browser run
+  could not connect because the local web server was stopped; it was started before verification.
+
+- **2026-10-07 · Consistent mistakes progress and history icons.** The mistakes reason,
+  subject and 60-day notebook funnel cards now opt into `ProgressLine`'s onboarding-style
+  12 px pill and shine. The healed fill keeps its success tone. Exam-history expansion,
+  coach, edit, delete and overflow actions now use direct Solar imports, matching the
+  existing background-free review status and navigation icons. Usage: Analiz → Yanlışlarım;
+  expand an exam in the shared history rail for its actions. Gotchas: counts, percentages,
+  review destinations and reduced-motion behavior are unchanged; reason rows remain text-only.
+  Related: `mistakes-why-card.tsx`, `mistakes-where-card.tsx`, `notebook-funnel-card.tsx`,
+  `analysis-history-card.tsx`, `analysis-history-detail.tsx`.
+  Validation: four existing mobile/desktop mistakes scenarios passed, covering populated
+  and empty notebooks; the new Solar action exports were verified directly.
+
+- **2026-10-07 · Onboarding-style subject progress.** `SubjectsCard` now uses the existing
+  `ProgressLine` play appearance: a 12 px rounded track, blue fill and upper shine stripe,
+  matching onboarding's `PlayProgress`. Usage: Analiz → Gelişim → Derslerin. Gotchas:
+  normalized percentages, labels and missing-data behavior remain unchanged; only this card
+  opts in, and width transitions respect reduced motion. Related:
+  `analysis/_components/subjects-card.tsx`, `components/panel/progress-line.tsx`,
+  `components/onboarding-play/play-progress.tsx`.
+  Validation: touched-component lint and the existing mobile and desktop analysis
+  scenarios passed, including subject values and layout overflow checks.
+
+- **2026-10-07 · Solar icons for analysis progress.** The improvement path and its primary
+  actions now match the dashboard: Lightbulb/Clipboard Check/Restart/Pen 2 describe the four
+  stages; Check Circle marks completion and Play the current review. Net/subject direction
+  arrows and add/back controls use Linear; record/AI stars use Bold. Usage: Analiz → Gelişim,
+  including the first-exam empty state. Gotchas: path-node surfaces remain because they encode
+  progress; icons inherit their node/CTA ink for contrast. No new decorative icon wells, copy
+  changes or data/route changes. Related: `analysis/_components/{focus-path-steps,focus-path-card,
+  net-trend-card,subjects-card,analysis-header}.tsx`, `DESIGN.md` §7.
+  Validation: touched-component lint, web typecheck and 13 focus-model/type-helper unit cases
+  passed. All 16 scoped mobile/desktop browser scenarios passed, covering empty/first exam,
+  completed/deleted focus, trend/subject cards, free/premium narration and English copy.
+  Two mobile cases initially hit an unrelated seans `shareDaypart` build overlay and passed
+  after that concurrent edit settled; no seans files were changed for this icon update.
+
+- **2026-10-07 · Simplify daily quest rows.** Removed the redundant plan/focus/mood/default
+  icons and their alignment slots from `DailyQuestsCard`, along with the unused mapping/imports.
+  Usage: `/panel` → daily quests now lead with title, progress and reward; completed rows retain
+  green progress/reward ink. The weekly chest glyph and all-quests arrow remain. Gotchas:
+  quest progress, reward text and the all-quests action retain their behavior. Related:
+  `dashboard/_components/daily-quests-card.tsx`, `e2e/panel.spec.ts`, `DESIGN.md` §7.
+  Validation: touched-component/test lint and 10 existing browser scenarios passed across
+  mobile/desktop, light/dark and free/premium, including completion progress and responsive layout.
+
+- **2026-10-06 · Remove redundant mistake-reason icons.** Following the approved design review,
+  the six mistake reasons now start with their text and progress bar; their leading glyphs,
+  alignment slots, mapping and unused imports are removed. Usage: Analiz → Yanlışlarım →
+  Neden kaçırıyorsun? Recent-review outcome icons, the review CTA's Play and destination arrows
+  remain. Gotchas: reason filtering, counts and review behavior are unchanged. Related:
+  `analysis/_components/mistakes-why-card.tsx`, `DESIGN.md` §7.
+  Validation: touched-component lint and four existing populated/empty notebook browser
+  scenarios passed on mobile and desktop.
+
+- **2026-10-06 · Plain Solar icons in analysis mistakes.** The six notebook error reasons now
+  use distinct Solar Bold glyphs (book, eye, document, crossed option list, answer refresh and
+  stopwatch). Recent reviews use a green Check Circle for solved questions and a neutral Restart
+  for retries; arrows are Linear and the review CTA uses the same Bold Play as the dashboard.
+  Usage: Analiz → Yanlışlarım. Both reason and recent-review icon backgrounds and rounded wells
+  are removed; transparent 40 px alignment slots retain row spacing, and glyphs stay 20 px.
+  Gotchas: links, filters, review dates/counts and card/progress backgrounds are unchanged.
+  Related: `analysis/_components/{mistakes-why-card,mistakes-where-card,review-history-card}.tsx`,
+  `DESIGN.md` §7, `public/icon-credits.txt`.
+  Validation: touched-file lint and web typecheck passed; six scoped browser scenarios passed
+  for populated/empty notebooks and all six reasons plus both review outcomes on mobile/desktop.
+  Temporary preview checks verify transparent icon slots, 20 px Bold glyphs, retained reason
+  filters, no horizontal overflow, and light/dark themes.
+
+- **2026-10-06 · Dashboard Solar icon extension.** Panel-owned icons now follow the approved
+  navigation direction: Solar Bold for ritual/destination glyphs and Linear for small controls.
+  Plan tasks use Clipboard Check, focus uses Stopwatch, mood uses Heart, analysis uses Chart 2,
+  conversations use Chat Round Dots, and study/notebook links use Notebook. Path stops distinguish
+  completed (Check Circle), current (Play) and upcoming (Notebook); human-coach assignments keep
+  an academic-cap marker. Usage: open `/panel` on mobile or desktop; blue study tools, green
+  completed quests and the existing mood/premium tokens adapt to both themes. Gotchas: path and
+  CTA glyphs inherit their container ink for contrast; no extra badge backgrounds were added.
+  Custom chest, Puhu, mood, flame, journey and premium artwork stay intact, as do coin/XP marks.
+  Individual imports keep the full Solar catalogue out of the bundle. Related:
+  `dashboard/_components/{today-path,today-path-card,daily-quests-card,membership-card,journey-card,
+  week-band,community-topics-card,my-coach-card,greeting-row,panel-shell,vision-board-card}.tsx`,
+  `e2e/panel.spec.ts`, `public/icon-credits.txt`, `DESIGN.md` §7. Validation: web typecheck and
+  dashboard/test lint passed; 12 path-model unit cases and 16 scoped browser cases passed,
+  covering light/dark, free/premium, mobile/desktop, progress, task completion, start links and
+  the empty-day route. The rail regression check now verifies Solar Bold glyphs at 20 px
+  instead of the former Lucide stroke width.
+
 - **2026-10-03 · Notebook review fixes (PR #133 follow-up).** The editor route keys `NotebookShell` by `notebookId`, so another notebook always gets a fresh page cache, unsaved set and editor state: a reused shell could have shown, then autosaved, the previous notebook's pages. `useNotebookContents` keeps its answer with the notebook it belongs to and never shows another notebook's lines or hides a failed read behind them. Signing out (or losing the session) unmounts the opening overlay with the signed-in shell; its cleanup now resets the opening store (`notebookOpening.reset`) and clears the contents cache (`forgetAllNotebookContents`), so nothing replays or is served to the next account in the same tab. The desk's drop-in timers are cleared on unmount. Usage unchanged. Gotcha: module-level notebook state must be dropped at the signed-in shell's boundary; the tab survives sign-out. Related: `notebooks/[notebookId]/page.tsx`, `use-notebook-contents.ts`, `notebook-opening-overlay.tsx`, `lib/notebook-opening.ts`, `lib/notebook-contents-cache.ts` (+ specs), `notebooks-shell.tsx`, DESIGN.md §9.1.
 
 - **2026-10-03 · Defterlerim desk, lift-and-open, İçindekiler and the page curl.** Decided with the product owner (direction "A · Masa"); motion budget and beats in DESIGN.md §9.1 "Masa". `/defterlerim` is a desk scene: notebooks lie on a wooden desk as 3D books (34° tilt; spin, nudge and thickness seeded from the id and page count; up to five due tabs), lit by the app theme (light: a day window and a sunbeam; dark: a night window and a lamp whose head turns to the hovered or focused book while its cone and light pool follow). From 640 px Puhu sits on the desk with one contextual bubble (due count, idle, first notebook, new notebook; on a phone the app header's Puhu stays the only one); a notebook that was just made drops onto the desk. Clicking a book lifts it, flies it to where the editor's book will stand and opens its cover onto the inside cover and the contents page; the editor mounts underneath at 520 ms and the book settles onto the editor's real first spread before it fades. The editor's cover now always opens onto that spread: the inside cover (ex-libris with the owner's name and a Puhu stamp) and **İçindekiler**, one line per written page (the first note line, else topic, subject or what is on it; due badges), where a line riffles the book to that page and an empty book offers "Yazmaya başla". New read endpoints: `GET /v1/coaching/notebook/contents` and `GET /v1/coaching/notebooks/:id/contents` (`NotebookContentsDto`), summarized by the pure `notebook-contents.policy.ts` from `doc -> 'items'` and the ink length; no schema change. Page turns: the rigid 3D leaf (`notebook-page-turn.tsx`, removed) is replaced by a corner curl that keeps the page's content (one straight fold, the back of the sheet over the page it uncovers): hands-off on arrows and keys, by hand from the page's outer edge (finishes past a third of the way or on a flick). A read-ahead cache keeps the spreads either side in hand, and pages are saved before a turn leaves them (this also closes the old autosave/turn race). Sounds are synthesised, toggled on the desk and remembered. Usage: Defterlerim → click (or Enter on) a notebook → İçindekiler → a line, "Sonraki" or a drag on the page edge. Gotchas: the hand-off between the two routes is the in-memory store `lib/notebook-opening.ts` (a reload has no book in the air, so the editor opens on its cover); only a small wrapper lives in the app shell, the flight is its own chunk the desk preloads and the wrapper keeps at module level (not `next/dynamic`: a lazy component suspends on first render and React holds the reveal ~300 ms, which the click felt as lag). The desk hides its book only once the store says `underway` (set in the flight's layout effect), and a flight that has not taken off 600 ms after the click is skipped for a plain navigation. The contents cache (`lib/notebook-contents-cache.ts`) is fresh for 8 s and dropped after every page save. `useFitSize` does not measure the book on first mount, so the landing measures `bookRef` itself. `.nb-book` is the size container (`cqw`); never give a 3D descendant `container-type` (it flattens `preserve-3d`), and keep screen-blended light layers out of stacking contexts. e2e: the cover opens onto contents, so specs that need a writing page use `openToFirstSpread` (`e2e/notebook.spec.ts`). Reduced motion: no flight, no turn animation, no drop-in. Related: `(app)/notebooks/_components/*` (desk), `components/notebook-desk/*` (book, contents page, overlay, flight, CSS), `components/notebook/notebook-page-curl.tsx`, `notebook-riffle.tsx`, `notebook-static-page.tsx`, `(app)/notebook/_components/{notebook-shell,use-notebook-turns,use-notebook-page-cache,notebook-contents-spread,use-notebook-contents,notebook-shell-layout}.ts(x)`, `lib/notebook-{desk,curl,opening,opening-geometry,sfx,contents-cache}.ts`, `apps/api/.../coaching/{domain/notebook-contents.policy,application/mistake-notebook.service,infrastructure/mistake-notebook.repository}.ts`, `e2e/notebook{,s}.spec.ts`.
@@ -157,6 +455,12 @@ pnpm --filter @mentor/api test
 - **2026-10-04 · Photo on a page as a taped print.** A photographed mistake on a notebook page follows the "Sayfa bileşeni" board of the "Defterlerim Yeniden Tasarım" canvas instead of a flat bordered box: a white print with a ~3cqw margin, two strips of masking tape over the top corners, a downward shadow and a small resting tilt (±1.5°, stable per entry via `restingTilt(entry.id)`). The topic (or subject) sits on the print's top margin, centred and inset past the tape; the hover overlay keeps error type, note and review count (topic only there when there is none). The tilt drops while the item is selected, so the print lines up with the selection frame and handles (`selected` now passes from `NotebookPageStage` to `NotebookEntryCard`). The photo stays `object-contain`; the letterbox falls on the print's white. The due state is a 2px `--color-progress` outline on the print. New tokens in `theme.css`: `--notebook-print`, `--notebook-print-shadow`, `--notebook-print-caption` (#6f6656, darker than the design's #8a8170 for 4.5:1), `--notebook-tape`. Gotcha: the tape hangs outside the card box, so nothing above the card may clip it. Text-only cards are unchanged. Related: `notebook-entry-card.tsx`, `notebook-page-stage.tsx`.
 - **2026-10-04 · Desk Puhu reads on the book stack (APP-116).** The desk's Puhu is a page-specific variant now: he sits on the stack of books with a teal book open in both wings. His eyes hold the left page, then the right one (2.2–3.2 s each), and a blink carries them back; his feet swing over the top book's edge (CSS, ±7°, against each other). A hovered or focused notebook makes him look up from the book towards it (`data-gaze` from `use-desk-light.ts`, unchanged), and a new notebook makes him wave with the book in his other wing. Art: `public/mascot/puhu/desk/` (eight sprites on one 360×384 canvas), built by `scripts/desk-puhu-sprites.mjs` from six image-generator edits on magenta. The eye frames are the base with only the changed pixels around the glasses pasted in (the generator repaints the whole picture on every edit, so cutting between raw frames would make the fluff shimmer), and the feet are cut into their own layers with belly painted in under them. `scripts/lib/png.mjs` now picks a PNG filter per row, so every sprite it writes is about a fifth smaller. Usage: Defterlerim at 640 px or wider. Gotchas: re-read `DESK_PUHU_ART` (`seat`, foot pivots) from the script's output whenever the art changes; the stack SVG is drawn before Puhu so he sits in front of the top book; the raw frames are not in the repo. Reduced motion: he stays on the left page, no blink, feet still. Related: `desk-puhu.tsx`, `notebook-desk.css` (`.desk-puhu-*`), `public/mascot/puhu/README.md`, DESIGN.md §9.1.
 - **2026-10-05 · Flash card list as a hand of cards ("Yelpaze").** Decided with the product owner (concept "A · Yelpaze" on the "Defterlerim Yeniden Tasarım" canvas); beats and budgets in DESIGN.md §9.1 "Yelpaze". The review deck's list is no longer a scrolling column of subject-grouped rows: "Listeyi aç" shrinks the review card into its own slot in a hand of cards that fans out around it, and answered cards lie on a small pile top left ("Cevapladıkların · N") with a ✓, disabled, so nothing there reviews a card twice. A hand card shows the question's real front (photo or text, the same `CardFront` the review card draws) and a "Ders · Konu" band, nothing else: the error type stays on the back because a list that printed it on every front would answer the card before it was turned. The card the deck is on is ringed and lifted; tapping a card folds the hand back into it and the panel moves the deck there. The geometry is pure and tested (`lib/notebook-review-fan.ts` + spec): card size, pivot radius, the step between neighbours, the window (five cards each side on a desktop, two on a phone, the rest squeezed to 1.1° at the edges), the pile and the arrow row all come from the dialog's measured box, so every full card stays on screen from 320×568 to 1920×1080 with 1 to 24 cards in hand. **Usage:** open a deck in a notebook, press "Listeyi aç", browse with ←/→/Home/End, a drag or the wheel, then tap a card to go to it (Escape folds the hand back). **Gotchas:** the panel is portalled to `document.body` now. The notebook shell's root is `relative isolate`, so the dialog's `fixed inset-0 z-50` was trapped in that stacking context and the phone header (z-20), the tab bar and the desktop sidebar drew over the fan, the pile and the "Listeyi aç" control; this is also what failed several mobile notebook e2e tests on master. The card view stays mounted while the hand is open (hidden with `visibility`), because the fan measures the review card's box to deal from and fold back to, and the panel's jump counter re-keys its `AnimatePresence` so the card it lands on does not slide in from the old one. `REVIEW_STACK_LAYERS` moved into the fan lib (a dealt card has to start exactly where the panel drew the two blanks behind the review card) and `DeckButton` into its own file. The cards move on CSS transitions rather than framer-motion: two dozen springs at once is dropped frames on a phone. Only one tab stop, the lifted card, the way a radio group works. Reduced motion: no deal and no fold, the hand crossfades (150 ms). New keys: `notebook.review_list_{title,pile,pile_empty}`. Related: `lib/notebook-review-fan{,.spec}.ts`, `notebook-review-{list,fan-card,deck-button,panel,card}.tsx`, `e2e/notebook.spec.ts`, DESIGN.md §9.1.
+- **2026-10-05 · Both open pages are one desk: no "page full", carry items across, drag and drop.** Decided with the product owner. (1) There is no page limit any more: `nextEntrySlot` (which returned null after four cards and made the shell say "Bu sayfa doldu") is now `entrySlot` in `lib/notebook-layout.ts`, which scans the writing column from the top for the first gap tall enough (only entry cards count as taken space) and, with no gap, puts the card at the bottom of the page over the others; `notebook.error_page_full` is gone. Card sizing moved into `entryCardSize(aspect)`. (2) On a wide spread the page that "Ekle", stickers, notes and paper act on wears a faint accent outline while the side panel is open; tapping the other page moves it (`NotebookPageHint`, `notebook-page-hint.tsx`). (3) An item dragged from one page and let go over the facing page moves there, at the spot it was let go (`use-notebook-page-transfer.ts`): it is removed from one page document and added to the other, the card's entry rides along in the page meta, and both pages autosave as usual. The page being dragged on stops clipping (`NotebookPageSurface clip={false}`) and draws over its neighbour, so the item is seen crossing the spine. On a phone the leaf's edge stands in for the facing page: drag to the right edge of page 1 (left edge of page 2), a strip and "Bırak, sağ/sol sayfaya geçsin" appear, and letting go turns the leaf to show the item there, centred in the writing column at the same height. Moving across spreads (page 2 to page 3) is not supported. (4) Native drag and drop, desktop only: stickers and index rows are `draggable` and land where they are dropped (`STICKER_DRAG_TYPE`, `ENTRY_DRAG_TYPE` in `lib/notebook-drop.ts`); a photo file dragged in from the computer opens the add form with that photo uploaded, and the saved card lands at the drop spot (mistake notebook with an exam only; custom notebooks hold no entries). Tapping still works everywhere. New keys: `notebook.move_to_{left,right}_page`, `notebook.sticker_drag_hint`, `notebook.index_drag_hint`. Gotchas: undo is per page, so undoing a cross-page move on the page it landed on removes it there without bringing it back on the other page (undo on the page it left brings it back); drop points are converted with the page surface's width (items are drawn in `cqw` of the page surface, from the stage's corner). The dropped photo is cleared while rendering when the add form closes (not in an effect, `react-hooks/set-state-in-effect`). Related: `notebook-shell.tsx`, `use-notebook-page-transfer.ts`, `notebook-page-hint.tsx`, `notebook-{side,add,index}-panel.tsx`, `components/notebook/notebook-surface.tsx`, `lib/notebook-{layout,drop}.ts`, `lib/notebook-layout.spec.ts`, `e2e/notebook.spec.ts`.
+- **2026-10-05 · Reading Puhu on phones too.** Below 640 px the desk's reading Puhu (with his book stack) is no longer hidden: he sits at the far left of the desk at 0.58 scale, between the title and the notebooks, while the app header's lamp Puhu stays at the top right. The bubble stays hidden on phones (no room). Usage: open Defterlerim on a phone. Gotcha: the mobile spot is the base `.desk-puhu-spot` rule; the 640 px rule overrides its position and scale. Related: `notebook-desk.css`, `desk-puhu.tsx`.
+- **2026-10-06 · Seans: centred setup, celebrating stars, room sounds.** Decided with the product owner. (1) Layout: the idle `/seans` frame drops the panel's `max-w-6xl`; top bar and timer share one centre axis and the 340 px rail sits at the content area's right edge. A container query (78 rem) adds an empty mirror column, so on wide screens the timer is on the page's centre line (DESIGN.md §4 exception); the skeleton uses the same `SESSION_*_CLASS`. (2) Done card: `CompletionStars` pops each star (centre last, ~18 % overshoot scoped here), sweeps the fill, rings once and throws six sparks; `CompletionSummary` brings title, status, stat rows and the caller's chrome in behind them; three full stars add the confetti lottie once (skipped while a streak celebration shows). Reduced motion: final frame, no sparks, no confetti. (3) Sound: the three synthesized loops (`focus-ambient-*.wav`, `scripts/generate-ambient-audio.mjs`) are gone. Every theme plays its room's ambience with a quiet music bed under it (two `Audio` loops, gains 0.35 / 0.16). The picker offers "Sahneye uygun" (`scene`, follows the room on screen, also the study-room suggestion), the three rooms pinned, and "Sessiz"; label "Ortam sesi". Old stored ids (`soft`/`rain`/`warm`) migrate to `scene`. The six mp3s are re-encoded to 96 kbps (9.5 MB in all, down from 23.5 MB; command in the README). Usage: Ortam sesi → Sahneye uygun, then switch Kütüphane/Kafe/Ev with the scene arrows; the sound follows. Gotchas: framer's `initial={false}` still plays a keyframe array, so the reduced-motion branch passes plain targets; `study-session.spec.ts` runs under emulated reduced motion, so motion checks need `emulateMedia({ reducedMotion: "no-preference" })`. `study-rooms`/`join-room` specs pin the CORS origin to 3100, so they fail against the 3000 dev server. Audio files and licences: `public/audio/README.md`. Related: `session-idle-view.tsx`, `session-content-skeleton.tsx`, `packages/ui/src/components/completion-{stars,summary}.tsx`, `session-done-state.tsx`, `lib/ambient-tracks{,.spec}.ts`, `use-session-ambient-sound.ts`, `session-ambient-picker.tsx`, `study-session-shell.tsx`, `lib/study-room-theme.ts`, `e2e/study-session.spec.ts`, DESIGN.md §4 and §9.1.
+- **2026-10-06 · Seans share card ("Seansı paylaş"), no "Panele dön".** Decided with the product owner on the canvas "Seans paylaşım kartı" (direction 1, "Polaroid"; the canvas also holds the two directions not taken and the in-app flow). The done card loses its "Panele dön" link (`session.back_panel` removed). "Bugünü paylaş" (a text-only Web Share) becomes **"Seansı paylaş"**, an outline ledge under "Yeni seans", and it only appears for a session that counted and lasted a minute (`resolveSessionShare(focusElapsed, countsAsFocusSession)`; a "kısa deneme" has no card). It opens `SessionShareSheet` (kit `Modal`, `placement="sheet"`, new `size="wide"` for the desktop two columns): the card putting itself together (2.6 s, once) and the actions. The card is a 1080×1920 PNG: the room the session was studied in as a taped instant print, the caption in Caveat ("50 dk Matematik" / "1 sa 45 dk odak", then "kütüphanede, öğleden sonra"), the date, the session's stars as stickers, Puhu's sticker, "Mentor" and the site host; no name, no streak, no scores. One function, `drawSessionShareCard(ctx, model, assets, seconds)`, draws both the preview frames and the PNG (its last frame), so what plays is what gets shared. Phones with Web Share for files get "Paylaş" (the system sheet with the PNG) and "Görseli kaydet"; elsewhere "Görseli indir" and, where `ClipboardItem` exists, "Görseli kopyala". **Usage:** finish a counted session, press "Seansı paylaş". **Gotchas:** feedback ("Görsel indirildi.") is a status line inside the window, because toasts sit under a native dialog's top layer. The sheet is `next/dynamic` and imports `@fontsource-variable/caveat` itself; the canvas waits for `document.fonts.load` and reads the hashed Nunito through `appFontFamily()`. Shadows in the renderer are scaled by hand (canvas shadow blur/offset ignore the transform the preview uses). In Playwright, `page.clock.install()` freezes framer animations (the done card and the sheet stay at their first frame); the share e2e tests run under the spec's reduced motion, so the preview draws its last frame at once. **Stage fix found on the way:** back at setup `SessionStage` dropped under the app chrome on a 500 ms timer that a click starts before the browser starts the cover's fade, so on slow frames (headless, ~6 fps) the sidebar showed through a cover still at ~90 % and "ışık açılırken sahne menünün üstünde kalır" failed about half the time on a production build. It now waits for the cover's own `transitionend` (only with the cover out; a lights-down fade still finishing does not count), starts the fade by reading the style in the effect, and keeps a 1.5 s backstop; 20/20 on a production build. Related: `lib/session-share{,.spec}.ts`, `lib/session-share-card.ts`, `session-share-{sheet,preview}.tsx`, `session-done-state.tsx`, `session-stage.tsx`, `study-session-shell.tsx`, `packages/ui/src/components/modal.tsx`, `messages/{tr,en}.json` (`session.share_*`), `e2e/study-session.spec.ts`, DESIGN.md §9.1.
+- **2026-10-07 · Share card second line, quieter window; HOME glass.** The caption's second line is the session's place among the day's counted sessions and the room ("bugünün ilk seansı · evde", "bugünün 3. seansı · kütüphanede"; EN "session 3 today · at the library"), from today's session list (`shareSessionOrdinal`, the finished session counted even before the list catches up); if the list fails, the room alone. The part-of-day line is gone. The window drops its two lines of copy and the "Görsel indirildi." status: the card and its actions only, one column at every width (the kit `Modal` `size="wide"` prop was removed again); only a failure shows, as an alert. On /seans the HOME room now paints its glass (cards, pills, rail, drawer) as 84 → 70 % white with dark-ink borders, and its `--room-ink-soft` is `#4a4160`: the shared 22 → 8 % white glass vanished over the pale rug. The room name in the theme switcher uses `--room-ink`. Related: `lib/session-share{,.spec}.ts`, `session-share-{sheet,preview}.tsx`, `session-done-state.tsx`, `packages/ui/src/theme.css`, `room-theme-switcher.tsx`, `e2e/study-session.spec.ts`.
+- **2026-10-07 · /seans top bar as one strip; Bugün as one bar.** The top bar is one glass strip (`session-liquid-pill` on the row) with three segments, subject | scene (arrows, name, plain-view toggle; the scene menu on phones) | sound, split by thin `--play-line` dividers; `SESSION_CHROME_PILL_CLASS` is now a glassless segment (hit area, tinted on hover). The row stays `justify-center-safe` and the strip scrolls when it does not fit. The Bugün card's goal strip (one segment per session) is now a single fill of the day's minutes against the goal, read from `/coaching/today` like the big figure; the session just finished grows the fill from where the day stood before it (`data-fresh` while growing). `session-strip-grow` keyframes removed. Related: `session-top-bar.tsx`, `session-chrome-pill.ts`, `session-today-card.tsx`, `globals.css`.
 - **2026-10-03 · "Yeni defter" form as the desk design's paper card.** The create/edit form no longer uses the kit `Modal` (hairline header, X, outline-ledge Vazgeç): it follows the "Defterlerim Yeniden Tasarım" canvas. A ruled cream sheet taped over the desk and tilted -1°, a Fraunces title, the name typed in Caveat with a placeholder, 36 px colour dots, Kumaş/Kraft/Deri/Düz as pills (selected = dark ink), a live 150 px cover on the right (colour, material and the typed name on its label) and "Vazgeç" as a text action before the Kaydet ledge. Phones under 640 px get the canvas's bottom sheet: handle, centred title, 44 px dots, no tape/tilt/preview, full-width Kaydet with Vazgeç under it. The subject select (not on the canvas) stays, styled as a paper field. Gotchas: paper keeps its palette in both themes, so `.nb-form` remaps `--color-main/body/secondary/surface/border` for `MenuSelect` and its menu, which portals into the open `<dialog>`; the dialog is `overflow: visible` so the tape can hang off the top, and the form inside scrolls (`max-height: 90dvh`). Escape, a scrim press and Vazgeç close it unless a save is in flight. Related: `notebook-form-dialog.tsx`, `notebook-desk.css` (`.nb-form*`), `messages/{tr,en}.json` (`notebooks.form.title_placeholder`, `preview_title`).
 
 - **2026-10-02 · Untimed tasks launch a stopwatch.** A task without explicit duration or a usable 5–200 minute calendar range now returns `sessionFocusMinutes: null`. Plan, dashboard and coach links select the additive `stopwatch` preset, counting elapsed focus upward without an automatic end or break. Pause, reload and navigation retain actual work; manual completion uses the existing minimum-focus/task/reward rules. Usage: leave an all-day task's duration empty, or select "Süresiz" before starting; select 25/5 or 50/10 to return to countdown mode. Gotchas: direct sessions still default to 25/5; existing 24-hour storage/credit retention remains, and orphaned stopwatch rows expire after that window rather than after 25 minutes. This supersedes the default-preset fallback in the earlier duration entry. No additional database migration is required because the preset is stored as text; deploy API before web. Related: `coaching.mappers.ts`, `session.service.ts`, `study-session.repository.ts`, `plan-study-session-link.ts`, `session-persistence.ts`, `use-session-timer.ts`, `use-session-restoration.ts`, `session-timer-ring.tsx`.

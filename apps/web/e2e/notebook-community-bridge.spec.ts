@@ -188,7 +188,7 @@ async function askQuestion(page: Page) {
   const body = page.getByRole("textbox", { name: "Soru açıklaması" });
   await body.click();
   await body.pressSequentially("Kendi denemem şöyleydi ama sonuca ulaşamadım.");
-  await page.getByRole("button", { name: "Soruyu yayınla" }).click();
+  await page.getByRole("button", { name: "Soruyu sor" }).click();
 }
 
 test("defterden gelen soru, paylaşıldığında karta geri bağlanır", async ({
@@ -200,7 +200,7 @@ test("defterden gelen soru, paylaşıldığında karta geri bağlanır", async (
 
   // They already pressed "ask in the community" on the card; the composer opens in question mode
   // rather than making them choose it again.
-  await expect(page.getByRole("dialog", { name: "Soru paylaş" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Soru sor" })).toBeVisible();
 
   await askQuestion(page);
 
@@ -222,7 +222,7 @@ test("bağlama başarısız olsa da soru paylaşılmış kalır", async ({ page 
   // The thread is already public; a failed link is worth saying out loud, never worth pretending
   // the whole thing failed or offering to post it again.
   await expect(page.getByText(/karta bağlanamadı/)).toBeVisible();
-  await expect(page.getByRole("dialog", { name: "Soru paylaş" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "Soru sor" })).toHaveCount(0);
   expect(api.links).toEqual([]);
 });
 
@@ -233,7 +233,7 @@ test("parametresiz akışta soru composer'ı kendiliğinden açılmaz", async ({
 
   await page.goto("/topluluk/akis");
 
-  await expect(page.getByRole("dialog", { name: "Soru paylaş" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "Soru sor" })).toHaveCount(0);
 });
 
 /**
@@ -362,7 +362,7 @@ async function mockQuestionApi(page: Page) {
   return { created, pageErrors };
 }
 
-test("topluluktaki soru 'ben de çözemedim' beyanıyla deftere girer", async ({
+test("topluluktaki soru 'ben de takıldım' beyanıyla deftere girer", async ({
   page,
 }) => {
   const api = await mockQuestionApi(page);
@@ -371,7 +371,7 @@ test("topluluktaki soru 'ben de çözemedim' beyanıyla deftere girer", async ({
 
   // Deliberately not one tap: the error type is a real answer, and the copy asks whether they
   // could solve it rather than offering a filing cabinet — the notebook maps their own gaps.
-  await page.getByRole("button", { name: "Ben de çözemedim" }).click();
+  await page.getByRole("button", { name: "Ben de takıldım" }).click();
   await page.getByRole("button", { name: "Biliyordum, dikkat hatası" }).click();
   await page.getByRole("button", { name: "Deftere ekle" }).click();
 

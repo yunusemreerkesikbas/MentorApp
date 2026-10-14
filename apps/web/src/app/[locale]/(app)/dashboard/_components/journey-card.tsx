@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { ChevronRight, Snowflake } from "lucide-react";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
+import { SnowflakeIcon as Snowflake } from "@solar-icons/react/bold/snowflake";
 import type { JourneyLevelKey } from "@mentor/types";
 import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-compact";
 import { useEconomySnapshot } from "@/lib/economy-store";
@@ -56,7 +57,7 @@ export function JourneyCard({ freezeTokens }: { freezeTokens: number | null }) {
           <JourneyLevelCompact
             level={balance.level}
             trailing={
-              <ChevronRight
+              <ChevronRight size={14}
                 className="size-3.5 text-[var(--color-secondary)] opacity-50 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100 group-hover:text-[var(--color-main)]"
                 aria-hidden
               />
@@ -65,7 +66,7 @@ export function JourneyCard({ freezeTokens }: { freezeTokens: number | null }) {
         </button>
         {freezeTokens != null && freezeTokens > 0 ? (
           <p className="flex items-start gap-2 text-caption font-bold leading-snug text-[var(--play-selected-ink)]">
-            <Snowflake className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <Snowflake size={16} className="mt-0.5 size-4 shrink-0" aria-hidden />
             {t("journey_freezes", { count: freezeTokens })}
           </p>
         ) : null}

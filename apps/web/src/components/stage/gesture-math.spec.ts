@@ -3,10 +3,13 @@ import type { VisionBoardTextItem } from "@mentor/types";
 import { createTextItem } from "@/components/vision-board/board-document";
 import {
   MIN_ITEM_SIZE,
+  NUDGE_STEP,
+  NUDGE_STEP_LARGE,
   angleFromCentre,
   applyMove,
   applyResize,
   normalizeAngle,
+  nudgeDelta,
   snapAngle,
   toCanvasScale,
   toLocalDelta,
@@ -30,6 +33,25 @@ describe("toCanvasScale", () => {
     expect(toCanvasScale(810, 1620)).toBe(2);
     // The same helper serves the notebook's narrower page, which is the point of the parameter.
     expect(toCanvasScale(540, 1080)).toBe(2);
+  });
+});
+
+describe("nudgeDelta", () => {
+  it("steps along the pressed arrow, and further with Shift", () => {
+    expect(nudgeDelta("ArrowLeft", false)).toEqual({ dx: -NUDGE_STEP, dy: 0 });
+    expect(nudgeDelta("ArrowRight", false)).toEqual({ dx: NUDGE_STEP, dy: 0 });
+    expect(nudgeDelta("ArrowUp", true)).toEqual({ dx: 0, dy: -NUDGE_STEP_LARGE });
+    expect(nudgeDelta("ArrowDown", true)).toEqual({ dx: 0, dy: NUDGE_STEP_LARGE });
+  });
+
+  it("leaves every other key alone", () => {
+    expect(nudgeDelta("Enter", false)).toBeNull();
+    expect(nudgeDelta("a", true)).toBeNull();
+  });
+
+  it("moves an item by whole canvas units through applyMove", () => {
+    const step = nudgeDelta("ArrowRight", false)!;
+    expect(applyMove(item(), step.dx, step.dy)).toEqual({ x: 200 + NUDGE_STEP, y: 100 });
   });
 });
 

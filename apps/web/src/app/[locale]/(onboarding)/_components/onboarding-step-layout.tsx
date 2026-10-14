@@ -22,9 +22,10 @@ export function OnboardingStepLayout({
   children,
   footer,
   wide = false,
+  center = false,
   root: Root = "main",
 }: {
-  progress: { done: number; total: number } | null;
+  progress: { done: number; total: number; from?: number } | null;
   onBack?: () => void;
   skipLabel?: string;
   onSkip?: () => void;
@@ -33,6 +34,8 @@ export function OnboardingStepLayout({
   footer?: ReactNode;
   /** The field grid opens to six columns on desktop. */
   wide?: boolean;
+  /** The body sits in the middle of what the heading leaves: a screen with no footer to anchor it. */
+  center?: boolean;
   /** Plan's coach brief reuses this screen over an existing page, so it is not a second main. */
   root?: "main" | "div";
 }) {
@@ -72,6 +75,7 @@ export function OnboardingStepLayout({
               <PlayProgress
                 done={progress.done}
                 total={progress.total}
+                from={progress.from}
                 label={t("progress_aria", { current: progress.done, total: progress.total })}
               />
             ) : null}
@@ -91,7 +95,12 @@ export function OnboardingStepLayout({
 
         <section className="flex flex-1 flex-col gap-6 px-5 pb-2 pt-5" data-onboarding-content>
           {heading}
-          {children ? <TextsReveal lines={[<div key="content">{children}</div>]} /> : null}
+          {children ? (
+            <TextsReveal
+              className={center ? "flex flex-1 flex-col justify-center" : undefined}
+              lines={[<div key="content">{children}</div>]}
+            />
+          ) : null}
         </section>
         {footer}
       </motion.div>

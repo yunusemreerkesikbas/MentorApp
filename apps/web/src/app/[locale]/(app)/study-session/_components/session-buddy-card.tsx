@@ -38,8 +38,14 @@ type State =
  *
  * Actions are the panel's: an outline ledge for the one thing to do ("Dürt", "Kabul et"),
  * quiet links for the rest. The page's single filled ledge stays "Başla".
+ *
+ * Elsewhere (the community rail) it takes the panel's card class, and `partnerOnly` keeps it to a
+ * pairing or a pending request: suggestions stay on /seans, where the tables are.
  */
-export function SessionBuddyCard() {
+export function SessionBuddyCard({
+  className = SESSION_CARD_CLASS,
+  partnerOnly = false,
+}: { className?: string; partnerOnly?: boolean } = {}) {
   const t = useTranslations("session");
   const titleId = useId();
   const dialog = useMentorDialog();
@@ -47,16 +53,19 @@ export function SessionBuddyCard() {
   const [state, setState] = useState<State>({ status: "loading" });
   const [busy, setBusy] = useState(false);
 
+  // An empty body (204) is "nothing to show", not a view: rendering it would crash the whole page.
   const load = useCallback(() => {
     getBuddy()
-      .then((view) => setState({ status: "ready", view }))
+      .then((view) => setState(view ? { status: "ready", view } : { status: "hidden" }))
       .catch(() => setState({ status: "hidden" }));
   }, []);
 
   // Silent refetch for polling — a transient failure must not hide the card.
   const refresh = useCallback(() => {
     getBuddy()
-      .then((view) => setState({ status: "ready", view }))
+      .then((view) => {
+        if (view) setState({ status: "ready", view });
+      })
       .catch(() => {});
   }, []);
 
@@ -122,11 +131,12 @@ export function SessionBuddyCard() {
   };
 
   if (state.status === "hidden") return null;
-  if (state.status === "loading") return <SessionBuddyCardSkeleton />;
+  if (state.status === "loading") return partnerOnly ? null : <SessionBuddyCardSkeleton className={className} />;
   const { active, outgoing, incoming } = state.view;
+  if (partnerOnly && !active && !outgoing && incoming.length === 0) return null;
 
   return (
-    <section className={SESSION_CARD_CLASS} aria-labelledby={titleId}>
+    <section className={className} aria-labelledby={titleId}>
       <h2 id={titleId} className={PANEL_CARD_TITLE}>
         {t("buddy_title")}
       </h2>
@@ -315,10 +325,10 @@ function BuddySuggestions({
   );
 }
 
-function SessionBuddyCardSkeleton() {
+function SessionBuddyCardSkeleton({ className }: { className: string }) {
   const t = useTranslations("session");
   return (
-    <SkeletonGroup label={t("loading")} className={SESSION_CARD_CLASS}>
+    <SkeletonGroup label={t("loading")} className={className}>
       <Skeleton className="h-5 w-32 rounded-[var(--radius-card)]" />
       <div className="flex items-center gap-3">
         <Skeleton className="size-11 rounded-full" />

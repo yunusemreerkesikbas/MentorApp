@@ -239,11 +239,17 @@ export class PlanService {
     userId: string,
     input: CreatePlanTaskInput,
     origin: Omit<CommunityCoachPlanTaskOriginDto, "type">,
+    /** Set when an accepted coach action creates the task: one task per message, even on retries. */
+    coachMessageId?: string,
   ): Promise<PlanTaskDto> {
     const taskDate = input.taskDate ?? todayIso();
     this.assertTaskDateMutable(taskDate);
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
+      if (coachMessageId) {
+        const existing = await this.tasks.findCommunityCoachTaskForMessage(tx, userId, coachMessageId);
+        if (existing) return { task: toPlanTaskDto(existing), created: false };
+      }
       const row = await this.tasks.create(tx, {
         userId,
         taskDate,
@@ -261,12 +267,15 @@ export class PlanService {
           threadId: origin.threadId,
           intent: origin.intent,
           zoneType: origin.zoneType,
+          ...(coachMessageId && { coachMessageId }),
         },
       });
-      return toPlanTaskDto(row);
+      return { task: toPlanTaskDto(row), created: true };
     });
-    this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(userId));
-    return result;
+    if (result.created) {
+      this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(userId));
+    }
+    return result.task;
   }
 
   /** W3 public seam: persist one explicitly user-approved AI mentor task, idempotent per message. */

@@ -4,6 +4,7 @@ import { ZoneMemberStatus, ZoneType } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
+import { withAuthorCard, withAuthorCards } from "./forum-author-cards";
 import {
   forumPosts,
   forumPollOptions,
@@ -112,7 +113,7 @@ export class ForumThreadRepository {
     zoneId: string,
     opts: { limit: number; before?: string },
   ): Promise<ThreadWithAuthor[]> {
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const rows = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const conds = [eq(forumThreads.zoneId, zoneId), isNull(forumThreads.deletedAt)];
       if (opts.before) {
         // Pinned items live on the first (no-cursor) page only; excluding them on cursor pages
@@ -134,6 +135,7 @@ export class ForumThreadRepository {
         .orderBy(desc(forumThreads.isPinned), desc(forumThreads.createdAt))
         .limit(opts.limit);
     });
+    return withAuthorCards(this.db, rows);
   }
 
   /**
@@ -143,7 +145,7 @@ export class ForumThreadRepository {
    * denormalized counter if a zone ever holds tens of thousands of threads.
    */
   async listPopular(viewerId: string, zoneId: string, limit: number): Promise<ThreadWithAuthor[]> {
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const rows = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const score = sql<number>`(
         (select count(*) from ${forumReactions} fr where fr.thread_id = ${forumThreads.id})
         + (select count(*) from ${forumPosts} fp where fp.thread_id = ${forumThreads.id} and fp.deleted_at is null)
@@ -161,10 +163,11 @@ export class ForumThreadRepository {
         .orderBy(desc(forumThreads.isPinned), desc(score), desc(forumThreads.createdAt))
         .limit(limit);
     });
+    return withAuthorCards(this.db, rows);
   }
 
   async findById(threadId: string, viewerId: string): Promise<ThreadWithAuthor | null> {
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const row = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const [row] = await tx
         .select({
           ...getTableColumns(forumThreads),
@@ -178,6 +181,7 @@ export class ForumThreadRepository {
         .limit(1);
       return row ?? null;
     });
+    return withAuthorCard(this.db, row);
   }
 
   /** A user's own threads, newest first (for their profile). `before` (ISO createdAt) loads older. */
@@ -186,7 +190,7 @@ export class ForumThreadRepository {
     viewerId: string,
     opts: { limit: number; before?: string },
   ): Promise<ThreadWithAuthorAndZone[]> {
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const rows = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const conds = [eq(forumThreads.authorId, authorId), isNull(forumThreads.deletedAt)];
       if (opts.before) conds.push(lt(forumThreads.createdAt, new Date(opts.before)));
       return tx
@@ -205,6 +209,7 @@ export class ForumThreadRepository {
         .orderBy(desc(forumThreads.createdAt))
         .limit(opts.limit);
     });
+    return withAuthorCards(this.db, rows);
   }
 
   /**
@@ -218,7 +223,7 @@ export class ForumThreadRepository {
     opts: { limit: number; before?: string },
   ): Promise<ThreadWithAuthor[]> {
     if (authorIds.length === 0) return [];
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const rows = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const conds = [inArray(forumThreads.authorId, authorIds), isNull(forumThreads.deletedAt)];
       if (opts.before) conds.push(lt(forumThreads.createdAt, new Date(opts.before)));
       return tx
@@ -234,12 +239,13 @@ export class ForumThreadRepository {
         .orderBy(desc(forumThreads.createdAt))
         .limit(opts.limit);
     });
+    return withAuthorCards(this.db, rows);
   }
 
   /** Visible threads for a set of ids (RLS hides deleted/hidden for the viewer). Order not guaranteed. */
   async findManyByIds(threadIds: string[], viewerId: string): Promise<ThreadWithAuthor[]> {
     if (threadIds.length === 0) return [];
-    return withUserContext(this.db, { userId: viewerId }, async (tx) =>
+    const rows = await withUserContext(this.db, { userId: viewerId }, async (tx) =>
       tx
         .select({
           ...getTableColumns(forumThreads),
@@ -251,6 +257,7 @@ export class ForumThreadRepository {
         .leftJoin(users, eq(forumThreads.authorId, users.id))
         .where(inArray(forumThreads.id, threadIds)),
     );
+    return withAuthorCards(this.db, rows);
   }
 
   async setPinned(threadId: string, pinned: boolean): Promise<void> {
@@ -319,7 +326,7 @@ export class ForumThreadRepository {
     viewerId: string,
     opts: { q: string; zoneSlug?: string; page: number; pageSize: number },
   ): Promise<{ items: ThreadWithAuthor[]; total: number }> {
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const result = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const match = sql`to_tsvector('turkish', coalesce(${forumThreads.title}, '') || ' ' || ${forumThreads.body}) @@ websearch_to_tsquery('turkish', ${opts.q})`;
       const conds = [eq(forumZones.type, ZoneType.QA), isNull(forumThreads.deletedAt), match];
       if (opts.zoneSlug) conds.push(eq(forumZones.slug, opts.zoneSlug));
@@ -349,6 +356,7 @@ export class ForumThreadRepository {
         .where(where);
       return { items, total: countRows[0]?.count ?? 0 };
     });
+    return { ...result, items: await withAuthorCards(this.db, result.items) };
   }
 
   async setReaction(threadId: string, userId: string, emoji: string): Promise<void> {

@@ -2,6 +2,8 @@ import { AdPlacementId, type AdPlacementView } from "@mentor/types";
 
 export const ADS_REWARD_SOURCE = "ad_reward";
 export const ADS_REWARD_REASON = "ad.reward.completed";
+// Official sample inventory, never the publisher's revenue inventory.
+export const GOOGLE_DISPLAY_TEST_AD_UNIT = "/6355419/Travel/Europe/France/Paris";
 
 export const AD_PLACEMENTS: Record<
   AdPlacementId,
@@ -10,7 +12,7 @@ export const AD_PLACEMENTS: Record<
   [AdPlacementId.KNOWLEDGE_ARTICLE_END]: {
     id: AdPlacementId.KNOWLEDGE_ARTICLE_END,
     format: "DISPLAY",
-    sizes: [[320, 100], [728, 90]],
+    sizes: [[320, 100], [300, 250], [728, 90]],
     configKey: "ads.placement.knowledge_article_end.enabled",
     envKey: "GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT",
   },

@@ -1,10 +1,11 @@
+import { disableAuthRateLimits } from "./app-harness";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ThrottlerStorage } from "@nestjs/throttler";
 import * as argon2 from "argon2";
 import cookieParser from "cookie-parser";
 import { eq, inArray } from "drizzle-orm";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { withServiceContext } from "../src/database/rls";
 import { subscriptions, users } from "../src/database/schema";
@@ -53,6 +54,7 @@ describe("account erasure fence (Postgres/API)", () => {
       .overrideProvider(TurnstileService).useValue({ assertValid: async () => undefined })
       .overrideProvider(ThrottlerStorage).useValue({ increment: async () => ({ totalHits: 1, timeToExpire: 0, isBlocked: false, timeToBlockExpire: 0 }) })
       .compile();
+    disableAuthRateLimits(module);
     app = module.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
@@ -97,7 +99,7 @@ describe("account erasure fence (Postgres/API)", () => {
     const ai = vi.spyOn(app.get(AiErasureService), "eraseUserData").mockImplementationOnce(async () => {
       paused.resolve(); await resume.promise;
     });
-    const erasing = app.get(AccountErasureService).eraseAccount(user.id, "DELETED");
+    const erasing = app.get(AccountErasureService).eraseAccount(user.id, "DELETED", user.sessionId);
     await paused.promise;
     try {
       expect(provider.cancel).toHaveBeenCalledWith(`cancel-${user.id}`);
@@ -147,7 +149,7 @@ describe("account erasure fence (Postgres/API)", () => {
       .rejects.toMatchObject({ code: "PAYMENT_TRIAL_PENDING" });
     const ai = vi.spyOn(app.get(AiErasureService), "eraseUserData");
     try {
-      await expect(app.get(AccountErasureService).eraseAccount(user.id, "DELETED"))
+      await expect(app.get(AccountErasureService).eraseAccount(user.id, "DELETED", user.sessionId))
         .rejects.toMatchObject({ code: "PAYMENT_TRIAL_PENDING" });
       expect(ai).not.toHaveBeenCalled();
       expect(await app.get(PhoneTrialsRepository).findPendingForUser(user.id))

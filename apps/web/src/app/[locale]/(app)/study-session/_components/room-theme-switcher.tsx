@@ -56,7 +56,7 @@ export function RoomThemeSwitcher({
           Wide enough for the longest name in either locale. */}
       <span
         className="w-[6.5rem] truncate text-center text-sm font-semibold"
-        style={{ color: "var(--room-ink-soft)" }}
+        style={{ color: "var(--room-ink)" }}
       >
         {t(`theme_${theme}`)}
       </span>

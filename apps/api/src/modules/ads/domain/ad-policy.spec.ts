@@ -13,9 +13,27 @@ const enabledRewarded = {
   isPremium: false,
   userId: "user-1",
   rolloutPercent: 100,
+  displayAllowedCountries: ["TR"],
 };
 
 describe("evaluateAdPolicy", () => {
+  it.each([[ExamType.KPSS, "NONE"], [ExamType.YKS, "TEEN"], [ExamType.LGS, "CHILD"]] as const)("serves each verified exam family in Turkey (%s)", (contentExamType, audienceTreatment) => {
+    expect(evaluateAdPolicy({ ...enabledRewarded, format: "DISPLAY", examType: null, contentExamType, userId: null }))
+      .toEqual({ enabled: true, reason: null, audienceTreatment });
+  });
+
+  it("keeps the stricter teen profile protection on adult content", () => {
+    expect(evaluateAdPolicy({ ...enabledRewarded, format: "DISPLAY", examType: ExamType.YKS, contentExamType: ExamType.KPSS }).audienceTreatment).toBe("TEEN");
+  });
+  it.each([null, "", "XX", "US"])("blocks display inventory outside the country allowlist (%s)", (countryCode) => {
+    expect(evaluateAdPolicy({ ...enabledRewarded, format: "DISPLAY", countryCode }))
+      .toEqual({ enabled: false, reason: "REGION_NOT_ENABLED", audienceTreatment: "NONE" });
+  });
+
+  it("normalizes the edge country and honours an empty display allowlist", () => {
+    expect(evaluateAdPolicy({ ...enabledRewarded, format: "DISPLAY", countryCode: " tr " }).enabled).toBe(true);
+    expect(evaluateAdPolicy({ ...enabledRewarded, format: "DISPLAY", displayAllowedCountries: [] }).enabled).toBe(false);
+  });
   it("renews the daily window exactly at Istanbul midnight", () => {
     expect(istanbulDayStart(new Date("2026-08-29T20:59:59.000Z"))).toEqual(
       new Date("2026-08-28T21:00:00.000Z"),

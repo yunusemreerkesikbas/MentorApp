@@ -1,5 +1,6 @@
 import { setRequestLocale } from "@/i18n/locale";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
@@ -19,7 +20,8 @@ import {
   buildBreadcrumbStructuredData,
 } from "@/lib/structured-data";
 import { ArticleContent } from "./_components/article-content";
-import { PublicChrome } from "@/components/public-chrome";
+import { BlogShell } from "../_components/blog-shell";
+import { BLOG_MEMBER_BOOTSTRAP_SCRIPT } from "../_components/blog-ui";
 import { PublicFooter } from "@/components/public-footer";
 
 export const revalidate = 3600;
@@ -36,11 +38,11 @@ export async function generateMetadata({
     const translate = await getTranslations("article");
     return { title: translate("not_found_title") };
   }
-  const title = article.metaTitle ?? `${article.title} | Mentor Blog`;
+  const title = article.metaTitle ?? `${article.title} | PuhuKoç Blog`;
   const description = article.metaDescription ?? undefined;
   const canonical = infoArticleUrl(article.slug);
   const origin = siteUrl();
-  const fallbackImage = `${origin}/mascot/puhu/puhu-default.png`;
+  const fallbackImage = `${origin}/img/brand/puhukoc-og-${locale === "en" ? "en" : "tr"}.png`;
   const image = article.coverImage
     ? {
         url: article.coverImage.url,
@@ -59,9 +61,9 @@ export async function generateMetadata({
       description,
       type: "article",
       url: canonical,
-      siteName: "Mentor",
+      siteName: "PuhuKoç",
       locale: locale === "en" ? "en_US" : "tr_TR",
-      images: image ? [image] : [{ url: fallbackImage, alt: "Mentor" }],
+      images: image ? [image] : [{ url: fallbackImage, alt: "PuhuKoç" }],
       publishedTime: article.publishedAt ?? undefined,
       modifiedTime: article.updatedAt,
     },
@@ -117,16 +119,17 @@ export default async function PublicArticlePage({ params }: PageProps) {
     3,
   );
   const canonical = infoArticleUrl(article.slug);
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   const origin = siteUrl();
   const articleJsonLd = buildArticleStructuredData({
     article,
     canonical,
     siteOrigin: origin,
-    publisherLogoUrl: `${origin}/mascot/puhu/puhu-default.png`,
+    publisherLogoUrl: `${origin}/img/brand/puhukoc-apple-icon.png`,
   });
   const breadcrumbJsonLd = buildBreadcrumbStructuredData({
-    homeName: "Mentor",
+    homeName: "PuhuKoç",
     homeUrl: origin,
     trail: [{ name: translate("blog"), url: blogUrl(article.family as ExamType) }],
     pageName: article.title,
@@ -137,16 +140,15 @@ export default async function PublicArticlePage({ params }: PageProps) {
     <NextIntlClientProvider
       messages={pickMessages(messages, ROUTE_MESSAGE_SCOPES.article)}
     >
-      <PublicChrome
-        loginLabel={translate("login")}
-        panelLabel={translate("panel")}
-        blogLabel={translate("blog")}
-      >
+      <script nonce={nonce} dangerouslySetInnerHTML={{ __html: BLOG_MEMBER_BOOTSTRAP_SCRIPT }} />
+      <BlogShell loginLabel={translate("login")} panelLabel={translate("panel")}>
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdHtml(articleJsonLd) }}
         />
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbJsonLd) }}
         />
@@ -160,7 +162,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
           readingMinutes={readingMinutes(article.body, article.bodyFormat)}
         />
         <PublicFooter wide />
-      </PublicChrome>
+      </BlogShell>
     </NextIntlClientProvider>
   );
 }

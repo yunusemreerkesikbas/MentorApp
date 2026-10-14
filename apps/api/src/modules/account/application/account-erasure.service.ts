@@ -53,8 +53,8 @@ export class AccountErasureService {
     private readonly phoneTrials: PhoneTrialService,
   ) {}
 
-  async eraseAccount(userId: string, status: string): Promise<AccountErasureResult> {
-    const startedAt = await this.users.beginAccountErasure(userId);
+  async eraseAccount(userId: string, status: string, sessionId?: string): Promise<AccountErasureResult> {
+    const startedAt = await this.users.beginAccountErasure(userId, status === "DELETED" ? sessionId ?? "" : undefined);
     let change: Awaited<ReturnType<UsersService["anonymizeAccount"]>>;
     try {
       change = await this.eraseFencedAccount(userId, status);

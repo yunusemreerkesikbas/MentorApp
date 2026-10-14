@@ -1,5 +1,6 @@
 import { subscriptionsControllerGetMine } from "@mentor/api-client";
 import type { SubscriptionView } from "@mentor/types";
+import { notifySubscriptionChanged } from "./subscription-events";
 
 let inFlight: Promise<SubscriptionView | null> | null = null;
 
@@ -13,7 +14,10 @@ export function fetchSubscriptionView(): Promise<SubscriptionView | null> {
     const timeout = setTimeout(() => controller.abort(), SUBSCRIPTION_VIEW_TIMEOUT_MS);
 
     return subscriptionsControllerGetMine({ signal: controller.signal })
-      .then((raw) => raw as unknown as SubscriptionView)
+      .then((raw) => {
+        notifySubscriptionChanged();
+        return raw as unknown as SubscriptionView;
+      })
       .catch(() => null)
       .finally(() => {
         clearTimeout(timeout);

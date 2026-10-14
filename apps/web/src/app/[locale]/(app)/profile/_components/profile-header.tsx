@@ -1,52 +1,21 @@
 "use client";
-import { BadgeCheck, ImagePlus, LoaderCircle, MailWarning, Pencil, Trash2 } from "lucide-react";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-} from "react";
+import { VerifiedCheckIcon as BadgeCheck } from "@solar-icons/react/bold/verified-check";
+import { RefreshIcon as LoaderCircle } from "@solar-icons/react/linear/refresh";
+import { LetterUnreadIcon as MailWarning } from "@solar-icons/react/bold/letter-unread";
+import { Pen2Icon as Pencil } from "@solar-icons/react/linear/pen-2";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { updateMeSchema } from "@mentor/validation";
-import {
-  ApiClientError,
-  usersControllerResendVerificationEmail,
-  usersControllerUpdateMe,
-} from "@mentor/api-client";
-import { Button, TextAreaField, TextField, useDialog } from "@mentor/ui";
+import { ApiClientError, usersControllerResendVerificationEmail } from "@mentor/api-client";
+import { useDialog } from "@mentor/ui";
 import type { AuthUser } from "@mentor/types";
-import { FormError } from "@/components/form";
 import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
-import { UserAvatar } from "@/components/user-avatar";
-import {
-  createAvatarUploadUrl,
-  putAvatarToSignedUrl,
-  resolveAvatarUrl,
-} from "@/lib/avatar";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorToast } from "@/lib/mentor-toast";
-
-const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
-const AVATAR_TYPES = new Set(["image/jpeg", "image/png"]);
-
-function ProfileAvatar({
-  alt,
-  overrideUrl,
-  size = "lg",
-  user,
-}: {
-  alt: string;
-  overrideUrl?: string | null;
-  size?: "lg" | "md";
-  user: AuthUser;
-}) {
-  const src = overrideUrl === undefined ? resolveAvatarUrl(user.avatarUrl) : overrideUrl;
-  return <UserAvatar alt={alt} frame="strong" name={user.displayName} size={size === "lg" ? 112 : 64} src={src} className="shadow-[var(--shadow-card)]" />;
-}
+import { useAccountSecurity } from "@/lib/use-account-security";
+import { ProfileAvatar, ProfileEditForm } from "./profile-edit-form";
 
 /**
  * Profile identity row — Nuton thumb placeholder (#D6DBFD) + Plus Jakarta Sans name stack.
@@ -66,6 +35,7 @@ export function ProfileHeader({
   const dialog = useDialog();
   const sheet = useMentorBottomSheet();
   const toast = useMentorToast();
+  const signInAgain = useAccountSecurity();
   const [resendingVerification, setResendingVerification] = useState(false);
   const didAutoOpenEdit = useRef(false);
 
@@ -78,6 +48,7 @@ export function ProfileHeader({
         <ProfileEditForm
           user={user}
           onCancel={sheet.dismiss}
+          onSignInAgain={signInAgain}
           onSaved={(next) => {
             onSaved(next);
             sheet.dismiss();
@@ -85,7 +56,7 @@ export function ProfileHeader({
         />
       ),
     });
-  }, [onSaved, sheet, t, user]);
+  }, [onSaved, sheet, signInAgain, t, user]);
 
   useEffect(() => {
     if (!autoOpenEdit || didAutoOpenEdit.current) return;
@@ -138,7 +109,7 @@ export function ProfileHeader({
             title={t("email_verified")}
             className="absolute -right-1 bottom-1 grid size-8 place-items-center rounded-full border-2 border-[var(--color-bg)] bg-[var(--color-surface)] text-[var(--color-main)] shadow-[var(--shadow-card)]"
           >
-            <BadgeCheck size={17} strokeWidth={2.2} aria-hidden />
+            <BadgeCheck size={17} strokeWidth={1.75} aria-hidden />
           </span>
         ) : (
           <button
@@ -163,12 +134,12 @@ export function ProfileHeader({
               {resendingVerification ? (
                 <LoaderCircle
                   size={16}
-                  strokeWidth={2.4}
+                  strokeWidth={1.75}
                   className="animate-spin motion-reduce:animate-none"
                   aria-hidden
                 />
               ) : (
-                <MailWarning size={16} strokeWidth={2.2} aria-hidden />
+                <MailWarning size={16} strokeWidth={1.75} aria-hidden />
               )}
             </span>
           </button>
@@ -199,243 +170,10 @@ export function ProfileHeader({
           style={{ color: "var(--color-accent)" }}
         >
           {t("community_profile_link")}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+          <ChevronRight size={14} strokeWidth={1.75} aria-hidden />
         </Link>
       ) : null}
     </section>
-  );
-}
-
-function ProfileEditForm({
-  onCancel,
-  onSaved,
-  user,
-}: {
-  onCancel: () => void;
-  onSaved: (user: AuthUser) => void;
-  user: AuthUser;
-}) {
-  const t = useTranslations("profile.edit");
-  const toast = useMentorToast();
-  const [displayName, setDisplayName] = useState(user.displayName);
-  const [email, setEmail] = useState(user.email);
-  const [username, setUsername] = useState(user.username ?? "");
-  const [bio, setBio] = useState(user.bio ?? "");
-  const [website, setWebsite] = useState(user.website ?? "");
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
-  const [removeAvatar, setRemoveAvatar] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
-    };
-  }, [avatarPreviewUrl]);
-
-  function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (!AVATAR_TYPES.has(file.type)) {
-      setError(t("avatar_type_error"));
-      return;
-    }
-    if (file.size > AVATAR_MAX_BYTES) {
-      setError(t("avatar_too_big"));
-      return;
-    }
-    setAvatarFile(file);
-    setRemoveAvatar(false);
-    setAvatarPreviewUrl(URL.createObjectURL(file));
-    setError(null);
-  }
-
-  function handleRemoveAvatar() {
-    setAvatarFile(null);
-    setAvatarPreviewUrl(null);
-    setRemoveAvatar(true);
-    setError(null);
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmedUsername = username.trim();
-    const trimmedEmail = email.trim().toLowerCase();
-    const emailChanged = trimmedEmail !== user.email.toLowerCase();
-    const patch = {
-      displayName: displayName.trim(),
-      ...((trimmedUsername || user.username) && { username: trimmedUsername }),
-      ...(emailChanged && { email: trimmedEmail }),
-      ...(removeAvatar && { avatarStorageKey: null }),
-      bio: bio.trim(),
-      website: website.trim(),
-    };
-    const parsed = updateMeSchema.safeParse(patch);
-    if (!parsed.success) {
-      const emailInvalid = parsed.error.issues.some((issue) => issue.path[0] === "email");
-      setError(emailInvalid ? t("email_error") : t("form_error"));
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-    try {
-      let payload = parsed.data;
-      if (avatarFile) {
-        const contentType = avatarFile.type as "image/jpeg" | "image/png";
-        const upload = await createAvatarUploadUrl(contentType);
-        if (avatarFile.size > upload.maxBytes) {
-          throw new Error(t("avatar_too_big"));
-        }
-        try {
-          await putAvatarToSignedUrl(upload.uploadUrl, avatarFile, contentType);
-        } catch {
-          throw new Error(t("avatar_upload_error"));
-        }
-        const avatarPatch = updateMeSchema.safeParse({
-          ...payload,
-          avatarStorageKey: upload.key,
-        });
-        if (!avatarPatch.success) {
-          throw new Error(t("avatar_upload_error"));
-        }
-        payload = avatarPatch.data;
-      }
-
-      const updated = (await usersControllerUpdateMe(payload)) as unknown as AuthUser;
-      onSaved(updated);
-      toast.success({
-        title: t("saved_title"),
-        message: emailChanged ? t("saved_email_changed_message") : t("saved_message"),
-        duration: emailChanged ? 5000 : 3000,
-      });
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.body.message
-          : err instanceof Error
-            ? err.message
-            : t("save_error"),
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <form
-      className="flex flex-col gap-3"
-      onSubmit={(event) => void handleSubmit(event)}
-    >
-      {error ? <FormError message={error} /> : null}
-      <div className="flex items-center gap-3 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_45%,transparent)] p-3 shadow-[var(--shadow-card)]">
-        <ProfileAvatar
-          alt={t("avatar_alt", { name: user.displayName })}
-          overrideUrl={removeAvatar ? null : (avatarPreviewUrl ?? undefined)}
-          size="md"
-          user={user}
-        />
-        <div className="min-w-0 flex-1">
-          <p
-            className="text-xs font-semibold"
-            style={{
-              color: "var(--color-secondary)",
-              fontFamily: "var(--font-heading)",
-            }}
-          >
-            {t("avatar_label")}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)]">
-              <ImagePlus size={16} aria-hidden />
-              {t("avatar_change")}
-              <input
-                className="sr-only"
-                type="file"
-                accept="image/jpeg,image/png"
-                disabled={saving}
-                onChange={handleAvatarChange}
-              />
-            </label>
-            {user.avatarUrl || avatarPreviewUrl ? (
-              <button
-                type="button"
-                className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-bold text-[var(--color-secondary)] shadow-[var(--shadow-card)] transition-colors hover:border-[color-mix(in_srgb,var(--color-danger)_40%,var(--color-border))] hover:bg-[color-mix(in_srgb,var(--color-danger)_5%,transparent)] hover:text-[var(--color-danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={saving}
-                onClick={handleRemoveAvatar}
-              >
-                <Trash2 size={16} aria-hidden />
-                {t("avatar_remove")}
-              </button>
-            ) : null}
-          </div>
-          <p className="mt-1 text-xs text-[var(--color-secondary)]">
-            {t("avatar_hint")}
-          </p>
-        </div>
-      </div>
-      <TextField
-        label={t("name_label")}
-        value={displayName}
-        onChange={(event) => setDisplayName(event.target.value)}
-        disabled={saving}
-        maxLength={64}
-        autoFocus
-      />
-      <TextField
-        label={t("username_label")}
-        value={username}
-        onChange={(event) => setUsername(event.target.value)}
-        disabled={saving}
-        maxLength={24}
-      />
-      <TextAreaField
-        label={t("bio_label")}
-        value={bio}
-        onChange={(event) => setBio(event.target.value)}
-        disabled={saving}
-        maxLength={200}
-        rows={3}
-        placeholder={t("bio_placeholder")}
-        hint={`${bio.trim().length}/200`}
-      />
-      <TextField
-        label={t("website_label")}
-        value={website}
-        onChange={(event) => setWebsite(event.target.value)}
-        disabled={saving}
-        maxLength={200}
-        type="url"
-        inputMode="url"
-        placeholder={t("website_placeholder")}
-      />
-      <TextField
-        label={t("email_label")}
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        disabled={saving}
-        type="email"
-        inputMode="email"
-        maxLength={254}
-        autoComplete="email"
-      />
-      <div className="grid grid-cols-2 gap-3 pt-2">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={saving}
-          fullWidth
-        >
-          {t("cancel")}
-        </Button>
-        <Button type="submit" busy={saving} fullWidth>
-          {t("save")}
-        </Button>
-      </div>
-    </form>
   );
 }
 

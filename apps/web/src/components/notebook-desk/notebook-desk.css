@@ -620,12 +620,16 @@ html.dark .mentor-notebook-desk {
 }
 
 /*
- * Not on a phone: the app's own header carries Puhu a few centimetres above where this one would
- * sit, and there is no room for the bubble that gives this one something to say. Two owls in one
- * corner read as a glitch, not as company.
+ * On a phone the reading Puhu sits at the far left of the desk, a little over half size, between the title and
+ * the notebooks. The app header's lamp Puhu hangs at the top right, so the two stay at opposite
+ * corners instead of crowding one. There is still no room for his bubble, so that stays hidden.
  */
 .desk-puhu-spot {
-  display: none;
+  z-index: 6;
+  left: -6px;
+  top: calc(var(--desk-wall-h) + 48px - 226px * 0.58);
+  transform: scale(0.58);
+  transform-origin: 0 0;
 }
 
 .desk-bubble-spot {

@@ -1062,7 +1062,9 @@ export class ForumThreadService {
     viewerId: string,
   ): Promise<ThreadWithAuthor> {
     const thread = await this.threads.findById(threadId, viewerId);
-    if (!thread)
+    // RLS already hides deleted rows from the runtime role; dev, CI and e2e connect as a superuser
+    // that skips it, so the application says it too.
+    if (!thread || thread.deletedAt)
       throw new DomainError(
         ErrorCode.FORUM_THREAD_NOT_FOUND,
         HttpStatus.NOT_FOUND,

@@ -2,7 +2,7 @@ import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { createTestApp } from "./app-harness";
 import { Pool } from "pg";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const RUN = Date.now();
@@ -68,7 +68,7 @@ describe("ai photo categorize (e2e)", () => {
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = createTestApp(moduleRef);
+    app = createTestApp(moduleRef, { authRateLimits: false });
     await app.init();
 
     const free = await signup("free");

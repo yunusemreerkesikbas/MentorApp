@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronLeft, Plus } from "lucide-react";
+import { AltArrowLeftIcon as ChevronLeft } from "@solar-icons/react/linear/alt-arrow-left";
+import { AddIcon as Plus } from "@solar-icons/react/linear/add";
 import { useTranslations } from "next-intl";
 import { Button, Skeleton } from "@mentor/ui";
 import { PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
@@ -52,14 +53,14 @@ export function AnalysisHeader({
             onClick={onAddExam}
             data-testid="analysis-add-exam"
           >
-            <Plus className="size-[18px]" strokeWidth={2.6} aria-hidden />
+            <Plus size={18} className="size-[18px]" strokeWidth={2.6} aria-hidden />
             {t("tabs.entry")}
           </Button>
         )}
       </div>
       {tab === "entry" ? (
         <button type="button" onClick={onBack} className={`${PANEL_TEXT_LINK} -my-2 self-start`}>
-          <ChevronLeft className="size-4" aria-hidden />
+          <ChevronLeft size={16} className="size-4" aria-hidden />
           {t("entry_back")}
         </button>
       ) : (

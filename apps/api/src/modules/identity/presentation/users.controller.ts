@@ -1,4 +1,6 @@
-import { Body, Controller, Get, HttpCode, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Patch, Post, Res } from "@nestjs/common";
+import type { Response } from "express";
+import { ADMIN_REFRESH_COOKIE, ADMIN_REFRESH_COOKIE_PATH, LEGACY_REFRESH_COOKIE, REFRESH_COOKIE, REFRESH_COOKIE_PATH } from "../domain/identity.constants";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { AuthUser, AvatarUploadUrlDto as AvatarUploadUrlResponseDto } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
@@ -22,8 +24,15 @@ export class UsersController {
   }
 
   @Patch("me")
-  updateMe(@CurrentUser() user: RequestUser, @Body() dto: UpdateMeDto): Promise<AuthUser> {
-    return this.users.updateMe(user.id, dto);
+  async updateMe(@CurrentUser() user: RequestUser, @Body() dto: UpdateMeDto,
+    @Res({ passthrough: true }) res: Response): Promise<AuthUser> {
+    const result = await this.users.updateMe(user.id, dto, user.sessionId);
+    if (dto.email !== undefined) {
+      res.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
+      res.clearCookie(LEGACY_REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
+      res.clearCookie(ADMIN_REFRESH_COOKIE, { path: ADMIN_REFRESH_COOKIE_PATH });
+    }
+    return result;
   }
 
   @Post("me/avatar-upload-url")

@@ -51,7 +51,7 @@ const Menus = () => {
     return (
         <>
             {items.map(({ dropdownMenu, id, name, path, icon }) => {
-                // Flat item (no submenu) → direct link (Mentor admin menu, W6).
+                // Flat item (no submenu) → direct link (PuhuKoç admin menu, W6).
                 if (!dropdownMenu) {
                     return (
                         <li key={id} className={`nxl-item ${pathName === path ? "active" : ""}`}>

@@ -50,7 +50,7 @@ const article: InfoArticleDto = {
   featuredUntil: null,
   family: "KPSS",
   category: "APPLICATION",
-  metaTitle: "KPSS Başvuru Süreci | Mentor Blog",
+  metaTitle: "KPSS Başvuru Süreci | PuhuKoç Blog",
   metaDescription: "KPSS başvuru rehberi.",
   publishedAt: "2026-01-01T12:00:00.000Z",
   source: "ÖSYM",
@@ -91,9 +91,9 @@ test("blog hub herkese açık ve KPSS ile açılır", async ({ page }) => {
   await page.goto("/blog");
 
   await expect(page.getByRole("heading", { level: 1, name: "Blog" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "KPSS", exact: true })).toHaveAttribute(
-    "aria-current",
-    "page",
+  await expect(page.getByRole("tab", { name: "KPSS", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
   );
   await expect(page.getByRole("heading", { name: article.title })).toBeVisible();
   await expect(page.getByRole("heading", { name: "KPSS Sınav Günü Kuralları", exact: true })).toBeVisible();
@@ -102,11 +102,15 @@ test("blog hub herkese açık ve KPSS ile açılır", async ({ page }) => {
   expect(api.unexpected).toEqual([]);
 });
 
-test("konu bağlantısı adresi ve listeyi değiştirir", async ({ page }) => {
+test("konu sekmesi adresi ve listeyi değiştirir", async ({ page }) => {
   await mockKnowledgeApi(page, { authenticated: false });
   await page.goto("/blog");
 
-  await page.getByRole("link", { name: "Sınav süreci", exact: true }).click();
+  await page.getByRole("tab", { name: "Sınav süreci", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Sınav süreci", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
   await expect(page).toHaveURL(/category=EXAM_PROCESS/);
   await expect(
     page.getByRole("heading", { name: "KPSS Sınav Günü Kuralları" }),
@@ -143,14 +147,18 @@ test("eski /bilgi adresleri /blog'a kalıcı yönlenir", async ({ page }) => {
   await expect(page).toHaveURL(/\/blog\?category=GENERAL$/);
 });
 
-test("oturumlu ziyaretçi hub'da panel bağlantısı alır", async ({ page }) => {
+/** The app's own Blog item, active: the sidebar's on desktop, the tab bar's on a phone. */
+function activeBlogNav(page: Page) {
+  return page.getByRole("link", { name: "Blog", exact: true }).and(page.locator('[aria-current="page"]'));
+}
+
+test("üye hub'da uygulamanın menüsünü görür, ziyaretçi barını görmez", async ({ page }) => {
   const api = await mockKnowledgeApi(page);
   await page.goto("/blog");
 
-  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveAttribute(
-    "href",
-    "/panel",
-  );
+  await expect(activeBlogNav(page)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Giriş yap" })).toHaveCount(0);
   expect(api.unexpected).toEqual([]);
 });
 
@@ -202,7 +210,7 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   const api = await mockKnowledgeApi(page, { authenticated: false });
   await page.goto(`/en/blog/${article.slug}`);
 
-  await expect(page.getByRole("link", { name: "Mentor" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "PuhuKoç" })).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Sign in to ask the Coach" }),
   ).toHaveAttribute("href", "/en/login");
@@ -216,7 +224,7 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   );
   await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute(
     "content",
-    "Mentor",
+    "PuhuKoç",
   );
   await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute(
     "content",
@@ -235,28 +243,30 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   const hub = await page.context().newPage();
   const hubApi = await mockKnowledgeApi(hub);
   await hub.goto("/en/blog");
-  await expect(hub.getByRole("link", { name: "KPSS", exact: true })).toHaveAttribute(
-    "aria-current",
-    "page",
+  await expect(hub.getByRole("tab", { name: "KPSS", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
   );
   await expect(hub.getByRole("heading", { name: article.title }).first()).toBeVisible();
   expect(hubApi.unexpected).toEqual([]);
 });
 
-test("oturumlu ziyaretçi de public chrome görür ve panel bağlantısı alır", async ({
+test("üye yazıda da uygulamanın menüsünü görür; yeniden yüklemede menü yeri baştan ayrılır", async ({
   page,
 }) => {
   const api = await mockKnowledgeApi(page);
 
   await page.goto(`/blog/${article.slug}`);
 
-  await expect(page.getByRole("link", { name: "Mentor" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveAttribute(
-    "href",
-    "/panel",
-  );
-  await expect(page.getByTestId("app-sidebar")).toHaveCount(0);
+  await expect(activeBlogNav(page)).toBeVisible();
   await expect(page.getByRole("link", { name: "Giriş yap" })).toHaveCount(0);
+  await expect(page.locator("html")).toHaveAttribute("data-blog-member", "");
+
+  // The hint from this visit reserves the chrome before the session answers on the next load.
+  await page.route("**/v1/auth/refresh", () => {});
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-blog-member", "");
+  await expect(page.locator(".blog-shell-bar")).toBeHidden();
   expect(api.unexpected).toEqual([]);
 });
 
@@ -301,7 +311,8 @@ test("anonim makale reklamı doğrulanmış slug ile limited ayarları display �
     (window as unknown as { __mentorGptLog: string[] }).__mentorGptLog,
   );
   expect(log.indexOf("privacy:limited")).toBeLessThan(log.indexOf("display"));
-  expect(log).toContain("sizes:320x100,728x90");
+  // The article column is narrower than 728px, even on this desktop viewport.
+  expect(log).toContain("sizes:320x100");
   expect(api.unexpected).toEqual([]);
 });
 
@@ -325,7 +336,7 @@ test("contextual no-fill alanı çöker; Premium kullanıcı GPT indirmez", asyn
       ),
     )
     .toBe(true);
-  await adSlot.evaluate((element) => element.scrollIntoView({ block: "center" }));
+  await page.getByRole("region", { name: "Bu konu kafanı mı kurcalıyor?" }).scrollIntoViewIfNeeded();
   await expect(adSlot).toBeHidden();
 
   const premiumPage = await context.newPage();
@@ -605,6 +616,7 @@ async function installDisplayGpt(page: Page, empty: boolean): Promise<void> {
       },
     };
     const googletag = {
+      setConfig() {},
       cmd: { push(callback: () => void) { callback(); return 1; } },
       enums: { OutOfPageFormat: { REWARDED: "REWARDED" } },
       defineSlot(_path: string, sizes: number[][]) {

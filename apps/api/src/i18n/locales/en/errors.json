@@ -11,8 +11,11 @@
   "TOO_MANY_REQUESTS_RETRY": "That was a bit fast. Try again in {seconds} seconds.",
   "TOO_MANY_REQUESTS_RETRY_ONE": "That was a bit fast. Try again in {seconds} second.",
   "SERVICE_UNAVAILABLE": "The service is down right now. Let's try again in a moment.",
+  "AUTH_REAUTHENTICATION_REQUIRED": "Sign in again to continue with this action.",
   "AUTH_INVALID_CREDENTIALS": "Incorrect email or password.",
   "AUTH_EMAIL_IN_USE": "An account with this email already exists.",
+  "AUTH_SIGNUP_CLOSED": "New registrations are currently closed. You can still sign in to your existing account.",
+  "AUTH_PILOT_INVITATION_REQUIRED": "We are currently welcoming an invited group. Use your invited email address to register.",
   "AUTH_USERNAME_IN_USE": "This username is already taken.",
   "AUTH_TOKEN_INVALID": "This link is not valid. Request a new one.",
   "AUTH_TOKEN_EXPIRED": "This link has expired. Request a new one.",
@@ -30,10 +33,10 @@
   "AUTH_GOOGLE_UNAVAILABLE": "Google sign-in is not ready right now. Continue with email.",
   "AUTH_GOOGLE_STATE_INVALID": "The Google sign-in session expired. Let's try again.",
   "AUTH_GOOGLE_EMAIL_UNVERIFIED": "Your Google account email does not look verified.",
-  "AUTH_GOOGLE_ACCOUNT_NOT_FOUND": "No Mentor account is registered with this Google account. Create an account first.",
+  "AUTH_GOOGLE_ACCOUNT_NOT_FOUND": "No PuhuKoç account is registered with this Google account. Create an account first.",
   "AUTH_GOOGLE_LINK_REQUIRED": "Sign in with your password or reset it to continue with this email. You can then link your Google account in Settings.",
   "AUTH_GOOGLE_LINK_UNAVAILABLE": "Verify your email and sign in again to link your Google account.",
-  "AUTH_GOOGLE_LINK_EMAIL_MISMATCH": "Choose the Google account with the same verified email as your Mentor account.",
+  "AUTH_GOOGLE_LINK_EMAIL_MISMATCH": "Choose the Google account with the same verified email as your PuhuKoç account.",
   "AUTH_GOOGLE_LINK_CONFLICT": "This Google account could not be linked. Check your account connection in Settings.",
   "COACHING_TASK_NOT_FOUND": "This task was not found.",
   "COACHING_TASK_DATE_READONLY": "Past days are read-only; only today and future days can be edited.",
@@ -176,5 +179,6 @@
   "MENTORSHIP_ASSIGNMENT_NOT_EDITABLE": "This assignment is no longer pending or does not belong to this link.",
   "MENTORSHIP_ASSIGNMENT_STALE": "This task changed after you opened it. Open the current plan and try again.",
   "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "The event organizer cannot also appear in the attendee list.",
-  "MENTORSHIP_EVENT_ATTENDEE_LIMIT": "An event can include at most {max} students."
+  "MENTORSHIP_EVENT_ATTENDEE_LIMIT": "An event can include at most {max} students.",
+  "MENTORSHIP_REGISTRATION_HAS_COACH": "You can't switch to a coach account while a coach is following you. End that link from My coach first."
 }

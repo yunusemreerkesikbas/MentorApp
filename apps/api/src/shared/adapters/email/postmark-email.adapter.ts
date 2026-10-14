@@ -35,7 +35,7 @@ export class PostmarkEmailAdapter implements EmailPort {
   }): Promise<void> {
     const token = this.config.get("POSTMARK_TOKEN", { infer: true }) ?? "";
     const from =
-      this.config.get("POSTMARK_FROM", { infer: true }) ?? "noreply@mentor.app";
+      this.config.get("POSTMARK_FROM", { infer: true }) ?? "noreply@puhukoc.com";
     const vars = input.variables ?? {};
     const lang = emailLang(vars);
     const copy = this.emailCopy(input.template, vars, lang);

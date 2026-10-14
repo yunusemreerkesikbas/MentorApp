@@ -4,7 +4,7 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  let data = { title: "Mentor", body: "", url: "/panel" };
+  let data = { title: "PuhuKoç", body: "", url: "/panel" };
   try {
     if (event.data) {
       data = { ...data, ...event.data.json() };
@@ -24,7 +24,7 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const relative = event.notification.data?.url ?? "/panel";
   const url = new URL(relative, self.location.origin).href;
-  // An open Mentor tab is focused and sent there; a new window only when there is none.
+  // An open PuhuKoç tab is focused and sent there; a new window only when there is none.
   event.waitUntil(
     clients
       .matchAll({ type: "window" })

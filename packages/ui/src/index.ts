@@ -6,6 +6,7 @@
  */
 export * from "./tokens.js";
 export * from "./components/button.js";
+export * from "./components/logo.js";
 export * from "./components/text-field.js";
 export * from "./components/text-area-field.js";
 export * from "./components/card.js";

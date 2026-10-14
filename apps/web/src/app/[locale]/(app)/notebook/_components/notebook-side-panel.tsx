@@ -20,6 +20,7 @@ import {
   VISION_TEXT_FONTS,
 } from "@mentor/types";
 import { RangeSlider } from "@/components/range-slider";
+import { STICKER_DRAG_TYPE } from "@/lib/notebook-drop";
 import { STICKER_ART } from "@/components/vision-board/board-stickers";
 import {
   FONT_DISPLAY_NAMES,
@@ -103,6 +104,8 @@ export interface NotebookSidePanelProps {
   /** The focused page's selected note, when there is one — drives the "text" category's controls. */
   selectedText: VisionBoardTextItem | null;
   onCreated: (entry: NotebookEntryDto, aspect: number | null) => void;
+  /** A photo dragged onto a page from the computer: the add form opens with it already in. */
+  droppedPhoto?: { file: File; nonce: number } | null;
   onAddSticker: (asset: VisionSticker) => void;
   /** Set when the student arrived from a just-saved mock exam; stamped onto entries they file. */
   mockExamId: string | null;
@@ -154,6 +157,7 @@ export function NotebookSidePanel({
   indexExam,
   selectedText,
   onCreated,
+  droppedPhoto,
   onAddSticker,
   mockExamId,
   placedEntryIds,
@@ -288,6 +292,7 @@ export function NotebookSidePanel({
             subjects={exam.subjects}
             topics={exam.topics}
           onCreated={onCreated}
+          droppedPhoto={droppedPhoto ?? null}
           onCancel={onCollapse}
         />
       </Panel>
@@ -473,12 +478,21 @@ function StickerPanel({
           );
         })}
       </div>
+      <p className="hidden text-xs sm:block" style={{ color: "var(--color-secondary)" }}>
+        {t("sticker_drag_hint")}
+      </p>
       <div role="tabpanel" className="grid grid-cols-6 gap-1">
         {VISION_STICKERS.filter((asset) => stickerGroup(asset) === group).map(
           (asset) => (
             <button
               key={asset}
               type="button"
+              // A tap still puts it in the middle of the focused page; a drag puts it where you let go.
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.setData(STICKER_DRAG_TYPE, asset);
+                event.dataTransfer.effectAllowed = "copy";
+              }}
               onClick={() => onAddSticker(asset)}
               aria-label={stickerName(asset)}
               className="grid aspect-square w-full cursor-pointer place-items-center rounded-[var(--radius-card)] outline-none hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"

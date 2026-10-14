@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
-import { Snowflake } from "lucide-react";
+import { SnowflakeIcon as Snowflake } from "@solar-icons/react/bold/snowflake";
 import type { FocusGoalDto, StreakWeekDayDto } from "@mentor/types";
 import {
   formatWeekdayShort,
@@ -73,7 +73,7 @@ export function WeekBand({
                     draggable={false}
                   />
                 ) : state === "frozen" ? (
-                  <Snowflake className="size-3.5" strokeWidth={2.4} />
+                  <Snowflake size={14} className="size-3.5" />
                 ) : state === "idle" ? (
                   <Image
                     src="/img/flame.png"

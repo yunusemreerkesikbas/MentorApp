@@ -141,8 +141,9 @@ test("koç profilini yazınca hesabı açılıyor ve kendi paneline iniyor", asy
   await page.getByLabel("Kullanıcı adı").fill("kocmert");
   await page.getByRole("button", { name: "Devam" }).click();
 
-  // The blocker they can still clear themselves, said before they find a locked panel.
-  await expect(page.getByText("e-postanı doğrulaman yeterli", { exact: false })).toBeVisible();
+  // What the invite code still waits on, said before they find a locked panel. Both, because the
+  // account opens without the phone now.
+  await expect(page.getByText("Davet kodun doğrulanmış e-posta ve telefonla açılır.")).toBeVisible();
   await page.getByRole("button", { name: "Panele git" }).click();
 
   // `/kocluk`, not `/panel`: somebody who just wrote a coach profile does not want a study plan.
@@ -170,20 +171,18 @@ test("doğrulanmamış e-posta davet kodundan önce doğrulama istiyor", async (
   await expect(page.getByText("Davet kodu e-postan doğrulanınca açılır.", { exact: false })).toBeVisible();
 });
 
-test("koç kaydı telefon doğrulanmadan açılmıyor", async ({ page }) => {
+test("koç kaydı telefon doğrulanmadan da açılıyor", async ({ page }) => {
   phoneVerified = false;
   await page.goto("/onboarding");
   await page.getByRole("button", { name: "Devam" }).click();
   await page.getByRole("radio", { name: "YKS" }).click();
   await page.getByRole("button", { name: "Devam" }).click();
+
+  // Not asked for here at all: the phone opens the invite code, and the coach's panel asks there.
+  // This step is unskippable, so gating it on SMS would lock a new coach out of the whole app.
   await page.getByLabel("Tek cümlede sen").fill("YKS matematik koçu");
+  await expect(page.getByLabel("Cep telefonu numaran")).toHaveCount(0);
   await page.getByLabel("Kendini anlat").fill("Sekiz yıldır YKS adaylarıyla çalışıyorum.");
-  await expect(page.getByRole("button", { name: "Koç hesabımı aç" })).toBeDisabled();
-  expect(registered).toBeNull();
-  await page.getByLabel("Cep telefonu numaran").fill("0532 123 45 67");
-  await page.getByRole("button", { name: "SMS kodu gönder" }).click();
-  await page.getByLabel("SMS doğrulama kodu").fill("123456");
-  await page.getByRole("button", { name: "Telefonu doğrula" }).click();
-  await expect(page.getByRole("button", { name: "Koç hesabımı aç" })).toBeEnabled();
-  expect(registered).toBeNull();
+  await page.getByRole("button", { name: "Koç hesabımı aç" }).click();
+  await expect.poll(() => registered).not.toBeNull();
 });

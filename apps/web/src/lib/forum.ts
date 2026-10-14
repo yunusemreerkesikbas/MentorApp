@@ -117,6 +117,8 @@ export async function getForumFeed(input: {
   tag?: string;
   zoneType?: string;
   contentType?: "posts" | "questions";
+  /** Only other people's QA questions with no answer yet ("Cevap bekleyenler"). */
+  unanswered?: boolean;
   cursor?: string;
   limit?: number;
 }): Promise<ForumFeed> {
@@ -128,6 +130,7 @@ export async function getForumFeed(input: {
   if (input.tag) qs.set("tag", input.tag);
   if (input.zoneType) qs.set("zoneType", input.zoneType);
   if (input.contentType) qs.set("contentType", input.contentType);
+  if (input.unanswered) qs.set("unanswered", "true");
   if (input.cursor) qs.set("cursor", input.cursor);
   return (await http<ForumFeed>(`/v1/forum/feed?${qs.toString()}`)) as ForumFeed;
 }

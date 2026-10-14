@@ -182,6 +182,13 @@ html {
   --coach-accent-soft: #e6e9f7;
   --coach-accent-ink: #1f2c66;
   /*
+   * Logo (DESIGN.md §8.7): the pupil in Koç's eye. The light blue of the play ledge drops to ~2.4:1
+   * at nav size, so light uses the deeper blue (6.5:1); dark takes the play blue back (~7.5:1 on
+   * the charcoal). The glint is paper white in both themes.
+   */
+  --logo-pupil: #1a5fa3;
+  --logo-glint: #ffffff;
+  /*
    * Correct / wrong in a mock exam's part-to-whole bars (DESIGN.md §2.3). Checked with the dataviz
    * palette validator in both themes; neither clears 3:1 on white, so the counts always sit beside
    * the bar. Blank is not a category: it is the remainder, drawn on `--play-track`.
@@ -248,6 +255,7 @@ html.dark {
   --play-track: #242833;
   --play-selected-ink: #7eb6e8;
   --play-selected: #2c3d56;
+  --logo-pupil: #55acee;
   --play-well-blue: #242833;
   --play-well-peri: #2a2f45;
   --play-well-violet: #332c47;
@@ -701,13 +709,32 @@ html.dark {
   --room-table-edge: #5e5476;
   --room-chair: #c3b8dc;
   --room-ink: #2a2438;
-  --room-ink-soft: #665c7c;
+  /* Darker than the card's #665c7c: secondary text here sits on a pink photo, not on paper. */
+  --room-ink-soft: #4a4160;
   --room-accent: #55acee;
   --room-live: #2e7d54;
   --room-scrim: rgba(255, 255, 255, 0.7);
   /* Half the others': a bright room with dark ink does not need to be washed pale to carry
      text — the label halo already does that job, and at full strength the artwork vanished. */
   --room-veil: rgba(227, 218, 241, 0.5);
+}
+
+/* The bright room's glass. 18 % white is enough to lift cream ink off dark wood, but over a pale
+   pink rug it left the rail and pills as faint outlines with text sinking into the photo. Here
+   the glass is mostly paper so the dark ink reads at AA. */
+.room-stage[data-room-theme="HOME"] .session-liquid-pill,
+.room-stage[data-room-theme="HOME"] .session-liquid-rail,
+.room-stage[data-room-theme="HOME"] .session-liquid-drawer,
+.room-stage[data-room-theme="HOME"] .session-liquid-card,
+.room-stage[data-room-theme="HOME"].session-liquid-pill,
+.room-stage[data-room-theme="HOME"].session-liquid-rail {
+  --color-surface: color-mix(in srgb, #ffffff 78%, transparent);
+  --color-surface-translucent: color-mix(in srgb, #ffffff 72%, transparent);
+  --color-surface-container: color-mix(in srgb, #2a2438 8%, transparent);
+  --play-selected: color-mix(in srgb, #2a2438 10%, transparent);
+  --play-line: color-mix(in srgb, #2a2438 22%, transparent);
+  --play-track: color-mix(in srgb, #2a2438 12%, transparent);
+  --color-progress-track: color-mix(in srgb, #2a2438 16%, transparent);
 }
 
 /* One seated avatar breathing — presence you can feel without reading a sentence. */
@@ -852,6 +879,24 @@ html.dark {
 .room-stage .session-liquid-drawer,
 .session-focus-theme .session-liquid-drawer {
   border-right-color: color-mix(in srgb, #ffffff 22%, transparent) !important;
+}
+
+/* The bright room paints its glass as paper (see the HOME tokens above): the shared glass above
+   is a 22 → 8 % white wash that disappears over the pale rug. */
+.room-stage[data-room-theme="HOME"] .session-liquid-card,
+.room-stage[data-room-theme="HOME"] .session-liquid-pill,
+.room-stage[data-room-theme="HOME"] .session-liquid-rail,
+.room-stage[data-room-theme="HOME"] .session-liquid-drawer,
+.room-stage[data-room-theme="HOME"].session-liquid-pill {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #ffffff 84%, transparent) 0%,
+    color-mix(in srgb, #ffffff 70%, transparent) 100%
+  ) !important;
+  border-color: color-mix(in srgb, #2a2438 14%, transparent);
+  box-shadow:
+    inset 0 1.5px 1.5px 0 color-mix(in srgb, #ffffff 70%, transparent),
+    0 16px 36px 0 color-mix(in srgb, #4a3a66 18%, transparent) !important;
 }
 
 .room-stage .session-liquid-btn-obsidian,

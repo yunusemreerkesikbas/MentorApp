@@ -115,6 +115,30 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-13 · Pilot daily reminder email control and measured cost profile.**
+  The owner selected in-app/push reminders with Postmark Free's 100-message monthly quota.
+  `notifications.daily_reminder.email_enabled` defaults to `true`; explicitly set it to `false`
+  in the existing registry for the pilot. Dispatch then creates the inbox reminder and follows
+  the user's push preference without enqueuing email or consuming an email dedupe claim.
+  The email handler rechecks the same setting for previously queued daily reminders. Suppressed
+  jobs intentionally complete and are not replayed on re-enable; an in-flight provider call
+  cannot be recalled. User preferences, verification/reset token guards, payment/coach mail and
+  existing polling/readiness/maintenance remain intact. This is a student daily-email control,
+  not a global quota or a guarantee of mail delivery. Process-local flag caching still assumes
+  one API instance. No live flag was changed. Related: config catalog, daily reminder service,
+  send-email handler, unit/PostgreSQL regressions,
+  [design](../plans/2026-10-13-pilot-reminder-email-design.md) and
+  [measured cost profile](../qa/2026-10-13-pilot-cost-profile.md). The proposed release allocation
+  remains a separate decision; no new endpoint, migration, provider, Blueprint or resource change.
+
+- **2026-10-13 · Low-cost Render queue processing.** Removed the paid five-minute queue
+  catch-up cron from the launch Blueprint; the always-on API's existing polling runner
+  still delivers queued jobs. Daily reminders, coach digest and subscription expiry keep
+  their existing UTC schedules, with bounded HTTP timeouts. Usage: check queue health and
+  use the protected `process-jobs` endpoint for manual recovery. Gotcha: do not move API
+  compute to Free; asleep instances cannot poll. Related: `render.yaml`,
+  `scripts/check-deployment.mts`, `job-runner.service{,.spec}.ts`, `docs/core/deployment.md`.
+
 - **2026-09-27 · Celebration visuals load only when queued.** The app-wide notification shell
   now loads achievement art and the journey spotlight when an unseen celebration is present.
   Usage: the notification and celebration flow is unchanged. Gotcha: first display fetches the

@@ -20,7 +20,7 @@ import { OnboardingStepLayout } from "@/app/[locale]/(onboarding)/_components/on
 import {
   formatKnownBrief,
   isMinuteEntry,
-  planWindowDays,
+  planWindowToday,
   seedBriefSubjects,
   type PlanAdaptationKnownWeek,
 } from "./plan-coach-adaptation-brief-note";
@@ -43,6 +43,7 @@ export function PlanCoachAdaptationBrief({
   knownWeek,
   brief,
   profile,
+  submitError,
   onComplete,
   onClose,
 }: {
@@ -50,8 +51,12 @@ export function PlanCoachAdaptationBrief({
   /** The coach's reading of the student's data; null while loading or when it failed. */
   brief: CoachPlanAdaptationBriefDto | null;
   profile: PlanAdaptationBriefProfile;
+  /** Why the last preview did not arrive. Said above the button: a toast would sit under this dialog. */
+  submitError?: string | null;
+  /** `progress` is this wizard's bar as it stands, for the waiting scene to carry on from. */
   onComplete: (
     input: Extract<CoachPlanAdaptationInput, { source: "PLAN" }>,
+    progress: { done: number; total: number },
   ) => void;
   onClose: () => void;
 }) {
@@ -63,20 +68,8 @@ export function PlanCoachAdaptationBrief({
   const [direction, setDirection] = useState<1 | -1>(1);
   const suggestion = brief?.suggestion ?? null;
 
-  // Opened on a click, so "today" is the student's own day; the API maps weekdays onto its window.
-  const [planDays] = useState(() => {
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: "Europe/Istanbul",
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-    }).formatToParts(new Date());
-    const part = (type: string) =>
-      Number(parts.find((item) => item.type === type)?.value);
-    return planWindowDays(
-      new Date(part("year"), part("month") - 1, part("day"), 12),
-    );
-  });
+  // Opened on a click, so "today" is the student's own day.
+  const [planDays] = useState(planWindowToday);
   // The days the student really studies on come pre-picked once the brief arrives.
   const [weekdaysOverride, setWeekdaysOverride] = useState<number[] | null>(
     null,
@@ -193,19 +186,22 @@ export function PlanCoachAdaptationBrief({
       setError(t("coach_adaptation_note_invalid"));
       return;
     }
-    onComplete({
-      source: "PLAN",
-      ...(parsed.data.note ? { note: parsed.data.note } : {}),
-      ...(parsed.data.studyWeekdays?.length
-        ? { studyWeekdays: parsed.data.studyWeekdays }
-        : {}),
-      ...(parsed.data.minutesPerDay != null
-        ? { minutesPerDay: parsed.data.minutesPerDay }
-        : {}),
-      ...(parsed.data.focusSubjects?.length
-        ? { focusSubjects: parsed.data.focusSubjects }
-        : {}),
-    });
+    onComplete(
+      {
+        source: "PLAN",
+        ...(parsed.data.note ? { note: parsed.data.note } : {}),
+        ...(parsed.data.studyWeekdays?.length
+          ? { studyWeekdays: parsed.data.studyWeekdays }
+          : {}),
+        ...(parsed.data.minutesPerDay != null
+          ? { minutesPerDay: parsed.data.minutesPerDay }
+          : {}),
+        ...(parsed.data.focusSubjects?.length
+          ? { focusSubjects: parsed.data.focusSubjects }
+          : {}),
+      },
+      { done: steps.length, total: steps.length + 1 },
+    );
   }
 
   function continueStep() {
@@ -286,7 +282,7 @@ export function PlanCoachAdaptationBrief({
           onSkip={skipStep}
           heading={<PuhuBubble title={title} sub={sub} />}
           footer={
-            <PlayFooter error={error}>
+            <PlayFooter error={error ?? (step === "note" ? submitError : null)}>
               <Button
                 fullWidth
                 onClick={continueStep}

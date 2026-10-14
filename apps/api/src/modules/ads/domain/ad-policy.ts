@@ -8,6 +8,7 @@ export type AdPolicyReason =
   | "PLACEMENT_DISABLED"
   | "PREMIUM_AD_FREE"
   | "REGION_REQUIRES_CONSENT"
+  | "REGION_NOT_ENABLED"
   | "ROLLOUT_EXCLUDED";
 
 export interface AdPolicyInput {
@@ -21,6 +22,7 @@ export interface AdPolicyInput {
   isPremium: boolean;
   userId: string | null;
   rolloutPercent: number;
+  displayAllowedCountries: readonly string[];
 }
 
 export interface AdPolicyDecision {
@@ -109,6 +111,10 @@ export function evaluateAdPolicy(input: AdPolicyInput): AdPolicyDecision {
     CONSENT_REQUIRED_COUNTRIES.has(input.countryCode.trim().toUpperCase())
   ) {
     return denied("REGION_REQUIRES_CONSENT");
+  }
+  if (input.format === "DISPLAY" &&
+      (!input.countryCode?.trim() || !input.displayAllowedCountries.includes(input.countryCode.trim().toUpperCase()))) {
+    return denied("REGION_NOT_ENABLED");
   }
   if (
     input.format === "REWARDED" &&

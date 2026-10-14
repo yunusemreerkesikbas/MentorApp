@@ -1,14 +1,78 @@
 import { describe, expect, it } from "vitest";
+import { VISION_BOARD_CANVAS } from "@mentor/types";
 import {
+  BOARD_WALLPAPER,
   alignAnchorX,
   boardImageSrc,
   coverRect,
+  cssGradientLine,
   frameHasPlate,
   frameInsets,
+  framedBoardLayout,
   needsCrossOrigin,
   textBlockTop,
+  wallpaperLayout,
   wrapText,
 } from "./board-export-layout";
+
+/**
+ * The exporter draws the frame the DOM draws, from the same shares. What has to hold is that the
+ * frame is added *around* the board: if the board's own box shrank, every item would land off.
+ */
+describe("framedBoardLayout", () => {
+  it("adds the moulding and the mat around a board that keeps its size", () => {
+    const { width, height, border, mat } = framedBoardLayout("wood");
+    expect(width - 2 * (border + mat)).toBeCloseTo(VISION_BOARD_CANVAS.width);
+    expect(height - 2 * (border + mat)).toBeCloseTo(VISION_BOARD_CANVAS.height);
+    // The shares are of the framed width, as `cqw` is on screen.
+    expect(border / width).toBeCloseTo(0.022);
+    expect(mat / width).toBeCloseTo(0.026);
+  });
+
+  it("is the board itself when there is no frame", () => {
+    expect(framedBoardLayout("none")).toEqual({
+      width: VISION_BOARD_CANVAS.width,
+      height: VISION_BOARD_CANVAS.height,
+      border: 0,
+      mat: 0,
+      radius: 0,
+    });
+  });
+});
+
+describe("cssGradientLine", () => {
+  it("runs left to right at 90deg and bottom to top at 0deg, like CSS", () => {
+    const across = cssGradientLine(200, 100, 90);
+    expect(across.x0).toBeCloseTo(0);
+    expect(across.x1).toBeCloseTo(200);
+    expect(across.y0).toBeCloseTo(50);
+    expect(across.y1).toBeCloseTo(50);
+
+    const up = cssGradientLine(200, 100, 0);
+    expect(up.y0).toBeCloseTo(100);
+    expect(up.y1).toBeCloseTo(0);
+  });
+
+  it("reaches past the box at a slant, so the far corners get the end stops", () => {
+    const { x0, x1 } = cssGradientLine(200, 100, 100);
+    expect(x0).toBeLessThan(0);
+    expect(x1).toBeGreaterThan(200);
+  });
+});
+
+describe("wallpaperLayout", () => {
+  it("hangs the framed board centred, whole, with the nail above it", () => {
+    for (const frame of ["wood", "gallery", "none"] as const) {
+      const hang = wallpaperLayout(frame);
+      expect(hang.x).toBeCloseTo(BOARD_WALLPAPER.width - hang.x - hang.width);
+      expect(hang.y + hang.height).toBeLessThan(BOARD_WALLPAPER.height);
+      expect(hang.width / hang.height).toBeCloseTo(hang.framed.width / hang.framed.height);
+      expect(hang.nail.y).toBeLessThan(hang.y);
+      expect(hang.cordLeftX).toBeGreaterThan(hang.x);
+      expect(hang.cordRightX).toBeLessThan(hang.x + hang.width);
+    }
+  });
+});
 
 /**
  * The blob case is the one that bites: `resolveApiUrl` only recognises http(s) and would prefix a

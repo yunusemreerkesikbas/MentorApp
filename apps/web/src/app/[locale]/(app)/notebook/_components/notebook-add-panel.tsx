@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { ExamSubjectDto, ExamTopicDto, NotebookEntryDto } from "@mentor/types";
@@ -25,6 +25,8 @@ interface NotebookAddPanelProps {
   topics: ExamTopicDto[];
   /** `aspect` is the uploaded photo's own width/height, null for a text-only mistake. */
   onCreated: (entry: NotebookEntryDto, aspect: number | null) => void;
+  /** A photo dragged onto a page from the computer, taken as if it had been picked here. */
+  droppedPhoto?: { file: File; nonce: number } | null;
   onCancel: () => void;
 }
 
@@ -45,6 +47,7 @@ export function NotebookAddPanel({
   subjects,
   topics,
   onCreated,
+  droppedPhoto = null,
   onCancel,
 }: NotebookAddPanelProps) {
   const t = useTranslations("notebook");
@@ -80,6 +83,18 @@ export function NotebookAddPanel({
       setBusy(false);
     }
   }
+
+  /*
+   * A dropped photo is uploaded once per drop. The nonce, not the file, is the guard: dropping the
+   * same file again is a real second drop, while Strict Mode running this effect twice is not.
+   */
+  const takenDrop = useRef<number | null>(null);
+  useEffect(() => {
+    if (!droppedPhoto || takenDrop.current === droppedPhoto.nonce) return;
+    takenDrop.current = droppedPhoto.nonce;
+    void handleFile(droppedPhoto.file);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs per drop, keyed on its nonce
+  }, [droppedPhoto]);
 
   /**
    * The answer photo. Upload only: running vision over an answer key would be asking it what the

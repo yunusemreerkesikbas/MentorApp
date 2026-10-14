@@ -3,6 +3,7 @@ import { and, asc, desc, eq, getTableColumns, inArray, isNull, lt, sql } from "d
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
+import { withAuthorCard, withAuthorCards } from "./forum-author-cards";
 import { forumPostReactions, forumPosts, forumThreads, forumZones, users } from "../../../database/schema";
 
 export type PostRow = typeof forumPosts.$inferSelect;
@@ -92,7 +93,7 @@ export class ForumPostRepository {
 
   /** Top-level comments on a thread (no parent) — oldest first. */
   async listTopLevel(threadId: string, viewerId: string): Promise<PostWithAuthor[]> {
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const rows = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       return tx
         .select({
           ...getTableColumns(forumPosts),
@@ -111,11 +112,12 @@ export class ForumPostRepository {
         )
         .orderBy(asc(forumPosts.createdAt));
     });
+    return withAuthorCards(this.db, rows);
   }
 
   /** Direct replies to a comment — oldest first. */
   async listReplies(parentPostId: string, viewerId: string): Promise<PostWithAuthor[]> {
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const rows = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       return tx
         .select({
           ...getTableColumns(forumPosts),
@@ -128,6 +130,7 @@ export class ForumPostRepository {
         .where(and(eq(forumPosts.parentPostId, parentPostId), isNull(forumPosts.deletedAt)))
         .orderBy(asc(forumPosts.createdAt));
     });
+    return withAuthorCards(this.db, rows);
   }
 
   // --- Comment likes (forum_post_reactions) + count aggregates (APP-017) ---
@@ -259,7 +262,7 @@ export class ForumPostRepository {
 
   /** Answers for a question — accepted first, then oldest-first. */
   async listByThread(threadId: string, viewerId: string): Promise<PostWithAuthor[]> {
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const rows = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       return tx
         .select({
           ...getTableColumns(forumPosts),
@@ -272,6 +275,7 @@ export class ForumPostRepository {
         .where(and(eq(forumPosts.threadId, threadId), isNull(forumPosts.deletedAt)))
         .orderBy(desc(forumPosts.isAccepted), asc(forumPosts.createdAt));
     });
+    return withAuthorCards(this.db, rows);
   }
 
   /** Public (SEO) answers for a question — service-context, non-deleted, accepted-first. */
@@ -286,7 +290,7 @@ export class ForumPostRepository {
   }
 
   async findById(postId: string, viewerId: string): Promise<PostWithAuthor | null> {
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const row = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const [row] = await tx
         .select({
           ...getTableColumns(forumPosts),
@@ -300,6 +304,7 @@ export class ForumPostRepository {
         .limit(1);
       return row ?? null;
     });
+    return withAuthorCard(this.db, row);
   }
 
   /** A user's own posts (comments + QA answers), newest first (for their profile). */
@@ -308,7 +313,7 @@ export class ForumPostRepository {
     viewerId: string,
     opts: { limit: number; before?: string },
   ): Promise<PostWithAuthorAndZone[]> {
-    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+    const rows = await withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const conds = [eq(forumPosts.authorId, authorId), isNull(forumPosts.deletedAt)];
       if (opts.before) conds.push(lt(forumPosts.createdAt, new Date(opts.before)));
       return tx
@@ -328,12 +333,13 @@ export class ForumPostRepository {
         .orderBy(desc(forumPosts.createdAt))
         .limit(opts.limit);
     });
+    return withAuthorCards(this.db, rows);
   }
 
   /** Visible posts for a set of ids (RLS hides deleted for the viewer). Order not guaranteed. */
   async findManyByIds(postIds: string[], viewerId: string): Promise<PostWithAuthor[]> {
     if (postIds.length === 0) return [];
-    return withUserContext(this.db, { userId: viewerId }, async (tx) =>
+    const rows = await withUserContext(this.db, { userId: viewerId }, async (tx) =>
       tx
         .select({
           ...getTableColumns(forumPosts),
@@ -345,6 +351,7 @@ export class ForumPostRepository {
         .leftJoin(users, eq(forumPosts.authorId, users.id))
         .where(and(inArray(forumPosts.id, postIds), isNull(forumPosts.deletedAt))),
     );
+    return withAuthorCards(this.db, rows);
   }
 
   async setAccepted(postId: string, accepted: boolean): Promise<void> {

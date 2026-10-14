@@ -1,5 +1,9 @@
 "use client";
-import { ArrowRight, Check, MessageCircle, UserRound, X } from "lucide-react";
+import { ArrowRightIcon as ArrowRight } from "@solar-icons/react/linear/arrow-right";
+import { ChatRoundDotsIcon as MessageCircle } from "@solar-icons/react/bold/chat-round-dots";
+import { SquareAcademicCapIcon as UserRound } from "@solar-icons/react/bold/square-academic-cap";
+import { CloseCircleIcon as X } from "@solar-icons/react/linear/close-circle";
+import { Check } from "lucide-react";
 
 import { useState } from "react";
 import type { CommunityCoachPlanTaskOriginDto, PlanTaskDto } from "@mentor/types";
@@ -145,7 +149,7 @@ export function PlanTaskRow({
               className={`inline-flex items-center gap-1 font-bold ${dense ? "text-[10px] max-lg:text-[9px]" : "text-[10px]"}`}
               style={{ color: "var(--color-progress)" }}
             >
-              <UserRound size={dense ? 11 : 12} strokeWidth={2.4} aria-hidden />
+              <UserRound size={dense ? 11 : 12} strokeWidth={1.75} aria-hidden />
               {t("coach_assigned")}
             </span>
           ) : null}
@@ -176,7 +180,7 @@ export function PlanTaskRow({
                     : t(communityTaskSourceLabelKey(task.status))
               }
             >
-              <MessageCircle size={15} strokeWidth={2.2} aria-hidden />
+              <MessageCircle size={15} strokeWidth={1.75} aria-hidden />
               <span>
                 {sourceState === "checking"
                   ? t("community_task_source_checking")
@@ -221,7 +225,7 @@ export function PlanTaskRow({
         >
           <MessageCircle
             size={20}
-            strokeWidth={2.2}
+            strokeWidth={1.75}
             className="shrink-0 text-[var(--community-blue-ink)]"
             aria-hidden
           />

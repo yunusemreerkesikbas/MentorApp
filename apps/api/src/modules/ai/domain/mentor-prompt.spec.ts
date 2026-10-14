@@ -65,7 +65,7 @@ describe("Mentor V2 prompt", () => {
     });
     expect(prompt).toContain("unnamed mentor-companion");
     expect(prompt).not.toContain("mentor-yol arkadaşı");
-    expect(prompt).not.toContain("Sen Mentor");
+    expect(prompt).not.toContain("Sen PuhuKoç");
     expect(prompt).not.toContain("<<MEMORY");
   });
 

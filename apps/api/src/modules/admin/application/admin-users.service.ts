@@ -17,6 +17,9 @@ export interface AdminUserView {
   status: string;
   isStaff: boolean;
   createdAt: string;
+  emailVerified: boolean;
+  /** A number on file that was confirmed by SMS. */
+  phoneVerified: boolean;
 }
 
 /** Result of a role mutation — carries before/after for the audit trail. */
@@ -31,7 +34,6 @@ export interface AdminUserDetail extends AdminUserView {
   organizationId: string | null;
   examType: string | null;
   examDate: string | null;
-  emailVerified: boolean;
   updatedAt: string;
 }
 
@@ -51,6 +53,8 @@ function toView(row: AdminUserRow): AdminUserView {
     status: row.status,
     isStaff: row.roles.includes(UserRole.STAFF),
     createdAt: row.createdAt.toISOString(),
+    emailVerified: row.emailVerifiedAt != null,
+    phoneVerified: row.phoneNumber != null && row.phoneVerifiedAt != null,
   };
 }
 
@@ -60,7 +64,6 @@ function toDetail(row: AdminUserRow): AdminUserDetail {
     organizationId: row.organizationId,
     examType: row.examType,
     examDate: row.examDate,
-    emailVerified: row.emailVerifiedAt !== null,
     updatedAt: row.updatedAt.toISOString(),
   };
 }

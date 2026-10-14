@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { ChevronRight, MessageCircle } from "lucide-react";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
+import { ChatRoundDotsIcon as Chat } from "@solar-icons/react/bold/chat-round-dots";
 import { ForumFeedScope, ForumFeedSort, type ForumFeedItem } from "@mentor/types";
 import { Link } from "@/i18n/navigation";
 import { getForumFeed } from "@/lib/forum";
@@ -49,7 +50,7 @@ export function CommunityTopicsCard() {
         </h2>
         <Link href="/community" className={PANEL_TEXT_LINK}>
           {t("community_open")}
-          <ChevronRight className="size-4" aria-hidden />
+          <ChevronRight size={16} className="size-4" aria-hidden />
         </Link>
       </div>
       <ul className="flex flex-col">
@@ -70,7 +71,7 @@ export function CommunityTopicsCard() {
                 className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-selected)] text-[var(--play-selected-ink)]"
                 aria-hidden
               >
-                <MessageCircle className="size-5" strokeWidth={2.2} />
+                <Chat size={20} className="size-5" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="line-clamp-2 text-body-sm font-extrabold leading-snug text-[var(--color-main)]">

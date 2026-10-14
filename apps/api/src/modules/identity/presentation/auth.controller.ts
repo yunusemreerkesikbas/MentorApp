@@ -73,8 +73,9 @@ export class AuthController {
   async adminLogin(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
+    @Req() req: Request & { cloudflareAccessEmail?: string },
   ): Promise<AuthSession> {
-    return this.finish(await this.auth.loginAdmin(dto), res, ADMIN_REFRESH_COOKIE, ADMIN_REFRESH_COOKIE_PATH);
+    return this.finish(await this.auth.loginAdmin(dto, req.cloudflareAccessEmail), res, ADMIN_REFRESH_COOKIE, ADMIN_REFRESH_COOKIE_PATH);
   }
 
   @Get("google/start")
@@ -166,11 +167,11 @@ export class AuthController {
   @HttpCode(200)
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   async adminRefresh(
-    @Req() req: Request,
+    @Req() req: Request & { cloudflareAccessEmail?: string },
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthSession> {
     const raw = (req.cookies as Record<string, string> | undefined)?.[ADMIN_REFRESH_COOKIE];
-    return this.finish(await this.auth.refreshAdmin(raw ?? ""), res, ADMIN_REFRESH_COOKIE, ADMIN_REFRESH_COOKIE_PATH);
+    return this.finish(await this.auth.refreshAdmin(raw ?? "", req.cloudflareAccessEmail), res, ADMIN_REFRESH_COOKIE, ADMIN_REFRESH_COOKIE_PATH);
   }
 
   @Post("logout")

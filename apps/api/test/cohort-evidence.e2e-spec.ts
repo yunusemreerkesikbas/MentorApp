@@ -1,8 +1,9 @@
+import { disableAuthRateLimits } from "./app-harness";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
 import { Pool, type PoolClient } from "pg";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CohortEvidenceService } from "../src/modules/coaching/application/cohort-evidence.service";
 import {
@@ -44,6 +45,7 @@ describe("cohort evidence (e2e)", () => {
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
     const { AppModule } = await import("../src/app.module");
     const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    disableAuthRateLimits(module);
     app = module.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());

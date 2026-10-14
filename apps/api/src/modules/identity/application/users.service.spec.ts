@@ -109,9 +109,6 @@ describe("UsersService.updateMe", () => {
     const storage = { getPublicUrl: vi.fn() };
     const calls: string[] = [];
     const authService = {
-      invalidateOutstandingVerification: vi.fn(async () => {
-        calls.push("invalidate");
-      }),
       resendVerificationEmail: vi.fn(async () => {
         calls.push("resend");
       }),
@@ -121,16 +118,16 @@ describe("UsersService.updateMe", () => {
       storage as never,
       { emitAsync: vi.fn() } as never,
       authService as never,
+      undefined, { get: vi.fn(async () => 600) } as never,
     );
 
-    const res = await service.updateMe("user-1", { email: "new@example.com" });
+    const res = await service.updateMe("user-1", { email: "new@example.com" }, "session-1");
     expect(res.email).toBe("new@example.com");
     expect(res.emailVerified).toBe(false);
     expect(usersRepo.updateSelf).toHaveBeenCalledWith("user-1", {
       email: "new@example.com",
-      emailVerifiedAt: null,
-    });
-    expect(calls).toEqual(["invalidate", "resend"]);
+    }, { sessionId: "session-1", seconds: 600 });
+    expect(calls).toEqual(["resend"]);
   });
 
   it("rejects duplicate email with AUTH_EMAIL_IN_USE (409)", async () => {
@@ -180,7 +177,6 @@ describe("UsersService.updateMe", () => {
       updateSelf: vi.fn(async () => updated),
     };
     const authService = {
-      invalidateOutstandingVerification: vi.fn(),
       resendVerificationEmail: vi.fn(),
     };
     const service = new UsersService(
@@ -188,14 +184,14 @@ describe("UsersService.updateMe", () => {
       { getPublicUrl: vi.fn() } as never,
       { emitAsync: vi.fn() } as never,
       authService as never,
+      undefined, { get: vi.fn(async () => 600) } as never,
     );
 
     await service.updateMe("user-1", { displayName: "Updated Name", email: "same@example.com" });
     expect(usersRepo.updateSelf).toHaveBeenCalledWith("user-1", {
-      displayName: "Updated Name",
-    });
+      displayName: "Updated Name", email: "same@example.com",
+    }, { sessionId: "", seconds: 600 });
     expect(usersRepo.findByEmailService).not.toHaveBeenCalled();
-    expect(authService.invalidateOutstandingVerification).not.toHaveBeenCalled();
     expect(authService.resendVerificationEmail).not.toHaveBeenCalled();
   });
 });

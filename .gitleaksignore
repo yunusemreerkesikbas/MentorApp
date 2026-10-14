@@ -1,0 +1,5 @@
+# Reviewed false positives: R2_PRIVATE_BUCKET is an environment variable NAME, not a credential.
+# Exact historical fingerprints only; later changes and all credential values remain scanned.
+3a6c87d86117a7ba934b2358e8c2167c4aadf5b8:scripts/check-deployment.mts:generic-api-key:108
+3a6c87d86117a7ba934b2358e8c2167c4aadf5b8:render.staging-low-cost.yaml:generic-api-key:68
+3a6c87d86117a7ba934b2358e8c2167c4aadf5b8:render.staging.yaml:generic-api-key:69
