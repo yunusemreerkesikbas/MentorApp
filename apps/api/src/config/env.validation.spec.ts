@@ -20,6 +20,23 @@ const PRODUCTION_SECURITY = {
 };
 
 describe("validateEnv", () => {
+  it("keeps local Google test inventory explicitly opt-in", () => {
+    expect(validateEnv(REQUIRED).ADS_LOCAL_TEST_ENABLED).toBe("false");
+    expect(validateEnv({ ...REQUIRED, ADS_LOCAL_TEST_ENABLED: "true" }).ADS_LOCAL_TEST_ENABLED).toBe("true");
+  });
+
+  it.each([
+    { NODE_ENV: "production" },
+    { APP_ENV: "staging" },
+    { APP_ENV: "production" },
+    { APP_URL: "https://puhukoc.com" },
+    { APP_URL: "http://localhost.evil.test" },
+    { ADS_LOCAL_TEST_ENABLED: "yes" },
+  ])("rejects accidental test mode deployment (%j)", (guard) => {
+    expect(() => validateEnv({ ...REQUIRED, ADS_LOCAL_TEST_ENABLED: "true", ...guard }))
+      .toThrow(/ADS_LOCAL_TEST_ENABLED/);
+  });
+
   it("throws when required vars are missing (fail-fast)", () => {
     expect(() => validateEnv({})).toThrow(/Invalid environment/);
     expect(() => validateEnv({ DATABASE_URL: REQUIRED.DATABASE_URL })).toThrow(

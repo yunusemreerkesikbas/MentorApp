@@ -47,7 +47,7 @@ export async function mockBlogAds(page: Page, options: { empty?: boolean; blocke
         id: "knowledge.article.end", format: "DISPLAY", enabled: !denied,
         reason: denied ? "PREMIUM_AD_FREE" : "ELIGIBLE", provider: "GOOGLE_AD_MANAGER",
         adUnitPath: denied ? null : "/6355419/Travel/Europe/France/Paris",
-        audienceTreatment: "CHILD", limitedAds: true, sizes: [[320, 100], [728, 90]],
+        audienceTreatment: "CHILD", limitedAds: true, sizes: [[320, 100], [300, 250], [728, 90]],
       });
     }
     if (path.endsWith("/view")) return json(route, null, 204);

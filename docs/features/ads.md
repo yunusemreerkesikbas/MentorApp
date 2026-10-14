@@ -78,6 +78,43 @@ Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs 
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-14 · Google test ads in the normal local application.** Added opt-in API
+  `ADS_LOCAL_TEST_ENABLED=true` for development with an HTTP loopback `APP_URL`. The existing
+  article placement uses Google's official sample inventory, overrides display rollout switches
+  only in this mode, and assumes TR only when the local request has no country header. Usage:
+  set the key in `apps/api/.env`, restart the API, open `/blog/kpss-basvuru-sureci` on
+  `http://localhost:3000`, and scroll to the article end in an anonymous or Free session.
+  Premium/STAFF entitlement, published-content validation, stricter profile/content treatment,
+  explicit country restrictions, and limited-ads loading remain in force. Gotchas: a Premium
+  session or ad blocker still prevents display; the blog index has no slot. Missing local
+  country is simulated, not evidence of edge geolocation. Startup rejects this mode on staging,
+  production, non-development NODE_ENV, or a public APP_URL. Real inventory env values cannot
+  replace the forced sample unit; rewarded placements and persisted configuration are unchanged.
+  Disable with `ADS_LOCAL_TEST_ENABLED=false` and restart the API. Test inventory generates no
+  publisher revenue. Related: `config/{env.validation,local-display-test}.ts`, `ads.service.ts`,
+  `ads.constants.ts`, corresponding unit tests, `.env.example`.
+  Verification: 101 relevant API/config/policy tests, API typecheck and touched-file lint passed.
+  Desktop/mobile fresh browsers on the normal `localhost:3000` app received the real local
+  backend decision and Google's 300x250 creative, without content or eligibility response mocks.
+  The local API was restarted with the opt-in flag; normal web/API remain available for manual
+  review. Full CI, production publisher approval and revenue were not verified in this step.
+
+- **2026-10-14 · Real Google test inventory and CSP compatibility.** An isolated local web
+  snapshot with synthetic content/eligibility loaded the actual limited GPT and a 300x250 Google
+  test creative on desktop/mobile. The earlier 320x100 request returned no-fill. Added 300x250
+  to the existing article catalog and reserved its 250px height. Allowed only the observed Google
+  traffic-quality hosts in their required connection/image/frame directives; nonce script trust
+  is unchanged. Usage: rehearse with the official sample unit, then configure a production unit
+  with matching sizes after the existing rollout gates. Gotchas: backend eligibility was simulated,
+  so this proves the real SDK/creative path, not trusted country headers, account approval or
+  earnings. Test inventory does not establish the publisher's revenue integration. Related:
+  `ads.constants.ts`, `components/ads/*`, `content-security-policy{,.spec}.ts`, blog ad fixtures,
+  [Google smoke evidence](../qa/2026-10-14-google-display-smoke.md).
+  Verification: 56 relevant web/API unit tests, 26 mobile/desktop ad browser cases, both package
+  typechecks and touched-file lint passed. Actual Google test creatives were visually confirmed
+  in desktop/mobile fresh contexts; no production ad flag, database setting or provider account
+  was changed. Full hosted CI and real publisher revenue remain unverified.
+
 - **2026-10-13 · Automatic Free blog ads.** Removed the advertising opt-in provider, banner
   choices, storage guards and withdrawal flow. Backend-eligible anonymous/Free readers now request
   the single limited ad automatically near the article end, regardless of optional analytics.

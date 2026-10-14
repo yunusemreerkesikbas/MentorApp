@@ -116,10 +116,25 @@ Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
 ### Google Ad Manager (web v1)
 - Ad unit paths: `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT` and
   `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT`. Test and production units must be separate.
+- Local manual preview: set `ADS_LOCAL_TEST_ENABLED=true` in `apps/api/.env`, restart the API,
+  and open `http://localhost:3000/blog/kpss-basvuru-sureci` anonymously or on Free. Scroll to
+  the article end. This uses the real local content/eligibility endpoints and Google's actual
+  SDK, without browser API mocks or changing DB flags. Only development with an HTTP loopback
+  `APP_URL` is allowed; staging/production fail startup if this flag is set. Missing local country
+  is treated as TR for the forced official test unit only. Premium/STAFF and content/age checks
+  still apply. Ad blockers may hide the sample. Set the flag to false and restart to leave preview.
+  Test ads do not demonstrate production approval, fill or revenue.
 - Staging smoke uses Google's official test inventory only:
   `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT=/6355419/Travel/Europe/France/Paris` and
   `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT=/22639388115/rewarded_web_example`. Staging may use rewarded
   rollout `%100`; production stays `%0` until the separate GAM/domain/legal operation is complete.
+  The article catalog includes `300x250`, `320x100` and `728x90`; the reading column filters out
+  widths it cannot fit. In the 2026-10-14 live SDK rehearsal the official sample returned no-fill
+  for `320x100` but filled `300x250`. Keep a supported rectangle in the test request; never infer
+  broken integration from a sample unit that has no creative for the requested size. Reserve 250px
+  before loading. CSP allows the observed `ep1.adtrafficquality.google` configuration/pixel in
+  `connect-src`/`img-src` and `ep2.adtrafficquality.google` in `frame-src`; script trust remains
+  nonce-based. See [live Google smoke evidence](../qa/2026-10-14-google-display-smoke.md).
 - Create/select AdSense with the owner's chosen Google account, add the owned live domain, and
   obtain site approval. Create Ad Manager and connect **actual Google demand** to the article ad
   unit; an empty Ad Manager network does not earn revenue. Disable AdSense Auto ads to preserve

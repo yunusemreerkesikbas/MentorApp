@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { validateProductionSecurity } from "./env-production-locks";
 import { pilotInvitedEmailsSchema } from "./pilot-invited-emails";
+import { isLocalDisplayTestAllowed } from "./local-display-test";
 
 /**
  * Environment variable schema (§8/§10).
@@ -112,6 +113,7 @@ const envSchema = z.object({
   // Google Ad Manager — public inventory paths, never credentials.
   GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT: z.string().min(1).optional(),
   GAM_DASHBOARD_REWARDED_COIN_AD_UNIT: z.string().min(1).optional(),
+  ADS_LOCAL_TEST_ENABLED: z.enum(["false", "true"]).default("false"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -129,6 +131,10 @@ export function isDevToolingAllowed(env: Pick<Env, "NODE_ENV" | "APP_ENV">): boo
 /** Cross-field locks that single-field rules can't express. */
 const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
   validateProductionSecurity(env, ctx);
+  if (env.ADS_LOCAL_TEST_ENABLED === "true" && !isLocalDisplayTestAllowed(env)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ADS_LOCAL_TEST_ENABLED"],
+      message: "ADS_LOCAL_TEST_ENABLED requires development NODE_ENV/APP_ENV and an HTTP loopback APP_URL." });
+  }
   if (env.SMS_PROVIDER === "netgsm" &&
       (!env.NETGSM_USERCODE?.trim() || !env.NETGSM_API_PASSWORD?.trim() || !env.NETGSM_MSGHEADER?.trim() ||
        !env.PHONE_OTP_SECRET || !env.PHONE_FINGERPRINT_SECRET)) {
