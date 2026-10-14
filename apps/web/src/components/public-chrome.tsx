@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Logo } from "@mentor/ui";
 import { PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -36,9 +37,9 @@ export function PublicChrome({
           <nav className="flex items-center gap-5 sm:gap-8">
             <Link
               href="/"
-              className={`inline-flex min-h-11 items-center text-lg font-black tracking-[-0.01em] text-[var(--color-main)] sm:text-xl ${FOCUS}`}
+              className={`inline-flex min-h-11 items-center text-lg text-[var(--color-main)] sm:text-xl ${FOCUS}`}
             >
-              PuhuKoç
+              <Logo />
             </Link>
             <Link
               href={blogHref({ family: user?.examType ?? undefined })}

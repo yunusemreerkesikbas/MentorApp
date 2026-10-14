@@ -56,15 +56,16 @@ export async function generateMetadata({
   const m = locale === "en" ? META.en : META.tr;
   const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
   const origin = siteUrl();
-  const socialImage = `${origin}/mascot/puhu/puhu-default.png`;
+  const socialImage = `${origin}/img/brand/puhukoc-og-${locale === "en" ? "en" : "tr"}.png`;
   return {
     metadataBase: new URL(origin),
     applicationName: "PuhuKoç",
     title: m.title,
     description: m.description,
+    // The logo's eye (DESIGN.md §8.7); under /img so the locale proxy leaves it alone.
     icons: {
-      icon: "/mascot/puhu/puhu-default.png",
-      apple: "/mascot/puhu/puhu-default.png",
+      icon: { url: "/img/brand/puhukoc-icon.svg", type: "image/svg+xml" },
+      apple: "/img/brand/puhukoc-apple-icon.png",
     },
     openGraph: {
       title: m.title,
@@ -73,7 +74,7 @@ export async function generateMetadata({
       siteName: "PuhuKoç",
       type: "website",
       url: origin,
-      images: [{ url: socialImage, alt: "PuhuKoç" }],
+      images: [{ url: socialImage, width: 1200, height: 630, alt: "PuhuKoç" }],
     },
     twitter: {
       card: "summary_large_image",

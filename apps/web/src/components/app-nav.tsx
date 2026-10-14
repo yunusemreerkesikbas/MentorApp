@@ -11,7 +11,7 @@ import {
   type EconomyBalance,
   type ExamType,
 } from "@mentor/types";
-import { NotificationBell } from "@mentor/ui";
+import { Logo, NotificationBell } from "@mentor/ui";
 
 import { LanguageToggle } from "@/components/language-toggle";
 import { AppNavIcon } from "@/components/app-nav-icon";
@@ -212,13 +212,10 @@ export function AppNav() {
           ) : (
             <Link
               href="/dashboard"
-              className="text-xl font-bold"
-              style={{
-                color: "var(--color-main)",
-                fontFamily: "var(--font-heading)",
-              }}
+              className="text-xl"
+              style={{ color: "var(--color-main)" }}
             >
-              PuhuKoç
+              <Logo />
             </Link>
           )}
           <div className="ml-auto flex shrink-0 items-center gap-1">
@@ -350,13 +347,10 @@ function DesktopSidebar({
         <div className="mb-4 flex items-center justify-between gap-2">
           <Link
             href={isCoach(user) ? "/students" : "/dashboard"}
-            className="inline-flex min-h-11 items-center text-2xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{
-              color: "var(--color-main)",
-              fontFamily: "var(--font-heading)",
-            }}
+            className="inline-flex min-h-11 items-center text-2xl transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            style={{ color: "var(--color-main)" }}
           >
-            PuhuKoç
+            <Logo cut="large" />
           </Link>
           <button
             type="button"

@@ -484,6 +484,28 @@ Flat files under `public/visuals/`, WebP preferred, e.g. `plan-empty.webp`, `ana
 - A second filled ledge, or a second commercial ask, on the same screen
 - Looping animated art inside a card (static art; motion belongs to moments, §9.1)
 
+### 8.7 Logo (2026-10-14)
+
+The logo is typographic: **PuhuKoç** set in Nunito 1000, where the o of Koç is drawn as an eye.
+There is no separate symbol and no mascot in it; Puhu stays in the art (§8.1). Component:
+`@mentor/ui` `Logo`. Never retype the name as styled text where the logo belongs.
+
+- **The eye:** a ring whose stroke matches the letter stem, a pupil tangent to the ring that looks
+  up and ahead, and a white glint. Pupil `--logo-pupil` (#1A5FA3 light, 6.5:1; #55ACEE dark),
+  glint `--logo-glint`. The ring and letters take the text colour (`--color-main`).
+- **Two drawings:** `cut="large"` at 24px and up (eye 0.52em, tracking -0.03em, glint);
+  `cut="small"` (the default) below 24px: eye 0.56em, pupil larger in the ring, tracking
+  +0.005em, no glint. The caller's class sets the type size.
+- **Minimum** 13px. Below that only the eye is used: the favicon
+  (`/img/brand/puhukoc-icon.svg`) and the app icon (`/img/brand/puhukoc-apple-icon.png`) are the
+  eye in `--play-cta-ink` on a `--play-cta` tile.
+- **Share image:** `/img/brand/puhukoc-og-{tr,en}.png`, 1200×630, the logo with the slogan on
+  the white blob canvas. The admin sidebar uses a PNG of the logo (`apps/admin/public/images/puhukoc/`).
+- **Clear space:** one eye diameter on every side.
+- **Written** "PuhuKoç": capital P and K, and the ç keeps its cedilla.
+- Lockups, dark and single-ink versions: the design canvas linked from
+  `docs/features/web-shell.md`.
+
 ---
 
 ## 9. Motion scale (rich, guarded)
