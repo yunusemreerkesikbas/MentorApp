@@ -10,6 +10,8 @@ import { aiVisionControllerNote, coachingControllerGetVision } from "@mentor/api
 import { Link } from "@/i18n/navigation";
 import { BoardFrame } from "@/components/vision-board/board-frame";
 import { BoardStage } from "@/components/vision-board/board-stage";
+import { HungBoard, useBoardSway } from "@/components/vision-board/hung-board";
+import { SWAY_KICK } from "@/components/vision-board/hung-board-sway";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { useSubscription } from "@/lib/subscription-context";
@@ -36,6 +38,7 @@ export function VisionBoardCard() {
     : isPremiumFeatureAvailable(view, "vision.note");
   const [generating, setGenerating] = useState(false);
   const previewRef = useRef<HTMLDialogElement>(null);
+  const sway = useBoardSway();
 
   const openPreview = useCallback(() => {
     previewRef.current?.showModal();
@@ -47,7 +50,9 @@ export function VisionBoardCard() {
   // Fires on Escape and on `.close()` alike — the one place scroll-lock needs to come off.
   const handlePreviewClose = useCallback(() => {
     document.documentElement.classList.remove("mentor-dialog-open");
-  }, []);
+    // Back on its nail. The one sway a phone gets from touching the board.
+    sway.nudge(SWAY_KICK.rehang);
+  }, [sway]);
 
   const generate = useCallback(async () => {
     setGenerating(true);
@@ -126,9 +131,7 @@ export function VisionBoardCard() {
                 aria-label={translate("board.preview_label")}
                 className="cursor-pointer rounded-[var(--radius-card)] text-left transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
               >
-                <BoardFrame frame={vision.board.frame}>
-                  <BoardStage doc={vision.board} />
-                </BoardFrame>
+                <HungBoard doc={vision.board} sway={sway} />
               </button>
             ) : (
               <p className="text-body-sm font-bold leading-snug text-[var(--color-main)]">

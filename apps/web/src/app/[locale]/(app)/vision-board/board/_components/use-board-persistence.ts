@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { VisionBoardDoc, VisionDto } from "@mentor/types";
 import { ApiClientError, coachingControllerGetVision, http } from "@mentor/api-client";
 import { seededBoard } from "@/components/vision-board/board-document";
+import { markBoardHung } from "@/components/vision-board/hung-board-sway";
 import { useMentorToast } from "@/lib/mentor-toast";
 import type { BoardAction, BoardState } from "./use-board-reducer";
 
@@ -32,6 +33,10 @@ function putBoard(doc: VisionBoardDoc, keepalive = false) {
     method: "PUT",
     body: JSON.stringify({ board: doc }),
     ...(keepalive ? { keepalive: true } : null),
+  }).then((res) => {
+    // The panel's card lets a board that has just changed settle on its nail, once.
+    if (doc.status === "PUBLISHED") markBoardHung();
+    return res;
   });
 }
 

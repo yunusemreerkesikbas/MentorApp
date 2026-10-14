@@ -145,6 +145,26 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-14 · Panel "Hedefin" card hangs the board on the wall, and it sways.** A published
+  board in the card is drawn as the phone wallpaper draws it: framed, on a wall of
+  `--color-surface-container`, hung from a nail by a cord (`HungBoard`,
+  `components/vision-board/hung-board.tsx`). The proportions are `wallpaperLayout`'s, restated
+  against the board's width: cord 19% in from each side, nail 17.7% of the width above. It swings
+  about the nail and comes to rest, on three causes and never by itself: the first sight of a
+  board the editor has just saved (a session flag set by every successful save of a published
+  board, spent on that sight), a mouse coming in over the card (pushed from that side), and the
+  full-size preview shutting. The overshoot and the ~1.3 s settle are a product-owner exception
+  scoped to this component (DESIGN.md §9.1, "the sway decision"); reduced motion keeps it still.
+  Usage: the spring, the three pushes and the flag live in `hung-board-sway.ts`; whoever has a
+  reason to push the board owns `useBoardSway()` and hands it to `HungBoard`. The full-size
+  preview is unchanged (frame only, no wall). Gotchas: the cord and nail keep the wallpaper's
+  browns in both themes, like the wood frame; a click brings a mouse in, so on desktop opening
+  the preview also pushes the board; when measuring the sway in a test, sample every frame inside
+  the page (`tiltRange` in `e2e/panel.spec.ts`), an outside poll walks past the peak. Tests: 4
+  unit (`hung-board-sway.spec.ts`), 4 browser scenarios in `panel.spec.ts` on both viewports,
+  each seen failing under a deliberate break. Looked at in the browser in the light theme only.
+  Not built: a sway on scroll, a sway on the day's progress.
+
 - **2026-10-13 · PR #161 conflict resolution.** Updated the notebook branch with current
   `master`, preserving both the notebook page-transfer/mobile Puhu notes and the session
   layout, sound, and sharing notes. Usage is unchanged: notebook items still move between

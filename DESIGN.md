@@ -570,6 +570,24 @@ squashes and stretches, and the film runs about 6 s with sound. Everything else 
 Existing exception: `.mentor-puhu-bounce` (globals.css) loops a 2 s idle bob for the mascot — a
 deliberate presence cue, disabled under reduced motion.
 
+**The hung board (2026-10-14): the sway decision.** On the panel's "Hedefin" card a published
+vision board hangs from a nail by a cord, and a hung thing swings. Decided with the product owner
+and scoped to `HungBoard` only: it may rotate about its nail past rest (a damped spring, never more
+than 3°) and take longer than the `Moment` budget to come to rest (it reads as settled at about
+1.3 s). Everything else in §9 stands, and so does §8: it is pushed, it never loops.
+
+| Cause | What the student sees | Push |
+| --- | --- | --- |
+| Arrival | The first sight of a board the editor has just saved: it swings and settles, once. The flag is spent on that sight, so a refresh does not repeat it | 42°/s, just under 3° |
+| Mouse | The pointer comes in over the card and the board is pushed from that side | 22°/s, about 1.5° |
+| Rehang | The full-size preview shuts and the board settles back on its nail (the one sway a phone gets from touching it) | 16°/s, about 1° |
+
+- **Reduced motion:** it does not move. The arrival flag is still spent.
+- **Not built, on purpose:** an idle loop (§8), a sway tied to scrolling, a sway on the day's
+  progress. The last two are open ideas, each its own decision.
+- **Source of truth:** `components/vision-board/hung-board-sway.ts` (spring, pushes, the flag);
+  the component is `hung-board.tsx`.
+
 **The coach's screens (2026-09-26, Durak F).** `/kocluk` is a Measured work surface with two
 Progress moments of its own. Classes live in `(coach)/_components/coach-theme.css`; framer defaults
 come from `CoachMotionConfig` (`reducedMotion="user"`); constants in `components/mentorship/coach-motion.ts`.
