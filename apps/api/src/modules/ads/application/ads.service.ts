@@ -14,12 +14,13 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { Env } from "../../../config/env.validation";
+import { isLocalDisplayTestAllowed } from "../../../config/local-display-test";
 import { ContentService } from "../../content/application/content.service";
 import { EconomyService } from "../../economy/application/economy.service";
 import { UsersService } from "../../identity/application/users.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { evaluateAdPolicy, istanbulDayStart } from "../domain/ad-policy";
-import { AD_PLACEMENTS, ADS_REWARD_REASON, ADS_REWARD_SOURCE } from "../domain/ads.constants";
+import { AD_PLACEMENTS, ADS_REWARD_REASON, ADS_REWARD_SOURCE, GOOGLE_DISPLAY_TEST_AD_UNIT } from "../domain/ads.constants";
 import { AdRewardSessionRepository, type AdRewardSessionRow } from "../infrastructure/ad-reward-session.repository";
 
 @Injectable()
@@ -52,6 +53,12 @@ export class AdsService {
     },
   ): Promise<AdPlacementView> {
     const placement = AD_PLACEMENTS[placementId];
+    const localTest = placementId === AdPlacementId.KNOWLEDGE_ARTICLE_END && isLocalDisplayTestAllowed({
+      NODE_ENV: this.env.get("NODE_ENV", { infer: true }),
+      APP_ENV: this.env.get("APP_ENV", { infer: true }),
+      APP_URL: this.env.get("APP_URL", { infer: true }),
+      ADS_LOCAL_TEST_ENABLED: this.env.get("ADS_LOCAL_TEST_ENABLED", { infer: true }),
+    });
     const [globalEnabled, formatEnabled, placementEnabled, rolloutPercent, allowedCountries, entitlement] = await Promise.all([
       this.config.get("ads.enabled"),
       this.config.get(placement.format === "DISPLAY" ? "ads.display.enabled" : "ads.rewarded.enabled"),
@@ -63,11 +70,12 @@ export class AdsService {
         : Promise.resolve({ isPremium: false }),
     ]);
     const decision = evaluateAdPolicy({
-      globalEnabled,
-      formatEnabled,
-      placementEnabled,
+      globalEnabled: localTest || globalEnabled,
+      formatEnabled: localTest || formatEnabled,
+      placementEnabled: localTest || placementEnabled,
       format: placement.format,
-      countryCode: context.countryCode,
+      // Local requests have no trusted edge country. Only test inventory may assume TR.
+      countryCode: localTest && context.countryCode === null ? "TR" : context.countryCode,
       examType: context.examType,
       contentExamType: context.contentExamType,
       isPremium: entitlement.isPremium,
@@ -75,7 +83,7 @@ export class AdsService {
       rolloutPercent,
       displayAllowedCountries: allowedCountries.split(",").filter(Boolean),
     });
-    const adUnitPath = this.adUnitPath(placementId);
+    const adUnitPath = localTest ? GOOGLE_DISPLAY_TEST_AD_UNIT : this.adUnitPath(placementId);
     const contextUnverified = placement.format === "DISPLAY" && context.contextVerified === false;
     // Google Ad Manager does not provide server-side verification for Rewarded Web. A browser
     // event is forgeable, so production must stay closed until the provider/format can prove it.

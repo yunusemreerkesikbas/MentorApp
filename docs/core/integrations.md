@@ -116,6 +116,14 @@ Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
 ### Google Ad Manager (web v1)
 - Ad unit paths: `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT` and
   `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT`. Test and production units must be separate.
+- Local manual preview: set `ADS_LOCAL_TEST_ENABLED=true` in `apps/api/.env`, restart the API,
+  and open `http://localhost:3000/blog/kpss-basvuru-sureci` anonymously or on Free. Scroll to
+  the article end. This uses the real local content/eligibility endpoints and Google's actual
+  SDK, without browser API mocks or changing DB flags. Only development with an HTTP loopback
+  `APP_URL` is allowed; staging/production fail startup if this flag is set. Missing local country
+  is treated as TR for the forced official test unit only. Premium/STAFF and content/age checks
+  still apply. Ad blockers may hide the sample. Set the flag to false and restart to leave preview.
+  Test ads do not demonstrate production approval, fill or revenue.
 - Staging smoke uses Google's official test inventory only:
   `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT=/6355419/Travel/Europe/France/Paris` and
   `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT=/22639388115/rewarded_web_example`. Staging may use rewarded

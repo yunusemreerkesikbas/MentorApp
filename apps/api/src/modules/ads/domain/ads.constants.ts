@@ -2,6 +2,8 @@ import { AdPlacementId, type AdPlacementView } from "@mentor/types";
 
 export const ADS_REWARD_SOURCE = "ad_reward";
 export const ADS_REWARD_REASON = "ad.reward.completed";
+// Official sample inventory, never the publisher's revenue inventory.
+export const GOOGLE_DISPLAY_TEST_AD_UNIT = "/6355419/Travel/Europe/France/Paris";
 
 export const AD_PLACEMENTS: Record<
   AdPlacementId,

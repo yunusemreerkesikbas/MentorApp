@@ -42,9 +42,27 @@ Query data was limited to inventory/size/privacy fields; console URL queries wer
 the final reports. No ad was clicked. The sample creative is Google-hosted; it was not replaced
 with a local image or fake GPT response.
 
+## Normal local application follow-up
+
+The normal web at `http://localhost:3000/blog/kpss-basvuru-sureci` was subsequently verified
+against the actual local API at `http://localhost:3001/v1`. `ADS_LOCAL_TEST_ENABLED=true`
+was added to the ignored API `.env` and the API was restarted. No content or eligibility
+response was mocked in these desktop/mobile fresh-browser checks. The local preview explicitly
+assumes TR for a missing edge country and forces the official sample unit; this is still not
+proof of country detection, publisher approval, or revenue. Both browsers received a non-empty
+300x250 creative with `ltd=1`; desktop paint was visually inspected. Google requests were
+guarded against any unit other than the official sample. No ad was clicked.
+
+Evidence: ignored `.artifacts/deployment/local-google-smoke/{desktop,mobile}.json` and
+`{desktop,mobile}-ad.png`. 101 relevant API/config/policy tests, API typecheck and touched-file
+lint passed. Normal web/API remain running for manual viewing. View anonymously or on Free,
+scroll to the article end, and disable any ad blocker for localhost. Premium/STAFF remain ad-free.
+To stop preview, set `ADS_LOCAL_TEST_ENABLED=false` and restart the API. Full CI was not run.
+
 ## Repeat and release
 
-1. Keep test/production inventory separate; use the official sample only in an isolated rehearsal.
+1. Keep test/production inventory separate; use the official sample only in a non-production
+   rehearsal or the guarded local preview documented above.
 2. Verify published article and backend eligibility with the existing API tests. For actual
    country coverage use a trusted test edge; do not loosen production header/authentication guards.
 3. Open the article anonymously or as Free and approach its end. Verify the limited script,
