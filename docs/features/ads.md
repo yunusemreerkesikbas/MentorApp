@@ -78,6 +78,22 @@ Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs 
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-14 · Real Google test inventory and CSP compatibility.** An isolated local web
+  snapshot with synthetic content/eligibility loaded the actual limited GPT and a 300x250 Google
+  test creative on desktop/mobile. The earlier 320x100 request returned no-fill. Added 300x250
+  to the existing article catalog and reserved its 250px height. Allowed only the observed Google
+  traffic-quality hosts in their required connection/image/frame directives; nonce script trust
+  is unchanged. Usage: rehearse with the official sample unit, then configure a production unit
+  with matching sizes after the existing rollout gates. Gotchas: backend eligibility was simulated,
+  so this proves the real SDK/creative path, not trusted country headers, account approval or
+  earnings. Test inventory does not establish the publisher's revenue integration. Related:
+  `ads.constants.ts`, `components/ads/*`, `content-security-policy{,.spec}.ts`, blog ad fixtures,
+  [Google smoke evidence](../qa/2026-10-14-google-display-smoke.md).
+  Verification: 56 relevant web/API unit tests, 26 mobile/desktop ad browser cases, both package
+  typechecks and touched-file lint passed. Actual Google test creatives were visually confirmed
+  in desktop/mobile fresh contexts; no production ad flag, database setting or provider account
+  was changed. Full hosted CI and real publisher revenue remain unverified.
+
 - **2026-10-13 · Automatic Free blog ads.** Removed the advertising opt-in provider, banner
   choices, storage guards and withdrawal flow. Backend-eligible anonymous/Free readers now request
   the single limited ad automatically near the article end, regardless of optional analytics.

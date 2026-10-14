@@ -26,6 +26,8 @@ export function contentSecurityPolicy(nonce: string, options: PolicyOptions): st
   const storage = [...new Set((options.storageOrigins ?? "").split(",").map((entry) => entry.trim()).filter(Boolean).map((entry) => origin(entry, false)))];
   const maps = "https://*.googleapis.com https://*.gstatic.com https://*.google.com";
   const ads = "https://*.googlesyndication.com https://*.doubleclick.net";
+  // Observed GPT invalid-traffic configuration/pixel endpoint; never added to script trust.
+  const adTrafficQuality = "https://ep1.adtrafficquality.google";
   const analytics = "https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com";
   return [
     "default-src 'self'",
@@ -34,10 +36,10 @@ export function contentSecurityPolicy(nonce: string, options: PolicyOptions): st
     "script-src-attr 'none'",
     // ponytail: React style props and provider-injected styles still need inline CSS.
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    `img-src 'self' data: blob: ${[apiOrigin, ...storage].join(" ")} ${maps} https://*.googleusercontent.com ${ads} ${analytics}`,
+    `img-src 'self' data: blob: ${[apiOrigin, ...storage].join(" ")} ${maps} https://*.googleusercontent.com ${ads} ${adTrafficQuality} ${analytics}`,
     "font-src 'self' data: https://fonts.gstatic.com",
-    `connect-src 'self' ${[apiOrigin, ...storage].join(" ")} https://challenges.cloudflare.com ${maps} ${ads} ${analytics} https://cdn.jsdelivr.net/npm/@lottiefiles/ https://unpkg.com/@lottiefiles/${options.production ? "" : " ws://localhost:* ws://127.0.0.1:*"}`,
-    `frame-src https://challenges.cloudflare.com https://*.google.com ${ads}`,
+    `connect-src 'self' ${[apiOrigin, ...storage].join(" ")} https://challenges.cloudflare.com ${maps} ${ads} ${adTrafficQuality} ${analytics} https://cdn.jsdelivr.net/npm/@lottiefiles/ https://unpkg.com/@lottiefiles/${options.production ? "" : " ws://localhost:* ws://127.0.0.1:*"}`,
+    `frame-src https://challenges.cloudflare.com https://*.google.com ${ads} https://ep2.adtrafficquality.google`,
     "worker-src 'self' blob:",
     `media-src 'self' data: blob: ${storage.join(" ")}`.trim(),
     "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",

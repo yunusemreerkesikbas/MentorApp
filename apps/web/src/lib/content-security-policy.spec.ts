@@ -6,6 +6,17 @@ import { NextRequest } from "next/server";
 afterEach(() => vi.unstubAllEnvs());
 
 describe("document CSP", () => {
+  it.each([false, true])("restricts Google's observed traffic-quality hosts to their required directives (production=%s)", (production) => {
+    const policy = contentSecurityPolicy("YWJjZGVmZ2hpamtsbW5vcA==", { production, apiUrl: "http://localhost:3001/v1" });
+    const directives = policy.split(";").map((part) => part.trim());
+    expect(directives.find((part) => part.startsWith("connect-src "))).toContain("https://ep1.adtrafficquality.google");
+    expect(directives.find((part) => part.startsWith("img-src "))).toContain("https://ep1.adtrafficquality.google");
+    expect(directives.find((part) => part.startsWith("frame-src "))).toContain("https://ep2.adtrafficquality.google");
+    expect(directives.filter((part) => !part.startsWith("connect-src ") && !part.startsWith("img-src ") && !part.startsWith("frame-src ")).join(";")).not.toContain("adtrafficquality.google");
+    expect(directives.find((part) => part.startsWith("connect-src "))).not.toContain("ep2.adtrafficquality.google");
+    expect(directives.find((part) => part.startsWith("frame-src "))).not.toContain("ep1.adtrafficquality.google");
+    expect(policy).not.toContain("https://*.adtrafficquality.google");
+  });
   it("blocks script injection and eval in production while preserving required integrations", () => {
     const policy = contentSecurityPolicy("YWJjZGVmZ2hpamtsbW5vcA==", {
       production: true, apiUrl: "https://api.mentor.example/v1",

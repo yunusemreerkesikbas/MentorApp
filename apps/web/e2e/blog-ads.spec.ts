@@ -40,7 +40,7 @@ test("tek reklam otomatik yüklenir, analitik reddi korunur ve sınırlı ayarla
   expect(events[0]).toContain('"limitedAds":true');
   expect(events[0]).toContain('"childDirectedTreatment":true');
   expect(events[1]).toBe("display");
-  expect(await ad.locator("div[id]").evaluate((node) => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(100);
+  expect(await ad.locator("div[id]").evaluate((node) => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(250);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
