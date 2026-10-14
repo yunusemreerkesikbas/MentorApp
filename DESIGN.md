@@ -701,11 +701,45 @@ moment, not a second desk: ease-out throughout, nothing overshoots, the deal is 
   `FAN_TIMING`), the hand in `(app)/notebook/_components/notebook-review-list.tsx`, one card in
   `notebook-review-fan-card.tsx`.
 
+**The plan's waiting scene (2026-10-14, "Hafta kuruluyor"): the loop decision.** "Koçla planla"
+asks a model for a preview and the answer takes seconds. That wait is the one place a full-screen
+scene loops: decided with the product owner and scoped to this scene, it keeps moving for as long
+as the request is out. §9's "no orchestrated full-page load shows" and the "never loop" rule above
+stand everywhere else. It is the wizard's last step, not a new screen: the wizard stays open
+underneath, and its bar, which always held one segment back, fills when the answer lands.
+
+| Beat | What happens | Time |
+| --- | --- | --- |
+| Deal | The student's own answers come onto the week as blocks: the picked days are the lit tracks, the picked subjects the colours | 500 ms, 40 ms apart |
+| Wait | Half the blocks change days on every beat, Puhu's eyes follow the one that leads, and the bubble says what the coach read: each line once, the last one stays | 900 ms a beat, 3.6 s a line |
+| Long wait | The bubble says the coach is still at it and that "Vazgeç" is there | from 12 s |
+| Arrival | The blocks gather and drop out, the bar fills, the scene closes and the preview sheet rises | 450 ms |
+
+- **True, not theatre:** nothing on it is a made-up figure. With the wizard the blocks are the
+  student's answers: two to a picked day, in the picked subjects' colours. Without it they are the
+  tasks already waiting in the week, one block each (twelve at most), so a week with one waiting
+  task shows one block trying the days. The lines are the brief's own evidence, and the bar never
+  claims more than it knows. The blocks carry no labels and never come to rest, so the board
+  cannot be read as the plan.
+- **Leaving:** "Vazgeç" and Escape are there from the first frame (the request can run 30 s). They
+  return to the wizard's note step with every answer in place, and a late answer opens nothing. A
+  failed request does the same; the wizard says the error above its own button, since a toast sits
+  under a native dialog.
+- **Without the wizard** (the mood and session invitations, "Yeniden hazırla"): the same scene opens
+  by itself, with no bar.
+- **Reduced motion:** the blocks stand in their first arrangement, the lines still change, and the
+  preview opens the moment the answer lands. No sound.
+- **Source of truth:** timings and the arrangement in
+  `(app)/plan/_components/plan-coach-stage-scene.ts` (`STAGE_TIMING`, `stageBeat`), the scene in
+  `plan-coach-adaptation-stage.tsx`, the board in `plan-coach-stage-board.tsx`.
+
 ---
 
 ## 10. Empty & loading
 
 - **Loading:** page-specific `*-content-skeleton.tsx` using `@mentor/ui` `Skeleton` / `SkeletonGroup` + global shimmer classes — **only while auth settles**. After that the layout paints at once and each section fills in on its own (its own placeholder, or nothing until it has something true to say); no `if (!data) return` gate over a whole page. Data a screen needs goes out in one parallel wave (panel: `use-panel-data.ts`).
+- **A wait on a model** is not a skeleton. "Koçla planla" plays its own scene (§9.1, "Hafta
+  kuruluyor"); the other AI waits keep their one-line status until each is its own decision.
 - **Empty:** teach the next action (`EmptyState`) — not “nothing here.” The panel's empty day is
   the pattern: one dashed "İlk adım" node, one ledge ("Planına görev ekle"), Puhu saying the first
   step can be small.

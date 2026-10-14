@@ -77,6 +77,19 @@ export function planWindowDays(today: Date): PlanWindowDay[] {
   });
 }
 
+/** The window as of now. "Today" is the student's own day; the API maps weekdays onto its window. */
+export function planWindowToday(): PlanWindowDay[] {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(new Date());
+  const part = (type: string) =>
+    Number(parts.find((item) => item.type === type)?.value);
+  return planWindowDays(new Date(part("year"), part("month") - 1, part("day"), 12));
+}
+
 export function formatKnownBrief(parts: {
   exam: string | null;
   goal: string | null;
