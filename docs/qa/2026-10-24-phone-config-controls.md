@@ -64,7 +64,7 @@ strict. Stale strict-phone fixture assumptions and onboarding copy expectations 
 match the selected requirements; assertions and production gates were not removed.
 
 No production migration, live config override, provider setup, carrier SMS, payment or deployment
-was performed. The work is based on current master 673a193a reconciled with PR #145; the primary
+was performed. The work was initially based on master 673a193a and finally reconciled with 9d1006ed for PR #145; the primary
 checkout's existing edits remain untouched. Apply the migration before the API/web rollout, and
 check effective live overrides explicitly. Full default CI remains required before merge.
 
@@ -74,5 +74,8 @@ check effective live overrides explicitly. Full default CI remains required befo
 While publishing, master advanced to 9d1006ed (PR #169, profile/settings). Its compact phone heading,
 profile hiding logic and stronger unavailable-SMS browser assertions were retained. The only merge
 conflict was overlapping phone-card tests; both the verified and unverified incoming scenarios
-were preserved alongside the independent-requirement coverage. Verification after this merge is
-recorded below.
+were preserved alongside the independent-requirement coverage. Verification after this merge: standard native workspace build 8/8; web performance budgets PASS;
+all 1,011 web assertions passed. The combined phone/settings/profile/community-profile browser
+run passed 92 cases, with two existing push-key-dependent skips. The four-case exact TR/EN
+SMS-off disclosure rerun and previous 74 phone/trial plus 82 coach cases remain recorded above.
+Merged phone-card source/test lint passed. No production action or merge was performed.
