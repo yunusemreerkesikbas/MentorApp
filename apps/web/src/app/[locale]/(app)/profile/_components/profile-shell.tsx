@@ -40,10 +40,11 @@ export function ProfileShell({
   openProfileEditor?: boolean;
 }) {
   const t = useTranslations("profile");
-  const { setUserFromServer } = useAuth();
+  const { user: authUser, setUserFromServer } = useAuth();
   const reduceMotion = useReducedMotion();
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [economyRefreshKey, setEconomyRefreshKey] = useState(0);
+  const [phoneHidden, setPhoneHidden] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -109,7 +110,7 @@ export function ProfileShell({
         className="grid min-w-0 gap-5 lg:gap-6 xl:grid-cols-[minmax(0,1fr)_360px]"
         {...motionProps}
       >
-        <section className="flex min-w-0 flex-col gap-5 lg:gap-6">
+        <section className="flex min-w-0 flex-col gap-5 lg:gap-6 [&>*:empty]:hidden">
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <ProfileHeader
               autoOpenEdit={openProfileEditor}
@@ -139,16 +140,24 @@ export function ProfileShell({
             <GoogleAccountCard />
           </motion.div>
 
-          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <PhoneVerificationCard allowNumberChange />
-          </motion.div>
+          {/* SMS off and no number on file: the card could only say "unavailable", so it goes.
+              A verified number stays visible either way. */}
+          {phoneHidden ? null : (
+            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+              <PhoneVerificationCard
+                allowNumberChange
+                compactHeading
+                onStatusChange={(phone) => setPhoneHidden(!phone.available && !phone.verified)}
+              />
+            </motion.div>
+          )}
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <ApplicationSupportCard />
           </motion.div>
         </section>
 
-        <aside className="flex min-w-0 flex-col gap-5 lg:gap-6 xl:sticky xl:top-8 xl:self-start">
+        <aside className="flex min-w-0 flex-col gap-5 lg:gap-6 xl:sticky xl:top-8 xl:self-start [&>*:empty]:hidden">
           {hasSocialLinks ? (
             <motion.div
               variants={reduceMotion ? undefined : staggerItemVariants}
@@ -157,9 +166,14 @@ export function ProfileShell({
             </motion.div>
           ) : null}
 
-          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <EconomySection refreshKey={economyRefreshKey} />
-          </motion.div>
+          {/* Not for a coach: every coin sink (Puhu chat, streak rescue, deep analysis) is a
+              student surface, and the quests send them to /study-session and /dashboard, which
+              bounce them home. The API still returns the full catalog; hiding here is enough. */}
+          {!isCoach(user) && (
+            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+              <EconomySection refreshKey={economyRefreshKey} />
+            </motion.div>
+          )}
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <AccountLinksCard
@@ -170,6 +184,10 @@ export function ProfileShell({
               }}
             />
           </motion.div>
+
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <SettingsLegalFooter />
+          </motion.div>
         </aside>
       </motion.div>
     ) : (
@@ -177,68 +195,86 @@ export function ProfileShell({
     );
 
   return (
-    <>
     <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-5 py-6 lg:px-8 lg:py-10">
       <SkeletonGroup
         label={t("loading")}
         loading={loading}
         revealed={readyBody}
       >
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <ProfileSkeletonBlocks />
+        {/* minmax(0,1fr) on phones too: SkeletonGroup stacks this layer under the revealed one,
+            so an auto column sized to the skeleton's min-content widened every card past 375px. */}
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <ProfileSkeletonBlocks coach={isCoach(authUser)} />
         </div>
       </SkeletonGroup>
     </main>
-    <SettingsLegalFooter />
+  );
+}
+
+/**
+ * Mirrors the revealed layout: centred identity, list cards, side rail with the legal links. A coach
+ * gets no Kazanımlar block, like the revealed rail; an unknown user still draws it.
+ */
+function ProfileSkeletonBlocks({ coach }: { coach: boolean }) {
+  return (
+    <>
+      <section className="flex min-w-0 flex-col gap-5 lg:gap-6">
+        <div className="flex flex-col items-center px-2 pb-1 pt-2">
+          <Skeleton className="size-30 rounded-full" />
+          <Skeleton className="mt-3 h-9 w-56 max-w-full rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-2 h-4 w-60 max-w-full rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-4 h-6 w-32 rounded-[var(--radius-card)]" />
+        </div>
+        <SkeletonListCard rows={3} trailing="toggle" />
+        <SkeletonListCard rows={1} />
+        <SkeletonListCard rows={5} />
+      </section>
+      <aside className="flex min-w-0 flex-col gap-5 lg:gap-6">
+        {coach ? null : <SkeletonListCard rows={3} />}
+        <SkeletonListCard rows={6} />
+        <div className="flex flex-col gap-2 px-3">
+          <Skeleton className="h-3 w-64 max-w-full rounded-[var(--radius-card)]" />
+          <Skeleton className="h-3 w-56 max-w-full rounded-[var(--radius-card)]" />
+          <Skeleton className="h-3 w-40 rounded-[var(--radius-card)]" />
+        </div>
+      </aside>
     </>
   );
 }
 
-function ProfileSkeletonBlocks() {
+/** One settings card: small section label, then 44px rows like `ListRow` / `ToggleRow`. */
+function SkeletonListCard({
+  rows,
+  trailing = "chevron",
+}: {
+  rows: number;
+  trailing?: "chevron" | "toggle";
+}) {
   return (
-    <>
-      <section className="flex flex-col gap-6">
-        <Card solid className="overflow-hidden p-0">
-          <Skeleton className="h-28 rounded-none" />
-          <div className="p-6">
-            <Skeleton className="-mt-14 h-24 w-24 rounded-[var(--radius-card)]" />
-            <Skeleton className="mt-5 h-7 w-60 max-w-full rounded-[var(--radius-card)]" />
-            <Skeleton className="mt-3 h-4 w-72 max-w-full rounded-[var(--radius-card)]" />
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <Skeleton className="h-14 rounded-[var(--radius-card)]" />
-              <Skeleton className="h-14 rounded-[var(--radius-card)]" />
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <Skeleton className="h-6 w-48 rounded-[var(--radius-card)]" />
-          <div className="mt-4 grid gap-2">
-            {[0, 1, 2].map((item) => (
+    <Card solid className="p-2 sm:p-2.5">
+      <div className="px-2 pt-1 pb-1.5">
+        <Skeleton className="h-3 w-28 rounded-[var(--radius-card)]" />
+      </div>
+      <div className="flex flex-col gap-0.5">
+        {Array.from({ length: rows }, (_, row) => (
+          <div key={row} className="flex min-h-11 items-center justify-between gap-3 px-3 py-1.5">
+            <span className="min-w-0">
               <Skeleton
-                key={item}
-                className="h-12 rounded-[var(--radius-card)]"
+                className={`h-4 rounded-[var(--radius-card)] ${row % 2 ? "w-28" : "w-36"}`}
               />
-            ))}
+              {/* ToggleRow shows its description from sm up. */}
+              {trailing === "toggle" ? (
+                <Skeleton className="mt-1.5 hidden h-3 w-56 max-w-full rounded-[var(--radius-card)] sm:block" />
+              ) : null}
+            </span>
+            {trailing === "toggle" ? (
+              <Skeleton className="h-7 w-12 shrink-0 rounded-full" />
+            ) : (
+              <Skeleton className="size-3 shrink-0 rounded-full" />
+            )}
           </div>
-        </Card>
-      </section>
-      <aside className="flex flex-col gap-6">
-        <Card className="p-2.5">
-          <Skeleton className="h-4 w-44 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-2.5 h-10 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-1 h-10 rounded-[var(--radius-card)]" />
-        </Card>
-        <Card className="p-2.5">
-          <Skeleton className="h-4 w-24 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-2.5 h-10 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-1 h-10 rounded-[var(--radius-card)]" />
-        </Card>
-        <Card className="p-2.5">
-          <Skeleton className="h-4 w-32 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-2.5 h-10 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-1 h-10 rounded-[var(--radius-card)]" />
-        </Card>
-      </aside>
-    </>
+        ))}
+      </div>
+    </Card>
   );
 }

@@ -93,57 +93,19 @@ export function ProfileHeader({
     <section className="flex flex-col items-center px-2 pb-1 pt-2 text-center">
       <div className="relative">
         <ProfileAvatar alt={t("edit.avatar_alt", { name: user.displayName })} user={user} />
+        {/* The one mark on the avatar (DESIGN.md §icons): the edit control, at the conventional
+            bottom-right corner. 44px hit area around a 36px disc. */}
         <button
           type="button"
           onClick={openEditDialog}
           aria-label={t("edit.action")}
           title={t("edit.action")}
-          className="absolute -right-2 top-1 grid min-h-11 min-w-11 place-items-center rounded-full bg-[var(--color-surface)] text-[var(--color-main)] shadow-[var(--shadow-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="group absolute -bottom-1.5 -right-1.5 grid size-11 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         >
-          <Pencil size={17} aria-hidden />
-        </button>
-        {user.emailVerified ? (
-          <span
-            role="img"
-            aria-label={t("email_verified")}
-            title={t("email_verified")}
-            className="absolute -right-1 bottom-1 grid size-8 place-items-center rounded-full border-2 border-[var(--color-bg)] bg-[var(--color-surface)] text-[var(--color-main)] shadow-[var(--shadow-card)]"
-          >
-            <BadgeCheck size={17} strokeWidth={1.75} aria-hidden />
+          <span className="grid size-9 place-items-center rounded-full border-2 border-[var(--color-bg)] bg-[var(--color-surface)] text-[var(--color-main)] shadow-[var(--shadow-card)] transition-colors group-hover:bg-[var(--color-surface-container)] motion-reduce:transition-none">
+            <Pencil size={16} strokeWidth={1.75} aria-hidden />
           </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => void resendVerificationEmail()}
-            disabled={resendingVerification}
-            aria-label={
-              resendingVerification
-                ? t("verification_sending")
-                : t("verification_resend_action")
-            }
-            title={t("status_unverified")}
-            className="absolute -right-2 bottom-0 grid min-h-11 min-w-11 place-items-center rounded-full text-[var(--color-chip-text)] transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transform-none motion-reduce:transition-none"
-          >
-            <span
-              className="grid size-8 place-items-center rounded-full border-2 border-[var(--color-bg)] shadow-[var(--shadow-card)]"
-              style={{
-                backgroundColor:
-                  "color-mix(in srgb, var(--color-chip) 38%, var(--color-surface))",
-              }}
-            >
-              {resendingVerification ? (
-                <LoaderCircle
-                  size={16}
-                  strokeWidth={1.75}
-                  className="animate-spin motion-reduce:animate-none"
-                  aria-hidden
-                />
-              ) : (
-                <MailWarning size={16} strokeWidth={1.75} aria-hidden />
-              )}
-            </span>
-          </button>
-        )}
+        </button>
       </div>
       <div className="mt-3 flex max-w-full flex-wrap items-center justify-center gap-2">
         <h1
@@ -157,9 +119,53 @@ export function ProfileHeader({
         </h1>
         {premium ? <PremiumIdentityMark /> : null}
       </div>
-      <p className="mt-2 max-w-full truncate text-sm text-[var(--color-secondary)]">
-        {user.username ? `@${user.username}` : user.email}
-      </p>
+      {/* Email status sits on the identity line, in words: a tick on the avatar read as a
+          "verified coach" stamp, and with a username the email it vouched for was not shown. */}
+      <div className="mt-2 flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-[var(--color-secondary)]">
+        <span className="max-w-full truncate">
+          {user.username ? `@${user.username}` : user.email}
+        </span>
+        <span aria-hidden>·</span>
+        {user.emailVerified ? (
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-success)]">
+            <BadgeCheck size={14} aria-hidden />
+            {t("email_verified")}
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void resendVerificationEmail()}
+            disabled={resendingVerification}
+            title={t("verification_resend_action")}
+            className="group inline-flex min-h-11 items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed"
+          >
+            <span
+              className="inline-flex min-h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-[var(--color-main)] transition-colors group-hover:bg-[color-mix(in_srgb,var(--color-star)_34%,var(--color-surface))] group-disabled:opacity-60 motion-reduce:transition-none"
+              style={{
+                backgroundColor:
+                  "color-mix(in srgb, var(--color-star) 22%, var(--color-surface))",
+              }}
+            >
+              {resendingVerification ? (
+                <LoaderCircle
+                  size={14}
+                  strokeWidth={1.75}
+                  className="animate-spin motion-reduce:animate-none"
+                  aria-hidden
+                />
+              ) : (
+                <MailWarning size={14} aria-hidden />
+              )}
+              {resendingVerification
+                ? t("verification_sending")
+                : t("verify_email_cta")}
+              {resendingVerification ? null : (
+                <ChevronRight size={12} strokeWidth={1.75} aria-hidden />
+              )}
+            </span>
+          </button>
+        )}
+      </div>
       {user.username ? (
         <Link
           href={{

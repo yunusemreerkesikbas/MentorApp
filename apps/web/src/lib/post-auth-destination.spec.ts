@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AuthUser } from "@mentor/types";
 import {
   hasCompletedOnboarding,
+  internalPathFromUrl,
   postAuthDestination,
   readAuthNextParam,
   safeNextPath,
@@ -132,6 +133,23 @@ describe("postAuthDestination for a coach (APP-090)", () => {
   it("still onboards a coach whose profile is unfinished", () => {
     // The role does not skip the gate: `(app)` and `(coach)` both need a username.
     expect(postAuthDestination(user({ roles: ["STUDENT", "COACH"] }))).toBe("/onboarding");
+  });
+});
+
+describe("internalPathFromUrl", () => {
+  it("maps the visible URL back to the internal route", () => {
+    expect(internalPathFromUrl("/panel")).toBe("/dashboard");
+    expect(internalPathFromUrl("/en/dashboard")).toBe("/dashboard");
+    expect(internalPathFromUrl("/kocluk-daveti?kod=AB12")).toBe("/coach-invitation?kod=AB12");
+    expect(internalPathFromUrl("/seans/masa/r1")).toBe("/study-session/rooms/r1");
+    expect(internalPathFromUrl("/en/coaching/students/profile")).toBe("/students/profile");
+    expect(internalPathFromUrl("/topluluk/akis")).toBe("/community/feed");
+  });
+
+  it("leaves internal and unknown paths alone", () => {
+    expect(internalPathFromUrl("/profile")).toBe("/profile");
+    expect(internalPathFromUrl("/settings?section=phone")).toBe("/settings?section=phone");
+    expect(internalPathFromUrl("/plan?date=2026-09-09")).toBe("/plan?date=2026-09-09");
   });
 });
 
