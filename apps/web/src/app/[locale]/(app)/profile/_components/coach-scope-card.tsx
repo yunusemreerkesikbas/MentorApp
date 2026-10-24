@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 import type { MentorshipDataScopeKey } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { fetchOverview } from "@/lib/mentorship";
+import { ListRow } from "./account-links-card";
 import { CoachScopeModal } from "./coach-scope-modal";
 
 /**
@@ -29,6 +29,7 @@ export function CoachScopeCard() {
   const [busy, setBusy] = useState(false);
 
   async function openModal() {
+    if (busy) return;
     // Already read once this visit: the contract does not change between two presses.
     if (scope !== null) {
       setOpen(true);
@@ -52,33 +53,18 @@ export function CoachScopeCard() {
 
   return (
     <>
-      <Card className="p-0">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={openModal}
-          aria-haspopup="dialog"
-          className="flex min-h-14 w-full cursor-pointer items-center gap-3.5 rounded-[var(--radius-card)] px-5 py-3 text-left outline-none transition-colors hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <span className="min-w-0 flex-1">
-            <span
-              className="block text-[15px] font-semibold"
-              style={{ color: "var(--color-main)" }}
-            >
-              {t("coach_scope_title")}
-            </span>
-            <span className="mt-0.5 block text-xs" style={{ color: "var(--color-secondary)" }}>
-              {t("coach_scope_row_body")}
-            </span>
-          </span>
-          <ChevronRight
-            aria-hidden
-            size={18}
-            strokeWidth={1.75}
-            className="flex-none"
-            style={{ color: "var(--color-secondary)" }}
-          />
-        </button>
+      <Card solid className="p-2 sm:p-2.5" aria-busy={busy}>
+        <div className="px-2 pt-1 pb-1.5">
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider text-[var(--color-secondary)]"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            {t("coach_scope_section")}
+          </h2>
+        </div>
+        <ListRow description={t("coach_scope_row_body")} onClick={() => void openModal()}>
+          {t("coach_scope_title")}
+        </ListRow>
       </Card>
       {open && scope !== null && (
         <CoachScopeModal scope={scope} onClose={() => setOpen(false)} />

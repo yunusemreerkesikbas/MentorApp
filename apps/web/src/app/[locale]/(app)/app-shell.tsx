@@ -42,7 +42,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       pathname === "/coach-invitation" ? `${pathname}${window.location.search}` : null;
     if (status === "anonymous") {
       if (invite) rememberPendingInvite(invite);
-      router.replace({ pathname: "/login", query: { next: `${pathname}${window.location.search}` } });
+      // The visible URL (`/panel`), not next-intl's internal route (`/dashboard`);
+      // `readAuthNextParam` maps it back.
+      router.replace({
+        pathname: "/login",
+        query: { next: `${window.location.pathname}${window.location.search}` },
+      });
     }
     if (status === "authenticated" && user && !hasCompletedOnboarding(user)) {
       if (invite) rememberPendingInvite(invite);

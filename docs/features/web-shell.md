@@ -1265,3 +1265,68 @@ eklendi.
   were screenshotted from the dev server with Playwright so they use the real Nunito; redraw
   them the same way if the logo changes. Gotcha: Duralux's dark navigation theme inverts
   `.logo-lg`, which turns the blue pupil orange there. The mascot PNG remains only as Puhu art.
+- **2026-10-15 — Login `?next=` shows the visible URL.** The `(app)` guard used next-intl's
+  `usePathname()` for `next`, which is the internal route, so `/panel` bounced to
+  `/giris?next=/dashboard`. It now sends `window.location.pathname` (`/panel`, `/en/dashboard`,
+  real dynamic segments), and `readAuthNextParam` maps it back to the internal route with
+  `internalPathFromUrl` (driven by `routing.pathnames`), so login, signup, Google `returnTo` and the
+  coach allow-list still see internal paths. Gotcha: producers that already send internal paths
+  (`/profile`, `/settings?section=phone`) pass through unchanged; keep static entries before their
+  dynamic siblings in `routing.pathnames`, the reverse map takes the first match.
+- **2026-10-15 — `/ayarlar` polish (no redesign).** Profile header: the only avatar mark is the
+  edit pencil, now bottom-right (36 px disc in a 44 px target). The email tick left the avatar (it
+  read as a "verified coach" stamp, and with a username the email was not even shown) and became
+  words on the handle line: green `E-posta doğrulandı`, or an amber-tinted `E-postanı doğrula`
+  pill that triggers the existing resend. Links: "Koçum" is hidden for a coach (`/my-coach` is
+  student-only and bounced them home); the legal links moved under the Hesap card in the side
+  column as a `·`-separated `nav` ("Yasal"), "Çerez tercihleri" became a row in the Uygulama card,
+  icon credits open in a new tab. Consistency: coach scope is a standard "KOÇLUK" card + `ListRow`;
+  the Google card header is "Bağlı hesaplar"; `PhoneVerificationCard compactHeading` gives the
+  settings label style (`/kocum` unchanged) and settings hides the card while SMS is off and no
+  number is verified; language/theme labels are `text-md`; a read-only `ListRow` gets no hover.
+  Gotchas: a `<footer>` inside `<aside>`/`<main>` has no `contentinfo` role, so the e2e targets
+  `getByRole("navigation", { name: "Yasal" })`. Null-returning cards (Google off, economy off)
+  left empty wrappers that doubled the gap: the columns use `[&>*:empty]:hidden`. The skeleton
+  grid needs `grid-cols-[minmax(0,1fr)]`: `SkeletonGroup` stacks it under the revealed layer and
+  its auto column widened every card past a 375 px phone. Related: `profile-header.tsx`,
+  `profile-shell.tsx`, `account-links-card.tsx`, `coach-scope-card.tsx`,
+  `application-support-card.tsx`, `google-account-card.tsx`, `components/{settings-legal-footer,
+  phone-verification-card}.tsx`, `e2e/{profile,phone-verification}.spec.ts`.
+  Same day, the loading skeleton (`ProfileSkeletonBlocks`) was redrawn to mirror this layout: it
+  still had the old banner + square avatar. Now a centred 120 px avatar disc, name/handle/link
+  bars, then `SkeletonListCard` (section label + 44 px rows, toggle rows with an `sm+`
+  description bar): Bildirim 3, Bağlı hesaplar 1, Uygulama 5; side rail Kazanımlar 3, Hesap 6 and
+  three legal-link lines. Role-dependent cards (KOÇLUK, phone) are left out of the skeleton, so
+  they appear on reveal. Checked against a gated `/v1/users/me` at 1280 and 375 px.
+  Then the Uygulama card's language and theme pickers became `SlidingTabs` pills (grey track,
+  sliding white pill) in a local `SettingRow`; theme tabs carry Solar Linear Sun/Moon and drop
+  their text below `sm` (`max-sm:sr-only`) so "Görünüm" is not truncated on a 375 px phone. The
+  language pill moves on the tap (`pendingLocale`) while the route change lands; a second tap
+  during the transition is ignored instead of disabling the buttons.
+- **2026-10-15 — Coach settings: no student rows left.** The Kazanımlar card (Bakiyen, Görevler,
+  Davet et) is hidden for a coach in `profile-shell.tsx`. `GET /v1/economy/quests` has no role
+  filter and hands a coach the whole student catalog, whose actions push to `/study-session` and
+  `/dashboard` (`STUDENT_ONLY`, bounced to `/students`), and every coin sink (Puhu chat, streak
+  rescue, deep analysis) is a student surface, so the card had nothing for a coach. The API was
+  left as is: hiding the card is enough, and `evaluateAndGrant` still runs from listeners. The
+  exam row stays, because a coach's `examType` is "the exam you coach" (APP-089) and drives the
+  `/students` countdown, the community feed and ad targeting; only its copy changes for a coach:
+  `profile.exam_label_coach` ("Koçluk yaptığın sınav") and `exam_settings.variant_label_coach`
+  ("Hangi KPSS düzeyine koçluk yapıyorsun?"). E2E: `profile.spec.ts` "koç ayarlarında Kazanımlar
+  yok" (counts `/v1/economy/quests` calls: zero for a coach; a student fetches it on mount even
+  with the economy off). Left open: the sidebar still shows a coach's XP/coin pills, the skeleton
+  still draws a Kazanımlar block for a coach, and onboarding's `kpss_level` step asks a coach the
+  student question.
+- **2026-10-15 — Coach: the three open economy traces closed.** (1) `AppNav` passes `balance =
+  null` for a coach, so `EconomyPills` ("Coin ve XP") is gone from both the desktop
+  `SidebarIdentity` and the mobile top bar. A coach has nothing to spend coin on, and the XP they do
+  earn (forum post `forum.thread.posted`, accepted answer) still shows on their community profile
+  and the leaderboard. `EconomySync` still fetches the balance and still toasts XP rewards; only
+  the pills are hidden. (2) `ProfileSkeletonBlocks` takes `coach` from `useAuth().user` and skips
+  the side rail's 3-row Kazanımlar block; an unknown user (no cached session yet) still draws it.
+  (3) Onboarding `KpssLevelStep` takes `audience` like `ExamStep`; a coach reads
+  `onboarding.kpss_level.title_coach` ("Hangi KPSS düzeyine koçluk yapıyorsun?", same as the
+  settings row). E2E: `coach-onboarding.spec.ts` "KPSS seçen koça düzey sorusu koç diliyle
+  geliyor"; `profile.spec.ts` coach test now serves a real balance and asserts no "Coin ve XP".
+  Left open (product call): coach XP has no role filter in `xpLeaderboardSince`, so an active
+  coach ranks in the same weekly league as students.

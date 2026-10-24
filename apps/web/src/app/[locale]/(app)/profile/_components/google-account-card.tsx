@@ -122,7 +122,7 @@ export function GoogleAccountCard() {
           className="text-xs font-semibold uppercase tracking-wider text-[var(--color-secondary)]"
           style={{ fontFamily: "var(--font-heading)" }}
         >
-          {t("title")}
+          {t("section_title")}
         </h2>
       </div>
       <div className="flex flex-col gap-0.5">
