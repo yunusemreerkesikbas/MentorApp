@@ -239,6 +239,15 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-15 · Independent coach phone requirement
+
+- Added audited `mentorship.phone_verification_required` (default false). Verified email remains mandatory for invitations and protected student access; optional phone checks also apply to followups, risk digests and task notifications. Active standing, relationship consent, roles and seats retain their own checks.
+- `GET /mentorship/coach-registration/mine` now returns `inviteBlockedReason`; the web renders that decision instead of deriving authority from raw contact fields. Onboarding directs coaches to the coaching screen for current requirements.
+- Usage: keep the requirement off while SMS onboarding is pending; turn it on separately after phone verification is available. This may lock unverified coaches' existing access. Sponsorship remains disabled and always requires real coach/student phone verification even when ordinary coaching does not.
+- Related: contact helper, application/link/followup services, feedback listener, query adapter, registration response DTO and web invite-lock mapping.
+
+
+
 - **2026-10-13 — `/koc-ol` is an honest account switch, as a full-screen wizard.** The old screen
   sat in the app shell without a page frame, drew a form whose button could never enable while SMS
   was off, never asked for the email the API requires, and did not say the one thing that matters:

@@ -127,6 +127,8 @@ export function PhoneVerificationCard({ allowNumberChange = false, compactHeadin
   const time = (iso: string) => new Date(iso).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
   const tokenMissing = Boolean(turnstileSiteKey && !token);
 
+  if (status && !status.available && !status.verified) return null;
+
   return (
     <Card className="flex flex-col gap-4" aria-labelledby={titleId}>
       <h2
@@ -147,7 +149,7 @@ export function PhoneVerificationCard({ allowNumberChange = false, compactHeadin
       ) : status.verified && !changing ? (
         <>
           <p role="status" className="text-sm text-[var(--color-body)]">{t("verified", { number: status.maskedPhoneNumber ?? "" })}</p>
-          {allowNumberChange ? <Button variant="secondary" disabled={!status.available} onClick={() => setChanging(true)}>{t("change")}</Button> : null}
+          {allowNumberChange && status.available ? <Button variant="secondary" disabled={!status.available} onClick={() => setChanging(true)}>{t("change")}</Button> : null}
           {!status.available ? <p role="status" className="text-sm text-[var(--color-secondary)]">{t("unavailable")}</p> : null}
         </>
       ) : !status.available ? (

@@ -22,6 +22,7 @@ interface MockOptions {
   pendingPaid?: "known" | "unknown";
   unknownCheckout?: boolean;
   trialUsed?: boolean;
+  phoneRequired?: boolean;
 }
 
 async function mockApi(page: Page, options: MockOptions = {}) {
@@ -83,7 +84,7 @@ async function mockApi(page: Page, options: MockOptions = {}) {
       id: "pending-subscription", planId: "premium-monthly", status: "INCOMPLETE", startedAt: "2026-10-01T12:00:00.000Z",
       trialEndsAt: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false, sponsored: false,
     } : null, entitlement: { tier: "FREE", isPremium: false, validUntil: null, reason: options.pendingTrial || pendingPaid ? "INCOMPLETE" : "NONE" }, features: {}, discount: null,
-      trialEligibility: { eligible: !options.pendingTrial && !options.trialUsed && status.verified, reason: options.pendingTrial ? "PENDING" : options.trialUsed ? "ACCOUNT_USED" : status.verified ? "AVAILABLE" : "PHONE_REQUIRED" },
+      trialEligibility: { phoneVerificationRequired: options.phoneRequired ?? true, eligible: !options.pendingTrial && !options.trialUsed && (options.phoneRequired === false || status.verified), reason: options.pendingTrial ? "PENDING" : options.trialUsed ? "ACCOUNT_USED" : options.phoneRequired === false || status.verified ? "AVAILABLE" : "PHONE_REQUIRED" },
       pendingTrialCheckoutUrl: options.pendingTrial === "known" ? pendingCheckoutUrl : null,
       pendingCheckoutUrl: options.pendingTrial === "known" || pendingPaid === "known" ? pendingCheckoutUrl : null,
     });
@@ -367,3 +368,29 @@ for (const surface of ["subscription", "paywall"] as const) {
     expect(api.checkoutCalls).toBe(1);
   });
 }
+
+
+for (const locale of ["tr", "en"] as const) {
+  test(`${locale}: SMS-off carded trials do not ask for a phone or claim phone retention`, async ({ page }) => {
+    const api = await mockApi(page, { phone: { available: false }, phoneRequired: false });
+    await page.goto(locale === "tr" ? "/abonelik" : "/en/subscription");
+    await expect(page.getByRole("heading", { name: locale === "tr" ? "Telefon doğrulaması" : "Phone verification", exact: true })).toHaveCount(0);
+    await expect(page.getByText(locale === "tr" ? "Deneme başladığında telefonunun" : "When your trial starts,", { exact: false })).toHaveCount(0);
+    await page.getByRole("checkbox").check();
+    const start = page.getByRole("button", { name: locale === "tr" ? "Denemeyi başlat" : "Start trial" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    await expect.poll(() => api.checkout).toEqual({ planId: "premium-monthly", useTrial: true });
+    expect(api.sent).toBe(0);
+  });
+}
+
+
+test("SMS-off settings keep a verified number masked and read-only", async ({ page }) => {
+  const api = await mockApi(page, { phone: { verified: true, maskedPhoneNumber: "+90 5** *** **67", available: false } });
+  await page.goto("/ayarlar");
+  await expect(page.getByText("Telefonun doğrulandı: +90 5** *** **67")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Telefon numarasını değiştir" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "SMS kodu gönder" })).toHaveCount(0);
+  expect(api.sent).toBe(0);
+});

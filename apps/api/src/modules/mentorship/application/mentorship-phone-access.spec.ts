@@ -75,7 +75,7 @@ describe("coach collection reads require current contact verification", () => {
       } as never,
       evidence as never,
       users as never,
-      {} as never,
+      { get: async () => true } as never,
     );
     await expect(service.listRiskDigestCandidates(new Date())).resolves.toEqual(
       [],
@@ -100,7 +100,7 @@ describe("coach collection reads require current contact verification", () => {
       {} as never,
       { get: vi.fn(async () => true) } as never,
       users as never,
-      {} as never,
+      { get: async () => true } as never,
     );
     await expect(service.listDueCoachIds(new Date())).resolves.toEqual([]);
     await expect(service.getDueCount(COACH, new Date())).resolves.toBe(0);

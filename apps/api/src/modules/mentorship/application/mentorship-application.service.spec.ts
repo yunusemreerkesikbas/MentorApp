@@ -45,6 +45,7 @@ function setup(
     existing?: MentorshipApplicationRow | null;
     emailVerified?: boolean;
     phoneVerified?: boolean;
+    phoneRequired?: boolean;
     hasCoach?: boolean;
   } = {},
 ) {
@@ -65,7 +66,8 @@ function setup(
   };
   const config = {
     get: vi.fn(async (key: string) =>
-      key === "mentorship.applications.open" ? (options.open ?? true) : 30,
+      key === "mentorship.applications.open" ? (options.open ?? true) :
+        key === "mentorship.phone_verification_required" ? (options.phoneRequired ?? true) : 30,
     ),
   };
   const users = {
@@ -430,5 +432,29 @@ describe("MentorshipApplicationService.findStatus", () => {
   it("is null for a coach with no registry row", async () => {
     const { service } = setup({ existing: null });
     await expect(service.findStatus(USER)).resolves.toBeNull();
+  });
+});
+
+
+describe("optional coach phone verification", () => {
+  it("opens invitation creation and reports no phone lock when the requirement is off", async () => {
+    const { service } = setup({ existing: row(), phoneVerified: false, phoneRequired: false });
+    await expect(service.assertCanInvite(USER)).resolves.toBeUndefined();
+    expect(await service.canInvite(USER)).toBe(true);
+    expect(await service.getRegistrationState(USER)).toMatchObject({
+      phoneVerified: false, inviteBlockedReason: null,
+    });
+  });
+
+  it("reports the authoritative phone lock when the requirement is on", async () => {
+    const { service } = setup({ existing: row(), phoneVerified: false, phoneRequired: true });
+    expect(await service.getRegistrationState(USER)).toMatchObject({ inviteBlockedReason: "PHONE_UNVERIFIED" });
+  });
+
+  it("keeps registry standing and email verification mandatory", async () => {
+    const suspended = setup({ existing: row({ status: "SUSPENDED" }), phoneRequired: false });
+    await expect(suspended.service.assertCanInvite(USER)).rejects.toMatchObject({ code: "MENTORSHIP_COACH_NOT_ACTIVE" });
+    const email = setup({ existing: row(), emailVerified: false, phoneRequired: false });
+    await expect(email.service.assertCanInvite(USER)).rejects.toMatchObject({ code: "MENTORSHIP_EMAIL_NOT_VERIFIED" });
   });
 });

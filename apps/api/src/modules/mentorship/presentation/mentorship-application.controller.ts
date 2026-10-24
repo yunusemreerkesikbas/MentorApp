@@ -1,12 +1,13 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Put } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import type {
   MentorshipApplicationDto,
   MentorshipCoachRegistrationStateDto,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { MentorshipApplicationService } from "../application/mentorship-application.service";
+import { CoachRegistrationStateResponseDto } from "./coach-registration-state.dto";
 import { RegisterCoachDto, UpdateCoachProfileDto } from "./mentorship.dto";
 
 /**
@@ -48,12 +49,13 @@ export class MentorshipApplicationController {
    * One call rather than three because every screen that asks one of these asks all of them: the
    * registration form needs `registrationOpen` BEFORE it is filled in (the old endpoint only
    * revealed a closed intake by rejecting a completed submission), and the coach panel needs
-   * `emailVerified` and `phoneVerified` to explain a locked invite code.
+   * `inviteBlockedReason` to explain the current configured invitation gate.
    *
    * `registration: null` rather than a 404, matching `GET /my-coach`: "you have not registered" is
    * a state, not an error, and a 404 would render a failure for the most common case there is.
    */
   @Get("mine")
+  @ApiOkResponse({ type: CoachRegistrationStateResponseDto })
   mine(@CurrentUser() user: RequestUser): Promise<MentorshipCoachRegistrationStateDto> {
     return this.applications.getRegistrationState(user.id);
   }

@@ -5,7 +5,8 @@ import { plans, subscriptions, users } from "./schema";
 /** Payments owns trial abuse prevention. Keyed fingerprints survive identity erasure. */
 export const phoneTrialClaims = pgTable("phone_trial_claims", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  phoneFingerprint: text("phone_fingerprint").notNull(),
+  // Null records an account-only trial; existing non-null claims keep phone verification.
+  phoneFingerprint: text("phone_fingerprint"),
   userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
   subscriptionId: uuid("subscription_id").references(() => subscriptions.id, { onDelete: "set null" }),
   planId: text("plan_id").notNull().references(() => plans.id),

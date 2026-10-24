@@ -46,8 +46,7 @@ export function CompleteStep({
   const leaving = useRef(false);
   const [titleDone, setTitleDone] = useState(false);
   const title = audience === "coach" ? t("title_coach") : t("title");
-  // A new coach's invite code stays shut until the email and the phone are verified; say so before
-  // they find a locked panel. Both are named because this screen does not know which one is left.
+  // The coach screen explains the current server-controlled invitation requirements.
   const body = audience === "coach" ? t("invite_code_coach") : t("subtitle");
 
   function finish() {

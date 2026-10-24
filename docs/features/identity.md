@@ -97,6 +97,16 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-15 · SMS remains optional and disabled
+
+- Kept transport (`SMS_PROVIDER=disabled`) and self-service OTP (`identity.phone.enabled=false`) off. Unavailable, unverified phone cards now disappear; existing verified numbers remain masked and read-only.
+- Usage: enable transport and phone availability only after the documented provider/carrier acceptance. Mentorship and carded-trial requirements have separate registry switches; a provider outage never relaxes an enabled requirement.
+- Gotchas: ownership fields remain truthful; no account is marked phone-verified by configuration. Related: `phone-verification-card.tsx`, config catalog, `docs/core/integrations.md`.
+
+
+
+- **2026-10-05 — Netgsm release preparation.** Kept the reviewed sender minimum and extended transport acceptance: an empty/whitespace task ID with code 00 stays UNKNOWN, without retry. Added a disabled-transport no-call check and renewed privacy/phone/trial/sponsorship acceptance. Existing profile/settings browser fixtures now return the typed unavailable phone state instead of a bare 204, preserving achievement and mentorship navigation checks. A stale coach AI quota test call was aligned with its existing delta argument; no AI or frontend production behavior changed. Usage: follow the ordered checklist in docs/core/integrations.md for sender approval/KEP, SMS service permission, OTP package, actual Render egress, secrets, Turnstile, migration and isolated carrier pilot. Gotchas: preliminary application is not approval; Render ranges may require provider format confirmation; identity.phone.enabled=false blocks both sends and confirmations, while a zero global daily quota pauses only sends. Production switches stay off; no live SMS or production migration was performed. Related: netgsm-sms.adapter{,.spec}.ts, env-phone.validation.spec.ts, docs/qa/2026-10-05-netgsm-release-prep.md.
+
 ### 2026-10-13 · Invited pilot registration
 
 - Password and Google account creation share an API admission policy. `signup.enabled=false`

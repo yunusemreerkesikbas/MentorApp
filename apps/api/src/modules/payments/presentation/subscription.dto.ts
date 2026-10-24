@@ -46,6 +46,7 @@ class SubscriptionDiscountResponseDto implements SubscriptionDiscountDto {
 }
 
 class TrialEligibilityResponseDto implements TrialEligibilityDto {
+  @ApiProperty() declare phoneVerificationRequired: boolean;
   @ApiProperty() declare eligible: boolean;
   @ApiProperty({ enum: ["AVAILABLE", "PHONE_REQUIRED", "ACCOUNT_USED", "PHONE_USED", "PENDING", "NO_TRIAL"] })
   declare reason: TrialEligibilityDto["reason"];

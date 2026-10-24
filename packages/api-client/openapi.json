@@ -7280,7 +7280,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachRegistrationStateResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -7696,6 +7703,34 @@
     "/v1/mentorship/students/{studentId}/brief": {
       "post": {
         "operationId": "MentorshipCoachController_generateBrief",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/brief-history": {
+      "get": {
+        "operationId": "MentorshipCoachController_listBriefHistory",
         "parameters": [
           {
             "name": "studentId",
@@ -11232,6 +11267,9 @@
       "TrialEligibilityResponseDto": {
         "type": "object",
         "properties": {
+          "phoneVerificationRequired": {
+            "type": "boolean"
+          },
           "eligible": {
             "type": "boolean"
           },
@@ -11248,6 +11286,7 @@
           }
         },
         "required": [
+          "phoneVerificationRequired",
           "eligible",
           "reason"
         ]
@@ -11968,6 +12007,44 @@
       "RegisterCoachDto": {
         "type": "object",
         "properties": {}
+      },
+      "CoachRegistrationStateResponseDto": {
+        "type": "object",
+        "properties": {
+          "registrationOpen": {
+            "type": "boolean"
+          },
+          "registration": {
+            "type": "object",
+            "nullable": true
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "phoneVerified": {
+            "type": "boolean"
+          },
+          "hasCoach": {
+            "type": "boolean"
+          },
+          "inviteBlockedReason": {
+            "type": "string",
+            "enum": [
+              "EMAIL_UNVERIFIED",
+              "PHONE_UNVERIFIED",
+              "NOT_ACTIVE"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "registrationOpen",
+          "registration",
+          "emailVerified",
+          "phoneVerified",
+          "hasCoach",
+          "inviteBlockedReason"
+        ]
       },
       "UpdateCoachProfileDto": {
         "type": "object",

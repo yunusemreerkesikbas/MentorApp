@@ -7,7 +7,7 @@ const LINK = "11111111-1111-4111-8111-111111111111";
 const COACH = "22222222-2222-4222-8222-222222222222";
 const STUDENT = "33333333-3333-4333-8333-333333333333";
 
-function setup(link?: { id: string; coachId: string; status: string } | undefined) {
+function setup(link?: { id: string; coachId: string; status: string } | undefined, requirePhone = true) {
   const emitted: { topic: string; payload: unknown }[] = [];
   const links = { findById: vi.fn(async () => link) };
   const dropped = { record: vi.fn(async () => undefined) };
@@ -27,6 +27,7 @@ function setup(link?: { id: string; coachId: string; status: string } | undefine
     dropped as never,
     users as never,
     events as never,
+    { get: async () => requirePhone } as never,
   );
   return { listener, emitted, links, dropped, users };
 }
@@ -175,4 +176,12 @@ describe("PlanTaskFeedbackListener", () => {
     await expect(listener.onPlanTaskCompleted(completed("MENTORSHIP", LINK))).resolves.toBeUndefined();
     expect(emitted).toEqual([]);
   });
+});
+
+
+it("delivers task feedback without phone verification when the requirement is off", async () => {
+  const { listener, users, emitted } = setup(activeLink, false);
+  users.isPhoneVerified.mockResolvedValue(false);
+  await listener.onPlanTaskCompleted(completed("MENTORSHIP", LINK));
+  expect(emitted).toHaveLength(1);
 });

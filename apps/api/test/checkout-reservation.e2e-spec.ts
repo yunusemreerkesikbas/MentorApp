@@ -52,7 +52,7 @@ describe("checkout reservations (Postgres)", () => {
       if (tx && !(await lockActiveAccount(userId, tx))) return null;
       return `checkout-test-${id}`;
     } };
-    const trials = new PhoneTrialService(db, users as never, claims, subscriptions);
+    const trials = new PhoneTrialService(db, users as never, claims, subscriptions, { get: async () => true } as never);
     const plan = (await new PlansRepository(db).findById("premium-monthly"))!;
     expect(plan).toBeDefined();
     const called = deferred<void>();

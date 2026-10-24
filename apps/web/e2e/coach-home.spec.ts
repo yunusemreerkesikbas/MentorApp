@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import type {
   AuthUser,
+  PhoneStatusDto,
   MentorshipCohortBriefDto,
   MentorshipFollowupDto,
   MentorshipRiskFlagId,
@@ -119,6 +120,7 @@ type MockOptions = {
   overview?: Record<string, unknown>;
   followups?: MentorshipFollowupDto[];
   emailVerified?: boolean;
+  phoneVerified?: boolean;
   inviteCode?: { code: string; expiresAt: string } | null;
   calls?: { attention: unknown[]; brief: number; verificationEmail: number; rotateInvite: number };
 };
@@ -150,6 +152,9 @@ async function mockApi(page: Page, user: AuthUser, options: MockOptions = {}) {
       return json({ accessToken: "test-token", expiresIn: 3600, user });
     }
     if (path === "/v1/users/me") return json(user);
+    if (method === "GET" && path === "/v1/users/me/phone") {
+      return json({ verified: false, maskedPhoneNumber: null, available: false, reauthenticationRequired: false } satisfies PhoneStatusDto);
+    }
     // The settings screen dereferences this body; a bare 204 would throw before it paints.
     if (path === "/v1/users/me/auth-accounts/google") return json({ enabled: false, linked: false, email: null });
     if (path === "/v1/subscription") {
@@ -201,7 +206,8 @@ async function mockApi(page: Page, user: AuthUser, options: MockOptions = {}) {
     if (path === "/v1/mentorship/coach-registration/mine") {
       return json({
         registrationOpen: true,
-        phoneVerified: true,
+        inviteBlockedReason: (options.emailVerified ?? user.emailVerified) ? null : "EMAIL_UNVERIFIED",
+        phoneVerified: options.phoneVerified ?? true,
         emailVerified: options.emailVerified ?? user.emailVerified,
         registration: {
           id: "reg-1",
@@ -821,4 +827,13 @@ test.describe("hareket", () => {
     // 1.5 s later it is the copy button again.
     await expect(seats.getByRole("button", { name: "Davet linkini kopyala" })).toBeVisible({ timeout: 5_000 });
   });
+});
+
+
+test("a phone-optional coach can use the invitation returned by the API", async ({ page }) => {
+  await mockApi(page, COACH, { phoneVerified: false });
+  await page.goto("/kocluk");
+  const invitation = page.getByRole("region", { name: "Davet ve koltuklar" });
+  await expect(invitation.getByRole("button", { name: "Davet linkini kopyala" })).toBeEnabled();
+  await expect(page.getByRole("heading", { name: "Telefon doğrulaması", exact: true })).toHaveCount(0);
 });

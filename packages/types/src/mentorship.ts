@@ -725,8 +725,8 @@ export interface AdminCoachApplicationDto extends MentorshipApplicationDto {
    */
   hasCoachRole: boolean;
   /**
-   * Registration asks for neither, so an ACTIVE row says nothing about them. Both are needed for
-   * an invite code, which is the only road to a student.
+   * Registration asks for neither, so an ACTIVE row says nothing about them. Invitation authority is reported separately
+   * by the registration-state endpoint and follows configured requirements.
    */
   emailVerified: boolean;
   phoneVerified: boolean;
@@ -763,15 +763,19 @@ export interface MentorshipCoachProfileDto {
  * completed form and reading the 403 back. That was survivable when the entry point was a link
  * buried in the profile list; it is not, now that signup routes people here on purpose.
  */
+export type MentorshipInviteBlockedReason = "EMAIL_UNVERIFIED" | "PHONE_UNVERIFIED" | "NOT_ACTIVE";
+
 export interface MentorshipCoachRegistrationStateDto {
   /** `mentorship.applications.open` — whether self-service registration is accepting anyone today. */
   registrationOpen: boolean;
   /** Null when this person has never registered as a coach. */
   registration: MentorshipApplicationDto | null;
-  /** Coach activation and the invite code require verified email. */
+  /** Invitations and protected student access require verified email. */
   emailVerified: boolean;
-  /** Coach activation and invitations require verified phone on an ACTIVE identity account. */
+  /** Actual phone ownership; the invitation requirement is configured independently. */
   phoneVerified: boolean;
+  /** Authoritative invitation gate; clients must not infer it from contact fields. */
+  inviteBlockedReason: MentorshipInviteBlockedReason | null;
   /** An active link as somebody's student. Registration is refused until it ends. */
   hasCoach: boolean;
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "phone_trial_claims" ALTER COLUMN "phone_fingerprint" DROP NOT NULL;
