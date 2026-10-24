@@ -37,7 +37,8 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
   async listRiskDigestCandidates(now: Date): Promise<CoachRiskDigestCandidate[]> {
     const activePairs = await this.links.listAllActiveLinks();
     const coachIds = [...new Set(activePairs.map((pair) => pair.coachId))];
-    const verified = await Promise.all(coachIds.map(async (id) => (await coachContactVerification(this.users, id)) === null));
+    const requirePhone = Boolean(await this.config.get("mentorship.phone_verification_required"));
+    const verified = await Promise.all(coachIds.map(async (id) => (await coachContactVerification(this.users, id, requirePhone)) === null));
     const verifiedCoachIds = new Set(coachIds.filter((_, index) => verified[index]));
     const pairs = activePairs.filter((pair) => verifiedCoachIds.has(pair.coachId));
     if (pairs.length === 0) return [];
@@ -101,7 +102,7 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
       [...byCoach].map(async ([coachId, students]) => ({
         coachId,
         students,
-        contact: await this.users.getVerifiedNotificationContact(coachId),
+        contact: await this.users.getVerifiedNotificationContact(coachId, requirePhone),
       })),
     );
 

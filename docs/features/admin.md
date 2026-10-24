@@ -100,6 +100,14 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-15 · Separate phone requirement controls
+
+- The existing config registry screen exposes `mentorship.phone_verification_required` and sensitive `payments.trial.phone_verification_required`, both false by default, using existing schema validation and server-side audit.
+- Usage: control the two requirements independently; SMS transport/availability and sponsorship are separate. Phone ownership badges continue reporting actual verification and do not imply invitation authority.
+- Gotchas: config cache is process-local, matching the current single-instance deployment. Related: config catalog and `docs/core/integrations.md` rollout matrix.
+
+
+
 - **2026-10-13 · Free admin launch compute.** The owner-selected low-cost profile keeps
   web/API always on and uses Free compute only for admin. Usage: let the operator UI wake
   before signing in; verify sessions after a restart. Gotchas: cold starts and shared Free

@@ -18,6 +18,20 @@ describe("UsersService verified notification contact", () => {
     });
   });
 
+  it("releases an email-verified active contact without a phone when explicitly permitted", async () => {
+    const row = { ...verified, phoneVerifiedAt: null, phoneNumber: null };
+    expect(await serviceFor(row).getVerifiedNotificationContact("coach", false)).toEqual({
+      email: verified.email, displayName: verified.displayName,
+    });
+  });
+
+  it.each([
+    { ...verified, emailVerifiedAt: null }, { ...verified, status: "SUSPENDED" },
+    { ...verified, erasureStartedAt: new Date() }, undefined,
+  ])("still rejects inactive, erased or email-unverified contacts when phones are optional", async (row) => {
+    expect(await serviceFor(row).getVerifiedNotificationContact("coach", false)).toBeNull();
+  });
+
   it.each([
     { ...verified, emailVerifiedAt: null }, { ...verified, phoneVerifiedAt: null },
     { ...verified, phoneNumber: null }, { ...verified, status: "SUSPENDED" }, undefined,

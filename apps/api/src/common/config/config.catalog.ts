@@ -403,6 +403,8 @@ export const CONFIG_CATALOG = {
     500,
     "Hard roster ceiling per coach, and the invite-code abuse bound (no separate use counter). Distinct from mentorship.coach.free_seats, which decides how many of those students are free.",
   ),
+  "mentorship.phone_verification_required": mentorshipFlag(false,
+    "Require verified coach phones for invitations, student access and notifications. Independent of SMS availability; sponsorship always requires verified phones."),
   "mentorship.seats.sponsorship_enabled": mentorshipFlag(
     false,
     "Whether a coach's seat also opens the student's Premium. Seats let a coach follow students either way. Off ends live sponsorships at once. Keep off until SMS OTP ships (AGENTS.md §4 #4): coach registration is self-service.",
@@ -928,6 +930,8 @@ export const CONFIG_CATALOG = {
   "identity.auth_rate.refresh_ip_limit": authCount(30, 1000, "Authentication refresh IP limit."),
   "identity.auth_rate.oauth_ip_limit": authCount(20, 1000, "Authentication oauth IP limit."),
   "identity.auth_rate.other_ip_limit": authCount(300, 1000, "Authentication other IP limit."),
+  "payments.trial.phone_verification_required": { ...flag(false,
+    "Require a verified phone for new carded trials. Off uses account-only eligibility; existing claims retain their original requirement."), sensitive: true },
   "identity.phone.enabled": flag(false, "Enable self-service phone verification. Does not bypass entitlement gates when off."),
   "identity.phone.code_ttl_seconds": identityCount(300, 600, "Phone verification code lifetime in seconds."),
   "identity.phone.resend_seconds": identityCount(60, 3600, "Minimum delay between phone code sends."),

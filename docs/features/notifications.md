@@ -115,6 +115,14 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-24 · Phone-optional coach delivery
+
+- Coach risk digests, due-followup emails, student-note and task-feedback notifications follow `mentorship.phone_verification_required`. The final identity contact snapshot retains ACTIVE status, verified email and erasure-fence checks; requiring a phone remains the default for callers that do not explicitly relax it.
+- Usage: ordinary coach notifications continue while SMS onboarding is paused and the mentorship phone requirement is false. Sponsorship keeps its independent actual-phone checks.
+- Gotchas: this does not relax email preferences, active links, seated access or delivery deduplication. Related: `users.service.ts`, mentorship query/link/feedback paths, `send-email.handler.ts` and regression tests.
+
+
+
 - **2026-10-13 · Pilot daily reminder email control and measured cost profile.**
   The owner selected in-app/push reminders with Postmark Free's 100-message monthly quota.
   `notifications.daily_reminder.email_enabled` defaults to `true`; explicitly set it to `false`

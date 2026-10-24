@@ -11,10 +11,8 @@ import type { MentorshipCoachRegistrationStateDto } from "@mentor/types";
 export type InviteLock = "EMAIL" | "PHONE" | "STANDING" | null;
 
 export function inviteLockOf(state: MentorshipCoachRegistrationStateDto): InviteLock {
-  // Email first: it is the condition the coach can act on, so when both are true it is the one
-  // worth reporting. The API orders its refusals the same way.
-  if (!state.emailVerified) return "EMAIL";
-  if (!state.phoneVerified) return "PHONE";
-  if (state.registration === null || state.registration.status !== "ACTIVE") return "STANDING";
-  return null;
+  const reason = state.inviteBlockedReason;
+  if (reason === null) return null;
+  const labels = { EMAIL_UNVERIFIED: "EMAIL", PHONE_UNVERIFIED: "PHONE", NOT_ACTIVE: "STANDING" } as const;
+  return labels[reason];
 }

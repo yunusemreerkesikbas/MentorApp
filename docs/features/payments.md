@@ -69,6 +69,16 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-15 · Phone-optional carded trials
+
+- Added audited `payments.trial.phone_verification_required` (default false). Eligible accounts can use the existing carded trial without SMS; explicit paid/trial intent, pending provider holds, account limits and erasure fences remain enforced.
+- Migration `0126_optional_trial_phone` makes claim fingerprints nullable. Null snapshots account-only verification; existing fingerprints keep phone checks. Binding, provider URL persistence and webhook consumption use the claim's original requirement, not the current switch.
+- Usage: change the phone requirement independently in admin config. Deploy the migration before the API, then the web. The additive `trialEligibility.phoneVerificationRequired` controls phone-retention disclosure.
+- Gotchas: account-only mode cannot prevent repeat trials across different accounts using phone ownership; no card-fingerprint protection was added. Unknown provider outcomes still require reconciliation. Existing phone-bound claims may still need the retained fingerprint secret even when new trials do not.
+- Related: trial service/repository, schema and migration, subscription response/OpenAPI/client, `subscription-trial-notice.tsx`, Postgres trial/checkout tests.
+
+
+
 - **Paywall benefits follow what is live on the web (2026-10-13).** A code audit found the
   "Fotoğraftan konu" row promising a feature with no screen: `photo.categorize` still has its API
   and a premium quota, but nothing on the web calls it since the notebook stopped pre-labelling

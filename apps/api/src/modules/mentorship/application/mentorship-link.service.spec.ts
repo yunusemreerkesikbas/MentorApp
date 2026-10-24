@@ -14,6 +14,7 @@ const TX = { execute: vi.fn() };
 
 const config: Record<string, number | boolean> = {
   "mentorship.enabled": true,
+  "mentorship.phone_verification_required": true,
   "mentorship.coach.max_active_students": 2,
   "mentorship.coach.free_seats": 1,
   "mentorship.seats.sponsorship_enabled": true,
@@ -288,6 +289,7 @@ describe("MentorshipLinkService", () => {
 
   beforeEach(() => {
     config["mentorship.enabled"] = true;
+    config["mentorship.phone_verification_required"] = true;
     config["mentorship.coach.max_active_students"] = 2;
     config["mentorship.coach.free_seats"] = 1;
     config["mentorship.seats.sponsorship_enabled"] = true;
@@ -322,6 +324,22 @@ describe("MentorshipLinkService", () => {
         () => service.requireActiveLinksInTransaction(TX as never, COACH, [STUDENT]),
         () => service.listActiveScopes(COACH),
       ]) await expect(call()).rejects.toMatchObject({ code: "AUTH_PHONE_REQUIRED" });
+    });
+
+    it("notifies an unverified coach about a student note when the phone requirement is off", async () => {
+      config["mentorship.phone_verification_required"] = false;
+      const { service, emitted } = setup({ rows: [link()], unverifiedPhones: [COACH] });
+      await service.setStudentNote(STUDENT, "Cuma gününü konuşabilir miyiz?");
+      expect(emitted).toContainEqual({ topic: MentorshipEventTopic.STUDENT_NOTE_UPDATED, payload: expect.anything() });
+    });
+
+    it("keeps existing coach access working without a phone when the requirement is off", async () => {
+      config["mentorship.phone_verification_required"] = false;
+      const { service } = setup({ rows: [link()], unverifiedPhones: [COACH] });
+      await expect(service.requireActiveLink(COACH, STUDENT)).resolves.toMatchObject({ id: link().id });
+      await expect(service.requireActiveLinkInTransaction(TX as never, COACH, STUDENT)).resolves.toMatchObject({ id: link().id });
+      await expect(service.requireActiveLinksInTransaction(TX as never, COACH, [STUDENT])).resolves.toHaveLength(1);
+      await expect(service.listActiveScopes(COACH)).resolves.toHaveLength(1);
     });
 
     it("keeps student access, responses and revocation when either phone is unverified", async () => {

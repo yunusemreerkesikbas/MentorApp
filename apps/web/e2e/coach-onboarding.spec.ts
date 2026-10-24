@@ -72,7 +72,7 @@ test.beforeEach(async ({ page }) => {
       return json(registered, 201);
     }
     if (request.method() === "GET" && path === "/v1/mentorship/coach-registration/mine") {
-      return json({ registrationOpen: true, registration: registered, emailVerified: false, phoneVerified });
+      return json({ registrationOpen: true, registration: registered, emailVerified: false, phoneVerified, inviteBlockedReason: "EMAIL_UNVERIFIED" });
     }
     if (path === "/v1/users/me/phone") return json({ verified: phoneVerified, maskedPhoneNumber: phoneVerified ? "+90 5** *** **67" : null, available: true, reauthenticationRequired: false });
     if (path === "/v1/users/me/phone/verifications") return json({ challengeId: "44444444-4444-4444-8444-444444444444", expiresAt: new Date(Date.now() + 60_000).toISOString(), resendAvailableAt: new Date(Date.now() + 30_000).toISOString(), maskedPhoneNumber: "+90 5** *** **67", sendStatus: "SENT" }, 201);
@@ -141,9 +141,8 @@ test("koç profilini yazınca hesabı açılıyor ve kendi paneline iniyor", asy
   await page.getByLabel("Kullanıcı adı").fill("kocmert");
   await page.getByRole("button", { name: "Devam" }).click();
 
-  // What the invite code still waits on, said before they find a locked panel. Both, because the
-  // account opens without the phone now.
-  await expect(page.getByText("Davet kodun doğrulanmış e-posta ve telefonla açılır.")).toBeVisible();
+  // Current verification requirements are explained on the coach screen, not assumed here.
+  await expect(page.getByText("Davet kodunu ve hesap doğrulama adımlarını koçluk ekranında bulabilirsin.")).toBeVisible();
   await page.getByRole("button", { name: "Panele git" }).click();
 
   // `/kocluk`, not `/panel`: somebody who just wrote a coach profile does not want a study plan.

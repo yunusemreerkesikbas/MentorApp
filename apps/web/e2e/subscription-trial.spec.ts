@@ -27,7 +27,7 @@ for (const surface of ["paywall", "subscription"] as const) {
   test(`${surface}: deneme uygun hesaba otomatik eklenir`, async ({ page }) => {
     await mockSubscriptionApi(page, {
       premiumRequired: true, plans: sellablePlans,
-      eligibility: { eligible: true, reason: "AVAILABLE" },
+      eligibility: { phoneVerificationRequired: true, eligible: true, reason: "AVAILABLE" },
     });
     await openPurchase(page, surface);
     await expect(page.getByText("7 gün ücretsiz deneme aboneliğine otomatik eklenir.")).toBeVisible();
@@ -43,7 +43,7 @@ for (const surface of ["paywall", "subscription"] as const) {
     test(`${surface}: ${reason} ücretli başlar`, async ({ page }) => {
       await mockSubscriptionApi(page, {
         premiumRequired: true, plans: sellablePlans,
-        eligibility: { eligible: false, reason },
+        eligibility: { phoneVerificationRequired: true, eligible: false, reason },
       });
       await openPurchase(page, surface);
       await expect(page.getByText(/deneme daha önce kullanıldı/)).toHaveCount(0);
@@ -56,7 +56,7 @@ for (const surface of ["paywall", "subscription"] as const) {
   test(`${surface}: telefon doğrulaması denemeyi korur ve onayı sıfırlar`, async ({ page }) => {
     const options = {
       premiumRequired: true, plans: sellablePlans,
-      eligibility: { eligible: false, reason: "PHONE_REQUIRED" } as TrialEligibilityDto,
+      eligibility: { phoneVerificationRequired: true, eligible: false, reason: "PHONE_REQUIRED" } as TrialEligibilityDto,
     };
     await mockSubscriptionApi(page, options);
     let releasePhoneStatus!: () => void;
@@ -75,7 +75,7 @@ for (const surface of ["paywall", "subscription"] as const) {
     await expect(page.getByRole("heading", { name: "Telefon doğrulaması" })).toBeVisible();
     await page.getByRole("checkbox").check();
     await expect(page.getByRole("button", { name: "Denemeyi başlat", exact: true })).toBeDisabled();
-    options.eligibility = { eligible: true, reason: "AVAILABLE" };
+    options.eligibility = { phoneVerificationRequired: true, eligible: true, reason: "AVAILABLE" };
     releasePhoneStatus();
     await expect(page.getByRole("heading", { name: "Telefon doğrulaması" })).toHaveCount(0);
     await expect(page.getByRole("checkbox")).not.toBeChecked();
@@ -87,7 +87,7 @@ test("paywall: plan değişiminde otomatik deneme korunur", async ({ page }) => 
   const quarterly = { ...sellablePlans[0]!, id: "premium-quarterly", name: "Premium 3 Aylık", periodMonths: 3, priceMinor: 59900 };
   await mockSubscriptionApi(page, {
     premiumRequired: true, plans: [...sellablePlans, quarterly],
-    eligibility: { eligible: true, reason: "AVAILABLE" },
+    eligibility: { phoneVerificationRequired: true, eligible: true, reason: "AVAILABLE" },
   });
   await openPurchase(page, "paywall");
   // The recommended (longest) plan opens selected and speaks per month, with its charged total.
@@ -104,7 +104,7 @@ test("paywall: plan değişiminde otomatik deneme korunur", async ({ page }) => 
 test("paywall: denemesiz plan ücretli başlar", async ({ page }) => {
   await mockSubscriptionApi(page, {
     premiumRequired: true, plans: sellablePlans.map((plan) => ({ ...plan, trialDays: 0 })),
-    eligibility: { eligible: true, reason: "AVAILABLE" },
+    eligibility: { phoneVerificationRequired: true, eligible: true, reason: "AVAILABLE" },
   });
   await openPurchase(page, "paywall");
   await expect(page.getByText("7 gün ücretsiz deneme aboneliğine otomatik eklenir.")).toHaveCount(0);
@@ -114,7 +114,7 @@ test("paywall: denemesiz plan ücretli başlar", async ({ page }) => {
 test("paywall: bekleyen deneme yeni checkout başlatmaz", async ({ page }) => {
   await mockSubscriptionApi(page, { premiumRequired: true, plans: sellablePlans });
   await page.route(`${apiUrl}/subscription`, (route) => route.fulfill({
-    json: { ...subscription, trialEligibility: { eligible: false, reason: "PENDING" }, pendingTrialCheckoutUrl: "https://checkout.test.local/resume" },
+    json: { ...subscription, trialEligibility: { phoneVerificationRequired: true, eligible: false, reason: "PENDING" }, pendingTrialCheckoutUrl: "https://checkout.test.local/resume" },
     headers: {
       "access-control-allow-origin": new URL(process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100").origin,
       "access-control-allow-credentials": "true",
@@ -129,7 +129,7 @@ test("paywall: bekleyen deneme yeni checkout başlatmaz", async ({ page }) => {
 test("paywall: kupon deneme sonrası fiyatı ve checkout kodunu korur", async ({ page }) => {
   await mockSubscriptionApi(page, {
     premiumRequired: true, plans: sellablePlans,
-    eligibility: { eligible: true, reason: "AVAILABLE" },
+    eligibility: { phoneVerificationRequired: true, eligible: true, reason: "AVAILABLE" },
   });
   await page.route(`${apiUrl}/subscription/offers`, (route) => {
     const discounted = route.request().postDataJSON().code === "TRIAL20";
@@ -158,3 +158,18 @@ test("paywall: kupon deneme sonrası fiyatı ve checkout kodunu korur", async ({
   await page.getByRole("button", { name: "Denemeyi başlat", exact: true }).click();
   expect((await request).postDataJSON()).toEqual({ planId: "premium-monthly", useTrial: true, code: "TRIAL20" });
 });
+
+
+for (const surface of ["paywall", "subscription"] as const) {
+  test(`${surface}: phone-optional carded trials remain usable without SMS`, async ({ page }) => {
+    await mockSubscriptionApi(page, {
+      premiumRequired: true, plans: sellablePlans,
+      eligibility: { eligible: true, reason: "AVAILABLE", phoneVerificationRequired: false },
+    });
+    await openPurchase(page, surface);
+    await expect(page.getByText("7 gün ücretsiz deneme aboneliğine otomatik eklenir.")).toBeVisible();
+    await expect(page.getByText("Deneme başladığında telefonunun", { exact: false })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Telefon doğrulaması", exact: true })).toHaveCount(0);
+    await expectCheckout(page, true);
+  });
+}

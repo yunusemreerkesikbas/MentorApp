@@ -48,6 +48,35 @@
 
 ### Netgsm (phone verification)
 
+#### Current rollout: SMS off, coaching and carded trials available (2026-10-15)
+
+| Control | Default/current rollout target | Purpose |
+| --- | --- | --- |
+| `SMS_PROVIDER` | `disabled` | Environment transport kill switch; no Netgsm request |
+| `identity.phone.enabled` | `false` | Registry switch for OTP requests and confirmations |
+| `mentorship.phone_verification_required` | `false` | Require coach phone ownership for invitations, protected access and notifications |
+| `payments.trial.phone_verification_required` | `false` | Require phone ownership for new carded-trial claims |
+| `mentorship.seats.sponsorship_enabled` | `false` | Keep sponsored Premium off; granting it always requires actual verified contacts |
+
+The two requirement switches are independent of transport. Enabling SMS does not enable either
+requirement; losing SMS availability does not bypass one that is already on. Registry changes use
+the existing admin config screen, validation and audit. Actual ownership is never manufactured.
+The registry cache currently assumes one API instance; coordinate restarts for multiple instances.
+
+Deploy migration `0126_optional_trial_phone` before the API, then deploy the web. Keep all five
+controls at the values above for the current rollout. Existing overrides must be checked explicitly;
+changing a catalog default does not clear an override. No live values were changed by this work.
+For rollback, switch a requirement off rather than reverting the nullable schema after account-only
+claims exist. In-flight trials complete using their stored requirement, even after a flag change.
+Existing phone-bound claims still need the original fingerprint secret and verification checks.
+
+After provider acceptance, configure transport, enable phone availability, verify it, then enable
+mentorship and trial requirements separately. Requiring phones can lock existing unverified coaches;
+communicate that rollout before enabling it. Sponsorship remains a separately approved rollout.
+Account-only trials preserve account limits but cannot deduplicate different accounts by phone.
+
+
+
 The implementation is complete enough for offline acceptance; carrier delivery is a separate
 release gate. Follow this checklist in order. Never put credentials, identity documents,
 raw phones or codes in Git, screenshots, CI artifacts, logs, Sentry, analytics, jobs or LLM input.
@@ -109,7 +138,7 @@ raw phones or codes in Git, screenshots, CI artifacts, logs, Sentry, analytics, 
   role/URL. Do not execute just the phone SQL files manually or edit applied migrations.
   0120 creates phone/challenge/trial tables and indexes; 0121 forces SERVICE-only RLS;
   0122 persists resumable checkout data; 0123 adds the account-erasure fence. Existing users
-  retain null phone fields; there is no legacy-coach grace period or verification bypass.
+  retain null phone fields. Current coach/trial requirements are configured independently as above.
 - [ ] Verify a fresh test DB and an existing test DB upgraded from immediately before 0120,
   including a preexisting user and subscription. Reapplying the journal must be idempotent.
 - Native HTTPS POST uses /sms/rest/v2/otp with Basic Auth and flat msgheader/msg/no JSON.

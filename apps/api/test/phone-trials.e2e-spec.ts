@@ -6,6 +6,7 @@ import { createDatabase } from "../src/database/drizzle";
 import { withServiceContext } from "../src/database/rls";
 import { PhoneTrialService } from "../src/modules/payments/application/phone-trial.service";
 import { PhoneTrialsRepository } from "../src/modules/payments/infrastructure/phone-trials.repository";
+import { UsersRepository } from "../src/modules/identity/infrastructure/users.repository";
 import { SubscriptionsRepository } from "../src/modules/payments/infrastructure/payments.repositories";
 
 /** Real Postgres constraints/transactions; no SMS or external payment calls. */
@@ -16,6 +17,7 @@ describe("phone trial claims (Postgres)", () => {
   let db: ReturnType<typeof createDatabase>;
   const users: string[] = [];
   const fingerprints: string[] = [];
+  const optionalClaims: string[] = [];
 
   beforeAll(async () => {
     const url = process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
@@ -26,9 +28,11 @@ describe("phone trial claims (Postgres)", () => {
     subscriptions = new SubscriptionsRepository(db);
   });
 
-  const serviceFor = (fingerprint: string) => {
-    fingerprints.push(fingerprint);
-    return new PhoneTrialService(db, { getVerifiedPhoneFingerprint: async () => fingerprint } as never, claims, subscriptions);
+  const serviceFor = (fingerprint: string | null, policy = { required: true }) => {
+    if (fingerprint) fingerprints.push(fingerprint);
+    return new PhoneTrialService(db, { getVerifiedPhoneFingerprint: async () => fingerprint,
+      lockActiveAccount: (id: string, tx: Parameters<UsersRepository["lockActiveAccount"]>[1]) => new UsersRepository(db).lockActiveAccount(id, tx),
+    } as never, claims, subscriptions, { get: async () => policy.required } as never);
   };
 
   const user = async () => {
@@ -46,7 +50,7 @@ describe("phone trial claims (Postgres)", () => {
     try {
       await client.query("begin");
       await client.query("select set_config('app.role','SERVICE',true)");
-      await client.query("delete from phone_trial_claims where phone_fingerprint = any($1::text[])", [fingerprints]);
+      await client.query("delete from phone_trial_claims where phone_fingerprint = any($1::text[]) or id = any($2::uuid[])", [fingerprints, optionalClaims]);
       await client.query("delete from users where id = any($1::uuid[])", [users]);
       await client.query("commit");
     } finally { client.release(); await pool.end(); }
@@ -141,4 +145,35 @@ describe("phone trial claims (Postgres)", () => {
       .rejects.toMatchObject({ code: "PAYMENT_TRIAL_UNAVAILABLE" });
     expect(await claims.findByFingerprint(fingerprint)).toMatchObject({ status: "PENDING", userId: null });
   });
+
+  it("allows different accounts to reserve null fingerprints but excludes concurrent attempts by one account", async () => {
+    const service = serviceFor(null, { required: false });
+    const [first, second] = await Promise.all([user(), user()]);
+    const results = await Promise.allSettled([service.reserve(first, "premium-monthly"), service.reserve(first, "premium-monthly"), service.reserve(second, "premium-monthly")]);
+    const reserved = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
+    optionalClaims.push(...reserved.map((r) => r.id));
+    expect(reserved).toHaveLength(2);
+    expect(reserved.every((r) => r.phoneFingerprint === null)).toBe(true);
+    expect((results.find((r) => r.status === "rejected") as PromiseRejectedResult).reason).toMatchObject({ code: "PAYMENT_TRIAL_PENDING" });
+  });
+
+  it("activates a phone-optional reservation after config changes and consumes it idempotently", async () => {
+    const policy = { required: false };
+    const service = serviceFor(null, policy);
+    const id = await user();
+    const claim = await service.reserve(id, "premium-monthly");
+    optionalClaims.push(claim.id);
+    const sub = await subscriptions.create({ userId: id, planId: "premium-monthly", status: "INCOMPLETE", provider: "FAKE" });
+    policy.required = true;
+    await withServiceContext(db, async (tx) => {
+      await service.bind(claim.id, sub.id, id, tx);
+      await service.saveCheckout(claim.id, { providerRef: "optional-ref", checkoutUrl: "https://pay/optional" }, id, tx);
+      await service.consume(sub.id, tx);
+      await service.consume(sub.id, tx);
+      await subscriptions.update(sub.id, { status: "TRIALING" }, tx);
+    });
+    expect(await service.eligibility(id)).toMatchObject({ eligible: false, reason: "ACCOUNT_USED" });
+    expect(await subscriptions.findOpenForUser(id)).toMatchObject({ status: "TRIALING" });
+  });
+
 });

@@ -239,10 +239,10 @@ export class UsersService {
   }
 
   /** One verified snapshot prevents digest delivery to an email changed between separate reads. */
-  async getVerifiedNotificationContact(userId: string): Promise<{ email: string; displayName: string } | null> {
+  async getVerifiedNotificationContact(userId: string, requirePhone = true): Promise<{ email: string; displayName: string } | null> {
     const user = await this.usersRepo.findByIdService(userId);
     if (!user || user.status !== "ACTIVE" || user.erasureStartedAt || !user.emailVerifiedAt ||
-        !user.phoneVerifiedAt || !user.phoneNumber) return null;
+        (requirePhone && (!user.phoneVerifiedAt || !user.phoneNumber))) return null;
     return { email: user.email, displayName: user.displayName };
   }
 

@@ -85,7 +85,8 @@ export class SendEmailHandler {
     );
     if (!(prefs?.emailEnabled ?? true)) return;
 
-    const contact = await this.users.getVerifiedNotificationContact(coachId);
+    const requirePhone = Boolean(await this.config.get("mentorship.phone_verification_required"));
+    const contact = await this.users.getVerifiedNotificationContact(coachId, requirePhone);
     if (!contact) return;
 
     const delivery = {
