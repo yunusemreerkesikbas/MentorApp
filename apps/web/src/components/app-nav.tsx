@@ -185,7 +185,10 @@ export function AppNav() {
   const t = useTranslations("nav");
   const ui = useTranslations("common");
   const { user } = useAuth();
-  const { balance } = useEconomySnapshot();
+  const snapshot = useEconomySnapshot();
+  // No coin/XP pills for a coach (2026-10-15): every coin sink is a student surface, and the XP a
+  // coach earns in the forum already shows on their community profile and the leaderboard.
+  const balance = isCoach(user) ? null : snapshot.balance;
   // Shared read (see `subscription-context`): the nav used to fetch `/v1/subscription` on its own,
   // which was one of the three calls the same page made for the same answer.
   const premium = useIsPremium();

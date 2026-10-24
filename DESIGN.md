@@ -370,9 +370,13 @@ from them (2026-09-22).
   not an app-wide icon migration.
 - **Settings menus (2026-10-07):** account, notification, application, economy and coach-scope
   rows use text labels without leading decorative icons or empty alignment slots. Keep trailing
-  navigation chevrons, the Google logo, profile verification badges and icon-only edit controls.
+  navigation chevrons, the Google logo and icon-only edit controls.
   Destructive account actions rely on their danger text tone. `ListRow` renders its optional
   icon slot only when a meaningful identity mark is supplied.
+  **Revised 2026-10-15:** the avatar carries one mark, the edit pencil at its bottom-right corner.
+  Email status is words on the handle line (`--color-success` "E-posta doğrulandı", or a
+  `--color-star`-tinted "E-postanı doğrula" pill with `--color-main` text), never a tick on the
+  avatar. Every settings card opens with the same small uppercase section label.
 - **Dashboard extension (2026-10-06):** panel-owned destination and ritual glyphs use Solar Bold:
   Clipboard Check for a plan task, Stopwatch for focus, Heart for mood, Chart 2 for analysis,
   Chat Round Dots for conversation, Notebook for study and notebooks, Target for a goal.

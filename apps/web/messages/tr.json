@@ -790,6 +790,7 @@
   },
   "profile": {
     "google_account": {
+      "section_title": "Bağlı hesaplar",
       "title": "Google hesabın",
       "loading": "Google bağlantın yükleniyor",
       "linked": "Google hesabın bağlı: {email}",
@@ -809,8 +810,8 @@
     "community_profile_link": "Topluluk profilim",
     "email_verified": "E-posta doğrulandı",
     "email_not_verified": "E-posta henüz doğrulanmadı.",
-    "status_unverified": "Doğrulama bekliyor",
     "verification_resend_action": "Doğrulama e-postasını yeniden gönder",
+    "verify_email_cta": "E-postanı doğrula",
     "verification_sending": "Gönderiliyor…",
     "verification_sent_title": "Doğrulama e-postası gönderildi",
     "verification_sent_message": "Gelen kutundaki bağlantıya tıklayınca e-postan doğrulanır. Bağlantı kısa süre geçerli.",
@@ -821,6 +822,7 @@
     "subscription_cta": "Aboneliği yönet",
     "notifications_cta": "Bildirimler",
     "exam_label": "Hedef sınav",
+    "exam_label_coach": "Koçluk yaptığın sınav",
     "exam_empty": "Henüz seçilmedi",
     "member_since": "Katılım",
     "username_empty": "Kullanıcı adı eklenmedi",
@@ -861,6 +863,7 @@
       "saved_toast_message": "Geri sayım ve içerikler buna göre güncellenecek.",
       "save_error": "Şimdi kaydolmadı.",
       "variant_label": "KPSS öğrenim düzeyin",
+      "variant_label_coach": "Hangi KPSS düzeyine koçluk yapıyorsun?",
       "variant": {
         "LISANS": "Lisans",
         "ONLISANS": "Önlisans",
@@ -1582,32 +1585,32 @@
         "close_note": "Puhu notunu kapat"
       },
       "welcome": {
-        "title": "Geçen hafta senden iz bıraktı.",
-        "next": "Şimdi o izleri sahneye alalım."
+        "title": "Haftan hazır, hadi bir bakalım!",
+        "next": "Kemerleri bağla, başlıyoruz! 🚀"
       },
       "week_map": {
-        "title": "Takvim seni fark etti.",
-        "active_days": "gün sahnedeydin",
-        "power_day": "{day} · güç günü · {minutes} dk"
+        "title": "Takvimde senin izin var!",
+        "active_days": "gün buradaydın",
+        "power_day": "{day} · süper gün · {minutes} dk"
       },
       "focus": {
-        "title": "Odağın sahneyi aldı.",
-        "minutes": "dakika gerçek odak",
-        "support": "{sessions} seans. En uzunu {longest} dakika. Net.",
-        "teaser_title": "Odak hikâyen ilk seansını bekliyor.",
-        "teaser_message": "Bir sonraki gerçek odak seansın bu ekranı kendi ritminle canlandıracak."
+        "title": "Odaklanınca durdurulamıyorsun!",
+        "minutes": "dakika tam odak",
+        "support": "{sessions} seans, en uzunu {longest} dakika. Helal olsun!",
+        "teaser_title": "Odak sahnen seni bekliyor!",
+        "teaser_message": "İlk odak seansınla burası canlanacak. Hadi bir tane açalım!"
       },
       "weekly_run": {
-        "title": "{count} gün üst üste. Tesadüf değil.",
-        "active_days_title": "Takvimde {count} farklı gün sen vardın."
+        "title": "{count} gün üst üste! Seri sende.",
+        "active_days_title": "Bu hafta {count} gün buradaydın!"
       },
       "weekly_best": {
-        "eyebrow": "Haftanın enleri",
-        "title": "Başrol çoktan belli.",
-        "focus_subject": "{minutes} dakika gerçek odakla haftanın ders yıldızı oldu.",
-        "plan_subject": "{count} tamamlanan görevle planında öne çıktı.",
-        "fallback": "Gerçek bir küçük adım",
-        "fallback_message": "Bu haftanın en güçlü izi burada."
+        "eyebrow": "Haftanın yıldızı",
+        "title": "Bu hafta en çok o parladı!",
+        "focus_subject": "{minutes} dakika odakla haftanın yıldız dersi oldu.",
+        "plan_subject": "{count} biten görevle planının yıldızı oldu.",
+        "fallback": "Küçük ama gerçek bir adım",
+        "fallback_message": "Her büyük yol böyle başlar!"
       },
       "rhythm": {
         "eyebrow": "Ritmin",
@@ -1630,15 +1633,15 @@
         "minutes": "{count} dk"
       },
       "performance": {
-        "eyebrow": "Deneme sahnesi",
-        "title": "Deneme sahneye çıktı.",
+        "eyebrow": "Deneme köşesi",
+        "title": "Deneme çözdün, cesaret ettin!",
         "net": "ortalama net",
-        "bridge_title": "Deneme bu haftaki kadroda yoktu.",
-        "bridge_message": "Bir sonraki denemen bu sahneyi açacak."
+        "bridge_title": "Bu hafta deneme molası vardı.",
+        "bridge_message": "Bir deneme çöz, bu sahne açılsın!"
       },
       "spark": {
         "label": "Haftanın kıvılcımı",
-        "title": "Küçük ama gerçek bir iz"
+        "title": "Küçük bir adım, kocaman bir iz!"
       },
       "bests": {
         "label": "Haftanın enleri",
@@ -1656,12 +1659,12 @@
         "fallback": "Nova Yolcusu"
       },
       "partial_unlocks": {
-        "title": "Hikâyende sırada ne var?",
-        "kicker": "Gelecek hafta açılabilecek sahneler",
+        "title": "Sırada ne var?",
+        "kicker": "Gelecek hafta açabileceğin sahneler",
         "count": "{count} yeni sahne"
       },
       "partial_final": {
-        "title": "İlk iz geldi. Devamı var."
+        "title": "İlk adımı attın! Devamı geliyor."
       },
       "closing": {
         "eyebrow": "Puhu’dan bir not",
@@ -1670,7 +1673,7 @@
       },
       "final": {
         "eyebrow": "Yeni haftaya",
-        "title": "Bunu sen yaptın.",
+        "title": "Bunu sen yaptın! 🎉",
         "plan_cta": "Öneriyi planımda aç",
         "share": "Emeğimi paylaş",
         "plan_short": "Plan",
@@ -1696,7 +1699,7 @@
         "error": "Paylaşım tamamlanamadı"
       },
       "share_card": {
-        "title": "Bir haftanın portresi",
+        "title": "İşte senin haftan!",
         "weekly_title_label": "Haftanın kod adı",
         "weekly_title_fallback": "Nova Yolcusu",
         "focus": "odakta geçen zaman",
@@ -2831,6 +2834,7 @@
     },
     "kpss_level": {
       "title": "KPSS’nin hangi düzeyine hazırlanıyorsun?",
+      "title_coach": "Hangi KPSS düzeyine koçluk yapıyorsun?",
       "continue": "Devam",
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
     },
@@ -3656,6 +3660,7 @@
     "coach_scope_PLAN_TASK_TITLES": "Plan görevlerinin başlıkları, ders/konu etiketleri ve durumları",
     "coach_scope_never_body": "Öğrencinin AI koçla konuştukları, seans ve mod notları, yanlış defteri, e-postası. Bunlar onda kalır.",
     "coach_scope_never_title": "Neyi göremezsin",
+    "coach_scope_section": "Koçluk",
     "coach_scope_title": "Öğrencinde neyi görürsün",
     "coach_scope_writes": "Ödev verebilir, ödevin altına kısa bir not yazabilir, bir de ödevden bağımsız duran bir not bırakabilirsin. Bu notları öğrencin de görür.",
     "assign_week_next": "Sonraki hafta",

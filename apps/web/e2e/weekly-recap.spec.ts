@@ -203,7 +203,7 @@ test("PARTIAL yalnız mevcut kanıtları gösterir ve AI/satış çağrısı yap
   // The cover slide's live copy is `recap.welcome.*`, not the `recap.cover.*` key this used to
   // check — same kind of superseded string as `analysis.summary.empty`.
   await expect(
-    page.getByText("Geçen hafta senden iz bıraktı."),
+    page.getByText("Haftan hazır, hadi bir bakalım!"),
   ).toBeVisible();
   await page.keyboard.press("ArrowRight");
   await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
@@ -428,7 +428,7 @@ test("TR/EN route sözleşmesi ve Escape kaynak dönüşü korunur", async ({
   // `recap.welcome.title`, the live cover copy — `recap.cover.*` (the string this used to check)
   // is superseded, same story as the Turkish welcome-slide fix above.
   await expect(
-    page.getByText("Last week has your fingerprints on it."),
+    page.getByText("Your week is ready. Let’s take a look!"),
   ).toBeVisible();
 
   await page.goto(

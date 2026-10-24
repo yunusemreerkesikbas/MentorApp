@@ -109,6 +109,7 @@ export function OnboardingWizard() {
         return (
           <KpssLevelStep
             user={user}
+            audience={audience}
             progress={progress}
             onBack={() => back("kpssLevel")}
             onSaved={() => go("kpssLevel")}

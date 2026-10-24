@@ -2550,6 +2550,15 @@ deftere fotoğraflı bir yanlış eklenip sayfaya yerleştirildiğinde tetikleni
   İlgili: `puhu-image.tsx`, `weekly-recap-story.tsx`,
   `public/mascot/puhu/{puhu-host.png,README.md}`.
 
+- **Recap hikâyesi Duolingo dili + ses açık (2026-10-15)** — Story slaytlarının sabit metinleri
+  (`analysis.recap.{welcome,week_map,focus,weekly_run,weekly_best,performance,spark,partial_*,final}`,
+  `share_card.title`) tr/en enerjik Puhu diline çekildi: kısa, cümle başına tek `!`, satır başına
+  en fazla bir emoji, em dash yok. Kontrol/aria etiketleri, paylaşım kartı istatistik etiketleri
+  ve API'den gelen mesajlar (`rhythm.message`, `closingMessage`, highlight mesajları) değişmedi.
+  Ses artık varsayılan açık (`use-weekly-recap-audio.ts`); tarayıcı autoplay'i
+  `NotAllowedError` ile reddederse buton sessize döner, tek dokunuşla açılır.
+  Gotcha: `e2e/weekly-recap.spec.ts` karşılama başlığını birebir arar, metin değişince güncelle.
+
 - **Hedef haritası: il/üniversite seçimi + kariyer maskotu (2026-07-31)** — `/hedef` ekranındaki
   serbest metin şehir alanı yerini normalize seçime bıraktı. `vision_boards`'a üç kolon:
   `target_city_code` (FK → `cities`), `target_university_id` (FK → `universities`), `career_group`.

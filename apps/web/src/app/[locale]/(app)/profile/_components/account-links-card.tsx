@@ -43,8 +43,9 @@ export function ListRow({
   trailing?: ReactElement;
 }) {
   // Compact list item (44px min touch target, reduced padding matching reference design).
-  const className =
-    "group flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-[calc(var(--radius-card)-2px)] px-3 py-1.5 text-left transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
+  // A read-only row (no href, no onClick) gets no hover: lighting it up promises a press.
+  const interactive = Boolean(href || externalHref || onClick);
+  const className = `group flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-[calc(var(--radius-card)-2px)] px-3 py-1.5 text-left${interactive ? " transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none" : ""}`;
   const style = { color: danger ? "var(--color-danger)" : "var(--color-main)" };
   const label = (
     <span className="flex min-w-0 items-center gap-3">
@@ -193,7 +194,7 @@ export function AccountLinksCard({
     let examVariant: ExamVariant | null = null;
     if (examType === "KPSS") {
       const level = await actionSheet({
-        title: tExam("variant_label"),
+        title: tExam(isCoach(user) ? "variant_label_coach" : "variant_label"),
         actions: variantOptions.map((value) => ({
           id: value,
           label: tExam(`variant.${value}`),
@@ -281,7 +282,9 @@ export function AccountLinksCard({
           description={examSummary}
           onClick={() => void openExamSheet()}
         >
-          {t("exam_label")}
+          {/* A coach's examType is "the exam you coach" (APP-089): their /students countdown and
+              community feed read it, so the row stays and only the wording changes. */}
+          {t(isCoach(user) ? "exam_label_coach" : "exam_label")}
         </ListRow>
         <ListRow
           description={joined}
@@ -296,10 +299,13 @@ export function AccountLinksCard({
         </ListRow>
         {/* The only way into the mentorship flow. /my-coach answers both states on its own: no
             coach yet -> the invite-code screen, linked -> the data-scope contract. A student
-            handed a code looks under "Koçum", so the row carries no separate hint. */}
-        <ListRow href="/my-coach">
-          {tMentorship("my_coach_title")}
-        </ListRow>
+            handed a code looks under "Koçum", so the row carries no separate hint. Hidden for a
+            coach: /my-coach is student-only (`isStudentOnlyPath`) and would bounce them home. */}
+        {!isCoach(user) && (
+          <ListRow href="/my-coach">
+            {tMentorship("my_coach_title")}
+          </ListRow>
+        )}
         {/* The other direction: becoming one. Follows `mentorship.applications.open`, so the
             feature disappears with its flag; hidden for somebody who already coaches. A suspended
             coach can still open the screen by URL to read the admin's reason. The hint is for the

@@ -158,10 +158,20 @@ test("server deadlines disable expired codes and enable a manual resend", async 
   await expect(page.getByLabel("SMS doğrulama kodu")).toBeEnabled();
 });
 
-test("unavailable SMS hides the unused form without sending a code", async ({ page }) => {
+test("unavailable SMS hides an unverified phone card in settings and offers no bypass", async ({ page }) => {
   const api = await mockApi(page, { phone: { available: false } });
   await page.goto("/en/settings");
-  await expect(page.getByRole("heading", { name: "Phone verification", exact: true })).toHaveCount(0);
+  // The legal links mount with the phone card, so the card's removal is awaited, not skipped.
+  await expect(page.getByRole("navigation", { name: "Legal" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Phone verification" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Send SMS code" })).toHaveCount(0);
+  expect(api.sent).toBe(0);
+});
+
+test("a verified number stays in settings with a clear state while SMS is unavailable", async ({ page }) => {
+  const api = await mockApi(page, { phone: { available: false, verified: true, maskedPhoneNumber: "+90 5** *** **11" } });
+  await page.goto("/en/settings");
+  await expect(page.getByText("SMS verification is unavailable right now.", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: "Send SMS code" })).toHaveCount(0);
   expect(api.sent).toBe(0);
 });

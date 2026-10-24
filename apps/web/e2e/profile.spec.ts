@@ -26,10 +26,14 @@ test("ayarlar yasal footer bağlantısını AppNav içindeki belgeye açar", asy
   );
   await page.goto("/ayarlar");
 
-  const footer = page.getByRole("contentinfo", { name: "Yasal" });
-  await expect(footer.getByRole("link")).toHaveCount(8);
+  const footer = page.getByRole("navigation", { name: "Yasal" });
+  // Six legal texts + icon credits; cookie preferences is a row in the Uygulama card.
+  await expect(footer.getByRole("link")).toHaveCount(7);
   await expect(footer.getByRole("link", { name: "İkon kaynakları" })).toHaveAttribute(
     "href", "/icon-credits.txt",
+  );
+  await expect(page.getByRole("link", { name: "Çerez tercihleri" })).toHaveAttribute(
+    "href", "/ayarlar/cerez-tercihleri",
   );
   await footer.getByRole("link", { name: "Kullanım Koşulları" }).click();
 
@@ -199,7 +203,38 @@ test("economy refresh updates the open balance sheet and celebrates ledger rewar
   expect(await page.evaluate(() => (window as unknown as { coinRewards: number[] }).coinRewards)).toEqual([7]);
 });
 
-async function mockProfileApi(page: Page) {
+test("koç ayarlarında Kazanımlar yok, sınav satırı koçluk yaptığı sınavı sorar", async ({ page }) => {
+  await mockProfileApi(page, { ...user, roles: ["COACH"] });
+  // Counted, then handed to the ECONOMY_DISABLED mock: a student's settings fetch quests on mount
+  // even with the economy off, so zero calls means the section never mounted.
+  let questCalls = 0;
+  await page.route("http://localhost:3001/v1/economy/quests", (route) => {
+    questCalls += 1;
+    return route.fallback();
+  });
+  // A real balance, so the missing pills below are the coach rule and not an empty store.
+  let balanceCalls = 0;
+  await page.route("http://localhost:3001/v1/economy/balance", (route) => {
+    balanceCalls += 1;
+    return json(route, { xp: 40, coinConfirmed: 5, coinPending: 0, level: null });
+  });
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+  await page.goto("/ayarlar");
+
+  await page.getByRole("button", { name: /Koçluk yaptığın sınav/ }).click();
+  await page.getByRole("button", { name: "KPSS", exact: true }).click();
+  await expect(page.getByText("Hangi KPSS düzeyine koçluk yapıyorsun?")).toBeVisible();
+
+  await expect(page.getByText("Hedef sınav", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Kazanımlar", { exact: true })).toHaveCount(0);
+  expect(questCalls).toBe(0);
+  await expect.poll(() => balanceCalls).toBeGreaterThan(0);
+  await expect(page.getByLabel("Coin ve XP")).toHaveCount(0);
+});
+
+async function mockProfileApi(page: Page, me: AuthUser = user) {
   let deleteAccountCalls = 0;
 
   await page.route("http://localhost:3001/v1/**", async (route) => {
@@ -210,9 +245,9 @@ async function mockProfileApi(page: Page) {
 
     if (method === "OPTIONS") return json(route, null, 204);
     if (method === "POST" && path === "/v1/auth/refresh") {
-      return json(route, { accessToken: "test-token", expiresIn: 3600, user });
+      return json(route, { accessToken: "test-token", expiresIn: 3600, user: me });
     }
-    if (method === "GET" && path === "/v1/users/me") return json(route, user);
+    if (method === "GET" && path === "/v1/users/me") return json(route, me);
     if (method === "GET" && path === "/v1/users/me/phone") return json(route, { verified: false, maskedPhoneNumber: null, available: false, reauthenticationRequired: false });
     // The Google card reads `.enabled` off this body; the empty catch-all 204 crashed the page.
     if (method === "GET" && path === "/v1/users/me/auth-accounts/google") {

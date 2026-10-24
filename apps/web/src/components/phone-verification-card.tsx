@@ -18,11 +18,13 @@ import { SignupTurnstile, turnstileSiteKey } from "@/app/[locale]/(auth)/_compon
 
 interface PhoneVerificationCardProps {
   allowNumberChange?: boolean;
+  /** Settings list style: the small uppercase section label the other settings cards use. */
+  compactHeading?: boolean;
   onStatusChange?: (status: PhoneStatusDto) => void;
 }
 
 /** The same private verification form serves registration, trial and account settings. */
-export function PhoneVerificationCard({ allowNumberChange = false, onStatusChange }: PhoneVerificationCardProps) {
+export function PhoneVerificationCard({ allowNumberChange = false, compactHeading = false, onStatusChange }: PhoneVerificationCardProps) {
   const t = useTranslations("phone");
   const common = useTranslations("common");
   const locale = useLocale();
@@ -129,7 +131,13 @@ export function PhoneVerificationCard({ allowNumberChange = false, onStatusChang
 
   return (
     <Card className="flex flex-col gap-4" aria-labelledby={titleId}>
-      <h2 id={titleId} className="text-base font-extrabold text-[var(--color-main)]">{t("title")}</h2>
+      <h2
+        id={titleId}
+        className={compactHeading ? "text-xs font-semibold uppercase tracking-wider text-[var(--color-secondary)]" : "text-base font-extrabold text-[var(--color-main)]"}
+        style={compactHeading ? { fontFamily: "var(--font-heading)" } : undefined}
+      >
+        {t("title")}
+      </h2>
       <FormError message={error} />
       {status === null ? error ? (
         <Button variant="secondary" onClick={() => { setError(null); setLoadKey((key) => key + 1); }}>{t("retry")}</Button>

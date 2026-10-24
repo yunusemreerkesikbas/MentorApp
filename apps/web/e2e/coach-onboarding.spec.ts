@@ -122,6 +122,18 @@ test("koç dalı öğrenci sorularını sormuyor, koç sorularını soruyor", as
   ).toBeVisible();
 });
 
+test("KPSS seçen koça düzey sorusu koç diliyle geliyor", async ({ page }) => {
+  await page.goto("/onboarding");
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("radio", { name: "KPSS" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Hangi KPSS düzeyine koçluk yapıyorsun?" }),
+  ).toBeVisible();
+  await expect(page.getByText("KPSS’nin hangi düzeyine hazırlanıyorsun?")).toHaveCount(0);
+});
+
 test("koç profilini yazınca hesabı açılıyor ve kendi paneline iniyor", async ({ page }) => {
   await page.goto("/onboarding");
   await page.getByRole("button", { name: "Devam" }).click();

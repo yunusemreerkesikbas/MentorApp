@@ -26,7 +26,8 @@ export function useWeeklyRecapAudio({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const loadedSrcRef = useRef<string | null>(null);
   const loadedKeyRef = useRef<string | null>(null);
-  const [muted, setMuted] = useState(true);
+  // Sound starts on: the story opens from a tap, so browsers usually allow it.
+  const [muted, setMuted] = useState(false);
 
   useEffect(() => {
     let audio = audioRef.current;
@@ -60,8 +61,10 @@ export function useWeeklyRecapAudio({
     }
 
     if (shouldPlay && !muted) {
-      void audio.play().catch(() => {
-        // Browser autoplay policy or unavailable asset: the visual story continues.
+      void audio.play().catch((error: unknown) => {
+        // Autoplay refused: show the muted icon so one tap turns it on. A missing asset just
+        // stays silent; the visual story continues either way.
+        if (error instanceof DOMException && error.name === "NotAllowedError") setMuted(true);
       });
     } else {
       audio.pause();

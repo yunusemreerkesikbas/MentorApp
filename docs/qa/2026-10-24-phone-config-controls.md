@@ -67,3 +67,12 @@ No production migration, live config override, provider setup, carrier SMS, paym
 was performed. The work is based on current master 673a193a reconciled with PR #145; the primary
 checkout's existing edits remain untouched. Apply the migration before the API/web rollout, and
 check effective live overrides explicitly. Full default CI remains required before merge.
+
+
+## Final master reconciliation
+
+While publishing, master advanced to 9d1006ed (PR #169, profile/settings). Its compact phone heading,
+profile hiding logic and stronger unavailable-SMS browser assertions were retained. The only merge
+conflict was overlapping phone-card tests; both the verified and unverified incoming scenarios
+were preserved alongside the independent-requirement coverage. Verification after this merge is
+recorded below.

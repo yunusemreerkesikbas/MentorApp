@@ -790,6 +790,7 @@
   },
   "profile": {
     "google_account": {
+      "section_title": "Connected accounts",
       "title": "Your Google account",
       "loading": "Loading your Google connection",
       "linked": "Google account linked: {email}",
@@ -809,8 +810,8 @@
     "community_profile_link": "My community profile",
     "email_verified": "Email verified",
     "email_not_verified": "Email not yet verified.",
-    "status_unverified": "Verification pending",
     "verification_resend_action": "Resend verification email",
+    "verify_email_cta": "Verify your email",
     "verification_sending": "Sending…",
     "verification_sent_title": "Verification email sent",
     "verification_sent_message": "Open the link in your inbox to verify your email. The link is valid for a short time.",
@@ -821,6 +822,7 @@
     "subscription_cta": "Manage subscription",
     "notifications_cta": "Notifications",
     "exam_label": "Target exam",
+    "exam_label_coach": "Exam you coach for",
     "exam_empty": "Not selected yet",
     "member_since": "Joined",
     "username_empty": "No username added",
@@ -861,6 +863,7 @@
       "saved_toast_message": "Countdown and content will update to match.",
       "save_error": "It didn't save just now.",
       "variant_label": "Your KPSS level",
+      "variant_label_coach": "Which KPSS level do you coach for?",
       "variant": {
         "LISANS": "Bachelor's",
         "ONLISANS": "Associate",
@@ -1582,32 +1585,32 @@
         "close_note": "Close Puhu note"
       },
       "welcome": {
-        "title": "Last week has your fingerprints on it.",
-        "next": "Now let’s bring them on stage."
+        "title": "Your week is ready. Let’s take a look!",
+        "next": "Buckle up, here we go! 🚀"
       },
       "week_map": {
-        "title": "The calendar noticed you.",
-        "active_days": "days on stage",
-        "power_day": "{day} · power day · {minutes} min"
+        "title": "Your calendar has your name on it!",
+        "active_days": "days you showed up",
+        "power_day": "{day} · super day · {minutes} min"
       },
       "focus": {
-        "title": "Your focus took the stage.",
-        "minutes": "minutes of real focus",
-        "support": "{sessions} sessions. The longest was {longest} minutes. Clear.",
-        "teaser_title": "Your focus story is waiting for its first session.",
-        "teaser_message": "Your next real focus session will bring this screen to life in your own rhythm."
+        "title": "Once you focus, you’re unstoppable!",
+        "minutes": "minutes of full focus",
+        "support": "{sessions} sessions, the longest was {longest} minutes. Way to go!",
+        "teaser_title": "Your focus scene is waiting for you!",
+        "teaser_message": "Your first focus session brings this screen to life. Let’s start one!"
       },
       "weekly_run": {
-        "title": "{count} days in a row. Not an accident.",
-        "active_days_title": "You showed up on {count} different calendar days."
+        "title": "{count} days in a row! You’re on a roll.",
+        "active_days_title": "You showed up {count} days this week!"
       },
       "weekly_best": {
-        "eyebrow": "Best of your week",
-        "title": "The lead role is already taken.",
-        "focus_subject": "It became your subject star with {minutes} minutes of real focus.",
-        "plan_subject": "It stood out in your plan with {count} completed tasks.",
-        "fallback": "One real small step",
-        "fallback_message": "The strongest trace from this week lives here."
+        "eyebrow": "Star of the week",
+        "title": "This one shone brightest!",
+        "focus_subject": "{minutes} minutes of focus made it your star subject.",
+        "plan_subject": "{count} finished tasks made it the star of your plan.",
+        "fallback": "A small but real step",
+        "fallback_message": "Every big journey starts like this!"
       },
       "rhythm": {
         "eyebrow": "Your rhythm",
@@ -1630,15 +1633,15 @@
         "minutes": "{count} min"
       },
       "performance": {
-        "eyebrow": "Mock-exam stage",
-        "title": "Your mock exam entered the stage.",
+        "eyebrow": "Mock exam corner",
+        "title": "You took a mock exam. Brave move!",
         "net": "average net",
-        "bridge_title": "A mock exam was not in this week’s cast.",
-        "bridge_message": "Your next mock exam will unlock this scene."
+        "bridge_title": "This week was a mock exam break.",
+        "bridge_message": "Take one and this scene opens up!"
       },
       "spark": {
         "label": "This week's spark",
-        "title": "A small but real trace"
+        "title": "A small step, a big trace!"
       },
       "bests": {
         "label": "Best of your week",
@@ -1656,12 +1659,12 @@
         "fallback": "Nova Traveler"
       },
       "partial_unlocks": {
-        "title": "What is next in your story?",
-        "kicker": "Scenes you can unlock next week",
+        "title": "What’s next?",
+        "kicker": "Scenes you can open next week",
         "count": "{count, plural, one {# new scene} other {# new scenes}}"
       },
       "partial_final": {
-        "title": "The first trace is here. More to come."
+        "title": "You took the first step! More is coming."
       },
       "closing": {
         "eyebrow": "A note from Puhu",
@@ -1670,7 +1673,7 @@
       },
       "final": {
         "eyebrow": "Into the new week",
-        "title": "You did this.",
+        "title": "You did this! 🎉",
         "plan_cta": "Open suggestion in my plan",
         "share": "Share my effort",
         "plan_short": "Plan",
@@ -1696,7 +1699,7 @@
         "error": "Sharing could not be completed"
       },
       "share_card": {
-        "title": "A portrait of your week",
+        "title": "Here’s your week!",
         "weekly_title_label": "Weekly codename",
         "weekly_title_fallback": "Nova Traveler",
         "focus": "time spent in focus",
@@ -2831,6 +2834,7 @@
     },
     "kpss_level": {
       "title": "Which KPSS level are you preparing for?",
+      "title_coach": "Which KPSS level do you coach for?",
       "continue": "Continue",
       "save_error": "It didn't save just now. Let's try again in a moment."
     },
@@ -3656,6 +3660,7 @@
     "coach_scope_PLAN_TASK_TITLES": "Plan task titles, subject/topic labels and statuses",
     "coach_scope_never_body": "What they tell the AI coach, their session and mood notes, their mistake notebook, their email. Those stay with them.",
     "coach_scope_never_title": "What you cannot see",
+    "coach_scope_section": "Coaching",
     "coach_scope_title": "What you can see about your student",
     "coach_scope_writes": "You can assign tasks, add a short note under a task, and leave one standing note apart from any task. Your student sees these too.",
     "assign_week_next": "Next week",

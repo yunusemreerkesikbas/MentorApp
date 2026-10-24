@@ -9,22 +9,26 @@ import { PlayOptionRow } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PuhuBubble } from "@/components/onboarding-play/play-heading";
 import { useAuth } from "@/lib/auth-context";
+import type { OnboardingAudience } from "../onboarding-flow";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
 
 const OPTIONS: ExamVariant[] = ["LISANS", "ONLISANS", "ORTAOGRETIM"];
 
 export function KpssLevelStep({
   user,
+  audience,
   progress,
   onSaved,
   onBack,
 }: {
   user: AuthUser;
+  audience: OnboardingAudience;
   progress: { done: number; total: number } | null;
   onSaved: () => void;
   onBack: () => void;
 }) {
   const t = useTranslations("onboarding.kpss_level");
+  const title = audience === "coach" ? t("title_coach") : t("title");
   const examCopy = useTranslations("profile.exam_settings");
   const { setUserFromServer } = useAuth();
   const [selected, setSelected] = useState<ExamVariant | null>(user.examType === "KPSS" ? user.examVariant : null);
@@ -50,7 +54,7 @@ export function KpssLevelStep({
     <OnboardingStepLayout
       progress={progress}
       onBack={onBack}
-      heading={<PuhuBubble title={t("title")} />}
+      heading={<PuhuBubble title={title} />}
       footer={
         <PlayFooter error={error}>
           <Button fullWidth onClick={() => void save()} busy={saving} disabled={!selected}>
@@ -59,7 +63,7 @@ export function KpssLevelStep({
         </PlayFooter>
       }
     >
-      <div role="radiogroup" aria-label={t("title")} className="flex flex-col gap-3">
+      <div role="radiogroup" aria-label={title} className="flex flex-col gap-3">
         {OPTIONS.map((value, index) => (
           <PlayOptionRow
             key={value}

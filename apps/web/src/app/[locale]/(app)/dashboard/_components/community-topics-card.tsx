@@ -68,7 +68,7 @@ export function CommunityTopicsCard() {
               className="flex items-center gap-3 py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             >
               <span
-                className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-selected)] text-[var(--play-selected-ink)]"
+                className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--play-selected-ink)]"
                 aria-hidden
               >
                 <Chat size={20} className="size-5" />
