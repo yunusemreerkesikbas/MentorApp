@@ -5,7 +5,7 @@ import { inviteCodeSchema } from "@mentor/validation";
 import { Public } from "../../../common/auth/public.decorator";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { InviteService } from "../application/invite.service";
+import { InviteViewService } from "../application/invite-view.service";
 import { InvitePreviewViewDto } from "./economy.dto";
 
 /**
@@ -17,7 +17,7 @@ import { InvitePreviewViewDto } from "./economy.dto";
 @Public()
 @Controller("economy/invite/preview")
 export class InvitePreviewController {
-  constructor(private readonly invites: InviteService) {}
+  constructor(private readonly inviteViews: InviteViewService) {}
 
   @Get(":code")
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
@@ -28,6 +28,6 @@ export class InvitePreviewController {
     // The landing shows one "invalid link" state, so a malformed code answers like an unknown one
     // (the validation pipe's 400 would tell a prober which of the two it hit).
     if (!parsed.success) throw new DomainError(ErrorCode.INVITE_CODE_INVALID, HttpStatus.NOT_FOUND);
-    return this.invites.getPreview(parsed.data);
+    return this.inviteViews.getPreview(parsed.data);
   }
 }

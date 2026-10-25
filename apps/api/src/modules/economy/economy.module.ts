@@ -11,6 +11,7 @@ import { EconomyStatsService } from "./application/economy-stats.service";
 import { ForumEventsListener } from "./application/forum-events.listener";
 import { ThreadPostedListener } from "./application/thread-posted.listener";
 import { InviteService } from "./application/invite.service";
+import { InviteViewService } from "./application/invite-view.service";
 import { InviteEventsListener } from "./application/invite-events.listener";
 import { RefundEventsListener } from "./application/refund-events.listener";
 import { QuestService } from "./application/quest.service";
@@ -39,6 +40,7 @@ import { InvitePreviewController } from "./presentation/invite-preview.controlle
     EconomyStatsService,
     LedgerRepository,
     InviteService,
+    InviteViewService,
     InviteRepository,
     InviteEventsListener,
     RefundEventsListener,

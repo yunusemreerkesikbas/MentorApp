@@ -28,6 +28,13 @@ export interface DisplayIdentity {
   displayName: string;
   username: string | null;
   avatarUrl: string | null;
+  /**
+   * A live account: ACTIVE and not mid-erasure. KVKK erasure keeps the row and rewrites it into a
+   * "Silinmiş Kullanıcı" shell, so the row alone does not say the person is gone; callers that must
+   * not show an erased person (an invite list) skip `active: false`, callers that must keep the row
+   * (a coach's roster) ignore it.
+   */
+  active: boolean;
 }
 
 /** Admin metrics: user-base snapshot (W6). */
@@ -126,6 +133,7 @@ export class UsersService {
           avatarUrl: row.avatarStorageKey
             ? this.storage.getPublicUrl(row.avatarStorageKey)
             : null,
+          active: row.status === "ACTIVE" && !row.erasureStartedAt,
         },
       ]),
     );

@@ -56,25 +56,11 @@ function makeRepoFake() {
         code,
         status: "PENDING",
         convertedAt: null,
-        // One second apart, so "newest first" has something to order by.
-        redeemedAt: new Date(Date.parse("2026-09-01T00:00:00Z") + redemptions.length * 1000),
+        redeemedAt: new Date("2026-09-01T00:00:00Z"),
       };
       redemptions.push(r);
       return r;
     },
-    listJoinedByInviter: async (inviter: string, limit: number) =>
-      redemptions
-        .filter((r) => r.inviterUserId === inviter)
-        .sort((a, b) => b.redeemedAt.getTime() - a.redeemedAt.getTime())
-        .slice(0, limit)
-        .map((r) => ({ invitedUserId: r.invitedUserId, redeemedAt: r.redeemedAt })),
-    countConvertedByInviter: async (inviter: string) =>
-      redemptions.filter(
-        (r) =>
-          r.inviterUserId === inviter &&
-          r.status === "CONVERTED" &&
-          !["REFUNDED", "REVERSED"].includes(r.rewardOutcome ?? ""),
-      ).length,
     markConverted: async (invited: string) => {
       const r = redemptions.find((x) => x.invitedUserId === invited && x.status === "PENDING");
       if (!r) return undefined;
@@ -87,11 +73,6 @@ function makeRepoFake() {
       return { invited: list.length, converted: list.filter((r) => r.status === "CONVERTED").length };
     },
   };
-}
-
-interface PromotionSummaryFake {
-  discountType: "PERCENT" | "FIXED";
-  discountValue: number;
 }
 
 interface UserFake {
@@ -124,12 +105,6 @@ describe("InviteService", () => {
   let emitted: Array<{ topic: string; payload: unknown }>;
   let economyEnabled: boolean;
   let signals: InviteSignalRegistry;
-  let phoneVerified: boolean;
-  let inviteOffer: { promotion: PromotionSummaryFake | null } | null;
-  let previewSummary: PromotionSummaryFake | null;
-  let blockingSubscription: boolean;
-  let offerLookups: string[];
-  let identityLookups: string[][];
   /** Per-user overrides; any other id is a fresh, active student created a day ago. */
   let userRows: Map<string, UserFake | null>;
 
@@ -163,34 +138,8 @@ describe("InviteService", () => {
     economyEnabled = true;
     signals = new InviteSignalRegistry();
     userRows = new Map();
-    phoneVerified = true;
-    inviteOffer = null;
-    previewSummary = null;
-    blockingSubscription = false;
-    offerLookups = [];
-    identityLookups = [];
     const users = {
       findByIdService: async (id: string) => (userRows.has(id) ? (userRows.get(id) ?? undefined) : defaultUser(id)),
-    };
-    // Identity's public seam: an id with no row is simply absent from the map.
-    const identities = {
-      isPhoneVerified: async () => phoneVerified,
-      listDisplayIdentities: async (ids: string[]) => {
-        identityLookups.push(ids);
-        return new Map(
-          ids
-            .filter((id) => userRows.get(id) !== null)
-            .map((id) => [id, { userId: id, displayName: (userRows.get(id) ?? defaultUser(id)).displayName, username: "handle", avatarUrl: "https://cdn/a.png" }]),
-        );
-      },
-    };
-    const subscriptions = {
-      findInviteOffer: async (userId: string) => {
-        offerLookups.push(userId);
-        return inviteOffer;
-      },
-      previewInviteOffer: async () => previewSummary,
-      hasCheckoutBlockingSubscription: async () => blockingSubscription,
     };
     const economy = {
       grantInServiceTx: async (userId: string, unit: string, amount: number, opts: { reason: string }) => {
@@ -238,8 +187,6 @@ describe("InviteService", () => {
       follows as never,
       events as never,
       signals,
-      identities as never,
-      subscriptions as never,
     );
   };
 
@@ -636,287 +583,6 @@ describe("InviteService", () => {
     grantError = null;
     await svc.onInvitedConverted(event);
     expect(grants).toHaveLength(1);
-  });
-
-  describe("getView (the user's own card)", () => {
-    const joinFriends = async (svc: InviteService, inviter: string, friends: string[]) => {
-      const code = await svc.getOrCreateCode(inviter);
-      for (const friend of friends) await svc.redeem(friend, code);
-    };
-
-    it("lists joined friends newest first by display name and counts only payers whose payment stands", async () => {
-      const svc = service();
-      await joinFriends(svc, "ayse", ["burak", "cem", "dilek"]);
-      // burak paid and the reward stands, cem paid and was refunded, dilek has not paid.
-      Object.assign(repo.redemptions[0]!, { status: "CONVERTED", rewardOutcome: "GRANTED" });
-      Object.assign(repo.redemptions[1]!, { status: "CONVERTED", rewardOutcome: "REFUNDED" });
-
-      const view = await svc.getView("ayse");
-
-      expect(view.joined).toEqual([
-        { displayName: "dilek-name" },
-        { displayName: "cem-name" },
-        { displayName: "burak-name" },
-      ]);
-      expect(view.convertedCount).toBe(1);
-      expect(view.code).toMatch(/^PUHU-/);
-      expect(view.rewardCoin).toBe(20);
-      expect(view.redeemed).toBeNull();
-    });
-
-    it("counts a reversed conversion out and a granted one in", async () => {
-      const svc = service();
-      await joinFriends(svc, "ayse", ["burak", "cem"]);
-      Object.assign(repo.redemptions[0]!, { status: "CONVERTED", rewardOutcome: "REVERSED" });
-      Object.assign(repo.redemptions[1]!, { status: "CONVERTED", rewardOutcome: "GRANTED" });
-
-      expect((await svc.getView("ayse")).convertedCount).toBe(1);
-    });
-
-    it("shows at most 20 joined friends and asks for exactly that many", async () => {
-      const svc = service();
-      await joinFriends(svc, "ayse", Array.from({ length: 23 }, (_, i) => `friend${i}`));
-
-      const view = await svc.getView("ayse");
-
-      expect(view.joined).toHaveLength(20);
-      expect(view.joined[0]).toEqual({ displayName: "friend22-name" });
-      expect(identityLookups.at(-1)).toHaveLength(20);
-    });
-
-    it("exposes a display name per friend and nothing else about them", async () => {
-      const svc = service();
-      await joinFriends(svc, "ayse", ["burak"]);
-
-      const view = await svc.getView("ayse");
-
-      expect(view.joined).toEqual([{ displayName: "burak-name" }]);
-      expect(JSON.stringify(view)).not.toMatch(/handle|cdn/);
-    });
-
-    it("skips a friend whose identity cannot be resolved instead of showing a placeholder", async () => {
-      const svc = service();
-      await joinFriends(svc, "ayse", ["burak", "cem"]);
-      userRows.set("burak", null);
-
-      expect((await svc.getView("ayse")).joined).toEqual([{ displayName: "cem-name" }]);
-    });
-
-    it("has an empty card for a user who invited nobody", async () => {
-      const svc = service();
-      const view = await svc.getView("ayse");
-      expect(view).toMatchObject({ joined: [], convertedCount: 0, redeemed: null, canRedeem: true });
-    });
-
-    it("names the inviter to an invited user, who can no longer redeem", async () => {
-      const svc = service();
-      await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
-
-      const view = await svc.getView("burak");
-
-      expect(view.redeemed).toEqual({ inviterDisplayName: "ayse-name", discount: null });
-      expect(view.canRedeem).toBe(false);
-    });
-
-    describe("canRedeem", () => {
-      beforeEach(() => {
-        vi.useFakeTimers({ toFake: ["Date"] });
-        vi.setSystemTime(NOW);
-      });
-
-      it("is true for a new, unpaid user who has not redeemed", async () => {
-        const svc = service();
-        setUser("burak", { createdAt: new Date(NOW.getTime() - DAY_MS) });
-        expect((await svc.getView("burak")).canRedeem).toBe(true);
-      });
-
-      it("is false once the user paid", async () => {
-        const svc = service();
-        paid = true;
-        expect((await svc.getView("burak")).canRedeem).toBe(false);
-      });
-
-      it("is false once the signup window closed, and follows the configured length", async () => {
-        const svc = service();
-        setUser("burak", { createdAt: new Date(NOW.getTime() - 8 * DAY_MS) });
-        expect((await svc.getView("burak")).canRedeem).toBe(false);
-        windowDays = 10;
-        expect((await svc.getView("burak")).canRedeem).toBe(true);
-      });
-
-      it("is false while the economy is switched off", async () => {
-        const svc = service();
-        economyEnabled = false;
-        expect((await svc.getView("burak")).canRedeem).toBe(false);
-      });
-
-      it("agrees with redeem: whoever can redeem gets in and whoever cannot is turned away", async () => {
-        const svc = service();
-        const code = await svc.getOrCreateCode("ayse");
-        setUser("late", { createdAt: new Date(NOW.getTime() - 30 * DAY_MS) });
-        expect((await svc.getView("late")).canRedeem).toBe(false);
-        await expect(svc.redeem("late", code)).rejects.toMatchObject({ code: ErrorCode.INVITE_WINDOW_CLOSED });
-        expect((await svc.getView("burak")).canRedeem).toBe(true);
-        await expect(svc.redeem("burak", code)).resolves.toEqual({ status: "PENDING" });
-      });
-    });
-
-    describe("the invited user's discount", () => {
-      const THIRTY_PERCENT: PromotionSummaryFake = { discountType: "PERCENT", discountValue: 30 };
-      const redeemAs = async (svc: InviteService, friend = "burak") => {
-        await svc.redeem(friend, await svc.getOrCreateCode("ayse"));
-      };
-
-      it("with a verified phone, tells the discount checkout will honour (no phone step)", async () => {
-        const svc = service();
-        await redeemAs(svc);
-        inviteOffer = { promotion: THIRTY_PERCENT };
-
-        const view = await svc.getView("burak");
-
-        expect(view.redeemed!.discount).toEqual({ discountType: "PERCENT", discountValue: 30, phoneRequired: false });
-        expect(offerLookups).toEqual(["burak"]);
-      });
-
-      it("with a verified phone, has no discount when checkout would not give one", async () => {
-        const svc = service();
-        await redeemAs(svc);
-        inviteOffer = null; // no live INVITED promotion, already paid, trialing, phone used elsewhere...
-
-        expect((await svc.getView("burak")).redeemed!.discount).toBeNull();
-      });
-
-      it("without a verified phone, says the discount waits for one when an INVITED promotion is live", async () => {
-        const svc = service();
-        await redeemAs(svc);
-        phoneVerified = false;
-        previewSummary = THIRTY_PERCENT;
-
-        const view = await svc.getView("burak");
-
-        expect(view.redeemed!.discount).toEqual({ discountType: "PERCENT", discountValue: 30, phoneRequired: true });
-        expect(offerLookups).toEqual([]); // the per-user lookup is for verified phones only
-      });
-
-      it("without a verified phone and no live INVITED promotion (or no web sales), has no discount", async () => {
-        const svc = service();
-        await redeemAs(svc);
-        phoneVerified = false;
-        previewSummary = null;
-
-        expect((await svc.getView("burak")).redeemed!.discount).toBeNull();
-      });
-
-      it("without a verified phone, promises nothing to someone who already paid", async () => {
-        const svc = service();
-        await redeemAs(svc);
-        phoneVerified = false;
-        previewSummary = THIRTY_PERCENT;
-        paid = true;
-
-        expect((await svc.getView("burak")).redeemed!.discount).toBeNull();
-      });
-
-      it("without a verified phone, promises nothing to someone checkout would refuse (open subscription)", async () => {
-        const svc = service();
-        await redeemAs(svc);
-        phoneVerified = false;
-        previewSummary = THIRTY_PERCENT;
-        blockingSubscription = true;
-
-        expect((await svc.getView("burak")).redeemed!.discount).toBeNull();
-      });
-
-      it("carries a FIXED discount as the kuruş amount checkout applies", async () => {
-        const svc = service();
-        await redeemAs(svc);
-        inviteOffer = { promotion: { discountType: "FIXED", discountValue: 5000 } };
-
-        expect((await svc.getView("burak")).redeemed!.discount).toEqual({
-          discountType: "FIXED",
-          discountValue: 5000,
-          phoneRequired: false,
-        });
-      });
-
-      it("shows no discount to a user who never redeemed, even with a live promotion", async () => {
-        const svc = service();
-        inviteOffer = { promotion: THIRTY_PERCENT };
-        previewSummary = THIRTY_PERCENT;
-
-        const view = await svc.getView("burak");
-
-        expect(view.redeemed).toBeNull();
-        expect(offerLookups).toEqual([]);
-      });
-    });
-  });
-
-  describe("getPreview (the public landing)", () => {
-    it("answers with the inviter's display name and nothing else about them", async () => {
-      const svc = service();
-      const code = await svc.getOrCreateCode("ayse");
-      setUser("ayse", { displayName: "Ayşe Y." });
-
-      const preview = await svc.getPreview(code);
-
-      expect(preview).toEqual({ inviterDisplayName: "Ayşe Y.", discount: null });
-      expect(Object.keys(preview).sort()).toEqual(["discount", "inviterDisplayName"]);
-    });
-
-    it("carries the live INVITED discount without the phoneRequired flag", async () => {
-      const svc = service();
-      const code = await svc.getOrCreateCode("ayse");
-      previewSummary = { discountType: "PERCENT", discountValue: 30 };
-
-      expect((await svc.getPreview(code)).discount).toEqual({ discountType: "PERCENT", discountValue: 30 });
-    });
-
-    it("has no discount when no INVITED promotion is live or the web cannot sell a plan", async () => {
-      const svc = service();
-      const code = await svc.getOrCreateCode("ayse");
-      previewSummary = null;
-
-      expect((await svc.getPreview(code)).discount).toBeNull();
-    });
-
-    it("answers INVITE_CODE_INVALID (404) for an unknown code", async () => {
-      const svc = service();
-      await expect(svc.getPreview("PUHU-NOPE2345")).rejects.toMatchObject({
-        constructor: DomainError,
-        code: ErrorCode.INVITE_CODE_INVALID,
-        httpStatus: 404,
-      });
-    });
-
-    it("answers INVITE_CODE_INVALID for a coach-owned code", async () => {
-      const svc = service();
-      const code = await svc.getOrCreateCode("ayse");
-      setUser("ayse", { roles: [UserRole.STUDENT, UserRole.COACH] });
-      await expect(svc.getPreview(code)).rejects.toMatchObject({ code: ErrorCode.INVITE_CODE_INVALID, httpStatus: 404 });
-    });
-
-    it("answers INVITE_CODE_INVALID when the owner is anonymized, erasing, suspended or gone", async () => {
-      const svc = service();
-      const code = await svc.getOrCreateCode("ayse");
-      for (const patch of [
-        { status: "DELETED", displayName: "Silinmiş Kullanıcı" }, // KVKK anonymization keeps the row
-        { erasureStartedAt: new Date() },
-        { status: "SUSPENDED" },
-      ]) {
-        setUser("ayse", patch);
-        await expect(svc.getPreview(code)).rejects.toMatchObject({ code: ErrorCode.INVITE_CODE_INVALID, httpStatus: 404 });
-      }
-      userRows.set("ayse", null);
-      await expect(svc.getPreview(code)).rejects.toMatchObject({ code: ErrorCode.INVITE_CODE_INVALID });
-    });
-
-    it("answers INVITE_CODE_INVALID while the economy is switched off, so the landing shows one invalid state", async () => {
-      const svc = service();
-      const code = await svc.getOrCreateCode("ayse");
-      economyEnabled = false;
-      await expect(svc.getPreview(code)).rejects.toMatchObject({ code: ErrorCode.INVITE_CODE_INVALID, httpStatus: 404 });
-    });
   });
 
 });

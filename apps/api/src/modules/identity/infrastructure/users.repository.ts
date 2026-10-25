@@ -25,6 +25,9 @@ export interface DisplayIdentityRow {
   displayName: string;
   username: string | null;
   avatarStorageKey: string | null;
+  /** Account state, so a caller can tell a live person from an anonymized shell (identity keeps the row). */
+  status: string;
+  erasureStartedAt: Date | null;
 }
 
 export interface PublicUserSearchRow {
@@ -263,6 +266,8 @@ export class UsersRepository {
           displayName: sql<string>`coalesce(${users.displayName}, '')`,
           username: sql<string | null>`${users.username}`,
           avatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+          status: users.status,
+          erasureStartedAt: users.erasureStartedAt,
         })
         .from(users)
         .where(inArray(users.id, ids)),

@@ -20,6 +20,7 @@ import { DeepAnalysisService } from "../application/deep-analysis.service";
 import { resolveEconomyLang } from "../application/economy-lang";
 import { EconomyService } from "../application/economy.service";
 import { InviteService } from "../application/invite.service";
+import { InviteViewService } from "../application/invite-view.service";
 import { QuestService, type QuestProgressView } from "../application/quest.service";
 import { StreakRescueService } from "../application/streak-rescue.service";
 import { DeepAnalysisDto, EconomyLedgerQueryDto, InviteCodeViewDto, RedeemInviteDto } from "./economy.dto";
@@ -36,6 +37,7 @@ export class EconomyController {
   constructor(
     private readonly economy: EconomyService,
     private readonly invites: InviteService,
+    private readonly inviteViews: InviteViewService,
     private readonly quests: QuestService,
     private readonly streakRescue: StreakRescueService,
     private readonly deepAnalysis: DeepAnalysisService,
@@ -81,7 +83,7 @@ export class EconomyController {
     if (user.roles.includes(UserRole.COACH)) {
       throw new DomainError(ErrorCode.INVITE_COACH_NOT_ALLOWED, HttpStatus.FORBIDDEN);
     }
-    return this.invites.getView(user.id);
+    return this.inviteViews.getView(user.id);
   }
 
   @Get("rewards/unseen")

@@ -525,8 +525,10 @@ bağlantısı açan birine yalnız `{ inviterDisplayName, discount }` gösterir;
 
 - **Sayım kuralı:** `convertedCount` = `status = CONVERTED` ve `reward_outcome` `REFUNDED` / `REVERSED`
   değil (`InviteRepository.countConvertedByInviter`). Arkadaşlar ismiyle listelenir, ödeyenler yalnız sayıyla.
-  İsmi çözülemeyen arkadaş (kimlik satırı yok / boş ad) listeden düşer, yer tutucu gösterilmez. Not:
-  KVKK silinen hesap satırı korur ve "Silinmiş Kullanıcı" adını taşır; bu görünüm onu ayrıca elemez.
+  Listede yalnız canlı hesaplar görünür (`DisplayIdentity.active`: ACTIVE ve silinme sürecinde değil):
+  KVKK silme satırı korur ve adı "Silinmiş Kullanıcı" yapar, yani satırın varlığı kişinin duruyor olduğunu
+  göstermez. Silinmiş / askıya alınmış / yasaklı arkadaş, satırı olmayan ve adı boş olan listeden düşer,
+  yer tutucu gösterilmez (liste bu yüzden 20'den az olabilir).
 - **`canRedeem`:** `economy.enabled` ve daha önce kullanmamış ve hiç ödememiş ve kayıt penceresi içinde.
   `redeem` ile aynı tek yargı (`InviteService.redeemBlock`), iki yerde kopya yok.
 - **`redeemed.discount`:** telefonu doğrulanmışsa `SubscriptionsService.findInviteOffer` (checkout'un
@@ -538,12 +540,15 @@ bağlantısı açan birine yalnız `{ inviterDisplayName, discount }` gösterir;
   `economy.enabled` kapalıyken hepsi aynı `404 INVITE_CODE_INVALID` (inen sayfa tek "geçersiz bağlantı"
   durumu gösterir; 400 vermek hangisi olduğunu sızdırırdı). "Geçerli kod" tanımı tek yerde:
   `InviteService.resolveValidInvite`.
+- **Dosya bölünmesi:** salt okunur kart ve önizleme `InviteViewService`'te (`invite-view.service.ts`),
+  kurallar `InviteService`'te kaldı: `resolveValidInvite` ve `redeemBlock` artık public ve tek tanım,
+  görünüm servisi onları çağırır, kopyalamaz. `InviteService` kurucusu eski haline döndü (10 bağımlılık).
 - **`summary()` kaldı:** admin kullanıcı ekonomi görünümü (`admin-economy.controller.ts`) hâlâ kullanıyor.
 - Usage: web kartı (`fetchInviteCode`) ve `/davet/[code]` iniş sayfası bu iki uç noktayı tüketir. İstemci
   `pnpm --filter @mentor/api openapi:export` + `pnpm --filter @mentor/api-client generate` ile yenilendi.
 - **Gotcha:** önizleme uç noktası 20/dk sınırlıdır; e2e'de bu bütçeyi tüketen test dosyanın sonunda durur.
-  `InviteService` kurucusu iki parametre kazandı (`UsersService`, `SubscriptionsService`), elle kurulan
-  spec örneklerinde sona eklenmeli. Related: `invite.service.ts`, `invite.repository.ts`,
+  `InviteViewService` `UsersService` ve `SubscriptionsService` ister, `InviteService` istemez.
+  Related: `invite.service.ts`, `invite-view.service.ts`, `invite.repository.ts`,
   `invite-preview.controller.ts`, `economy.dto.ts`, [payments.md](./payments.md) 2026-10-25,
   [promotions.md](./promotions.md) 2026-10-25, `apps/api/test/economy-invite.e2e-spec.ts`.
 

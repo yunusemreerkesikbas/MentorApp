@@ -2,6 +2,7 @@ import { disableAuthRateLimits } from "./app-harness";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 import { JobRunnerService } from "../src/modules/notifications/application/job-runner.service";
 import { SubscriptionsService } from "../src/modules/payments/application/subscriptions.service";
+import { UsersService } from "../src/modules/identity/application/users.service";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
@@ -559,6 +560,26 @@ describe("economy invite (e2e)", () => {
       ]);
       expect(res.body.convertedCount).toBe(1);
       expect(res.body.redeemed).toBeNull();
+    });
+
+    it("an erased friend drops off the inviter's list: anonymization keeps the row, so the list must not show it", async () => {
+      const inviter = await signup("view-erase-host");
+      const staying = await signup("view-erase-stays");
+      const leaving = await signup("view-erase-leaves");
+      const code = (await inviteView(inviter.accessToken)).body.code as string;
+      await redeem(leaving.accessToken, code).expect(201);
+      await redeem(staying.accessToken, code).expect(201);
+      expect((await inviteView(inviter.accessToken)).body.joined).toHaveLength(2);
+
+      // The path account erasure takes (AccountErasureService -> UsersService.anonymizeAccount).
+      await app.get(UsersService).anonymizeAccount(leaving.user.id, "DELETED");
+      const [row] = await serviceRows("select status, display_name from users where id = $1", [leaving.user.id]);
+      expect(row).toEqual({ status: "DELETED", display_name: "Silinmiş Kullanıcı" }); // the row, and the placeholder, are really there
+
+      const res = await inviteView(inviter.accessToken);
+
+      expect(res.body.joined).toEqual([{ displayName: "Inv view-erase-stays" }]);
+      expect(JSON.stringify(res.body)).not.toContain("Silinmiş");
     });
 
     it("an invited user sees who invited them and can no longer redeem", async () => {

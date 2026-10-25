@@ -97,6 +97,15 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **`DisplayIdentity.active` (2026-10-25)** — `UsersService.listDisplayIdentities` now also says whether each
+  person is a live account: `active = status === "ACTIVE" && erasureStartedAt == null`
+  (`UsersRepository.listDisplayByIds` selects `status` and `erasureStartedAt`). Why: KVKK erasure
+  (`anonymizeAccount`) keeps the `users` row and rewrites it to "Silinmiş Kullanıcı", so the row's presence
+  never meant the person was still there. Usage: a list that must not show an erased person (the invite
+  card's joined friends) skips `active: false`; a list that must keep the row (a coach's roster) ignores
+  the flag, nothing changes for it. Gotcha: suspended and banned accounts are `active: false` too, so
+  "active" is not "erased". Related: `users.service.ts`, `users.repository.ts`,
+  `economy/application/invite-view.service.ts`, [economy.md](./economy.md) 2026-10-25.
 - **Anonymous-only analytics banner (2026-10-25)** — Public content now shows the analytics
   banner only after the session resolves as anonymous. Loading and authenticated sessions do not
   open it, even without a stored browser preference. Usage: signup still records its optional
