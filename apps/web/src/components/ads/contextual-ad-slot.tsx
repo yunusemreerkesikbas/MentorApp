@@ -2,7 +2,8 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { AdPlacementId, type ExamType } from "@mentor/types";
+import { AdPlacementId, type ExamType, type AdQuestionContext } from "@mentor/types";
+import type { AdBlogListContext } from "@mentor/validation";
 import { useAuth } from "@/lib/auth-context";
 import { fetchAdPlacement, fetchPublicAdPlacement } from "@/lib/ads";
 import { onSubscriptionChanged } from "@/lib/subscription-events";
@@ -10,12 +11,27 @@ import { configureLimitedPrivacy, withGpt, type GptEvent, type GptSlot } from "@
 
 const DISPLAY_TIMEOUT_MS = 10_000;
 
+export interface ContextualAdSlotProps {
+  placementId?: AdPlacementId;
+  contentSlug?: string;
+  examType?: ExamType;
+  blogList?: AdBlogListContext;
+  question?: AdQuestionContext;
+}
+
 /** Mounted by the deferred boundary only when it approaches the viewport. */
 export function ContextualAdSlot({
   placementId = AdPlacementId.KNOWLEDGE_ARTICLE_END,
   contentSlug,
   examType,
-}: { placementId?: AdPlacementId; contentSlug: string; examType?: ExamType }) {
+  blogList,
+  question,
+}: ContextualAdSlotProps) {
+  const questionId = question?.questionId;
+  const contentRevision = question?.contentRevision;
+  const family = blogList?.family;
+  const category = blogList?.category;
+  const page = blogList?.page;
   const { status, user } = useAuth();
   const t = useTranslations("ads");
   const reactId = useId();
@@ -24,6 +40,8 @@ export function ContextualAdSlot({
   const containerRef = useRef<HTMLElement>(null);
   const [revision, setRevision] = useState(0);
   const [renderState, setRenderState] = useState<"loading" | "filled" | "empty">("loading");
+  const canRequest = status === "authenticated" ||
+    (status === "anonymous" && (placementId === AdPlacementId.KNOWLEDGE_ARTICLE_END || placementId === AdPlacementId.KNOWLEDGE_INDEX || placementId === AdPlacementId.FORUM_QUESTION_END));
 
   useEffect(() => {
     const invalidate = () => {
@@ -36,7 +54,7 @@ export function ContextualAdSlot({
   }, []);
 
   useEffect(() => {
-    if (status === "loading") return;
+    if (!canRequest) return;
     let cancelled = false;
     let slot: GptSlot | null = null;
     let removeRenderListener: (() => void) | null = null;
@@ -50,9 +68,11 @@ export function ContextualAdSlot({
     };
     const timeout = setTimeout(() => { stop(); setRenderState("empty"); }, DISPLAY_TIMEOUT_MS);
     stopCurrent.current = stop;
+    const listContext = family ? { family, category, page: page ?? 1 } : undefined;
+    const questionContext = questionId && contentRevision ? { questionId, contentRevision } : undefined;
     void (status === "authenticated"
-      ? fetchAdPlacement(placementId, contentSlug)
-      : fetchPublicAdPlacement(placementId, contentSlug, examType))
+      ? fetchAdPlacement(placementId, contentSlug, listContext, questionContext)
+      : fetchPublicAdPlacement(placementId, contentSlug, examType, listContext, questionContext))
       .then(async (policy) => {
         if (cancelled) return;
         if (!policy.enabled || !policy.adUnitPath) {
@@ -83,12 +103,12 @@ export function ContextualAdSlot({
       })
       .catch(() => { if (!cancelled) { stop(); setRenderState("empty"); } });
     return stop;
-  }, [contentSlug, examType, placementId, slotId, status, user, revision]);
+  }, [canRequest, category, contentRevision, contentSlug, examType, family, page, placementId, questionId, slotId, status, user, revision]);
 
   return (
-    <aside ref={containerRef} aria-label={t("label")} className={status === "loading" || renderState === "empty" ? "hidden" : "my-4 flex flex-col items-center"}>
-      <span className="mb-1 text-micro uppercase tracking-widest text-[var(--color-secondary)]">{t("label")}</span>
-      {/* Reserve the maximum declared inventory height (300x250 / 320x100 / 728x90). */}
+    <aside ref={containerRef} aria-label={t("label")} className={!canRequest || renderState === "empty" ? "hidden" : "my-4 flex flex-col items-center"}>
+      <span className="mb-1 rounded-[var(--radius-card)] bg-[var(--color-surface)] px-2 text-micro uppercase tracking-widest text-[var(--color-main)]">{t("label")}</span>
+      {/* Display inventory is at most 250px high, including the overview squares. */}
       <div id={slotId} className="min-h-[250px] max-w-full overflow-hidden" />
     </aside>
   );

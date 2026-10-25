@@ -9,6 +9,7 @@ import {
 import { LoaderCircle } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { AdPlacementId } from "@mentor/types";
 import type {
   ExamSubjectDto,
   NotebookDto,
@@ -23,6 +24,7 @@ import { playNotebookSfx } from "@/lib/notebook-sfx";
 import { prefetchNotebookContents } from "@/lib/notebook-contents-cache";
 import { preloadNotebookOpeningFlight } from "@/components/notebook-desk/notebook-opening-overlay";
 import { useTheme } from "@/lib/use-theme";
+import { DeferredContextualAdSlot } from "@/components/ads/deferred-contextual-ad-slot";
 import { NotebookFormDialog } from "./notebook-form-dialog";
 import { DeskBackdrop, DeskLight } from "@/components/notebook-desk/desk-backdrop";
 import { DeskHeader } from "./desk-header";
@@ -417,6 +419,9 @@ export function NotebooksShell() {
             </button>
           ) : null}
         </div>
+        {!loading && !error ? (
+          <DeferredContextualAdSlot placementId={AdPlacementId.NOTEBOOKS_OVERVIEW} />
+        ) : null}
       </div>
       <DeskLight />
 

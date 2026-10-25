@@ -12,6 +12,7 @@ import { withServiceContext, withUserContext } from "../../../database/rls";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { GeoService } from "../../content/application/geo.service";
 import { KpssService } from "../../content/application/kpss.service";
+import { UsersService } from "../../identity/application/users.service";
 import { VisionBoardRepository } from "../infrastructure/vision-board.repository";
 import { CoachingEventTopic, VisionBoardSaved } from "../domain/coaching.events";
 import { toVisionDto } from "./coaching.mappers";
@@ -46,6 +47,7 @@ export class VisionService {
     private readonly geo: GeoService,
     private readonly kpss: KpssService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly users: UsersService,
     @Optional() private readonly events?: EventEmitter2,
   ) {}
 
@@ -169,6 +171,8 @@ export class VisionService {
       const row = await this.visions.upsert(tx, userId, normalized);
       return toVisionDto(row);
     });
+    // ponytail: separate write after the board tx; a failure here leaves the mirror one save stale.
+    await this.users.setCareerGroup(userId, normalized.careerGroup);
     return this.enrich(userId, dto);
   }
 

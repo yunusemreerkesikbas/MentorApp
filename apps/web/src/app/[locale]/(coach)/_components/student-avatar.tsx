@@ -9,8 +9,8 @@ export function initialsOf(name: string): string {
 }
 
 /**
- * A student on the coach's surface: their own photo when they set one, otherwise initials in the
- * coach's soft ink, the same well the round's waiting nodes use (DESIGN.md §2.5).
+ * A student on the coach's surface: their own photo when they set one, otherwise the shared
+ * default silhouette (2026-10-25: no-photo avatars are the same everywhere).
  */
 export function StudentAvatar({
   name,
@@ -21,14 +21,5 @@ export function StudentAvatar({
   src: string | null;
   size?: 32 | 40 | 56;
 }) {
-  if (src) return <UserAvatar name={name} src={src} size={size} />;
-  const text = size === 56 ? "text-lg" : size === 40 ? "text-sm" : "text-xs";
-  return (
-    <span
-      aria-hidden
-      className={`grid shrink-0 place-items-center rounded-full bg-[var(--coach-accent-soft)] font-black text-[var(--coach-accent-ink)] ${size === 56 ? "size-14" : size === 40 ? "size-10" : "size-8"} ${text}`}
-    >
-      {initialsOf(name)}
-    </span>
-  );
+  return <UserAvatar name={name} src={src} size={size} />;
 }

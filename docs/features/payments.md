@@ -372,6 +372,13 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 - Promotion tests select direct purchase with `useTrial: false` while their buyers remain phone-unverified. A pending promotion reservation is released only after provider-confirmed cancellation; another checkout no longer discards an unresolved attempt. Trial conversion and refund tests keep `useTrial: true` with verified-phone fixtures, preserving coverage of the initial charge versus renewal reward lifecycle. Invite-only users still need no phone verification.
 - Usage: run `promotions.e2e-spec.ts` and `economy-invite.e2e-spec.ts` against the dedicated test database. Omitting `useTrial` intentionally retains automatic first-subscription trial selection and its phone requirement. Related: `apps/api/test/promotions.e2e-spec.ts`, `apps/api/test/economy-invite.e2e-spec.ts`.
 
+### 2026-10-25 — Paywall sales copy
+
+- Paywall copy rewritten to lead with what the student gets: default headline "Sınava koçunla hazırlan", the coach is named "AI koç" (so it is not mistaken for the human coach in Koçum), new benefit titles, and all contextual headlines except mood (kept soft on purpose).
+- The featured multi-month plan badge shows `%N tasarruf` (`savingsPercent` in `apps/web/src/lib/paywall-plans.ts`): compared with the monthly plan's list price, rounded down so it never overstates. It falls back to "Önerilen" when there is no monthly plan.
+- CTA on both the paywall and `/abonelik`: `subscription.start_paid` = "{price} ile Premium'a geç" (the price is what gets charged now, coupon included); `start_trial` = "{days} gün ücretsiz başla"; `start_premium` is the fallback while plans are loading.
+- Gotchas: Premium coach chat is capped (`ai.chat.daily_limit`, default 30/day), so never write "sınırsız". There is no real social proof yet, so don't invent any. E2e specs now find the CTA by regex (`/ile Premium'a geç/`, `/gün ücretsiz başla/`).
+
 ## Gotchas / Known issues
 
 - **Coach seats read payments twice, and never write it (W8 phase B, 2026-09-27).** The seat on a

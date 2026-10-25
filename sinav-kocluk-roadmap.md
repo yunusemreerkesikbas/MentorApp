@@ -383,6 +383,28 @@ Ek gelir             → sponsorlu/öne-çıkarma (Faz 2-3, dikkatli)
 - Basit kurum lisansı **Faz 2'ye cash tamponu** olarak öne çekilebilir (taslakta Faz 3'tü).
 
 ### Karar: Kontrollü reklam + sponsorlu keşif
+- **REVİZYON (2026-10-25, incelenmiş herkese açık soru-cevap):** Cevapların sonunda tek Google
+  limited alanı hazırlanır. Yönetici soru ve tüm cevapları önizleyip içerik sürümünü onaylar;
+  soru/cevap veya görünürlük değişince yeniden inceleme gerekir. Görünen sürüm, güncel sürüm ve
+  onay eşleşmeden reklam sunulmaz. Sınav bağlamı belirsiz, özel, gizlenmiş, arşivlenmiş veya
+  cevapsız içerik kapalıdır. İnceleme/onayı kaldırma denetim kaydına girer. Alan ve Google birimi
+  admin'den yönetilir; varsayılan kapalıdır. Google envanter/içerik/gizlilik incelemesi ve kamuya
+  açık bilgilendirmeler tamamlanmadan üretime açılmaz. Akış, sohbet ve profillere reklam eklenmez.
+- **REVİZYON (2026-10-25, blog ana sayfası):** Blog listesine tek Google limited alanı eklenir.
+  Masaüstünde sınav kartının altında, mobilde yazı listesinin sonunda yer alır; sabitlenmez.
+  Seçili sınav/kategori/sayfada yayımlanmış açıklamalı içerik sunucuda doğrulanır; öne çıkan yazı
+  yalnız uygun ilk sayfada sayılır. Boş/hatalı listede reklam hazırlanmaz. Alan ve Google birimi
+  admin'den bağımsız yönetilir; varsayılan kapalıdır. Google envanter/içerik/gizlilik uygunluğu ve
+  kamuya açık reklam bilgilendirmeleri tamamlanmadan üretime açılmaz. Premium/STAFF reklamsızdır.
+- **REVİZYON (2026-10-25):** Google gösterim altyapısı Free kullanıcılar için Defterlerim
+  listesi sonuna ve Vision Board keşif paneli sonuna genişletilir. Mobil panoda yalnız açılan
+  keşif panelinde hazırlanır; harita küçültülmez, defter/pano editörüne reklam girmez. Her
+  ekranda en fazla tek alan vardır. Alan bazında aç/kapat ve Google birim yolu mevcut admin
+  panelinden yönetilir; yeni alanlar varsayılan kapalıdır. Blog onayı kişisel araç ekranlarının
+  onayı sayılmaz: Google içerik/tarama ve gizlilik uygunluğu doğrulanmadan üretimde açılmaz,
+  tarayıcıya gerçek öğrenci hesabı/verisi verilmez. Premium/STAFF reklamsızlığı korunur.
+  Sponsor kampanyaları ileride aynı Ad Manager birimleri üzerinden sunulabilir; bu adım ayrı
+  sponsor sistemi, kozmetik satış veya reklam karşılığı AI/özellik hakkı içermez.
 - **İlk gelir pilotu (2026-10-09):** Türkiye'deki anonim ve Free okuyuculara KPSS/YKS/LGS blog
   yazılarının sonunda tek Google limited reklam. Analitikten bağımsız reklam verisi tercihi kabul
   edilmeden etiket yüklenmez; Premium ve STAFF reklamsız kalır. Kişiselleştirme kapalıdır.
@@ -394,7 +416,8 @@ Ek gelir             → sponsorlu/öne-çıkarma (Faz 2-3, dikkatli)
   Defter/pano sponsorları, tek seferlik tema/kapak/sticker ve kaynak satış ortaklığı sonraki
   doğrulamalara bırakılır; bu pilot bunların satış altyapısını içermez.
 - Genel ürün akışına klasik banner/CPM reklamı yayılmaz. İstisna: bilgi merkezi sonunda tek
-  contextual limited banner ve Free dashboard'da tamamen gönüllü Coin rewarded reklamı. Premium
+  contextual limited banner, yukarıdaki koşullarla blog ana sayfası ve Defterlerim/Vision Board ana ekranlarında tek
+  Google limited alanı ve Free dashboard'da tamamen gönüllü Coin rewarded reklamı. Premium
   ve STAFF tamamen reklamsızdır; görev/seans/mood/koç akışına reklam girmez. Interstitial, sticky ve
   app-open reklam yapılmaz. Bu dar sınır gelir ihtiyacı ile "yoldaşlık" güvenini birlikte korur.
 - Bunun yerine **marketplace'in native uzantısı:**

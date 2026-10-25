@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AdminAdReviewsController } from "./presentation/admin-ad-reviews.controller";
 import { AccountModule } from "../account/account.module";
 import { AdsModule } from "../ads/ads.module";
 import { AiModule } from "../ai/ai.module";
@@ -51,6 +52,7 @@ import { AdminForumController } from "./presentation/admin-forum.controller";
     MentorshipModule,
   ],
   controllers: [
+    AdminAdReviewsController,
     AdminUsersController,
     AdminConfigController,
     AdminEconomyController,

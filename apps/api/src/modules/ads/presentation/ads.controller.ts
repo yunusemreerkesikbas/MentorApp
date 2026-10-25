@@ -30,6 +30,8 @@ export class AdsController {
       query.contentSlug ?? null,
       (query.examType as ExamType | undefined) ?? null,
       countryCode ?? null,
+      query.family ? { family: query.family, category: query.category, page: query.page ?? 1 } : undefined,
+      query.questionId && query.contentRevision ? { questionId: query.questionId, contentRevision: query.contentRevision } : undefined,
     );
   }
 
@@ -48,6 +50,8 @@ export class AdsController {
       user.roles,
       query.contentSlug ?? null,
       countryCode ?? null,
+      query.family ? { family: query.family, category: query.category, page: query.page ?? 1 } : undefined,
+      query.questionId && query.contentRevision ? { questionId: query.questionId, contentRevision: query.contentRevision } : undefined,
     );
   }
 

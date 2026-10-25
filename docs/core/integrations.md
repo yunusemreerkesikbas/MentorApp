@@ -173,6 +173,52 @@ Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
   with a real impression visible in Ad Manager before wider exposure. Only enable `ads.enabled`,
   `ads.display.enabled`, `ads.placement.knowledge_article_end.enabled`; keep rewarded flags/rollout
   off (web has no server verification). Roll back by disabling `ads.enabled`.
+- Overview inventory (2026-10-25): admin `/config` adds independent
+  `ads.placement.{notebooks_overview,vision_overview}.enabled` switches (default false) and
+  `.ad_unit_path` strings. Blog `.ad_unit_path` overrides its environment unit; empty preserves
+  the existing environment fallback. Overview empty paths disable delivery. Only inventory paths
+  are accepted, never scripts/HTML; saving is validated and audited. Changes apply on the next
+  placement-policy request, with no redeployment or active-page polling.
+- Reviewed public QA (2026-10-25): migrate `0127_ad_question_reviews` through the normal deployment
+  path. In Community admin, inspect the public question and every answer before approving its
+  revision; approve/revoke are audited. Public/authenticated `forum.question.end` requests require
+  UUID `questionId` and rendered SHA-256 `contentRevision`. Current snapshot, rendered revision and
+  approval must match. Unknown exam context or unavailable/unapproved QA cannot request Google,
+  including local sample mode. The flag defaults off and the unit has no env fallback. Complete
+  Google inventory/content/privacy review and update public disclosures before activation.
+  Monitor the existing moderation report queue; manual approval is not automated policy detection.
+  Changes apply on the next eligibility request; open snapshots have no live moderation push.
+  No user-level impression tracking added. See [Google's UGC guidance](https://support.google.com/adsense/answer/1355699?hl=en)
+  and [the implementation design](../plans/2026-10-25-reviewed-question-ads.md).
+- Public blog index (2026-10-25): configure `ads.placement.knowledge_index.ad_unit_path` in the
+  same admin category and leave `.enabled=false` until the index itself passes inventory,
+  content-value and privacy review. Empty path disables delivery. The index uses
+  `family`/`category`/`page` on existing placement endpoints to verify published descriptions on
+  the actual selected page, including a matching featured article only on page one. No unrelated
+  article URL or legacy exam query proves the listing context. The UI shares one server request
+  result for its list/ad boundary, mounts no ad for a failed/empty list and uses a single
+  non-sticky responsive slot. Revise the currently article-end-specific public TR/EN disclosures
+  before production activation. After approval, use the existing 14-day real-impression pilot and
+  per-placement rollback switch; stubbed or sample inventory proves no revenue.
+- Keep both overview switches off until Google has accepted the actual login-protected content,
+  crawler accessibility and privacy treatment. These are tool/personal-library screens, so blog
+  approval alone does not establish their inventory eligibility. As part of that review, revise
+  the currently blog-specific public privacy/KVKK/terms and TR/EN advertising disclosures before
+  activating overview inventory; this development does not certify or publish that legal review.
+  Use synthetic data in any
+  isolated crawler rehearsal; never provide real student credentials, weaken RLS/authentication,
+  expose private notes/goals, or spoof a public article URL as the overview's context. If safe
+  crawler access cannot be demonstrated with the existing auth, leave the placement off and plan
+  that integration separately. Do not build a crawler bypass as part of the ad rollout.
+- Locally, `ADS_LOCAL_TEST_ENABLED=true` previews all display placements with Google's
+  official sample unit; real configured inventory cannot replace it. Premium/STAFF exclusion,
+  verified profile for overviews, strict audience treatment and explicit country restrictions
+  remain. Production/staging/public-origin use is rejected at startup. Previews earn no revenue.
+- After each overview passes the existing production gates, enable it independently and run the
+  same 14-day observation from its first real impression. Reuse Google reporting rather than
+  adding passive user-level logs. Roll back one placement with its switch, or all via `ads.enabled`.
+  Future direct sponsor campaigns can use the same units via Google Ad Manager Sponsorship or
+  Standard line items; no second provider or sponsor database is required for this initial model.
 - Run a 14-day exploratory pilot from the first real impression. Record daily Ad Manager fill,
   impressions, viewability, revenue, eCPM, and serving restriction=Limited ads. Record article read
   completion and Web Vitals only among analytics-consenting visitors; these are a biased subset.

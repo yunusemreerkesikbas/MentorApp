@@ -125,6 +125,12 @@ export const users = pgTable(
     examDate: date("exam_date"),
     /** Daily focus goal in minutes (/study-session progress + XP quest); null = no goal set. */
     dailyFocusGoalMinutes: integer("daily_focus_goal_minutes"),
+    /**
+     * CareerGroup mirror of `vision_boards.career_group`, so every client draws the sector mascot
+     * from the session user. Coaching owns the value and writes it here through
+     * `UsersService.setCareerGroup` on every goal upsert; identity never reads the board.
+     */
+    careerGroup: text("career_group"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     phoneNumber: text("phone_number"),
     phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),

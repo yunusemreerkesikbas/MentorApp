@@ -78,6 +78,14 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-25 · Blog index advertising boundary.** The post list and the new ad rail share a
+  request-scoped result for featured/list requests; existing filters, pagination and error/empty
+  views are preserved. A single non-sticky ad boundary appears only with rendered article
+  content, below the calendar on desktop and after the list on mobile. AdsModule independently
+  verifies published descriptions through Content's public APIs. Usage and production gates:
+  [ads.md](./ads.md). Related: `knowledge/_components/{blog-posts,blog-index-ad,posts-section}.*`,
+  `knowledge/page.tsx`, shared `BLOG_PAGE_SIZE`.
+
 - **2026-10-14 — Blog sadeleştirme (düz zemin, tek mürekkep, üyeye uygulama menüsü)** — Hub ve yazı artık
   `BlogShell`'de (`knowledge/_components/blog-shell.tsx`), `PublicChrome` yalnız yasal sayfalarda. Zemin opak
   `--color-bg` (blob'lar blogda görünmez). **Ziyaretçi**: ince bar, PuhuKoç + "Giriş yap" ("Blog" linki kalktı).

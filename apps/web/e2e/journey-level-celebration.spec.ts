@@ -20,6 +20,7 @@ const user: AuthUser = {
   examVariant: null,
   examDate: "2027-07-25",
   dailyFocusGoalMinutes: null,
+  careerGroup: null,
   emailVerified: true,
   createdAt: "2026-01-01T00:00:00.000Z",
 };

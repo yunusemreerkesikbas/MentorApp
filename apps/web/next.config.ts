@@ -5,6 +5,8 @@ import { webSecurityHeaders } from "./src/lib/security-headers";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  // Dedicated browser QA can run beside the developer's server without sharing build state.
+  distDir: process.env.WEB_QA_DIST_DIR ?? ".next",
   poweredByHeader: false,
   async headers() {
     return [{ source: "/:path*", headers: webSecurityHeaders(process.env.NODE_ENV === "production") }];

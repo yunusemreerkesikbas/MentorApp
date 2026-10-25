@@ -2,7 +2,7 @@
  * Auth API contracts — shared by api (producer) and web/mobile (consumers).
  * Refresh token travels ONLY in an httpOnly cookie; it never appears in these payloads.
  */
-import type { ExamType, ExamVariant, UserRole } from "./index.js";
+import type { CareerGroup, ExamType, ExamVariant, UserRole } from "./index.js";
 
 export interface AuthUser {
   id: string;
@@ -22,6 +22,8 @@ export interface AuthUser {
   examDate: string | null; // ISO date (yyyy-mm-dd)
   /** Daily focus goal in minutes; null = no goal set. */
   dailyFocusGoalMinutes: number | null;
+  /** Field picked in onboarding / on the goal board; null = "Diğer" or never picked (classic Puhu). */
+  careerGroup: CareerGroup | null;
   emailVerified: boolean;
   createdAt: string; // ISO datetime
 }

@@ -97,6 +97,15 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **Anonymous-only analytics banner (2026-10-25)** — Public content now shows the analytics
+  banner only after the session resolves as anonymous. Loading and authenticated sessions do not
+  open it, even without a stored browser preference. Usage: signup still records its optional
+  analytics checkbox; existing choices remain editable at `/cookie-preferences`. Gotcha: login
+  has no analytics checkbox and consent is browser-local, not account-backed; hiding the banner
+  never grants consent, so analytics stays disabled without explicit acceptance. Related:
+  `components/cookie-consent-banner.tsx`, `[locale]/layout.tsx`, `lib/consent-banner-path.ts`,
+  `(auth)/_components/auth-cookie-consent.tsx`, `e2e/analytics-consent.spec.ts`.
+
 ### 2026-10-13 · Invited pilot registration
 
 - Password and Google account creation share an API admission policy. `signup.enabled=false`

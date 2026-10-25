@@ -60,13 +60,14 @@ export function CoachEmptyLanding() {
           than the space left, it starts under the greeting and scrolls instead of rising over it. */}
       <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-y-auto py-2">
         <div className="my-auto flex w-full flex-col items-center">
-          <CoachCalibrationCard />
-          <PuhuImage
-            variant="encouraging"
-            size={120}
-            priority
-            className="max-h-full w-auto drop-shadow-[var(--shadow-card)]"
-          />
+          <CoachCalibrationCard>
+            <PuhuImage
+              variant="encouraging"
+              size={120}
+              priority
+              className="max-h-full w-auto drop-shadow-[var(--shadow-card)]"
+            />
+          </CoachCalibrationCard>
         </div>
       </div>
     </motion.div>

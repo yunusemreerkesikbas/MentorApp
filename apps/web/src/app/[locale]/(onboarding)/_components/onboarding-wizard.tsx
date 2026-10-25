@@ -28,7 +28,7 @@ import { WhyStep, type MotivationKey } from "./steps/why-step";
 const SESSION_KEY = "mentor_onboarding";
 
 export function OnboardingWizard() {
-  const { user } = useAuth();
+  const { user, setUserFromServer } = useAuth();
   const router = useRouter();
   const completeTracked = useRef(false);
   const [step, setStep] = useState<OnboardingStep>("intro");
@@ -137,7 +137,11 @@ export function OnboardingWizard() {
             replaceOwnVision={visionWritten}
             onBack={() => back("field")}
             onSaved={(careerGroup, wrote) => {
-              if (wrote) setVisionWritten(true);
+              if (wrote) {
+                setVisionWritten(true);
+                // The API mirrored the field onto the user; match it so every Puhu switches now.
+                if (user) setUserFromServer({ ...user, careerGroup });
+              }
               setSummary((current) => ({ ...current, careerGroup }));
               go("field");
             }}

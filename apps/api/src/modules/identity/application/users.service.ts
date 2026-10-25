@@ -6,7 +6,7 @@ import { phoneFingerprint } from "../domain/phone";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { IdentityEventTopic } from "../domain/identity.events";
 import { HttpStatus, Inject, Injectable, Logger, Optional } from "@nestjs/common";
-import type { AuthUser, AvatarUploadUrlDto, ForumPublicPerson } from "@mentor/types";
+import type { AuthUser, AvatarUploadUrlDto, CareerGroup, ForumPublicPerson } from "@mentor/types";
 import type { AvatarUploadUrlInput, UpdateMeInput } from "@mentor/validation";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -250,6 +250,14 @@ export class UsersService {
   async getAdminAccessIdentity(userId: string): Promise<{ email: string } | null> {
     const user = await this.usersRepo.findByIdService(userId);
     return user ? { email: user.email } : null;
+  }
+
+  /**
+   * Coaching's goal upsert mirrors the picked field here so the session user carries it (sector
+   * mascot on web + mobile). Coaching owns the value; this is the only writer of the column.
+   */
+  async setCareerGroup(userId: string, careerGroup: CareerGroup | null): Promise<void> {
+    await this.usersRepo.updateSelf(userId, { careerGroup });
   }
 
   async getMe(userId: string): Promise<AuthUser> {

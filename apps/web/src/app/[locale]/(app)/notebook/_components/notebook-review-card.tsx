@@ -560,9 +560,11 @@ function CardBack({
         <div className="flex flex-wrap items-center gap-1.5">
           <span
             className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+            // The app's selected-blue, not the lavender chip: the deck's only other colours are the
+            // blue CTA family and the success green, and lavender was the one hue from outside it.
             style={{
-              color: "var(--color-chip-text)",
-              backgroundColor: "var(--color-chip)",
+              color: "var(--play-selected-ink)",
+              backgroundColor: "var(--play-selected)",
             }}
           >
             {t(`error_type.${entry.errorType}`)}
@@ -572,7 +574,7 @@ function CardBack({
               className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
               style={{
                 color: "var(--color-secondary)",
-                backgroundColor: "var(--color-surface-container)",
+                border: "1px solid color-mix(in srgb, var(--color-main) 12%, transparent)",
               }}
             >
               <Repeat aria-hidden size={12} />
@@ -681,9 +683,14 @@ function EditableField({
   const wellClass = `flex min-h-0 flex-col rounded-[var(--radius-card)] p-3 ${
     fills ? "flex-1" : ""
   }`;
+  // No grey fill: an empty well is a dashed outline that reads as "write here", a filled one a
+  // hairline box on the card's own surface. The warm grey clashed with the deck's blue family.
+  const empty = !editing && !value;
   const wellStyle = {
-    backgroundColor: "var(--color-surface-container)",
-    border: "1px solid color-mix(in srgb, var(--color-main) 8%, transparent)",
+    backgroundColor: "transparent",
+    border: empty
+      ? "1.5px dashed color-mix(in srgb, var(--play-selected-ink) 35%, transparent)"
+      : "1px solid color-mix(in srgb, var(--color-main) 12%, transparent)",
   } as const;
 
   if (!editing) {
@@ -699,7 +706,7 @@ function EditableField({
       >
         <span
           className="inline-flex items-center gap-1.5 text-xs font-semibold"
-          style={{ color: "var(--color-secondary)" }}
+          style={{ color: value ? "var(--color-secondary)" : "var(--play-selected-ink)" }}
         >
           <Pencil aria-hidden size={12} />
           {value ? editLabel : addLabel}

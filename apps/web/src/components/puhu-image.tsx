@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { CareerGroup } from "@mentor/types";
+import { useAuth } from "@/lib/auth-context";
 
 export type PuhuVariant =
   | "default"
@@ -44,7 +45,7 @@ function resolvePuhuSize(size: PuhuSizeToken | number): number {
 
 export function PuhuImage({
   variant,
-  career = null,
+  career: careerOverride,
   size = "lg",
   className,
   priority = false,
@@ -54,6 +55,8 @@ export function PuhuImage({
    * Career field the user is aiming for. When set, it REPLACES the variant artwork with a
    * dedicated illustration under `/mascot/career/{enum}.png`. Ten finished files rather than
    * an accessory overlay: an overlay anchored for one pose drifts on the other seven.
+   * Omitted = the session user's field (null → classic Puhu); pass a value only to preview an
+   * unsaved pick, as the goal board's form does.
    */
   career?: CareerGroup | null;
   /** Token (`sm`/`md`/`lg`) or raw px for special layouts (mood wheel, onboarding). */
@@ -63,6 +66,8 @@ export function PuhuImage({
 }) {
   const px = resolvePuhuSize(size);
   const reduceMotion = useReducedMotion();
+  const { user } = useAuth();
+  const career = careerOverride === undefined ? (user?.careerGroup ?? null) : careerOverride;
   const src = career
     ? `/mascot/career/${career.toLowerCase()}.png`
     : `/mascot/puhu/${FILE_BY_VARIANT[variant]}`;

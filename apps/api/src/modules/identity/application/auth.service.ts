@@ -315,6 +315,7 @@ export function toAuthUser(
     examVariant: (user.examVariant as AuthUser["examVariant"]) ?? null,
     examDate: user.examDate ?? null,
     dailyFocusGoalMinutes: user.dailyFocusGoalMinutes ?? null,
+    careerGroup: (user.careerGroup as AuthUser["careerGroup"]) ?? null,
     emailVerified: user.emailVerifiedAt != null,
     createdAt: user.createdAt.toISOString(),
   };

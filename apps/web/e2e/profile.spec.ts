@@ -15,6 +15,7 @@ const user: AuthUser = {
   examVariant: null,
   examDate: "2026-07-26",
   dailyFocusGoalMinutes: null,
+  careerGroup: null,
   emailVerified: true,
   createdAt: "2026-01-01T00:00:00.000Z",
 };
@@ -27,11 +28,9 @@ test("ayarlar yasal footer bağlantısını AppNav içindeki belgeye açar", asy
   await page.goto("/ayarlar");
 
   const footer = page.getByRole("navigation", { name: "Yasal" });
-  // Six legal texts + icon credits; cookie preferences is a row in the Uygulama card.
-  await expect(footer.getByRole("link")).toHaveCount(7);
-  await expect(footer.getByRole("link", { name: "İkon kaynakları" })).toHaveAttribute(
-    "href", "/icon-credits.txt",
-  );
+  // The six legal texts only; cookie preferences is a row in the Uygulama card.
+  await expect(footer.getByRole("link")).toHaveCount(6);
+  await expect(page.getByRole("link", { name: "İkon kaynakları" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Çerez tercihleri" })).toHaveAttribute(
     "href", "/ayarlar/cerez-tercihleri",
   );

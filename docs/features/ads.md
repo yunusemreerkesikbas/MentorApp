@@ -1,14 +1,25 @@
-# Ads — Google Ad Manager (Blog pilot)
+# Ads — Google Ad Manager (Blog, reviewed public QA and gated app overviews)
 
 ## Product boundary
 
+- Reviewed public QA pilot: one `forum.question.end` slot after all answers. Only an answered
+  public QA snapshot explicitly approved by an editor qualifies. Inventory defaults off.
+  Community feed, chat, profile and private thread advertising remain excluded.
+
 - Pilot: one contextual Google limited ad at the end of `/blog/[slug]` for anonymous and Free
   readers in Turkey, across published KPSS/YKS/LGS articles. Premium and STAFF stay ad-free.
+- Gated public blog index inventory: `knowledge.index` uses the selected family/category/page,
+  appears below the exam card on desktop and before that card after the article list on mobile.
+  One DOM slot is rendered; the rail is not sticky. The index placement defaults off pending
+  inventory, content-value and privacy review.
 - Backend eligibility controls automatic display for anonymous/Free readers. There is no visitor
   advertising accept/reject switch. Optional analytics remains separately opt-in; rejecting it
   does not disable ads. Cookie preferences disclose ad processing without presenting ad permission.
-- Notebook/Vision Board ads and their policy evaluation are deferred. Sponsor placements,
-  one-time cosmetic purchases and affiliate/institutional pilots have no new sales infrastructure.
+- Authenticated Free overview inventory: `notebooks.overview` follows the notebook list/load-more;
+  `vision.overview` follows the desktop discovery list or the open mobile discovery panel.
+  Both default off pending private-page content/crawler and privacy review. Editors stay ad-free.
+  Sponsor campaigns can later reuse the same Google Ad Manager units through directly sold line
+  items; no sponsor sales, cosmetic purchase or affiliate infrastructure is added.
 - Existing rewarded development/test code remains; production stays fail-closed without server
   verification. Interstitial, sticky/app-open, feature entitlement and mobile SDK ads are excluded.
 
@@ -30,6 +41,10 @@ AI konuşması Google'a gönderilmez.
 
 - `GET /v1/ads/public/placements/:placementId?contentSlug=` (`examType` deprecated)
 - `GET /v1/ads/placements/:placementId?contentSlug=`
+- `GET /v1/ads/{public/}placements/forum.question.end?questionId=<uuid>&contentRevision=<sha256>`
+- `GET /v1/admin/ads/questions/:questionId` (preview, EDITOR/full admin)
+- `PUT /v1/admin/ads/questions/:questionId` with `{contentRevision}` (audited approval, stale → 409)
+- `DELETE /v1/admin/ads/questions/:questionId` (audited revoke)
 - `GET /v1/ads/reward-offers/:placementId`
 - `POST /v1/ads/reward-sessions` (`Idempotency-Key: <uuid>` opsiyonel)
 - `POST /v1/ads/reward-sessions/:id/complete`
@@ -44,7 +59,51 @@ fails closed (`REGION_NOT_ENABLED`, additive `/v1` reason). Existing EEA/UK/Swit
 restrictions still apply even if those countries are added to the allowlist. Ad units remain
 environment-backed: `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT`, `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT`.
 No new provider or database table is added. Published article validation and the stricter
-profile/content CHILD or TEEN treatment are preserved.
+profile/content CHILD or TEEN treatment are preserved. Overview inventory uses only the
+authenticated server-side profile; unknown/missing exam context returns `CONTEXT_UNVERIFIED`.
+Public placement requests for overview inventory return 404; authenticated endpoints require a session.
+
+### Admin-managed display units
+
+In admin `/config`, category **Reklamlar**, configure each display unit using a Google inventory
+path such as `/123456/notebooks`; URLs, HTML and scripts are rejected. Saves use the existing
+validated/audited config API. Keys:
+
+| Placement | Enable key | Google unit key |
+|---|---|---|
+| Article end | `ads.placement.knowledge_article_end.enabled` | `ads.placement.knowledge_article_end.ad_unit_path` |
+| Blog index | `ads.placement.knowledge_index.enabled` | `ads.placement.knowledge_index.ad_unit_path` |
+| Notebook overview | `ads.placement.notebooks_overview.enabled` | `ads.placement.notebooks_overview.ad_unit_path` |
+| Vision discovery | `ads.placement.vision_overview.enabled` | `ads.placement.vision_overview.ad_unit_path` |
+| Reviewed public QA | `ads.placement.forum_question_end.enabled` | `ads.placement.forum_question_end.ad_unit_path` |
+
+Empty overview units disable delivery. An empty article unit explicitly retains the legacy
+`GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT` fallback; turn off the article placement to stop delivery.
+Rewarded configuration is unchanged. A saved override takes effect on the next policy request
+(normally route re-entry/reload), without deployment; existing slots are not polled or live-updated.
+The existing registry cache is process-local, so multi-instance cache invalidation remains a
+separate platform concern.
+
+Blog index policy requires `family`, with optional `category` and `page` (default 1), on the
+existing public/authenticated placement endpoints. Content's published-list API verifies the same
+shared `BLOG_PAGE_SIZE` page as the UI. A matching featured article counts only on page one.
+At least one matching published summary must contain an editorial description; links-only,
+empty and past-end pages are denied. This minimum check is not a Google policy approval.
+The legacy `examType` or an unrelated article slug never proves index context. Authenticated
+readers retain the stricter profile/content audience treatment. A failed content lookup cannot
+enable advertising. Empty index unit configuration disables delivery, with no environment fallback.
+
+The server-rendered list and ad boundary share a request-scoped React cache for their existing
+content requests. A failed/empty list never mounts the index ad boundary, regardless of ad policy.
+Filtering or pagination replaces the slot's context; Premium/account changes retain the existing
+teardown behavior. The index does not change article-end, overview or rewarded inventory.
+
+Overview inventory requests only fitting `250x250` / `300x250` sizes. Discovery-panel width and map
+height are unchanged; no second hidden desktop/mobile slot is mounted. A closed mobile drawer
+does not prepare a slot, and closing it destroys its active slot. Google code remains deferred
+until the placement approaches the viewport. No-fill/blocking/errors collapse the ad, with no
+feature restriction or automatic refresh. Private notes, goal text and personal images are not
+added to ad targeting or request parameters.
 
 The retired `mentor.advertising-consent.v1` value is neither read nor rewritten and is never
 interpreted as data consent. Google policy and GPT code remain deferred until the article end
@@ -77,6 +136,69 @@ real eligible impressions appearing in reporting and zero Google requests for ex
 Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs out of Mentor DB.
 
 ## Geliştirmeler (timeline)
+
+- **2026-10-25: Reviewed public QA pilot.** Added one lazy square slot after all answers.
+  Usage: Community admin → Question ad review → paste a public question URL/UUID → inspect
+  the question and every answer → approve the exact snapshot. Revoke also works after the
+  question becomes unavailable. EDITOR/full admin mutations audit revision/reviewer metadata,
+  without copying content bodies. Ads owns the SERVICE-only, forced-RLS `ad_question_reviews`
+  table; it reads Forum's public application service, never its tables. Account erasure clears
+  reviewer attribution while preserving the reviewed snapshot and the existing audit retention
+  policy. Eligibility requires
+  matching rendered/current/approved revisions. Text, answer IDs/acceptance, update timestamps
+  and zone context participate; editing back to old text cannot restore approval. Unknown exam
+  context, private/archived/deleted/unanswered questions and missing approval fail closed even
+  in local sample mode. Public pages read fresh on each visit. Gotchas: no live moderation push
+  or polling to already open snapshots; manual review is not automated policy/PII detection.
+  Monitor existing reports and revoke when needed. The new flag defaults off, unit paths have
+  no env fallback, and approval alone cannot enable inventory. Google inventory/content/privacy
+  review and updated public disclosures remain activation prerequisites. Browser checks use
+  `pnpm --filter @mentor/web test:e2e:question-ads` (isolated ports 3370/3371, synthetic content,
+  no database or real Google requests). Related: `ads-question-review.service.ts`,
+  `ad-question-review.repository.ts`, `admin-ad-reviews.controller.ts`, `forum-public.service.ts`,
+  `QuestionAdReview.tsx`, public `forum/question/[id]/page.tsx`, migration `0127`.
+
+- **2026-10-25 · Public blog index inventory.** Added default-off `knowledge.index`, an admin
+  enable switch and validated Google unit path, published list/featured-context verification,
+  and one responsive non-sticky slot. Usage: configure `ads.placement.knowledge_index.ad_unit_path`
+  under admin `/config`, review inventory/content/privacy and update the currently article-end
+  public disclosures before enabling `ads.placement.knowledge_index.enabled`. Local sample mode
+  supports the index but still requires verified content. Gotchas: editorial description is a
+  minimum technical check, not approval; empty/error lists and description-free content do not
+  become ad inventory. Related: `blog-ad-context.ts`, `ads.service.ts`, shared ads/content
+  contracts, `knowledge/_components/{blog-posts,blog-index-ad,posts-section}.*`, `lib/ads.ts`,
+  `e2e/blog-index-ads.spec.ts`, `test/ads.e2e-spec.ts`.
+  Verification: 79 targeted API/config unit tests, 11 API/Postgres integration tests and 22 web
+  message/blog/GPT unit tests passed. Sixteen new index browser cases and 16 related article/
+  overview compatibility cases were verified on mobile/desktop, with focused reruns after
+  transient local content-load failures. Screenshots were inspected; API/web/shared typechecks
+  and touched-file lint passed, and independent review found no actionable findings. Full CI,
+  live Google demand/revenue, inventory acceptance and disclosure review remain outstanding.
+
+- **2026-10-25 · Vision discovery ad bottom alignment.** The ad now consumes the remaining
+  space above it in the desktop discovery rail and open mobile drawer, placing it toward the
+  panel bottom when the list is short. Long lists still scroll normally; the ad is not fixed or
+  sticky, and the map size is unchanged. Usage: open `/hedef` with eligible inventory or local
+  test mode; on mobile open the discovery drawer. Related: `vision-board-shell.tsx`.
+
+- **2026-10-25 · Admin-managed Google overview inventory.** Added gated `notebooks.overview` and
+  `vision.overview`, independent on/off settings, and validated Google unit paths for all three
+  display placements. Usage: configure the unit under admin `/config` and complete the inventory,
+  private-page/crawler and privacy gates before independently enabling either overview; defaults
+  remain off. Local `ADS_LOCAL_TEST_ENABLED=true` now previews all display placements using only
+  official sample inventory, retaining profile, entitlement and explicit-country protections.
+  Gotchas: test inventory/stubbed browser tests do not establish revenue or publisher approval;
+  do not expose real student credentials/data to crawlers. Empty blog configuration retains its
+  documented environment fallback. Rewarded Coin and editors are unchanged. Related:
+  `ads.constants.ts`, `ads.service.ts`, `config.catalog.ts`, `packages/{types,validation}/src/ads.ts`,
+  `components/ads/*`, notebook/vision overview shells, `e2e/overview-ads.spec.ts`,
+  `test/ads.e2e-spec.ts`, `docs/core/integrations.md`.
+  Verification: 67 targeted API/config unit tests and 10 API/Postgres integration tests passed.
+  Fifty distinct mobile/desktop blog/overview browser cases were verified across the combined
+  run and focused reruns after correcting test-only editor landmark assertions. API, web and
+  shared-package typechecks and touched-file lint passed; an independent review found no
+  actionable findings. Browser demand is stubbed; full workspace CI, production eligibility,
+  real Google fill/revenue and the required public disclosure review remain unverified.
 
 - **2026-10-14 · PR #168 conflict resolution.** Synced the local Google display preview
   branch with `master`, retaining the isolated SDK/creative findings and the normal local

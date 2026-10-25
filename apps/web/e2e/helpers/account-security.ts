@@ -5,7 +5,7 @@ export const user: AuthUser = {
   id: "33333333-3333-4333-8333-333333333333", email: "security@test.local",
   displayName: "Security Test", username: "security_test", avatarUrl: null, bio: null, website: null,
   roles: ["STUDENT"], organizationId: null, examType: "KPSS", examVariant: null,
-  examDate: null, dailyFocusGoalMinutes: null, emailVerified: true, createdAt: "2026-01-01T00:00:00.000Z",
+  examDate: null, dailyFocusGoalMinutes: null, careerGroup: null, emailVerified: true, createdAt: "2026-01-01T00:00:00.000Z",
 };
 type Widget = { callback: (token: string) => void; "expired-callback": () => void; "error-callback": () => void };
 export type CaptchaState = { widget?: Widget; renders: number; removals: number };

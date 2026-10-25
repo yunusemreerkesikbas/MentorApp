@@ -124,12 +124,12 @@ export default async function LocaleLayout({
           <ToastProviderShell>
             <DialogProviderShell>
               <BottomSheetProviderShell>
-                <AnalyticsConsentProvider nonce={nonce}>
-                  <WebVitalsReporter />
-                  <AuthProvider>
+                <AuthProvider>
+                  <AnalyticsConsentProvider nonce={nonce}>
+                    <WebVitalsReporter />
                     <CloudTransitionProvider>{children}</CloudTransitionProvider>
-                  </AuthProvider>
-                </AnalyticsConsentProvider>
+                  </AnalyticsConsentProvider>
+                </AuthProvider>
               </BottomSheetProviderShell>
             </DialogProviderShell>
           </ToastProviderShell>

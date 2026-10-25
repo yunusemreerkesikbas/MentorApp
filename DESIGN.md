@@ -365,8 +365,9 @@ from them (2026-09-22).
   Keep 22 px glyph size (20 px raised centre) and role filtering. Linear stroke is 1.75 px;
   sidebar expand/collapse uses Solar Linear at 20 px. Home uses Home 2, analysis Chart 2,
   Blog Document Text (distinct from the spiral Notebook), and settings the full Settings gear.
-  The coin/XP identity glyphs keep their current icons. Credit 480 Design (CC BY 4.0) through
-  Settings → icon credits. This is a visual trial,
+  The coin/XP identity glyphs keep their current icons. The 480 Design (CC BY 4.0) credit lives in
+  `public/icon-credits.txt`; the Settings link to it was removed on 2026-10-24 at the owner's
+  request (no visible in-app attribution now). This is a visual trial,
   not an app-wide icon migration.
 - **Settings menus (2026-10-07):** account, notification, application, economy and coach-scope
   rows use text labels without leading decorative icons or empty alignment slots. Keep trailing

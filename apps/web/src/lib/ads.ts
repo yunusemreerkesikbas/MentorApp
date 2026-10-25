@@ -1,26 +1,43 @@
 import type {
   AdPlacementId,
   AdPlacementView,
+  AdQuestionContext,
   AdRewardCompletionView,
   AdRewardOfferView,
   AdRewardSessionView,
   ExamType,
 } from "@mentor/types";
 import { http } from "@mentor/api-client";
+import type { AdBlogListContext } from "@mentor/validation";
+
+function placementQuery(contentSlug?: string, examType?: ExamType, blogList?: AdBlogListContext, question?: AdQuestionContext) {
+  const query = new URLSearchParams();
+  if (contentSlug) query.set("contentSlug", contentSlug);
+  if (examType) query.set("examType", examType);
+  if (question) {
+    query.set("questionId", question.questionId);
+    query.set("contentRevision", question.contentRevision);
+  }
+  if (blogList) {
+    query.set("family", blogList.family);
+    query.set("page", String(blogList.page));
+    if (blogList.category) query.set("category", blogList.category);
+  }
+  return query.size > 0 ? `?${query.toString()}` : "";
+}
 
 export function fetchPublicAdPlacement(
   placementId: AdPlacementId,
   contentSlug?: string,
   examType?: ExamType,
+  blogList?: AdBlogListContext,
+  question?: AdQuestionContext,
 ) {
-  const query = new URLSearchParams();
-  if (contentSlug) query.set("contentSlug", contentSlug);
-  if (examType) query.set("examType", examType);
-  const suffix = query.size > 0 ? `?${query.toString()}` : "";
+  const suffix = placementQuery(contentSlug, examType, blogList, question);
   return http<AdPlacementView>(`/v1/ads/public/placements/${placementId}${suffix}`);
 }
-export function fetchAdPlacement(placementId: AdPlacementId, contentSlug?: string) {
-  const query = contentSlug ? `?contentSlug=${encodeURIComponent(contentSlug)}` : "";
+export function fetchAdPlacement(placementId: AdPlacementId, contentSlug?: string, blogList?: AdBlogListContext, question?: AdQuestionContext) {
+  const query = placementQuery(contentSlug, undefined, blogList, question);
   return http<AdPlacementView>(`/v1/ads/placements/${placementId}${query}`);
 }
 export function fetchRewardOffer(placementId: AdPlacementId) {

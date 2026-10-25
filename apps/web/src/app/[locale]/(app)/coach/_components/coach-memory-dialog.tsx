@@ -1,10 +1,13 @@
 "use client";
-import { Brain, Pencil, Trash2, X } from "lucide-react";
+import { Brain } from "lucide-react";
+import { CloseIcon } from "@solar-icons/react/linear/close";
+import { Pen2Icon } from "@solar-icons/react/linear/pen-2";
+import { TrashBinMinimalisticIcon } from "@solar-icons/react/linear/trash-bin-minimalistic";
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
-import { Skeleton, SkeletonGroup } from "@mentor/ui";
+import { Skeleton, SkeletonGroup, Toggle } from "@mentor/ui";
 import type { CoachMemoryFactDto, CoachProfileDto } from "@mentor/types";
 import { useIsMounted } from "@/lib/use-is-mounted";
 import {
@@ -180,9 +183,9 @@ export function CoachMemoryDialog() {
                     type="button"
                     onClick={() => setOpen(false)}
                     aria-label={t("close")}
-                    className="inline-flex size-9 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                    className="-mr-1.5 -mt-1.5 inline-flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--color-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] hover:text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
                   >
-                    <X className="size-5" aria-hidden />
+                    <CloseIcon size={20} strokeWidth={1.75} aria-hidden />
                   </button>
                 </div>
 
@@ -195,13 +198,15 @@ export function CoachMemoryDialog() {
                   </div>
                 ) : (
                   <div className="mt-5 min-h-0 overflow-y-auto mentor-scrollarea">
+                    {/* Consent is an on/off setting, so it reads as the settings page's switch row
+                        rather than a grey slab with an outlined button. */}
                     {profile ? (
-                      <div className="mb-4 flex items-center justify-between gap-3 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] p-3">
-                        <div>
-                          <p className="text-sm font-semibold text-[var(--color-body-text)]">
+                      <div className="mb-4 flex items-center justify-between gap-4 border-b border-[color-mix(in_srgb,var(--color-main)_8%,transparent)] pb-4">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[var(--color-main)]">
                             {t("remembering")}
                           </p>
-                          <p className="text-xs text-[var(--color-secondary)]">
+                          <p className="mt-0.5 text-xs leading-4 text-[var(--color-secondary)]">
                             {t(
                               profile.memoryConsent === "GRANTED"
                                 ? "on"
@@ -209,19 +214,13 @@ export function CoachMemoryDialog() {
                             )}
                           </p>
                         </div>
-                        <button
-                          type="button"
+                        <Toggle
+                          className="shrink-0 [--toggle-on-bg:var(--play-cta)]"
+                          checked={profile.memoryConsent === "GRANTED"}
                           disabled={mutating}
-                          onClick={() => void toggleMemory()}
-                          className="min-h-10 rounded-full border px-3 text-sm font-semibold text-[var(--color-main)] disabled:opacity-50"
-                          style={{ borderColor: "var(--color-border)" }}
-                        >
-                          {t(
-                            profile.memoryConsent === "GRANTED"
-                              ? "pause"
-                              : "resume",
-                          )}
-                        </button>
+                          onChange={() => void toggleMemory()}
+                          aria-label={t("remembering")}
+                        />
                       </div>
                     ) : null}
 
@@ -234,8 +233,7 @@ export function CoachMemoryDialog() {
                         {facts.map((fact) => (
                           <li
                             key={fact.id}
-                            className="rounded-[var(--radius-card)] border p-3"
-                            style={{ borderColor: "var(--color-border)" }}
+                            className="rounded-[var(--radius-card)] bg-[var(--color-surface)] py-2.5 pl-3.5 pr-1.5 shadow-[var(--shadow-card)]"
                           >
                             <p className="text-xs font-semibold text-[var(--color-secondary)]">
                               {t(`keys.${fact.key}`)}
@@ -275,7 +273,7 @@ export function CoachMemoryDialog() {
                                   type="button"
                                   disabled={mutating || !editValue.trim()}
                                   onClick={() => void saveFact(fact)}
-                                  className="min-h-10 rounded-full bg-[var(--color-btn)] px-3 text-sm font-semibold text-[var(--color-btn-label)] disabled:opacity-50"
+                                  className="min-h-10 cursor-pointer rounded-full bg-[var(--color-progress)] px-4 text-sm font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-45 motion-reduce:transition-none"
                                 >
                                   {t("save")}
                                 </button>
@@ -295,18 +293,18 @@ export function CoachMemoryDialog() {
                                     setEditingId(fact.id);
                                     setEditValue(fact.value);
                                   }}
-                                  className="inline-flex size-9 items-center justify-center rounded-full hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] disabled:opacity-50"
+                                  className="inline-flex size-10 items-center justify-center rounded-full text-[var(--color-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] hover:text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none"
                                 >
-                                  <Pencil className="size-4" aria-hidden />
+                                  <Pen2Icon size={18} strokeWidth={1.75} aria-hidden />
                                 </button>
                                 <button
                                   type="button"
                                   disabled={mutating}
                                   aria-label={t("forget")}
                                   onClick={() => void forget(fact.id)}
-                                  className="inline-flex size-9 items-center justify-center rounded-full text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] disabled:opacity-50"
+                                  className="inline-flex size-10 items-center justify-center rounded-full text-[var(--color-danger)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none"
                                 >
-                                  <Trash2 className="size-4" aria-hidden />
+                                  <TrashBinMinimalisticIcon size={18} strokeWidth={1.75} aria-hidden />
                                 </button>
                               </div>
                             )}
@@ -318,8 +316,7 @@ export function CoachMemoryDialog() {
                       <button
                         type="button"
                         disabled={mutating}
-                        className="mt-4 min-h-10 rounded-full border px-3 text-sm font-semibold text-[var(--color-danger)] disabled:opacity-50"
-                        style={{ borderColor: "var(--color-border)" }}
+                        className="mt-3 min-h-11 cursor-pointer rounded-full px-3 text-sm font-semibold text-[var(--color-danger)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none"
                         onClick={() => void clearAll()}
                       >
                         {t(confirmClear ? "clear_confirm" : "clear_all")}

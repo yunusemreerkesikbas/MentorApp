@@ -75,7 +75,8 @@ export function CoachStarterChips({ onSeed }: CoachStarterChipsProps) {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-md flex-wrap justify-center gap-2"
+      // Phones: while the first-visit preference card is open it needs the room; answer or skip first.
+      className="mx-auto flex w-full max-w-md flex-wrap justify-center gap-2 max-sm:[:root:has([data-coach-calibration])_&]:hidden"
       role="group"
       aria-label={tLanding("chips_label")}
     >

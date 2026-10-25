@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { AUTH_ANALYTICS_FIELD } from "@/lib/auth-analytics-choice";
 import { useAnalyticsConsent } from "@/lib/analytics-consent";
 
-/** Optional analytics cookie opt-in for login/signup. Banner stays on public pages only. */
+/** Optional analytics cookie opt-in for signup. Banner stays on anonymous public pages only. */
 export function AuthCookieConsent() {
   const t = useTranslations("auth.cookie");
   const { consent } = useAnalyticsConsent();

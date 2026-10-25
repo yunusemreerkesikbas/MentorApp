@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { isPublicConsentBannerPath } from "@/lib/consent-banner-path";
 import type { ConsentContextValue } from "@/lib/analytics-consent";
+import { useAuth } from "@/lib/auth-context";
 
 export function CookieConsentBanner({ analytics, analyticsHydrated, analyticsEnabled }: {
   analytics: ConsentContextValue;
@@ -12,7 +13,8 @@ export function CookieConsentBanner({ analytics, analyticsHydrated, analyticsEna
 }) {
   const t = useTranslations("consentBanner");
   const pathname = usePathname();
-  const showAnalytics = analyticsEnabled && analyticsHydrated && analytics.consent === null && isPublicConsentBannerPath(pathname);
+  const { status } = useAuth();
+  const showAnalytics = status === "anonymous" && analyticsEnabled && analyticsHydrated && analytics.consent === null && isPublicConsentBannerPath(pathname);
   if (!showAnalytics) return null;
 
   return (

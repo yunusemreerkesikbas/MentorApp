@@ -18,6 +18,7 @@ import { ForumOverviewStrip } from "./ForumOverviewStrip";
 import { TagManager } from "./TagManager";
 import { TagSuggestionManager } from "./TagSuggestionManager";
 import { ZoneTable } from "./ZoneTable";
+import { QuestionAdReview } from "./QuestionAdReview";
 
 export default function ForumManagementPage() {
     const [zones, setZones] = useState<ZoneView[]>([]);
@@ -96,6 +97,7 @@ export default function ForumManagementPage() {
                         <div className="col-12">
                             <ZoneTable zones={zones} />
                         </div>
+                        <div className="col-12"><QuestionAdReview /></div>
                     </div>
                 ) : null}
             </div>

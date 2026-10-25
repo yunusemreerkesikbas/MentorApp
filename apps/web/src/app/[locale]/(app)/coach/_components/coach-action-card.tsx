@@ -99,7 +99,7 @@ export function CoachActionCard({
     status === CoachActionStatus.COMPLETED
   ) {
     return (
-      <div className="flex max-w-[85%] items-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] px-3 py-2 text-sm text-[var(--color-body-text)]">
+      <div className="flex max-w-[85%] items-center gap-2 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_72%,transparent)] px-3 py-2 text-sm text-[var(--color-body-text)] shadow-[var(--shadow-card)] backdrop-blur-md">
         <SuccessCheck
           state="in"
           size={18}
@@ -121,28 +121,28 @@ export function CoachActionCard({
   if (status === CoachActionStatus.CANCELLED) return null;
 
   return (
-    <div className="flex max-w-[85%] flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)] p-3 shadow-[var(--shadow-card)]">
-      <p className="flex items-center gap-2 text-sm font-semibold text-[var(--color-body-text)]">
-        <Sparkles className="size-4 text-[var(--color-accent)]" aria-hidden />
+    // Same language as the first-visit preference card: glass card, blue pill, quiet text button.
+    <div className="flex max-w-[85%] flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_92%,transparent)] py-2.5 pl-4 pr-2.5 shadow-[var(--shadow-card)] backdrop-blur-md">
+      <p className="flex min-w-0 items-center gap-2 text-sm font-semibold text-[var(--color-main)]">
+        <Sparkles className="size-4 shrink-0 text-[var(--color-progress)]" aria-hidden />
         {action.label}
       </p>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void decide("ACCEPT")}
-          className="min-h-10 rounded-full bg-[var(--color-btn)] px-4 text-sm font-semibold text-[var(--color-btn-label)] disabled:opacity-50"
-        >
-          {t("approve")}
-        </button>
+      <div className="flex items-center gap-1">
         <button
           type="button"
           disabled={busy}
           onClick={() => void decide("CANCEL")}
-          className="min-h-10 rounded-full border px-4 text-sm font-semibold text-[var(--color-main)] disabled:opacity-50"
-          style={{ borderColor: "var(--color-border)" }}
+          className="min-h-11 cursor-pointer rounded-full px-3.5 text-sm font-semibold text-[var(--color-secondary)] transition-colors hover:text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none"
         >
           {t("dismiss")}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void decide("ACCEPT")}
+          className="min-h-11 cursor-pointer rounded-full bg-[var(--color-progress)] px-5 text-sm font-bold text-white shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
+        >
+          {t("approve")}
         </button>
       </div>
       {error ? (

@@ -12,6 +12,7 @@ import { BLOG_MEMBER_BOOTSTRAP_SCRIPT } from "./_components/blog-ui";
 import { ExamDaySkeleton, PostsSkeleton } from "./_components/blog-skeletons";
 import { ExamDayCard } from "./_components/exam-day-card";
 import { PostsSection } from "./_components/posts-section";
+import { BlogIndexAd } from "./_components/blog-index-ad";
 
 type PageProps = {
   params: Promise<{ locale: string }>;
@@ -56,9 +57,14 @@ export default async function BlogPage({ params, searchParams }: PageProps) {
                 <PostsSection query={query} locale={locale} />
               </Suspense>
             </div>
-            <aside className="min-w-0 xl:sticky xl:top-6">
-              <Suspense key={query.family} fallback={<ExamDaySkeleton />}>
-                <ExamDayCard family={query.family} locale={locale} />
+            <aside className="flex min-w-0 flex-col gap-5" data-testid="blog-sidebar">
+              <div data-testid="blog-calendar">
+                <Suspense key={query.family} fallback={<ExamDaySkeleton />}>
+                  <ExamDayCard family={query.family} locale={locale} />
+                </Suspense>
+              </div>
+              <Suspense key={`ad-${query.family}-${query.category}-${query.page}`} fallback={null}>
+                <BlogIndexAd query={query} />
               </Suspense>
             </aside>
           </div>

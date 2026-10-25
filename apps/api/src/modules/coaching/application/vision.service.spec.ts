@@ -175,11 +175,13 @@ function makeGeoFake(pairs: ReadonlyArray<readonly [string, string]>) {
 describe("VisionService", () => {
   let visions: ReturnType<typeof makeVisionsFake>;
   let storage: ReturnType<typeof makeStorageFake>;
+  let careerMirror: Map<string, string | null>;
   let service: VisionService;
 
   beforeEach(() => {
     visions = makeVisionsFake();
     storage = makeStorageFake();
+    careerMirror = new Map();
     service = new VisionService(
       fakeDb,
       visions as never,
@@ -189,6 +191,11 @@ describe("VisionService", () => {
       ]) as never,
       makeKpssFake() as never,
       storage as never,
+      {
+        setCareerGroup: async (userId: string, group: string | null) => {
+          careerMirror.set(userId, group);
+        },
+      } as never,
     );
   });
 
@@ -250,6 +257,13 @@ describe("VisionService", () => {
     await service.setAiNote(USER, "Konya seni bekliyor!", "fake");
     await service.upsert(USER, { goalTitle: "Tıp", targetCityCode: ANKARA });
     expect((await service.getMine(USER))?.aiNote).toBeNull();
+  });
+
+  it("mirrors the career group onto the user so the session carries the sector mascot", async () => {
+    await service.upsert(USER, { goalTitle: "Üniversite", careerGroup: "SAGLIK" });
+    expect(careerMirror.get(USER)).toBe("SAGLIK");
+    await service.upsert(USER, { goalTitle: "Üniversite" });
+    expect(careerMirror.get(USER)).toBeNull();
   });
 
   it("invalidates the cached AI note when the career group changes", async () => {
