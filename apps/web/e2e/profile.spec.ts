@@ -233,6 +233,322 @@ test("koç ayarlarında Kazanımlar yok, sınav satırı koçluk yaptığı sın
   await expect(page.getByLabel("Coin ve XP")).toHaveCount(0);
 });
 
+// --- Davet kartı (Ayarlar > Davet et) -------------------------------------------------------------
+
+const INVITE_CODE = "PUHU-TEST2345";
+const percentDiscount = { discountType: "PERCENT", discountValue: 30 };
+
+/** The card as the API returns it for a student who has not been invited and nobody joined yet. */
+function inviteView(over: Record<string, unknown> = {}) {
+  return {
+    code: INVITE_CODE,
+    rewardCoin: 20,
+    joined: [],
+    convertedCount: 0,
+    redeemed: null,
+    canRedeem: true,
+    ...over,
+  };
+}
+
+/**
+ * Economy ON for the settings page: balance, quests, the invite view and the public preview the
+ * card reads for the friend discount (the view itself only carries the viewer's own redemption).
+ * Registered after `mockProfileApi`, so it answers first and hands everything else back.
+ */
+async function mockInviteEconomy(
+  page: Page,
+  {
+    view,
+    previewDiscount = percentDiscount,
+    onRedeem,
+  }: { view: () => unknown; previewDiscount?: unknown; onRedeem?: () => void },
+) {
+  const redeemBodies: unknown[] = [];
+  await page.route("http://localhost:3001/v1/economy/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    const method = request.method();
+    if (method === "GET" && path.endsWith("/balance")) {
+      return json(route, { xp: 0, coinConfirmed: 0, coinPending: 0, level: null });
+    }
+    if (method === "GET" && path.endsWith("/quests")) return json(route, []);
+    if (method === "GET" && path.endsWith("/rewards/unseen")) {
+      return json(route, { items: [], total: 0, page: 1, pageSize: 20 });
+    }
+    if (method === "GET" && path === `/v1/economy/invite/preview/${INVITE_CODE}`) {
+      return json(route, { inviterDisplayName: "Profil", discount: previewDiscount });
+    }
+    if (method === "GET" && path === "/v1/economy/invite") return json(route, view());
+    if (method === "POST" && path === "/v1/economy/invite/redeem") {
+      redeemBodies.push(request.postDataJSON());
+      onRedeem?.();
+      return json(route, { status: "PENDING" }, 201);
+    }
+    return route.fallback();
+  });
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+  return { redeemBodies };
+}
+
+async function openInviteCard(page: Page) {
+  await page.goto("/ayarlar");
+  const row = page.getByRole("button", { name: "Davet et", exact: true });
+  await row.click();
+  const dialog = page.getByRole("dialog", { name: /Arkadaşını getir/ });
+  await expect(dialog).toBeVisible();
+  return { row, dialog };
+}
+
+test.describe("davet kartı", () => {
+  test("başlık, indirimli alt metin ve davet kodu", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    const { dialog } = await openInviteCard(page);
+
+    await expect(dialog.getByRole("heading", { level: 2 })).toHaveText(
+      "Arkadaşını getir, birlikte çalışın!",
+    );
+    await expect(dialog.getByText("Davet et", { exact: true })).toBeVisible();
+    await expect(
+      dialog.getByText("%30 indirim arkadaşına, 20 Coin sana. Üstelik birlikte çalışırsınız!"),
+    ).toBeVisible();
+    await expect(dialog.getByText(INVITE_CODE, { exact: true })).toBeVisible();
+  });
+
+  test("indirim yoksa alt metin yalnız Coin'i söyler", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView(), previewDiscount: null });
+    const { dialog } = await openInviteCard(page);
+
+    await expect(
+      dialog.getByText("Arkadaşın Premium'a geçince sana 20 Coin. Üstelik birlikte çalışırsınız!"),
+    ).toBeVisible();
+    await expect(dialog.getByText("%30")).toHaveCount(0);
+  });
+
+  test("Paylaş bağlantıyı navigator.share ile paylaşır", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    await page.addInitScript(() => {
+      (window as unknown as { shared: unknown[] }).shared = [];
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: async (data: unknown) => {
+          (window as unknown as { shared: unknown[] }).shared.push(data);
+        },
+      });
+    });
+    const { dialog } = await openInviteCard(page);
+
+    await dialog.getByRole("button", { name: "Paylaş" }).click();
+
+    const shared = await page.evaluate(() => (window as unknown as { shared: unknown[] }).shared);
+    expect(shared).toHaveLength(1);
+    const payload = shared[0] as { url: string; text: string };
+    expect(new URL(payload.url).pathname).toBe(`/davet/${INVITE_CODE}`);
+    expect(new URL(payload.url).origin).toBe(new URL(page.url()).origin);
+    expect(payload.text).toBe("PuhuKoç'ta birlikte çalışalım!");
+  });
+
+  test("paylaşım yoksa bağlantıyı kopyalar ve söyler", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    await page.addInitScript(() => {
+      (window as unknown as { copied: string[] }).copied = [];
+      Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: async (text: string) => {
+            (window as unknown as { copied: string[] }).copied.push(text);
+          },
+        },
+      });
+    });
+    const { dialog } = await openInviteCard(page);
+
+    await dialog.getByRole("button", { name: "Paylaş" }).click();
+
+    await expect(dialog.getByText("Bağlantı kopyalandı")).toBeVisible();
+    const copied = await page.evaluate(() => (window as unknown as { copied: string[] }).copied);
+    expect(copied).toHaveLength(1);
+    expect(new URL(copied[0]).pathname).toBe(`/davet/${INVITE_CODE}`);
+  });
+
+  test("ilerleme satırı katılanları ve Premium'a geçenleri sayar", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, {
+      view: () =>
+        inviteView({
+          joined: [{ displayName: "Ayşe" }, { displayName: "Mehmet" }],
+          convertedCount: 1,
+        }),
+    });
+    const { dialog } = await openInviteCard(page);
+
+    await expect(dialog.getByText("2 arkadaşın katıldı · 1 kişi Premium'a geçti")).toBeVisible();
+    await expect(dialog.getByText("İlk arkadaşını bekliyoruz!")).toHaveCount(0);
+  });
+
+  test("kimse katılmadıysa bekleyen metin görünür", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    const { dialog } = await openInviteCard(page);
+
+    await expect(dialog.getByText("İlk arkadaşını bekliyoruz!")).toBeVisible();
+    await expect(dialog.getByText(/arkadaşın katıldı/)).toHaveCount(0);
+  });
+
+  test("kod kullanılmışsa davet edeni söyler ve form görünmez", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, {
+      view: () =>
+        inviteView({
+          canRedeem: false,
+          redeemed: {
+            inviterDisplayName: "Ayşe",
+            discount: { ...percentDiscount, phoneRequired: false },
+          },
+        }),
+    });
+    const { dialog } = await openInviteCard(page);
+
+    await expect(dialog.getByText("Ayşe davetiyle geldin!")).toBeVisible();
+    await expect(dialog.getByText("İndirimin ödeme ekranında seni bekliyor.")).toBeVisible();
+    await expect(dialog.getByRole("textbox")).toHaveCount(0);
+    await expect(dialog.getByRole("button", { name: "Kodu kullan" })).toHaveCount(0);
+  });
+
+  test("telefon doğrulanmadıysa indirim için telefona yönlendirir", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, {
+      view: () =>
+        inviteView({
+          canRedeem: false,
+          redeemed: {
+            inviterDisplayName: "Ayşe",
+            discount: { ...percentDiscount, phoneRequired: true },
+          },
+        }),
+    });
+    const { dialog } = await openInviteCard(page);
+
+    await expect(dialog.getByText("Ayşe davetiyle geldin!")).toBeVisible();
+    await expect(dialog.getByText("İndirimin ödeme ekranında seni bekliyor.")).toHaveCount(0);
+    await expect(dialog.getByRole("link", { name: "İndirim için telefonunu doğrula." })).toHaveAttribute(
+      "href",
+      "/ayarlar#phone-verification",
+    );
+  });
+
+  test("kod kullanılamıyorsa (ödeme yapmış ya da süre dolmuş) form görünmez", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView({ canRedeem: false }) });
+    const { dialog } = await openInviteCard(page);
+
+    await expect(dialog.getByText(INVITE_CODE, { exact: true })).toBeVisible();
+    await expect(dialog.getByRole("textbox")).toHaveCount(0);
+    await expect(dialog.getByText(/davetiyle geldin/)).toHaveCount(0);
+  });
+
+  test("açıklama satırı kod alanının üstünde görünür", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    const { dialog } = await openInviteCard(page);
+
+    const disclosure = dialog.getByText(
+      "Davet eden kişi katıldığını görecek. Premium'a geçersen ona Coin düşer.",
+    );
+    const input = dialog.getByRole("textbox", { name: "Bir davet kodun var mı?" });
+    await expect(disclosure).toBeVisible();
+    await expect(input).toBeVisible();
+    const disclosureBox = await disclosure.boundingBox();
+    const inputBox = await input.boundingBox();
+    expect(disclosureBox!.y + disclosureBox!.height).toBeLessThanOrEqual(inputBox!.y);
+  });
+
+  test("kod formu kartın içinde kalır, Kodu kullan düğmesi kesilmez", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, {
+      view: () => inviteView({ joined: [{ displayName: "Ayşe" }], convertedCount: 1 }),
+    });
+    const { dialog } = await openInviteCard(page);
+    const submit = dialog.getByRole("button", { name: "Kodu kullan" });
+
+    // The dock slides in; measure once it has landed.
+    await expect(async () => {
+      const dialogBox = await dialog.boundingBox();
+      const submitBox = await submit.boundingBox();
+      expect(submitBox!.y + submitBox!.height).toBeLessThanOrEqual(dialogBox!.y + dialogBox!.height);
+    }).toPass();
+  });
+
+  test("kodu kullanınca kaydeder, kaydedildiğini söyler ve davet edeni gösterir", async ({ page }) => {
+    await mockProfileApi(page);
+    let redeemed = false;
+    const api = await mockInviteEconomy(page, {
+      view: () =>
+        redeemed
+          ? inviteView({
+              canRedeem: false,
+              redeemed: { inviterDisplayName: "Ayşe", discount: null },
+            })
+          : inviteView(),
+      onRedeem: () => {
+        redeemed = true;
+      },
+    });
+    const { dialog } = await openInviteCard(page);
+
+    await dialog.getByRole("textbox", { name: "Bir davet kodun var mı?" }).fill("puhu-abcd2345");
+    await dialog.getByRole("button", { name: "Kodu kullan" }).click();
+
+    await expect(dialog.getByText("Kodun kaydedildi!")).toBeVisible();
+    await expect(dialog.getByText("Ayşe davetiyle geldin!")).toBeVisible();
+    await expect(dialog.getByRole("textbox")).toHaveCount(0);
+    expect(api.redeemBodies).toEqual([{ code: "PUHU-ABCD2345" }]);
+  });
+
+  test("odak dialoga girer, Tab içeride döner, Escape odağı Davet et satırına geri verir", async ({
+    page,
+  }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    const { row, dialog } = await openInviteCard(page);
+
+    await expect(dialog.getByRole("button", { name: "Kapat" })).toBeFocused();
+
+    const insideDialog = () =>
+      page.evaluate(() => Boolean(document.activeElement?.closest('[role="dialog"]')));
+    for (let step = 0; step < 8; step += 1) {
+      await page.keyboard.press("Tab");
+      expect(await insideDialog()).toBe(true);
+    }
+    for (let step = 0; step < 8; step += 1) {
+      await page.keyboard.press("Shift+Tab");
+      expect(await insideDialog()).toBe(true);
+    }
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(row).toBeFocused();
+  });
+
+  test("Kapat düğmesi de odağı Davet et satırına geri verir", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    const { row, dialog } = await openInviteCard(page);
+
+    await dialog.getByRole("button", { name: "Kapat" }).click();
+
+    await expect(dialog).toHaveCount(0);
+    await expect(row).toBeFocused();
+  });
+});
+
 async function mockProfileApi(page: Page, me: AuthUser = user) {
   let deleteAccountCalls = 0;
 

@@ -514,6 +514,47 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-25 — Davet kartı (web): paylaş, ilerleme, kullanılmış kod durumu
+
+Ayarlar > Kazanımlar > "Davet et" overlay'i (`economy-invite-card.tsx`) `InviteCodeView`'i tüketir ve
+dürüst bir davet kartına dönüştü: başlık "Arkadaşını getir, birlikte çalışın!", kod kartta okunur
+kalır, **Kopyala yerine Paylaş**, ilerleme satırı, kod kullanılmışsa durum, kullanılabiliyorsa form.
+
+- **Paylaş:** `buildInviteLink(code, locale)` (`src/lib/invite-link.ts`, `getPathname` ile mutlak:
+  `/davet/PUHU-…`, en `/en/invite/PUHU-…`) `navigator.share({ text, url })` ile gider; destek yoksa
+  bağlantı panoya kopyalanır ve "Bağlantı kopyalandı" yazar. Kullanıcı paylaşım sayfasını kapatırsa
+  (`AbortError`) sessiz kalır, arkadan kopyalamaz. `routing.ts`'e `/invite/[code]` (`/davet/[code]`)
+  eklendi; sayfanın kendisi iniş sayfası görevinde.
+- **Alt metin / indirim:** `InviteCodeView` davet edenin kartı için indirim taşımaz (`redeemed.discount`
+  kullanıcının kendi kullanımı içindir). Kart kendi kodunun herkese açık önizlemesini okur
+  (`fetchInvitePreview` → `useFriendDiscount`): arkadaşın göreceği indirim neyse kart onu söyler,
+  iniş sayfasıyla ayrışamaz. Yanıt gelene kadar alt metin boş (iki satır yer ayrılı), hata olursa
+  yalnız Coin cümlesi (`invite_subtitle_plain`). `{discount}` `formatPromotionMagnitude` ile
+  paywall'daki gibi biçimlenir: PERCENT `%30`, FIXED kuruştan aşağı yuvarlanmış TL. `{coin}`
+  `rewardCoin`'den gelir, koda gömülü değil.
+- **İlerleme:** "2 arkadaşın katıldı · 1 kişi Premium'a geçti" (yalnız sayılar; isim listesi yok),
+  kimse yoksa "İlk arkadaşını bekliyoruz!". Katılan sayısı `joined.length` ve `convertedCount`'un büyüğü
+  (liste en çok 20 isim taşıdığı için dönüşüm onu aşabilir).
+- **Kod alanı:** `canRedeem` ise form, kod kullanılmadan önce görünen açıklama satırıyla ("Davet eden
+  kişi katıldığını görecek. Premium'a geçersen ona Coin düşer."; Ayarlar'da davet eden bilinmediği için
+  adsız metin, `redeem_disclosure_named` iniş sayfası için). `redeemed` varsa form yerine "{ad}
+  davetiyle geldin!" + ("İndirimin ödeme ekranında seni bekliyor." ya da `phoneRequired` ise Ayarlar'daki
+  telefon kartına bağlantı). `canRedeem` false ve kullanılmamışsa dock hiç görünmez.
+- **Odak:** `useDialogFocus` (`src/lib/use-dialog-focus.ts`, bağımlılık yok): açılışta Kapat butonuna odak,
+  Tab / Shift+Tab dialog içinde döner, Escape kapatır, kapanınca odak "Davet et" satırına döner
+  (`EconomySection` satırı bir ref ile sarar: kart görev sayfasından açılınca eski odaklı öğe artık yok).
+- **Dosyalar:** `economy-invite-card.tsx` kabuk (~260 satır), `invite-share-ticket.tsx`,
+  `invite-progress.tsx`, `invite-redeem-panel.tsx`. Kaldırılan anahtarlar: `invite_subtitle`,
+  `redeem_pending`, `invite_copy_short`.
+- **Gotcha:** masaüstünde dialog `min(90dvh, 44rem)` ve üst kısım `sm:flex-initial` (kaydırılabilir); eski
+  `36rem` yeni içerikle düğmeyi kesiyordu (e2e'de ölçülür). Önizleme uç noktası 20/dk sınırlı: kart yalnız
+  açılınca bir kez okur, Ayarlar sayfası yüklenirken değil. Telefon bağlantısı `#phone-verification`
+  çapasına gider (`profile-shell.tsx`). Playwright'ta `navigator.share` / `clipboard` `addInitScript` ile
+  taklit edilir (`apps/web/e2e/profile.spec.ts`, "davet kartı").
+- **Related:** `economy-invite-card.tsx`, `invite-*.tsx`, `economy-section.tsx`, `src/lib/invite-link.ts`,
+  `src/lib/use-friend-discount.ts`, `src/lib/use-dialog-focus.ts`, `src/lib/economy.ts`,
+  `apps/web/messages/{tr,en}.json` (`economy.*`), [promotions.md](./promotions.md) 2026-10-25.
+
 ### 2026-10-25 — Davet kartı görünümü ve herkese açık davet önizlemesi
 
 `GET /v1/economy/invite` artık yalnız `{ code }` değil `InviteCodeView` döner (`@mentor/types`):

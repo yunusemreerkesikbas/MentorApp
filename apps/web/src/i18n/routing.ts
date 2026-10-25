@@ -42,6 +42,11 @@ export const routing = defineRouting({
      * shell, so it can greet someone who has never signed in.
      */
     "/join-room": { tr: "/masaya-katil", en: "/join-room" },
+    /**
+     * Friend-invite landing (`/davet/PUHU-XXXXXXXX`). Same idea as `/join-room`: short for pasting
+     * into chats, public, outside the app shell. The page itself comes with the landing task.
+     */
+    "/invite/[code]": { tr: "/davet/[code]", en: "/invite/[code]" },
     "/coach": { tr: "/koc", en: "/coach" },
     /**
      * The HUMAN coach surface (W8). `/koc` above is the AI companion chat — these must never

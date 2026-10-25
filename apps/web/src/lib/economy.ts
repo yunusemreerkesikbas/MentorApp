@@ -3,6 +3,7 @@ import type {
   EconomyBalance,
   EconomyLedgerEntryView,
   InviteCodeView,
+  InvitePreviewView,
   QuestProgressView,
   RedeemInviteResult,
   StreakRescueView,
@@ -48,6 +49,18 @@ export async function fetchQuests(): Promise<QuestProgressView[]> {
 
 export async function fetchInviteCode(): Promise<InviteCodeView> {
   return (await http<InviteCodeView>("/v1/economy/invite")) as InviteCodeView;
+}
+
+/**
+ * What a friend sees before signing up: the inviter's display name and the live friend discount.
+ * Public (no session needed) and throttled; 404 `INVITE_CODE_INVALID` for any unusable code. The
+ * card reads it for its own code to learn whether a friend discount is live, because
+ * `InviteCodeView` only carries the discount of the viewer's own redemption.
+ */
+export async function fetchInvitePreview(code: string): Promise<InvitePreviewView> {
+  return (await http<InvitePreviewView>(
+    `/v1/economy/invite/preview/${encodeURIComponent(code)}`,
+  )) as InvitePreviewView;
 }
 
 export async function redeemInviteCode(code: string): Promise<RedeemInviteResult> {
