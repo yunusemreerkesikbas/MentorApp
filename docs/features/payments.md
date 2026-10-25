@@ -386,6 +386,13 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 - `CheckoutService.reserve` reads the phone fingerprint again inside the reservation transaction (after `lockActiveAccount`) whenever a discount is being reserved and hands it to `promotions.reserve`; the advisory value never keys the once-per-phone quota. `PROMOTION_ERROR_BY_REASON` maps `PHONE_REQUIRED` / `PHONE_USED` to `PROMOTION_NOT_ELIGIBLE` (reason in `details`).
 - Usage: nothing to call; an admin-created `INVITED` promotion does the rest (see [promotions.md](./promotions.md)). Gotcha: `SubscriptionsService` gained two constructor params (`UsersService`, `InviteSignalRegistry`) at the end, so hand-built instances in specs must pass them before reaching `promotionContext`. Related: `subscriptions.service.ts`, `checkout.service.ts`, `payments.module.ts`, `economy/application/invite.service.ts`.
 
+### 2026-10-25 — Invite discount seams for the invite card (`findInviteOffer`, `previewInviteOffer`)
+
+- `SubscriptionsService.findInviteOffer(userId)`: the best offer whose winning promotion is an `INVITED` one, resolved with the user's full checkout context (so it competes with the other automatic promotions exactly like checkout does), or null. Null for a user checkout would refuse (an open subscription, a trial included), while the web sells no plan, and whenever the rule is not met. `findWinBackOffer` is the pattern; unlike it, this builds the real context (`getMe` for signup date and org).
+- `SubscriptionsService.previewInviteOffer()`: no user. The summary of a live, automatic `INVITED` promotion that discounts at least one plan the web can sell (same `purchaseEnabled` filter as `resolveOffers`), else null. Backed by the new `PromotionsService.previewByRule` (promotions on, inside dates, under the global cap, clamped magnitude; no per-user or per-phone quota).
+- `SubscriptionsService.hasCheckoutBlockingSubscription(userId)` and the module-level `blocksCheckout(open)`: the one definition of "checkout answers `PAYMENT_ALREADY_SUBSCRIBED`" (open and not `INCOMPLETE` and not `SPONSOR`). `checkout` uses it too, so an advertised discount and a refused purchase cannot drift apart.
+- Usage: economy's `InviteService.getView` / `getPreview` are the callers; nothing else should advertise the friend discount without going through these. Gotcha: both discounts are web-checkout only, so a store-only catalog returns null everywhere. Related: `subscriptions.service.ts`, `promotions.service.ts`, `economy/application/invite.service.ts`, [economy.md](./economy.md) 2026-10-25.
+
 ## Gotchas / Known issues
 
 - **Coach seats read payments twice, and never write it (W8 phase B, 2026-09-27).** The seat on a

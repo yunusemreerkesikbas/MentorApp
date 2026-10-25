@@ -109,7 +109,8 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `GET /v1/economy/rewards/unseen`          | Paginated unread positive reward receipts |
 | `POST /v1/economy/rewards/seen`           | Acknowledge own ledger IDs without changing ledger |
 | `GET /v1/economy/quests`                  | Quest catalog + progress (auto-grants)                   |
-| `GET /v1/economy/invite`                  | Get/generate invite code (403 for coaches)               |
+| `GET /v1/economy/invite`                  | Own invite card: code, joined friends (names, newest first, max 20), paying-friend count, own invitation + discount, `canRedeem` (403 for coaches) |
+| `GET /v1/economy/invite/preview/:code`    | Public (20/min): inviter display name + live friend discount; one 404 `INVITE_CODE_INVALID` for any unusable code |
 | `POST /v1/economy/invite/redeem`          | Redeem invite code (first 7 days, never paid, not a coach) |
 | `GET /v1/economy/streak-rescue`           | Streak-rescue offer (eligible? cost? affordable?)        |
 | `POST /v1/economy/streak-rescue`          | Buy the freeze for the break day (coin sink, idempotent) |
@@ -512,6 +513,39 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   (review READY) is checked BEFORE spending, so an ungeneratable report can't be bought.
 
 ## Geliştirmeler (timeline)
+
+### 2026-10-25 — Davet kartı görünümü ve herkese açık davet önizlemesi
+
+`GET /v1/economy/invite` artık yalnız `{ code }` değil `InviteCodeView` döner (`@mentor/types`):
+`code`, `rewardCoin`, `joined` (katılan arkadaşlar, en yeni önce, en çok 20, yalnız `displayName`),
+`convertedCount` (ödeme yapan ve ödemesi geçerli kalan arkadaş sayısı), `redeemed` (kullanıcı birinin
+davetiyle geldiyse `{ inviterDisplayName, discount }`) ve `canRedeem`. Yeni `GET
+/v1/economy/invite/preview/:code` (`InvitePreviewController`, `@Public()`, `@Throttle` 20/dk) davet
+bağlantısı açan birine yalnız `{ inviterDisplayName, discount }` gösterir; id, kullanıcı adı, avatar yok.
+
+- **Sayım kuralı:** `convertedCount` = `status = CONVERTED` ve `reward_outcome` `REFUNDED` / `REVERSED`
+  değil (`InviteRepository.countConvertedByInviter`). Arkadaşlar ismiyle listelenir, ödeyenler yalnız sayıyla.
+  İsmi çözülemeyen arkadaş (kimlik satırı yok / boş ad) listeden düşer, yer tutucu gösterilmez. Not:
+  KVKK silinen hesap satırı korur ve "Silinmiş Kullanıcı" adını taşır; bu görünüm onu ayrıca elemez.
+- **`canRedeem`:** `economy.enabled` ve daha önce kullanmamış ve hiç ödememiş ve kayıt penceresi içinde.
+  `redeem` ile aynı tek yargı (`InviteService.redeemBlock`), iki yerde kopya yok.
+- **`redeemed.discount`:** telefonu doğrulanmışsa `SubscriptionsService.findInviteOffer` (checkout'un
+  vereceği indirim, `phoneRequired: false`). Doğrulanmamışsa ve açık INVITED kampanyası varsa
+  `previewInviteOffer` ile `phoneRequired: true` ("doğrula, indirim senin"), ama yalnız hiç ödememiş ve
+  checkout'u reddedilmeyecek (açık abonelik yok) kullanıcıya. Aksi halde `null`: checkout'un vermeyeceği
+  indirim vaat edilmez. İndirim yalnız web checkout için geçerlidir.
+- **Önizleme 404:** bozuk kod, bilinmeyen kod, koç / anonimleştirilmiş / silinme sürecindeki sahip ve
+  `economy.enabled` kapalıyken hepsi aynı `404 INVITE_CODE_INVALID` (inen sayfa tek "geçersiz bağlantı"
+  durumu gösterir; 400 vermek hangisi olduğunu sızdırırdı). "Geçerli kod" tanımı tek yerde:
+  `InviteService.resolveValidInvite`.
+- **`summary()` kaldı:** admin kullanıcı ekonomi görünümü (`admin-economy.controller.ts`) hâlâ kullanıyor.
+- Usage: web kartı (`fetchInviteCode`) ve `/davet/[code]` iniş sayfası bu iki uç noktayı tüketir. İstemci
+  `pnpm --filter @mentor/api openapi:export` + `pnpm --filter @mentor/api-client generate` ile yenilendi.
+- **Gotcha:** önizleme uç noktası 20/dk sınırlıdır; e2e'de bu bütçeyi tüketen test dosyanın sonunda durur.
+  `InviteService` kurucusu iki parametre kazandı (`UsersService`, `SubscriptionsService`), elle kurulan
+  spec örneklerinde sona eklenmeli. Related: `invite.service.ts`, `invite.repository.ts`,
+  `invite-preview.controller.ts`, `economy.dto.ts`, [payments.md](./payments.md) 2026-10-25,
+  [promotions.md](./promotions.md) 2026-10-25, `apps/api/test/economy-invite.e2e-spec.ts`.
 
 ### 2026-10-25 — Davet kodu kullanılınca çalışma arkadaşı isteği veya karşılıklı takip, davet edene bildirim
 

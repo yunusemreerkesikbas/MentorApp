@@ -217,6 +217,47 @@ export class PromotionsService {
   }
 
   /**
+   * What a live, automatic promotion of one rule type would give, judged WITHOUT a user: no rule
+   * evaluation and no per-user or per-phone quota. For surfaces that explain a rule before the user
+   * qualifies ("verify your phone and the friend discount applies"). Still honest about what the
+   * campaign can give: it must be switched on, inside its dates, under its global cap, and discount
+   * at least one of `plans` (the caller passes only plans the web can sell). The biggest discount wins.
+   */
+  async previewByRule(
+    ruleType: PromotionRuleType,
+    plans: readonly PromotionPlanInput[],
+    locale?: string,
+  ): Promise<PromotionSummary | null> {
+    if (plans.length === 0 || !(await this.config.get("promotions.enabled"))) return null;
+    const [maxPercent, live] = await Promise.all([
+      this.config.get("promotions.max_percent"),
+      this.promotionsRepo.findLive(new Date()),
+    ]);
+    let best: { row: PromotionRow; discountMinor: number } | null = null;
+    for (const row of live) {
+      // A coded promotion needs the code typed, so it is not something a surface can promise.
+      if (row.ruleType !== ruleType || row.code !== null) continue;
+      if (
+        row.maxRedemptions !== null &&
+        (await this.redemptionsRepo.countForPromotion(row.id)) >= row.maxRedemptions
+      ) {
+        continue;
+      }
+      for (const plan of plans) {
+        if (row.planIds !== null && !row.planIds.includes(plan.id)) continue;
+        const { discountMinor } = computeDiscount(
+          plan.priceMinor,
+          row.discountType as PromotionDiscountType,
+          row.discountValue,
+          maxPercent,
+        );
+        if (discountMinor > 0 && (!best || discountMinor > best.discountMinor)) best = { row, discountMinor };
+      }
+    }
+    return best ? toSummary(best.row, locale, maxPercent, plans) : null;
+  }
+
+  /**
    * Coded promotions the user already qualifies for. Surfacing them keeps the coupon code in the
    * DATA — the welcome modal renders whatever the admin created instead of hardcoding "HOSGELDIN".
    * Skipped when the user supplied a code: they are already looking at one.

@@ -483,12 +483,204 @@ describe("economy invite (e2e)", () => {
     }, 30_000);
   });
 
+  describe("invite views: progress card and public preview", () => {
+    /** SERVICE-context SQL (the tables belong to identity / economy; tests bypass the API on purpose). */
+    const serviceRows = async (sql: string, params: unknown[]): Promise<Array<Record<string, unknown>>> => {
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query("select set_config('app.role','SERVICE',true)");
+        const res = await client.query(sql, params);
+        await client.query("commit");
+        return res.rows;
+      } catch (error) {
+        await client.query("rollback");
+        throw error;
+      } finally {
+        client.release();
+      }
+    };
+    const inviteView = (token: string) => request(app.getHttpServer()).get("/v1/economy/invite").set(auth(token));
+    const previewOf = (rawCode: string) =>
+      request(app.getHttpServer()).get(`/v1/economy/invite/preview/${encodeURIComponent(rawCode)}`);
+    const redeem = (token: string, code: string) =>
+      request(app.getHttpServer()).post("/v1/economy/invite/redeem").set(auth(token)).send({ code });
+    const setEconomy = (value: boolean) =>
+      request(app.getHttpServer()).patch("/v1/admin/config/economy.enabled").set(auth(adminToken)).send({ value }).expect(200);
+    const makeCoach = (userId: string) =>
+      serviceRows("update users set roles = array_append(roles,$1) where id=$2", [UserRole.COACH, userId]);
+
+    it("a user who invited nobody yet gets a complete, empty card", async () => {
+      const user = await signup("view-empty");
+      const res = await inviteView(user.accessToken);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        code: expect.stringMatching(/^PUHU-/),
+        rewardCoin: 20,
+        joined: [],
+        convertedCount: 0,
+        redeemed: null,
+        canRedeem: true,
+      });
+    });
+
+    it("lists joined friends newest first by display name and counts only payers whose payment stands", async () => {
+      const inviter = await signup("view-inviter");
+      const first = await signup("view-first");
+      const second = await signup("view-second");
+      const third = await signup("view-third");
+      const code = (await inviteView(inviter.accessToken)).body.code as string;
+      for (const friend of [first, second, third]) await redeem(friend.accessToken, code).expect(201);
+      // first paid and the reward stands, second paid and was refunded, third has not paid.
+      await serviceRows(
+        "update invite_redemptions set status = 'CONVERTED', reward_outcome = 'GRANTED' where invited_user_id = $1",
+        [first.user.id],
+      );
+      await serviceRows(
+        "update invite_redemptions set status = 'CONVERTED', reward_outcome = 'REFUNDED' where invited_user_id = $1",
+        [second.user.id],
+      );
+      await serviceRows(
+        "update invite_redemptions set redeemed_at = now() - interval '2 hours' where invited_user_id = $1",
+        [first.user.id],
+      );
+      await serviceRows(
+        "update invite_redemptions set redeemed_at = now() - interval '1 hour' where invited_user_id = $1",
+        [second.user.id],
+      );
+
+      const res = await inviteView(inviter.accessToken);
+
+      expect(res.status).toBe(200);
+      expect(res.body.joined).toEqual([
+        { displayName: "Inv view-third" },
+        { displayName: "Inv view-second" },
+        { displayName: "Inv view-first" },
+      ]);
+      expect(res.body.convertedCount).toBe(1);
+      expect(res.body.redeemed).toBeNull();
+    });
+
+    it("an invited user sees who invited them and can no longer redeem", async () => {
+      const inviter = await signup("view-host");
+      const friend = await signup("view-guest");
+      const code = (await inviteView(inviter.accessToken)).body.code as string;
+      await redeem(friend.accessToken, code).expect(201);
+
+      const res = await inviteView(friend.accessToken);
+
+      expect(res.body.redeemed).toEqual({ inviterDisplayName: "Inv view-host", discount: null });
+      expect(res.body.canRedeem).toBe(false);
+    });
+
+    it("canRedeem closes with the signup window and after the first payment", async () => {
+      const late = await signup("view-late");
+      await serviceRows("update users set created_at = now() - interval '8 days' where id = $1", [late.user.id]);
+      expect((await inviteView(late.accessToken)).body.canRedeem).toBe(false);
+
+      const payer = await signup("view-payer");
+      await verifyTrialPhone(payer.user.id);
+      expect((await inviteView(payer.accessToken)).body.canRedeem).toBe(true);
+      const checkout = await request(app.getHttpServer()).post("/v1/subscription/checkout")
+        .set(auth(payer.accessToken)).send({ planId: "premium-monthly", useTrial: true }).expect(200);
+      const providerRef = new URL(checkout.body.checkoutUrl).searchParams.get("ref")!;
+      const { body, headers } = signFakeWebhook(SECRET, {
+        eventId: `evt_view_payer_${RUN}`, type: "payment_succeeded", providerRef, amountMinor: 24900,
+      });
+      await request(app.getHttpServer()).post("/v1/webhooks/payments").set(headers).send(JSON.parse(body)).expect(200);
+      expect((await inviteView(payer.accessToken)).body.canRedeem).toBe(false);
+    }, 30_000);
+
+    it("keeps a coach out of their own card (no code is minted)", async () => {
+      const coach = await signup("view-coach");
+      await makeCoach(coach.user.id);
+      const res = await inviteView(coach.accessToken);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("INVITE_COACH_NOT_ALLOWED");
+    });
+
+    describe("GET /economy/invite/preview/:code (public)", () => {
+      it("shows the inviter's display name and nothing else, without signing in", async () => {
+        const inviter = await signup("preview-host");
+        const code = (await inviteView(inviter.accessToken)).body.code as string;
+
+        const res = await previewOf(code);
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ inviterDisplayName: "Inv preview-host", discount: null });
+      });
+
+      it("takes a code typed by hand: lower case and stray spaces", async () => {
+        const inviter = await signup("preview-typed");
+        const code = (await inviteView(inviter.accessToken)).body.code as string;
+
+        const res = await previewOf(`  ${code.toLowerCase()} `);
+
+        expect(res.status).toBe(200);
+        expect(res.body.inviterDisplayName).toBe("Inv preview-typed");
+      });
+
+      it("answers one 404 INVITE_CODE_INVALID for an unknown code and for a malformed one", async () => {
+        for (const raw of ["PUHU-DEADBEEF", "hello", "PUHU-7KX4"]) {
+          const res = await previewOf(raw);
+          expect(res.status).toBe(404);
+          expect(res.body.code).toBe("INVITE_CODE_INVALID");
+        }
+      });
+
+      it("answers 404 for a code whose owner became a coach", async () => {
+        const owner = await signup("preview-coach");
+        const code = (await inviteView(owner.accessToken)).body.code as string;
+        expect((await previewOf(code)).status).toBe(200);
+        await makeCoach(owner.user.id);
+
+        const res = await previewOf(code);
+
+        expect(res.status).toBe(404);
+        expect(res.body.code).toBe("INVITE_CODE_INVALID");
+      });
+
+      it("answers 404 for a code whose owner was anonymized or is being erased, never leaking the name", async () => {
+        const gone = await signup("preview-gone");
+        const goneCode = (await inviteView(gone.accessToken)).body.code as string;
+        await serviceRows(
+          "update users set status = 'DELETED', display_name = 'Silinmiş Kullanıcı', username = null where id = $1",
+          [gone.user.id],
+        );
+        const erasing = await signup("preview-erasing");
+        const erasingCode = (await inviteView(erasing.accessToken)).body.code as string;
+        await serviceRows("update users set erasure_started_at = now() where id = $1", [erasing.user.id]);
+
+        for (const code of [goneCode, erasingCode]) {
+          const res = await previewOf(code);
+          expect(res.status).toBe(404);
+          expect(res.body.code).toBe("INVITE_CODE_INVALID");
+          expect(JSON.stringify(res.body)).not.toContain("Silinmiş");
+        }
+      });
+
+      it("answers 404 while the economy is switched off", async () => {
+        const inviter = await signup("preview-off");
+        const code = (await inviteView(inviter.accessToken)).body.code as string;
+        await setEconomy(false);
+        try {
+          const res = await previewOf(code);
+          expect(res.status).toBe(404);
+          expect(res.body.code).toBe("INVITE_CODE_INVALID");
+        } finally {
+          await setEconomy(true);
+        }
+      });
+    });
+  });
+
   describe("INVITED promotion: the friend discount at checkout", () => {
     const LIST_PRICE = 24_900; // premium-monthly, seeded by migration 0003
     const INVITE_DISCOUNT = 7_470; // 30% of 24 900, under the default 50% ceiling
     let promotionId = "";
     let promotionsWereEnabled = false;
     let inviterToken = "";
+    let inviterCode = "";
 
     /** SERVICE-context SQL (payments/identity tables; tests bypass the API on purpose). */
     const serviceRows = async (sql: string, params: unknown[]): Promise<Array<Record<string, unknown>>> => {
@@ -545,6 +737,7 @@ describe("economy invite (e2e)", () => {
       expect(created.body).toMatchObject({ ruleType: "INVITED", ruleParams: { withinDays: 30 } });
       promotionId = created.body.id;
       inviterToken = (await signup("promo-inviter")).accessToken;
+      inviterCode = (await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(inviterToken)).expect(200)).body.code;
     }, 30_000);
 
     afterAll(async () => {
@@ -605,6 +798,75 @@ describe("economy invite (e2e)", () => {
         discount_minor: INVITE_DISCOUNT,
         phone_fingerprint: held!.phone_fingerprint,
       });
+    }, 30_000);
+
+    it("the invited friend's card says what checkout will give, or that a verified phone unlocks it", async () => {
+      const verified = await invitedFriend("view-verified");
+      await verifyTrialPhone(verified.user.id);
+      const unverified = await invitedFriend("view-unverified");
+      const card = async (token: string) =>
+        (await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(token)).expect(200)).body.redeemed;
+
+      expect(await card(verified.accessToken)).toEqual({
+        inviterDisplayName: "Inv promo-inviter",
+        discount: { discountType: "PERCENT", discountValue: 30, phoneRequired: false },
+      });
+      expect(await card(unverified.accessToken)).toEqual({
+        inviterDisplayName: "Inv promo-inviter",
+        discount: { discountType: "PERCENT", discountValue: 30, phoneRequired: true },
+      });
+    }, 30_000);
+
+    it("never advertises a discount checkout would refuse: an open trial, or web sales switched off", async () => {
+      const trialing = await invitedFriend("view-trialing");
+      await verifyTrialPhone(trialing.user.id);
+      const verified = await invitedFriend("view-websales");
+      await verifyTrialPhone(verified.user.id);
+      const unverified = await invitedFriend("view-websales-nophone");
+      const discountOf = async (token: string) =>
+        (await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(token)).expect(200)).body.redeemed.discount;
+      expect(await discountOf(trialing.accessToken)).toMatchObject({ phoneRequired: false });
+      await request(app.getHttpServer()).post("/v1/subscription/checkout").set(auth(trialing.accessToken))
+        .send({ planId: "premium-monthly", useTrial: true }).expect(200);
+
+      // A trialing user hits PAYMENT_ALREADY_SUBSCRIBED at checkout, so the card stays quiet.
+      expect(await discountOf(trialing.accessToken)).toBeNull();
+
+      const registry = app.get(ConfigRegistryService);
+      const webWasEnabled = await registry.get("payments.web.enabled");
+      await registry.set(adminId, "payments.web.enabled", false);
+      try {
+        expect(await discountOf(verified.accessToken)).toBeNull();
+        expect(await discountOf(unverified.accessToken)).toBeNull();
+        const preview = await request(app.getHttpServer()).get(`/v1/economy/invite/preview/${inviterCode}`);
+        expect(preview.body.discount).toBeNull();
+      } finally {
+        await registry.set(adminId, "payments.web.enabled", webWasEnabled);
+      }
+    }, 30_000);
+
+    it("the public preview carries the live discount and exposes only the inviter's display name", async () => {
+      const res = await request(app.getHttpServer()).get(`/v1/economy/invite/preview/${inviterCode}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        inviterDisplayName: "Inv promo-inviter",
+        discount: { discountType: "PERCENT", discountValue: 30 },
+      });
+      expect(Object.keys(res.body).sort()).toEqual(["discount", "inviterDisplayName"]);
+      expect(Object.keys(res.body.discount).sort()).toEqual(["discountType", "discountValue"]);
+    });
+  });
+
+  // Last on purpose: it spends the preview route's whole per-minute budget.
+  describe("public invite preview rate limit", () => {
+    it("throttles one client hammering the preview, long before the global limit", async () => {
+      const statuses: number[] = [];
+      for (let i = 0; i < 30; i++) {
+        statuses.push((await request(app.getHttpServer()).get("/v1/economy/invite/preview/PUHU-NOPE2345")).status);
+      }
+      expect(statuses[0]).toBe(404);
+      expect(statuses).toContain(429);
     }, 30_000);
   });
 });

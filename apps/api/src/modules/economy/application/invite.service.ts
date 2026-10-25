@@ -1,15 +1,18 @@
 import { PaymentEvidenceService } from "../../payments/application/payment-evidence.service";
 import { InviteSignalRegistry } from "../../payments/application/invite-signal.registry";
+import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 import type { PaymentSucceeded } from "../../payments/domain/payments.events";
 import { HttpStatus, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { randomInt } from "node:crypto";
 import { Currency, UserRole } from "@mentor/types";
+import type { InviteCodeView, InviteDiscountView, InvitePreviewView } from "@mentor/types";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { BuddyService } from "../../identity/application/buddy.service";
 import { FollowService } from "../../identity/application/follow.service";
+import { UsersService } from "../../identity/application/users.service";
 import { UsersRepository, type UserRow } from "../../identity/infrastructure/users.repository";
 import { EconomyService } from "./economy.service";
 import { QuestService } from "./quest.service";
@@ -37,6 +40,15 @@ export const generateInviteCode = (): string => {
 
 const DAY_MS = 86_400_000;
 
+/** How many joined friends the inviter's card lists. */
+const JOINED_LIST_LIMIT = 20;
+
+/** Why a user cannot redeem a code right now (all three are a 409 on redeem). */
+interface RedeemBlock {
+  code: ErrorCode;
+  details?: Record<string, unknown>;
+}
+
 const isCoach = (user: Pick<UserRow, "roles">): boolean => user.roles.includes(UserRole.COACH);
 
 /**
@@ -58,6 +70,8 @@ export class InviteService implements OnModuleInit {
     private readonly follows: FollowService,
     private readonly events: EventEmitter2,
     private readonly inviteSignals: InviteSignalRegistry,
+    private readonly identities: UsersService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   /**
@@ -99,6 +113,21 @@ export class InviteService implements OnModuleInit {
   }
 
   /**
+   * What stops this user from redeeming any code right now, or null when nothing does. Check order:
+   * not already redeemed, inside the signup window, never paid (a trial alone does not count). One
+   * definition, shared by `redeem` (which throws it) and the card's `canRedeem` (which reports it).
+   */
+  private async redeemBlock(invited: Pick<UserRow, "id" | "createdAt">): Promise<RedeemBlock | null> {
+    if (await this.repo.findRedemptionByInvited(invited.id)) return { code: ErrorCode.INVITE_ALREADY_REDEEMED };
+    const days = await this.config.get("economy.invite.redeem_window_days");
+    if (Date.now() - invited.createdAt.getTime() > days * DAY_MS) {
+      return { code: ErrorCode.INVITE_WINDOW_CLOSED, details: { days } };
+    }
+    if (await this.paymentEvidence.hasPaid(invited.id)) return { code: ErrorCode.INVITE_ALREADY_PAID };
+    return null;
+  }
+
+  /**
    * Redeem a code (post-signup). Forward-only + new-user guards; reward happens on conversion.
    * Check order: usable code → not self → redeemer not a coach → not already redeemed → inside the
    * signup window → never paid (a trial alone does not count).
@@ -113,16 +142,8 @@ export class InviteService implements OnModuleInit {
     const invited = await this.users.findByIdService(invitedUserId);
     if (!invited) throw new NotFoundError();
     if (isCoach(invited)) throw new DomainError(ErrorCode.INVITE_COACH_NOT_ALLOWED, HttpStatus.FORBIDDEN);
-    if (await this.repo.findRedemptionByInvited(invitedUserId)) {
-      throw new DomainError(ErrorCode.INVITE_ALREADY_REDEEMED, HttpStatus.CONFLICT);
-    }
-    const days = await this.config.get("economy.invite.redeem_window_days");
-    if (Date.now() - invited.createdAt.getTime() > days * DAY_MS) {
-      throw new DomainError(ErrorCode.INVITE_WINDOW_CLOSED, HttpStatus.CONFLICT, { days });
-    }
-    if (await this.paymentEvidence.hasPaid(invitedUserId)) {
-      throw new DomainError(ErrorCode.INVITE_ALREADY_PAID, HttpStatus.CONFLICT);
-    }
+    const block = await this.redeemBlock(invited);
+    if (block) throw new DomainError(block.code, HttpStatus.CONFLICT, block.details);
 
     const redemption = await this.repo.createRedemption(invite.inviterUserId, invitedUserId, code);
     // Race: a concurrent redeem inserted first (unique invited) → onConflictDoNothing returned none.
@@ -249,6 +270,93 @@ export class InviteService implements OnModuleInit {
     });
   }
 
+  /**
+   * The user's own invite card: their code, how their invites are going, and, when a friend invited
+   * them, who and what discount that earns. Everything the card needs in one read.
+   */
+  async getView(userId: string): Promise<InviteCodeView> {
+    const user = await this.users.findByIdService(userId);
+    if (!user) throw new NotFoundError();
+    const [code, rewardCoin, joinedRows, convertedCount, redemption, economyEnabled, block] = await Promise.all([
+      this.getOrCreateCode(userId),
+      this.config.get("economy.invite.reward_coin"),
+      this.repo.listJoinedByInviter(userId, JOINED_LIST_LIMIT),
+      this.repo.countConvertedByInviter(userId),
+      this.repo.findRedemptionByInvited(userId),
+      this.config.get("economy.enabled"),
+      this.redeemBlock(user),
+    ]);
+    return {
+      code,
+      rewardCoin,
+      joined: await this.joinedFriends(joinedRows.map((row) => row.invitedUserId)),
+      convertedCount,
+      redeemed: redemption ? await this.redeemedView(userId, redemption.inviterUserId) : null,
+      canRedeem: economyEnabled && block === null,
+    };
+  }
+
+  /** Display names only, in the order given. A friend whose identity cannot be resolved is left out, not replaced by a placeholder. */
+  private async joinedFriends(invitedUserIds: string[]): Promise<{ displayName: string }[]> {
+    if (invitedUserIds.length === 0) return [];
+    const identities = await this.identities.listDisplayIdentities(invitedUserIds);
+    return invitedUserIds.flatMap((id) => {
+      const displayName = identities.get(id)?.displayName.trim();
+      return displayName ? [{ displayName }] : [];
+    });
+  }
+
+  private async redeemedView(userId: string, inviterUserId: string): Promise<NonNullable<InviteCodeView["redeemed"]>> {
+    const [identities, discount] = await Promise.all([
+      this.identities.listDisplayIdentities([inviterUserId]),
+      this.inviteDiscountFor(userId),
+    ]);
+    return { inviterDisplayName: identities.get(inviterUserId)?.displayName ?? "", discount };
+  }
+
+  /**
+   * The friend discount as THIS user should be told about it: only what web checkout will honour.
+   * A verified phone: exactly what checkout would resolve now. Without one the INVITED rule cannot
+   * apply yet, so the card says "verify to get it", but only to someone who could then check out
+   * (no open subscription) and still qualifies (never paid).
+   */
+  private async inviteDiscountFor(userId: string): Promise<InviteDiscountView | null> {
+    if (await this.identities.isPhoneVerified(userId)) {
+      const promotion = (await this.subscriptions.findInviteOffer(userId))?.promotion;
+      return promotion
+        ? { discountType: promotion.discountType, discountValue: promotion.discountValue, phoneRequired: false }
+        : null;
+    }
+    const preview = await this.subscriptions.previewInviteOffer();
+    if (!preview) return null;
+    const [blocked, paid] = await Promise.all([
+      this.subscriptions.hasCheckoutBlockingSubscription(userId),
+      this.paymentEvidence.hasPaid(userId),
+    ]);
+    return blocked || paid
+      ? null
+      : { discountType: preview.discountType, discountValue: preview.discountValue, phoneRequired: true };
+  }
+
+  /**
+   * What a friend sees on the public invite link. One "invalid" answer covers every unusable code
+   * (unknown, coach, anonymized or erasing owner) and a switched-off economy, so the landing cannot
+   * be used to probe which of those it is. Only the inviter's display name leaves: no username,
+   * avatar or id.
+   */
+  async getPreview(code: string): Promise<InvitePreviewView> {
+    const invalid = () => new DomainError(ErrorCode.INVITE_CODE_INVALID, HttpStatus.NOT_FOUND);
+    if (!(await this.config.get("economy.enabled"))) throw invalid();
+    const resolved = await this.resolveValidInvite(code);
+    if (!resolved) throw invalid();
+    const offer = await this.subscriptions.previewInviteOffer();
+    return {
+      inviterDisplayName: resolved.owner.displayName,
+      discount: offer ? { discountType: offer.discountType, discountValue: offer.discountValue } : null,
+    };
+  }
+
+  /** Admin per-user economy view (invite counts only; the user-facing card is {@link getView}). */
   async summary(inviterUserId: string): Promise<InviteSummary> {
     const invite = await this.repo.findByInviter(inviterUserId);
     const counts = await this.repo.countsByInviter(inviterUserId);

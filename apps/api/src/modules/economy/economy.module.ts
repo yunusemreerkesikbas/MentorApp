@@ -21,6 +21,7 @@ import { LedgerRepository } from "./infrastructure/ledger.repository";
 import { InviteRepository } from "./infrastructure/invite.repository";
 import { QuestRepository } from "./infrastructure/quest.repository";
 import { EconomyController } from "./presentation/economy.controller";
+import { InvitePreviewController } from "./presentation/invite-preview.controller";
 
 /**
  * W6 — Light economy (§3). Slice 1: ledger + balances + reward engine + admin adjust. Slice 2a:
@@ -29,7 +30,7 @@ import { EconomyController } from "./presentation/economy.controller";
  */
 @Module({
   imports: [PaymentsModule, IdentityModule, CoachingModule],
-  controllers: [EconomyController],
+  controllers: [EconomyController, InvitePreviewController],
   providers: [
     RewardReceiptService,
     QuestTriggerService,

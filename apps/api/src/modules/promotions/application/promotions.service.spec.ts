@@ -482,6 +482,89 @@ describe("PromotionsService INVITED signal", () => {
   });
 });
 
+describe("PromotionsService.previewByRule (a rule's offer, judged without a user)", () => {
+  const invited = (overrides: Partial<PromotionRow> = {}) =>
+    promo({ id: "invited", ruleType: "INVITED", ruleParams: { withinDays: 30 }, discountValue: 30, ...overrides });
+  const preview = (harness: Harness, plans = [MONTHLY]) => harness.service.previewByRule("INVITED", plans);
+
+  it("summarises a live, automatic promotion of that rule", async () => {
+    const harness = makeService({ live: [invited()] });
+
+    await expect(preview(harness)).resolves.toMatchObject({
+      id: "invited",
+      code: null,
+      discountType: "PERCENT",
+      discountValue: 30,
+      planNames: null,
+    });
+  });
+
+  it("evaluates no user rule and no per-user or per-phone quota", async () => {
+    const harness = makeService({ live: [invited()], userUsed: 5, phoneUsed: 5 });
+
+    await expect(preview(harness)).resolves.not.toBeNull();
+    expect(harness.redemptionsRepo.countForUser).not.toHaveBeenCalled();
+    expect(harness.redemptionsRepo.countActiveForPhone).not.toHaveBeenCalled();
+  });
+
+  it("ignores other rule types and promotions that need a code typed", async () => {
+    const harness = makeService({
+      live: [promo({ id: "anyone" }), promo({ id: "new", ruleType: "NEW_USER" }), invited({ id: "coded", code: "ARKADAS" })],
+    });
+
+    await expect(preview(harness)).resolves.toBeNull();
+  });
+
+  it("is null while promotions are switched off", async () => {
+    const harness = makeService({ live: [invited()], enabled: false });
+
+    await expect(preview(harness)).resolves.toBeNull();
+    expect(harness.promotionsRepo.findLive).not.toHaveBeenCalled();
+  });
+
+  it("is null when no plan is sellable", async () => {
+    const harness = makeService({ live: [invited()] });
+
+    await expect(preview(harness, [])).resolves.toBeNull();
+  });
+
+  it("is null for a promotion scoped to plans the caller cannot sell", async () => {
+    const harness = makeService({ live: [invited({ planIds: [QUARTERLY.id] })] });
+
+    await expect(preview(harness, [MONTHLY])).resolves.toBeNull();
+  });
+
+  it("names the covered sellable plans when the promotion is scoped", async () => {
+    const harness = makeService({ live: [invited({ planIds: [QUARTERLY.id] })] });
+
+    await expect(preview(harness, [MONTHLY, QUARTERLY])).resolves.toMatchObject({ planNames: [QUARTERLY.name] });
+  });
+
+  it("is null once the global cap is spent, since checkout would refuse every taker", async () => {
+    const harness = makeService({ live: [invited({ maxRedemptions: 10 })], globalUsed: 10 });
+
+    await expect(preview(harness)).resolves.toBeNull();
+  });
+
+  it("is null when the discount computes to nothing", async () => {
+    const harness = makeService({ live: [invited({ discountType: "FIXED", discountValue: 0 })] });
+
+    await expect(preview(harness)).resolves.toBeNull();
+  });
+
+  it("advertises the clamped magnitude checkout applies, never the admin's raw entry", async () => {
+    const harness = makeService({ live: [invited({ discountValue: 70 })], maxPercent: 50 });
+
+    await expect(preview(harness)).resolves.toMatchObject({ discountValue: 50 });
+  });
+
+  it("picks the biggest discount among several", async () => {
+    const harness = makeService({ live: [invited({ id: "small", discountValue: 10 }), invited({ id: "big", discountValue: 40 })] });
+
+    await expect(preview(harness)).resolves.toMatchObject({ id: "big", discountValue: 40 });
+  });
+});
+
 describe("PromotionsService.reserve", () => {
   const tx = {} as never;
   let offer: ResolvedOffer;

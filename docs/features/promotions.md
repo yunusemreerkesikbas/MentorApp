@@ -131,6 +131,17 @@ Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyur
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-25 — `previewByRule`: what a rule would give, without a user.** `PromotionsService.previewByRule(ruleType, plans, locale?)`
+  returns the summary of the live, code-less promotion of that rule with the biggest discount over the
+  given (web-sellable) plans, or null. It checks promotions on, the date window, the global cap and a
+  non-zero clamped discount, and deliberately skips rule evaluation and the per-user / per-phone
+  quotas, because there is no user. Only for surfaces that explain a rule before the viewer qualifies
+  (the invite landing, "verify your phone to get it"); anything that charges still goes through
+  `resolveOffers` + `reserve`. Gotcha: a coded promotion never previews (the code has to be typed),
+  and `INVITED`'s `withinDays` is not evaluated, so a preview can outlive one user's window.
+  Related: `promotions.service.ts`, `subscriptions.service.ts` `previewInviteOffer`,
+  [payments.md](./payments.md) 2026-10-25.
+
 - **2026-10-25 — `INVITED` rule: the friend-invite discount, once per verified phone.** New rule
   type `INVITED`, `ruleParams: { withinDays }` (days since the invite redeem, form default 30,
   rule fallback 30). It matches a user who redeemed a friend's code inside the window, never paid

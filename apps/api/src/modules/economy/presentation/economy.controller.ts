@@ -9,6 +9,7 @@ import type {
   DeepAnalysisView,
   EconomyBalance,
   EconomyLedgerEntryView,
+  InviteCodeView,
   StreakRescueView,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
@@ -21,7 +22,7 @@ import { EconomyService } from "../application/economy.service";
 import { InviteService } from "../application/invite.service";
 import { QuestService, type QuestProgressView } from "../application/quest.service";
 import { StreakRescueService } from "../application/streak-rescue.service";
-import { DeepAnalysisDto, EconomyLedgerQueryDto, RedeemInviteDto } from "./economy.dto";
+import { DeepAnalysisDto, EconomyLedgerQueryDto, InviteCodeViewDto, RedeemInviteDto } from "./economy.dto";
 import { toLedgerEntryView, type LedgerCopyFn } from "./ledger-entry-view";
 
 /**
@@ -71,14 +72,16 @@ export class EconomyController {
     return rows.map((row) => toLedgerEntryView(row, t));
   }
 
+  /** The user's invite card: code, joined friends, paying friends, their own invitation and what they can still redeem. */
   @Get("invite")
-  async invite(@CurrentUser() user: RequestUser): Promise<{ code: string }> {
+  @ApiOkResponse({ type: InviteCodeViewDto })
+  async invite(@CurrentUser() user: RequestUser): Promise<InviteCodeView> {
     await this.assertEnabled();
     // Coaches are outside the invite economy: no code is minted for them (redeem is guarded in the service).
     if (user.roles.includes(UserRole.COACH)) {
       throw new DomainError(ErrorCode.INVITE_COACH_NOT_ALLOWED, HttpStatus.FORBIDDEN);
     }
-    return { code: await this.invites.getOrCreateCode(user.id) };
+    return this.invites.getView(user.id);
   }
 
   @Get("rewards/unseen")
