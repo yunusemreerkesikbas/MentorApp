@@ -38,7 +38,10 @@ export class IdentityEventsListener {
 
   @OnEvent(IdentityEventTopic.BUDDY_REQUESTED)
   async onBuddyRequested(e: BuddyEvent): Promise<void> {
-    await this.createBuddyNotification(e, NotificationCopyKey.BUDDY_REQUESTED);
+    await this.createBuddyNotification(
+      e,
+      e.viaInvite ? NotificationCopyKey.BUDDY_REQUESTED_VIA_INVITE : NotificationCopyKey.BUDDY_REQUESTED,
+    );
   }
 
   @OnEvent(IdentityEventTopic.BUDDY_ACCEPTED)

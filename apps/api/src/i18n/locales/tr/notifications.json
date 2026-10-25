@@ -155,6 +155,16 @@
       "title": "Yol arkadaşından haber",
       "body": "{name} bugün ilk seansını tamamladı."
     },
+    "inviteJoined": {
+      "register": "puhu",
+      "title": "{name} davetinle geldi!",
+      "body": "Premium'a geçerse sana Coin düşer."
+    },
+    "buddyRequestedViaInvite": {
+      "register": "puhu",
+      "title": "{name} davetinle geldi!",
+      "body": "Seninle çalışmak istiyor. İsteği seans ekranında bekliyor."
+    },
     "studyRoomSessionStarted": {
       "register": "puhu",
       "title": "Masada biri var",

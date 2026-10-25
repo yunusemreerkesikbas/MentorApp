@@ -1,15 +1,19 @@
 import { PaymentEvidenceService } from "../../payments/application/payment-evidence.service";
 import type { PaymentSucceeded } from "../../payments/domain/payments.events";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { randomInt } from "node:crypto";
 import { Currency, UserRole } from "@mentor/types";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { BuddyService } from "../../identity/application/buddy.service";
+import { FollowService } from "../../identity/application/follow.service";
 import { UsersRepository, type UserRow } from "../../identity/infrastructure/users.repository";
 import { EconomyService } from "./economy.service";
 import { QuestService } from "./quest.service";
 import { EconomyLedger } from "../domain/economy.constants";
+import { EconomyEventTopic, type InviteRedeemed } from "../domain/economy.events";
 import { InviteRepository, type InviteRow } from "../infrastructure/invite.repository";
 
 export interface InviteSummary {
@@ -49,6 +53,9 @@ export class InviteService {
     private readonly config: ConfigRegistryService,
     private readonly paymentEvidence: PaymentEvidenceService,
     private readonly users: UsersRepository,
+    private readonly buddy: BuddyService,
+    private readonly follows: FollowService,
+    private readonly events: EventEmitter2,
   ) {}
 
   /** The user's stable invite code (created on first request). */
@@ -113,7 +120,43 @@ export class InviteService {
     } catch (err) {
       this.logger.error({ err, invitedUserId }, "quest eval after redeem failed (redemption recorded)");
     }
+    await this.connectAfterRedeem(redemption.id, invite.inviterUserId, invited);
     return { status: redemption.status };
+  }
+
+  /**
+   * Side effects of a redeem that WON the insert (the loser of a race never gets here): link the two as
+   * study buddies (invited asks inviter), or follow each other when either already has a pairing; then
+   * emit INVITE_REDEEMED so the inviter hears about it. Best-effort end to end: the redemption is already
+   * committed, so no failure here may fail the redeem. A failed buddy request counts as "not requested",
+   * which keeps the inviter's single notification honest (the joined one) and still tries the follow.
+   */
+  private async connectAfterRedeem(redemptionId: string, inviterUserId: string, invited: UserRow): Promise<void> {
+    let buddyRequested = false;
+    try {
+      buddyRequested = await this.buddy.requestFromInvite(invited.id, inviterUserId);
+    } catch (err) {
+      this.logger.warn({ err, redemptionId }, "invite buddy request failed (redemption recorded)");
+    }
+    if (!buddyRequested) {
+      try {
+        await this.follows.followEachOtherSilently(invited.id, inviterUserId);
+      } catch (err) {
+        this.logger.warn({ err, redemptionId }, "invite mutual follow failed (redemption recorded)");
+      }
+    }
+    const payload: InviteRedeemed = {
+      redemptionId,
+      inviterUserId,
+      invitedUserId: invited.id,
+      invitedDisplayName: invited.displayName,
+      buddyRequested,
+    };
+    try {
+      this.events.emit(EconomyEventTopic.INVITE_REDEEMED, payload);
+    } catch (err) {
+      this.logger.warn({ err, redemptionId }, "invite redeemed event failed (redemption recorded)");
+    }
   }
 
   /**

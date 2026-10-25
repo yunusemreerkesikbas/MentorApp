@@ -115,6 +115,17 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-25 · Invite joined notifications (Puhu).** New `InviteEventsListener`
+  (`listeners/invite-events.listener.ts`) subscribes to `economy.invite.redeemed` and tells the inviter who
+  joined: `createFromTemplate(inviter, "FORUM", INVITE_JOINED, "/settings", { args: { name },
+  dedupeKey: "invite-joined:<redemptionId>" })`. When a study-buddy request went out with the redeem
+  (`buddyRequested: true`) it stays quiet, because `IdentityEventsListener.onBuddyRequested` now picks
+  `BUDDY_REQUESTED_VIA_INVITE` for `BuddyEvent.viaInvite` and links to `/study-session`: the inviter gets
+  exactly one notification either way. New copy keys `inviteJoined` and `buddyRequestedViaInvite`
+  (`notifications.inApp.*`, tr + en, `register: puhu`). Gotcha: the via-invite buddy row has no dedupe key
+  (the buddy event carries no redemption id); single delivery relies on the event being emitted only by the
+  winning redeem insert. Related: `notification-copy.ts`, `identity-events.listener.ts`,
+  [economy.md](./economy.md) 2026-10-25, [identity.md](./identity.md) 2026-10-25.
 - **2026-10-13 · Pilot daily reminder email control and measured cost profile.**
   The owner selected in-app/push reminders with Postmark Free's 100-message monthly quota.
   `notifications.daily_reminder.email_enabled` defaults to `true`; explicitly set it to `false`

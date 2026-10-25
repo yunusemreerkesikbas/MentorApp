@@ -360,4 +360,125 @@ describe("economy invite (e2e)", () => {
       }
     }, 30_000);
   });
+
+  describe("redeem side effects: study buddy, mutual follow, inviter notification", () => {
+    /** SERVICE-context read (the tables belong to identity / notifications; tests bypass the API on purpose). */
+    const serviceRows = async (sql: string, params: unknown[]): Promise<Array<Record<string, unknown>>> => {
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query("select set_config('app.role','SERVICE',true)");
+        const res = await client.query(sql, params);
+        await client.query("commit");
+        return res.rows;
+      } catch (error) {
+        await client.query("rollback");
+        throw error;
+      } finally {
+        client.release();
+      }
+    };
+    const buddyRows = (a: string, b: string) =>
+      serviceRows(
+        "select requester_id, addressee_id, status from buddy_pairs where requester_id in ($1,$2) or addressee_id in ($1,$2)",
+        [a, b],
+      );
+    const followRows = (a: string, b: string) =>
+      serviceRows(
+        "select follower_id, followee_id from user_follows where follower_id in ($1,$2) and followee_id in ($1,$2)",
+        [a, b],
+      );
+    /** Templates the invite flow can put in the inviter's inbox (plus the follow one, which must stay out). */
+    const inviteInbox = (userId: string) =>
+      serviceRows(
+        "select data->>'templateKey' as template, category, link_url, dedupe_key from user_notifications "
+          + "where user_id = $1 and data->>'templateKey' in ('inviteJoined','buddyRequestedViaInvite','newFollower','buddyRequested') "
+          + "order by created_at",
+        [userId],
+      );
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    /** Listeners run after the HTTP response: wait for the first row, then give any duplicate time to show up. */
+    const settledInbox = async (userId: string) => {
+      for (let i = 0; i < 40 && (await inviteInbox(userId)).length === 0; i++) await sleep(100);
+      await sleep(400);
+      return inviteInbox(userId);
+    };
+    const redeem = (token: string, body: { code: string }) =>
+      request(app.getHttpServer()).post("/v1/economy/invite/redeem").set(auth(token)).send(body);
+    const inviteCodeOf = async (token: string): Promise<string> =>
+      (await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(token)).expect(200)).body.code;
+
+    it("two simultaneous redeems by one user: one 201, one 409, one buddy request, one inviter notification", async () => {
+      const inviter = await signup("sfx-race-inviter");
+      const invited = await signup("sfx-race-invited");
+      const code = await inviteCodeOf(inviter.accessToken);
+
+      const results = await Promise.all([
+        redeem(invited.accessToken, { code }),
+        redeem(invited.accessToken, { code }),
+      ]);
+      expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
+      expect(results.find((r) => r.status === 409)!.body.code).toBe("INVITE_ALREADY_REDEEMED");
+
+      expect(await buddyRows(inviter.user.id, invited.user.id)).toEqual([
+        { requester_id: invited.user.id, addressee_id: inviter.user.id, status: "PENDING" },
+      ]);
+      // the buddy path carries the news: exactly one notification, the via-invite one, no follow noise
+      const inbox = await settledInbox(inviter.user.id);
+      expect(inbox).toHaveLength(1);
+      expect(inbox[0]).toMatchObject({ template: "buddyRequestedViaInvite", link_url: "/study-session" });
+      expect(await followRows(inviter.user.id, invited.user.id)).toEqual([]);
+    }, 30_000);
+
+    it("the inviter is already paired: they follow each other, no buddy row, one 'joined' notification", async () => {
+      const inviter = await signup("sfx-active-inviter");
+      const partner = await signup("sfx-active-partner");
+      const invited = await signup("sfx-active-invited");
+      await serviceRows(
+        "insert into buddy_pairs (requester_id, addressee_id, status) values ($1,$2,'ACTIVE') returning id",
+        [inviter.user.id, partner.user.id],
+      );
+      const code = await inviteCodeOf(inviter.accessToken);
+
+      await redeem(invited.accessToken, { code }).expect(201);
+
+      expect(await buddyRows(inviter.user.id, invited.user.id)).toEqual([
+        { requester_id: inviter.user.id, addressee_id: partner.user.id, status: "ACTIVE" },
+      ]);
+      const follows = await followRows(inviter.user.id, invited.user.id);
+      expect(follows).toHaveLength(2);
+      expect(follows).toEqual(
+        expect.arrayContaining([
+          { follower_id: inviter.user.id, followee_id: invited.user.id },
+          { follower_id: invited.user.id, followee_id: inviter.user.id },
+        ]),
+      );
+      const inbox = await settledInbox(inviter.user.id);
+      expect(inbox).toHaveLength(1);
+      expect(inbox[0]).toMatchObject({ template: "inviteJoined", category: "FORUM", link_url: "/settings" });
+      expect(String(inbox[0]!.dedupe_key)).toMatch(/^invite-joined:[0-9a-f-]{36}$/);
+      // silent follows: neither side hears "new follower"
+      expect(await inviteInbox(invited.user.id)).toEqual([]);
+    }, 30_000);
+
+    it("the invited user already has a pending request: mutual follow instead of a second request", async () => {
+      const inviter = await signup("sfx-pending-inviter");
+      const other = await signup("sfx-pending-other");
+      const invited = await signup("sfx-pending-invited");
+      await serviceRows(
+        "insert into buddy_pairs (requester_id, addressee_id, status) values ($1,$2,'PENDING') returning id",
+        [other.user.id, invited.user.id],
+      );
+      const code = await inviteCodeOf(inviter.accessToken);
+
+      await redeem(invited.accessToken, { code }).expect(201);
+
+      expect(await buddyRows(inviter.user.id, invited.user.id)).toEqual([
+        { requester_id: other.user.id, addressee_id: invited.user.id, status: "PENDING" },
+      ]);
+      expect(await followRows(inviter.user.id, invited.user.id)).toHaveLength(2);
+      const inbox = await settledInbox(inviter.user.id);
+      expect(inbox.map((r) => r.template)).toEqual(["inviteJoined"]);
+    }, 30_000);
+  });
 });

@@ -31,6 +31,10 @@ export const NotificationCopyKey = {
   BUDDY_ACCEPTED: "buddyAccepted",
   BUDDY_NUDGED: "buddyNudged",
   BUDDY_FIRST_SESSION: "buddyFirstSession",
+  /** Invite redeem: the friend joined with your code (no buddy request went out). */
+  INVITE_JOINED: "inviteJoined",
+  /** Invite redeem: the friend joined with your code and asks to study with you. */
+  BUDDY_REQUESTED_VIA_INVITE: "buddyRequestedViaInvite",
   STUDY_ROOM_SESSION_STARTED: "studyRoomSessionStarted",
   MENTORSHIP_STUDENT_JOINED: "mentorshipStudentJoined",
   MENTORSHIP_ASSIGNED_SINGULAR: "mentorshipAssignedSingular",

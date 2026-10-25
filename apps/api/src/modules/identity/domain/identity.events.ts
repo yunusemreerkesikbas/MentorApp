@@ -38,4 +38,6 @@ export interface BuddyEvent {
   actorId: string;
   actorDisplayName: string;
   actorUsername: string | null;
+  /** Set by `BuddyService.requestFromInvite`: the request exists because the actor redeemed the recipient's invite code. */
+  viaInvite?: boolean;
 }

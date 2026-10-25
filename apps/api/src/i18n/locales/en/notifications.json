@@ -155,6 +155,16 @@
       "title": "News from your buddy",
       "body": "{name} finished their first session today."
     },
+    "inviteJoined": {
+      "register": "puhu",
+      "title": "{name} joined with your invite!",
+      "body": "If they go Premium, you get Coin."
+    },
+    "buddyRequestedViaInvite": {
+      "register": "puhu",
+      "title": "{name} joined with your invite!",
+      "body": "They want to study with you. The request is waiting on the session screen."
+    },
     "studyRoomSessionStarted": {
       "register": "puhu",
       "title": "Someone sat down",

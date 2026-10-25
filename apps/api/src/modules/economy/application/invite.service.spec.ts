@@ -4,6 +4,7 @@ import { Currency, UserRole } from "@mentor/types";
 import { inviteCodeSchema, normalizeInviteCode, redeemInviteSchema } from "@mentor/validation";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
+import { EconomyEventTopic } from "../domain/economy.events";
 import { InviteService, generateInviteCode } from "./invite.service";
 
 interface Redemption {
@@ -75,6 +76,7 @@ function makeRepoFake() {
 
 interface UserFake {
   id: string;
+  displayName: string;
   status: string;
   erasureStartedAt: Date | null;
   roles: string[];
@@ -94,6 +96,12 @@ describe("InviteService", () => {
   let refunded: boolean;
   let grantError: Error | null;
   let windowDays: number;
+  let buddyResult: boolean;
+  let buddyError: Error | null;
+  let followError: Error | null;
+  let buddyCalls: Array<[string, string]>;
+  let followCalls: Array<[string, string]>;
+  let emitted: Array<{ topic: string; payload: unknown }>;
   /** Per-user overrides; any other id is a fresh, active student created a day ago. */
   let userRows: Map<string, UserFake | null>;
 
@@ -102,6 +110,7 @@ describe("InviteService", () => {
   };
   const defaultUser = (id: string): UserFake => ({
     id,
+    displayName: `${id}-name`,
     status: "ACTIVE",
     erasureStartedAt: null,
     roles: [UserRole.STUDENT],
@@ -117,6 +126,12 @@ describe("InviteService", () => {
     refunded = false;
     grantError = null;
     windowDays = 7;
+    buddyResult = true;
+    buddyError = null;
+    followError = null;
+    buddyCalls = [];
+    followCalls = [];
+    emitted = [];
     userRows = new Map();
     const users = {
       findByIdService: async (id: string) => (userRows.has(id) ? (userRows.get(id) ?? undefined) : defaultUser(id)),
@@ -137,6 +152,20 @@ describe("InviteService", () => {
       get: async (key: string) => (key === "economy.invite.redeem_window_days" ? windowDays : 20),
     };
     const quests = { evaluateAndGrant: async () => undefined };
+    const buddy = {
+      requestFromInvite: async (requesterId: string, addresseeId: string) => {
+        buddyCalls.push([requesterId, addresseeId]);
+        if (buddyError) throw buddyError;
+        return buddyResult;
+      },
+    };
+    const follows = {
+      followEachOtherSilently: async (a: string, b: string) => {
+        followCalls.push([a, b]);
+        if (followError) throw followError;
+      },
+    };
+    const events = { emit: (topic: string, payload: unknown) => void emitted.push({ topic, payload }) };
     return new InviteService(
       repo as never,
       economy as never,
@@ -144,6 +173,9 @@ describe("InviteService", () => {
       config as never,
       { isRefunded: async () => refunded, hasPaid: async () => paid } as never,
       users as never,
+      buddy as never,
+      follows as never,
+      events as never,
     );
   };
 
@@ -196,6 +228,92 @@ describe("InviteService", () => {
     const code = await svc.getOrCreateCode("ayse");
     paid = false; // a trial grants premium entitlement but moved no money
     await expect(svc.redeem("burak", code)).resolves.toEqual({ status: "PENDING" });
+  });
+
+  describe("redeem side effects", () => {
+    it("asks for a study buddy request invited → inviter and emits INVITE_REDEEMED once", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      await expect(svc.redeem("burak", code)).resolves.toEqual({ status: "PENDING" });
+
+      expect(buddyCalls).toEqual([["burak", "ayse"]]);
+      expect(followCalls).toEqual([]);
+      expect(emitted).toEqual([
+        {
+          topic: EconomyEventTopic.INVITE_REDEEMED,
+          payload: {
+            redemptionId: "r1",
+            inviterUserId: "ayse",
+            invitedUserId: "burak",
+            invitedDisplayName: "burak-name",
+            buddyRequested: true,
+          },
+        },
+      ]);
+      expect(EconomyEventTopic.INVITE_REDEEMED).toBe("economy.invite.redeemed");
+    });
+
+    it("falls back to a silent mutual follow when no buddy request was made", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      buddyResult = false;
+      await expect(svc.redeem("burak", code)).resolves.toEqual({ status: "PENDING" });
+
+      expect(buddyCalls).toEqual([["burak", "ayse"]]);
+      expect(followCalls).toEqual([["burak", "ayse"]]);
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0]!.payload).toMatchObject({ buddyRequested: false, redemptionId: "r1" });
+    });
+
+    it("still returns PENDING, follows and emits when the buddy request throws", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      buddyError = new Error("db down");
+      await expect(svc.redeem("burak", code)).resolves.toEqual({ status: "PENDING" });
+
+      expect(followCalls).toEqual([["burak", "ayse"]]);
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0]!.payload).toMatchObject({ buddyRequested: false });
+    });
+
+    it("still returns PENDING and emits when the mutual follow throws", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      buddyResult = false;
+      followError = new Error("db down");
+      await expect(svc.redeem("burak", code)).resolves.toEqual({ status: "PENDING" });
+
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0]!.payload).toMatchObject({ buddyRequested: false });
+    });
+
+    it("does nothing when the redemption insert lost the race (no row returned)", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      repo.createRedemption = async () => undefined as never;
+      await expect(svc.redeem("burak", code)).rejects.toMatchObject({
+        code: ErrorCode.INVITE_ALREADY_REDEEMED,
+      });
+
+      expect(buddyCalls).toEqual([]);
+      expect(followCalls).toEqual([]);
+      expect(emitted).toEqual([]);
+    });
+
+    it("does nothing for any rejected redeem", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      await expect(svc.redeem("ayse", code)).rejects.toBeInstanceOf(DomainError); // self
+      await expect(svc.redeem("burak", "PUHU-NOPE2345")).rejects.toBeInstanceOf(DomainError); // unknown
+      paid = true;
+      await expect(svc.redeem("cem", code)).rejects.toBeInstanceOf(DomainError); // already paid
+      setUser("dilek", { createdAt: new Date(Date.now() - 30 * DAY_MS) });
+      await expect(svc.redeem("dilek", code)).rejects.toBeInstanceOf(DomainError); // window
+
+      expect(buddyCalls).toEqual([]);
+      expect(followCalls).toEqual([]);
+      expect(emitted).toEqual([]);
+    });
   });
 
   describe("redeem window", () => {

@@ -722,6 +722,22 @@ rows expire normally; no schema migration is required. Related: `identity.consta
   `profile/_components/profile-header.tsx`, `profile-edit-form.tsx`,
   `docs/core/security-release-checklist.md`.
 
+### 2026-10-25 — Invite redeem links people: `requestFromInvite` and `followEachOtherSilently`
+
+- `BuddyService.requestFromInvite(requesterId, addresseeId): Promise<boolean>` works by id (no username lookup)
+  and never throws for state. It returns `false`, writing nothing, when either user has an ACTIVE pair or any
+  PENDING request (incoming or outgoing), or when a row between them already exists; otherwise it inserts a
+  PENDING request and emits `BUDDY_REQUESTED` with `viaInvite: true`. Backed by two small
+  `BuddyRepository` methods: `hasActiveOrPending(userId)` (does not hide banned counterparts, so a hidden row
+  still occupies the slot) and `tryInsertPending` (`onConflictDoNothing`, so a racing request returns false
+  instead of a unique-index 500).
+- `FollowService.followEachOtherSilently(a, b)` writes both follow rows (the repository insert is already
+  conflict-safe, so repeats are no-ops) and emits no `USER_FOLLOWED`: nobody gets a "new follower" notification.
+- `BuddyEvent.viaInvite?: boolean` is optional; existing emitters and payloads are unchanged.
+- Gotcha: callers decide the fallback (economy follows each other on `false`); `requestFromInvite` itself does
+  not follow. Related: `buddy.service.ts`, `buddy.repository.ts`, `follow.service.ts`, `identity.events.ts`,
+  [economy.md](./economy.md) 2026-10-25, [notifications.md](./notifications.md) 2026-10-25.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax

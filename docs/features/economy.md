@@ -513,6 +513,23 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-25 — Davet kodu kullanılınca çalışma arkadaşı isteği veya karşılıklı takip, davet edene bildirim
+
+`InviteService.redeem` kaydı yazan (kazanan) insert'ten sonra, `connectAfterRedeem` ile iki şey yapar:
+davet edilenden davet edene `BuddyService.requestFromInvite(invitedId, inviterId)`; `false` dönerse
+`FollowService.followEachOtherSilently` ile iki yönlü takip. Ardından `economy.invite.redeemed`
+(`EconomyEventTopic.INVITE_REDEEMED`) olayı `{ redemptionId, inviterUserId, invitedUserId,
+invitedDisplayName, buddyRequested }` ile yayılır. Olayı yalnız insert'i kazanan çağrı yayar: aynı
+kullanıcının iki eşzamanlı redeem'inde biri 201, öbürü 409 olur, tek buddy satırı ve tek bildirim kalır.
+
+- **Best-effort:** üç adımın her biri ayrı try/catch (`logger.warn`); hiçbiri redeem'i düşürmez. Buddy isteği
+  fırlatırsa `buddyRequested=false` sayılır, takip yine denenir ve davet edene "geldi" bildirimi gider.
+- **Sıra:** Task 2'nin kontrol sırası değişmedi; yan etkiler yalnız `createRedemption` satır döndürünce çalışır.
+- **Gotcha:** yan etkiler HTTP yanıtından sonra tamamlanabilir (olay dinleyicileri async); testte bildirimi
+  beklemek için kısa bekleme gerekir. Takip yolu `USER_FOLLOWED` yaymaz, "yeni takipçi" bildirimi gitmez.
+- **Related:** `invite.service.ts`, `economy.events.ts`, [identity.md](./identity.md) 2026-10-25,
+  [notifications.md](./notifications.md) 2026-10-25, `apps/api/test/economy-invite.e2e-spec.ts`.
+
 ### 2026-09-17 — İade clawback'i flag ve kuyruk parse'ına bağlandı
 
 `payments.payment.refunded` worker'ı `sourcePaymentId` zorunlu parse eder. Davet dönüşüm ödülü yalnız
