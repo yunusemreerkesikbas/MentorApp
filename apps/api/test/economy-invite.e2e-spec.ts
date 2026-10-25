@@ -519,6 +519,7 @@ describe("economy invite (e2e)", () => {
         code: expect.stringMatching(/^PUHU-/),
         rewardCoin: 20,
         joined: [],
+        joinedCount: 0,
         convertedCount: 0,
         redeemed: null,
         canRedeem: true,
@@ -558,6 +559,7 @@ describe("economy invite (e2e)", () => {
         { displayName: "Inv view-second" },
         { displayName: "Inv view-first" },
       ]);
+      expect(res.body.joinedCount).toBe(3);
       expect(res.body.convertedCount).toBe(1);
       expect(res.body.redeemed).toBeNull();
     });
@@ -579,6 +581,8 @@ describe("economy invite (e2e)", () => {
       const res = await inviteView(inviter.accessToken);
 
       expect(res.body.joined).toEqual([{ displayName: "Inv view-erase-stays" }]);
+      // The number still counts the erased friend (it names nobody); the list is a window of live accounts.
+      expect(res.body.joinedCount).toBe(2);
       expect(JSON.stringify(res.body)).not.toContain("Silinmiş");
     });
 

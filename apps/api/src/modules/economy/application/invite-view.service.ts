@@ -37,10 +37,11 @@ export class InviteViewService {
   async getView(userId: string): Promise<InviteCodeView> {
     const user = await this.users.findByIdService(userId);
     if (!user) throw new NotFoundError();
-    const [code, rewardCoin, joinedRows, convertedCount, redemption, economyEnabled, block] = await Promise.all([
+    const [code, rewardCoin, joinedRows, joinedCount, convertedCount, redemption, economyEnabled, block] = await Promise.all([
       this.invites.getOrCreateCode(userId),
       this.config.get("economy.invite.reward_coin"),
       this.repo.listJoinedByInviter(userId, JOINED_LIST_LIMIT),
+      this.repo.countJoinedByInviter(userId),
       this.repo.countConvertedByInviter(userId),
       this.repo.findRedemptionByInvited(userId),
       this.config.get("economy.enabled"),
@@ -50,6 +51,7 @@ export class InviteViewService {
       code,
       rewardCoin,
       joined: await this.joinedFriends(joinedRows.map((row) => row.invitedUserId)),
+      joinedCount,
       convertedCount,
       redeemed: redemption ? await this.redeemedView(userId, redemption.inviterUserId) : null,
       canRedeem: economyEnabled && block === null,

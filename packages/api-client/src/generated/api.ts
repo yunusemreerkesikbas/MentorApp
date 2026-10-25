@@ -504,6 +504,8 @@ export interface InviteCodeViewDto {
   rewardCoin: number;
   /** Newest first, at most 20. */
   joined: InviteJoinedFriendDto[];
+  /** Everyone who joined with the code; `joined` is only the newest 20 live accounts. */
+  joinedCount: number;
   convertedCount: number;
   /** @nullable */
   redeemed: InviteCodeViewDtoRedeemed;

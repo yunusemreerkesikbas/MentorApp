@@ -109,7 +109,7 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `GET /v1/economy/rewards/unseen`          | Paginated unread positive reward receipts |
 | `POST /v1/economy/rewards/seen`           | Acknowledge own ledger IDs without changing ledger |
 | `GET /v1/economy/quests`                  | Quest catalog + progress (auto-grants)                   |
-| `GET /v1/economy/invite`                  | Own invite card: code, joined friends (names, newest first, max 20), paying-friend count, own invitation + discount, `canRedeem` (403 for coaches) |
+| `GET /v1/economy/invite`                  | Own invite card: code, joined friends (names, newest first, max 20) and `joinedCount` (all of them), paying-friend count, own invitation + discount, `canRedeem` (403 for coaches) |
 | `GET /v1/economy/invite/preview/:code`    | Public (20/min): inviter display name + live friend discount; one 404 `INVITE_CODE_INVALID` for any unusable code |
 | `POST /v1/economy/invite/redeem`          | Redeem invite code (first 7 days, never paid, not a coach) |
 | `GET /v1/economy/streak-rescue`           | Streak-rescue offer (eligible? cost? affordable?)        |
@@ -514,6 +514,23 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-26 — `InviteCodeView.joinedCount`: katılan sayısı listeden ayrıldı
+
+`joined` en yeni 20 **canlı** hesabı listeler; kart bu listenin uzunluğunu "N arkadaşın katıldı" diye
+basınca 25 arkadaşı olan 20 görüyordu (silinmiş ya da askıdaki arkadaşlar da listeden düştüğü için 20'nin
+altında da yanlış olurdu). Görünüme `joinedCount: number` eklendi: bu davet edenin **tüm** kullanımları
+(`InviteRepository.countJoinedByInviter`, `count(*)` yalnız `inviter_user_id` süzgeciyle; `InviteViewService.getView`
+doldurur). Sayı kimseyi adlandırmadığı için silinmiş arkadaşlar da sayılır; liste hâlâ yalnız canlı hesapları
+gösterir. `convertedCount` onun alt kümesidir. Web kartı `joined.length` yerine `joinedCount`'u basar.
+
+- **Test:** `invite-view.service.spec.ts` (25 kullanım → `joinedCount` 25, `joined` 20; silinmiş / satırı olmayan
+  arkadaş sayıda kalır listeden düşer; başka davet edenin arkadaşı sayılmaz), `economy-invite.e2e-spec.ts` (boş
+  kart `joinedCount: 0`, silinmiş arkadaşlı kartta sayı 2 liste 1), `apps/web/e2e/profile.spec.ts` (25 / 20).
+- **Gotcha:** OpenAPI + istemci yenilendi (`openapi:export`, `api-client generate`); kart `joinedCount`'u zorunlu
+  varsayar, o yüzden API ve web birlikte yayınlanmalı (eski bir API yanıtında alan yoktur).
+- **Related:** `invite-view.service.ts`, `invite.repository.ts`, `economy.dto.ts`, `packages/types/src/economy.ts`,
+  `invite-progress.tsx`.
+
 ### 2026-10-25 — Davet kartı (web): paylaş, ilerleme, kullanılmış kod durumu
 
 Ayarlar > Kazanımlar > "Davet et" overlay'i (`economy-invite-card.tsx`) `InviteCodeView`'i tüketir ve
@@ -533,8 +550,9 @@ kalır, **Kopyala yerine Paylaş**, ilerleme satırı, kod kullanılmışsa duru
   paywall'daki gibi biçimlenir: PERCENT `%30`, FIXED kuruştan aşağı yuvarlanmış TL. `{coin}`
   `rewardCoin`'den gelir, koda gömülü değil.
 - **İlerleme:** "2 arkadaşın katıldı · 1 kişi Premium'a geçti" (yalnız sayılar; isim listesi yok),
-  kimse yoksa "İlk arkadaşını bekliyoruz!". Katılan sayısı `joined.length` ve `convertedCount`'un büyüğü
-  (liste en çok 20 isim taşıdığı için dönüşüm onu aşabilir).
+  kimse yoksa "İlk arkadaşını bekliyoruz!". Katılan sayısı görünümün `joinedCount` alanıdır, `joined.length`
+  değil (liste en çok 20 canlı hesap taşır; 25 arkadaşı olan "20 arkadaşın katıldı" görürdü, bkz. aşağıdaki
+  `joinedCount` girdisi).
 - **Kod alanı:** `canRedeem` ise form, kod kullanılmadan önce görünen açıklama satırıyla ("Davet eden
   kişi katıldığını görecek. Premium'a geçersen ona Coin düşer."; Ayarlar'da davet eden bilinmediği için
   adsız metin, `redeem_disclosure_named` iniş sayfası için). `redeemed` varsa form yerine "{ad}

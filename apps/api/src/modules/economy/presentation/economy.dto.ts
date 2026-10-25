@@ -33,6 +33,8 @@ export class InviteCodeViewDto implements InviteCodeView {
   @ApiProperty() code!: string;
   @ApiProperty({ type: "integer" }) rewardCoin!: number;
   @ApiProperty({ type: [InviteJoinedFriendDto], description: "Newest first, at most 20." }) joined!: InviteJoinedFriendDto[];
+  @ApiProperty({ type: "integer", description: "Everyone who joined with the code; `joined` is only the newest 20 live accounts." })
+  joinedCount!: number;
   @ApiProperty({ type: "integer" }) convertedCount!: number;
   @ApiProperty({ type: InviteRedeemedDto, nullable: true }) redeemed!: InviteRedeemedDto | null;
   @ApiProperty() canRedeem!: boolean;

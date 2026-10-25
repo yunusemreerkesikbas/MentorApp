@@ -244,6 +244,7 @@ function inviteView(over: Record<string, unknown> = {}) {
     code: INVITE_CODE,
     rewardCoin: 20,
     joined: [],
+    joinedCount: 0,
     convertedCount: 0,
     redeemed: null,
     canRedeem: true,
@@ -384,8 +385,38 @@ test.describe("davet kartı", () => {
       view: () =>
         inviteView({
           joined: [{ displayName: "Ayşe" }, { displayName: "Mehmet" }],
+          joinedCount: 2,
           convertedCount: 1,
         }),
+    });
+    const { dialog } = await openInviteCard(page);
+
+    await expect(dialog.getByText("2 arkadaşın katıldı · 1 kişi Premium'a geçti")).toBeVisible();
+    await expect(dialog.getByText("İlk arkadaşını bekliyoruz!")).toHaveCount(0);
+  });
+
+  test("ilerleme satırı listedeki 20 isimde durmaz, toplam katılanı söyler", async ({ page }) => {
+    await mockProfileApi(page);
+    // The view lists the newest 20 live friends and counts all 25.
+    await mockInviteEconomy(page, {
+      view: () =>
+        inviteView({
+          joined: Array.from({ length: 20 }, (_, index) => ({ displayName: `Arkadaş ${index}` })),
+          joinedCount: 25,
+          convertedCount: 3,
+        }),
+    });
+    const { dialog } = await openInviteCard(page);
+
+    await expect(dialog.getByText("25 arkadaşın katıldı · 3 kişi Premium'a geçti")).toBeVisible();
+    await expect(dialog.getByText(/^20 arkadaşın katıldı/)).toHaveCount(0);
+  });
+
+  test("katılan sayısı listeyi değil joinedCount'u izler: liste boş olsa da sayı doğru", async ({ page }) => {
+    await mockProfileApi(page);
+    // Every friend erased: nobody to list, but the count still says how many came.
+    await mockInviteEconomy(page, {
+      view: () => inviteView({ joined: [], joinedCount: 2, convertedCount: 1 }),
     });
     const { dialog } = await openInviteCard(page);
 
@@ -465,15 +496,18 @@ test.describe("davet kartı", () => {
     const input = dialog.getByRole("textbox", { name: "Bir davet kodun var mı?" });
     await expect(disclosure).toBeVisible();
     await expect(input).toBeVisible();
-    const disclosureBox = await disclosure.boundingBox();
-    const inputBox = await input.boundingBox();
-    expect(disclosureBox!.y + disclosureBox!.height).toBeLessThanOrEqual(inputBox!.y);
+    // The dock slides in, so two sequential reads can straddle a frame; retry until it has landed.
+    await expect(async () => {
+      const disclosureBox = await disclosure.boundingBox();
+      const inputBox = await input.boundingBox();
+      expect(disclosureBox!.y + disclosureBox!.height).toBeLessThanOrEqual(inputBox!.y);
+    }).toPass();
   });
 
   test("kod formu kartın içinde kalır, Kodu kullan düğmesi kesilmez", async ({ page }) => {
     await mockProfileApi(page);
     await mockInviteEconomy(page, {
-      view: () => inviteView({ joined: [{ displayName: "Ayşe" }], convertedCount: 1 }),
+      view: () => inviteView({ joined: [{ displayName: "Ayşe" }], joinedCount: 1, convertedCount: 1 }),
     });
     const { dialog } = await openInviteCard(page);
     const submit = dialog.getByRole("button", { name: "Kodu kullan" });

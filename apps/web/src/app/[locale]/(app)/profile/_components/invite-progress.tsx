@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 
 interface InviteProgressProps {
-  /** Friends who joined with the code (the view lists at most 20 names, so it is a floor). */
+  /** Everyone who joined with the code: the view's `joinedCount`, not the length of its 20-name list. */
   joined: number;
   /** Friends whose first payment stands. */
   converted: number;
@@ -17,9 +17,6 @@ interface InviteProgressProps {
  */
 export function InviteProgress({ joined, converted, reduceMotion }: InviteProgressProps) {
   const t = useTranslations("economy");
-  // Past the 20 listed names the converted count can outgrow the joined one; never print less
-  // joined friends than paying ones.
-  const joinedCount = Math.max(joined, converted);
 
   return (
     <motion.p
@@ -28,9 +25,7 @@ export function InviteProgress({ joined, converted, reduceMotion }: InviteProgre
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: reduceMotion ? 0 : 0.28, delay: reduceMotion ? 0 : 0.34 }}
     >
-      {joinedCount === 0
-        ? t("invite_progress_empty")
-        : t("invite_progress", { joined: joinedCount, converted })}
+      {joined === 0 ? t("invite_progress_empty") : t("invite_progress", { joined, converted })}
     </motion.p>
   );
 }

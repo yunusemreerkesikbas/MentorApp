@@ -145,6 +145,11 @@ export interface InviteCodeView {
   rewardCoin: number;
   /** Friends who joined with this code, newest first, at most 20. Display names only. */
   joined: { displayName: string }[];
+  /**
+   * Everyone who joined with this code, however many `joined` lists: a number only, so it also counts
+   * friends who are no longer live accounts (erased or suspended) without naming them.
+   */
+  joinedCount: number;
   /** Friends who paid and whose payment still stands (refunded or reversed ones do not count). */
   convertedCount: number;
   /** Set when this user redeemed a friend's code. */

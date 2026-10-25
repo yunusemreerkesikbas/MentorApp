@@ -240,7 +240,7 @@ export function EconomyInviteCard({
 
                 <InviteShareTicket code={invite.code} reduceMotion={reduceMotion} />
                 <InviteProgress
-                  joined={invite.joined.length}
+                  joined={invite.joinedCount}
                   converted={invite.convertedCount}
                   reduceMotion={reduceMotion}
                 />

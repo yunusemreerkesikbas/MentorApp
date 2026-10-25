@@ -11741,6 +11741,10 @@
               "$ref": "#/components/schemas/InviteJoinedFriendDto"
             }
           },
+          "joinedCount": {
+            "type": "integer",
+            "description": "Everyone who joined with the code; `joined` is only the newest 20 live accounts."
+          },
           "convertedCount": {
             "type": "integer"
           },
@@ -11761,6 +11765,7 @@
           "code",
           "rewardCoin",
           "joined",
+          "joinedCount",
           "convertedCount",
           "redeemed",
           "canRedeem"

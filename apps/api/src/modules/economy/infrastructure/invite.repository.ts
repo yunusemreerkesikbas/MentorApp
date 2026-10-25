@@ -118,6 +118,17 @@ export class InviteRepository {
     );
   }
 
+  /** Everyone who joined with this inviter's code, whatever happened to them since. A number, no names. */
+  countJoinedByInviter(inviterUserId: string): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(inviteRedemptions)
+        .where(eq(inviteRedemptions.inviterUserId, inviterUserId));
+      return rows[0]?.n ?? 0;
+    });
+  }
+
   /**
    * Friends of this inviter who paid and whose payment still stands: CONVERTED, minus the ones whose
    * reward was settled by a refund (`REFUNDED` before the reward, `REVERSED` after it).

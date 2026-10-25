@@ -54,6 +54,7 @@ function makeRepoFake() {
         .sort((a, b) => b.redeemedAt.getTime() - a.redeemedAt.getTime())
         .slice(0, limit)
         .map((r) => ({ invitedUserId: r.invitedUserId, redeemedAt: r.redeemedAt })),
+    countJoinedByInviter: async (inviter: string) => redemptions.filter((r) => r.inviterUserId === inviter).length,
     countConvertedByInviter: async (inviter: string) =>
       redemptions.filter(
         (r) =>
@@ -226,15 +227,39 @@ describe("InviteViewService", () => {
       expect((await views.getView("ayse")).convertedCount).toBe(1);
     });
 
-    it("shows at most 20 joined friends and asks for exactly that many", async () => {
+    it("shows at most 20 joined friends and asks for exactly that many, but counts all of them", async () => {
       const { invites, views } = build();
-      await joinFriends(invites, "ayse", Array.from({ length: 23 }, (_, i) => `friend${i}`));
+      await joinFriends(invites, "ayse", Array.from({ length: 25 }, (_, i) => `friend${i}`));
 
       const view = await views.getView("ayse");
 
       expect(view.joined).toHaveLength(20);
-      expect(view.joined[0]).toEqual({ displayName: "friend22-name" });
+      expect(view.joined[0]).toEqual({ displayName: "friend24-name" });
       expect(identityLookups.at(-1)).toHaveLength(20);
+      // The list is a window; the number is the truth the card prints.
+      expect(view.joinedCount).toBe(25);
+    });
+
+    it("counts a friend who is not a live account in joinedCount while leaving them out of the list", async () => {
+      const { invites, views } = build();
+      await joinFriends(invites, "ayse", ["burak", "cem", "dilek"]);
+      setUser("burak", { status: "DELETED", displayName: "Silinmiş Kullanıcı" });
+      userRows.set("cem", null);
+
+      const view = await views.getView("ayse");
+
+      // Only a number: it names nobody, so erased friends cannot leak through it.
+      expect(view.joined).toEqual([{ displayName: "dilek-name" }]);
+      expect(view.joinedCount).toBe(3);
+    });
+
+    it("does not count another inviter's friends", async () => {
+      const { invites, views } = build();
+      await joinFriends(invites, "ayse", ["burak"]);
+      await joinFriends(invites, "cem", ["dilek", "elif"]);
+
+      expect((await views.getView("ayse")).joinedCount).toBe(1);
+      expect((await views.getView("cem")).joinedCount).toBe(2);
     });
 
     it("exposes a display name per friend and nothing else about them", async () => {
@@ -273,7 +298,7 @@ describe("InviteViewService", () => {
     it("has an empty card for a user who invited nobody", async () => {
       const { views } = build();
       const view = await views.getView("ayse");
-      expect(view).toMatchObject({ joined: [], convertedCount: 0, redeemed: null, canRedeem: true });
+      expect(view).toMatchObject({ joined: [], joinedCount: 0, convertedCount: 0, redeemed: null, canRedeem: true });
     });
 
     it("names the inviter to an invited user, who can no longer redeem", async () => {
