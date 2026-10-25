@@ -45,7 +45,19 @@ const RULE_OPTIONS: { value: PromotionRuleType; label: string; hint: string }[] 
         label: "Geri kazanım",
         hint: "Aboneliği sona ermiş veya iptal edilmiş kullanıcılar.",
     },
+    {
+        value: "INVITED",
+        label: "Davetle gelen",
+        hint: "Belirlenen gün içinde bir arkadaşının davet kodunu kullanmış, telefonunu doğrulamış ve hiç ödeme yapmamış kullanıcılar. Her telefon numarası kampanyayı bir kez kullanır.",
+    },
 ];
+
+/** Rules that read `withinDays`, with the value a fresh form starts from. */
+const WITHIN_DAYS_DEFAULT: Partial<Record<PromotionRuleType, number>> = { NEW_USER: 7, INVITED: 30 };
+const WITHIN_DAYS_LABEL: Partial<Record<PromotionRuleType, string>> = {
+    NEW_USER: "Kayıttan sonra kaç gün",
+    INVITED: "Davet kodu kullanıldıktan sonra kaç gün",
+};
 
 interface FormState {
     name: string;
@@ -78,6 +90,7 @@ function blankToNull(value: string): string | null {
 
 function seed(initial?: AdminPromotion | null): FormState {
     const params = (initial?.ruleParams ?? {}) as Record<string, number | undefined>;
+    const withinDays = params.withinDays ?? WITHIN_DAYS_DEFAULT[initial?.ruleType ?? "ANYONE"];
     return {
         name: initial?.name ?? "",
         labelTr: initial?.labelTr ?? "",
@@ -88,7 +101,8 @@ function seed(initial?: AdminPromotion | null): FormState {
         descriptionEn: initial?.descriptionEn ?? "",
         code: initial?.code ?? "",
         ruleType: initial?.ruleType ?? "ANYONE",
-        withinDays: String(params.withinDays ?? 7),
+        // Blank until a rule needs it, so picking a rule can fill in that rule's own default.
+        withinDays: withinDays === undefined ? "" : String(withinDays),
         days: String(params.days ?? 5),
         windowDays: String(params.windowDays ?? 7),
         discountType: initial?.discountType ?? "PERCENT",
@@ -117,8 +131,25 @@ export default function PromotionForm({ initial }: { initial?: AdminPromotion | 
         (event: { target: { value: string } }) =>
             setForm((current) => ({ ...current, [key]: event.target.value }));
 
+    /** A rule switch fills in the new rule's default unless the admin already typed a value. */
+    function changeRule(event: { target: { value: string } }) {
+        const ruleType = event.target.value as PromotionRuleType;
+        setForm((current) => {
+            const previousDefault = WITHIN_DAYS_DEFAULT[current.ruleType];
+            const untouched =
+                current.withinDays.trim() === "" ||
+                (previousDefault !== undefined && current.withinDays === String(previousDefault));
+            const nextDefault = WITHIN_DAYS_DEFAULT[ruleType];
+            return {
+                ...current,
+                ruleType,
+                withinDays: untouched && nextDefault !== undefined ? String(nextDefault) : current.withinDays,
+            };
+        });
+    }
+
     function ruleParams(): Record<string, number> {
-        if (form.ruleType === "NEW_USER") return { withinDays: Number(form.withinDays) };
+        if (WITHIN_DAYS_DEFAULT[form.ruleType] !== undefined) return { withinDays: Number(form.withinDays) };
         if (form.ruleType === "ACTIVE_DAYS") {
             return { days: Number(form.days), windowDays: Number(form.windowDays) };
         }
@@ -184,6 +215,7 @@ export default function PromotionForm({ initial }: { initial?: AdminPromotion | 
     }
 
     const activeRule = RULE_OPTIONS.find((option) => option.value === form.ruleType);
+    const withinDaysLabel = WITHIN_DAYS_LABEL[form.ruleType];
     const usageMax = form.maxRedemptions.trim() === "" ? "sınırsız" : form.maxRedemptions;
 
     return (
@@ -241,15 +273,15 @@ export default function PromotionForm({ initial }: { initial?: AdminPromotion | 
                         <FormSection title="Hedef kitle" hint={activeRule?.hint}>
                             <div className="mb-4">
                                 <FieldLabel htmlFor="promotion-rule" label="Uygunluk kuralı" required />
-                                <select id="promotion-rule" className="form-select" value={form.ruleType} onChange={set("ruleType")}>
+                                <select id="promotion-rule" className="form-select" value={form.ruleType} onChange={changeRule}>
                                     {RULE_OPTIONS.map((option) => (
                                         <option key={option.value} value={option.value}>{option.label}</option>
                                     ))}
                                 </select>
                             </div>
-                            {form.ruleType === "NEW_USER" ? (
+                            {withinDaysLabel ? (
                                 <div className="mb-4 admin-field-compact">
-                                    <FieldLabel htmlFor="promotion-within-days" label="Kayıttan sonra kaç gün" required />
+                                    <FieldLabel htmlFor="promotion-within-days" label={withinDaysLabel} required />
                                     <input id="promotion-within-days" type="number" className="form-control" value={form.withinDays} onChange={set("withinDays")} min={1} max={365} required />
                                 </div>
                             ) : null}

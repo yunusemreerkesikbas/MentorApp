@@ -55,8 +55,10 @@ import {
   type ResolvedOffer,
 } from "../../promotions/application/promotions.service";
 import { StreakService } from "../../coaching/application/streak.service";
+import { UsersService } from "../../identity/application/users.service";
 import { computeEntitlement, EntitlementService, hasLostAccess } from "./entitlement.service";
 import { FeaturePolicyService } from "./feature-policy.service";
+import { InviteSignalRegistry } from "./invite-signal.registry";
 import { PhoneTrialService } from "./phone-trial.service";
 import { CheckoutService } from "./checkout.service";
 
@@ -74,6 +76,9 @@ const PROMOTION_ERROR_BY_REASON: Partial<Record<PromotionIneligibleReason, Error
   NOT_FOUND: ErrorCode.PROMOTION_NOT_FOUND,
   EXPIRED: ErrorCode.PROMOTION_EXPIRED,
   EXHAUSTED: ErrorCode.PROMOTION_EXHAUSTED,
+  // INVITED's phone conditions: the generic "not eligible", the reason travels in `details`.
+  PHONE_REQUIRED: ErrorCode.PROMOTION_NOT_ELIGIBLE,
+  PHONE_USED: ErrorCode.PROMOTION_NOT_ELIGIBLE,
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -173,6 +178,8 @@ export class SubscriptionsService {
     private readonly rewardEvents: PaymentRewardEventsService,
     private readonly phoneTrials: PhoneTrialService,
     private readonly checkoutService: CheckoutService,
+    private readonly users: UsersService,
+    private readonly inviteSignals: InviteSignalRegistry,
   ) {}
 
   async listPlans(): Promise<PlanDto[]> {
@@ -409,12 +416,23 @@ export class SubscriptionsService {
    * Start checkout (§7): one open subscription per user; trial only ONCE per user —
    * a returning (expired) subscriber re-subscribes without a trial.
    */
-  /** Build the signals promotion rules read. Every one is payments- or identity-owned. */
+  /**
+   * Build the signals promotion rules read. Payments- and identity-owned, plus economy's invite
+   * signal through the registry (economy imports payments, never the other way round).
+   *
+   * Advisory, lock-free reads — they price the paywall and seed checkout. The phone that actually
+   * keys INVITED's once-per-phone quota is re-read under the account lock inside the reservation.
+   */
   private async promotionContext(
     user: CheckoutUser,
     hadAnySubscription: boolean,
     latest: SubscriptionRow | undefined,
   ): Promise<PromotionUserContext> {
+    const [invitedAt, hasPaid, phoneFingerprint] = await Promise.all([
+      this.inviteSignals.invitedAt(user.id),
+      this.eventsRepo.hasPositiveCharge(user.id),
+      this.users.getVerifiedPhoneFingerprint(user.id),
+    ]);
     return {
       userId: user.id,
       orgId: user.orgId ?? null,
@@ -424,6 +442,9 @@ export class SubscriptionsService {
       // so a subscription that simply lapsed still reads ACTIVE and the raw status would miss
       // exactly the users WIN_BACK exists for. `hasRunOut` is the same rule the sweeper uses.
       lostPremiumAccess: hasLostAccess(latest ?? null, new Date()),
+      invitedAt,
+      hasPaid,
+      phoneFingerprint,
     };
   }
 
@@ -515,6 +536,10 @@ export class SubscriptionsService {
         userCreatedAt: latest.createdAt,
         hadAnySubscription: true,
         lostPremiumAccess: true,
+        // INVITED is for people who never paid; a lapsed subscriber is out, so skip its lookups.
+        invitedAt: null,
+        hasPaid: true,
+        phoneFingerprint: null,
       },
       plans: sellable.map((row) => ({ id: row.id, name: row.name, priceMinor: row.priceMinor })),
       activeDates: this.activeDatesSupplier(userId),

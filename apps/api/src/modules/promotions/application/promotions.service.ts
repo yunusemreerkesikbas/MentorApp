@@ -33,6 +33,12 @@ export interface PromotionUserContext {
   hadAnySubscription: boolean;
   /** Had a subscription and no longer has premium — the WIN_BACK signal. Derived by payments. */
   lostPremiumAccess: boolean;
+  /** When the user redeemed a friend's invite code (economy, via payments' registry), or null. */
+  invitedAt: Date | null;
+  /** Ever paid real money. Payments-owned; a trial alone is not payment. */
+  hasPaid: boolean;
+  /** Keyed hash of the verified phone (identity), null when unverified. Advisory: read lock-free. */
+  phoneFingerprint: string | null;
 }
 
 /**
@@ -72,6 +78,8 @@ export interface ResolvedOffer {
   chargedPriceMinor: number;
   renewalPriceMinor: number;
   promotionId: string | null;
+  /** Rule of the applied promotion, null at list price — lets a caller pick out e.g. the invite offer. */
+  ruleType: PromotionRuleType | null;
   summary: PromotionSummary | null;
   reason: PromotionIneligibleReason | null;
 }
@@ -156,6 +164,9 @@ export class PromotionsService {
         hadAnySubscription: input.context.hadAnySubscription,
         lostPremiumAccess: input.context.lostPremiumAccess,
         activeDates: needsActivity ? await activity! : [],
+        invitedAt: input.context.invitedAt,
+        hasPaid: input.context.hasPaid,
+        phoneFingerprint: input.context.phoneFingerprint,
       };
     };
 
@@ -233,6 +244,9 @@ export class PromotionsService {
    * Freeze the agreed price. MUST run inside the caller's checkout transaction so the redemption
    * and the subscription row commit together — a redemption without a subscription would hold a
    * seat forever, and a subscription without one would charge the list price.
+   *
+   * `phoneFingerprint` must be the caller's LOCKED read (inside `tx`), not the advisory one the
+   * offer was resolved with: it is the key of INVITED's once-per-phone quota.
    */
   async reserve(params: {
     tx: DatabaseTx;
@@ -240,6 +254,7 @@ export class PromotionsService {
     userId: string;
     orgId: string | null;
     subscriptionId: string;
+    phoneFingerprint: string | null;
   }): Promise<PromotionRedemptionRow | null> {
     const { tx, offer, userId, orgId, subscriptionId } = params;
     if (!offer.promotionId || offer.discountMinor <= 0) return null;
@@ -269,6 +284,12 @@ export class PromotionsService {
       });
     }
 
+    // INVITED is once per PHONE, across accounts. The promotion lock above serializes every
+    // reservation of this promotion, so two accounts on one number cannot both read 0 here. Judged
+    // by the promotion row, not the offer: an admin may have changed the rule since the resolve.
+    const invited = promotion.ruleType === PromotionRuleType.INVITED;
+    if (invited) await this.assertPhoneFree(promotion.id, params.phoneFingerprint, tx);
+
     return this.redemptionsRepo.create(
       {
         orgId,
@@ -281,9 +302,28 @@ export class PromotionsService {
         chargedPriceMinor: offer.chargedPriceMinor,
         periodsRemaining: promotion.appliesToPeriods,
         status: PromotionRedemptionStatus.RESERVED,
+        // Only where it is a quota key: no phone hash on rows that never need one (KVKK minimization).
+        phoneFingerprint: invited ? params.phoneFingerprint : null,
       },
       tx,
     );
+  }
+
+  private async assertPhoneFree(
+    promotionId: string,
+    phoneFingerprint: string | null,
+    tx: DatabaseTx,
+  ): Promise<void> {
+    if (phoneFingerprint === null) {
+      throw new DomainError(ErrorCode.PROMOTION_NOT_ELIGIBLE, HttpStatus.CONFLICT, {
+        reason: "PHONE_REQUIRED",
+      });
+    }
+    if ((await this.redemptionsRepo.countActiveForPhone(promotionId, phoneFingerprint, tx)) > 0) {
+      throw new DomainError(ErrorCode.PROMOTION_NOT_ELIGIBLE, HttpStatus.CONFLICT, {
+        reason: "PHONE_USED",
+      });
+    }
   }
 
   /** The discount still covering this subscription's next charge, if any. */
@@ -418,6 +458,14 @@ export class PromotionsService {
     }
     const mine = await this.redemptionsRepo.countForUser(promotion.id, userId);
     if (mine >= promotion.maxRedemptionsPerUser) return "USER_LIMIT_REACHED";
+    // The rule already required a fingerprint; the same quota `reserve` re-checks under the lock.
+    if (
+      promotion.ruleType === PromotionRuleType.INVITED &&
+      ruleContext.phoneFingerprint !== null &&
+      (await this.redemptionsRepo.countActiveForPhone(promotion.id, ruleContext.phoneFingerprint)) > 0
+    ) {
+      return "PHONE_USED";
+    }
     return null;
   }
 
@@ -464,6 +512,7 @@ export class PromotionsService {
       // Once the covered periods run out the plan renews at its list price.
       renewalPriceMinor: plan.priceMinor,
       promotionId: best.promotion.id,
+      ruleType: best.promotion.ruleType as PromotionRuleType,
       summary: toSummary(best.promotion, locale, maxPercent, plans),
       reason: null,
     };
@@ -480,6 +529,7 @@ export class PromotionsService {
       chargedPriceMinor: plan.priceMinor,
       renewalPriceMinor: plan.priceMinor,
       promotionId: null,
+      ruleType: null,
       summary: null,
       reason,
     };

@@ -1,4 +1,5 @@
 import { disableAuthRateLimits } from "./app-harness";
+import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 import { JobRunnerService } from "../src/modules/notifications/application/job-runner.service";
 import { SubscriptionsService } from "../src/modules/payments/application/subscriptions.service";
 import type { INestApplication } from "@nestjs/common";
@@ -479,6 +480,131 @@ describe("economy invite (e2e)", () => {
       expect(await followRows(inviter.user.id, invited.user.id)).toHaveLength(2);
       const inbox = await settledInbox(inviter.user.id);
       expect(inbox.map((r) => r.template)).toEqual(["inviteJoined"]);
+    }, 30_000);
+  });
+
+  describe("INVITED promotion: the friend discount at checkout", () => {
+    const LIST_PRICE = 24_900; // premium-monthly, seeded by migration 0003
+    const INVITE_DISCOUNT = 7_470; // 30% of 24 900, under the default 50% ceiling
+    let promotionId = "";
+    let promotionsWereEnabled = false;
+    let inviterToken = "";
+
+    /** SERVICE-context SQL (payments/identity tables; tests bypass the API on purpose). */
+    const serviceRows = async (sql: string, params: unknown[]): Promise<Array<Record<string, unknown>>> => {
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query("select set_config('app.role','SERVICE',true)");
+        const res = await client.query(sql, params);
+        await client.query("commit");
+        return res.rows;
+      } catch (error) {
+        await client.query("rollback");
+        throw error;
+      } finally {
+        client.release();
+      }
+    };
+    const monthlyOffer = async (token: string) => {
+      const res = await request(app.getHttpServer()).post("/v1/subscription/offers").set(auth(token)).send({});
+      expect(res.status).toBe(200);
+      return res.body.offers["premium-monthly"] as {
+        discountMinor: number; chargedPriceMinor: number; promotion: { id: string } | null;
+      };
+    };
+    const invitedFriend = async (label: string) => {
+      const friend = await signup(label);
+      const code = (await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(inviterToken)).expect(200)).body.code;
+      await request(app.getHttpServer()).post("/v1/economy/invite/redeem").set(auth(friend.accessToken)).send({ code }).expect(201);
+      return friend;
+    };
+    const redemptionOf = async (userId: string) =>
+      (await serviceRows(
+        "select promotion_id, phone_fingerprint, discount_minor, status from promotion_redemptions where user_id = $1",
+        [userId],
+      ))[0];
+
+    beforeAll(async () => {
+      const registry = app.get(ConfigRegistryService);
+      promotionsWereEnabled = await registry.get("promotions.enabled");
+      await registry.set(adminId, "promotions.enabled", true);
+      // Through the admin API, the way FINANCE creates it. The `e2e <run>` name lets global-setup retire a leftover.
+      const created = await request(app.getHttpServer()).post("/v1/admin/promotions").set(auth(adminToken)).send({
+        name: `e2e ${RUN} invited`,
+        labelTr: "Davet hediyesi",
+        labelEn: "Invite gift",
+        code: null,
+        ruleType: "INVITED",
+        ruleParams: { withinDays: 30 },
+        discountType: "PERCENT",
+        discountValue: 30,
+        appliesToPeriods: 1,
+      });
+      expect(created.status).toBe(201);
+      expect(created.body).toMatchObject({ ruleType: "INVITED", ruleParams: { withinDays: 30 } });
+      promotionId = created.body.id;
+      inviterToken = (await signup("promo-inviter")).accessToken;
+    }, 30_000);
+
+    afterAll(async () => {
+      // A live automatic promotion would leak into every later spec's checkout.
+      if (promotionId) {
+        await request(app.getHttpServer()).patch(`/v1/admin/promotions/${promotionId}`)
+          .set(auth(adminToken)).send({ isActive: false }).expect(200);
+      }
+      await app.get(ConfigRegistryService).set(adminId, "promotions.enabled", promotionsWereEnabled);
+    });
+
+    it("an invited, phone-verified friend sees the discount; a stranger and an unverified friend see the list price", async () => {
+      const friend = await invitedFriend("promo-friend");
+      await verifyTrialPhone(friend.user.id);
+      const unverified = await invitedFriend("promo-unverified");
+      const stranger = await signup("promo-stranger");
+      await verifyTrialPhone(stranger.user.id);
+
+      expect(await monthlyOffer(friend.accessToken)).toMatchObject({
+        discountMinor: INVITE_DISCOUNT,
+        chargedPriceMinor: LIST_PRICE - INVITE_DISCOUNT,
+        promotion: { id: promotionId },
+      });
+      expect(await monthlyOffer(stranger.accessToken)).toMatchObject({
+        discountMinor: 0, chargedPriceMinor: LIST_PRICE, promotion: null,
+      });
+      expect(await monthlyOffer(unverified.accessToken)).toMatchObject({
+        discountMinor: 0, chargedPriceMinor: LIST_PRICE, promotion: null,
+      });
+    }, 30_000);
+
+    it("one phone, one invite discount: a second account on that number waits until the first checkout is voided", async () => {
+      const first = await invitedFriend("promo-phone-a");
+      const second = await invitedFriend("promo-phone-b");
+      await verifyTrialPhone(first.user.id);
+
+      await request(app.getHttpServer()).post("/v1/subscription/checkout").set(auth(first.accessToken))
+        .send({ planId: "premium-monthly", useTrial: false }).expect(200);
+      const held = await redemptionOf(first.user.id);
+      expect(held).toMatchObject({ promotion_id: promotionId, discount_minor: INVITE_DISCOUNT, status: "RESERVED" });
+      expect(held!.phone_fingerprint).toEqual(expect.any(String));
+
+      // The number moves to another account (the first one drops it, the second verifies it).
+      const [{ phone_number: phone }] = (await serviceRows("select phone_number from users where id = $1", [first.user.id])) as [
+        { phone_number: string },
+      ];
+      await serviceRows("update users set phone_verified_at = null where id = $1", [first.user.id]);
+      await serviceRows("update users set phone_number = $1, phone_verified_at = now() where id = $2", [phone, second.user.id]);
+      expect(await monthlyOffer(second.accessToken)).toMatchObject({ discountMinor: 0, promotion: null });
+
+      // An abandoned checkout must not burn the phone's one discount.
+      await serviceRows("update promotion_redemptions set status = 'VOIDED' where user_id = $1", [first.user.id]);
+      expect(await monthlyOffer(second.accessToken)).toMatchObject({ discountMinor: INVITE_DISCOUNT });
+      await request(app.getHttpServer()).post("/v1/subscription/checkout").set(auth(second.accessToken))
+        .send({ planId: "premium-monthly", useTrial: false }).expect(200);
+      expect(await redemptionOf(second.user.id)).toMatchObject({
+        promotion_id: promotionId,
+        discount_minor: INVITE_DISCOUNT,
+        phone_fingerprint: held!.phone_fingerprint,
+      });
     }, 30_000);
   });
 });

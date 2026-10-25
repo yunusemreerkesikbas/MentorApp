@@ -379,6 +379,13 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 - CTA on both the paywall and `/abonelik`: `subscription.start_paid` = "{price} ile Premium'a geç" (the price is what gets charged now, coupon included); `start_trial` = "{days} gün ücretsiz başla"; `start_premium` is the fallback while plans are loading.
 - Gotchas: Premium coach chat is capped (`ai.chat.daily_limit`, default 30/day), so never write "sınırsız". There is no real social proof yet, so don't invent any. E2e specs now find the CTA by regex (`/ile Premium'a geç/`, `/gün ücretsiz başla/`).
 
+### 2026-10-25 — Promotion signals for the INVITED rule (invite discount)
+
+- `promotionContext` now also builds `invitedAt` (economy's invite redeem time), `hasPaid` (`PaymentEventsRepository.hasPositiveCharge`, the lock-free read) and `phoneFingerprint` (`UsersService.getVerifiedPhoneFingerprint`), in parallel. `findWinBackOffer` passes `invitedAt: null, hasPaid: true, phoneFingerprint: null` and skips those reads.
+- `InviteSignalRegistry` (`payments/application/invite-signal.registry.ts`, provided and exported by `PaymentsModule`): economy imports payments, so payments cannot import economy. `InviteService.onModuleInit` registers the resolver; unregistered → null. The resolver answers null while `economy.enabled` is off.
+- `CheckoutService.reserve` reads the phone fingerprint again inside the reservation transaction (after `lockActiveAccount`) whenever a discount is being reserved and hands it to `promotions.reserve`; the advisory value never keys the once-per-phone quota. `PROMOTION_ERROR_BY_REASON` maps `PHONE_REQUIRED` / `PHONE_USED` to `PROMOTION_NOT_ELIGIBLE` (reason in `details`).
+- Usage: nothing to call; an admin-created `INVITED` promotion does the rest (see [promotions.md](./promotions.md)). Gotcha: `SubscriptionsService` gained two constructor params (`UsersService`, `InviteSignalRegistry`) at the end, so hand-built instances in specs must pass them before reaching `promotionContext`. Related: `subscriptions.service.ts`, `checkout.service.ts`, `payments.module.ts`, `economy/application/invite.service.ts`.
+
 ## Gotchas / Known issues
 
 - **Coach seats read payments twice, and never write it (W8 phase B, 2026-09-27).** The seat on a

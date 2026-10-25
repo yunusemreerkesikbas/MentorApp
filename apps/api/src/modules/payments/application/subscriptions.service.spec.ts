@@ -230,14 +230,22 @@ describe("SubscriptionsService checkout with a promotion", () => {
         .mockResolvedValue({ checkoutUrl: "https://pay/x", providerRef: "ref-1" }),
     };
     const trials = trialStub();
-    const users = { lockActiveAccount: vi.fn(async () => true) };
+    // Checkout's identity seam: the LOCKED read inside the reservation transaction.
+    const users = {
+      lockActiveAccount: vi.fn(async () => true),
+      getVerifiedPhoneFingerprint: vi.fn(async () => "fp-locked"),
+    };
+    // The advisory reads the offer is resolved with, outside any transaction.
+    const identity = { getVerifiedPhoneFingerprint: vi.fn(async () => "fp-advisory") };
+    const eventsRepo = { hasPositiveCharge: vi.fn(async () => false) };
+    const inviteSignals = { invitedAt: vi.fn(async () => INVITED_AT) };
     const events = { emit: vi.fn() };
     (subsRepo as unknown as { update: unknown }).update = vi.fn();
     const service = new SubscriptionsService(
       db as never,
       plansRepo as never,
       subsRepo as never,
-      {} as never,
+      eventsRepo as never,
       {} as never,
       { listPolicies: vi.fn(async () => ({})) } as never,
       promotions as never,
@@ -250,9 +258,66 @@ describe("SubscriptionsService checkout with a promotion", () => {
       { append: vi.fn() } as never,
       trials as never,
       new CheckoutService(db as never, subsRepo as never, promotions as never, trials as never, paymentProvider as never, users as never, events as never),
+      identity as never,
+      inviteSignals as never,
     );
-    return { service, subsRepo, promotions, paymentProvider, db, tx, trials, users, events };
+    return { service, subsRepo, promotions, paymentProvider, db, tx, trials, users, events, identity, eventsRepo, inviteSignals };
   }
+
+  const INVITED_AT = new Date("2026-08-28T09:00:00Z");
+
+  it("feeds the invite, payment and phone signals to the promotion rules", async () => {
+    const { service, promotions, inviteSignals, eventsRepo, identity } = makeService(LIST_OFFER);
+
+    await service.resolveOffers(USER);
+
+    expect(inviteSignals.invitedAt).toHaveBeenCalledWith(USER.id);
+    expect(eventsRepo.hasPositiveCharge).toHaveBeenCalledWith(USER.id);
+    expect(identity.getVerifiedPhoneFingerprint).toHaveBeenCalledWith(USER.id);
+    expect(promotions.resolveOffers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.objectContaining({
+          invitedAt: INVITED_AT,
+          hasPaid: false,
+          phoneFingerprint: "fp-advisory",
+        }),
+      }),
+    );
+  });
+
+  it("reserves a discount with the phone read under the checkout lock, not the advisory one", async () => {
+    const { service, promotions, users, tx } = makeService(DISCOUNTED_OFFER);
+
+    await service.checkout(USER, plan.id, "HOSGELDIN");
+
+    expect(users.getVerifiedPhoneFingerprint).toHaveBeenCalledWith(USER.id, tx);
+    expect(promotions.reserve).toHaveBeenCalledWith(
+      expect.objectContaining({ tx, phoneFingerprint: "fp-locked" }),
+    );
+  });
+
+  it("does not read the phone at checkout when no promotion applies", async () => {
+    const { service, promotions, users } = makeService(LIST_OFFER);
+
+    await service.checkout(USER, plan.id);
+
+    expect(users.getVerifiedPhoneFingerprint).not.toHaveBeenCalled();
+    expect(promotions.reserve).toHaveBeenCalledWith(expect.objectContaining({ phoneFingerprint: null }));
+  });
+
+  it("keeps the invite rule out of the win-back offer", async () => {
+    const { service, subsRepo, promotions, inviteSignals } = makeService(DISCOUNTED_OFFER);
+    subsRepo.findLatestForUser.mockResolvedValue(LAPSED_SUBSCRIPTION);
+
+    await service.findWinBackOffer(USER.id);
+
+    expect(inviteSignals.invitedAt).not.toHaveBeenCalled();
+    expect(promotions.resolveOffers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.objectContaining({ invitedAt: null, hasPaid: true, phoneFingerprint: null }),
+      }),
+    );
+  });
 
   /** A subscriber whose paid period ran out last month: the win-back audience. */
   const LAPSED_SUBSCRIPTION = {

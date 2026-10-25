@@ -1,5 +1,6 @@
 import { PaymentRewardEventsService } from "./application/payment-reward-events.service";
 import { PaymentEvidenceService } from "./application/payment-evidence.service";
+import { InviteSignalRegistry } from "./application/invite-signal.registry";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
@@ -53,6 +54,7 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
     CheckoutService,
     PaymentRewardEventsService,
     PaymentEvidenceService,
+    InviteSignalRegistry,
     SubscriptionsService,
     SubscriptionMaintenanceService,
     FeaturePolicyService,
@@ -82,6 +84,7 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
   ],
   // SponsoredSeatService is exported for the admin metrics surface, which is the one place
   // allowed to hold both "who has a seat" and "what AI cost" at the same time.
-  exports: [PaymentEvidenceService, EntitlementService, PremiumGuard, SubscriptionsService, SponsoredSeatService, PhoneTrialService],
+  // InviteSignalRegistry is exported so economy can register its invite signal (see the class).
+  exports: [PaymentEvidenceService, InviteSignalRegistry, EntitlementService, PremiumGuard, SubscriptionsService, SponsoredSeatService, PhoneTrialService],
 })
 export class PaymentsModule {}

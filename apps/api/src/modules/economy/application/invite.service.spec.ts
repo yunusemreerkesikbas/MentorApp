@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PaymentSucceeded } from "../../payments/domain/payments.events";
+import { InviteSignalRegistry } from "../../payments/application/invite-signal.registry";
 import { Currency, UserRole } from "@mentor/types";
 import { inviteCodeSchema, normalizeInviteCode, redeemInviteSchema } from "@mentor/validation";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -102,6 +103,8 @@ describe("InviteService", () => {
   let buddyCalls: Array<[string, string]>;
   let followCalls: Array<[string, string]>;
   let emitted: Array<{ topic: string; payload: unknown }>;
+  let economyEnabled: boolean;
+  let signals: InviteSignalRegistry;
   /** Per-user overrides; any other id is a fresh, active student created a day ago. */
   let userRows: Map<string, UserFake | null>;
 
@@ -132,6 +135,8 @@ describe("InviteService", () => {
     buddyCalls = [];
     followCalls = [];
     emitted = [];
+    economyEnabled = true;
+    signals = new InviteSignalRegistry();
     userRows = new Map();
     const users = {
       findByIdService: async (id: string) => (userRows.has(id) ? (userRows.get(id) ?? undefined) : defaultUser(id)),
@@ -149,7 +154,12 @@ describe("InviteService", () => {
       },
     };
     const config = {
-      get: async (key: string) => (key === "economy.invite.redeem_window_days" ? windowDays : 20),
+      get: async (key: string) =>
+        key === "economy.invite.redeem_window_days"
+          ? windowDays
+          : key === "economy.enabled"
+            ? economyEnabled
+            : 20,
     };
     const quests = { evaluateAndGrant: async () => undefined };
     const buddy = {
@@ -176,6 +186,7 @@ describe("InviteService", () => {
       buddy as never,
       follows as never,
       events as never,
+      signals,
     );
   };
 
@@ -193,6 +204,28 @@ describe("InviteService", () => {
     const b = await svc.getOrCreateCode("inviter");
     expect(a).toBe(b);
     expect(a).toMatch(/^PUHU-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/);
+  });
+
+  describe("invite signal for the INVITED promotion", () => {
+    it("tells payments when a user redeemed, once registered at boot", async () => {
+      const svc = service();
+      await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+      expect(await signals.invitedAt("burak")).toBeNull(); // nothing registered yet
+
+      svc.onModuleInit();
+
+      expect(await signals.invitedAt("burak")).toEqual(new Date("2026-09-01T00:00:00Z"));
+      expect(await signals.invitedAt("never-invited")).toBeNull();
+    });
+
+    it("answers null while the economy is switched off, so a dormant economy never discounts", async () => {
+      const svc = service();
+      await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+      svc.onModuleInit();
+      economyEnabled = false;
+
+      expect(await signals.invitedAt("burak")).toBeNull();
+    });
   });
 
   it("redeem creates a PENDING redemption (no reward yet)", async () => {

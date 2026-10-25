@@ -4096,7 +4096,7 @@ export const promotions = pgTable(
     ),
     check(
       "promotions_rule_type_check",
-      sql`${t.ruleType} in ('ANYONE', 'NEW_USER', 'ACTIVE_DAYS', 'WIN_BACK')`,
+      sql`${t.ruleType} in ('ANYONE', 'NEW_USER', 'ACTIVE_DAYS', 'WIN_BACK', 'INVITED')`,
     ),
     check(
       "promotions_discount_type_check",
@@ -4139,6 +4139,11 @@ export const promotionRedemptions = pgTable(
     /** Decremented on every succeeded charge; at 0 the next renewal is at the list price. */
     periodsRemaining: integer("periods_remaining").notNull(),
     status: text("status").notNull().default("RESERVED"),
+    /**
+     * Keyed hash of the verified phone (identity's `phoneFingerprint`, never the raw number). Set
+     * only on INVITED redemptions: it is the key of their "once per phone" quota.
+     */
+    phoneFingerprint: text("phone_fingerprint"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -4151,6 +4156,10 @@ export const promotionRedemptions = pgTable(
     uniqueIndex("promotion_redemptions_subscription_unique_idx")
       .on(t.subscriptionId)
       .where(sql`${t.subscriptionId} is not null`),
+    // The phone-once count runs under the promotion lock at checkout; keep it an index lookup.
+    index("promotion_redemptions_promotion_phone_idx")
+      .on(t.promotionId, t.phoneFingerprint)
+      .where(sql`${t.phoneFingerprint} is not null`),
     index("promotion_redemptions_user_promotion_idx").on(
       t.userId,
       t.promotionId,

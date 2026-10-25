@@ -1,6 +1,7 @@
 import { PaymentEvidenceService } from "../../payments/application/payment-evidence.service";
+import { InviteSignalRegistry } from "../../payments/application/invite-signal.registry";
 import type { PaymentSucceeded } from "../../payments/domain/payments.events";
-import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { HttpStatus, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { randomInt } from "node:crypto";
 import { Currency, UserRole } from "@mentor/types";
@@ -43,7 +44,7 @@ const isCoach = (user: Pick<UserRow, "roles">): boolean => user.roles.includes(U
  * first positive payment succeeds (forward-only, verified). Reward goes to the inviter; idempotent + capped.
  */
 @Injectable()
-export class InviteService {
+export class InviteService implements OnModuleInit {
   private readonly logger = new Logger(InviteService.name);
 
   constructor(
@@ -56,7 +57,20 @@ export class InviteService {
     private readonly buddy: BuddyService,
     private readonly follows: FollowService,
     private readonly events: EventEmitter2,
+    private readonly inviteSignals: InviteSignalRegistry,
   ) {}
+
+  /**
+   * Hand payments the "came through an invite, and when" signal for the INVITED promotion rule.
+   * Payments cannot import economy (economy imports payments), so it asks this resolver through
+   * its registry. A switched-off economy answers null: a dormant invite programme never discounts.
+   */
+  onModuleInit(): void {
+    this.inviteSignals.register(async (userId) => {
+      if (!(await this.config.get("economy.enabled"))) return null;
+      return (await this.repo.findRedemptionByInvited(userId))?.redeemedAt ?? null;
+    });
+  }
 
   /** The user's stable invite code (created on first request). */
   async getOrCreateCode(userId: string): Promise<string> {

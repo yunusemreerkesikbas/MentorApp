@@ -127,7 +127,12 @@ export class CheckoutService {
           currentPeriodStart: now, currentPeriodEnd: trialEndsAt ?? periodEnd,
         }, tx);
         if (claim) await this.trials.bind(claim.id, sub.id, user.id, tx);
-        await this.promotions.reserve({ tx, offer, userId: user.id, orgId: user.orgId ?? null, subscriptionId: sub.id });
+        // The phone keying INVITED's once-per-phone quota: read here, under the account lock, never
+        // the advisory value the offer was priced with. Only when a discount is being reserved.
+        const phoneFingerprint = offer.promotionId && offer.discountMinor > 0
+          ? await this.users.getVerifiedPhoneFingerprint(user.id, tx)
+          : null;
+        await this.promotions.reserve({ tx, offer, userId: user.id, orgId: user.orgId ?? null, subscriptionId: sub.id, phoneFingerprint });
         return { sub, claimId: claim?.id };
       });
     } catch (error) {

@@ -35,6 +35,18 @@ export interface PromotionRuleContext {
    * An empty array simply means no ACTIVE_DAYS rule can match.
    */
   activeDates: readonly string[];
+  /**
+   * When the user redeemed a friend's invite code, or null. Economy-owned; payments reads it
+   * through its `InviteSignalRegistry`, so null also covers "economy absent or switched off".
+   */
+  invitedAt: Date | null;
+  /**
+   * Ever paid real money (a succeeded charge above zero). Payments-owned. NOT `hadAnySubscription`:
+   * an uncharged trial creates a subscription row without any payment.
+   */
+  hasPaid: boolean;
+  /** Keyed hash of the verified phone, null when unverified. Identity-owned; never the raw number. */
+  phoneFingerprint: string | null;
 }
 
 /** Distinct dates inside the `windowDays` calendar days ending today, inclusive (UTC). */
@@ -78,6 +90,13 @@ export function evaluateRule(
         countDatesWithin(ctx.activeDates, ctx.now, num(params.windowDays, 7)) >=
         num(params.days, 5)
       );
+
+    case PromotionRuleType.INVITED: {
+      // Phone-once is a quota, not part of the rule: it is counted by the service, under the
+      // promotion lock at checkout. A verified phone is part of the rule because it is the key.
+      if (ctx.invitedAt === null || ctx.hasPaid || ctx.phoneFingerprint === null) return false;
+      return ctx.now.getTime() - ctx.invitedAt.getTime() <= num(params.withinDays, 30) * DAY_MS;
+    }
 
     default:
       // Unreachable while the rule_type CHECK constraint holds; deny rather than throw.

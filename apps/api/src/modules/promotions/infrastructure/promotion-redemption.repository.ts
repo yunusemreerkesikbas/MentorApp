@@ -84,6 +84,30 @@ export class PromotionRedemptionRepository {
     });
   }
 
+  /**
+   * Live redemptions of one promotion on one phone, across every account — the INVITED "once per
+   * phone" quota. VOIDED is excluded like every other count, so an abandoned checkout frees the phone.
+   */
+  async countActiveForPhone(
+    promotionId: string,
+    phoneFingerprint: string,
+    exec?: DatabaseTx,
+  ): Promise<number> {
+    return this.onService(exec, async (tx) => {
+      const [row] = await tx
+        .select({ value: count() })
+        .from(promotionRedemptions)
+        .where(
+          and(
+            eq(promotionRedemptions.promotionId, promotionId),
+            eq(promotionRedemptions.phoneFingerprint, phoneFingerprint),
+            ne(promotionRedemptions.status, PromotionRedemptionStatus.VOIDED),
+          ),
+        );
+      return row?.value ?? 0;
+    });
+  }
+
   async create(entry: NewPromotionRedemption, tx: DatabaseTx): Promise<PromotionRedemptionRow> {
     const [row] = await tx.insert(promotionRedemptions).values(entry).returning();
     if (!row) throw new Error("Promotion redemption insert returned no row");

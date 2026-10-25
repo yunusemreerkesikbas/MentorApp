@@ -47,6 +47,9 @@ function context(overrides: Partial<PromotionUserContext> = {}): PromotionUserCo
     userCreatedAt: NOW,
     hadAnySubscription: false,
     lostPremiumAccess: false,
+    invitedAt: null,
+    hasPaid: false,
+    phoneFingerprint: null,
     ...overrides,
   };
 }
@@ -62,6 +65,7 @@ interface Harness {
   redemptionsRepo: {
     countForPromotion: ReturnType<typeof vi.fn>;
     countForUser: ReturnType<typeof vi.fn>;
+    countActiveForPhone: ReturnType<typeof vi.fn>;
     acquirePromotionLock: ReturnType<typeof vi.fn>;
     acquireUserLock: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
@@ -76,6 +80,7 @@ function makeService(
     maxPercent?: number;
     globalUsed?: number;
     userUsed?: number;
+    phoneUsed?: number;
     coded?: PromotionRow[];
   } = {},
 ): Harness {
@@ -88,6 +93,7 @@ function makeService(
   const redemptionsRepo = {
     countForPromotion: vi.fn().mockResolvedValue(options.globalUsed ?? 0),
     countForUser: vi.fn().mockResolvedValue(options.userUsed ?? 0),
+    countActiveForPhone: vi.fn().mockResolvedValue(options.phoneUsed ?? 0),
     acquirePromotionLock: vi.fn().mockResolvedValue(undefined),
     acquireUserLock: vi.fn().mockResolvedValue(undefined),
     create: vi.fn(async (entry: unknown) => entry),
@@ -426,6 +432,56 @@ describe("PromotionsService waiting coupons", () => {
   });
 });
 
+describe("PromotionsService INVITED signal", () => {
+  const invitedRule = promo({ ruleType: "INVITED", ruleParams: { withinDays: 30 } });
+  const invitedUser = context({
+    invitedAt: new Date(NOW.getTime() - 3 * 86_400_000),
+    phoneFingerprint: "fp-1",
+  });
+
+  it("discounts an invited, phone-verified user who never paid, and names the rule on the offer", async () => {
+    const harness = makeService({ live: [invitedRule] });
+    const offer = await resolveMonthly(harness, { context: invitedUser });
+    expect(offer).toMatchObject({ discountMinor: 4_980, promotionId: "p1", ruleType: "INVITED" });
+  });
+
+  it("asks about the phone with the advisory (lock-free) read", async () => {
+    const harness = makeService({ live: [invitedRule] });
+    await resolveMonthly(harness, { context: invitedUser });
+    expect(harness.redemptionsRepo.countActiveForPhone).toHaveBeenCalledWith("p1", "fp-1");
+  });
+
+  it("withholds it once the phone already carries this promotion on another account", async () => {
+    const harness = makeService({ live: [invitedRule], phoneUsed: 1 });
+    expect((await resolveMonthly(harness, { context: invitedUser })).discountMinor).toBe(0);
+  });
+
+  it("explains a typed INVITED code the phone already used", async () => {
+    const harness = makeService({ byCode: promo({ ...invitedRule, code: "DAVET" }), phoneUsed: 1 });
+    const offer = await resolveMonthly(harness, { code: "DAVET", context: invitedUser });
+    expect(offer.reason).toBe("PHONE_USED");
+  });
+
+  it("withholds it from the same user without a verified phone", async () => {
+    const harness = makeService({ live: [invitedRule] });
+    const offer = await resolveMonthly(harness, {
+      context: { ...invitedUser, phoneFingerprint: null },
+    });
+    expect(offer.discountMinor).toBe(0);
+  });
+
+  it("never counts phones for any other rule type", async () => {
+    const harness = makeService({ live: [promo()] });
+    await resolveMonthly(harness, { context: invitedUser });
+    expect(harness.redemptionsRepo.countActiveForPhone).not.toHaveBeenCalled();
+  });
+
+  it("reports no rule type on a list-price offer", async () => {
+    const harness = makeService();
+    expect((await resolveMonthly(harness, { context: invitedUser })).ruleType).toBeNull();
+  });
+});
+
 describe("PromotionsService.reserve", () => {
   const tx = {} as never;
   let offer: ResolvedOffer;
@@ -438,9 +494,104 @@ describe("PromotionsService.reserve", () => {
       chargedPriceMinor: 19_920,
       renewalPriceMinor: 24_900,
       promotionId: "p1",
+      ruleType: "ANYONE",
       summary: null,
       reason: null,
     };
+  });
+
+  describe("an INVITED promotion (once per verified phone)", () => {
+    const invitedRule = promo({ ruleType: "INVITED", ruleParams: { withinDays: 30 } });
+    const reserveFor = (harness: Harness, userId: string, phoneFingerprint: string | null) =>
+      harness.service.reserve({
+        tx,
+        offer: { ...offer, ruleType: "INVITED" },
+        userId,
+        orgId: null,
+        subscriptionId: `sub-${userId}`,
+        phoneFingerprint,
+      });
+
+    /**
+     * In-memory ledger. The phone count skips VOIDED rows exactly like the repository's SQL, so the
+     * test can walk one phone through APPLIED → VOIDED (Review Focus 4: an abandoned checkout frees it).
+     */
+    function ledger() {
+      const harness = makeService({ byCode: invitedRule });
+      const rows: Array<{ promotionId: string; userId: string; phoneFingerprint: string | null; status: string }> = [];
+      harness.redemptionsRepo.create.mockImplementation(async (entry: (typeof rows)[number]) => {
+        rows.push({ ...entry });
+        return entry;
+      });
+      harness.redemptionsRepo.countForUser.mockImplementation(async (promotionId: string, userId: string) =>
+        rows.filter((r) => r.promotionId === promotionId && r.userId === userId && r.status !== "VOIDED").length,
+      );
+      harness.redemptionsRepo.countActiveForPhone.mockImplementation(async (promotionId: string, fp: string) =>
+        rows.filter((r) => r.promotionId === promotionId && r.phoneFingerprint === fp && r.status !== "VOIDED").length,
+      );
+      return { harness, rows };
+    }
+
+    it("stores the phone fingerprint on the redemption row", async () => {
+      const { harness, rows } = ledger();
+      await reserveFor(harness, "u1", "fp-1");
+      expect(rows).toEqual([expect.objectContaining({ userId: "u1", phoneFingerprint: "fp-1", status: "RESERVED" })]);
+    });
+
+    it("refuses a user without a verified phone before writing anything", async () => {
+      const { harness } = ledger();
+      await expect(reserveFor(harness, "u1", null)).rejects.toMatchObject({
+        code: ErrorCode.PROMOTION_NOT_ELIGIBLE,
+        httpStatus: 409,
+        details: { reason: "PHONE_REQUIRED" },
+      });
+      expect(harness.redemptionsRepo.create).not.toHaveBeenCalled();
+    });
+
+    it("refuses a second account on a phone that already redeemed it, then frees the phone once that checkout is voided", async () => {
+      const { harness, rows } = ledger();
+      await reserveFor(harness, "u1", "fp-1");
+      rows[0]!.status = "APPLIED";
+
+      await expect(reserveFor(harness, "u2", "fp-1")).rejects.toMatchObject({
+        code: ErrorCode.PROMOTION_NOT_ELIGIBLE,
+        httpStatus: 409,
+        details: { reason: "PHONE_USED" },
+      });
+      expect(rows).toHaveLength(1);
+
+      rows[0]!.status = "VOIDED"; // the first checkout was abandoned
+      await expect(reserveFor(harness, "u2", "fp-1")).resolves.toMatchObject({
+        userId: "u2",
+        phoneFingerprint: "fp-1",
+      });
+    });
+
+    it("counts the phone inside the checkout transaction, under the promotion lock", async () => {
+      const { harness } = ledger();
+      await reserveFor(harness, "u1", "fp-1");
+      expect(harness.redemptionsRepo.countActiveForPhone).toHaveBeenCalledWith("p1", "fp-1", tx);
+      const lock = harness.redemptionsRepo.acquirePromotionLock.mock.invocationCallOrder[0]!;
+      const count = harness.redemptionsRepo.countActiveForPhone.mock.invocationCallOrder[0]!;
+      expect(lock).toBeLessThan(count);
+    });
+
+    it("keeps the phone off redemptions of every other rule type", async () => {
+      const harness = makeService({ byCode: promo() });
+      await harness.service.reserve({
+        tx,
+        offer,
+        userId: "u1",
+        orgId: null,
+        subscriptionId: "s1",
+        phoneFingerprint: "fp-1",
+      });
+      expect(harness.redemptionsRepo.countActiveForPhone).not.toHaveBeenCalled();
+      expect(harness.redemptionsRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ phoneFingerprint: null }),
+        tx,
+      );
+    });
   });
 
   it("freezes the agreed price on the redemption row", async () => {

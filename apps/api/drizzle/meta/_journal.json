@@ -904,6 +904,13 @@
       "when": 1792932464703,
       "tag": "0128_invite_puhu_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 129,
+      "version": "7",
+      "when": 1792941290393,
+      "tag": "0129_promotions_invited_rule",
+      "breakpoints": true
     }
   ]
 }
