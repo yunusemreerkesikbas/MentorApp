@@ -120,6 +120,23 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-25 · Friend invite codes are `PUHU-` + 8 characters, input is case-insensitive.**
+  `generateInviteCode()` (exported from `invite.service.ts`) draws 8 characters with
+  `crypto.randomInt` from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no 0/O/1/I), so a code read off a
+  screen survives being retyped. `@mentor/validation` exports `normalizeInviteCode` (trim, upper
+  case, `MENTOR-` to `PUHU-`) and `inviteCodeSchema` (output is the normalized code, shape
+  `^PUHU-[0-9A-Z]{8,12}$`); `redeemInviteSchema` uses it, and the global Zod pipe passes
+  `result.data` on, so `InviteService.redeem` always sees the canonical code. Migration 0128
+  rewrites existing `invites.code` and `invite_redemptions.code` from `MENTOR-<suffix>` to
+  `PUHU-<suffix>`, so codes already shared keep working (legacy suffixes are 8 to 12 chars, hence
+  `{8,12}`). Usage: nothing to call, `GET /v1/economy/invite` now returns the new format.
+  Gotchas: the API consumes the built `@mentor/validation` `dist`, so run
+  `pnpm --filter @mentor/validation build` before API tests after touching the schema; both
+  invite tables force RLS, so the migration sets a transaction-local `app.role = SERVICE` (a
+  role without BYPASSRLS would otherwise update zero rows silently); coach invitation codes
+  (`MENTOR-KOC-…`) are a separate mentorship code and are untouched. Related: `invite.service.ts`,
+  `invite.service.spec.ts`, `packages/validation/src/economy.ts`,
+  `apps/api/drizzle/0128_invite_puhu_codes.sql`, `test/economy-invite.e2e-spec.ts`.
 - **2026-10-09 · Verified-email reward fixture follows the serialized token contract.** The
   quest test supplies the expected current email and an enqueue callback when creating its
   verification token. Usage: run `test/economy-quests.e2e-spec.ts`; verification grants ten Coin

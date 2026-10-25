@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { PaymentSucceeded } from "../../payments/domain/payments.events";
 import { Currency } from "@mentor/types";
+import { inviteCodeSchema, normalizeInviteCode, redeemInviteSchema } from "@mentor/validation";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
-import { InviteService } from "./invite.service";
+import { InviteService, generateInviteCode } from "./invite.service";
 
 interface Redemption {
   id: string;
@@ -124,7 +125,7 @@ describe("InviteService", () => {
     const a = await svc.getOrCreateCode("inviter");
     const b = await svc.getOrCreateCode("inviter");
     expect(a).toBe(b);
-    expect(a).toMatch(/^MENTOR-/);
+    expect(a).toMatch(/^PUHU-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/);
   });
 
   it("redeem creates a PENDING redemption (no reward yet)", async () => {
@@ -140,7 +141,7 @@ describe("InviteService", () => {
     const code = await svc.getOrCreateCode("ayse");
 
     await expect(svc.redeem("ayse", code)).rejects.toMatchObject({ code: ErrorCode.INVITE_SELF });
-    await expect(svc.redeem("burak", "MENTOR-NOPE")).rejects.toMatchObject({
+    await expect(svc.redeem("burak", "PUHU-NOPE2345")).rejects.toMatchObject({
       code: ErrorCode.INVITE_CODE_INVALID,
     });
     await svc.redeem("burak", code);
@@ -268,4 +269,29 @@ describe("InviteService", () => {
     expect(grants).toHaveLength(1);
   });
 
+});
+
+describe("invite code format", () => {
+  it("generateInviteCode returns PUHU- + 8 chars from the unambiguous alphabet", () => {
+    for (let i = 0; i < 200; i++) {
+      expect(generateInviteCode()).toMatch(/^PUHU-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/);
+    }
+  });
+
+  it("normalizeInviteCode trims, uppercases and maps the legacy MENTOR- prefix", () => {
+    expect(normalizeInviteCode(" puhu-7kx4m9qr ")).toBe("PUHU-7KX4M9QR");
+    expect(normalizeInviteCode("mentor-d650653f9bb6")).toBe("PUHU-D650653F9BB6");
+  });
+
+  it("inviteCodeSchema outputs the normalized code and rejects malformed input", () => {
+    expect(inviteCodeSchema.parse(" puhu-7kx4m9qr ")).toBe("PUHU-7KX4M9QR");
+    expect(inviteCodeSchema.parse("MENTOR-D650653F9BB6")).toBe("PUHU-D650653F9BB6");
+    expect(inviteCodeSchema.safeParse("PUHU-7KX4").success).toBe(false);
+    expect(inviteCodeSchema.safeParse("hello").success).toBe(false);
+    expect(inviteCodeSchema.safeParse("PUHU-7KX4M9QRABCDE").success).toBe(false);
+  });
+
+  it("redeemInviteSchema hands the normalized code to the service", () => {
+    expect(redeemInviteSchema.parse({ code: "puhu-7kx4m9qr" })).toEqual({ code: "PUHU-7KX4M9QR" });
+  });
 });

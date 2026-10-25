@@ -1,7 +1,7 @@
 import { PaymentEvidenceService } from "../../payments/application/payment-evidence.service";
 import type { PaymentSucceeded } from "../../payments/domain/payments.events";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
-import { randomBytes } from "node:crypto";
+import { randomInt } from "node:crypto";
 import { Currency } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -18,7 +18,17 @@ export interface InviteSummary {
   converted: number;
 }
 
-const genCode = (): string => `MENTOR-${randomBytes(6).toString("hex").toUpperCase()}`;
+/** No 0/O/1/I: a code read off a screen or shared by voice must survive being retyped. */
+const INVITE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const INVITE_CODE_LENGTH = 8;
+
+export const generateInviteCode = (): string => {
+  let suffix = "";
+  for (let i = 0; i < INVITE_CODE_LENGTH; i++) {
+    suffix += INVITE_CODE_ALPHABET.charAt(randomInt(INVITE_CODE_ALPHABET.length));
+  }
+  return `PUHU-${suffix}`;
+};
 
 /**
  * Invite → conversion → coin (§3 light economy slice 2a). Reward fires ONLY when an invited user's
@@ -42,7 +52,7 @@ export class InviteService {
     const existing = await this.repo.findByInviter(userId);
     if (existing) return existing.code;
     for (let i = 0; i < 5; i++) {
-      const code = genCode();
+      const code = generateInviteCode();
       if (!(await this.repo.findByCode(code))) {
         return (await this.repo.create(userId, code)).code;
       }

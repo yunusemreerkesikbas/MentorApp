@@ -361,7 +361,7 @@ export function EconomyInviteCard({
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="MENTOR-…"
+                placeholder="PUHU-…"
                 autoComplete="off"
                 className="min-h-11 w-full rounded-[var(--radius-card)] border bg-[var(--color-surface)] px-3 text-base focus-visible:outline-none focus-visible:ring-2"
                 style={{

@@ -120,7 +120,7 @@ describe("economy invite (e2e)", () => {
   it("inviter gets a stable invite code", async () => {
     const res = await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(ayseToken));
     expect(res.status).toBe(200);
-    expect(res.body.code).toMatch(/^MENTOR-/);
+    expect(res.body.code).toMatch(/^PUHU-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/);
     code = res.body.code;
   });
 
@@ -137,16 +137,17 @@ describe("economy invite (e2e)", () => {
     const res = await request(app.getHttpServer())
       .post("/v1/economy/invite/redeem")
       .set(auth(burakToken))
-      .send({ code: "MENTOR-DEADBEEF" });
+      .send({ code: "PUHU-DEADBEEF" });
     expect(res.status).toBe(404);
     expect(res.body.code).toBe("INVITE_CODE_INVALID");
   });
 
   it("invited redeems (PENDING) and can't redeem twice", async () => {
+    // Typed by hand: lower case with stray spaces still resolves (the pipe hands the service the normalized code).
     const ok = await request(app.getHttpServer())
       .post("/v1/economy/invite/redeem")
       .set(auth(burakToken))
-      .send({ code });
+      .send({ code: `  ${code.toLowerCase()} ` });
     expect(ok.status).toBe(201);
     expect(ok.body.status).toBe("PENDING");
 
