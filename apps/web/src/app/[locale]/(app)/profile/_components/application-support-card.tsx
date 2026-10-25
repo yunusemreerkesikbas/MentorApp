@@ -1,19 +1,15 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useRef, useState, useTransition, type ReactNode } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { MoonIcon } from "@solar-icons/react/linear/moon";
 import { SunIcon } from "@solar-icons/react/linear/sun";
 import { Card, SlidingTabs } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
-import { useAuth } from "@/lib/auth-context";
-import { isCoach } from "@/lib/coach-surface";
-import { fetchInviteCode } from "@/lib/economy";
-import { buildInviteLink } from "@/lib/invite-link";
 import { getProfileLinks } from "@/lib/profile-links";
-import { useMentorToast } from "@/lib/mentor-toast";
 import { useTheme } from "@/lib/use-theme";
 import { ListRow } from "./account-links-card";
+import { useRecommendShare } from "./use-recommend-share";
 
 const LOCALES = ["tr", "en"] as const;
 const THEMES = [
@@ -26,15 +22,12 @@ export function ApplicationSupportCard() {
   const tLegal = useTranslations("legal");
   const locale = useLocale();
   const router = useRouter();
-  const toast = useMentorToast();
-  const { user } = useAuth();
+  const recommend = useRecommendShare();
   const [isPending, startTransition] = useTransition();
   // The pill slides on the tap; the locale itself lands with the route change.
   const [pendingLocale, setPendingLocale] = useState<string | null>(null);
   const { theme, setTheme } = useTheme();
   const links = getProfileLinks();
-  // One tap, one share sheet: a second tap while the link is still being looked up is ignored.
-  const sharingRef = useRef(false);
 
   function switchLocale(next: (typeof LOCALES)[number]) {
     if (isPending || next === locale) return;
@@ -42,56 +35,6 @@ export function ApplicationSupportCard() {
     startTransition(() => {
       router.replace("/settings", { locale: next });
     });
-  }
-
-  /**
-   * What "Tavsiye et" puts in the chat. A student shares their personal invite link, so a friend
-   * who comes from here is attributed to them. The code is read on the tap, not on page load, and
-   * anything that goes wrong (economy off, network, throttle) falls back to the generic site URL:
-   * the share still happens. A coach is outside the referral program (their invite call would be a
-   * 403), so they get the generic URL without asking.
-   */
-  async function resolveShareUrl(): Promise<string> {
-    if (isCoach(user)) return links.shareUrl;
-    try {
-      const { code } = await fetchInviteCode();
-      return buildInviteLink(code, locale);
-    } catch {
-      return links.shareUrl;
-    }
-  }
-
-  async function handleShare() {
-    if (sharingRef.current) return;
-    sharingRef.current = true;
-    try {
-      const url = await resolveShareUrl();
-      if (navigator.share) {
-        await navigator.share({
-          title: t("share_title"),
-          text: t("share_text"),
-          url,
-        });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(url);
-        toast.success({
-          title: t("share_copied_title"),
-          message: t("share_copied_message"),
-          duration: 3000,
-        });
-      } else {
-        throw new Error("clipboard unavailable");
-      }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      toast.error({
-        title: t("share_error_title"),
-        message: t("share_error_message"),
-        duration: 3000,
-      });
-    } finally {
-      sharingRef.current = false;
-    }
   }
 
   return (
@@ -140,7 +83,7 @@ export function ApplicationSupportCard() {
         </ListRow>
 
         <ListRow
-          onClick={() => void handleShare()}
+          onClick={() => void recommend()}
           showChevron={false}
         >
           {t("recommend")}

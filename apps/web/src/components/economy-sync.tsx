@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { ECONOMY_CHANGED_EVENT, fetchUnseenRewards, markRewardsSeen, notifyCoinCelebration } from "@/lib/economy";
+import { ECONOMY_CHANGED_EVENT, fetchUnseenRewards, forgetInviteCode, markRewardsSeen, notifyCoinCelebration } from "@/lib/economy";
 import { refreshEconomySnapshot, resetEconomySnapshot } from "@/lib/economy-store";
 
 /** One reward consumer per authenticated app. Amounts always come from committed ledger rows. */
@@ -20,9 +20,16 @@ export function EconomySync() {
   useEffect(() => { presentation.current = { pathname, t, toast }; }, [pathname, t, toast]);
 
   useEffect(() => {
+    // Everything the economy layer remembers about the account goes with it: the balance and the
+    // invite code (the "Tavsiye et" row reads the latter synchronously, so it must never be a
+    // previous account's).
+    const forgetAccount = () => {
+      resetEconomySnapshot();
+      forgetInviteCode();
+    };
     displayed.current.clear();
-    resetEconomySnapshot();
-    return resetEconomySnapshot;
+    forgetAccount();
+    return forgetAccount;
   }, [user?.id]);
 
   useEffect(() => {

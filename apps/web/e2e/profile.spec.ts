@@ -585,25 +585,56 @@ test.describe("davet kartı", () => {
 
 // --- Tavsiye et (Ayarlar > Uygulama) --------------------------------------------------------------
 
-/** `navigator.share` records what it was handed into `window.shared`. */
-async function stubNavigatorShare(page: Page) {
-  await page.addInitScript(() => {
+/**
+ * `navigator.share` records what it was handed into `window.shared`. With `rejectWith` it then
+ * rejects with a DOMException of that name, the way a browser refuses (NotAllowedError) or the
+ * user dismisses the sheet (AbortError).
+ */
+async function stubNavigatorShare(page: Page, rejectWith?: string) {
+  await page.addInitScript((errorName) => {
     (window as unknown as { shared: unknown[] }).shared = [];
     Object.defineProperty(navigator, "share", {
       configurable: true,
       value: async (data: unknown) => {
-        (window as unknown as { shared: unknown[] }).shared.push(data);
+        (window as unknown as { shared: unknown[] }).shared.push({
+          ...(data as object),
+          at: performance.now(),
+        });
+        if (errorName) throw new DOMException("share refused", errorName);
+      },
+    });
+  }, rejectWith);
+}
+
+/** `navigator.clipboard.writeText` records into `window.copied`. */
+async function stubClipboard(page: Page) {
+  await page.addInitScript(() => {
+    (window as unknown as { copied: string[] }).copied = [];
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          (window as unknown as { copied: string[] }).copied.push(text);
+        },
       },
     });
   });
 }
 
 async function sharedPayloads(page: Page) {
-  return page.evaluate(() => (window as unknown as { shared: { url: string }[] }).shared);
+  return page.evaluate(
+    () => (window as unknown as { shared: { url: string; at: number }[] }).shared,
+  );
+}
+
+async function copiedTexts(page: Page) {
+  return page.evaluate(() => (window as unknown as { copied: string[] }).copied);
 }
 
 test.describe("tavsiye et", () => {
-  test("öğrencide kişisel davet bağlantısını paylaşır, kodu tıklayınca ister", async ({ page }) => {
+  test("öğrencide kartın zaten okuduğu kodla kişisel bağlantıyı paylaşır, yeni davet isteği atmaz", async ({
+    page,
+  }) => {
     await mockProfileApi(page);
     let inviteCalls = 0;
     await mockInviteEconomy(page, {
@@ -617,6 +648,7 @@ test.describe("tavsiye et", () => {
     // The Davet et card read the code on mount; whatever it asked for is the baseline.
     await expect(page.getByRole("button", { name: "Davet et", exact: true })).toBeVisible();
     const callsOnLoad = inviteCalls;
+    expect(callsOnLoad).toBeGreaterThan(0);
 
     await page.getByRole("button", { name: "Tavsiye et", exact: true }).click();
 
@@ -624,32 +656,63 @@ test.describe("tavsiye et", () => {
     const [payload] = await sharedPayloads(page);
     expect(new URL(payload.url).pathname).toBe(`/davet/${INVITE_CODE}`);
     expect(new URL(payload.url).origin).toBe(new URL(page.url()).origin);
-    expect(inviteCalls).toBe(callsOnLoad + 1);
+    // The code is in hand, so the sheet opens inside the tap: no round trip, no new request.
+    expect(inviteCalls).toBe(callsOnLoad);
   });
 
   test("öğrencide paylaşım yoksa kişisel bağlantıyı kopyalar", async ({ page }) => {
     await mockProfileApi(page);
     await mockInviteEconomy(page, { view: () => inviteView() });
+    await stubClipboard(page);
     await page.addInitScript(() => {
-      (window as unknown as { copied: string[] }).copied = [];
       Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
-      Object.defineProperty(navigator, "clipboard", {
-        configurable: true,
-        value: {
-          writeText: async (text: string) => {
-            (window as unknown as { copied: string[] }).copied.push(text);
-          },
-        },
-      });
     });
     await page.goto("/ayarlar");
 
     await page.getByRole("button", { name: "Tavsiye et", exact: true }).click();
 
     await expect(page.getByText("Bağlantı kopyalandı")).toBeVisible();
-    const copied = await page.evaluate(() => (window as unknown as { copied: string[] }).copied);
+    const copied = await copiedTexts(page);
     expect(copied).toHaveLength(1);
     expect(new URL(copied[0]).pathname).toBe(`/davet/${INVITE_CODE}`);
+  });
+
+  // iOS Safari refuses a share it no longer ties to the tap; the link must still get out.
+  test("tarayıcı paylaşımı reddederse kişisel bağlantıyı kopyalar ve söyler", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    await stubNavigatorShare(page, "NotAllowedError");
+    await stubClipboard(page);
+    await page.goto("/ayarlar");
+    await expect(page.getByRole("button", { name: "Davet et", exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Tavsiye et", exact: true }).click();
+
+    await expect(page.getByText("Bağlantı kopyalandı")).toBeVisible();
+    await expect(page.getByText("Paylaşım açılamadı")).toHaveCount(0);
+    expect(await sharedPayloads(page)).toHaveLength(1);
+    const copied = await copiedTexts(page);
+    expect(copied).toHaveLength(1);
+    expect(new URL(copied[0]).pathname).toBe(`/davet/${INVITE_CODE}`);
+  });
+
+  test("paylaşım penceresini kapatmak sessizdir: kopyalamaz, hata göstermez", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    await stubNavigatorShare(page, "AbortError");
+    await stubClipboard(page);
+    await page.goto("/ayarlar");
+    const row = page.getByRole("button", { name: "Tavsiye et", exact: true });
+
+    await row.click();
+    await expect.poll(async () => (await sharedPayloads(page)).length).toBe(1);
+    // A second tap is only handled once the first finished, so by now any copy or toast would exist.
+    await row.click();
+    await expect.poll(async () => (await sharedPayloads(page)).length).toBe(2);
+
+    expect(await copiedTexts(page)).toEqual([]);
+    await expect(page.getByText("Bağlantı kopyalandı")).toHaveCount(0);
+    await expect(page.getByText("Paylaşım açılamadı")).toHaveCount(0);
   });
 
   test("ekonomi kapalıysa genel bağlantıya düşer ve yine paylaşır", async ({ page }) => {
@@ -669,25 +732,83 @@ test.describe("tavsiye et", () => {
     expect(payload.url).not.toContain("/davet/");
   });
 
-  test("davet isteği başka bir hatayla düşerse de genel bağlantıyı paylaşır", async ({ page }) => {
+  test("davet isteği hata verirse (kod hiç okunamadı) genel bağlantıyı paylaşır", async ({ page }) => {
     await mockProfileApi(page);
     await mockInviteEconomy(page, { view: () => inviteView() });
-    // Registered last, so it answers first. The Davet et card's mount read goes through; once the
-    // page is up the endpoint starts failing, so only the share's lazy read sees the 500.
-    let failing = false;
+    // Registered last, so it answers first: neither the card nor the tap ever gets a code.
     await page.route("http://localhost:3001/v1/economy/invite", (route) =>
-      failing ? json(route, { code: "INTERNAL", message: "Hata" }, 500) : route.fallback(),
+      json(route, { code: "INTERNAL", message: "Hata" }, 500),
     );
     await stubNavigatorShare(page);
     await page.goto("/ayarlar");
-    await expect(page.getByRole("button", { name: "Davet et", exact: true })).toBeVisible();
-    failing = true;
 
     await page.getByRole("button", { name: "Tavsiye et", exact: true }).click();
 
     await expect.poll(async () => (await sharedPayloads(page)).length).toBe(1);
     const [payload] = await sharedPayloads(page);
     expect(new URL(payload.url).pathname).toBe("/");
+  });
+
+  test("kod sayfada yokken dokunuş kodu bir kez okur, sonraki dokunuş okumaz", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    // The page's own read fails once, so the tap is the first to hold a code. Registered last,
+    // so it answers first and hands every later call to the working mock.
+    let inviteCalls = 0;
+    await page.route("http://localhost:3001/v1/economy/invite", (route) => {
+      inviteCalls += 1;
+      return inviteCalls === 1
+        ? json(route, { code: "INTERNAL", message: "Hata" }, 500)
+        : route.fallback();
+    });
+    await stubNavigatorShare(page);
+    await page.goto("/ayarlar");
+    await expect.poll(() => inviteCalls).toBe(1);
+    const row = page.getByRole("button", { name: "Tavsiye et", exact: true });
+
+    await row.click();
+    await expect.poll(async () => (await sharedPayloads(page)).length).toBe(1);
+    expect(new URL((await sharedPayloads(page))[0].url).pathname).toBe(`/davet/${INVITE_CODE}`);
+    expect(inviteCalls).toBe(2);
+
+    await row.click();
+    await expect.poll(async () => (await sharedPayloads(page)).length).toBe(2);
+    expect(new URL((await sharedPayloads(page))[1].url).pathname).toBe(`/davet/${INVITE_CODE}`);
+    expect(inviteCalls).toBe(2);
+  });
+
+  test("davet isteği yanıt vermezse kısa bir beklemeden sonra genel bağlantıyı paylaşır", async ({
+    page,
+  }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    // Never answered: no code reaches the page, and the tap must not wait on it forever.
+    await page.route("http://localhost:3001/v1/economy/invite", () => {});
+    await stubNavigatorShare(page);
+    // Timed inside the page, from the tap to the share call: the click itself (scrolling, waiting
+    // for the row to settle) is Playwright's time, not the lookup's.
+    await page.addInitScript(() =>
+      document.addEventListener(
+        "click",
+        () => ((window as unknown as { tappedAt: number }).tappedAt = performance.now()),
+        true,
+      ),
+    );
+    await page.goto("/ayarlar");
+
+    await page.getByRole("button", { name: "Tavsiye et", exact: true }).click();
+
+    await expect
+      .poll(async () => (await sharedPayloads(page)).length, { timeout: 6000 })
+      .toBe(1);
+    const tappedAt = await page.evaluate(() => (window as unknown as { tappedAt: number }).tappedAt);
+    const [payload] = await sharedPayloads(page);
+    const elapsed = payload.at - tappedAt;
+    expect(new URL(payload.url).pathname).toBe("/");
+    expect(payload.url).not.toContain("/davet/");
+    // It did wait for the lookup (about 1.5 s) rather than giving up at once, and not much longer.
+    expect(elapsed).toBeGreaterThanOrEqual(1400);
+    expect(elapsed).toBeLessThan(4000);
   });
 
   test("koçta davet kodu istemez, genel bağlantıyı paylaşır", async ({ page }) => {

@@ -535,26 +535,39 @@ gösterir. `convertedCount` onun alt kümesidir. Web kartı `joined.length` yeri
 
 Satır kodsuz genel site adresini (`links.shareUrl`) paylaşıyordu; o bağlantıdan gelen arkadaş kimseye
 atfedilmiyordu. Artık öğrenci için `buildInviteLink(code, locale)` paylaşılır (tr `/davet/PUHU-…`, en
-`/en/invite/PUHU-…`). Paylaşım yolu, kopyalama yolu ve toast metinleri aynen kaldı; yalnız URL değişti.
+`/en/invite/PUHU-…`). Toast metinleri aynen kaldı; değişenler URL ve reddedilen paylaşımın davranışı (aşağıda).
 
-- **Kod dokunuşta okunur, sayfa açılırken değil.** `application-support-card.tsx` `handleShare` önce
-  `fetchInviteCode()` çağırır; sayfa yüklemesine ek istek eklenmedi. (Ayarlar'daki Davet et kartı zaten kendi
-  okumasını yapar; satır ondan bağımsızdır, kodu ondan almaz.)
-- **Her hata genel bağlantıya düşer, paylaşım yine olur.** Ekonomi kapalı (404 `ECONOMY_DISABLED`), ağ, throttle,
-  5xx: hepsi `links.shareUrl`. Hata toast'u yalnız paylaşım/panoya yazma başarısızsa çıkar (eskisi gibi).
+- **Paylaşım sayfası jestin içinde açılır.** iOS Safari, dokunuşla `navigator.share` arasına ağ isteği giren
+  paylaşımı reddedebilir (`NotAllowedError`). Bu yüzden kod dokunuştan önce elde olmalı: `fetchInviteCode()`
+  başarılı yanıtın `code`'unu modül içinde hatırlar, `peekInviteCode()` onu eşzamanlı verir (Ayarlar'daki Davet et
+  kartı `EconomySection` ile zaten sayfa açılırken okur, yani satır için ek istek yok). Kod elde varsa
+  `navigator.share` dokunuşun içinde, `await`'siz çağrılır. Hook: `use-recommend-share.ts`.
+- **Kod yoksa sınırlı arama.** Kart henüz okumadıysa ya da okuyamadıysa dokunuş `fetchInviteCode()`'u 1,5 sn'ye
+  kadar bekler; süre dolarsa, ekonomi kapalıysa (404 `ECONOMY_DISABLED`), ağ/throttle/5xx/403 durumunda
+  `links.shareUrl` paylaşılır, paylaşım yine olur. Süre dolan istek arkada sürer ve gelirse kodu önbelleğe yazar,
+  sonraki dokunuş anında kişisel bağlantıyı açar.
+- **Hesap değişince unutulur.** `forgetInviteCode()`, `EconomySync`'in `user?.id` efektinde
+  `resetEconomySnapshot()` ile birlikte çalışır (oturum kapanışı ve hesap değişimi), ayrıca cleanup'ta. Bir
+  `generation` sayacı, hesap değiştikten sonra dönen eski yanıtın önbelleğe yazılmasını engeller. Gotcha: aynı
+  commit'te `EconomySync` efekti bir çocuğun isteğinden sonra çalışırsa o yanıt önbelleğe yazılmaz (güvenli yön,
+  dokunuş sınırlı aramaya düşer).
+- **Reddedilen paylaşım kopyalanır.** `AbortError` (kullanıcı sayfayı kapattı) sessiz kalır. Başka her reddedilme
+  (iOS `NotAllowedError` dahil) aynı bağlantıyı panoya yazıp "Bağlantı kopyalandı" toast'unu gösterir
+  (`invite-share-ticket.tsx` ile aynı desen); pano da başarısızsa mevcut hata toast'u çıkar. Toast metinleri
+  değişmedi.
 - **Koç programın dışında.** `isCoach(useAuth().user)` ise istek hiç atılmaz (API 403 `INVITE_COACH_NOT_ALLOWED`
-  dönerdi), bugünkü genel bağlantı paylaşılır. Kullanıcı henüz bilinmiyorsa (`null`) istek atılır, 403 de genel
-  bağlantıya düşer.
-- **Çift dokunuş.** Arama sürerken ikinci dokunuş yok sayılır (`sharingRef`); yoksa ikinci `navigator.share`
-  `InvalidStateError` ile hata toast'u gösterirdi.
-- **Gotcha.** `navigator.share` artık bir ağ isteğinden sonra çağrılıyor. Chrome'un geçici kullanıcı etkinliği
-  penceresi (~5 sn) içinde kalır; iOS Safari paylaşımı jest dışı sayıp `NotAllowedError` atarsa mevcut hata toast'u
-  çıkar (kartın "Paylaş" düğmesi bundan etkilenmez, kodu elinde taşır). Gerçek cihazda bir kez denenmeli.
-- **Test:** `apps/web/e2e/profile.spec.ts` `tavsiye et` (5 senaryo: öğrenci paylaşım `/davet/PUHU-TEST2345` ve
-  istek dokunuşta tam bir kez, öğrenci panoya kopyalama, ekonomi kapalı, davet isteği 500, koç ve sıfır davet isteği).
-  `next start` ile koş.
-- **Related:** `application-support-card.tsx`, `invite-link.ts`, `economy.ts` (`fetchInviteCode`),
-  `coach-surface.ts`, docs/superpowers/specs/2026-10-25-invite-referral-design.md § 6.
+  dönerdi), bugünkü genel bağlantı paylaşılır. Kullanıcı henüz bilinmiyorsa (`null`) kod/arama yolu işler, 403 de
+  genel bağlantıya düşer.
+- **Çift dokunuş.** Arama ya da paylaşım sürerken ikinci dokunuş yok sayılır (`sharingRef`); yoksa ikinci
+  `navigator.share` `InvalidStateError` ile hata toast'u gösterirdi.
+- **Test:** `apps/web/e2e/profile.spec.ts` `tavsiye et` (9 senaryo: kodu kartın okuduğu öğrenci yeni davet isteği
+  atmadan `/davet/PUHU-TEST2345` paylaşır, paylaşım yoksa kopyalama, `NotAllowedError` ve `AbortError`, ekonomi kapalı,
+  davet isteği 500, kod sayfada yokken tek okuma ve sonraki dokunuşta sıfır istek, yanıtsız istek 1,5 sn sonra genel
+  bağlantı, koç ve sıfır istek) ve `src/lib/economy-invite-code.spec.ts` (vitest: peek/forget/eski yanıt). Playwright
+  için `next start` ile koş.
+- **Related:** `application-support-card.tsx`, `use-recommend-share.ts`, `invite-link.ts`, `economy.ts`
+  (`fetchInviteCode`, `peekInviteCode`, `forgetInviteCode`), `economy-sync.tsx`, `coach-surface.ts`,
+  docs/superpowers/specs/2026-10-25-invite-referral-design.md § 6.
 
 ### 2026-10-25 — `/davet/PUHU-XXXXXXXX` karşılama sayfası, kod onboarding bitince kendiliğinden kullanılır
 
