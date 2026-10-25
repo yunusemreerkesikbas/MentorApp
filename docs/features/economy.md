@@ -531,6 +531,31 @@ gösterir. `convertedCount` onun alt kümesidir. Web kartı `joined.length` yeri
 - **Related:** `invite-view.service.ts`, `invite.repository.ts`, `economy.dto.ts`, `packages/types/src/economy.ts`,
   `invite-progress.tsx`.
 
+### 2026-10-25 — Ayarlar > Uygulama "Tavsiye et" satırı kişisel davet bağlantısını paylaşır
+
+Satır kodsuz genel site adresini (`links.shareUrl`) paylaşıyordu; o bağlantıdan gelen arkadaş kimseye
+atfedilmiyordu. Artık öğrenci için `buildInviteLink(code, locale)` paylaşılır (tr `/davet/PUHU-…`, en
+`/en/invite/PUHU-…`). Paylaşım yolu, kopyalama yolu ve toast metinleri aynen kaldı; yalnız URL değişti.
+
+- **Kod dokunuşta okunur, sayfa açılırken değil.** `application-support-card.tsx` `handleShare` önce
+  `fetchInviteCode()` çağırır; sayfa yüklemesine ek istek eklenmedi. (Ayarlar'daki Davet et kartı zaten kendi
+  okumasını yapar; satır ondan bağımsızdır, kodu ondan almaz.)
+- **Her hata genel bağlantıya düşer, paylaşım yine olur.** Ekonomi kapalı (404 `ECONOMY_DISABLED`), ağ, throttle,
+  5xx: hepsi `links.shareUrl`. Hata toast'u yalnız paylaşım/panoya yazma başarısızsa çıkar (eskisi gibi).
+- **Koç programın dışında.** `isCoach(useAuth().user)` ise istek hiç atılmaz (API 403 `INVITE_COACH_NOT_ALLOWED`
+  dönerdi), bugünkü genel bağlantı paylaşılır. Kullanıcı henüz bilinmiyorsa (`null`) istek atılır, 403 de genel
+  bağlantıya düşer.
+- **Çift dokunuş.** Arama sürerken ikinci dokunuş yok sayılır (`sharingRef`); yoksa ikinci `navigator.share`
+  `InvalidStateError` ile hata toast'u gösterirdi.
+- **Gotcha.** `navigator.share` artık bir ağ isteğinden sonra çağrılıyor. Chrome'un geçici kullanıcı etkinliği
+  penceresi (~5 sn) içinde kalır; iOS Safari paylaşımı jest dışı sayıp `NotAllowedError` atarsa mevcut hata toast'u
+  çıkar (kartın "Paylaş" düğmesi bundan etkilenmez, kodu elinde taşır). Gerçek cihazda bir kez denenmeli.
+- **Test:** `apps/web/e2e/profile.spec.ts` `tavsiye et` (5 senaryo: öğrenci paylaşım `/davet/PUHU-TEST2345` ve
+  istek dokunuşta tam bir kez, öğrenci panoya kopyalama, ekonomi kapalı, davet isteği 500, koç ve sıfır davet isteği).
+  `next start` ile koş.
+- **Related:** `application-support-card.tsx`, `invite-link.ts`, `economy.ts` (`fetchInviteCode`),
+  `coach-surface.ts`, docs/superpowers/specs/2026-10-25-invite-referral-design.md § 6.
+
 ### 2026-10-25 — `/davet/PUHU-XXXXXXXX` karşılama sayfası, kod onboarding bitince kendiliğinden kullanılır
 
 Kartın "Paylaş"ı artık 404'e gitmiyor: `apps/web/src/app/[locale]/invite/[code]/page.tsx` (tr `/davet/[code]`,

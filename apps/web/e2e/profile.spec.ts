@@ -583,6 +583,136 @@ test.describe("davet kartı", () => {
   });
 });
 
+// --- Tavsiye et (Ayarlar > Uygulama) --------------------------------------------------------------
+
+/** `navigator.share` records what it was handed into `window.shared`. */
+async function stubNavigatorShare(page: Page) {
+  await page.addInitScript(() => {
+    (window as unknown as { shared: unknown[] }).shared = [];
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (data: unknown) => {
+        (window as unknown as { shared: unknown[] }).shared.push(data);
+      },
+    });
+  });
+}
+
+async function sharedPayloads(page: Page) {
+  return page.evaluate(() => (window as unknown as { shared: { url: string }[] }).shared);
+}
+
+test.describe("tavsiye et", () => {
+  test("öğrencide kişisel davet bağlantısını paylaşır, kodu tıklayınca ister", async ({ page }) => {
+    await mockProfileApi(page);
+    let inviteCalls = 0;
+    await mockInviteEconomy(page, {
+      view: () => {
+        inviteCalls += 1;
+        return inviteView();
+      },
+    });
+    await stubNavigatorShare(page);
+    await page.goto("/ayarlar");
+    // The Davet et card read the code on mount; whatever it asked for is the baseline.
+    await expect(page.getByRole("button", { name: "Davet et", exact: true })).toBeVisible();
+    const callsOnLoad = inviteCalls;
+
+    await page.getByRole("button", { name: "Tavsiye et", exact: true }).click();
+
+    await expect.poll(async () => (await sharedPayloads(page)).length).toBe(1);
+    const [payload] = await sharedPayloads(page);
+    expect(new URL(payload.url).pathname).toBe(`/davet/${INVITE_CODE}`);
+    expect(new URL(payload.url).origin).toBe(new URL(page.url()).origin);
+    expect(inviteCalls).toBe(callsOnLoad + 1);
+  });
+
+  test("öğrencide paylaşım yoksa kişisel bağlantıyı kopyalar", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    await page.addInitScript(() => {
+      (window as unknown as { copied: string[] }).copied = [];
+      Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: async (text: string) => {
+            (window as unknown as { copied: string[] }).copied.push(text);
+          },
+        },
+      });
+    });
+    await page.goto("/ayarlar");
+
+    await page.getByRole("button", { name: "Tavsiye et", exact: true }).click();
+
+    await expect(page.getByText("Bağlantı kopyalandı")).toBeVisible();
+    const copied = await page.evaluate(() => (window as unknown as { copied: string[] }).copied);
+    expect(copied).toHaveLength(1);
+    expect(new URL(copied[0]).pathname).toBe(`/davet/${INVITE_CODE}`);
+  });
+
+  test("ekonomi kapalıysa genel bağlantıya düşer ve yine paylaşır", async ({ page }) => {
+    // `mockProfileApi` answers every economy GET with 404 ECONOMY_DISABLED.
+    await mockProfileApi(page);
+    await page.addInitScript(() =>
+      window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+    );
+    await stubNavigatorShare(page);
+    await page.goto("/ayarlar");
+
+    await page.getByRole("button", { name: "Tavsiye et", exact: true }).click();
+
+    await expect.poll(async () => (await sharedPayloads(page)).length).toBe(1);
+    const [payload] = await sharedPayloads(page);
+    expect(new URL(payload.url).pathname).toBe("/");
+    expect(payload.url).not.toContain("/davet/");
+  });
+
+  test("davet isteği başka bir hatayla düşerse de genel bağlantıyı paylaşır", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, { view: () => inviteView() });
+    // Registered last, so it answers first. The Davet et card's mount read goes through; once the
+    // page is up the endpoint starts failing, so only the share's lazy read sees the 500.
+    let failing = false;
+    await page.route("http://localhost:3001/v1/economy/invite", (route) =>
+      failing ? json(route, { code: "INTERNAL", message: "Hata" }, 500) : route.fallback(),
+    );
+    await stubNavigatorShare(page);
+    await page.goto("/ayarlar");
+    await expect(page.getByRole("button", { name: "Davet et", exact: true })).toBeVisible();
+    failing = true;
+
+    await page.getByRole("button", { name: "Tavsiye et", exact: true }).click();
+
+    await expect.poll(async () => (await sharedPayloads(page)).length).toBe(1);
+    const [payload] = await sharedPayloads(page);
+    expect(new URL(payload.url).pathname).toBe("/");
+  });
+
+  test("koçta davet kodu istemez, genel bağlantıyı paylaşır", async ({ page }) => {
+    await mockProfileApi(page, { ...user, roles: ["COACH"] });
+    // A coach is out of the program: the API would answer 403, and the row must not even ask.
+    let inviteCalls = 0;
+    await page.route("http://localhost:3001/v1/economy/invite", (route) => {
+      inviteCalls += 1;
+      return json(route, { code: "INVITE_COACH_NOT_ALLOWED", message: "Koç" }, 403);
+    });
+    await page.addInitScript(() =>
+      window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+    );
+    await stubNavigatorShare(page);
+    await page.goto("/ayarlar");
+
+    await page.getByRole("button", { name: "Tavsiye et", exact: true }).click();
+
+    await expect.poll(async () => (await sharedPayloads(page)).length).toBe(1);
+    const [payload] = await sharedPayloads(page);
+    expect(new URL(payload.url).pathname).toBe("/");
+    expect(inviteCalls).toBe(0);
+  });
+});
+
 async function mockProfileApi(page: Page, me: AuthUser = user) {
   let deleteAccountCalls = 0;
 
