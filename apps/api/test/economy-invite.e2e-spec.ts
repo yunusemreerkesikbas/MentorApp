@@ -229,4 +229,135 @@ describe("economy invite (e2e)", () => {
     const after = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(inviter.accessToken));
     expect(after.body.coinConfirmed).toBe(0);
   });
+
+  describe("redeem rules: trial, paid, window, coaches", () => {
+    /** SERVICE-context write to `users` (identity owns the table; tests bypass the API on purpose). */
+    const updateUser = async (sql: string, params: unknown[]): Promise<void> => {
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query("select set_config('app.role','SERVICE',true)");
+        await client.query(sql, params);
+        await client.query("commit");
+      } catch (error) {
+        await client.query("rollback");
+        throw error;
+      } finally {
+        client.release();
+      }
+    };
+    const makeCoach = (userId: string) =>
+      updateUser("update users set roles = array_append(roles,$1) where id=$2", [UserRole.COACH, userId]);
+
+    /** Trial checkout with the fake provider: the subscription is TRIALING at once, no money moved. */
+    const startTrial = async (token: string): Promise<string> => {
+      const checkout = await request(app.getHttpServer()).post("/v1/subscription/checkout")
+        .set(auth(token)).send({ planId: "premium-monthly", useTrial: true }).expect(200);
+      return new URL(checkout.body.checkoutUrl).searchParams.get("ref")!;
+    };
+    const pay = async (providerRef: string, tag: string): Promise<void> => {
+      const { body, headers } = signFakeWebhook(SECRET, {
+        eventId: `evt_${tag}_${RUN}`, type: "payment_succeeded", providerRef, amountMinor: 24900,
+      });
+      await request(app.getHttpServer()).post("/v1/webhooks/payments").set(headers).send(JSON.parse(body)).expect(200);
+      await app.get(JobRunnerService).processBatch(100);
+    };
+    const inviteCodeOf = async (token: string): Promise<string> =>
+      (await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(token)).expect(200)).body.code;
+    const redeem = (token: string, body: { code: string }) =>
+      request(app.getHttpServer()).post("/v1/economy/invite/redeem").set(auth(token)).send(body);
+    const coinOf = async (token: string): Promise<number> =>
+      (await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(token)).expect(200)).body.coinConfirmed;
+
+    it("a user in a trial can still redeem (lower case), and the first real payment rewards the inviter", async () => {
+      const inviter = await signup("trial-inviter");
+      const invited = await signup("trial-invited");
+      await verifyTrialPhone(invited.user.id);
+      const code = await inviteCodeOf(inviter.accessToken);
+
+      const providerRef = await startTrial(invited.accessToken);
+      const view = await request(app.getHttpServer()).get("/v1/subscription").set(auth(invited.accessToken));
+      expect(view.body.subscription.status).toBe("TRIALING");
+
+      const res = await redeem(invited.accessToken, { code: code.toLowerCase() });
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe("PENDING");
+      expect(await coinOf(inviter.accessToken)).toBe(0); // the trial itself pays nothing
+
+      await pay(providerRef, "trial-redeem");
+      expect(await coinOf(inviter.accessToken)).toBe(20);
+    }, 30_000);
+
+    it("a user who already paid gets INVITE_ALREADY_PAID", async () => {
+      const inviter = await signup("paid-inviter");
+      const payer = await signup("paid-user");
+      await verifyTrialPhone(payer.user.id);
+      const code = await inviteCodeOf(inviter.accessToken);
+
+      await pay(await startTrial(payer.accessToken), "paid-user");
+      const res = await redeem(payer.accessToken, { code });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("INVITE_ALREADY_PAID");
+    }, 30_000);
+
+    it("closes the redeem window after the configured days and says how many", async () => {
+      const inviter = await signup("window-inviter");
+      const late = await signup("window-late");
+      const code = await inviteCodeOf(inviter.accessToken);
+      await updateUser("update users set created_at = now() - interval '8 days' where id = $1", [late.user.id]);
+
+      const res = await redeem(late.accessToken, { code });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("INVITE_WINDOW_CLOSED");
+      expect(res.body.details).toEqual({ days: 7 });
+      expect(res.body.message).toMatch(/\b7\b/);
+      expect(res.body.message).not.toContain("{days}");
+    });
+
+    it("keeps coaches out: no code, no redeem, and a coach-owned code is invalid", async () => {
+      const coach = await signup("coach");
+      const student = await signup("coach-student");
+      const lateCoach = await signup("late-coach");
+      const lateCoachCode = await inviteCodeOf(lateCoach.accessToken);
+      const studentCode = await inviteCodeOf(student.accessToken);
+      await makeCoach(coach.user.id);
+      await makeCoach(lateCoach.user.id);
+
+      const mint = await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(coach.accessToken));
+      expect(mint.status).toBe(403);
+      expect(mint.body.code).toBe("INVITE_COACH_NOT_ALLOWED");
+
+      const asCoach = await redeem(coach.accessToken, { code: studentCode });
+      expect(asCoach.status).toBe(403);
+      expect(asCoach.body.code).toBe("INVITE_COACH_NOT_ALLOWED");
+
+      const fresh = await signup("coach-code-redeemer");
+      const ownedByCoach = await redeem(fresh.accessToken, { code: lateCoachCode });
+      expect(ownedByCoach.status).toBe(404);
+      expect(ownedByCoach.body.code).toBe("INVITE_CODE_INVALID");
+    });
+
+    it("pays no Coin when the inviter became a coach before the friend's first payment", async () => {
+      const inviter = await signup("skip-inviter");
+      const invited = await signup("skip-invited");
+      await verifyTrialPhone(invited.user.id);
+      const code = await inviteCodeOf(inviter.accessToken);
+      await redeem(invited.accessToken, { code }).expect(201);
+      await makeCoach(inviter.user.id);
+
+      await pay(await startTrial(invited.accessToken), "skip-coach");
+      expect(await coinOf(inviter.accessToken)).toBe(0);
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query("select set_config('app.role','SERVICE',true)");
+        const row = await client.query(
+          "select status, reward_outcome from invite_redemptions where invited_user_id = $1", [invited.user.id]);
+        await client.query("commit");
+        expect(row.rows[0]).toEqual({ status: "CONVERTED", reward_outcome: "COACH_SKIPPED" });
+      } finally {
+        client.release();
+      }
+    }, 30_000);
+  });
 });

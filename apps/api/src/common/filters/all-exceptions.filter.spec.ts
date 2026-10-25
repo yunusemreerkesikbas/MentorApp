@@ -97,6 +97,17 @@ describe("AllExceptionsFilter", () => {
     });
   });
 
+  it("fills catalog placeholders from a DomainError's scalar details", () => {
+    mockErrorCatalog({ "errors.INVITE_WINDOW_CLOSED": "Works in the first {days} days." });
+    const { host, res } = mockHost();
+    filter.catch(new DomainError("INVITE_WINDOW_CLOSED", 409, { days: 7 }), host);
+    expect(res.json.mock.calls[0]![0]).toMatchObject({
+      code: "INVITE_WINDOW_CLOSED",
+      message: "Works in the first 7 days.",
+      details: { days: 7 },
+    });
+  });
+
   it("publishes the durable account quota's remaining fixed window", () => {
     mockErrorCatalog({ "errors.TOO_MANY_REQUESTS_RETRY": "Try again in {seconds} seconds." });
     const { host, res } = mockHost();
@@ -108,11 +119,13 @@ describe("AllExceptionsFilter", () => {
 
 function mockErrorCatalog(messages: Record<string, string>) {
   vi.spyOn(I18nContext, "current").mockReturnValue({
-    translate: (key: string, options?: { args?: { seconds?: number } }) => {
+    translate: (key: string, options?: { args?: Record<string, string | number> }) => {
       const template = messages[key];
       if (!template) return key;
-      const seconds = options?.args?.seconds;
-      return seconds === undefined ? template : template.replaceAll("{seconds}", String(seconds));
+      return Object.entries(options?.args ?? {}).reduce(
+        (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
+        template,
+      );
     },
   } as unknown as I18nContext);
 }

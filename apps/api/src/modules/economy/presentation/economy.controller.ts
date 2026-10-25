@@ -4,6 +4,7 @@ import { RewardReceiptService } from "../application/reward-receipt.service";
 import { EconomyRewardsSeenDto } from "./economy.dto";
 import { ApiBearerAuth, ApiTags, ApiOkResponse, ApiQuery, ApiBody } from "@nestjs/swagger";
 import { I18nService } from "nestjs-i18n";
+import { UserRole } from "@mentor/types";
 import type {
   DeepAnalysisView,
   EconomyBalance,
@@ -73,6 +74,10 @@ export class EconomyController {
   @Get("invite")
   async invite(@CurrentUser() user: RequestUser): Promise<{ code: string }> {
     await this.assertEnabled();
+    // Coaches are outside the invite economy: no code is minted for them (redeem is guarded in the service).
+    if (user.roles.includes(UserRole.COACH)) {
+      throw new DomainError(ErrorCode.INVITE_COACH_NOT_ALLOWED, HttpStatus.FORBIDDEN);
+    }
     return { code: await this.invites.getOrCreateCode(user.id) };
   }
 

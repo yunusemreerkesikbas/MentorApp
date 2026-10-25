@@ -109,8 +109,8 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `GET /v1/economy/rewards/unseen`          | Paginated unread positive reward receipts |
 | `POST /v1/economy/rewards/seen`           | Acknowledge own ledger IDs without changing ledger |
 | `GET /v1/economy/quests`                  | Quest catalog + progress (auto-grants)                   |
-| `GET /v1/economy/invite`                  | Get/generate invite code                                 |
-| `POST /v1/economy/invite/redeem`          | Redeem invite code                                       |
+| `GET /v1/economy/invite`                  | Get/generate invite code (403 for coaches)               |
+| `POST /v1/economy/invite/redeem`          | Redeem invite code (first 7 days, never paid, not a coach) |
 | `GET /v1/economy/streak-rescue`           | Streak-rescue offer (eligible? cost? affordable?)        |
 | `POST /v1/economy/streak-rescue`          | Buy the freeze for the break day (coin sink, idempotent) |
 | `GET /v1/economy/deep-analysis?examId=`   | Deep-analysis unlock state (eligible? cost? unlocked?)   |
@@ -120,6 +120,31 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-25 · Invite redeem rules: signup window, "never paid" instead of "not premium", coaches out.**
+  `InviteService.redeem` now checks, in order: the code is usable (`resolveValidInvite`: exists, owner
+  row present, `status = ACTIVE`, no `erasure_started_at`, owner not a coach; otherwise
+  `INVITE_CODE_INVALID`) → not your own code → redeemer is not a coach (`INVITE_COACH_NOT_ALLOWED`,
+  403) → not already redeemed → inside the window (`INVITE_WINDOW_CLOSED`, 409, `details.days`) → has
+  never paid (`INVITE_ALREADY_PAID`, 409; replaces `INVITE_ALREADY_PREMIUM`). The window is
+  `economy.invite.redeem_window_days` (default 7, 1 to 90) counted in exact 24h days from
+  `users.created_at`. "Paid" is `PaymentEvidenceService.hasPaid(userId)`: any SUCCEEDED RENEWAL
+  with `amount_minor > 0` (new non-locking `PaymentEventsRepository.hasPositiveCharge`), so a user
+  in a trial can still redeem and the inviter's 20 Coin still falls on the first real payment.
+  `GET /v1/economy/invite` returns 403 `INVITE_COACH_NOT_ALLOWED` for a coach (role from the
+  request user). Coaches are also checked at conversion: if the inviter or the invited user is a
+  coach when the first payment lands, the redemption becomes CONVERTED with `reward_outcome =
+  COACH_SKIPPED` and no Coin moves (nothing to reverse on refund). No migration: `reward_outcome` is
+  free text. `InviteService` no longer depends on `EntitlementService`; it reads the two user rows
+  through `UsersRepository.findByIdService` (exported by IdentityModule). Usage: tune the window in
+  admin config; the error copy is companion voice in `i18n/locales/{tr,en}/errors.json`.
+  Gotchas: the global exception filter now fills `{placeholder}` in a DomainError's catalog message
+  from its scalar `details` (`{ days: 7 }` fills "ilk {days} günde"); before this a placeholder
+  stayed literal (`MENTORSHIP_EVENT_ATTENDEE_LIMIT` had the same latent problem). The unit spec
+  pins the window boundary at 7d + 1s (closed) and 7d - 1s (open) with a faked `Date`. Related:
+  `invite.service.ts`, `economy.controller.ts`, `payment-evidence.service.ts`,
+  `payments.repositories.ts`, `all-exceptions.filter.ts`, `config.catalog.ts`,
+  `apps/admin/src/app/(general)/config/config-hints.ts`, `invite.service.spec.ts`,
+  `test/economy-invite.e2e-spec.ts`.
 - **2026-10-25 · Friend invite codes are `PUHU-` + 8 characters, input is case-insensitive.**
   `generateInviteCode()` (exported from `invite.service.ts`) draws 8 characters with
   `crypto.randomInt` from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no 0/O/1/I), so a code read off a

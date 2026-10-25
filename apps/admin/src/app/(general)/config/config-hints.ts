@@ -67,6 +67,7 @@ export const CONFIG_HINTS: Record<string, string> = {
     "economy.coin.weekly_cap": "Kullanıcının haftada kazanabileceği Coin tavanı.",
     "economy.coin.min_xp_for_coin": "Coin kazanmak için gereken asgari XP.",
     "economy.invite.reward_coin": "Davet edilen kullanıcı dönüşünce davet edene verilen Coin.",
+    "economy.invite.redeem_window_days": "Davet kodunun, hesap açıldıktan sonra kaç gün içinde kullanılabildiği.",
     "economy.quest.onboarding_reward_coin": "Tamamlanan her onboarding görevi için Coin.",
     "economy.quest.daily_ritual_reward_xp": "Tamamlanan her günlük ritüel görevi için XP.",
     "economy.quest.streak_milestone_reward_xp": "Tamamlanan her seri eşiği görevi için XP.",

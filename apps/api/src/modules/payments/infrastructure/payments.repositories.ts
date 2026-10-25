@@ -437,6 +437,19 @@ export class PaymentEventsRepository {
     });
   }
 
+  /**
+   * Same filter as {@link hasSuccessfulCharge} without the advisory lock: a plain read for consumers
+   * outside the payment path (invite redeem), which must never serialize behind a checkout.
+   */
+  async hasPositiveCharge(userId: string): Promise<boolean> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx.select({ id: paymentTransactions.id }).from(paymentTransactions)
+        .where(and(eq(paymentTransactions.userId, userId), eq(paymentTransactions.status, TxStatus.SUCCEEDED),
+          eq(paymentTransactions.type, TxType.RENEWAL), gt(paymentTransactions.amountMinor, 0))).limit(1);
+      return rows.length > 0;
+    });
+  }
+
   async hasSuccessfulCharge(userId: string, tx: Exec): Promise<boolean> {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${"first-payment:" + userId}, 0))`);
     const rows = await tx.select({ id: paymentTransactions.id }).from(paymentTransactions)

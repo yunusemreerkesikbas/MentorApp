@@ -544,6 +544,11 @@ export const CONFIG_CATALOG = {
     100000,
     "Coin granted to the inviter when an invited user converts.",
   ),
+  "economy.invite.redeem_window_days": economyTarget(
+    7,
+    90,
+    "Days after signup (users.created_at) during which an invite code can be redeemed.",
+  ),
   "economy.quest.onboarding_reward_coin": economyCount(
     10,
     100000,

@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PaymentSucceeded } from "../../payments/domain/payments.events";
-import { Currency } from "@mentor/types";
+import { Currency, UserRole } from "@mentor/types";
 import { inviteCodeSchema, normalizeInviteCode, redeemInviteSchema } from "@mentor/validation";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -73,25 +73,54 @@ function makeRepoFake() {
   };
 }
 
+interface UserFake {
+  id: string;
+  status: string;
+  erasureStartedAt: Date | null;
+  roles: string[];
+  createdAt: Date;
+}
+
+const DAY_MS = 86_400_000;
+const NOW = new Date("2026-10-25T12:00:00Z");
+
 describe("InviteService", () => {
   let repo: ReturnType<typeof makeRepoFake>;
   let grants: Array<{ userId: string; unit: string; amount: number; reason: string }>;
   let reversals: Array<{ userId: string; opts: Record<string, string> }>;
   let reverseResult: number;
   let reverseError: Error | null;
-  let premium: boolean;
+  let paid: boolean;
   let refunded: boolean;
   let grantError: Error | null;
+  let windowDays: number;
+  /** Per-user overrides; any other id is a fresh, active student created a day ago. */
+  let userRows: Map<string, UserFake | null>;
+
+  const setUser = (id: string, patch: Partial<UserFake>) => {
+    userRows.set(id, { ...defaultUser(id), ...patch });
+  };
+  const defaultUser = (id: string): UserFake => ({
+    id,
+    status: "ACTIVE",
+    erasureStartedAt: null,
+    roles: [UserRole.STUDENT],
+    createdAt: new Date(Date.now() - DAY_MS),
+  });
 
   const service = () => {
     grants = [];
     reversals = [];
     reverseResult = 20;
     reverseError = null;
-    premium = false;
+    paid = false;
     refunded = false;
     grantError = null;
-    const entitlement = { getEntitlement: async () => ({ isPremium: premium }) };
+    windowDays = 7;
+    userRows = new Map();
+    const users = {
+      findByIdService: async (id: string) => (userRows.has(id) ? (userRows.get(id) ?? undefined) : defaultUser(id)),
+    };
     const economy = {
       grantInServiceTx: async (userId: string, unit: string, amount: number, opts: { reason: string }) => {
         if (grantError) throw grantError;
@@ -104,20 +133,26 @@ describe("InviteService", () => {
         return reverseResult;
       },
     };
-    const config = { get: async () => 20 };
+    const config = {
+      get: async (key: string) => (key === "economy.invite.redeem_window_days" ? windowDays : 20),
+    };
     const quests = { evaluateAndGrant: async () => undefined };
     return new InviteService(
       repo as never,
-      entitlement as never,
       economy as never,
       quests as never,
       config as never,
-      { isRefunded: async () => refunded } as never,
+      { isRefunded: async () => refunded, hasPaid: async () => paid } as never,
+      users as never,
     );
   };
 
   beforeEach(() => {
     repo = makeRepoFake();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("getOrCreateCode is stable (same code on second call)", async () => {
@@ -136,7 +171,7 @@ describe("InviteService", () => {
     expect(grants).toHaveLength(0);
   });
 
-  it("rejects self-redeem, unknown code, double redeem, and premium", async () => {
+  it("rejects self-redeem, unknown code, double redeem, and a user who already paid", async () => {
     const svc = service();
     const code = await svc.getOrCreateCode("ayse");
 
@@ -148,10 +183,140 @@ describe("InviteService", () => {
     await expect(svc.redeem("burak", code)).rejects.toMatchObject({
       code: ErrorCode.INVITE_ALREADY_REDEEMED,
     });
-    premium = true;
+    paid = true;
     await expect(svc.redeem("cem", code)).rejects.toMatchObject({
       constructor: DomainError,
-      code: ErrorCode.INVITE_ALREADY_PREMIUM,
+      code: ErrorCode.INVITE_ALREADY_PAID,
+      httpStatus: 409,
+    });
+  });
+
+  it("lets a trialing user (no positive charge yet) redeem", async () => {
+    const svc = service();
+    const code = await svc.getOrCreateCode("ayse");
+    paid = false; // a trial grants premium entitlement but moved no money
+    await expect(svc.redeem("burak", code)).resolves.toEqual({ status: "PENDING" });
+  });
+
+  describe("redeem window", () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(NOW);
+    });
+
+    it("rejects an account created 7 days + 1 second ago", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      setUser("burak", { createdAt: new Date(NOW.getTime() - 7 * DAY_MS - 1000) });
+      await expect(svc.redeem("burak", code)).rejects.toMatchObject({
+        constructor: DomainError,
+        code: ErrorCode.INVITE_WINDOW_CLOSED,
+        httpStatus: 409,
+        details: { days: 7 },
+      });
+      expect(repo.redemptions).toHaveLength(0);
+    });
+
+    it("accepts an account created 7 days - 1 second ago", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      setUser("burak", { createdAt: new Date(NOW.getTime() - 7 * DAY_MS + 1000) });
+      await expect(svc.redeem("burak", code)).resolves.toEqual({ status: "PENDING" });
+    });
+
+    it("reads the window length from config", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      windowDays = 3;
+      setUser("burak", { createdAt: new Date(NOW.getTime() - 4 * DAY_MS) });
+      await expect(svc.redeem("burak", code)).rejects.toMatchObject({
+        code: ErrorCode.INVITE_WINDOW_CLOSED,
+        details: { days: 3 },
+      });
+    });
+
+    it("checks the window before the paid check", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      paid = true;
+      setUser("burak", { createdAt: new Date(NOW.getTime() - 30 * DAY_MS) });
+      await expect(svc.redeem("burak", code)).rejects.toMatchObject({ code: ErrorCode.INVITE_WINDOW_CLOSED });
+    });
+  });
+
+  describe("coaches and unusable owners", () => {
+    it("treats a code whose owner became a coach as invalid", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      setUser("ayse", { roles: [UserRole.STUDENT, UserRole.COACH] });
+      await expect(svc.redeem("burak", code)).rejects.toMatchObject({
+        code: ErrorCode.INVITE_CODE_INVALID,
+        httpStatus: 404,
+      });
+      expect(repo.redemptions).toHaveLength(0);
+    });
+
+    it("treats a code whose owner is erased, suspended or gone as invalid", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      for (const patch of [
+        { status: "DELETED" },
+        { status: "SUSPENDED" },
+        { erasureStartedAt: new Date() },
+      ]) {
+        setUser("ayse", patch);
+        await expect(svc.redeem("burak", code)).rejects.toMatchObject({ code: ErrorCode.INVITE_CODE_INVALID });
+      }
+      userRows.set("ayse", null);
+      await expect(svc.redeem("burak", code)).rejects.toMatchObject({ code: ErrorCode.INVITE_CODE_INVALID });
+    });
+
+    it("judges the owner before the redeemer's own checks", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      setUser("ayse", { roles: [UserRole.COACH] });
+      // a coach redeeming a dead code still sees the code verdict, not a role verdict
+      setUser("burak", { roles: [UserRole.COACH] });
+      await expect(svc.redeem("burak", code)).rejects.toMatchObject({ code: ErrorCode.INVITE_CODE_INVALID });
+    });
+
+    it("rejects a redeemer who is a coach", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      setUser("burak", { roles: [UserRole.COACH] });
+      await expect(svc.redeem("burak", code)).rejects.toMatchObject({
+        constructor: DomainError,
+        code: ErrorCode.INVITE_COACH_NOT_ALLOWED,
+        httpStatus: 403,
+      });
+      expect(repo.redemptions).toHaveLength(0);
+    });
+
+    it("keeps the self-redeem verdict ahead of the redeemer role check", async () => {
+      const svc = service();
+      const code = await svc.getOrCreateCode("ayse");
+      await expect(svc.redeem("ayse", code)).rejects.toMatchObject({ code: ErrorCode.INVITE_SELF });
+    });
+
+    it("skips the reward when the inviter became a coach before the first payment", async () => {
+      const svc = service();
+      await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+      setUser("ayse", { roles: [UserRole.COACH] });
+      await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub", "pay-1", 100, new Date()));
+      expect(grants).toHaveLength(0);
+      expect(repo.redemptions[0]).toMatchObject({ status: "CONVERTED", rewardOutcome: "COACH_SKIPPED" });
+      // nothing was granted, so a refund has nothing to take back
+      await svc.onInvitedRefunded("burak", "pay-1");
+      expect(reversals).toHaveLength(0);
+    });
+
+    it("skips the reward when the invited user became a coach before the first payment", async () => {
+      const svc = service();
+      await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+      setUser("burak", { roles: [UserRole.COACH] });
+      await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub", "pay-1", 100, new Date()));
+      expect(grants).toHaveLength(0);
+      expect(repo.redemptions[0]).toMatchObject({ status: "CONVERTED", rewardOutcome: "COACH_SKIPPED" });
     });
   });
 
