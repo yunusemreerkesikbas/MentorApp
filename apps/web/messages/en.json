@@ -2680,6 +2680,26 @@
       }
     }
   },
+  "invite_landing": {
+    "loading": "Loading your invite",
+    "title": "{name} invited you!",
+    "discount": "{discount} off Premium is waiting for you.",
+    "body": "Want to study together on PuhuKoç?",
+    "code_label": "Your invite code",
+    "start": "Get started",
+    "login": "I already have an account",
+    "accept": "Accept the invite",
+    "accepting": "Accepting…",
+    "accepted": "Nice, you two are together now!",
+    "accept_failed": "That did not go through just now. Let's try again in a moment.",
+    "go_panel": "Go to your panel",
+    "invalid_title": "This invite link isn't working.",
+    "invalid_body": "You can ask whoever sent it for a new link.",
+    "invalid_cta": "Get started anyway",
+    "failed_title": "The invite did not load just now.",
+    "failed_body": "Let's try again in a moment.",
+    "retry": "Try again"
+  },
   "economy": {
     "balance_subtitle": "Coin has no cash value. Use it for coach chat and weekly deep analysis.",
     "balance_title": "Your balance",

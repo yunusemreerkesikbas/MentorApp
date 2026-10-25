@@ -531,6 +531,50 @@ gösterir. `convertedCount` onun alt kümesidir. Web kartı `joined.length` yeri
 - **Related:** `invite-view.service.ts`, `invite.repository.ts`, `economy.dto.ts`, `packages/types/src/economy.ts`,
   `invite-progress.tsx`.
 
+### 2026-10-25 — `/davet/PUHU-XXXXXXXX` karşılama sayfası, kod onboarding bitince kendiliğinden kullanılır
+
+Kartın "Paylaş"ı artık 404'e gitmiyor: `apps/web/src/app/[locale]/invite/[code]/page.tsx` (tr `/davet/[code]`,
+en `/invite/[code]`) `(app)` dışında, `join-room` deseninde herkese açık bir sayfa (`noindex`). Mesajlar
+`route-message-scopes.json` → `inviteLanding: ["invite_landing", "economy", "paywall"]` (açıklama satırı
+`economy.redeem_disclosure_named`, indirim biçimi `paywall.discount_percent`; iki ad alanı da küçük).
+
+- **Dört kart.** Shell herkese açık önizlemeyi (`fetchInvitePreview`) istemcide çeker, oturum ve önizleme
+  netleşene dek iskelet gösterir. Oturum açık ve onboarding'i bitmiş öğrenci: tek "Daveti kabul et" düğmesi
+  (varışta hiçbir şey kullanılmaz; kullanım geri alınamaz, davet edene isim gider). Ziyaretçi ya da
+  onboarding'i süren öğrenci: karşılama ("{ad} seni davet etti!", önizleme indirim döndürdüyse indirim satırı,
+  kod okunur metin olarak, açıklama satırı, "Hemen başla" `/signup`, "Zaten hesabım var" `/login?next=…`).
+  Koç, ölü ya da biçimi bozuk kod: sakin "Bu davet bağlantısı çalışmıyor." kartı (kod saklanmaz, kullanım
+  yok). Önizleme 404 dışında hata verirse (ağ, throttle, 500) aynı kart değil, "yeniden dene" sunan ayrı bir
+  kart; bağlantıyı ölü ilan etmez.
+- **Kod, düğmeye basınca hatırlanır, sayfa görüntülenince değil.** `src/lib/pending-referral.ts`:
+  `rememberPendingReferral` / `consumePendingReferral` (sessionStorage `mentor.pendingReferral`, yalnız kodun
+  kendisi, yazarken ve okurken `inviteCodeSchema` ile doğrulanır; `pending-invite.ts` ile aynı try/catch
+  deseni). Kodu görünür metin olarak göstermek, bağlantı uygulama içi tarayıcıda açılıp hesap başka yerde
+  bitirilirse kodun Ayarlar'a elle yazılabilmesi içindir.
+- **Onboarding bitince.** `complete-step.tsx` "Panele git"te `useRedeemPendingReferral` çağırır: kodu tüketir
+  (bir kez), öğrenciyse `redeemInviteCode`'u fire-and-forget gönderir, sonucu `useMentorToast` ile bildirir
+  (başarıda `economy.redeem_saved`, hatada `economy.redeem_failed` + API'nin yerelleşmiş mesajı), sonra
+  `onboardingDestination` ile aynen gider. Toast sağlayıcısı router'ın üstünde olduğu için sayfa değişince
+  de görünür. Koç kodu istek atmadan bırakır.
+- **Oturumu açık öğrenci.** Onboarded öğrenci sayfada kendi kararını verir; daha önce düğmeyle hatırlanmış
+  kod (giriş yapıp geri dönme) sayfa açılınca silinir, yoksa sonraki bir onboarding'de habersiz kullanılırdı.
+  Onboarding'i bitmemiş oturum: "Hemen başla" kodu hatırlayıp `/onboarding`'e götürür (bitince kullanılır).
+- **Gotchas.** Pilot kayıt kapısı dokunulmadı: düğmeler olağan `/signup`, `/login` rotalarına gider.
+  Kartın görünümü `RoomNoticeCard`'ı (join-room) yeniden kullanır. `?next=` iç yol taşır (`/invite/PUHU-…`),
+  `internalPathFromUrl` onu olduğu gibi bırakır. **Önizleme isteği oturum netleşene dek beklenir**
+  (`useInvitePreview(code, ready)`): API istemcisini `AuthProvider` bir effect'te yapılandırır ve çocuğun
+  effect'i önce çalışır; bekletmezsek istek sitenin kendi origin'ine gider, 404 döner ve "ölü bağlantı" gibi
+  görünür. Dev'de Strict Mode'un ikinci effect turu bunu gizler, yalnız production build'de patlar, o yüzden
+  e2e'yi `next start` ile de koş. Kullanılabilirlik (`canRedeem`) için ek bir `GET /economy/invite`
+  yapılmaz; ödeme yapmış ya da süresi dolmuş biri düğmeye basınca API'nin mesajını görür.
+- **Test:** `src/lib/pending-referral.spec.ts` (vitest), `apps/web/e2e/invite-landing.spec.ts` (15 senaryo, API
+  mock'lu: karşılama, indirimsiz, İngilizce, giriş-dönüş, iskelet, kabul, red, onboarding'deki oturum, koç,
+  ölü bağlantı, biçimi bozuk kod, başarısız arama, onboarding sonunda tek redeem, 409 toast'u, kodsuz
+  onboarding).
+- **Related:** `invite/[code]/_components/*`, `use-redeem-pending-referral.ts`, `complete-step.tsx`,
+  `pending-referral.ts`, `invite-link.ts`, `routing.ts`, `messages/{tr,en}.json` (`invite_landing`),
+  [identity.md](./identity.md), docs/superpowers/specs/2026-10-25-invite-referral-design.md § 4.
+
 ### 2026-10-25 — Davet kartı (web): paylaş, ilerleme, kullanılmış kod durumu
 
 Ayarlar > Kazanımlar > "Davet et" overlay'i (`economy-invite-card.tsx`) `InviteCodeView`'i tüketir ve

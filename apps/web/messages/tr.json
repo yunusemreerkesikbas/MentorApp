@@ -2680,6 +2680,26 @@
       }
     }
   },
+  "invite_landing": {
+    "loading": "Davet yükleniyor",
+    "title": "{name} seni davet etti!",
+    "discount": "Premium'da {discount} indirim seni bekliyor.",
+    "body": "PuhuKoç'ta birlikte çalışalım mı?",
+    "code_label": "Davet kodun",
+    "start": "Hemen başla",
+    "login": "Zaten hesabım var",
+    "accept": "Daveti kabul et",
+    "accepting": "Kabul ediliyor…",
+    "accepted": "Harika, artık birliktesiniz!",
+    "accept_failed": "Şimdi kabul edilmedi. Biraz sonra bir daha deneyelim.",
+    "go_panel": "Panele git",
+    "invalid_title": "Bu davet bağlantısı çalışmıyor.",
+    "invalid_body": "Gönderen kişiden yeni bir bağlantı isteyebilirsin.",
+    "invalid_cta": "Yine de başla",
+    "failed_title": "Davet şimdi yüklenmedi.",
+    "failed_body": "Biraz sonra bir daha deneyelim.",
+    "retry": "Yeniden dene"
+  },
   "economy": {
     "balance_subtitle": "Coin nakit değildir. Koç sohbetinde ve haftalık derin analizde kullanılır.",
     "balance_title": "Bakiyen",

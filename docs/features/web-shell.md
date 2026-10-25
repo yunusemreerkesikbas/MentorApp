@@ -17,7 +17,9 @@ feature logic — each feature's UI is documented in its own feature doc.
 ## Architecture (key decisions)
 
 - **Next.js App Router** — route groups `(app)` (authenticated) and `(auth)` (auth screens), plus
-  public routes (`/`, `/bilgi/[slug]`). All under `src/app/[locale]/` after the i18n restructure
+  public routes (`/`, `/bilgi/[slug]`, the shared-link landings `/masaya-katil` and `/davet/[code]`,
+  which sit outside `(app)` so an anonymous visitor is not bounced to login; see
+  [economy.md](./economy.md) 2026-10-25 for the invite landing). All under `src/app/[locale]/` after the i18n restructure
   (see [i18n.md](./i18n.md)).
 - **DESIGN.md tokens, no magic numbers** — UI values come from `@mentor/ui` tokens (`Chip`, `Card`,
   `SectionHeading`, `Button`, `Field`, `SubmitButton`, `FormError`). Nuton thumb pastels for feature
