@@ -494,10 +494,31 @@ export interface InviteRedeemedDto {
   discount: InviteRedeemedDtoDiscount;
 }
 
+export type InvitePreviewDiscountDtoDiscountType = typeof InvitePreviewDiscountDtoDiscountType[keyof typeof InvitePreviewDiscountDtoDiscountType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvitePreviewDiscountDtoDiscountType = {
+  PERCENT: 'PERCENT',
+  FIXED: 'FIXED',
+} as const;
+
+export interface InvitePreviewDiscountDto {
+  discountType: InvitePreviewDiscountDtoDiscountType;
+  /** Percent for PERCENT, kuruş for FIXED: what checkout really applies. */
+  discountValue: number;
+}
+
 /**
  * @nullable
  */
 export type InviteCodeViewDtoRedeemed = InviteRedeemedDto | null;
+
+/**
+ * What a friend gets with this code now (the public preview's discount); null when none is live.
+ * @nullable
+ */
+export type InviteCodeViewDtoFriendDiscount = InvitePreviewDiscountDto | null;
 
 export interface InviteCodeViewDto {
   code: string;
@@ -510,6 +531,11 @@ export interface InviteCodeViewDto {
   /** @nullable */
   redeemed: InviteCodeViewDtoRedeemed;
   canRedeem: boolean;
+  /**
+   * What a friend gets with this code now (the public preview's discount); null when none is live.
+   * @nullable
+   */
+  friendDiscount: InviteCodeViewDtoFriendDiscount;
 }
 
 export type RewardLedgerEntryDtoUnit = typeof RewardLedgerEntryDtoUnit[keyof typeof RewardLedgerEntryDtoUnit];
@@ -554,21 +580,6 @@ export interface UnseenRewardsDto {
 export interface DeepAnalysisDto { [key: string]: unknown }
 
 export interface RedeemInviteDto { [key: string]: unknown }
-
-export type InvitePreviewDiscountDtoDiscountType = typeof InvitePreviewDiscountDtoDiscountType[keyof typeof InvitePreviewDiscountDtoDiscountType];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const InvitePreviewDiscountDtoDiscountType = {
-  PERCENT: 'PERCENT',
-  FIXED: 'FIXED',
-} as const;
-
-export interface InvitePreviewDiscountDto {
-  discountType: InvitePreviewDiscountDtoDiscountType;
-  /** Percent for PERCENT, kuruş for FIXED: what checkout really applies. */
-  discountValue: number;
-}
 
 /**
  * @nullable

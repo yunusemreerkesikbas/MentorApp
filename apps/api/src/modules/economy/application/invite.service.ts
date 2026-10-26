@@ -10,6 +10,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { BuddyService } from "../../identity/application/buddy.service";
 import { FollowService } from "../../identity/application/follow.service";
+import { UserStatus } from "../../identity/domain/identity.constants";
 import { UsersRepository, type UserRow } from "../../identity/infrastructure/users.repository";
 import { EconomyService } from "./economy.service";
 import { QuestService } from "./quest.service";
@@ -46,6 +47,14 @@ export interface RedeemBlock {
 const isCoach = (user: Pick<UserRow, "roles">): boolean => user.roles.includes(UserRole.COACH);
 
 /**
+ * The account cannot take a reward any more: no row, mid-erasure, or erased. Erasure anonymizes and
+ * KEEPS the row, landing on DELETED (self-service) or BANNED (admin anonymize, also the terminal
+ * moderation state), so the row's presence says nothing. SUSPENDED is not gone: it ends.
+ */
+const isGone = (user: Pick<UserRow, "status" | "erasureStartedAt"> | undefined): boolean =>
+  !user || Boolean(user.erasureStartedAt) || user.status === UserStatus.DELETED || user.status === UserStatus.BANNED;
+
+/**
  * Invite → conversion → coin (§3 light economy slice 2a). Reward fires ONLY when an invited user's
  * first positive payment succeeds (forward-only, verified). Reward goes to the inviter; idempotent + capped.
  */
@@ -70,11 +79,16 @@ export class InviteService implements OnModuleInit {
    * Hand payments the "came through an invite, and when" signal for the INVITED promotion rule.
    * Payments cannot import economy (economy imports payments), so it asks this resolver through
    * its registry. A switched-off economy answers null: a dormant invite programme never discounts.
+   * So does a coach (or a missing account): a redeem made before becoming a coach must not turn into
+   * an INVITED discount, since coaches are outside the invite economy.
    */
   onModuleInit(): void {
     this.inviteSignals.register(async (userId) => {
       if (!(await this.config.get("economy.enabled"))) return null;
-      return (await this.repo.findRedemptionByInvited(userId))?.redeemedAt ?? null;
+      const redemption = await this.repo.findRedemptionByInvited(userId);
+      if (!redemption) return null;
+      const user = await this.users.findByIdService(userId);
+      return user && !isCoach(user) ? redemption.redeemedAt : null;
     });
   }
 
@@ -200,11 +214,16 @@ export class InviteService implements OnModuleInit {
         await this.repo.recordPayment(redemption.id, event.paymentId, "REFUNDED", tx);
         return;
       }
-      // Coaches are outside the invite economy; a role gained after the redeem is caught here.
       const [inviter, invited] = await Promise.all([
         this.users.findByIdService(redemption.inviterUserId),
         this.users.findByIdService(redemption.invitedUserId),
       ]);
+      // An erased (or erasing) inviter has no wallet to fill: no Coin, and nothing to reverse later.
+      if (isGone(inviter)) {
+        await this.repo.recordPayment(redemption.id, event.paymentId, "INVITER_GONE", tx);
+        return;
+      }
+      // Coaches are outside the invite economy; a role gained after the redeem is caught here.
       if ((inviter && isCoach(inviter)) || (invited && isCoach(invited))) {
         await this.repo.recordPayment(redemption.id, event.paymentId, "COACH_SKIPPED", tx);
         return;

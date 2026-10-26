@@ -226,6 +226,24 @@ describe("InviteService", () => {
 
       expect(await signals.invitedAt("burak")).toBeNull();
     });
+
+    it("answers null for a coach, so a redeem made before becoming one never discounts", async () => {
+      const svc = service();
+      await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+      svc.onModuleInit();
+      setUser("burak", { roles: [UserRole.STUDENT, UserRole.COACH] });
+
+      expect(await signals.invitedAt("burak")).toBeNull();
+    });
+
+    it("answers null when the user row is gone", async () => {
+      const svc = service();
+      await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+      svc.onModuleInit();
+      userRows.set("burak", null);
+
+      expect(await signals.invitedAt("burak")).toBeNull();
+    });
   });
 
   it("redeem creates a PENDING redemption (no reward yet)", async () => {
@@ -468,6 +486,39 @@ describe("InviteService", () => {
       await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub", "pay-1", 100, new Date()));
       expect(grants).toHaveLength(0);
       expect(repo.redemptions[0]).toMatchObject({ status: "CONVERTED", rewardOutcome: "COACH_SKIPPED" });
+    });
+  });
+
+  describe("an inviter who is gone by the first payment", () => {
+    const convert = async (patch: Partial<UserFake> | null) => {
+      const svc = service();
+      await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+      if (patch === null) userRows.set("ayse", null);
+      else setUser("ayse", patch);
+      await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub", "pay-1", 100, new Date()));
+      return svc;
+    };
+
+    for (const [label, patch] of [
+      ["erased by the user (DELETED, anonymized row)", { status: "DELETED", displayName: "Silinmiş Kullanıcı" }],
+      ["anonymized by an admin (BANNED)", { status: "BANNED", displayName: "Silinmiş Kullanıcı" }],
+      ["mid-erasure", { erasureStartedAt: new Date() }],
+      ["without a row", null],
+    ] as const) {
+      it(`earns no Coin when ${label}: outcome INVITER_GONE`, async () => {
+        const svc = await convert(patch);
+        expect(grants).toHaveLength(0);
+        expect(repo.redemptions[0]).toMatchObject({ status: "CONVERTED", rewardOutcome: "INVITER_GONE" });
+        // nothing was granted, so a refund has nothing to take back
+        await svc.onInvitedRefunded("burak", "pay-1");
+        expect(reversals).toHaveLength(0);
+      });
+    }
+
+    it("still earns the Coin while merely SUSPENDED (a suspension ends, the account is still theirs)", async () => {
+      await convert({ status: "SUSPENDED" });
+      expect(grants).toEqual([{ userId: "ayse", unit: Currency.COIN, amount: 20, reason: "invite.converted" }]);
+      expect(repo.redemptions[0]).toMatchObject({ rewardOutcome: "GRANTED" });
     });
   });
 

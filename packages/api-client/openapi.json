@@ -11725,6 +11725,26 @@
           "discount"
         ]
       },
+      "InvitePreviewDiscountDto": {
+        "type": "object",
+        "properties": {
+          "discountType": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "FIXED"
+            ]
+          },
+          "discountValue": {
+            "type": "integer",
+            "description": "Percent for PERCENT, kuruş for FIXED: what checkout really applies."
+          }
+        },
+        "required": [
+          "discountType",
+          "discountValue"
+        ]
+      },
       "InviteCodeViewDto": {
         "type": "object",
         "properties": {
@@ -11759,6 +11779,16 @@
           },
           "canRedeem": {
             "type": "boolean"
+          },
+          "friendDiscount": {
+            "nullable": true,
+            "description": "What a friend gets with this code now (the public preview's discount); null when none is live.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InvitePreviewDiscountDto"
+              }
+            ]
           }
         },
         "required": [
@@ -11768,7 +11798,8 @@
           "joinedCount",
           "convertedCount",
           "redeemed",
-          "canRedeem"
+          "canRedeem",
+          "friendDiscount"
         ]
       },
       "RewardLedgerEntryDto": {
@@ -11859,26 +11890,6 @@
       "RedeemInviteDto": {
         "type": "object",
         "properties": {}
-      },
-      "InvitePreviewDiscountDto": {
-        "type": "object",
-        "properties": {
-          "discountType": {
-            "type": "string",
-            "enum": [
-              "PERCENT",
-              "FIXED"
-            ]
-          },
-          "discountValue": {
-            "type": "integer",
-            "description": "Percent for PERCENT, kuruş for FIXED: what checkout really applies."
-          }
-        },
-        "required": [
-          "discountType",
-          "discountValue"
-        ]
       },
       "InvitePreviewViewDto": {
         "type": "object",

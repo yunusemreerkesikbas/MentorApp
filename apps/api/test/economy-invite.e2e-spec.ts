@@ -523,6 +523,7 @@ describe("economy invite (e2e)", () => {
         convertedCount: 0,
         redeemed: null,
         canRedeem: true,
+        friendDiscount: null, // no INVITED promotion is live in this block
       });
     });
 
@@ -880,6 +881,24 @@ describe("economy invite (e2e)", () => {
       });
       expect(Object.keys(res.body).sort()).toEqual(["discount", "inviterDisplayName"]);
       expect(Object.keys(res.body.discount).sort()).toEqual(["discountType", "discountValue"]);
+    });
+
+    it("the inviter's own card carries the same friend discount as the public preview, and drops it with web sales", async () => {
+      const cardOf = async () =>
+        (await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(inviterToken)).expect(200)).body;
+      const preview = await request(app.getHttpServer()).get(`/v1/economy/invite/preview/${inviterCode}`).expect(200);
+
+      expect((await cardOf()).friendDiscount).toEqual({ discountType: "PERCENT", discountValue: 30 });
+      expect((await cardOf()).friendDiscount).toEqual(preview.body.discount);
+
+      const registry = app.get(ConfigRegistryService);
+      const webWasEnabled = await registry.get("payments.web.enabled");
+      await registry.set(adminId, "payments.web.enabled", false);
+      try {
+        expect((await cardOf()).friendDiscount).toBeNull();
+      } finally {
+        await registry.set(adminId, "payments.web.enabled", webWasEnabled);
+      }
     });
   });
 

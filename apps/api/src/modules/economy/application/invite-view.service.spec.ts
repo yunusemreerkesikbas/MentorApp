@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Logger } from "@nestjs/common";
 import { UserRole } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -92,6 +93,10 @@ describe("InviteViewService", () => {
   let inviteOffer: { promotion: PromotionSummaryFake | null } | null;
   let previewSummary: PromotionSummaryFake | null;
   let blockingSubscription: boolean;
+  /** Set to make that lookup throw (a payments or identity read failing). */
+  let previewError: Error | null;
+  let offerError: Error | null;
+  let phoneError: Error | null;
   let offerLookups: string[];
   let identityLookups: string[][];
   /** Per-user overrides; any other id is a fresh, active student created a day ago. `null` = no such row. */
@@ -118,6 +123,9 @@ describe("InviteViewService", () => {
     inviteOffer = null;
     previewSummary = null;
     blockingSubscription = false;
+    previewError = null;
+    offerError = null;
+    phoneError = null;
     offerLookups = [];
     identityLookups = [];
     userRows = new Map();
@@ -128,7 +136,10 @@ describe("InviteViewService", () => {
     // Identity's public seam, as UsersService maps it (see users.service.spec): the anonymized row is
     // still there, with its placeholder name, and `active` is false.
     const identities = {
-      isPhoneVerified: async () => phoneVerified,
+      isPhoneVerified: async () => {
+        if (phoneError) throw phoneError;
+        return phoneVerified;
+      },
       listDisplayIdentities: async (ids: string[]) => {
         identityLookups.push(ids);
         return new Map(
@@ -150,9 +161,13 @@ describe("InviteViewService", () => {
     const subscriptions = {
       findInviteOffer: async (userId: string) => {
         offerLookups.push(userId);
+        if (offerError) throw offerError;
         return inviteOffer;
       },
-      previewInviteOffer: async () => previewSummary,
+      previewInviteOffer: async () => {
+        if (previewError) throw previewError;
+        return previewSummary;
+      },
       hasCheckoutBlockingSubscription: async () => blockingSubscription,
     };
     const config = {
@@ -298,7 +313,95 @@ describe("InviteViewService", () => {
     it("has an empty card for a user who invited nobody", async () => {
       const { views } = build();
       const view = await views.getView("ayse");
-      expect(view).toMatchObject({ joined: [], joinedCount: 0, convertedCount: 0, redeemed: null, canRedeem: true });
+      expect(view).toMatchObject({
+        joined: [],
+        joinedCount: 0,
+        convertedCount: 0,
+        redeemed: null,
+        canRedeem: true,
+        friendDiscount: null,
+      });
+    });
+
+    describe("friendDiscount (what this user's friends would get, for the card's subtitle)", () => {
+      it("carries the live INVITED summary without the phone flag", async () => {
+        const { views } = build();
+        previewSummary = THIRTY_PERCENT;
+
+        expect((await views.getView("ayse")).friendDiscount).toEqual({ discountType: "PERCENT", discountValue: 30 });
+      });
+
+      it("is null when no INVITED promotion is live or the web cannot sell a plan", async () => {
+        const { views } = build();
+        previewSummary = null;
+
+        expect((await views.getView("ayse")).friendDiscount).toBeNull();
+      });
+
+      it("is what friends get, whatever this user's own redemption: a redeemed user still sees it", async () => {
+        const { invites, views } = build();
+        await invites.redeem("burak", await invites.getOrCreateCode("ayse"));
+        previewSummary = { discountType: "FIXED", discountValue: 5000 };
+        inviteOffer = null; // burak himself would not get one (say his phone already took it)
+
+        const view = await views.getView("burak");
+
+        expect(view.friendDiscount).toEqual({ discountType: "FIXED", discountValue: 5000 });
+        expect(view.redeemed!.discount).toBeNull();
+      });
+    });
+
+    describe("a failed discount lookup never takes the card down", () => {
+      let warn: ReturnType<typeof vi.spyOn>;
+      beforeEach(() => {
+        warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+      });
+      afterEach(() => {
+        warn.mockRestore();
+      });
+
+      it("drops friendDiscount to null and warns when the preview lookup throws", async () => {
+        const { invites, views } = build();
+        await invites.redeem("burak", await invites.getOrCreateCode("ayse"));
+        previewError = new Error("payments down");
+
+        const view = await views.getView("ayse");
+
+        expect(view.friendDiscount).toBeNull();
+        expect(view.joined).toEqual([{ displayName: "burak-name" }]);
+        expect(view.code).toMatch(/^PUHU-/);
+        expect(warn).toHaveBeenCalled();
+      });
+
+      it("drops the redeemed discount to null and warns when the per-user offer lookup throws", async () => {
+        const { invites, views } = build();
+        await invites.redeem("burak", await invites.getOrCreateCode("ayse"));
+        offerError = new Error("payments down");
+
+        const view = await views.getView("burak");
+
+        expect(view.redeemed).toEqual({ inviterDisplayName: "ayse-name", discount: null });
+        expect(view.canRedeem).toBe(false);
+        expect(warn).toHaveBeenCalled();
+      });
+
+      it("drops the redeemed discount to null when the phone lookup behind it throws", async () => {
+        const { invites, views } = build();
+        await invites.redeem("burak", await invites.getOrCreateCode("ayse"));
+        phoneError = new Error("identity down");
+
+        expect((await views.getView("burak")).redeemed).toEqual({ inviterDisplayName: "ayse-name", discount: null });
+        expect(warn).toHaveBeenCalled();
+      });
+
+      it("never promises the phone-step discount when the preview behind it failed", async () => {
+        const { invites, views } = build();
+        await invites.redeem("burak", await invites.getOrCreateCode("ayse"));
+        phoneVerified = false;
+        previewError = new Error("payments down");
+
+        expect((await views.getView("burak")).redeemed!.discount).toBeNull();
+      });
     });
 
     it("names the inviter to an invited user, who can no longer redeem", async () => {
@@ -337,11 +440,8 @@ describe("InviteViewService", () => {
         expect((await views.getView("burak")).canRedeem).toBe(true);
       });
 
-      it("is false while the economy is switched off", async () => {
-        const { views } = build();
-        economyEnabled = false;
-        expect((await views.getView("burak")).canRedeem).toBe(false);
-      });
+      // No "economy switched off" case: the only caller (GET /economy/invite) 404s ECONOMY_DISABLED
+      // before the view is built, so the view does not read the flag again.
 
       it("agrees with redeem: whoever can redeem gets in and whoever cannot is turned away", async () => {
         const { invites, views } = build();

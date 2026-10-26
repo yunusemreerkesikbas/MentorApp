@@ -38,6 +38,12 @@ export class InviteCodeViewDto implements InviteCodeView {
   @ApiProperty({ type: "integer" }) convertedCount!: number;
   @ApiProperty({ type: InviteRedeemedDto, nullable: true }) redeemed!: InviteRedeemedDto | null;
   @ApiProperty() canRedeem!: boolean;
+  @ApiProperty({
+    type: InvitePreviewDiscountDto,
+    nullable: true,
+    description: "What a friend gets with this code now (the public preview's discount); null when none is live.",
+  })
+  friendDiscount!: InvitePreviewDiscountDto | null;
 }
 
 /** GET /v1/economy/invite/preview/:code (public) */

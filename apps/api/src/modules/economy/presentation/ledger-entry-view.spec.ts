@@ -97,6 +97,17 @@ describe("toLedgerEntryView", () => {
     });
   });
 
+  it("says the invite Coin came from the friend's first payment, in tr and en", () => {
+    expect(toLedgerEntryView(row("invite.converted", Currency.COIN), tTr)).toMatchObject({
+      title: "Davet hakkı",
+      description: "Arkadaşın Premium'a geçti, Coin hesabına işlendi.",
+    });
+    expect(toLedgerEntryView(row("invite.converted", Currency.COIN), tEn)).toMatchObject({
+      title: "Invite right",
+      description: "Your friend went Premium, so Coin landed on your account.",
+    });
+  });
+
   it("maps invite reversals to a rights label, not a prize", () => {
     expect(toLedgerEntryView(row("invite.reverted", Currency.COIN), tTr)).toMatchObject({
       title: "Davet hakkı geri alındı",

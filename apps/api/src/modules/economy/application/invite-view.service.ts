@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { InviteCodeView, InviteDiscountView, InvitePreviewView } from "@mentor/types";
 import { PaymentEvidenceService } from "../../payments/application/payment-evidence.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
@@ -20,6 +20,8 @@ const JOINED_LIST_LIMIT = 20;
  */
 @Injectable()
 export class InviteViewService {
+  private readonly logger = new Logger(InviteViewService.name);
+
   constructor(
     private readonly invites: InviteService,
     private readonly repo: InviteRepository,
@@ -37,15 +39,15 @@ export class InviteViewService {
   async getView(userId: string): Promise<InviteCodeView> {
     const user = await this.users.findByIdService(userId);
     if (!user) throw new NotFoundError();
-    const [code, rewardCoin, joinedRows, joinedCount, convertedCount, redemption, economyEnabled, block] = await Promise.all([
+    const [code, rewardCoin, joinedRows, joinedCount, convertedCount, redemption, block, friendDiscount] = await Promise.all([
       this.invites.getOrCreateCode(userId),
       this.config.get("economy.invite.reward_coin"),
       this.repo.listJoinedByInviter(userId, JOINED_LIST_LIMIT),
       this.repo.countJoinedByInviter(userId),
       this.repo.countConvertedByInviter(userId),
       this.repo.findRedemptionByInvited(userId),
-      this.config.get("economy.enabled"),
       this.invites.redeemBlock(user),
+      this.friendDiscount(),
     ]);
     return {
       code,
@@ -53,9 +55,26 @@ export class InviteViewService {
       joined: await this.joinedFriends(joinedRows.map((row) => row.invitedUserId)),
       joinedCount,
       convertedCount,
-      redeemed: redemption ? await this.redeemedView(userId, redemption.inviterUserId) : null,
-      canRedeem: economyEnabled && block === null,
+      redeemed: redemption ? await this.redeemedView(userId, redemption.inviterUserId, friendDiscount) : null,
+      // No economy flag here: the only caller (GET /economy/invite) answers ECONOMY_DISABLED first.
+      canRedeem: block === null,
+      friendDiscount,
     };
+  }
+
+  /**
+   * What a friend gets with this user's code: the public preview's discount, so the card and the
+   * landing never disagree. A failed lookup is "none", never a promise on unknown state, and never
+   * takes the rest of the card down with it.
+   */
+  private async friendDiscount(): Promise<InviteCodeView["friendDiscount"]> {
+    try {
+      const offer = await this.subscriptions.previewInviteOffer();
+      return offer ? { discountType: offer.discountType, discountValue: offer.discountValue } : null;
+    } catch (err) {
+      this.logger.warn({ err }, "invite friend discount lookup failed (card shows none)");
+      return null;
+    }
   }
 
   /**
@@ -73,10 +92,18 @@ export class InviteViewService {
     });
   }
 
-  private async redeemedView(userId: string, inviterUserId: string): Promise<NonNullable<InviteCodeView["redeemed"]>> {
+  private async redeemedView(
+    userId: string,
+    inviterUserId: string,
+    friendDiscount: InviteCodeView["friendDiscount"],
+  ): Promise<NonNullable<InviteCodeView["redeemed"]>> {
     const [identities, discount] = await Promise.all([
       this.identities.listDisplayIdentities([inviterUserId]),
-      this.inviteDiscountFor(userId),
+      this.inviteDiscountFor(userId, friendDiscount).catch((err: unknown) => {
+        // The discount line is optional; the "you came with X's invite" state is not.
+        this.logger.warn({ err, userId }, "invite discount lookup failed (card shows none)");
+        return null;
+      }),
     ]);
     return { inviterDisplayName: identities.get(inviterUserId)?.displayName ?? "", discount };
   }
@@ -84,17 +111,19 @@ export class InviteViewService {
   /**
    * The friend discount as THIS user should be told about it: only what web checkout will honour.
    * A verified phone: exactly what checkout would resolve now. Without one the INVITED rule cannot
-   * apply yet, so the card says "verify to get it", but only to someone who could then check out
-   * (no open subscription) and still qualifies (never paid).
+   * apply yet, so the card says "verify to get it" (with the live INVITED summary, `preview`), but
+   * only to someone who could then check out (no open subscription) and still qualifies (never paid).
    */
-  private async inviteDiscountFor(userId: string): Promise<InviteDiscountView | null> {
+  private async inviteDiscountFor(
+    userId: string,
+    preview: InviteCodeView["friendDiscount"],
+  ): Promise<InviteDiscountView | null> {
     if (await this.identities.isPhoneVerified(userId)) {
       const promotion = (await this.subscriptions.findInviteOffer(userId))?.promotion;
       return promotion
         ? { discountType: promotion.discountType, discountValue: promotion.discountValue, phoneRequired: false }
         : null;
     }
-    const preview = await this.subscriptions.previewInviteOffer();
     if (!preview) return null;
     const [blocked, paid] = await Promise.all([
       this.subscriptions.hasCheckoutBlockingSubscription(userId),

@@ -156,6 +156,11 @@ export interface InviteCodeView {
   redeemed: { inviterDisplayName: string; discount: InviteDiscountView | null } | null;
   /** False once redeemed, once paid, or when the signup window has closed (same rules as redeem). */
   canRedeem: boolean;
+  /**
+   * What a friend gets with this user's code right now (the live INVITED promotion, as the public
+   * preview shows it), or null when none is live, the web sells no plan or the lookup failed.
+   */
+  friendDiscount: Omit<InviteDiscountView, "phoneRequired"> | null;
 }
 
 /**
