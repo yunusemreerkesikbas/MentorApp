@@ -1,4 +1,4 @@
-import { z, type ZodTypeAny } from "zod";
+import { z } from "zod";
 
 /**
  * Config registry catalog (§9, engineering-principles §2/§8).
@@ -44,7 +44,9 @@ export interface ConfigEntryDef {
   category: string;
   /** UI hint so the admin panel renders the right control. */
   type: ConfigValueType;
-  schema: ZodTypeAny;
+  // ponytail: `any` output keeps zod 3 ZodTypeAny inference for helper-built entries; type each helper to tighten.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schema: z.ZodType<any>;
   default: unknown;
   /** Sensitive (money/coin/commission) → bounds + extra confirmation in the UI. */
   sensitive: boolean;
