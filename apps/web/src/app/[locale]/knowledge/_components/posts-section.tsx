@@ -11,20 +11,16 @@ import {
   showsFeatured,
   type BlogQuery,
 } from "@/lib/blog-url";
-import { fetchFeaturedArticle, fetchInfoArticlesByFamily } from "@/lib/content-api";
+import { loadBlogPosts } from "./blog-posts";
 import { BLOG_ACTION } from "./blog-ui";
 import { FeaturedPost } from "./featured-post";
 import { PostRows } from "./post-rows";
 
 /** Featured post, rows and pages for one family/topic/page. The header never waits for this section. */
 export async function PostsSection({ query, locale }: { query: BlogQuery; locale: string }) {
-  const [t, featured, list] = await Promise.all([
+  const [t, { featured, list }] = await Promise.all([
     getTranslations("knowledge"),
-    fetchFeaturedArticle(query.family, { revalidate: 300 }).catch(() => null),
-    fetchInfoArticlesByFamily(query.family, query.page, BLOG_PAGE_SIZE, {
-      category: query.category ?? undefined,
-      revalidate: 300,
-    }).catch(() => null),
+    loadBlogPosts(query.family, query.category, query.page),
   ]);
 
   if (!list) {

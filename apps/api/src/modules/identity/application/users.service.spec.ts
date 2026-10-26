@@ -41,6 +41,38 @@ describe("UsersService verified notification contact", () => {
   });
 });
 
+describe("UsersService.listDisplayIdentities", () => {
+  const row = (userId: string, patch: Record<string, unknown> = {}) => ({
+    userId, displayName: `${userId}-name`, username: userId, avatarStorageKey: null,
+    status: "ACTIVE", erasureStartedAt: null, ...patch,
+  });
+  const identitiesFor = async (rows: unknown[]) => {
+    const service = new UsersService(
+      { listDisplayByIds: vi.fn().mockResolvedValue(rows) } as never,
+      { getPublicUrl: (key: string) => `https://cdn/${key}` } as never,
+      {} as never,
+    );
+    return service.listDisplayIdentities(["a"]);
+  };
+
+  it("marks a live account active", async () => {
+    expect((await identitiesFor([row("a")])).get("a")).toMatchObject({ displayName: "a-name", active: true });
+  });
+
+  it("keeps the row of an anonymized account but marks it inactive (the real erased shape)", async () => {
+    const people = await identitiesFor([
+      row("a", { status: "DELETED", displayName: "Silinmiş Kullanıcı", username: null }),
+    ]);
+    expect(people.get("a")).toMatchObject({ displayName: "Silinmiş Kullanıcı", active: false });
+  });
+
+  it("marks suspended, banned and mid-erasure accounts inactive without dropping them", async () => {
+    for (const patch of [{ status: "SUSPENDED" }, { status: "BANNED" }, { erasureStartedAt: new Date() }]) {
+      expect((await identitiesFor([row("a", patch)])).get("a")).toMatchObject({ active: false });
+    }
+  });
+});
+
 describe("usernameSchema", () => {
   it("normalizes valid usernames", () => {
     expect(usernameSchema.parse(" Student_01 ")).toBe("student_01");

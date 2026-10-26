@@ -93,6 +93,7 @@ function setup(
     {
       getInfoArticleBySlug: async () => ({ family: options.articleFamily ?? ExamType.LGS }),
     } as never,
+    {} as never,
   );
   return { service, sessions, economy, rewardedCountSince };
 }

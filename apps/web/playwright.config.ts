@@ -7,6 +7,8 @@ const projectBrowser = firefoxQa ? "firefox" : "chromium";
 
 export default defineConfig({
   testDir: "./e2e",
+  // This suite owns an isolated SSR API fixture and runs with its dedicated config.
+  testIgnore: ["**/question-ads.spec.ts"],
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"], ["html", { open: "never" }]],

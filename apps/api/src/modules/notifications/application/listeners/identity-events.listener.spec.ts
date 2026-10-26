@@ -80,6 +80,27 @@ describe("IdentityEventsListener", () => {
     }
   });
 
+  it("uses the via-invite copy when the buddy request came from an invite redeem", async () => {
+    await listener.onBuddyRequested({ ...buddyEvent, viaInvite: true });
+    expect(notifications.createFromTemplate).toHaveBeenCalledTimes(1);
+    expect(notifications.createFromTemplate).toHaveBeenCalledWith(
+      "uB",
+      "FORUM",
+      NotificationCopyKey.BUDDY_REQUESTED_VIA_INVITE,
+      "/study-session",
+      expect.objectContaining({ args: { name: "Alice" } }),
+    );
+  });
+
+  it("keeps the plain request copy when viaInvite is absent or false", async () => {
+    await listener.onBuddyRequested(buddyEvent);
+    await listener.onBuddyRequested({ ...buddyEvent, viaInvite: false });
+    for (const call of notifications.createFromTemplate.mock.calls) {
+      expect(call[2]).toBe(NotificationCopyKey.BUDDY_REQUESTED);
+    }
+    expect(notifications.createFromTemplate).toHaveBeenCalledTimes(2);
+  });
+
   it("buddy notifications are best-effort too", async () => {
     notifications.createFromTemplate.mockRejectedValueOnce(new Error("db down"));
     await expect(listener.onBuddyNudged(buddyEvent)).resolves.toBeUndefined();

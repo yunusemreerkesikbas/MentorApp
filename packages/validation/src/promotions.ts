@@ -20,6 +20,7 @@ export const promotionRuleTypeSchema = z.enum([
   "NEW_USER",
   "ACTIVE_DAYS",
   "WIN_BACK",
+  "INVITED",
 ]);
 export const promotionDiscountTypeSchema = z.enum(["PERCENT", "FIXED"]);
 
@@ -99,11 +100,15 @@ function refinePromotion(value: PromotionShape, ctx: z.RefinementCtx): void {
   }
 
   const params = value.ruleParams ?? {};
-  if (value.ruleType === "NEW_USER" && typeof params.withinDays !== "number") {
+  // NEW_USER counts days since signup, INVITED days since the invite redeem.
+  if (
+    (value.ruleType === "NEW_USER" || value.ruleType === "INVITED") &&
+    typeof params.withinDays !== "number"
+  ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["ruleParams"],
-      message: "NEW_USER requires { withinDays }.",
+      message: `${value.ruleType} requires { withinDays }.`,
     });
   }
   if (

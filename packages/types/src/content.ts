@@ -3,6 +3,9 @@
  * Critical dates render as data cards verbatim (guardrail §4 #1).
  */
 
+/** The public blog and its ad eligibility must verify the same page of editorial summaries. */
+export const BLOG_PAGE_SIZE = 12;
+
 export interface ExamSummaryDto {
   id: string;
   slug: string;

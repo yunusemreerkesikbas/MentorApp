@@ -17,6 +17,7 @@ const user: AuthUser = {
   examVariant: null,
   examDate: "2027-07-25",
   dailyFocusGoalMinutes: null,
+  careerGroup: null,
   emailVerified: true,
   createdAt: "2026-01-01T00:00:00.000Z",
 };
@@ -51,7 +52,7 @@ test("Soru detayı: tek durum, N cevap, çözüm yeşil çerçevede önde, Ben d
   await expect(answerCards.nth(1)).not.toContainText("Çözüm");
 
   const people = page.getByRole("region", { name: "Bu soruda" });
-  // toContainText: each row also carries the avatar's initials.
+  // toContainText: rows carry the name plus the role label.
   await expect(people.getByRole("listitem")).toContainText([
     `${asker.name}Soran`,
     `${solver.name}Çözümü yazdı`,
@@ -102,7 +103,7 @@ test("Detaylarda adsız bağlantı yok: avatar bağlantısı adın tekrarı olar
   // The avatar repeated the name link next to it but had no accessible name of its own, so a screen
   // reader announced an empty link before every post, comment and answer.
   await mockApi(page);
-  // The accessibility tree is the truth: the avatar's initials are aria-hidden, so its text is no name.
+  // The accessibility tree is the truth: the avatar is aria-hidden, so it gives a link no name.
   const unnamedLinks = async () =>
     ((await page.locator("main").ariaSnapshot()).match(/^\s*- link(?::\s*$|\s*$)/gm) ?? []).length;
   for (const path of ["/topluluk/mesaj/t1", "/topluluk/soru/q3"]) {

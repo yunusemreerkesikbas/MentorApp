@@ -20,6 +20,7 @@ const viewer: AuthUser = {
   examVariant: null,
   examDate: "2027-07-25",
   dailyFocusGoalMinutes: null,
+  careerGroup: null,
   emailVerified: true,
   createdAt: "2026-01-01T00:00:00.000Z",
 };
@@ -291,12 +292,14 @@ test("üye profili kimlik kartı, aksiyonlar ve yolculuk panelini her genişlikt
   await expect(page.getByRole("button", { name: "Takiptesin", exact: true })).toBeVisible();
   await expect(followButton).toBeVisible();
 
-  // A long name stays on one card without side scroll, and a broken photo falls back to initials.
+  // A long name stays on one card without side scroll, and a broken photo falls back to the
+  // default silhouette.
   await page.goto("/topluluk/uye/broken");
   await expect(
     page.getByRole("heading", { name: "Çok Uzun İsimli Bir Topluluk Üyesi Soyadı" }),
   ).toBeVisible();
-  await expect(page.locator(".profile-avatar").getByText("ÇS", { exact: true })).toBeVisible();
+  await expect(page.locator(".profile-avatar svg")).toBeVisible();
+  await expect(page.locator(".profile-avatar img")).toHaveCount(0);
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
   ).toBe(true);
@@ -775,7 +778,7 @@ test("showcase chrome'u İngilizce rota için yerelleştirilir", async ({ page }
 async function mockProfileApi(page: Page) {
   // Fixture images live on the API origin: the production CSP `img-src` only allows that origin
   // (plus WEB_CSP_STORAGE_ORIGINS, unset in CI), so a foreign CDN host is blocked and the avatar
-  // falls back to initials.
+  // falls back to the default silhouette.
   await page.route("http://localhost:3001/test-assets/missing.svg", async (route) => {
     await route.fulfill({ status: 404, body: "" });
   });

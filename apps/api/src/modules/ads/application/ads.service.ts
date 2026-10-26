@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { AdBlogListContext } from "@mentor/validation";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
@@ -6,6 +7,7 @@ import {
   ExamType,
   type AdEligibilityReason,
   type AdPlacementView,
+  type AdQuestionContext,
   type AdRewardCompletionView,
   type AdRewardOfferView,
   type AdRewardSessionView,
@@ -22,6 +24,8 @@ import { EntitlementService } from "../../payments/application/entitlement.servi
 import { evaluateAdPolicy, istanbulDayStart } from "../domain/ad-policy";
 import { AD_PLACEMENTS, ADS_REWARD_REASON, ADS_REWARD_SOURCE, GOOGLE_DISPLAY_TEST_AD_UNIT } from "../domain/ads.constants";
 import { AdRewardSessionRepository, type AdRewardSessionRow } from "../infrastructure/ad-reward-session.repository";
+import { resolveBlogAdContext } from "./blog-ad-context";
+import { AdsQuestionReviewService } from "./ads-question-review.service";
 
 @Injectable()
 export class AdsService {
@@ -33,11 +37,15 @@ export class AdsService {
     private readonly users: UsersService,
     private readonly economy: EconomyService,
     private readonly content: ContentService,
+    private readonly questionReviews: AdsQuestionReviewService,
   ) {}
 
-  private adUnitPath(placementId: AdPlacementId): string | null {
-    const key = AD_PLACEMENTS[placementId].envKey as keyof Env;
-    const value = this.env.get(key, { infer: true });
+  private async adUnitPath(placementId: AdPlacementId): Promise<string | null> {
+    const { unitConfigKey, envKey } = AD_PLACEMENTS[placementId];
+    const configured = unitConfigKey ? await this.config.get(unitConfigKey) : "";
+    if (configured) return configured;
+    // Only the existing blog/reward inventory has an explicit legacy environment fallback.
+    const value = envKey ? this.env.get(envKey, { infer: true }) : null;
     return typeof value === "string" && value.length > 0 ? value : null;
   }
 
@@ -53,7 +61,7 @@ export class AdsService {
     },
   ): Promise<AdPlacementView> {
     const placement = AD_PLACEMENTS[placementId];
-    const localTest = placementId === AdPlacementId.KNOWLEDGE_ARTICLE_END && isLocalDisplayTestAllowed({
+    const localTest = placement.format === "DISPLAY" && isLocalDisplayTestAllowed({
       NODE_ENV: this.env.get("NODE_ENV", { infer: true }),
       APP_ENV: this.env.get("APP_ENV", { infer: true }),
       APP_URL: this.env.get("APP_URL", { infer: true }),
@@ -62,7 +70,7 @@ export class AdsService {
     const [globalEnabled, formatEnabled, placementEnabled, rolloutPercent, allowedCountries, entitlement] = await Promise.all([
       this.config.get("ads.enabled"),
       this.config.get(placement.format === "DISPLAY" ? "ads.display.enabled" : "ads.rewarded.enabled"),
-      this.config.get(placement.configKey as "ads.placement.knowledge_article_end.enabled"),
+      this.config.get(placement.configKey),
       this.config.get("ads.rewarded.web.rollout_percent"),
       this.config.get("ads.display.allowed_countries"),
       context.userId
@@ -83,7 +91,7 @@ export class AdsService {
       rolloutPercent,
       displayAllowedCountries: allowedCountries.split(",").filter(Boolean),
     });
-    const adUnitPath = localTest ? GOOGLE_DISPLAY_TEST_AD_UNIT : this.adUnitPath(placementId);
+    const adUnitPath = localTest ? GOOGLE_DISPLAY_TEST_AD_UNIT : await this.adUnitPath(placementId);
     const contextUnverified = placement.format === "DISPLAY" && context.contextVerified === false;
     // Google Ad Manager does not provide server-side verification for Rewarded Web. A browser
     // event is forgeable, so production must stay closed until the provider/format can prove it.
@@ -121,11 +129,13 @@ export class AdsService {
     contentSlug: string | null,
     _legacyExamType: ExamType | null,
     countryCode: string | null,
+    blogList?: AdBlogListContext,
+    question?: AdQuestionContext,
   ) {
-    if (placementId !== AdPlacementId.KNOWLEDGE_ARTICLE_END) {
+    if (placementId !== AdPlacementId.KNOWLEDGE_ARTICLE_END && placementId !== AdPlacementId.KNOWLEDGE_INDEX && placementId !== AdPlacementId.FORUM_QUESTION_END) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    const contentContext = await this.resolveContentContext(placementId, contentSlug);
+    const contentContext = await this.resolveContentContext(placementId, contentSlug, blogList, question);
     return this.placement(placementId, {
       userId: null,
       examType: null,
@@ -141,17 +151,21 @@ export class AdsService {
     roles: string[],
     contentSlug: string | null,
     countryCode: string | null,
+    blogList?: AdBlogListContext,
+    question?: AdQuestionContext,
   ) {
     const [profile, contentContext] = await Promise.all([
       this.users.getDiscoveryProfile(userId),
-      this.resolveContentContext(placementId, contentSlug),
+      this.resolveContentContext(placementId, contentSlug, blogList, question),
     ]);
     return this.placement(placementId, {
       userId,
       roles,
       examType: profile.examType as ExamType | null,
       contentExamType: contentContext.examType,
-      contextVerified: contentContext.verified,
+      contextVerified: (placementId === AdPlacementId.NOTEBOOKS_OVERVIEW || placementId === AdPlacementId.VISION_OVERVIEW)
+        ? Object.values(ExamType).includes(profile.examType as ExamType)
+        : contentContext.verified,
       countryCode,
     });
   }
@@ -159,8 +173,12 @@ export class AdsService {
   private async resolveContentContext(
     placementId: AdPlacementId,
     contentSlug: string | null,
+    blogList?: AdBlogListContext,
+    question?: AdQuestionContext,
   ): Promise<{ verified: boolean; examType: ExamType | null }> {
-    if (AD_PLACEMENTS[placementId].format !== "DISPLAY") {
+    if (placementId === AdPlacementId.FORUM_QUESTION_END) return this.questionReviews.resolve(question);
+    if (placementId === AdPlacementId.KNOWLEDGE_INDEX) return resolveBlogAdContext(this.content, blogList);
+    if (placementId !== AdPlacementId.KNOWLEDGE_ARTICLE_END) {
       return { verified: true, examType: null };
     }
     if (!contentSlug) return { verified: false, examType: null };

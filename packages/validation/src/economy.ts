@@ -21,9 +21,22 @@ export const economyAdjustSchema = z.object({
 });
 export type EconomyAdjust = z.infer<typeof economyAdjustSchema>;
 
-/** Redeem an invite code (post-signup). Code format is opaque; server validates existence. */
+/**
+ * Friend invite code input → canonical form: trimmed, uppercased, legacy `MENTOR-` mapped to `PUHU-`.
+ * Shared FE+BE so the web field, the invite link and the redeem endpoint all agree on one shape.
+ */
+export const normalizeInviteCode = (raw: string): string =>
+  raw.trim().toUpperCase().replace(/^MENTOR-/, "PUHU-");
+
+/** Normalized friend invite code. New codes are `PUHU-` + 8 chars; migrated legacy ones carry 12. */
+export const inviteCodeSchema = z
+  .string()
+  .transform(normalizeInviteCode)
+  .pipe(z.string().regex(/^PUHU-[0-9A-Z]{8,12}$/));
+
+/** Redeem an invite code (post-signup). The output code is already normalized; server validates existence. */
 export const redeemInviteSchema = z.object({
-  code: z.string().trim().min(4).max(64),
+  code: inviteCodeSchema,
 });
 export type RedeemInvite = z.infer<typeof redeemInviteSchema>;
 

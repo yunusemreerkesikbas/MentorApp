@@ -86,6 +86,26 @@ export class BuddyRepository {
     });
   }
 
+  /**
+   * Whether the user is on either side of any ACTIVE or PENDING row. Unlike the profile-facing
+   * lookups this does not hide banned counterparts: a hidden row still occupies the user's slot.
+   */
+  async hasActiveOrPending(userId: string): Promise<boolean> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ id: buddyPairs.id })
+        .from(buddyPairs)
+        .where(
+          and(
+            inArray(buddyPairs.status, ["ACTIVE", "PENDING"]),
+            or(eq(buddyPairs.requesterId, userId), eq(buddyPairs.addresseeId, userId)),
+          ),
+        )
+        .limit(1);
+      return rows.length > 0;
+    });
+  }
+
   /** A PENDING row by id where `userId` is a party (requester or addressee). */
   async findPendingById(id: string, userId: string): Promise<BuddyPairRow | undefined> {
     return withServiceContext(this.db, async (tx) => {
@@ -111,6 +131,21 @@ export class BuddyRepository {
         .values({ requesterId, addresseeId, status: "PENDING" })
         .returning();
       return rows[0]!;
+    });
+  }
+
+  /**
+   * Insert a PENDING request unless any row already exists between the two (the pair index is
+   * direction-agnostic). Undefined on conflict, so a racing request never surfaces as a 500.
+   */
+  async tryInsertPending(requesterId: string, addresseeId: string): Promise<BuddyPairRow | undefined> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .insert(buddyPairs)
+        .values({ requesterId, addresseeId, status: "PENDING" })
+        .onConflictDoNothing()
+        .returning();
+      return rows[0];
     });
   }
 

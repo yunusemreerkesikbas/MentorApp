@@ -12,6 +12,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useCloudTransition } from "@/lib/cloud-transition";
 import { consumePendingInvite } from "@/lib/pending-invite";
 import { onboardingDestination, type OnboardingAudience } from "../onboarding-flow";
+import { useRedeemPendingReferral } from "../use-redeem-pending-referral";
 import { ReadyWindow } from "./ready-window";
 
 const EXAM_ICON = { KPSS: Landmark, YKS: GraduationCap, LGS: Backpack } as const;
@@ -43,6 +44,7 @@ export function CompleteStep({
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const { startCloudTransition } = useCloudTransition();
+  const redeemPendingReferral = useRedeemPendingReferral();
   const leaving = useRef(false);
   const [titleDone, setTitleDone] = useState(false);
   const title = audience === "coach" ? t("title_coach") : t("title");
@@ -53,9 +55,8 @@ export function CompleteStep({
     if (leaving.current) return;
     leaving.current = true;
     onFinish();
-    try {
-
-    } catch {}
+    // A friend's invite code remembered by /davet: redeemed here, without holding the door.
+    redeemPendingReferral(audience);
     const destination = onboardingDestination(consumePendingInvite(), audience);
     startCloudTransition(() => {
       // @ts-expect-error validated internal destination may be transported as a string.

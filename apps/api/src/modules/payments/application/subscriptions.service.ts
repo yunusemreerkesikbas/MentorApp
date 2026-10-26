@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   COACH_SEAT_PLAN_ID,
+  PromotionRuleType,
   SUBSCRIPTION_PROVIDER_SPONSOR,
   SubscriptionStatus,
   type CheckoutSession,
@@ -13,6 +14,7 @@ import {
   type PromotionIneligibleReason,
   type PromotionOfferView,
   type PromotionOffersView,
+  type PromotionSummary,
   type SubscriptionDto,
   type SubscriptionView,
 } from "@mentor/types";
@@ -55,8 +57,10 @@ import {
   type ResolvedOffer,
 } from "../../promotions/application/promotions.service";
 import { StreakService } from "../../coaching/application/streak.service";
+import { UsersService } from "../../identity/application/users.service";
 import { computeEntitlement, EntitlementService, hasLostAccess } from "./entitlement.service";
 import { FeaturePolicyService } from "./feature-policy.service";
+import { InviteSignalRegistry } from "./invite-signal.registry";
 import { PhoneTrialService } from "./phone-trial.service";
 import { CheckoutService } from "./checkout.service";
 
@@ -74,9 +78,22 @@ const PROMOTION_ERROR_BY_REASON: Partial<Record<PromotionIneligibleReason, Error
   NOT_FOUND: ErrorCode.PROMOTION_NOT_FOUND,
   EXPIRED: ErrorCode.PROMOTION_EXPIRED,
   EXHAUSTED: ErrorCode.PROMOTION_EXHAUSTED,
+  // INVITED's phone conditions: the generic "not eligible", the reason travels in `details`.
+  PHONE_REQUIRED: ErrorCode.PROMOTION_NOT_ELIGIBLE,
+  PHONE_USED: ErrorCode.PROMOTION_NOT_ELIGIBLE,
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Whether this open subscription makes checkout answer PAYMENT_ALREADY_SUBSCRIBED. An unpaid
+ * INCOMPLETE checkout is resumed or replaced and a coach-sponsored seat is retired by the user's own
+ * purchase, so neither blocks. One definition for checkout AND for every surface that advertises a
+ * discount, so none of them can promise a purchase checkout then refuses.
+ */
+function blocksCheckout(open: SubscriptionRow | undefined): boolean {
+  return !!open && open.status !== SubscriptionStatus.INCOMPLETE && open.provider !== SUBSCRIPTION_PROVIDER_SPONSOR;
+}
 
 /** A domain event to publish after the webhook transaction commits. */
 interface DomainEmit {
@@ -173,6 +190,8 @@ export class SubscriptionsService {
     private readonly rewardEvents: PaymentRewardEventsService,
     private readonly phoneTrials: PhoneTrialService,
     private readonly checkoutService: CheckoutService,
+    private readonly users: UsersService,
+    private readonly inviteSignals: InviteSignalRegistry,
   ) {}
 
   async listPlans(): Promise<PlanDto[]> {
@@ -409,12 +428,23 @@ export class SubscriptionsService {
    * Start checkout (§7): one open subscription per user; trial only ONCE per user —
    * a returning (expired) subscriber re-subscribes without a trial.
    */
-  /** Build the signals promotion rules read. Every one is payments- or identity-owned. */
+  /**
+   * Build the signals promotion rules read. Payments- and identity-owned, plus economy's invite
+   * signal through the registry (economy imports payments, never the other way round).
+   *
+   * Advisory, lock-free reads — they price the paywall and seed checkout. The phone that actually
+   * keys INVITED's once-per-phone quota is re-read under the account lock inside the reservation.
+   */
   private async promotionContext(
     user: CheckoutUser,
     hadAnySubscription: boolean,
     latest: SubscriptionRow | undefined,
   ): Promise<PromotionUserContext> {
+    const [invitedAt, hasPaid, phoneFingerprint] = await Promise.all([
+      this.inviteSignals.invitedAt(user.id),
+      this.eventsRepo.hasPositiveCharge(user.id),
+      this.users.getVerifiedPhoneFingerprint(user.id),
+    ]);
     return {
       userId: user.id,
       orgId: user.orgId ?? null,
@@ -424,6 +454,9 @@ export class SubscriptionsService {
       // so a subscription that simply lapsed still reads ACTIVE and the raw status would miss
       // exactly the users WIN_BACK exists for. `hasRunOut` is the same rule the sweeper uses.
       lostPremiumAccess: hasLostAccess(latest ?? null, new Date()),
+      invitedAt,
+      hasPaid,
+      phoneFingerprint,
     };
   }
 
@@ -515,6 +548,10 @@ export class SubscriptionsService {
         userCreatedAt: latest.createdAt,
         hadAnySubscription: true,
         lostPremiumAccess: true,
+        // INVITED is for people who never paid; a lapsed subscriber is out, so skip its lookups.
+        invitedAt: null,
+        hasPaid: true,
+        phoneFingerprint: null,
       },
       plans: sellable.map((row) => ({ id: row.id, name: row.name, priceMinor: row.priceMinor })),
       activeDates: this.activeDatesSupplier(userId),
@@ -526,6 +563,73 @@ export class SubscriptionsService {
       if (!best || offer.discountMinor > best.discountMinor) best = offer;
     }
     return best ? toOfferView(best) : null;
+  }
+
+  /**
+   * The friend discount this user would get at web checkout right now, or null.
+   *
+   * Narrow seam for the invite card, which must show a discount only when checkout honours it. Null
+   * for a user checkout refuses (an open subscription, a trial included), while the web sells no plan,
+   * and whenever the INVITED rule is not met (never redeemed, already paid, no verified phone, the
+   * phone already took it, no live promotion). Only an offer whose winning promotion IS an INVITED one
+   * counts: a bigger unrelated discount on the same plan wins at checkout and is not the friend gift.
+   */
+  async findInviteOffer(userId: string): Promise<PromotionOfferView | null> {
+    const [planRows, open, hadAny, latest, channelOf, me] = await Promise.all([
+      this.plansRepo.findActive(),
+      this.subsRepo.findOpenForUser(userId),
+      this.subsRepo.hasAnyForUser(userId),
+      this.subsRepo.findLatestForUser(userId),
+      this.purchaseChannels(),
+      this.users.getMe(userId),
+    ]);
+    if (blocksCheckout(open)) return null;
+    // Same rule as resolveOffers: no card may advertise a discount the web cannot honour.
+    const sellable = planRows.filter((row) => channelOf(row).purchaseEnabled);
+    if (sellable.length === 0) return null;
+
+    const resolved = await this.promotions.resolveOffers({
+      // The full checkout context, not a shortcut: INVITED competes with every other automatic
+      // promotion for the same plan, so the other rules must read the user's real signals too.
+      context: await this.promotionContext(
+        { id: userId, email: me.email, createdAt: new Date(me.createdAt), orgId: me.organizationId },
+        hadAny,
+        latest,
+      ),
+      plans: sellable.map((row) => ({ id: row.id, name: row.name, priceMinor: row.priceMinor })),
+      activeDates: this.activeDatesSupplier(userId),
+    });
+
+    let best: ResolvedOffer | null = null;
+    for (const offer of Object.values(resolved.offers)) {
+      if (offer.ruleType !== PromotionRuleType.INVITED || offer.discountMinor <= 0) continue;
+      if (!best || offer.discountMinor > best.discountMinor) best = offer;
+    }
+    return best ? toOfferView(best) : null;
+  }
+
+  /**
+   * The live INVITED promotion a friend could get once they verify their phone, or null. No user
+   * context: it names what the rule offers, not whether this person qualifies. Null unless a live,
+   * automatic INVITED promotion discounts a plan the web can sell (the same sellable filter as
+   * {@link resolveOffers}), so a surface never promises a discount no web checkout can give.
+   */
+  async previewInviteOffer(): Promise<PromotionSummary | null> {
+    const [planRows, channelOf] = await Promise.all([this.plansRepo.findActive(), this.purchaseChannels()]);
+    const sellable = planRows.filter((row) => channelOf(row).purchaseEnabled);
+    if (sellable.length === 0) return null;
+    return this.promotions.previewByRule(
+      PromotionRuleType.INVITED,
+      sellable.map((row) => ({ id: row.id, name: row.name, priceMinor: row.priceMinor })),
+    );
+  }
+
+  /**
+   * Whether the user holds an open subscription that makes checkout answer PAYMENT_ALREADY_SUBSCRIBED.
+   * For surfaces that must not advertise a purchase checkout would then refuse.
+   */
+  async hasCheckoutBlockingSubscription(userId: string): Promise<boolean> {
+    return blocksCheckout(await this.subsRepo.findOpenForUser(userId));
   }
 
   async checkout(
@@ -553,7 +657,7 @@ export class SubscriptionsService {
     const resumed = await this.checkoutService.resume(user.id, plan, code, useTrial);
     if (resumed) return resumed;
     const open = await this.subsRepo.findOpenForUser(user.id);
-    if (open && open.status !== SubscriptionStatus.INCOMPLETE && open.provider !== SUBSCRIPTION_PROVIDER_SPONSOR) {
+    if (blocksCheckout(open)) {
       throw new DomainError(ErrorCode.PAYMENT_ALREADY_SUBSCRIBED, HttpStatus.CONFLICT);
     }
     const hadAny = await this.subsRepo.hasAnyForUser(user.id);

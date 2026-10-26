@@ -21,6 +21,13 @@ const AD_CONFIG_OVERRIDES = {
   "ads.rewarded.enabled": true,
   "ads.placement.knowledge_article_end.enabled": true,
   "ads.placement.dashboard_rewarded_coin.enabled": true,
+  "ads.placement.knowledge_article_end.ad_unit_path": "",
+  "ads.placement.knowledge_index.enabled": true,
+  "ads.placement.knowledge_index.ad_unit_path": "/123/blog-index",
+  "ads.placement.notebooks_overview.enabled": true,
+  "ads.placement.notebooks_overview.ad_unit_path": "/123/notebooks",
+  "ads.placement.vision_overview.enabled": true,
+  "ads.placement.vision_overview.ad_unit_path": "/123/vision",
   "ads.rewarded.web.rollout_percent": 100,
   "ads.rewarded.web.cooldown_seconds": 0,
 } as const;
@@ -73,6 +80,8 @@ describe("ads stabilization (e2e)", () => {
   };
 
   beforeAll(async () => {
+    // The developer's local preview must not override integration-test rollout decisions.
+    process.env.ADS_LOCAL_TEST_ENABLED = "false";
     process.env.DATABASE_URL =
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     process.env.CRON_SECRET = CRON_SECRET;
@@ -108,9 +117,9 @@ describe("ads stabilization (e2e)", () => {
 
     await serviceQuery(
       `insert into info_articles
-       (slug,title,body,family,category,source,source_url,verified_at,verified_by,published_at)
+       (slug,title,body,family,category,source,source_url,verified_at,verified_by,published_at,meta_description)
        values ($1,'LGS reklam güvenliği','Doğrulanmış içerik','LGS','APPLICATION','MEB',
-               'https://www.meb.gov.tr',now(),'e2e-editor',now())`,
+               'https://www.meb.gov.tr',now(),'e2e-editor',now(),'An editorial exam guide for this published article.')`,
       [ARTICLE_SLUG],
     );
     await serviceQuery(`insert into info_articles (slug,title,body,family,category,source,source_url,verified_at,verified_by,published_at)
@@ -161,6 +170,47 @@ describe("ads stabilization (e2e)", () => {
       reason: "CONTEXT_UNVERIFIED",
       adUnitPath: null,
     });
+  });
+
+  it.each(["notebooks", "vision"])("requires authentication and a verified profile for %s; registry changes apply without restart", async (name) => {
+    const placementId = `${name}.overview`;
+    const prefix = `ads.placement.${name}_overview`;
+    const registry = app.get(ConfigRegistryService);
+    const placement = () => request(app.getHttpServer())
+      .get(`/v1/ads/placements/${placementId}`)
+      .set({ Authorization: `Bearer ${firstToken}`, "cf-ipcountry": "TR" });
+    expect((await request(app.getHttpServer()).get(`/v1/ads/placements/${placementId}`)).status).toBe(401);
+    expect((await request(app.getHttpServer()).get(`/v1/ads/public/placements/${placementId}`)).status).toBe(404);
+    expect((await placement()).body).toMatchObject({ enabled: false, reason: "CONTEXT_UNVERIFIED", adUnitPath: null });
+    try {
+      await serviceQuery("update users set exam_type='YKS' where id=$1", [firstUserId]);
+      expect((await placement()).body).toMatchObject({ enabled: true, audienceTreatment: "TEEN" });
+      await expect(registry.set(firstUserId, `${prefix}.ad_unit_path`, "<script>bad</script>"))
+        .rejects.toMatchObject({ code: "ADMIN_CONFIG_INVALID_VALUE" });
+      await registry.set(firstUserId, `${prefix}.ad_unit_path`, "/456/updated");
+      expect((await placement()).body).toMatchObject({ enabled: true, adUnitPath: "/456/updated" });
+      await registry.set(firstUserId, `${prefix}.enabled`, false);
+      expect((await placement()).body).toMatchObject({ enabled: false, reason: "PLACEMENT_DISABLED" });
+    } finally {
+      await serviceQuery("update users set exam_type=null where id=$1", [firstUserId]);
+      await registry.set(firstUserId, `${prefix}.enabled`, true);
+      await registry.set(firstUserId, `${prefix}.ad_unit_path`, `/123/${name}`);
+    }
+  });
+
+  it("verifies public blog index content and rejects missing/empty/invalid list context", async () => {
+    const path = "/v1/ads/public/placements/knowledge.index";
+    const published = await request(app.getHttpServer())
+      .get(`${path}?family=LGS&category=APPLICATION&page=1&examType=KPSS`)
+      .set("cf-ipcountry", "TR");
+    expect(published.status).toBe(200);
+    expect(published.body).toMatchObject({ enabled: true, audienceTreatment: "CHILD", adUnitPath: "/123/blog-index" });
+    for (const suffix of ["", "?family=LGS&page=999999"]) {
+      const response = await request(app.getHttpServer()).get(`${path}${suffix}`).set("cf-ipcountry", "TR");
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ enabled: false, reason: "CONTEXT_UNVERIFIED", adUnitPath: null });
+    }
+    expect((await request(app.getHttpServer()).get(`${path}?family=INVALID`)).status).toBe(400);
   });
 
   it.each([null, "US", "XX"])("denies display outside Turkey for anonymous and Free visitors (%s)", async (country) => {

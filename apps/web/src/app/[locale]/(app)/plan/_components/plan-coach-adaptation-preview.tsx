@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, ChevronDown, Sparkles } from "lucide-react";
+import { BadgeCheck, Check, ChevronDown, Sparkles } from "lucide-react";
 import { forwardRef, useImperativeHandle, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { CoachPlanAdaptationDto } from "@mentor/types";
@@ -92,8 +92,8 @@ export const PlanCoachAdaptationPreview = forwardRef<
         {preview.message}
       </p>
       {evidence.length > 0 ? (
-        <details className="group rounded-[var(--radius-card)] bg-[var(--color-surface-container)] text-sm text-[var(--color-secondary-text)]">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] [&::-webkit-details-marker]:hidden">
+        <details className="group text-sm text-[var(--color-secondary-text)]">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] [&::-webkit-details-marker]:hidden">
             <BadgeCheck
               className="size-4 shrink-0 text-[var(--color-accent)]"
               aria-hidden
@@ -107,7 +107,7 @@ export const PlanCoachAdaptationPreview = forwardRef<
               aria-hidden
             />
           </summary>
-          <div className="px-3 pb-3">
+          <div className="pb-1 pl-6">
             <CoachEvidenceList evidence={evidence} />
           </div>
         </details>
@@ -140,17 +140,24 @@ export const PlanCoachAdaptationPreview = forwardRef<
             {dayRows.map((row) => (
               <label
                 key={row.key}
-                className="flex min-h-11 cursor-pointer items-start gap-3 rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-3 py-2.5"
-                style={{ borderColor: "var(--color-progress-track)" }}
+                // The card's edge follows the box, so a skipped change reads at a glance.
+                className="flex min-h-11 cursor-pointer items-start gap-3 rounded-[var(--radius-card)] border border-[var(--play-line)] bg-[var(--color-surface-translucent)] px-3 py-2.5 transition-colors duration-150 has-[:checked]:border-[var(--play-cta)] motion-reduce:transition-none"
               >
-                <input
-                  type="checkbox"
-                  checked={selected.has(row.key)}
-                  onChange={() => toggle(row.key)}
-                  className="mt-0.5 size-5 shrink-0 accent-[var(--color-btn)]"
-                />
+                {/* Same box as the paywall consent, in the CTA's blue rather than the native black. */}
+                <span className="relative mt-0.5 grid size-5 shrink-0 place-items-center">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(row.key)}
+                    onChange={() => toggle(row.key)}
+                    className="peer size-5 cursor-pointer appearance-none rounded-md border-2 border-[var(--color-secondary)] transition-colors duration-150 checked:border-[var(--play-cta-edge)] checked:bg-[var(--play-cta)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 motion-reduce:transition-none"
+                  />
+                  <Check
+                    className="pointer-events-none absolute size-3.5 text-[var(--play-cta-ink)] opacity-0 peer-checked:opacity-100"
+                    strokeWidth={3}
+                    aria-hidden
+                  />
+                </span>
                 <span className="min-w-0">
-                  
                   <span
                     className="block text-sm font-semibold"
                     style={{ color: "var(--color-body)" }}

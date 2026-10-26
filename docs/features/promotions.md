@@ -131,6 +131,54 @@ Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyur
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-26 — INVITED fails closed on a missing fingerprint; coaches get no invite signal.**
+  `reserve`'s `assertPhoneFree`, `disqualify`'s phone-quota check and `evaluateRule`'s INVITED case
+  now test the fingerprint as falsy instead of `=== null` / `!== null`, so a caller that omits it
+  (`undefined`) is `PHONE_REQUIRED` at checkout and RULE_UNMET at resolve, never a phone-free
+  discount. New unit tests: reserve with `phoneFingerprint: undefined` on an INVITED row → 409
+  `PHONE_REQUIRED`; resolve with an undefined fingerprint → list price, no phone count; and "judged by
+  the promotion row, not the offer" (offer resolved as ANYONE, row now INVITED → phone still required).
+  Economy's invite signal (`InviteService.onModuleInit` → `InviteSignalRegistry`) answers null for a
+  user who has the COACH role (one `users` read, only when a redemption exists), so a redeem made
+  before becoming a coach never turns into an INVITED discount.
+  Related: `promotions.service.ts`, `promotion-rule.ts`, `invite.service.ts`,
+  [economy.md](./economy.md) 2026-10-26.
+
+- **2026-10-25 — `previewByRule`: what a rule would give, without a user.** `PromotionsService.previewByRule(ruleType, plans, locale?)`
+  returns the summary of the live, code-less promotion of that rule with the biggest discount over the
+  given (web-sellable) plans, or null. It checks promotions on, the date window, the global cap and a
+  non-zero clamped discount, and deliberately skips rule evaluation and the per-user / per-phone
+  quotas, because there is no user. Only for surfaces that explain a rule before the viewer qualifies
+  (the invite landing, "verify your phone to get it"); anything that charges still goes through
+  `resolveOffers` + `reserve`. Gotcha: a coded promotion never previews (the code has to be typed),
+  and `INVITED`'s `withinDays` is not evaluated, so a preview can outlive one user's window.
+  Related: `promotions.service.ts`, `subscriptions.service.ts` `previewInviteOffer`,
+  [payments.md](./payments.md) 2026-10-25.
+
+- **2026-10-25 — `INVITED` rule: the friend-invite discount, once per verified phone.** New rule
+  type `INVITED`, `ruleParams: { withinDays }` (days since the invite redeem, form default 30,
+  rule fallback 30). It matches a user who redeemed a friend's code inside the window, never paid
+  real money (`hasPaid`: a succeeded charge above zero, so an uncharged trial does not count) and
+  has a verified phone. Phone-once is a quota, not part of the rule: `promotion_redemptions` gains
+  `phone_fingerprint` (identity's keyed hash, written only on INVITED rows) and
+  `countActiveForPhone` (status ≠ `VOIDED`, so an abandoned checkout frees the phone). The
+  advisory resolve answers `PHONE_USED`; `reserve` re-checks under the existing promotion lock with
+  the phone read under the account lock inside the checkout transaction, and refuses with
+  `PROMOTION_NOT_ELIGIBLE` + `{ reason: "PHONE_REQUIRED" | "PHONE_USED" }` (409). `ResolvedOffer`
+  now carries `ruleType`. Migration `0130_promotions_invited_rule` (CHECK + column + partial index
+  `promotion_redemptions_promotion_phone_idx`).
+  Usage: FINANCE creates a code-less `Davetle gelen` campaign in admin `/promotions` (proposal: 30%,
+  `appliesToPeriods: 1`), with `promotions.enabled` on and web sales open. Nothing else to wire.
+  Gotchas: the signals (`invitedAt`, `hasPaid`, `phoneFingerprint`) are built by payments
+  (`promotionContext`): three extra indexed reads per offers/checkout call. `invitedAt` comes from
+  economy through `InviteSignalRegistry` (see [payments.md](./payments.md)); economy off or not
+  loaded → null → INVITED matches nobody. The price is frozen at checkout, so a code redeemed during
+  a trial does not discount that subscription. A code-less INVITED campaign with `planIds: null` also
+  covers sellable coach plans, like every other rule; scope it with `planIds` if that matters.
+  Related: `promotion-rule.ts`, `promotions.service.ts`, `promotion-redemption.repository.ts`,
+  `packages/{types,validation}/src/promotions.ts`, `apps/admin/src/app/(general)/promotions/**`,
+  `apps/api/test/economy-invite.e2e-spec.ts`.
+
 - **2026-09-24 — One automatic offer request per panel load.** The panel passes its existing
   `PromotionOffersView` to `PromotionDialog` instead of fetching a second copy. The dialog still
   checks the shared entitlement and whether another modal is open before showing a campaign.

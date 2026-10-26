@@ -43,6 +43,16 @@ export class FollowService {
     }
   }
 
+  /**
+   * Both directions by id, idempotent, and silent: no USER_FOLLOWED, so neither side gets a "new follower"
+   * notification. Used when an invite redeem links two people who cannot become study buddies.
+   */
+  async followEachOtherSilently(a: string, b: string): Promise<void> {
+    if (a === b) return;
+    await this.follows.follow(a, b);
+    await this.follows.follow(b, a);
+  }
+
   /** Unfollow a user by username. No-op if the target is gone or wasn't followed. */
   async unfollow(followerId: string, username: string): Promise<void> {
     const target = await this.usersRepo.findByUsernameService(username);

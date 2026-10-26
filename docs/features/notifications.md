@@ -115,13 +115,23 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-25 · Invite joined notifications (Puhu).** New `InviteEventsListener`
+  (`listeners/invite-events.listener.ts`) subscribes to `economy.invite.redeemed` and tells the inviter who
+  joined: `createFromTemplate(inviter, "FORUM", INVITE_JOINED, "/settings", { args: { name },
+  dedupeKey: "invite-joined:<redemptionId>" })`. When a study-buddy request went out with the redeem
+  (`buddyRequested: true`) it stays quiet, because `IdentityEventsListener.onBuddyRequested` now picks
+  `BUDDY_REQUESTED_VIA_INVITE` for `BuddyEvent.viaInvite` and links to `/study-session`: the inviter gets
+  exactly one notification either way. New copy keys `inviteJoined` and `buddyRequestedViaInvite`
+  (`notifications.inApp.*`, tr + en, `register: puhu`). Gotcha: the via-invite buddy row has no dedupe key
+  (the buddy event carries no redemption id); single delivery relies on the event being emitted only by the
+  winning redeem insert. Related: `notification-copy.ts`, `identity-events.listener.ts`,
+  [economy.md](./economy.md) 2026-10-25, [identity.md](./identity.md) 2026-10-25.
+
 ### 2026-10-24 · Phone-optional coach delivery
 
 - Coach risk digests, due-followup emails, student-note and task-feedback notifications follow `mentorship.phone_verification_required`. The final identity contact snapshot retains ACTIVE status, verified email and erasure-fence checks; requiring a phone remains the default for callers that do not explicitly relax it.
 - Usage: ordinary coach notifications continue while SMS onboarding is paused and the mentorship phone requirement is false. Sponsorship keeps its independent actual-phone checks.
 - Gotchas: this does not relax email preferences, active links, seated access or delivery deduplication. Related: `users.service.ts`, mentorship query/link/feedback paths, `send-email.handler.ts` and regression tests.
-
-
 
 - **2026-10-13 · Pilot daily reminder email control and measured cost profile.**
   The owner selected in-app/push reminders with Postmark Free's 100-message monthly quota.

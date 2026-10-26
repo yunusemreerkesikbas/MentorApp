@@ -17,7 +17,9 @@ feature logic — each feature's UI is documented in its own feature doc.
 ## Architecture (key decisions)
 
 - **Next.js App Router** — route groups `(app)` (authenticated) and `(auth)` (auth screens), plus
-  public routes (`/`, `/bilgi/[slug]`). All under `src/app/[locale]/` after the i18n restructure
+  public routes (`/`, `/bilgi/[slug]`, the shared-link landings `/masaya-katil` and `/davet/[code]`,
+  which sit outside `(app)` so an anonymous visitor is not bounced to login; see
+  [economy.md](./economy.md) 2026-10-25 for the invite landing). All under `src/app/[locale]/` after the i18n restructure
   (see [i18n.md](./i18n.md)).
 - **DESIGN.md tokens, no magic numbers** — UI values come from `@mentor/ui` tokens (`Chip`, `Card`,
   `SectionHeading`, `Button`, `Field`, `SubmitButton`, `FormError`). Nuton thumb pastels for feature
@@ -1303,6 +1305,19 @@ eklendi.
   their text below `sm` (`max-sm:sr-only`) so "Görünüm" is not truncated on a 375 px phone. The
   language pill moves on the tap (`pendingLocale`) while the route change lands; a second tap
   during the transition is ignored instead of disabling the buttons.
+- **2026-10-24 — Settings drops the icon credits link.** At the owner's request the legal nav lists
+  only the six legal texts (no trailing `·` after the last); `legal.footer_icon_credits` is gone.
+  `public/icon-credits.txt` is still served (proxy matcher unchanged) but nothing links to it, so
+  the Solar CC BY 4.0 credit is no longer visible in the app; a visible credit must come back if
+  that is revisited (DESIGN.md §icons notes it).
+- **2026-10-25 — No-photo avatars are a silhouette everywhere.** `UserAvatar`'s fallback is no
+  longer coloured initials but an inline SVG head + shoulders (two circles in a 100×100 viewBox,
+  clipped by the round frame) on `--color-surface-container`, figure in `--color-secondary` 38%
+  mixed into it, so it follows dark mode and costs no request. `StudentAvatar` (coach surface) now
+  always delegates to `UserAvatar`. Left as they were: the coach's own identity marks
+  (`CoachIdentity`, `my-coach-card`, the round path's node initials), which are coach-ink badges
+  (DESIGN.md §2.5), not user avatars. `name` stays on the props for callers. E2e: the broken-photo
+  check in `community-member-profile.spec.ts` now asserts the `svg` instead of "ÇS".
 - **2026-10-15 — Coach settings: no student rows left.** The Kazanımlar card (Bakiyen, Görevler,
   Davet et) is hidden for a coach in `profile-shell.tsx`. `GET /v1/economy/quests` has no role
   filter and hands a coach the whole student catalog, whose actions push to `/study-session` and

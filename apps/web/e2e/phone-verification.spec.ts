@@ -5,7 +5,7 @@ const user: AuthUser = {
   id: "33333333-3333-4333-8333-333333333333", email: "phone@test.local",
   displayName: "Phone Test", username: "phone_test", avatarUrl: null, bio: null, website: null,
   roles: ["STUDENT"], organizationId: null, examType: "KPSS", examVariant: null,
-  examDate: null, dailyFocusGoalMinutes: null, emailVerified: true, createdAt: "2026-01-01T00:00:00.000Z",
+  examDate: null, dailyFocusGoalMinutes: null, careerGroup: null, emailVerified: true, createdAt: "2026-01-01T00:00:00.000Z",
 };
 const challengeId = "44444444-4444-4444-8444-444444444444";
 const apiUrl = "http://localhost:3001/v1";
@@ -217,7 +217,7 @@ test("paid checkout after a used trial never asks for SMS and sends useTrial fal
   const api = await mockApi(page, { trialUsed: true });
   await page.goto("/abonelik");
   await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Ücretli aboneliği başlat" }).click();
+  await page.getByRole("button", { name: /ile Premium'a geç/ }).click();
   await expect.poll(() => api.checkout).toEqual({ planId: "premium-monthly", useTrial: false });
   expect(api.phoneReads).toBe(0);
   expect(api.sent).toBe(0);
@@ -235,14 +235,14 @@ test("trial waits for SMS and the refreshed server eligibility before checkout",
   await expect(page.getByText("7 gün ücretsiz deneme aboneliğine otomatik eklenir.")).toBeVisible();
   await expect(page.getByText("Deneme başladığında telefonunun denemede kullanıldığına dair kayıt 12 ay saklanır.", { exact: false })).toBeVisible();
   await page.getByRole("checkbox").check();
-  await expect(page.getByRole("button", { name: "Denemeyi başlat" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /gün ücretsiz başla/ })).toBeDisabled();
   await sendCode(page);
   await page.getByLabel("SMS doğrulama kodu").fill("123456");
   await page.getByRole("button", { name: "Telefonu doğrula" }).click();
   await expect(page.getByRole("checkbox")).not.toBeChecked();
   await page.getByRole("checkbox").check();
-  await expect(page.getByRole("button", { name: "Denemeyi başlat" })).toBeEnabled();
-  await page.getByRole("button", { name: "Denemeyi başlat" }).click();
+  await expect(page.getByRole("button", { name: /gün ücretsiz başla/ })).toBeEnabled();
+  await page.getByRole("button", { name: /gün ücretsiz başla/ }).click();
   await expect.poll(() => api.checkout).toEqual({ planId: "premium-monthly", useTrial: true });
   expect(api.sent).toBe(1);
 });
@@ -298,7 +298,7 @@ test("paywall trial phone verification controls remain reachable within the dial
   // Refreshed eligibility removes the verification card once the trial can start.
   await expect(code).toHaveCount(0);
   await page.getByRole("checkbox").check();
-  const start = page.getByRole("button", { name: "Denemeyi başlat" });
+  const start = page.getByRole("button", { name: /gün ücretsiz başla/ });
   await expect(start).toBeEnabled();
   await expect(start).toBeInViewport({ ratio: 1 });
   expect(api.sent).toBe(1);
@@ -316,7 +316,7 @@ for (const surface of ["subscription", "paywall"] as const) {
     const api = await mockApi(page, { pendingTrial: "known" });
     await page.route(pendingCheckoutUrl, (route) => route.fulfill({ contentType: "text/html", body: "<p>Stored hosted checkout</p>" }));
     await openPendingSurface(page);
-    await expect(page.getByRole("button", { name: "Ücretli aboneliği başlat" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /ile Premium'a geç/ })).toHaveCount(0);
     if (surface === "subscription") await expect(page.getByRole("button", { name: "Bekleyen denemeyi iptal et", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Ödemeye devam et" }).click();
     await expect(page).toHaveURL(pendingCheckoutUrl);
@@ -329,7 +329,7 @@ for (const surface of ["subscription", "paywall"] as const) {
     await openPendingSurface(page);
     await expect(page.getByText("Deneme ödemesinin sonucu henüz belli değil.", { exact: false })).toBeVisible();
     await expect(page.getByRole("link", { name: "Destek seçenekleri" })).toHaveAttribute("href", "/ayarlar");
-    for (const action of ["Ödemeye devam et", "Ücretli aboneliği başlat", "Denemeyi başlat", "Aboneliği iptal et", "Bekleyen denemeyi iptal et"]) {
+    for (const action of ["Ödemeye devam et", /ile Premium'a geç/, /gün ücretsiz başla/, "Aboneliği iptal et", "Bekleyen denemeyi iptal et"]) {
       await expect(page.getByRole("button", { name: action, exact: true })).toHaveCount(0);
     }
     expect(api.checkout).toBeNull();
@@ -340,7 +340,7 @@ for (const surface of ["subscription", "paywall"] as const) {
     const api = await mockApi(page, { pendingPaid: "known" });
     await page.route(pendingCheckoutUrl, (route) => route.fulfill({ contentType: "text/html", body: "<p>Stored hosted checkout</p>" }));
     await openPendingSurface(page);
-    await expect(page.getByRole("button", { name: "Ücretli aboneliği başlat" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /ile Premium'a geç/ })).toHaveCount(0);
     if (surface === "subscription") await expect(page.getByRole("button", { name: "Bekleyen ödemeyi iptal et", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Ödemeye devam et" }).click();
     await expect(page).toHaveURL(pendingCheckoutUrl);
@@ -352,7 +352,7 @@ for (const surface of ["subscription", "paywall"] as const) {
     await openPendingSurface(page);
     await expect(page.getByText("Ödemenin sonucu henüz belli değil.", { exact: false })).toBeVisible();
     await expect(page.getByRole("link", { name: "Destek seçenekleri" })).toHaveAttribute("href", "/ayarlar");
-    for (const action of ["Ödemeye devam et", "Ücretli aboneliği başlat", "Denemeyi başlat", "Aboneliği iptal et", "Bekleyen ödemeyi iptal et"]) {
+    for (const action of ["Ödemeye devam et", /ile Premium'a geç/, /gün ücretsiz başla/, "Aboneliği iptal et", "Bekleyen ödemeyi iptal et"]) {
       await expect(page.getByRole("button", { name: action, exact: true })).toHaveCount(0);
     }
     expect(api.checkoutCalls).toBe(0);
@@ -362,9 +362,9 @@ for (const surface of ["subscription", "paywall"] as const) {
     const api = await mockApi(page, { unknownCheckout: true, trialUsed: true });
     await openPendingSurface(page);
     await page.getByRole("checkbox").check();
-    await page.getByRole("button", { name: "Ücretli aboneliği başlat" }).click();
+    await page.getByRole("button", { name: /ile Premium'a geç/ }).click();
     await expect(page.getByText("Ödemenin sonucu henüz belli değil.", { exact: false })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Ücretli aboneliği başlat" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /ile Premium'a geç/ })).toHaveCount(0);
     expect(api.checkoutCalls).toBe(1);
   });
 }

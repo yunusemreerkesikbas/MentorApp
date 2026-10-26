@@ -2,21 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import type { ExamType } from "@mentor/types";
+import { AdPlacementId } from "@mentor/types";
+import type { ContextualAdSlotProps } from "./contextual-ad-slot";
 
 const ContextualAdSlot = dynamic(
   () => import("./contextual-ad-slot").then((module) => module.ContextualAdSlot),
   { loading: () => <div aria-hidden className="my-4 min-h-[250px]" /> },
 );
 
-/** Keep ad policy and Google tag code off the initial article path. */
+/** Keep ad policy and Google tag code off the initial content path. */
 export function DeferredContextualAdSlot({
+  placementId = AdPlacementId.KNOWLEDGE_ARTICLE_END,
   contentSlug,
   examType,
-}: {
-  contentSlug: string;
-  examType: ExamType;
-}) {
+  blogList,
+  question,
+  className = "",
+}: ContextualAdSlotProps & { className?: string }) {
   const boundary = useRef<HTMLDivElement>(null);
   const [nearViewport, setNearViewport] = useState(false);
 
@@ -36,8 +38,12 @@ export function DeferredContextualAdSlot({
   }, []);
 
   return (
-    <div ref={boundary} className={!nearViewport ? "min-h-[250px]" : "min-h-px"}>
-      {nearViewport ? <ContextualAdSlot contentSlug={contentSlug} examType={examType} /> : null}
+    <div
+      ref={boundary}
+      data-ad-placement={placementId}
+      className={`${!nearViewport && placementId === AdPlacementId.KNOWLEDGE_ARTICLE_END ? "min-h-[250px]" : "min-h-px"} ${className}`}
+    >
+      {nearViewport ? <ContextualAdSlot placementId={placementId} contentSlug={contentSlug} examType={examType} blogList={blogList} question={question} /> : null}
     </div>
   );
 }

@@ -7,9 +7,9 @@ import { SunIcon } from "@solar-icons/react/linear/sun";
 import { Card, SlidingTabs } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { getProfileLinks } from "@/lib/profile-links";
-import { useMentorToast } from "@/lib/mentor-toast";
 import { useTheme } from "@/lib/use-theme";
 import { ListRow } from "./account-links-card";
+import { useRecommendShare } from "./use-recommend-share";
 
 const LOCALES = ["tr", "en"] as const;
 const THEMES = [
@@ -22,7 +22,7 @@ export function ApplicationSupportCard() {
   const tLegal = useTranslations("legal");
   const locale = useLocale();
   const router = useRouter();
-  const toast = useMentorToast();
+  const recommend = useRecommendShare();
   const [isPending, startTransition] = useTransition();
   // The pill slides on the tap; the locale itself lands with the route change.
   const [pendingLocale, setPendingLocale] = useState<string | null>(null);
@@ -35,34 +35,6 @@ export function ApplicationSupportCard() {
     startTransition(() => {
       router.replace("/settings", { locale: next });
     });
-  }
-
-  async function handleShare() {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: t("share_title"),
-          text: t("share_text"),
-          url: links.shareUrl,
-        });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(links.shareUrl);
-        toast.success({
-          title: t("share_copied_title"),
-          message: t("share_copied_message"),
-          duration: 3000,
-        });
-      } else {
-        throw new Error("clipboard unavailable");
-      }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      toast.error({
-        title: t("share_error_title"),
-        message: t("share_error_message"),
-        duration: 3000,
-      });
-    }
   }
 
   return (
@@ -111,7 +83,7 @@ export function ApplicationSupportCard() {
         </ListRow>
 
         <ListRow
-          onClick={() => void handleShare()}
+          onClick={() => void recommend()}
           showChevron={false}
         >
           {t("recommend")}

@@ -4,7 +4,7 @@ import { ARTICLE_CATEGORIES, EXAM_FAMILIES, type ArticleCategory } from "@/lib/c
 import { siteUrl } from "@/lib/forum-public";
 import { blogHref } from "./blog-href";
 
-export const BLOG_PAGE_SIZE = 12;
+export { BLOG_PAGE_SIZE } from "@mentor/types";
 
 export interface BlogQuery {
   family: ExamType;

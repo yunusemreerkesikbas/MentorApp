@@ -45,11 +45,11 @@ export function questionUrl(id: string): string {
   })}`;
 }
 
-/** Public (anon) indexable QA question, or null (404 / not indexable). ISR-cached. */
+/** Public QA snapshot. Read fresh so moderation changes are honored on the next visit. */
 export async function fetchPublicQuestion(id: string): Promise<PublicQuestionView | null> {
   const res = await fetch(
     `${publicApiBase()}/v1/forum/public/questions/${encodeURIComponent(id)}`,
-    { next: { revalidate: 3600 } },
+    { cache: "no-store" },
   );
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Public question fetch failed: ${res.status}`);

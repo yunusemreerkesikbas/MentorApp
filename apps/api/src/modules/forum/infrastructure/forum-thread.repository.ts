@@ -583,10 +583,10 @@ export class ForumThreadRepository {
   }
 
   /** A single indexable QA question (or null). */
-  async findPublicQuestion(threadId: string): Promise<ThreadRow | null> {
+  async findPublicQuestion(threadId: string): Promise<(ThreadRow & { examType: string | null; zoneUpdatedAt: Date }) | null> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx
-        .select(getTableColumns(forumThreads))
+        .select({ ...getTableColumns(forumThreads), examType: forumZones.examType, zoneUpdatedAt: forumZones.updatedAt })
         .from(forumThreads)
         .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
         .where(and(eq(forumThreads.id, threadId), this.indexableWhere()))

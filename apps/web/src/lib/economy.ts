@@ -3,6 +3,7 @@ import type {
   EconomyBalance,
   EconomyLedgerEntryView,
   InviteCodeView,
+  InvitePreviewView,
   QuestProgressView,
   RedeemInviteResult,
   StreakRescueView,
@@ -46,8 +47,43 @@ export async function fetchQuests(): Promise<QuestProgressView[]> {
   return (await http<QuestProgressView[]>("/v1/economy/quests")) as QuestProgressView[];
 }
 
+// The viewer's own invite code, remembered for the session so a share can start inside the tap
+// (see `peekInviteCode`). Browser-only module state, like `economy-store`; `EconomySync` clears it
+// whenever the signed-in account changes. The generation drops a response that lands after that.
+let rememberedInviteCode: string | null = null;
+let inviteCodeGeneration = 0;
+
 export async function fetchInviteCode(): Promise<InviteCodeView> {
-  return (await http<InviteCodeView>("/v1/economy/invite")) as InviteCodeView;
+  const generation = inviteCodeGeneration;
+  const view = (await http<InviteCodeView>("/v1/economy/invite")) as InviteCodeView;
+  if (generation === inviteCodeGeneration) rememberedInviteCode = view.code;
+  return view;
+}
+
+/**
+ * The code the last successful `fetchInviteCode()` returned, or null when none was fetched yet
+ * (or the account changed since). Synchronous on purpose: iOS Safari rejects `navigator.share`
+ * once a network round trip separates it from the tap, so the share row needs the code in hand.
+ */
+export function peekInviteCode(): string | null {
+  return rememberedInviteCode;
+}
+
+/** Sign-out or account switch: the remembered code belongs to someone else now. */
+export function forgetInviteCode(): void {
+  rememberedInviteCode = null;
+  inviteCodeGeneration += 1;
+}
+
+/**
+ * What a friend sees before signing up: the inviter's display name and the live friend discount.
+ * Public (no session needed) and throttled; 404 `INVITE_CODE_INVALID` for any unusable code. Only
+ * the `/davet` landing reads it; the viewer's own card has `InviteCodeView.friendDiscount`.
+ */
+export async function fetchInvitePreview(code: string): Promise<InvitePreviewView> {
+  return (await http<InvitePreviewView>(
+    `/v1/economy/invite/preview/${encodeURIComponent(code)}`,
+  )) as InvitePreviewView;
 }
 
 export async function redeemInviteCode(code: string): Promise<RedeemInviteResult> {

@@ -17,6 +17,7 @@ const RULE_LABEL: Record<AdminPromotion["ruleType"], string> = {
     NEW_USER: "Yeni kayıt",
     ACTIVE_DAYS: "Aktif gün",
     WIN_BACK: "Geri kazanım",
+    INVITED: "Davetle gelen",
 };
 
 type PromotionFilter = "all" | "active" | "inactive";

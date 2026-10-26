@@ -16,6 +16,12 @@ export const PromotionRuleType = {
   ACTIVE_DAYS: "ACTIVE_DAYS",
   /** Previously subscribed, now EXPIRED or CANCELED. */
   WIN_BACK: "WIN_BACK",
+  /**
+   * Redeemed a friend's invite code within `withinDays` (days since the redeem), never paid real
+   * money, and has a verified phone. Applied once per phone per promotion, so a second account on
+   * the same number cannot take the friend discount again.
+   */
+  INVITED: "INVITED",
 } as const;
 export type PromotionRuleType =
   (typeof PromotionRuleType)[keyof typeof PromotionRuleType];
@@ -25,6 +31,7 @@ export const PROMOTION_RULE_TYPES = [
   PromotionRuleType.NEW_USER,
   PromotionRuleType.ACTIVE_DAYS,
   PromotionRuleType.WIN_BACK,
+  PromotionRuleType.INVITED,
 ] as const satisfies readonly PromotionRuleType[];
 
 export const PromotionDiscountType = {
@@ -56,7 +63,11 @@ export type PromotionIneligibleReason =
   | "PLAN_MISMATCH"
   | "RULE_UNMET"
   | "USER_LIMIT_REACHED"
-  | "EXHAUSTED";
+  | "EXHAUSTED"
+  /** INVITED only: the discount needs a verified phone and the account has none. */
+  | "PHONE_REQUIRED"
+  /** INVITED only: this phone already carries this promotion on another account. */
+  | "PHONE_USED";
 
 /** The user-facing half of a resolved promotion — enough to render the badge and the legal copy. */
 export interface PromotionSummary {

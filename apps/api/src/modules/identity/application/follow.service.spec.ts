@@ -129,3 +129,23 @@ describe("FollowService.getFollowers", () => {
     await expect(svc.getFollowers("ghost", "viewer")).rejects.toBeInstanceOf(NotFoundError);
   });
 });
+
+describe("FollowService.followEachOtherSilently", () => {
+  it("writes both directions and emits nothing (no new-follower notifications)", async () => {
+    const { svc, follows, users, events } = make();
+
+    await svc.followEachOtherSilently("uA", "uB");
+
+    expect(follows.follow).toHaveBeenCalledTimes(2);
+    expect(follows.follow).toHaveBeenCalledWith("uA", "uB");
+    expect(follows.follow).toHaveBeenCalledWith("uB", "uA");
+    expect(events.emit).not.toHaveBeenCalled();
+    expect(users.findByIdService).not.toHaveBeenCalled();
+  });
+
+  it("is a no-op for the same user on both sides", async () => {
+    const { svc, follows } = make();
+    await svc.followEachOtherSilently("uA", "uA");
+    expect(follows.follow).not.toHaveBeenCalled();
+  });
+});

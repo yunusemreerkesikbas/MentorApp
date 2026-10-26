@@ -5,6 +5,8 @@
  * Never rename an existing value (audit history references it) — add new ones instead.
  */
 export const AuditAction = {
+  AD_QUESTION_APPROVE: "ads.question.approve",
+  AD_QUESTION_REVOKE: "ads.question.revoke",
   STAFF_ASSIGN: "staff.assign",
   STAFF_REVOKE: "staff.revoke",
   ROLE_ASSIGN: "role.assign",

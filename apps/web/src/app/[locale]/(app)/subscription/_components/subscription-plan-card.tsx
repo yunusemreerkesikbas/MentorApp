@@ -73,7 +73,7 @@ export function SubscriptionPlanCard({ plan, view, mode, offer, busy, onCheckout
           </label>
           {consentMissing ? <p id={consentHintId} role="alert" className="text-sm font-semibold text-[var(--color-danger)]">{t("consent_needed")}</p> : null}
           <Button disabled={!view || (includesTrial && !view.trialEligibility.eligible)} busy={busy} onClick={start} className="!min-h-11 !px-4 !py-2 !text-sm">
-            {t(includesTrial ? "start_trial" : "start_paid")}
+            {includesTrial ? t("start_trial", { days: plan.trialDays }) : t("start_paid", { price })}
           </Button>
         </>
       ) : mode === "store" ? null : <Button disabled className="!min-h-11 !px-4 !py-2 !text-sm">{t("coming_soon")}</Button>}

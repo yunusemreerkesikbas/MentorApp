@@ -3,13 +3,16 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import { AdPlacementId } from "@mentor/types";
+import { DeferredContextualAdSlot } from "@/components/ads/deferred-contextual-ad-slot";
 import { Logo } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { fetchPublicQuestion, questionUrl, siteUrl } from "@/lib/forum-public";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { buildQuestionStructuredData } from "@/lib/structured-data";
 
-export const revalidate = 3600;
+export const revalidate = 0;
 
 type PageProps = { params: Promise<{ locale: string; id: string }> };
 
@@ -53,6 +56,7 @@ export default async function PublicQuestionPage({ params }: PageProps) {
 
   const t = await getTranslations("community");
   const tAuth = await getTranslations("article");
+  const tAds = await getTranslations("ads");
   const jsonLd = buildQuestionStructuredData({
     question: q,
     canonical: questionUrl(id),
@@ -125,6 +129,14 @@ export default async function PublicQuestionPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+        {q.contentRevision ? (
+          <NextIntlClientProvider messages={{ ads: { label: tAds("label") } }}>
+            <DeferredContextualAdSlot
+              placementId={AdPlacementId.FORUM_QUESTION_END}
+              question={{ questionId: q.id, contentRevision: q.contentRevision }}
+            />
+          </NextIntlClientProvider>
+        ) : null}
       </main>
     </div>
   );

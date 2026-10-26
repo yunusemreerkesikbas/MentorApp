@@ -54,6 +54,25 @@ export class BuddyService {
     await this.emitBuddyEvent(IdentityEventTopic.BUDDY_REQUESTED, userId, target.id);
   }
 
+  /**
+   * Study-buddy request created by an invite redeem: the invited user asks the inviter. Takes ids (no
+   * username lookup) and never throws for state: returns false, writing nothing, when either side already
+   * has an ACTIVE pair or any PENDING request, or a row between them exists. The caller then falls back
+   * to a mutual follow. Emits BUDDY_REQUESTED flagged `viaInvite` so the notification can say why.
+   */
+  async requestFromInvite(requesterId: string, addresseeId: string): Promise<boolean> {
+    if (requesterId === addresseeId) return false;
+    const [requesterBusy, addresseeBusy] = await Promise.all([
+      this.pairs.hasActiveOrPending(requesterId),
+      this.pairs.hasActiveOrPending(addresseeId),
+    ]);
+    if (requesterBusy || addresseeBusy) return false;
+    const inserted = await this.pairs.tryInsertPending(requesterId, addresseeId);
+    if (!inserted) return false;
+    await this.emitBuddyEvent(IdentityEventTopic.BUDDY_REQUESTED, requesterId, addresseeId, true);
+    return true;
+  }
+
   /** Accept an incoming request. 404 unknown/not addressee; 409 if either party got paired meanwhile. */
   async accept(userId: string, pairId: string): Promise<void> {
     const pair = await this.pairs.findPendingById(pairId, userId);
@@ -144,6 +163,7 @@ export class BuddyService {
     topic: string,
     actorId: string,
     recipientId: string,
+    viaInvite = false,
   ): Promise<void> {
     // Name the actor without a listener-side lookup (best-effort — missing actor skips the event).
     const actor = await this.usersRepo.findByIdService(actorId);
@@ -153,6 +173,7 @@ export class BuddyService {
       actorId,
       actorDisplayName: actor.displayName,
       actorUsername: actor.username,
+      ...(viaInvite ? { viaInvite: true } : {}),
     };
     this.events.emit(topic, payload);
   }

@@ -6,7 +6,7 @@ import { phoneFingerprint } from "../domain/phone";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { IdentityEventTopic } from "../domain/identity.events";
 import { HttpStatus, Inject, Injectable, Logger, Optional } from "@nestjs/common";
-import type { AuthUser, AvatarUploadUrlDto, ForumPublicPerson } from "@mentor/types";
+import type { AuthUser, AvatarUploadUrlDto, CareerGroup, ForumPublicPerson } from "@mentor/types";
 import type { AvatarUploadUrlInput, UpdateMeInput } from "@mentor/validation";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -28,6 +28,13 @@ export interface DisplayIdentity {
   displayName: string;
   username: string | null;
   avatarUrl: string | null;
+  /**
+   * A live account: ACTIVE and not mid-erasure. KVKK erasure keeps the row and rewrites it into a
+   * "Silinmiş Kullanıcı" shell, so the row alone does not say the person is gone; callers that must
+   * not show an erased person (an invite list) skip `active: false`, callers that must keep the row
+   * (a coach's roster) ignore it.
+   */
+  active: boolean;
 }
 
 /** Admin metrics: user-base snapshot (W6). */
@@ -126,6 +133,7 @@ export class UsersService {
           avatarUrl: row.avatarStorageKey
             ? this.storage.getPublicUrl(row.avatarStorageKey)
             : null,
+          active: row.status === "ACTIVE" && !row.erasureStartedAt,
         },
       ]),
     );
@@ -250,6 +258,14 @@ export class UsersService {
   async getAdminAccessIdentity(userId: string): Promise<{ email: string } | null> {
     const user = await this.usersRepo.findByIdService(userId);
     return user ? { email: user.email } : null;
+  }
+
+  /**
+   * Coaching's goal upsert mirrors the picked field here so the session user carries it (sector
+   * mascot on web + mobile). Coaching owns the value; this is the only writer of the column.
+   */
+  async setCareerGroup(userId: string, careerGroup: CareerGroup | null): Promise<void> {
+    await this.usersRepo.updateSelf(userId, { careerGroup });
   }
 
   async getMe(userId: string): Promise<AuthUser> {

@@ -1,6 +1,10 @@
 export const AdPlacementId = {
   KNOWLEDGE_ARTICLE_END: "knowledge.article.end",
+  KNOWLEDGE_INDEX: "knowledge.index",
+  FORUM_QUESTION_END: "forum.question.end",
   DASHBOARD_REWARDED_COIN: "dashboard.rewarded.coin",
+  NOTEBOOKS_OVERVIEW: "notebooks.overview",
+  VISION_OVERVIEW: "vision.overview",
 } as const;
 export type AdPlacementId = (typeof AdPlacementId)[keyof typeof AdPlacementId];
 
@@ -33,6 +37,17 @@ export interface AdPlacementView {
   audienceTreatment: AdAudienceTreatment;
   limitedAds: true;
   sizes: ReadonlyArray<readonly [number, number]>;
+}
+
+export interface AdQuestionContext {
+  questionId: string;
+  contentRevision: string;
+}
+
+export interface AdQuestionReviewView {
+  question: import("./forum.js").PublicQuestionView | null;
+  approval: { contentRevision: string; reviewedAt: string; reviewedBy: string | null } | null;
+  approved: boolean;
 }
 
 export interface AdRewardOfferView extends AdPlacementView {

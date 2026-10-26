@@ -1,4 +1,7 @@
 import { Module } from "@nestjs/common";
+import { ForumModule } from "../forum/forum.module";
+import { AdsQuestionReviewService } from "./application/ads-question-review.service";
+import { AdQuestionReviewRepository } from "./infrastructure/ad-question-review.repository";
 import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
@@ -12,15 +15,17 @@ import { AdsController } from "./presentation/ads.controller";
 import { AdsInternalController } from "./presentation/ads-internal.controller";
 
 @Module({
-  imports: [ContentModule, EconomyModule, IdentityModule, PaymentsModule],
+  imports: [ContentModule, EconomyModule, IdentityModule, PaymentsModule, ForumModule],
   controllers: [AdsController, AdsInternalController],
   providers: [
+    AdsQuestionReviewService,
+    AdQuestionReviewRepository,
     AdsService,
     AdsStatsService,
     AdsErasureService,
     AdsMaintenanceService,
     AdRewardSessionRepository,
   ],
-  exports: [AdsStatsService, AdsErasureService],
+  exports: [AdsStatsService, AdsErasureService, AdsQuestionReviewService],
 })
 export class AdsModule {}

@@ -17,7 +17,7 @@ import { http } from "@mentor/api-client";
  * message. Currency is `Intl`'s job either way.
  */
 export function formatPromotionMagnitude(
-  promotion: PromotionSummary,
+  promotion: Pick<PromotionSummary, "discountType" | "discountValue">,
   locale: string,
   percent: (value: number) => string,
 ): string {

@@ -59,6 +59,7 @@ export function EconomySection({ refreshKey = 0 }: EconomySectionProps) {
   const [state, setState] = useState<EconomyState>({ status: "probing" });
   const [inviteOpen, setInviteOpen] = useState(false);
   const economyDisabledRef = useRef(false);
+  const inviteRowRef = useRef<HTMLDivElement>(null);
 
   const applyHidden = useCallback(() => {
     economyDisabledRef.current = true;
@@ -176,16 +177,21 @@ export function EconomySection({ refreshKey = 0 }: EconomySectionProps) {
           >
             {t("quests_title")}
           </ListRow>
-          <ListRow onClick={showInvite}>
-            {t("invite_title")}
-          </ListRow>
+          {/* Wrapped so the card can hand focus back to this row, also when it was opened from the
+              quests sheet (the sheet that had focus is gone by then). */}
+          <div ref={inviteRowRef}>
+            <ListRow onClick={showInvite}>
+              {t("invite_title")}
+            </ListRow>
+          </div>
         </div>
       </Card>
       {inviteOpen ? (
         <EconomyInviteCard
-          code={state.invite.code}
+          invite={state.invite}
           onClose={() => setInviteOpen(false)}
           onRedeemed={() => void reload()}
+          returnFocusTo={() => inviteRowRef.current?.querySelector<HTMLElement>("button, a") ?? null}
         />
       ) : null}
     </>

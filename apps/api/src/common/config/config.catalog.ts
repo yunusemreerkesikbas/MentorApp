@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { googleAdUnitPathSchema } from "@mentor/validation";
 
 /**
  * Config registry catalog (§9, engineering-principles §2/§8).
@@ -236,6 +237,15 @@ const adsFlag = (def: boolean, description: string): ConfigEntryDef<boolean> => 
   description,
 });
 
+const adsUnit = (description: string): ConfigEntryDef<string> => ({
+  category: ConfigCategory.ADS,
+  type: ConfigValueType.STRING,
+  schema: googleAdUnitPathSchema,
+  default: "",
+  sensitive: true,
+  description,
+});
+
 const adsCount = (def: number, min: number, max: number, description: string): ConfigEntryDef<number> => ({
   category: ConfigCategory.ADS,
   type: ConfigValueType.NUMBER,
@@ -334,6 +344,17 @@ export const CONFIG_CATALOG = {
     false,
     "Enable the voluntary dashboard Coin reward offer.",
   ),
+  "ads.placement.knowledge_article_end.ad_unit_path": adsUnit(
+    "Google unit for article-end display. Empty uses GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT; disable the placement to stop serving.",
+  ),
+  "ads.placement.notebooks_overview.enabled": adsFlag(false, "Enable notebook overview display after inventory and private-page policy review."),
+  "ads.placement.notebooks_overview.ad_unit_path": adsUnit("Google unit for notebook overview display. Empty disables delivery."),
+  "ads.placement.vision_overview.enabled": adsFlag(false, "Enable vision discovery display after inventory and private-page policy review."),
+  "ads.placement.vision_overview.ad_unit_path": adsUnit("Google unit for vision discovery display. Empty disables delivery."),
+  "ads.placement.knowledge_index.enabled": adsFlag(false, "Enable one non-sticky ad on a nonempty public blog listing after inventory/content/privacy review."),
+  "ads.placement.knowledge_index.ad_unit_path": adsUnit("Google unit for the public blog listing. Empty disables delivery; no environment fallback."),
+  "ads.placement.forum_question_end.enabled": adsFlag(false, "Enable reviewed public QA inventory only after Google/content/privacy review."),
+  "ads.placement.forum_question_end.ad_unit_path": adsUnit("Google unit for reviewed public QA. Empty disables delivery; no environment fallback."),
   "ads.rewarded.web.reward_coin": adsCount(5, 1, 50, "Coin granted for one completed web ad."),
   "ads.rewarded.web.daily_limit": adsCount(2, 0, 10, "Completed rewarded ads per user per day."),
   "ads.rewarded.web.cooldown_seconds": adsCount(0, 0, 86400, "Delay between rewarded ads."),
@@ -525,6 +546,11 @@ export const CONFIG_CATALOG = {
     20,
     100000,
     "Coin granted to the inviter when an invited user converts.",
+  ),
+  "economy.invite.redeem_window_days": economyTarget(
+    7,
+    90,
+    "Days after signup (users.created_at) during which an invite code can be redeemed.",
   ),
   "economy.quest.onboarding_reward_coin": economyCount(
     10,

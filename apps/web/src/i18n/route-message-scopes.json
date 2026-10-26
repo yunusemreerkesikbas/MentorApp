@@ -5,6 +5,7 @@
   "auth": ["auth", "common", "economy"],
   "onboarding": ["onboarding", "profile", "vision", "common", "economy", "mentorship", "phone"],
   "joinRoom": ["session_room"],
+  "inviteLanding": ["invite_landing", "economy", "paywall"],
   "plan": ["plan", "coachPlan", "common"],
   "coaching": ["mentorship", "common", "nav", "notifications", "journey_levels", "countdown", "community"]
 }

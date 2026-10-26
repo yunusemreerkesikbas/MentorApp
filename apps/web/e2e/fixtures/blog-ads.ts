@@ -10,20 +10,22 @@ const user: AuthUser = {
   id: "22222222-2222-4222-8222-222222222222", email: "display@test.local", displayName: "Display Test",
   username: "display_test", avatarUrl: null, bio: null, website: null, roles: ["STUDENT"],
   organizationId: null, examType: "KPSS", examVariant: null, examDate: null,
-  dailyFocusGoalMinutes: null, emailVerified: true, createdAt: "2026-01-01T00:00:00.000Z",
+  dailyFocusGoalMinutes: null, careerGroup: null, emailVerified: true, createdAt: "2026-01-01T00:00:00.000Z",
 };
 
-export async function mockBlogAds(page: Page, options: { empty?: boolean; blocked?: boolean; authenticated?: boolean; denied?: boolean } = {}) {
+export async function mockBlogAds(page: Page, options: { empty?: boolean; blocked?: boolean; authenticated?: boolean; denied?: boolean; examType?: AuthUser["examType"] } = {}) {
   const state = {
     authenticated: options.authenticated ?? false,
     premium: options.denied ?? false,
     userId: user.id,
     placementCalls: [] as string[],
+    placementUrls: [] as string[],
     scriptRequests: 0,
     analyticsRequests: 0,
     refreshCalls: 0,
     refreshHold: null as Promise<void> | null,
     scriptHold: null as Promise<void> | null,
+    adUnitPath: "/6355419/Travel/Europe/France/Paris",
   };
   // Acceptance tests must never load the site's real analytics provider.
   await page.route("https://www.googletagmanager.com/gtag/js**", (route) => {
@@ -37,21 +39,23 @@ export async function mockBlogAds(page: Page, options: { empty?: boolean; blocke
       state.refreshCalls++;
       await state.refreshHold;
       return state.authenticated
-        ? json(route, { accessToken: `test-${state.userId}`, expiresIn: 3600, user: { ...user, id: state.userId } })
+        ? json(route, { accessToken: `test-${state.userId}`, expiresIn: 3600, user: { ...user, id: state.userId, examType: options.examType ?? user.examType } })
         : json(route, { code: "AUTH_INVALID_REFRESH", message: "Oturum bulunamadı." }, 401);
     }
     if (path.startsWith("/v1/ads/")) {
       state.placementCalls.push(path);
+      state.placementUrls.push(route.request().url());
       const denied = Boolean(options.denied) || (state.premium && !path.includes("/public/"));
       return json(route, {
-        id: "knowledge.article.end", format: "DISPLAY", enabled: !denied,
+        id: path.split("/").at(-1), format: "DISPLAY", enabled: !denied,
         reason: denied ? "PREMIUM_AD_FREE" : "ELIGIBLE", provider: "GOOGLE_AD_MANAGER",
-        adUnitPath: denied ? null : "/6355419/Travel/Europe/France/Paris",
-        audienceTreatment: "CHILD", limitedAds: true, sizes: [[320, 100], [300, 250], [728, 90]],
+        adUnitPath: denied ? null : state.adUnitPath,
+        audienceTreatment: "CHILD", limitedAds: true,
+        sizes: path.endsWith(".overview") || path.endsWith("knowledge.index") || path.endsWith("forum.question.end") ? [[250, 250], [300, 250]] : [[320, 100], [300, 250], [728, 90]],
       });
     }
     if (path.endsWith("/view")) return json(route, null, 204);
-    if (path === "/v1/users/me") return json(route, { ...user, id: state.userId });
+    if (path === "/v1/users/me") return json(route, { ...user, id: state.userId, examType: options.examType ?? user.examType });
     return json(route, { code: "TEST_UNEXPECTED_REQUEST", message: path }, 501);
   });
   await page.route("https://pagead2.googlesyndication.com/tag/js/gpt.js", async (route) => {
@@ -65,7 +69,7 @@ export async function mockBlogAds(page: Page, options: { empty?: boolean; blocke
 
 async function json(route: Route, body: unknown, status = 200) {
   await route.fulfill({ status, contentType: "application/json", headers: {
-    "access-control-allow-origin": process.env.PLAYWRIGHT_BASE_URL?.trim() || "http://localhost:3100",
+    "access-control-allow-origin": route.request().headers().origin ?? process.env.PLAYWRIGHT_BASE_URL?.trim() ?? "http://localhost:3100",
     "access-control-allow-credentials": "true",
   }, body: body === null ? "" : JSON.stringify(body) });
 }
@@ -73,6 +77,7 @@ async function json(route: Route, body: unknown, status = 200) {
 function displayGpt(empty: boolean) {
   const log: string[] = [];
   const listeners = new Set<(event: { slot: object; isEmpty: boolean }) => void>();
+  const definitions: { path: string; sizes: number[][] }[] = [];
   let slot: object;
   let slotId: string;
   const pubads = {
@@ -84,7 +89,7 @@ function displayGpt(empty: boolean) {
   const gpt = {
     cmd: { push(run: () => void) { run(); } },
     pubads: () => pubads, setConfig() {}, enableServices() {},
-    defineSlot(_path: string, _sizes: unknown, id: string) { slot = {}; slotId = id; return { addService: () => slot }; },
+    defineSlot(path: string, sizes: number[][], id: string) { definitions.push({ path, sizes }); slot = {}; slotId = id; return { addService: () => slot }; },
     display() {
       log.push("display");
       const div = document.getElementById(slotId)!;
@@ -100,7 +105,7 @@ function displayGpt(empty: boolean) {
       return true;
     },
   };
-  Object.assign(window, { googletag: gpt, __displayLog: log });
+  Object.assign(window, { googletag: gpt, __displayLog: log, __displayDefinitions: definitions });
   queued.forEach((run) => run());
 }
 

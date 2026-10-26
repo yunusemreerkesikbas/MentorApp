@@ -143,7 +143,8 @@ export function ProfileShell({
           {/* SMS off and no number on file: the card could only say "unavailable", so it goes.
               A verified number stays visible either way. */}
           {phoneHidden ? null : (
-            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            // `phone-verification` is the anchor the invite card's "verify your phone" link targets.
+            <motion.div id="phone-verification" variants={reduceMotion ? undefined : staggerItemVariants}>
               <PhoneVerificationCard
                 allowNumberChange
                 compactHeading

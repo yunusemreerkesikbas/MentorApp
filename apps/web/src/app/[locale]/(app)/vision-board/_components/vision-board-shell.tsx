@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
   CAREER_GROUPS,
+  AdPlacementId,
   type CareerGroup,
   type CityDto,
   type DatasetInfoDto,
@@ -28,6 +29,7 @@ import { Button } from "@mentor/ui";
 import { Link, useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { HistorySideDrawer } from "@/components/history-side-panel";
+import { DeferredContextualAdSlot } from "@/components/ads/deferred-contextual-ad-slot";
 import { MenuSelect } from "@/components/menu-select";
 import { PuhuImage } from "@/components/puhu-image";
 import { CityPostingHoverCard } from "@/components/turkey-map/city-posting-hover-card";
@@ -78,7 +80,7 @@ export function VisionBoardShell() {
   const common = useTranslations("common");
   const reduceMotion = useReducedMotion();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, setUserFromServer } = useAuth();
   const { confirm } = useMentorDialog();
 
   const [goalTitle, setGoalTitle] = useState("");
@@ -321,6 +323,8 @@ export function VisionBoardShell() {
         careerGroup,
         motivation,
       });
+      // The API mirrored the field onto the user; match it so every Puhu switches now.
+      if (user) setUserFromServer({ ...user, careerGroup });
       /*
        * The save confirmation doubles as the board's invitation — the one moment the user has just
        * committed to a goal and is most likely to want to picture it. Declining keeps them here;
@@ -490,6 +494,9 @@ export function VisionBoardShell() {
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             {mapBrowser}
           </motion.div>
+          {loaded ? (
+            <DeferredContextualAdSlot placementId={AdPlacementId.VISION_OVERVIEW} className="-mx-2 mt-auto shrink-0" />
+          ) : null}
         </motion.div>
       ) : null}
 
@@ -652,6 +659,9 @@ export function VisionBoardShell() {
           }
         >
           {mapBrowser}
+          {loaded && panelOpen ? (
+            <DeferredContextualAdSlot placementId={AdPlacementId.VISION_OVERVIEW} className="-mx-2 mt-auto shrink-0" />
+          ) : null}
         </HistorySideDrawer>
       ) : null}
     </main>

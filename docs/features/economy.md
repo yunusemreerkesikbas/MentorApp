@@ -22,7 +22,11 @@ These rules supersede earlier launch assumptions in the historical timeline.
 | Profile / verified email | 10 Coin each, once |
 | First subscription / entering invite code | Disabled quest IDs retained; no Coin |
 | Weekly effort | 5 active UTC days in one ISO week gives 15 Coin |
-| Successful invite | Inviter receives 20 Coin on the invitee's first positive successful payment |
+| Successful invite | Inviter receives 20 Coin on the invitee's first positive successful payment (a trial, a sponsor, a 0 TL charge and renewals never count; a refund of that payment takes the Coin back). No Coin moves when either side is a coach by then (`reward_outcome = COACH_SKIPPED`) or the inviter's account is erased or erasing (`INVITER_GONE`; a suspension still earns) |
+| Invite code | `PUHU-` + 8 characters (no 0/O/1/I). Old `MENTOR-` codes were rewritten to `PUHU-`. Input is case-insensitive. Redeemable only in the first 7 days after signup (`economy.invite.redeem_window_days`, 1 to 90) by someone who has never paid (a trial does not block it). Own code, a second code and coaches (403) are refused |
+| Invite link | `puhukoc.com/davet/PUHU-XXXXXXXX` (`/en/invite/...`), public, noindex. A new signup carries the code through signup and onboarding and it is redeemed once when onboarding ends. A signed-in student confirms with one "Daveti kabul et" button, nothing is redeemed on arrival. Redeeming links the two (study-buddy request, or a mutual follow when a slot is taken) and notifies the inviter |
+| Invitee discount | Not Coin. An automatic `INVITED` promotion (rule `{ withinDays }`, default 30) that FINANCE creates in admin (e.g. 30% on the first period). Web checkout only, needs a verified phone and applies once per phone. Shown on the landing, the card and the paywall only while web sales are on and the campaign is live; otherwise the copy drops the discount sentence. A hand-typed coupon replaces it |
+| Inviter card | Shows own link (Paylaş), joined count, paying-friend count ("1 kişi Premium'a geçti", never names who paid) and, for the invited friend, "{ad} davetiyle geldin!" with the discount or the phone hint |
 | AI chat / weekly deep analysis | 5 / 25 Coin, configured centrally |
 | XP leaderboard / paid streak rescue / rewarded ads | Disabled, enforced by backend |
 
@@ -109,8 +113,9 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `GET /v1/economy/rewards/unseen`          | Paginated unread positive reward receipts |
 | `POST /v1/economy/rewards/seen`           | Acknowledge own ledger IDs without changing ledger |
 | `GET /v1/economy/quests`                  | Quest catalog + progress (auto-grants)                   |
-| `GET /v1/economy/invite`                  | Get/generate invite code                                 |
-| `POST /v1/economy/invite/redeem`          | Redeem invite code                                       |
+| `GET /v1/economy/invite`                  | Own invite card: code, joined friends (names, newest first, max 20) and `joinedCount` (all of them), paying-friend count, own invitation + discount, `canRedeem`, `friendDiscount` (what a friend gets with the code, the preview's discount) (403 for coaches) |
+| `GET /v1/economy/invite/preview/:code`    | Public (20/min): inviter display name + live friend discount; one 404 `INVITE_CODE_INVALID` for any unusable code |
+| `POST /v1/economy/invite/redeem`          | Redeem invite code (first 7 days, never paid, not a coach) |
 | `GET /v1/economy/streak-rescue`           | Streak-rescue offer (eligible? cost? affordable?)        |
 | `POST /v1/economy/streak-rescue`          | Buy the freeze for the break day (coin sink, idempotent) |
 | `GET /v1/economy/deep-analysis?examId=`   | Deep-analysis unlock state (eligible? cost? unlocked?)   |
@@ -120,6 +125,63 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-27 — PR #170 conflict resolution
+
+- **What:** Merged current master into the referral branch, preserving ad-unit validation and Zod 4 typed config helpers.
+- **Usage:** No workflow change; referral and ad config keys remain available through the registry.
+- **Gotcha:** Keep both the shared ad-unit schema and concrete string/number helper output types when updating the catalog.
+- **Related files:** `apps/api/src/common/config/config.catalog.ts`.
+
+
+- **2026-10-26 · Invite landing promises no discount to a trialing student.** `InviteCodeView` gains
+  `checkoutBlocked` (= `SubscriptionsService.hasCheckoutBlockingSubscription`; a failed lookup counts as
+  blocked). A trial may still redeem, but its price is frozen at checkout, so the `/davet` accept card drops
+  the "%X indirim seni bekliyor" line when the student's own view says `checkoutBlocked`; the accept button
+  stays. Closes the residual from the branch review (spec: "deneme sırasında giren arkadaşa indirim
+  uygulanmaz ... kart indirim vaat etmez"). Related: `invite-view.service.ts`, `invite-landing-shell.tsx`,
+  `packages/types/src/economy.ts`, `e2e/invite-landing.spec.ts`.
+- **2026-10-25 · Invite redeem rules: signup window, "never paid" instead of "not premium", coaches out.**
+  `InviteService.redeem` now checks, in order: the code is usable (`resolveValidInvite`: exists, owner
+  row present, `status = ACTIVE`, no `erasure_started_at`, owner not a coach; otherwise
+  `INVITE_CODE_INVALID`) → not your own code → redeemer is not a coach (`INVITE_COACH_NOT_ALLOWED`,
+  403) → not already redeemed → inside the window (`INVITE_WINDOW_CLOSED`, 409, `details.days`) → has
+  never paid (`INVITE_ALREADY_PAID`, 409; replaces `INVITE_ALREADY_PREMIUM`). The window is
+  `economy.invite.redeem_window_days` (default 7, 1 to 90) counted in exact 24h days from
+  `users.created_at`. "Paid" is `PaymentEvidenceService.hasPaid(userId)`: any SUCCEEDED RENEWAL
+  with `amount_minor > 0` (new non-locking `PaymentEventsRepository.hasPositiveCharge`), so a user
+  in a trial can still redeem and the inviter's 20 Coin still falls on the first real payment.
+  `GET /v1/economy/invite` returns 403 `INVITE_COACH_NOT_ALLOWED` for a coach (role from the
+  request user). Coaches are also checked at conversion: if the inviter or the invited user is a
+  coach when the first payment lands, the redemption becomes CONVERTED with `reward_outcome =
+  COACH_SKIPPED` and no Coin moves (nothing to reverse on refund). No migration: `reward_outcome` is
+  free text. `InviteService` no longer depends on `EntitlementService`; it reads the two user rows
+  through `UsersRepository.findByIdService` (exported by IdentityModule). Usage: tune the window in
+  admin config; the error copy is companion voice in `i18n/locales/{tr,en}/errors.json`.
+  Gotchas: the global exception filter now fills `{placeholder}` in a DomainError's catalog message
+  from its scalar `details` (`{ days: 7 }` fills "ilk {days} günde"); before this a placeholder
+  stayed literal (`MENTORSHIP_EVENT_ATTENDEE_LIMIT` had the same latent problem). The unit spec
+  pins the window boundary at 7d + 1s (closed) and 7d - 1s (open) with a faked `Date`. Related:
+  `invite.service.ts`, `economy.controller.ts`, `payment-evidence.service.ts`,
+  `payments.repositories.ts`, `all-exceptions.filter.ts`, `config.catalog.ts`,
+  `apps/admin/src/app/(general)/config/config-hints.ts`, `invite.service.spec.ts`,
+  `test/economy-invite.e2e-spec.ts`.
+- **2026-10-25 · Friend invite codes are `PUHU-` + 8 characters, input is case-insensitive.**
+  `generateInviteCode()` (exported from `invite.service.ts`) draws 8 characters with
+  `crypto.randomInt` from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no 0/O/1/I), so a code read off a
+  screen survives being retyped. `@mentor/validation` exports `normalizeInviteCode` (trim, upper
+  case, `MENTOR-` to `PUHU-`) and `inviteCodeSchema` (output is the normalized code, shape
+  `^PUHU-[0-9A-Z]{8,12}$`); `redeemInviteSchema` uses it, and the global Zod pipe passes
+  `result.data` on, so `InviteService.redeem` always sees the canonical code. Migration 0129
+  rewrites existing `invites.code` and `invite_redemptions.code` from `MENTOR-<suffix>` to
+  `PUHU-<suffix>`, so codes already shared keep working (legacy suffixes are 8 to 12 chars, hence
+  `{8,12}`). Usage: nothing to call, `GET /v1/economy/invite` now returns the new format.
+  Gotchas: the API consumes the built `@mentor/validation` `dist`, so run
+  `pnpm --filter @mentor/validation build` before API tests after touching the schema; both
+  invite tables force RLS, so the migration sets a transaction-local `app.role = SERVICE` (a
+  role without BYPASSRLS would otherwise update zero rows silently); coach invitation codes
+  (`MENTOR-KOC-…`) are a separate mentorship code and are untouched. Related: `invite.service.ts`,
+  `invite.service.spec.ts`, `packages/validation/src/economy.ts`,
+  `apps/api/drizzle/0129_invite_puhu_codes.sql`, `test/economy-invite.e2e-spec.ts`.
 - **2026-10-09 · Verified-email reward fixture follows the serialized token contract.** The
   quest test supplies the expected current email and an enqueue callback when creating its
   verification token. Usage: run `test/economy-quests.e2e-spec.ts`; verification grants ten Coin
@@ -470,6 +532,286 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   (review READY) is checked BEFORE spending, so an ungeneratable report can't be bought.
 
 ## Geliştirmeler (timeline)
+
+### 2026-10-26 — Davet akışı son düzeltme turu (bütün dal incelemesi)
+
+Bütün dal incelemesinin (6233fbc9..fcce4cfd) dokuz maddesi tek turda kapandı:
+
+- **Defter satırı:** `ledger.inviteConverted.description` artık ödülün ne zaman düştüğünü söylüyor: "Arkadaşın
+  Premium'a geçti, Coin hesabına işlendi." / "Your friend went Premium, so Coin landed on your account." (başlık aynı).
+- **Karşılama (`/davet`) vaat etmez:** oturumu açık, onboarding'i bitmiş öğrenci için sayfa önizlemeyle birlikte
+  `GET /economy/invite`'ı da okur (`use-own-invite.ts`, paralel; iskelet ikisi de gelene kadar durur). `redeemed`
+  doluysa "{ad} davetiyle geldin!" kartı, `canRedeem` false ise sakin "Bu davet yeni gelenler için." kartı
+  (`invite-standing.tsx`, yeni `invite_landing.closed_*`); ikisinde de kabul butonu ve indirim satırı yok, yalnız
+  "Panele git". Okuma başarısızsa kabul kartı kalır ama indirim satırı düşer (bilinmeyen durumda vaat yok). Koç ve
+  ziyaretçi bu okumayı hiç yapmaz. Kabul başarılıysa `notifyEconomyChanged()` (Ayarlar'daki gibi; bu sayfada dinleyen
+  yok, app shell panele varınca zaten tazeler).
+- **Katılanların adı kartta:** `invite-progress.tsx` sayı satırının altında en yeni 3 adı çip olarak, kalan için
+  "+N" (N = `joinedCount` − gösterilen; ekran okuyucu "N arkadaş daha" duyar) gösterir. Liste `<ul aria-label="Katılan
+  arkadaşların">`. Hiç ad yoksa (hepsi silinmiş) liste yok, yalnız sayı. Kim ödedi işaretlenmez.
+- **`InviteCodeView.friendDiscount`** (`{ discountType, discountValue } | null`): `previewInviteOffer()` özeti, yani
+  arkadaşın bu kodla alacağı indirim. Kartın alt metni bunu okur; `useFriendDiscount` ve kartın kendi kodu için attığı
+  herkese açık önizleme isteği kalktı (alt metin ilk boyamada kesin). Davetli kullanıcının telefonsuz indirim satırı da
+  aynı değeri kullanır, önizleme bir kez okunur.
+- **Kart çökmez:** indirim okuması (`previewInviteOffer`, `findInviteOffer`, `isPhoneVerified`, abonelik/ödeme
+  okumaları) hata verirse ilgili alan `null` olur ve `warn` loglanır; kartın geri kalanı döner.
+- **Silinmiş davet edene Coin yok:** `onInvitedConverted` davet edenin satırı yoksa, silme sürüyorsa
+  (`erasureStartedAt`) ya da hesap silinmişse (`DELETED`, kendi silmesi; `BANNED`, admin anonimleştirmesi ve kalıcı
+  moderasyon) `reward_outcome = INVITER_GONE` yazar, grant yok, iadede geri alınacak bir şey yok. `SUSPENDED` hâlâ
+  kazanır (askı biter). Kontrol koç kontrolünden önce.
+- **Koça `INVITED` indirimi yok:** `InviteService.onModuleInit`'in kaydettiği sinyal, kodu kullanmış kullanıcı koçsa
+  (ya da satırı yoksa) null döner; kullanım satırı varsa tek bir `users` okuması.
+- **`canRedeem`:** servisteki `economy.enabled &&` kalktı; tek çağıran `GET /economy/invite` önce `assertEnabled` ile
+  `ECONOMY_DISABLED` 404 döner.
+- **Testler:** `invite.service.spec`, `invite-view.service.spec`, `ledger-entry-view.spec`, `economy-invite.e2e-spec`
+  (boş kart + davet edenin kartı önizlemeyle aynı `friendDiscount`, web satışı kapanınca null), `e2e/profile.spec.ts`
+  (eski `{ code: "MENTOR-TEST" }` fikstürü güncel şekle geçti; önizleme isteği sayılır ve 0), `e2e/invite-landing.spec.ts`.
+- **Gotcha:** OpenAPI dışa aktarımı paralel çalışmanın admin reklam uçlarını da çekiyor; yalnız `InviteCodeView`
+  parçaları commit'lendi, istemci o dosyadan yeniden üretildi.
+- **Related:** `invite.service.ts`, `invite-view.service.ts`, `economy.dto.ts`, `packages/types/src/economy.ts`,
+  `profile/_components/{economy-invite-card,invite-progress}.tsx`, `invite/[code]/_components/{invite-landing-shell,
+  invite-accept,invite-standing}.tsx`, `use-own-invite.ts`, [promotions.md](./promotions.md) 2026-10-26.
+
+### 2026-10-26 — Davet akışı kapanışı: ses kuralları, başlatma kuralları tablosu, gerçek API geçişi (8/8)
+
+Plan 2026-10-25 tasarımının son görevi. Dokümanlar: `docs/copy/voice.md` (yeni "Davet: enerjik Puhu" bölümü; davet
+overlay'i, `/davet` karşılaması ve iki davet bildirimi Puhu, açıklama satırı, `INVITE_*` hataları ve ölü bağlantı
+kartı companion; `invite_subtitle` / `redeem_pending` companion listesinden çıktı, eski "hak düşer" örnekleri
+yayındaki satırlarla değişti), bu dosyanın "Launch rules" tablosu (kod biçimi, 7 günlük pencere, koç dışlaması,
+`INVITED` indirimi, kart) ve spec durumu "uygulandı".
+
+**Gerçek API geçişi** (dev DB `mentor`, sahte ödeme sağlayıcısı, yalnız `@example.test` hesapları, Playwright ile
+production build). Sonuç 8/8 geçti:
+
+| # | Senaryo | Sonuç | Kanıt |
+| --- | --- | --- | --- |
+| 1 | Davet eden öğrenci Ayarlar > Davet et | geçti | Kart: "%30 indirim arkadaşına, 20 Coin sana. Üstelik birlikte çalışırsınız!", kod `PUHU-7NSLJ7VC`; Paylaş `navigator.share` ile `/davet/PUHU-7NSLJ7VC` verdi |
+| 2 | Bağlantıyı anonim açma, kayıt, onboarding, otomatik kullanım | geçti | Karşılama: "Inviter Test seni davet etti!", kod okunur metin, açıklama satırı, indirim satırı. "Hemen başla" kodu `mentor.pendingReferral`'a yazdı; "Panele git"ten önce istek yok, sonra tek `POST /economy/invite/redeem` 201, toast "Kodun kaydedildi!", sessionStorage boşaldı. İki ayrı arkadaşta tekrarlandı: her biri için `invite_redemptions` tek satır (PENDING) |
+| 3 | Davet eden: bildirim ve katılan sayısı | geçti | `user_notifications`: ilk kullanımda tek `buddyRequestedViaInvite` ("Friend Test davetinle geldi!", `buddy_pairs` PENDING arkadaştan davet edene), ikinci kullanımda (çalışma arkadaşı yeri dolu) tek `inviteJoined`. Kart "1 arkadaşın katıldı · 0 kişi Premium'a geçti" |
+| 4 | Admin formu, `INVITED` %30 kampanyası | geçti (Task 4'ten ertelenen tarayıcı kontrolü) | Kural listesi "Herkes / Yeni kayıt / Aktif gün / Geri kazanım / Davetle gelen"; `withinDays` varsayılanı 30; kayıt `rule_type=INVITED`, `rule_params={"withinDays":30}`, PERCENT 30, 1 dönem, kuponsuz; liste "Davetle gelen · %30 · Otomatik uygulanır" |
+| 5 | Telefon doğrulaması ve indirim | geçti | Doğrulanmamış: kart "İndirim için telefonunu doğrula.", `offers` `discountMinor: 0`, fiyat ₺249,00. Doğrulanmış: kart "İndirimin ödeme ekranında seni bekliyor.", `discountMinor: 7470`, `/abonelik` ₺174,30 ("ilk ödeme ₺174,30, sonraki yenilemeler ₺249,00"). `payments.web.enabled` katalog varsayılanı (true), bayrak değiştirilmedi |
+| 6 | Arkadaşın ödemesi, davet edene Coin | geçti | Checkout `useTrial: false` → `promotion_redemptions` RESERVED 7470; imzalı `payment_succeeded` webhook'u → `invite_redemptions` CONVERTED / `GRANTED`, defter `COIN +20 invite-redemption`, `convertedCount: 1`, kart "2 arkadaşın katıldı · 1 kişi Premium'a geçti" |
+| 7 | Koç | geçti | `GET /economy/invite` ve `POST /economy/invite/redeem` 403 `INVITE_COACH_NOT_ALLOWED`; Ayarlar'da "Davet et" satırı yok; karşılama "Bu davet bağlantısı çalışmıyor." gösterir, "Daveti kabul et" / "Hemen başla" yok, kod saklanmaz |
+| 8 | Küçük harfle kod | geçti | Ayarlar formuna `puhu-7nslj7vc` yazıldı: 201, satırda `PUHU-7NSLJ7VC`, kart "Kodun kaydedildi!" ve "Inviter Test davetiyle geldin!" |
+
+- **Gotchas (geçişte çıkanlar):**
+  - Kimlik doğrulama POST'ları `Origin`'in `APP_URL`'e (admin için `ADMIN_APP_URL`) tam eşit olmasını ister
+    (`AuthOriginGuard`). Başka portta çalışan bir production build'i gerçek API'ye bağlamak için ikinci bir API
+    süreci `PORT=3011 APP_URL=http://localhost:3100 ADMIN_APP_URL=http://localhost:3002` ile açıldı; web
+    `NEXT_PUBLIC_API_URL`'i build sırasında bu porta bağlandı (`WEB_QA_DIST_DIR` ile ayrı dist). Geçişten sonra
+    süreçler kapatıldı, dist silindi.
+  - `apps/api/.env` bugün `ADMIN_APP_URL=http://localhost:3001` içeriyor: `:3002`'deki admin uygulaması bu API'ye
+    giriş yapamaz (403). Bu görevle ilgisiz, `.env`'e dokunulmadı.
+  - Dev `.env`'de `PHONE_FINGERPRINT_SECRET` yok. Doğrulanmış telefonlu davetli bile indirim görmez ve kart sessiz
+    kalır (`getVerifiedPhoneFingerprint` null döner, kapalı varsayılan). İndirimi denemek için süreç ortamına ≥32
+    karakterlik geçici bir sır verildi.
+  - Sahte sağlayıcı anında aktif eder, `checkout_completed` gelmediği için indirim satırı RESERVED kalır
+    (`markApplied` yalnız o olayda çalışır); iyzico yolunda APPLIED olur. Davet edenin Coin'i bundan etkilenmez.
+  - Hesap başına giriş sınırı 15 dakikada 10: aynı hesapla sık giriş yapan bir otomasyon 429 alır. Yeni hesaplarda
+    seviye kutlaması ve "Devam et" spotlight'ı tıklamaları kapatır, otomasyonda önce onları kapat.
+  - Geçiş sırasında admin panosundaki `GET /admin/metrics/coach-feedback` 500 verdi; davetle ilgisi yok, bakılmadı.
+- **Temizlik:** `INVITED` kampanyası admin API'siyle pasife alındı (`is_active = false`), yapılandırma bayrakları
+  değişmedi (`economy.enabled`, `promotions.enabled` açık, `payments.web.*` geçersiz kılma yok). Test hesapları dev
+  DB'de kaldı (`*-mvoevo9w@example.test`: inviter, friend, friendtwo, friendthree, coach, admin).
+- **Related:** `docs/copy/voice.md`, `docs/superpowers/specs/2026-10-25-invite-referral-design.md`,
+  `apps/api/src/config/env.validation.ts`, `apps/api/src/common/auth/auth-origin.guard.ts`,
+  [promotions.md](./promotions.md) 2026-10-25, [payments.md](./payments.md) 2026-10-25.
+
+### 2026-10-26 — `InviteCodeView.joinedCount`: katılan sayısı listeden ayrıldı
+
+`joined` en yeni 20 **canlı** hesabı listeler; kart bu listenin uzunluğunu "N arkadaşın katıldı" diye
+basınca 25 arkadaşı olan 20 görüyordu (silinmiş ya da askıdaki arkadaşlar da listeden düştüğü için 20'nin
+altında da yanlış olurdu). Görünüme `joinedCount: number` eklendi: bu davet edenin **tüm** kullanımları
+(`InviteRepository.countJoinedByInviter`, `count(*)` yalnız `inviter_user_id` süzgeciyle; `InviteViewService.getView`
+doldurur). Sayı kimseyi adlandırmadığı için silinmiş arkadaşlar da sayılır; liste hâlâ yalnız canlı hesapları
+gösterir. `convertedCount` onun alt kümesidir. Web kartı `joined.length` yerine `joinedCount`'u basar.
+
+- **Test:** `invite-view.service.spec.ts` (25 kullanım → `joinedCount` 25, `joined` 20; silinmiş / satırı olmayan
+  arkadaş sayıda kalır listeden düşer; başka davet edenin arkadaşı sayılmaz), `economy-invite.e2e-spec.ts` (boş
+  kart `joinedCount: 0`, silinmiş arkadaşlı kartta sayı 2 liste 1), `apps/web/e2e/profile.spec.ts` (25 / 20).
+- **Gotcha:** OpenAPI + istemci yenilendi (`openapi:export`, `api-client generate`); kart `joinedCount`'u zorunlu
+  varsayar, o yüzden API ve web birlikte yayınlanmalı (eski bir API yanıtında alan yoktur).
+- **Related:** `invite-view.service.ts`, `invite.repository.ts`, `economy.dto.ts`, `packages/types/src/economy.ts`,
+  `invite-progress.tsx`.
+
+### 2026-10-25 — Ayarlar > Uygulama "Tavsiye et" satırı kişisel davet bağlantısını paylaşır
+
+Satır kodsuz genel site adresini (`links.shareUrl`) paylaşıyordu; o bağlantıdan gelen arkadaş kimseye
+atfedilmiyordu. Artık öğrenci için `buildInviteLink(code, locale)` paylaşılır (tr `/davet/PUHU-…`, en
+`/en/invite/PUHU-…`). Toast metinleri aynen kaldı; değişenler URL ve reddedilen paylaşımın davranışı (aşağıda).
+
+- **Paylaşım sayfası jestin içinde açılır.** iOS Safari, dokunuşla `navigator.share` arasına ağ isteği giren
+  paylaşımı reddedebilir (`NotAllowedError`). Bu yüzden kod dokunuştan önce elde olmalı: `fetchInviteCode()`
+  başarılı yanıtın `code`'unu modül içinde hatırlar, `peekInviteCode()` onu eşzamanlı verir (Ayarlar'daki Davet et
+  kartı `EconomySection` ile zaten sayfa açılırken okur, yani satır için ek istek yok). Kod elde varsa
+  `navigator.share` dokunuşun içinde, `await`'siz çağrılır. Hook: `use-recommend-share.ts`.
+- **Kod yoksa sınırlı arama.** Kart henüz okumadıysa ya da okuyamadıysa dokunuş `fetchInviteCode()`'u 1,5 sn'ye
+  kadar bekler; süre dolarsa, ekonomi kapalıysa (404 `ECONOMY_DISABLED`), ağ/throttle/5xx/403 durumunda
+  `links.shareUrl` paylaşılır, paylaşım yine olur. Süre dolan istek arkada sürer ve gelirse kodu önbelleğe yazar,
+  sonraki dokunuş anında kişisel bağlantıyı açar.
+- **Hesap değişince unutulur.** `forgetInviteCode()`, `EconomySync`'in `user?.id` efektinde
+  `resetEconomySnapshot()` ile birlikte çalışır (oturum kapanışı ve hesap değişimi), ayrıca cleanup'ta. Bir
+  `generation` sayacı, hesap değiştikten sonra dönen eski yanıtın önbelleğe yazılmasını engeller. Gotcha: aynı
+  commit'te `EconomySync` efekti bir çocuğun isteğinden sonra çalışırsa o yanıt önbelleğe yazılmaz (güvenli yön,
+  dokunuş sınırlı aramaya düşer).
+- **Reddedilen paylaşım kopyalanır.** `AbortError` (kullanıcı sayfayı kapattı) sessiz kalır. Başka her reddedilme
+  (iOS `NotAllowedError` dahil) aynı bağlantıyı panoya yazıp "Bağlantı kopyalandı" toast'unu gösterir
+  (`invite-share-ticket.tsx` ile aynı desen); pano da başarısızsa mevcut hata toast'u çıkar. Toast metinleri
+  değişmedi.
+- **Koç programın dışında.** `isCoach(useAuth().user)` ise istek hiç atılmaz (API 403 `INVITE_COACH_NOT_ALLOWED`
+  dönerdi), bugünkü genel bağlantı paylaşılır. Kullanıcı henüz bilinmiyorsa (`null`) kod/arama yolu işler, 403 de
+  genel bağlantıya düşer.
+- **Çift dokunuş.** Arama ya da paylaşım sürerken ikinci dokunuş yok sayılır (`sharingRef`); yoksa ikinci
+  `navigator.share` `InvalidStateError` ile hata toast'u gösterirdi.
+- **Test:** `apps/web/e2e/profile.spec.ts` `tavsiye et` (9 senaryo: kodu kartın okuduğu öğrenci yeni davet isteği
+  atmadan `/davet/PUHU-TEST2345` paylaşır, paylaşım yoksa kopyalama, `NotAllowedError` ve `AbortError`, ekonomi kapalı,
+  davet isteği 500, kod sayfada yokken tek okuma ve sonraki dokunuşta sıfır istek, yanıtsız istek 1,5 sn sonra genel
+  bağlantı, koç ve sıfır istek) ve `src/lib/economy-invite-code.spec.ts` (vitest: peek/forget/eski yanıt). Playwright
+  için `next start` ile koş.
+- **Related:** `application-support-card.tsx`, `use-recommend-share.ts`, `invite-link.ts`, `economy.ts`
+  (`fetchInviteCode`, `peekInviteCode`, `forgetInviteCode`), `economy-sync.tsx`, `coach-surface.ts`,
+  docs/superpowers/specs/2026-10-25-invite-referral-design.md § 6.
+
+### 2026-10-25 — `/davet/PUHU-XXXXXXXX` karşılama sayfası, kod onboarding bitince kendiliğinden kullanılır
+
+Kartın "Paylaş"ı artık 404'e gitmiyor: `apps/web/src/app/[locale]/invite/[code]/page.tsx` (tr `/davet/[code]`,
+en `/invite/[code]`) `(app)` dışında, `join-room` deseninde herkese açık bir sayfa (`noindex`). Mesajlar
+`route-message-scopes.json` → `inviteLanding: ["invite_landing", "economy", "paywall"]` (açıklama satırı
+`economy.redeem_disclosure_named`, indirim biçimi `paywall.discount_percent`; iki ad alanı da küçük).
+
+- **Dört kart.** Shell herkese açık önizlemeyi (`fetchInvitePreview`) istemcide çeker, oturum ve önizleme
+  netleşene dek iskelet gösterir. Oturum açık ve onboarding'i bitmiş öğrenci: tek "Daveti kabul et" düğmesi
+  (varışta hiçbir şey kullanılmaz; kullanım geri alınamaz, davet edene isim gider). Ziyaretçi ya da
+  onboarding'i süren öğrenci: karşılama ("{ad} seni davet etti!", önizleme indirim döndürdüyse indirim satırı,
+  kod okunur metin olarak, açıklama satırı, "Hemen başla" `/signup`, "Zaten hesabım var" `/login?next=…`).
+  Koç, ölü ya da biçimi bozuk kod: sakin "Bu davet bağlantısı çalışmıyor." kartı (kod saklanmaz, kullanım
+  yok). Önizleme 404 dışında hata verirse (ağ, throttle, 500) aynı kart değil, "yeniden dene" sunan ayrı bir
+  kart; bağlantıyı ölü ilan etmez.
+- **Kod, düğmeye basınca hatırlanır, sayfa görüntülenince değil.** `src/lib/pending-referral.ts`:
+  `rememberPendingReferral` / `consumePendingReferral` (sessionStorage `mentor.pendingReferral`, yalnız kodun
+  kendisi, yazarken ve okurken `inviteCodeSchema` ile doğrulanır; `pending-invite.ts` ile aynı try/catch
+  deseni). Kodu görünür metin olarak göstermek, bağlantı uygulama içi tarayıcıda açılıp hesap başka yerde
+  bitirilirse kodun Ayarlar'a elle yazılabilmesi içindir.
+- **Onboarding bitince.** `complete-step.tsx` "Panele git"te `useRedeemPendingReferral` çağırır: kodu tüketir
+  (bir kez), öğrenciyse `redeemInviteCode`'u fire-and-forget gönderir, sonucu `useMentorToast` ile bildirir
+  (başarıda `economy.redeem_saved`, hatada `economy.redeem_failed` + API'nin yerelleşmiş mesajı), sonra
+  `onboardingDestination` ile aynen gider. Toast sağlayıcısı router'ın üstünde olduğu için sayfa değişince
+  de görünür. Koç kodu istek atmadan bırakır.
+- **Oturumu açık öğrenci.** Onboarded öğrenci sayfada kendi kararını verir; daha önce düğmeyle hatırlanmış
+  kod (giriş yapıp geri dönme) sayfa açılınca silinir, yoksa sonraki bir onboarding'de habersiz kullanılırdı.
+  Onboarding'i bitmemiş oturum: "Hemen başla" kodu hatırlayıp `/onboarding`'e götürür (bitince kullanılır).
+- **Gotchas.** Pilot kayıt kapısı dokunulmadı: düğmeler olağan `/signup`, `/login` rotalarına gider.
+  Kartın görünümü `RoomNoticeCard`'ı (join-room) yeniden kullanır. `?next=` iç yol taşır (`/invite/PUHU-…`),
+  `internalPathFromUrl` onu olduğu gibi bırakır. **Önizleme isteği oturum netleşene dek beklenir**
+  (`useInvitePreview(code, ready)`): API istemcisini `AuthProvider` bir effect'te yapılandırır ve çocuğun
+  effect'i önce çalışır; bekletmezsek istek sitenin kendi origin'ine gider, 404 döner ve "ölü bağlantı" gibi
+  görünür. Dev'de Strict Mode'un ikinci effect turu bunu gizler, yalnız production build'de patlar, o yüzden
+  e2e'yi `next start` ile de koş. Kullanılabilirlik (`canRedeem`) için ek bir `GET /economy/invite`
+  yapılmaz; ödeme yapmış ya da süresi dolmuş biri düğmeye basınca API'nin mesajını görür.
+- **Test:** `src/lib/pending-referral.spec.ts` (vitest), `apps/web/e2e/invite-landing.spec.ts` (15 senaryo, API
+  mock'lu: karşılama, indirimsiz, İngilizce, giriş-dönüş, iskelet, kabul, red, onboarding'deki oturum, koç,
+  ölü bağlantı, biçimi bozuk kod, başarısız arama, onboarding sonunda tek redeem, 409 toast'u, kodsuz
+  onboarding).
+- **Related:** `invite/[code]/_components/*`, `use-redeem-pending-referral.ts`, `complete-step.tsx`,
+  `pending-referral.ts`, `invite-link.ts`, `routing.ts`, `messages/{tr,en}.json` (`invite_landing`),
+  [identity.md](./identity.md), docs/superpowers/specs/2026-10-25-invite-referral-design.md § 4.
+
+### 2026-10-25 — Davet kartı (web): paylaş, ilerleme, kullanılmış kod durumu
+
+Ayarlar > Kazanımlar > "Davet et" overlay'i (`economy-invite-card.tsx`) `InviteCodeView`'i tüketir ve
+dürüst bir davet kartına dönüştü: başlık "Arkadaşını getir, birlikte çalışın!", kod kartta okunur
+kalır, **Kopyala yerine Paylaş**, ilerleme satırı, kod kullanılmışsa durum, kullanılabiliyorsa form.
+
+- **Paylaş:** `buildInviteLink(code, locale)` (`src/lib/invite-link.ts`, `getPathname` ile mutlak:
+  `/davet/PUHU-…`, en `/en/invite/PUHU-…`) `navigator.share({ text, url })` ile gider; destek yoksa
+  bağlantı panoya kopyalanır ve "Bağlantı kopyalandı" yazar. Kullanıcı paylaşım sayfasını kapatırsa
+  (`AbortError`) sessiz kalır, arkadan kopyalamaz. `routing.ts`'e `/invite/[code]` (`/davet/[code]`)
+  eklendi; sayfanın kendisi iniş sayfası görevinde.
+- **Alt metin / indirim:** `InviteCodeView` davet edenin kartı için indirim taşımaz (`redeemed.discount`
+  kullanıcının kendi kullanımı içindir). Kart kendi kodunun herkese açık önizlemesini okur
+  (`fetchInvitePreview` → `useFriendDiscount`): arkadaşın göreceği indirim neyse kart onu söyler,
+  iniş sayfasıyla ayrışamaz. Yanıt gelene kadar alt metin boş (iki satır yer ayrılı), hata olursa
+  yalnız Coin cümlesi (`invite_subtitle_plain`). `{discount}` `formatPromotionMagnitude` ile
+  paywall'daki gibi biçimlenir: PERCENT `%30`, FIXED kuruştan aşağı yuvarlanmış TL. `{coin}`
+  `rewardCoin`'den gelir, koda gömülü değil.
+- **İlerleme:** "2 arkadaşın katıldı · 1 kişi Premium'a geçti" (yalnız sayılar; isim listesi yok),
+  kimse yoksa "İlk arkadaşını bekliyoruz!". Katılan sayısı görünümün `joinedCount` alanıdır, `joined.length`
+  değil (liste en çok 20 canlı hesap taşır; 25 arkadaşı olan "20 arkadaşın katıldı" görürdü, bkz. aşağıdaki
+  `joinedCount` girdisi).
+- **Kod alanı:** `canRedeem` ise form, kod kullanılmadan önce görünen açıklama satırıyla ("Davet eden
+  kişi katıldığını görecek. Premium'a geçersen ona Coin düşer."; Ayarlar'da davet eden bilinmediği için
+  adsız metin, `redeem_disclosure_named` iniş sayfası için). `redeemed` varsa form yerine "{ad}
+  davetiyle geldin!" + ("İndirimin ödeme ekranında seni bekliyor." ya da `phoneRequired` ise Ayarlar'daki
+  telefon kartına bağlantı). `canRedeem` false ve kullanılmamışsa dock hiç görünmez.
+- **Odak:** `useDialogFocus` (`src/lib/use-dialog-focus.ts`, bağımlılık yok): açılışta Kapat butonuna odak,
+  Tab / Shift+Tab dialog içinde döner, Escape kapatır, kapanınca odak "Davet et" satırına döner
+  (`EconomySection` satırı bir ref ile sarar: kart görev sayfasından açılınca eski odaklı öğe artık yok).
+- **Dosyalar:** `economy-invite-card.tsx` kabuk (~260 satır), `invite-share-ticket.tsx`,
+  `invite-progress.tsx`, `invite-redeem-panel.tsx`. Kaldırılan anahtarlar: `invite_subtitle`,
+  `redeem_pending`, `invite_copy_short`.
+- **Gotcha:** masaüstünde dialog `min(90dvh, 44rem)` ve üst kısım `sm:flex-initial` (kaydırılabilir); eski
+  `36rem` yeni içerikle düğmeyi kesiyordu (e2e'de ölçülür). Önizleme uç noktası 20/dk sınırlı: kart yalnız
+  açılınca bir kez okur, Ayarlar sayfası yüklenirken değil. Telefon bağlantısı `#phone-verification`
+  çapasına gider (`profile-shell.tsx`). Playwright'ta `navigator.share` / `clipboard` `addInitScript` ile
+  taklit edilir (`apps/web/e2e/profile.spec.ts`, "davet kartı").
+- **Related:** `economy-invite-card.tsx`, `invite-*.tsx`, `economy-section.tsx`, `src/lib/invite-link.ts`,
+  `src/lib/use-friend-discount.ts`, `src/lib/use-dialog-focus.ts`, `src/lib/economy.ts`,
+  `apps/web/messages/{tr,en}.json` (`economy.*`), [promotions.md](./promotions.md) 2026-10-25.
+
+### 2026-10-25 — Davet kartı görünümü ve herkese açık davet önizlemesi
+
+`GET /v1/economy/invite` artık yalnız `{ code }` değil `InviteCodeView` döner (`@mentor/types`):
+`code`, `rewardCoin`, `joined` (katılan arkadaşlar, en yeni önce, en çok 20, yalnız `displayName`),
+`convertedCount` (ödeme yapan ve ödemesi geçerli kalan arkadaş sayısı), `redeemed` (kullanıcı birinin
+davetiyle geldiyse `{ inviterDisplayName, discount }`) ve `canRedeem`. Yeni `GET
+/v1/economy/invite/preview/:code` (`InvitePreviewController`, `@Public()`, `@Throttle` 20/dk) davet
+bağlantısı açan birine yalnız `{ inviterDisplayName, discount }` gösterir; id, kullanıcı adı, avatar yok.
+
+- **Sayım kuralı:** `convertedCount` = `status = CONVERTED` ve `reward_outcome` `REFUNDED` / `REVERSED`
+  değil (`InviteRepository.countConvertedByInviter`). Arkadaşlar ismiyle listelenir, ödeyenler yalnız sayıyla.
+  Listede yalnız canlı hesaplar görünür (`DisplayIdentity.active`: ACTIVE ve silinme sürecinde değil):
+  KVKK silme satırı korur ve adı "Silinmiş Kullanıcı" yapar, yani satırın varlığı kişinin duruyor olduğunu
+  göstermez. Silinmiş / askıya alınmış / yasaklı arkadaş, satırı olmayan ve adı boş olan listeden düşer,
+  yer tutucu gösterilmez (liste bu yüzden 20'den az olabilir).
+- **`canRedeem`:** `economy.enabled` ve daha önce kullanmamış ve hiç ödememiş ve kayıt penceresi içinde.
+  `redeem` ile aynı tek yargı (`InviteService.redeemBlock`), iki yerde kopya yok.
+- **`redeemed.discount`:** telefonu doğrulanmışsa `SubscriptionsService.findInviteOffer` (checkout'un
+  vereceği indirim, `phoneRequired: false`). Doğrulanmamışsa ve açık INVITED kampanyası varsa
+  `previewInviteOffer` ile `phoneRequired: true` ("doğrula, indirim senin"), ama yalnız hiç ödememiş ve
+  checkout'u reddedilmeyecek (açık abonelik yok) kullanıcıya. Aksi halde `null`: checkout'un vermeyeceği
+  indirim vaat edilmez. İndirim yalnız web checkout için geçerlidir.
+- **Önizleme 404:** bozuk kod, bilinmeyen kod, koç / anonimleştirilmiş / silinme sürecindeki sahip ve
+  `economy.enabled` kapalıyken hepsi aynı `404 INVITE_CODE_INVALID` (inen sayfa tek "geçersiz bağlantı"
+  durumu gösterir; 400 vermek hangisi olduğunu sızdırırdı). "Geçerli kod" tanımı tek yerde:
+  `InviteService.resolveValidInvite`.
+- **Dosya bölünmesi:** salt okunur kart ve önizleme `InviteViewService`'te (`invite-view.service.ts`),
+  kurallar `InviteService`'te kaldı: `resolveValidInvite` ve `redeemBlock` artık public ve tek tanım,
+  görünüm servisi onları çağırır, kopyalamaz. `InviteService` kurucusu eski haline döndü (10 bağımlılık).
+- **`summary()` kaldı:** admin kullanıcı ekonomi görünümü (`admin-economy.controller.ts`) hâlâ kullanıyor.
+- Usage: web kartı (`fetchInviteCode`) ve `/davet/[code]` iniş sayfası bu iki uç noktayı tüketir. İstemci
+  `pnpm --filter @mentor/api openapi:export` + `pnpm --filter @mentor/api-client generate` ile yenilendi.
+- **Gotcha:** önizleme uç noktası 20/dk sınırlıdır; e2e'de bu bütçeyi tüketen test dosyanın sonunda durur.
+  `InviteViewService` `UsersService` ve `SubscriptionsService` ister, `InviteService` istemez.
+  Related: `invite.service.ts`, `invite-view.service.ts`, `invite.repository.ts`,
+  `invite-preview.controller.ts`, `economy.dto.ts`, [payments.md](./payments.md) 2026-10-25,
+  [promotions.md](./promotions.md) 2026-10-25, `apps/api/test/economy-invite.e2e-spec.ts`.
+
+### 2026-10-25 — Davet kodu kullanılınca çalışma arkadaşı isteği veya karşılıklı takip, davet edene bildirim
+
+`InviteService.redeem` kaydı yazan (kazanan) insert'ten sonra, `connectAfterRedeem` ile iki şey yapar:
+davet edilenden davet edene `BuddyService.requestFromInvite(invitedId, inviterId)`; `false` dönerse
+`FollowService.followEachOtherSilently` ile iki yönlü takip. Ardından `economy.invite.redeemed`
+(`EconomyEventTopic.INVITE_REDEEMED`) olayı `{ redemptionId, inviterUserId, invitedUserId,
+invitedDisplayName, buddyRequested }` ile yayılır. Olayı yalnız insert'i kazanan çağrı yayar: aynı
+kullanıcının iki eşzamanlı redeem'inde biri 201, öbürü 409 olur, tek buddy satırı ve tek bildirim kalır.
+
+- **Best-effort:** üç adımın her biri ayrı try/catch (`logger.warn`); hiçbiri redeem'i düşürmez. Buddy isteği
+  fırlatırsa `buddyRequested=false` sayılır, takip yine denenir ve davet edene "geldi" bildirimi gider.
+- **Sıra:** Task 2'nin kontrol sırası değişmedi; yan etkiler yalnız `createRedemption` satır döndürünce çalışır.
+- **Gotcha:** yan etkiler HTTP yanıtından sonra tamamlanabilir (olay dinleyicileri async); testte bildirimi
+  beklemek için kısa bekleme gerekir. Takip yolu `USER_FOLLOWED` yaymaz, "yeni takipçi" bildirimi gitmez.
+- **Related:** `invite.service.ts`, `economy.events.ts`, [identity.md](./identity.md) 2026-10-25,
+  [notifications.md](./notifications.md) 2026-10-25, `apps/api/test/economy-invite.e2e-spec.ts`.
 
 ### 2026-09-17 — İade clawback'i flag ve kuyruk parse'ına bağlandı
 

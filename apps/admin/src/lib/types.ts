@@ -331,7 +331,7 @@ export interface AdminAnnouncement {
 
 
 // GET /admin/promotions — coupons, campaigns and automatic discounts (W4 promotions).
-export type PromotionRuleType = "ANYONE" | "NEW_USER" | "ACTIVE_DAYS" | "WIN_BACK";
+export type PromotionRuleType = "ANYONE" | "NEW_USER" | "ACTIVE_DAYS" | "WIN_BACK" | "INVITED";
 export type PromotionDiscountType = "PERCENT" | "FIXED";
 
 export interface AdminPromotion {

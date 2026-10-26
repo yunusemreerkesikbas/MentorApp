@@ -122,4 +122,24 @@ describe("NotificationsCopyService", () => {
       }
     },
   );
+
+  it.each(["tr", "en"])(
+    "resolves the invite notifications from the real %s catalog in the Puhu voice",
+    (lang) => {
+      const service = realCopyService();
+      for (const key of [
+        NotificationCopyKey.INVITE_JOINED,
+        NotificationCopyKey.BUDDY_REQUESTED_VIA_INVITE,
+      ]) {
+        const copy = service.resolve(key, { name: "Burak" }, lang);
+        expect(copy.title).toContain("Burak");
+        expect(`${copy.title} ${copy.body}`).not.toMatch(/\{name\}|undefined|null/);
+        expect(`${copy.title} ${copy.body}`).not.toMatch(/\u2014|l\u00fctfen|please/i);
+        // voice.md: at most one "!" per sentence
+        for (const sentence of `${copy.title}. ${copy.body}`.split(/(?<=[.!?])\s+/)) {
+          expect((sentence.match(/!/g) ?? []).length).toBeLessThanOrEqual(1);
+        }
+      }
+    },
+  );
 });

@@ -4741,7 +4741,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteCodeViewDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4965,6 +4972,39 @@
             "bearer": []
           }
         ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/invite/preview/{code}": {
+      "get": {
+        "operationId": "InvitePreviewController_preview",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitePreviewViewDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "INVITE_CODE_INVALID: unknown, malformed or unusable code (also while the economy is off)"
+          }
+        },
         "tags": [
           "economy"
         ]
@@ -8675,6 +8715,96 @@
         ]
       }
     },
+    "/v1/admin/ads/questions/{questionId}": {
+      "get": {
+        "operationId": "AdminAdReviewsController_preview",
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "AdminAdReviewsController_approve",
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveQuestionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminAdReviewsController_revoke",
+        "parameters": [
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/users": {
       "get": {
         "operationId": "AdminUsersController_searchUsers",
@@ -11549,6 +11679,145 @@
         "type": "object",
         "properties": {}
       },
+      "InviteJoinedFriendDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName"
+        ]
+      },
+      "InviteDiscountViewDto": {
+        "type": "object",
+        "properties": {
+          "discountType": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "FIXED"
+            ]
+          },
+          "discountValue": {
+            "type": "integer",
+            "description": "Percent for PERCENT, kuruş for FIXED: what checkout really applies."
+          },
+          "phoneRequired": {
+            "type": "boolean",
+            "description": "True when the discount waits for a verified phone number."
+          }
+        },
+        "required": [
+          "discountType",
+          "discountValue",
+          "phoneRequired"
+        ]
+      },
+      "InviteRedeemedDto": {
+        "type": "object",
+        "properties": {
+          "inviterDisplayName": {
+            "type": "string"
+          },
+          "discount": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InviteDiscountViewDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "inviterDisplayName",
+          "discount"
+        ]
+      },
+      "InvitePreviewDiscountDto": {
+        "type": "object",
+        "properties": {
+          "discountType": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "FIXED"
+            ]
+          },
+          "discountValue": {
+            "type": "integer",
+            "description": "Percent for PERCENT, kuruş for FIXED: what checkout really applies."
+          }
+        },
+        "required": [
+          "discountType",
+          "discountValue"
+        ]
+      },
+      "InviteCodeViewDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "rewardCoin": {
+            "type": "integer"
+          },
+          "joined": {
+            "description": "Newest first, at most 20.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InviteJoinedFriendDto"
+            }
+          },
+          "joinedCount": {
+            "type": "integer",
+            "description": "Everyone who joined with the code; `joined` is only the newest 20 live accounts."
+          },
+          "convertedCount": {
+            "type": "integer"
+          },
+          "redeemed": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InviteRedeemedDto"
+              }
+            ]
+          },
+          "canRedeem": {
+            "type": "boolean"
+          },
+          "checkoutBlocked": {
+            "type": "boolean",
+            "description": "Checkout would refuse this user now (e.g. a trial): never promise them the invite discount."
+          },
+          "friendDiscount": {
+            "nullable": true,
+            "description": "What a friend gets with this code now (the public preview's discount); null when none is live.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InvitePreviewDiscountDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "rewardCoin",
+          "joined",
+          "joinedCount",
+          "convertedCount",
+          "redeemed",
+          "canRedeem",
+          "checkoutBlocked",
+          "friendDiscount"
+        ]
+      },
       "RewardLedgerEntryDto": {
         "type": "object",
         "properties": {
@@ -11637,6 +11906,27 @@
       "RedeemInviteDto": {
         "type": "object",
         "properties": {}
+      },
+      "InvitePreviewViewDto": {
+        "type": "object",
+        "properties": {
+          "inviterDisplayName": {
+            "type": "string"
+          },
+          "discount": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InvitePreviewDiscountDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "inviterDisplayName",
+          "discount"
+        ]
       },
       "CreateZoneDto": {
         "type": "object",
@@ -13028,6 +13318,10 @@
           "coachEvaluation",
           "brief"
         ]
+      },
+      "ApproveQuestionDto": {
+        "type": "object",
+        "properties": {}
       },
       "UpdateUserStatusDto": {
         "type": "object",

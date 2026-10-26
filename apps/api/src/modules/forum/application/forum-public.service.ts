@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import type { PublicQuestionRef, PublicQuestionView } from "@mentor/types";
+import { createHash } from "node:crypto";
+import { ExamType, type PublicQuestionRef, type PublicQuestionView } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { ForumThreadRepository } from "../infrastructure/forum-thread.repository";
 import { ForumPostRepository } from "../infrastructure/forum-post.repository";
@@ -27,7 +28,16 @@ export class ForumPublicService {
     const thread = await this.threads.findPublicQuestion(threadId);
     if (!thread) return null;
     const answers = await this.posts.listPublicAnswers(threadId);
+    if (answers.length === 0) return null;
+    // Include timestamps so editing back to old text cannot resurrect a previous approval.
+    const contentRevision = createHash("sha256").update(JSON.stringify({
+      id: thread.id, title: thread.title, body: thread.body, updatedAt: thread.updatedAt,
+      zoneUpdatedAt: thread.zoneUpdatedAt, examType: thread.examType,
+      answers: answers.map((a) => [a.id, a.body, a.isAccepted, a.updatedAt]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+    })).digest("hex");
     return {
+      contentRevision,
+      examType: Object.values(ExamType).includes(thread.examType as ExamType) ? thread.examType as ExamType : null,
       id: thread.id,
       title: thread.title ?? "",
       body: thread.body,

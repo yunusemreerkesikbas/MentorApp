@@ -7,9 +7,12 @@ import type {
   CoachMemoryConsent,
   CoachSupportPreference,
 } from "@mentor/types";
+import type { ReactNode } from "react";
+import { PuhuImage } from "@/components/puhu-image";
 import { fetchCoachProfile, patchCoachProfile } from "@/lib/coach";
 
-export function CoachCalibrationCard() {
+/** First-visit chat preferences. `children` (the landing's big Puhu) shows whenever the card does not. */
+export function CoachCalibrationCard({ children }: { children?: ReactNode }) {
   const t = useTranslations("coach_chat.calibration");
   const [visible, setVisible] = useState(false);
   const [support, setSupport] = useState<CoachSupportPreference | null>(null);
@@ -40,7 +43,7 @@ export function CoachCalibrationCard() {
     };
   }, []);
 
-  if (!visible) return null;
+  if (!visible) return children ?? null;
 
   async function save(skip = false) {
     setBusy(true);
@@ -65,46 +68,58 @@ export function CoachCalibrationCard() {
   }
 
   return (
-    <section className="mb-3 w-full max-w-lg rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] p-4 text-left shadow-[var(--shadow-card)]">
-      <p className="text-sm font-semibold text-[var(--color-main)]">
-        {t("intro")}
-      </p>
-      <ChoiceRow
-        label={t("support_question")}
-        value={support}
-        onChange={(value) => setSupport(value as CoachSupportPreference)}
-        options={[
-          ["EMOTIONAL", t("support_emotional")],
-          ["BALANCED", t("support_balanced")],
-          ["ACTION", t("support_action")],
-        ]}
-      />
-      <ChoiceRow
-        label={t("directness_question")}
-        value={directness}
-        onChange={(value) => setDirectness(value as CoachDirectnessPreference)}
-        options={[
-          ["GENTLE", t("directness_gentle")],
-          ["BALANCED", t("directness_balanced")],
-          ["DIRECT", t("directness_direct")],
-        ]}
-      />
-      <ChoiceRow
-        label={t("memory_question")}
-        hint={t("memory_hint")}
-        value={memory}
-        onChange={(value) => setMemory(value as CoachMemoryConsent)}
-        options={[
-          ["GRANTED", t("memory_yes")],
-          ["DECLINED", t("memory_no")],
-        ]}
-      />
-      <div className="mt-4 flex gap-2">
+    <section data-coach-calibration className="mb-3 w-full max-w-lg rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_92%,transparent)] p-4 text-left shadow-[var(--shadow-card)] backdrop-blur-md sm:p-5">
+      {/* Puhu asks the question here; the big landing Puhu steps aside while the card is open. */}
+      <div className="flex items-center gap-3">
+        <PuhuImage variant="encouraging" size={44} className="shrink-0" />
+        <div className="min-w-0">
+          <h3
+            className="text-[15px] font-bold leading-5 text-[var(--color-main)]"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            {t("title")}
+          </h3>
+          <p className="mt-0.5 text-xs text-[var(--color-secondary)]">{t("intro")}</p>
+        </div>
+      </div>
+      <div className="mt-2.5 divide-y divide-[color-mix(in_srgb,var(--color-main)_8%,transparent)]">
+        <ChoiceRow
+          label={t("support_question")}
+          value={support}
+          onChange={(value) => setSupport(value as CoachSupportPreference)}
+          options={[
+            ["EMOTIONAL", t("support_emotional")],
+            ["BALANCED", t("support_balanced")],
+            ["ACTION", t("support_action")],
+          ]}
+        />
+        <ChoiceRow
+          label={t("directness_question")}
+          value={directness}
+          onChange={(value) => setDirectness(value as CoachDirectnessPreference)}
+          options={[
+            ["GENTLE", t("directness_gentle")],
+            ["BALANCED", t("directness_balanced")],
+            ["DIRECT", t("directness_direct")],
+          ]}
+        />
+        <ChoiceRow
+          label={t("memory_question")}
+          hint={t("memory_hint")}
+          value={memory}
+          onChange={(value) => setMemory(value as CoachMemoryConsent)}
+          options={[
+            ["GRANTED", t("memory_yes")],
+            ["DECLINED", t("memory_no")],
+          ]}
+        />
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={busy || !support || !directness || !memory}
           onClick={() => void save()}
-          className="min-h-10 rounded-full bg-[var(--color-btn)] px-4 text-sm font-semibold text-[var(--color-btn-label)] disabled:opacity-50"
+          className="min-h-11 cursor-pointer rounded-full bg-[var(--color-progress)] px-5 text-sm font-bold text-white shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none motion-reduce:transition-none"
         >
           {t("save")}
         </button>
@@ -112,8 +127,7 @@ export function CoachCalibrationCard() {
           type="button"
           disabled={busy}
           onClick={() => void save(true)}
-          className="min-h-10 rounded-full border px-4 text-sm font-semibold text-[var(--color-main)] disabled:opacity-50"
-          style={{ borderColor: "var(--color-border)" }}
+          className="min-h-11 cursor-pointer rounded-full px-4 text-sm font-semibold text-[var(--color-secondary)] transition-colors hover:text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none"
         >
           {t("skip")}
         </button>
@@ -141,37 +155,27 @@ function ChoiceRow({
   onChange: (value: string) => void;
 }) {
   return (
-    <fieldset className="mt-3">
-      <legend className="text-sm font-medium text-[var(--color-body)]">
+    <fieldset className="py-2.5 first:pt-0">
+      <legend className="float-left w-full text-sm font-semibold text-[var(--color-main)]">
         {label}
       </legend>
       {hint ? (
-        <p className="mt-1 text-xs text-[var(--color-secondary)]">{hint}</p>
+        <p className="clear-left pt-1 text-xs leading-4 text-[var(--color-secondary)]">{hint}</p>
       ) : null}
-      <div className="mt-2 flex flex-wrap gap-2">
+      {/* Same pills as the starter chips below; the chosen one takes the page's blue action ink. */}
+      <div className="clear-left flex flex-wrap gap-2 pt-2">
         {options.map(([option, text]) => {
           const selected = value === option;
           return (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={selected}
-            onClick={() => onChange(option)}
-            className="min-h-9 rounded-full border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{
-              borderColor: selected
-                ? "var(--color-btn)"
-                : "var(--color-border)",
-              backgroundColor: selected
-                ? "var(--color-btn)"
-                : "var(--color-surface)",
-              color: selected
-                ? "var(--color-btn-label)"
-                : "var(--color-main)",
-            }}
-          >
-            {text}
-          </button>
+            <button
+              key={option}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onChange(option)}
+              className={`inline-flex h-9 cursor-pointer items-center rounded-full px-3.5 text-[12px] font-semibold shadow-[var(--shadow-card)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${selected ? "bg-[var(--color-progress)] text-white" : "bg-[var(--color-surface)] text-[var(--color-main)]"}`}
+            >
+              {text}
+            </button>
           );
         })}
       </div>

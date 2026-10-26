@@ -1,30 +1,25 @@
 "use client";
-import { GiftIcon as Gift } from "@solar-icons/react/bold/gift";
 import { CloseCircleIcon as X } from "@solar-icons/react/linear/close-circle";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
-import { redeemInviteSchema } from "@mentor/validation";
-import { ApiClientError } from "@mentor/api-client";
-import { Button } from "@mentor/ui";
-import { FormError } from "@/components/form";
-import {
-  notifyEconomyChanged,
-  redeemInviteCode,
-} from "@/lib/economy";
+import { useLocale, useTranslations } from "next-intl";
+import type { InviteCodeView } from "@mentor/types";
+import { formatPromotionMagnitude } from "@/lib/promotions";
+import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { useIsMounted } from "@/lib/use-is-mounted";
+import { InviteProgress } from "./invite-progress";
+import { InviteRedeemPanel } from "./invite-redeem-panel";
+import { InviteShareTicket } from "./invite-share-ticket";
 
 interface EconomyInviteCardProps {
-  code: string;
+  invite: InviteCodeView;
   onClose: () => void;
   onRedeemed: () => void;
+  /** Where focus goes on close: the "Davet et" row, whichever way the card was opened. */
+  returnFocusTo: () => HTMLElement | null;
 }
-
-type CopyStatus = "idle" | "copied" | "failed";
-
-const COPY_FEEDBACK_MS = 2000;
 
 /** Deep saturated violet — stronger contrast for white type + gift art. */
 const HERO_GRADIENT =
@@ -62,95 +57,54 @@ function InviteSparkle({
 }
 
 /**
- * Invite overlay: share code (ticket) + redeem someone else's code.
- * Full-screen on mobile; centered modal on `sm+`. Rewards stay server-side on conversion.
+ * Invite overlay: share the personal link, see how many friends came, and (until the viewer has
+ * used one) redeem a friend's code. Full-screen on mobile; centered modal on `sm+`. Rewards stay
+ * server-side on conversion. This shell owns the hero, the dialog focus contract and the friend
+ * discount line; the ticket, progress line and redeem dock are subcomponents.
  */
 export function EconomyInviteCard({
-  code,
+  invite,
   onClose,
   onRedeemed,
+  returnFocusTo,
 }: EconomyInviteCardProps) {
-  const translate = useTranslations("economy");
+  const t = useTranslations("economy");
+  const paywall = useTranslations("paywall");
+  const locale = useLocale();
   const reduceMotion = useReducedMotion();
   const titleId = useId();
-  const codeLabelId = useId();
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
-  const [redeemError, setRedeemError] = useState<string | null>(null);
-  const [redeemSuccess, setRedeemSuccess] = useState<string | null>(null);
   const mounted = useIsMounted();
-  const copyResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useDialogFocus({
+    dialogRef,
+    initialFocusRef: closeRef,
+    active: mounted,
+    onEscape: onClose,
+    returnFocusTo,
+  });
 
   useEffect(() => {
-    return () => {
-      if (copyResetRef.current) clearTimeout(copyResetRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [onClose]);
-
-  function flashCopyStatus(next: CopyStatus) {
-    if (copyResetRef.current) clearTimeout(copyResetRef.current);
-    setCopyStatus(next);
-    copyResetRef.current = setTimeout(() => {
-      setCopyStatus("idle");
-      copyResetRef.current = null;
-    }, COPY_FEEDBACK_MS);
-  }
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(code);
-      flashCopyStatus("copied");
-    } catch {
-      flashCopyStatus("failed");
-    }
-  }
-
-  async function handleRedeem(e: React.FormEvent) {
-    e.preventDefault();
-    setRedeemError(null);
-    setRedeemSuccess(null);
-    const parsed = redeemInviteSchema.safeParse({ code: input });
-    if (!parsed.success) {
-      setRedeemError(translate("redeem_invalid"));
-      return;
-    }
-    setBusy(true);
-    try {
-      const result = await redeemInviteCode(parsed.data.code);
-      setInput("");
-      setRedeemSuccess(
-        result.status === "PENDING"
-          ? translate("redeem_pending")
-          : translate("redeem_saved"),
-      );
-      notifyEconomyChanged();
-      onRedeemed();
-    } catch (err) {
-      setRedeemError(
-        err instanceof ApiClientError
-          ? err.body.message
-          : translate("redeem_failed"),
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
+  }, []);
 
   if (!mounted || typeof document === "undefined") return null;
+
+  // The view carries the friend discount (null when none is live or its lookup failed), so the
+  // line is final on first paint: the Coin alone, or the discount as well.
+  const subtitle = invite.friendDiscount
+    ? t("invite_subtitle_discount", {
+        discount: formatPromotionMagnitude(invite.friendDiscount, locale, (value) =>
+          paywall("discount_percent", { value }),
+        ),
+        coin: invite.rewardCoin,
+      })
+    : t("invite_subtitle_plain", { coin: invite.rewardCoin });
 
   return createPortal(
     <div
@@ -159,8 +113,9 @@ export function EconomyInviteCard({
     >
       <motion.button
         type="button"
-        aria-label={translate("invite_close")}
-        className="absolute inset-0 hidden bg-[color-mix(in_srgb,var(--color-main)_45%,transparent)] backdrop-blur-[2px] sm:block"
+        tabIndex={-1}
+        aria-hidden
+        className="absolute inset-0 hidden cursor-default bg-[color-mix(in_srgb,var(--color-main)_45%,transparent)] backdrop-blur-[2px] sm:block"
         initial={reduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: reduceMotion ? 0 : 0.25 }}
@@ -168,7 +123,8 @@ export function EconomyInviteCard({
       />
 
       <motion.div
-        className="relative flex w-full min-h-0 max-h-none flex-col overflow-hidden max-sm:h-full sm:max-h-[min(90dvh,36rem)] sm:max-w-md sm:rounded-[24px] sm:shadow-[var(--shadow-card)]"
+        ref={dialogRef}
+        className="relative flex w-full min-h-0 max-h-none flex-col overflow-hidden max-sm:h-full sm:max-h-[min(90dvh,44rem)] sm:max-w-md sm:rounded-[24px] sm:shadow-[var(--shadow-card)]"
         style={{ background: HERO_GRADIENT }}
         role="dialog"
         aria-modal="true"
@@ -202,16 +158,17 @@ export function EconomyInviteCard({
         />
 
         <button
+          ref={closeRef}
           type="button"
           onClick={onClose}
           className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 grid size-11 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] text-[var(--color-main)] shadow-[var(--shadow-card)] outline-none transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-white sm:right-3 sm:top-3"
-          aria-label={translate("invite_close")}
+          aria-label={t("invite_close")}
         >
           <X size={20} strokeWidth={1.75} aria-hidden />
         </button>
 
         <div className="relative z-[1] flex min-h-0 flex-1 flex-col max-sm:min-h-0">
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto mentor-scrollarea sm:flex-none">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto mentor-scrollarea sm:flex-initial">
             {/* Top: mascot — compact stack on desktop, airy on mobile */}
             <div className="shrink-0 px-5 pt-[max(3.5rem,calc(env(safe-area-inset-top)+2.75rem))] sm:pt-8">
               <div className="relative mx-auto size-[140px] sm:size-[112px]">
@@ -251,7 +208,7 @@ export function EconomyInviteCard({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: reduceMotion ? 0 : 0.28, delay: reduceMotion ? 0 : 0.1 }}
                 >
-                  {translate("invite_eyebrow")}
+                  {t("invite_eyebrow")}
                 </motion.p>
                 <motion.h2
                   id={titleId}
@@ -261,132 +218,38 @@ export function EconomyInviteCard({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: reduceMotion ? 0 : 0.28, delay: reduceMotion ? 0 : 0.16 }}
                 >
-                  {translate("invite_headline")}
+                  {t("invite_headline")}
                 </motion.h2>
-                <motion.p
-                  className="mx-auto mt-2.5 max-w-[22rem] text-center text-[15px] leading-relaxed text-white/90 sm:mt-2"
-                  initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.28, delay: reduceMotion ? 0 : 0.22 }}
-                >
-                  {translate("invite_subtitle")}
-                </motion.p>
-
-                <motion.div
-                  className="relative mx-auto mt-5 w-full sm:mt-4"
-                  initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.28 }}
-                >
-                  <div
-                    className="relative flex min-h-[76px] items-stretch bg-black/25 shadow-[0_8px_24px_rgba(20,5,40,0.35)] ring-1 ring-white/20 backdrop-blur-md"
-                    style={{
-                      borderRadius: 18,
-                      WebkitMaskImage:
-                        "radial-gradient(circle 10px at 0 50%, transparent 10px, #000 10.5px), radial-gradient(circle 10px at 100% 50%, transparent 10px, #000 10.5px)",
-                      maskImage:
-                        "radial-gradient(circle 10px at 0 50%, transparent 10px, #000 10.5px), radial-gradient(circle 10px at 100% 50%, transparent 10px, #000 10.5px)",
-                      WebkitMaskComposite: "source-in",
-                      maskComposite: "intersect",
-                    }}
+                {/* Two lines reserved, so the ticket below sits the same with either line. */}
+                <div className="mx-auto mt-2.5 min-h-12 max-w-[22rem] sm:mt-2">
+                  <motion.p
+                    className="text-center text-[15px] leading-relaxed text-white/90"
+                    initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.28 }}
                   >
-                    <div className="flex min-w-0 flex-1 flex-col justify-center py-3.5 pl-7 pr-3 text-left">
-                      <p
-                        id={codeLabelId}
-                        className="text-[11px] font-semibold uppercase tracking-wide text-white/65"
-                      >
-                        {translate("invite_code_label")}
-                      </p>
-                      <code
-                        className="mt-0.5 block truncate text-[15px] font-bold tracking-[0.04em] text-white tabular-nums sm:text-base"
-                        aria-labelledby={codeLabelId}
-                      >
-                        {code}
-                      </code>
-                    </div>
+                    {subtitle}
+                  </motion.p>
+                </div>
 
-                    <div
-                      aria-hidden
-                      className="my-3.5 w-px shrink-0 border-l border-dashed border-white/40"
-                    />
-
-                    <div className="flex shrink-0 items-center p-2.5 pl-2.5 pr-3.5">
-                      <button
-                        type="button"
-                        onClick={() => void handleCopy()}
-                        className="min-w-[5.75rem] cursor-pointer rounded-full bg-[var(--color-surface)] px-5 py-2.5 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] outline-none transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-white"
-                        style={{ fontFamily: "var(--font-body)" }}
-                        aria-live="polite"
-                      >
-                        {copyStatus === "copied"
-                          ? translate("copied")
-                          : copyStatus === "failed"
-                            ? translate("copy_failed")
-                            : translate("invite_copy_short")}
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
+                <InviteShareTicket code={invite.code} reduceMotion={reduceMotion} />
+                <InviteProgress
+                  joined={invite.joinedCount}
+                  converted={invite.convertedCount}
+                  names={invite.joined.map((friend) => friend.displayName)}
+                  reduceMotion={reduceMotion}
+                />
               </div>
             </div>
           </div>
 
-          {/* Full-bleed redeem dock — flush to modal edges; parent clips bottom radius */}
-          <motion.div
-            className="relative z-[1] w-full shrink-0 rounded-t-[24px] bg-[var(--color-surface)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:pb-5"
-            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: reduceMotion ? 0 : 0.35,
-              delay: reduceMotion ? 0 : 0.32,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-          >
-            <form
-              className="flex w-full flex-col gap-3"
-              onSubmit={(e) => void handleRedeem(e)}
-            >
-              <label
-                htmlFor="economy-invite-redeem"
-                className="text-sm font-bold"
-                style={{
-                  color: "var(--color-main)",
-                  fontFamily: "var(--font-heading)",
-                }}
-              >
-                {translate("have_code")}
-              </label>
-              <input
-                id="economy-invite-redeem"
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="MENTOR-…"
-                autoComplete="off"
-                className="min-h-11 w-full rounded-[var(--radius-card)] border bg-[var(--color-surface)] px-3 text-base focus-visible:outline-none focus-visible:ring-2"
-                style={{
-                  borderColor:
-                    "color-mix(in srgb, var(--color-main) 12%, transparent)",
-                  color: "var(--color-main)",
-                }}
-                disabled={busy}
-              />
-              <Button type="submit" disabled={busy} fullWidth className="gap-2.5">
-                <Gift size={24} strokeWidth={1.75} aria-hidden />
-                {busy ? translate("redeeming") : translate("use_code")}
-              </Button>
-              {redeemError ? <FormError message={redeemError} /> : null}
-              {redeemSuccess ? (
-                <p
-                  className="text-sm"
-                  style={{ color: "var(--color-secondary)" }}
-                  role="status"
-                >
-                  {redeemSuccess}
-                </p>
-              ) : null}
-            </form>
-          </motion.div>
+          <InviteRedeemPanel
+            redeemed={invite.redeemed}
+            canRedeem={invite.canRedeem}
+            onRedeemed={onRedeemed}
+            onLeave={onClose}
+            reduceMotion={reduceMotion}
+          />
         </div>
       </motion.div>
     </div>,

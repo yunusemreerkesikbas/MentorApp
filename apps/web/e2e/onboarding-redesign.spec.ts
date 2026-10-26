@@ -15,6 +15,7 @@ const onboardingUser: AuthUser = {
   examVariant: null,
   examDate: null,
   dailyFocusGoalMinutes: null,
+  careerGroup: null,
   emailVerified: true,
   createdAt: "2026-01-01T00:00:00.000Z",
 };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PromotionRuleType } from "@mentor/types";
+import { adminCreatePromotionSchema } from "@mentor/validation";
 import { countDatesWithin, evaluateRule, type PromotionRuleContext } from "./promotion-rule";
 
 const NOW = new Date("2026-08-30T12:00:00Z");
@@ -12,6 +13,9 @@ function ctx(overrides: Partial<PromotionRuleContext> = {}): PromotionRuleContex
     hadAnySubscription: false,
     lostPremiumAccess: false,
     activeDates: [],
+    invitedAt: null,
+    hasPaid: false,
+    phoneFingerprint: null,
     ...overrides,
   };
 }
@@ -107,5 +111,70 @@ describe("evaluateRule", () => {
     it("rejects when no activity is supplied at all", () => {
       expect(evaluateRule(PromotionRuleType.ACTIVE_DAYS, params, ctx())).toBe(false);
     });
+  });
+
+  describe("INVITED", () => {
+    const params = { withinDays: 30 };
+    const invited = (overrides: Partial<PromotionRuleContext> = {}) =>
+      ctx({ invitedAt: new Date(NOW.getTime() - 10 * DAY_MS), phoneFingerprint: "fp-1", ...overrides });
+
+    it("qualifies an invited, phone-verified user who never paid, inside the window", () => {
+      expect(evaluateRule(PromotionRuleType.INVITED, params, invited())).toBe(true);
+    });
+
+    it("qualifies exactly at the window boundary", () => {
+      const invitedAt = new Date(NOW.getTime() - 30 * DAY_MS);
+      expect(evaluateRule(PromotionRuleType.INVITED, params, invited({ invitedAt }))).toBe(true);
+    });
+
+    it("rejects once the window since the redeem has passed", () => {
+      const invitedAt = new Date(NOW.getTime() - 30 * DAY_MS - 1);
+      expect(evaluateRule(PromotionRuleType.INVITED, params, invited({ invitedAt }))).toBe(false);
+    });
+
+    it("rejects a user who already paid real money (a trial alone does not count as paid)", () => {
+      expect(evaluateRule(PromotionRuleType.INVITED, params, invited({ hasPaid: true }))).toBe(false);
+    });
+
+    it("rejects a user without a verified phone", () => {
+      expect(evaluateRule(PromotionRuleType.INVITED, params, invited({ phoneFingerprint: null }))).toBe(
+        false,
+      );
+    });
+
+    it("rejects a user who never redeemed an invite", () => {
+      expect(evaluateRule(PromotionRuleType.INVITED, params, invited({ invitedAt: null }))).toBe(false);
+    });
+
+    it("falls back to a 30-day window when the params carry none", () => {
+      const at = (days: number) => invited({ invitedAt: new Date(NOW.getTime() - days * DAY_MS) });
+      expect(evaluateRule(PromotionRuleType.INVITED, {}, at(29))).toBe(true);
+      expect(evaluateRule(PromotionRuleType.INVITED, {}, at(31))).toBe(false);
+    });
+  });
+});
+
+describe("adminCreatePromotionSchema rule params", () => {
+  const base = {
+    name: "Davet indirimi",
+    labelTr: "Davet hediyesi",
+    labelEn: "Invite gift",
+    discountType: "PERCENT",
+    discountValue: 30,
+  } as const;
+
+  it("accepts an INVITED promotion with { withinDays }", () => {
+    const parsed = adminCreatePromotionSchema.safeParse({
+      ...base,
+      ruleType: "INVITED",
+      ruleParams: { withinDays: 30 },
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects an INVITED promotion without { withinDays }", () => {
+    const parsed = adminCreatePromotionSchema.safeParse({ ...base, ruleType: "INVITED", ruleParams: {} });
+    expect(parsed.success).toBe(false);
+    expect(parsed.error?.issues.map((issue) => issue.path.join("."))).toContain("ruleParams");
   });
 });

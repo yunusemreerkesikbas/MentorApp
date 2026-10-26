@@ -20,6 +20,7 @@ const user: AuthUser = {
   examVariant: null,
   examDate: "2026-09-06",
   dailyFocusGoalMinutes: null,
+  careerGroup: null,
   emailVerified: true,
   createdAt: "2026-08-28T00:00:00.000Z",
 };
@@ -214,7 +215,7 @@ for (const trialUsed of [false, true]) {
       : /7 gün deneme sonrası ilk ödeme[\s\S]*₺199,20[\s\S]*₺249,00/);
     await expect(paywall.getByRole("radio")).toHaveCount(0);
     // Live CTA: pressed without consent it asks for the box and no checkout starts.
-    await paywall.getByRole("button", { name: trialUsed ? "Ücretli aboneliği başlat" : "Denemeyi başlat", exact: true }).click();
+    await paywall.getByRole("button", { name: trialUsed ? /ile Premium'a geç/ : /gün ücretsiz başla/, exact: true }).click();
     await expect(paywall.getByText("Başlamadan önce bir onayın gerekiyor.")).toBeVisible();
   });
 }

@@ -382,6 +382,27 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 - Promotion tests select direct purchase with `useTrial: false` while their buyers remain phone-unverified. A pending promotion reservation is released only after provider-confirmed cancellation; another checkout no longer discards an unresolved attempt. Trial conversion and refund tests keep `useTrial: true` with verified-phone fixtures, preserving coverage of the initial charge versus renewal reward lifecycle. Invite-only users still need no phone verification.
 - Usage: run `promotions.e2e-spec.ts` and `economy-invite.e2e-spec.ts` against the dedicated test database. Omitting `useTrial` intentionally retains automatic first-subscription trial selection and its phone requirement. Related: `apps/api/test/promotions.e2e-spec.ts`, `apps/api/test/economy-invite.e2e-spec.ts`.
 
+### 2026-10-25 — Paywall sales copy
+
+- Paywall copy rewritten to lead with what the student gets: default headline "Sınava koçunla hazırlan", the coach is named "AI koç" (so it is not mistaken for the human coach in Koçum), new benefit titles, and all contextual headlines except mood (kept soft on purpose).
+- The featured multi-month plan badge shows `%N tasarruf` (`savingsPercent` in `apps/web/src/lib/paywall-plans.ts`): compared with the monthly plan's list price, rounded down so it never overstates. It falls back to "Önerilen" when there is no monthly plan.
+- CTA on both the paywall and `/abonelik`: `subscription.start_paid` = "{price} ile Premium'a geç" (the price is what gets charged now, coupon included); `start_trial` = "{days} gün ücretsiz başla"; `start_premium` is the fallback while plans are loading.
+- Gotchas: Premium coach chat is capped (`ai.chat.daily_limit`, default 30/day), so never write "sınırsız". There is no real social proof yet, so don't invent any. E2e specs now find the CTA by regex (`/ile Premium'a geç/`, `/gün ücretsiz başla/`).
+
+### 2026-10-25 — Promotion signals for the INVITED rule (invite discount)
+
+- `promotionContext` now also builds `invitedAt` (economy's invite redeem time), `hasPaid` (`PaymentEventsRepository.hasPositiveCharge`, the lock-free read) and `phoneFingerprint` (`UsersService.getVerifiedPhoneFingerprint`), in parallel. `findWinBackOffer` passes `invitedAt: null, hasPaid: true, phoneFingerprint: null` and skips those reads.
+- `InviteSignalRegistry` (`payments/application/invite-signal.registry.ts`, provided and exported by `PaymentsModule`): economy imports payments, so payments cannot import economy. `InviteService.onModuleInit` registers the resolver; unregistered → null. The resolver answers null while `economy.enabled` is off.
+- `CheckoutService.reserve` reads the phone fingerprint again inside the reservation transaction (after `lockActiveAccount`) whenever a discount is being reserved and hands it to `promotions.reserve`; the advisory value never keys the once-per-phone quota. `PROMOTION_ERROR_BY_REASON` maps `PHONE_REQUIRED` / `PHONE_USED` to `PROMOTION_NOT_ELIGIBLE` (reason in `details`).
+- Usage: nothing to call; an admin-created `INVITED` promotion does the rest (see [promotions.md](./promotions.md)). Gotcha: `SubscriptionsService` gained two constructor params (`UsersService`, `InviteSignalRegistry`) at the end, so hand-built instances in specs must pass them before reaching `promotionContext`. Related: `subscriptions.service.ts`, `checkout.service.ts`, `payments.module.ts`, `economy/application/invite.service.ts`.
+
+### 2026-10-25 — Invite discount seams for the invite card (`findInviteOffer`, `previewInviteOffer`)
+
+- `SubscriptionsService.findInviteOffer(userId)`: the best offer whose winning promotion is an `INVITED` one, resolved with the user's full checkout context (so it competes with the other automatic promotions exactly like checkout does), or null. Null for a user checkout would refuse (an open subscription, a trial included), while the web sells no plan, and whenever the rule is not met. `findWinBackOffer` is the pattern; unlike it, this builds the real context (`getMe` for signup date and org).
+- `SubscriptionsService.previewInviteOffer()`: no user. The summary of a live, automatic `INVITED` promotion that discounts at least one plan the web can sell (same `purchaseEnabled` filter as `resolveOffers`), else null. Backed by the new `PromotionsService.previewByRule` (promotions on, inside dates, under the global cap, clamped magnitude; no per-user or per-phone quota).
+- `SubscriptionsService.hasCheckoutBlockingSubscription(userId)` and the module-level `blocksCheckout(open)`: the one definition of "checkout answers `PAYMENT_ALREADY_SUBSCRIBED`" (open and not `INCOMPLETE` and not `SPONSOR`). `checkout` uses it too, so an advertised discount and a refused purchase cannot drift apart.
+- Usage: economy's `InviteViewService.getView` / `getPreview` are the callers; nothing else should advertise the friend discount without going through these. Gotcha: both discounts are web-checkout only, so a store-only catalog returns null everywhere. Related: `subscriptions.service.ts`, `promotions.service.ts`, `economy/application/invite.service.ts`, [economy.md](./economy.md) 2026-10-25.
+
 ## Gotchas / Known issues
 
 - **Coach seats read payments twice, and never write it (W8 phase B, 2026-09-27).** The seat on a

@@ -66,6 +66,9 @@ const USER = {
   orgId: null,
 };
 
+/** Identity's self view, which supplies the signals a user-keyed offer lookup needs. */
+const ME = { email: "user@example.com", createdAt: "2026-08-30T00:00:00.000Z", organizationId: null };
+
 /** No promotion applies — the list price stands. */
 const LIST_OFFER = {
   planId: plan.id,
@@ -216,6 +219,7 @@ describe("SubscriptionsService checkout with a promotion", () => {
       resolveOffers: vi.fn().mockResolvedValue({ offers: { [plan.id]: offer }, available: [] }),
       reserve: vi.fn().mockResolvedValue(null),
       voidForSubscription: vi.fn(),
+      previewByRule: vi.fn().mockResolvedValue(null),
     };
     const config = {
       get: vi.fn((key: string) =>
@@ -230,14 +234,25 @@ describe("SubscriptionsService checkout with a promotion", () => {
         .mockResolvedValue({ checkoutUrl: "https://pay/x", providerRef: "ref-1" }),
     };
     const trials = trialStub();
-    const users = { lockActiveAccount: vi.fn(async () => true) };
+    // Checkout's identity seam: the LOCKED read inside the reservation transaction.
+    const users = {
+      lockActiveAccount: vi.fn(async () => true),
+      getVerifiedPhoneFingerprint: vi.fn(async () => "fp-locked"),
+    };
+    // The advisory reads the offer is resolved with, outside any transaction.
+    const identity = {
+      getVerifiedPhoneFingerprint: vi.fn(async () => "fp-advisory"),
+      getMe: vi.fn(async () => ME),
+    };
+    const eventsRepo = { hasPositiveCharge: vi.fn(async () => false) };
+    const inviteSignals = { invitedAt: vi.fn(async () => INVITED_AT) };
     const events = { emit: vi.fn() };
     (subsRepo as unknown as { update: unknown }).update = vi.fn();
     const service = new SubscriptionsService(
       db as never,
       plansRepo as never,
       subsRepo as never,
-      {} as never,
+      eventsRepo as never,
       {} as never,
       { listPolicies: vi.fn(async () => ({})) } as never,
       promotions as never,
@@ -250,9 +265,66 @@ describe("SubscriptionsService checkout with a promotion", () => {
       { append: vi.fn() } as never,
       trials as never,
       new CheckoutService(db as never, subsRepo as never, promotions as never, trials as never, paymentProvider as never, users as never, events as never),
+      identity as never,
+      inviteSignals as never,
     );
-    return { service, subsRepo, promotions, paymentProvider, db, tx, trials, users, events };
+    return { service, subsRepo, promotions, paymentProvider, db, tx, trials, users, events, identity, eventsRepo, inviteSignals };
   }
+
+  const INVITED_AT = new Date("2026-08-28T09:00:00Z");
+
+  it("feeds the invite, payment and phone signals to the promotion rules", async () => {
+    const { service, promotions, inviteSignals, eventsRepo, identity } = makeService(LIST_OFFER);
+
+    await service.resolveOffers(USER);
+
+    expect(inviteSignals.invitedAt).toHaveBeenCalledWith(USER.id);
+    expect(eventsRepo.hasPositiveCharge).toHaveBeenCalledWith(USER.id);
+    expect(identity.getVerifiedPhoneFingerprint).toHaveBeenCalledWith(USER.id);
+    expect(promotions.resolveOffers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.objectContaining({
+          invitedAt: INVITED_AT,
+          hasPaid: false,
+          phoneFingerprint: "fp-advisory",
+        }),
+      }),
+    );
+  });
+
+  it("reserves a discount with the phone read under the checkout lock, not the advisory one", async () => {
+    const { service, promotions, users, tx } = makeService(DISCOUNTED_OFFER);
+
+    await service.checkout(USER, plan.id, "HOSGELDIN");
+
+    expect(users.getVerifiedPhoneFingerprint).toHaveBeenCalledWith(USER.id, tx);
+    expect(promotions.reserve).toHaveBeenCalledWith(
+      expect.objectContaining({ tx, phoneFingerprint: "fp-locked" }),
+    );
+  });
+
+  it("does not read the phone at checkout when no promotion applies", async () => {
+    const { service, promotions, users } = makeService(LIST_OFFER);
+
+    await service.checkout(USER, plan.id);
+
+    expect(users.getVerifiedPhoneFingerprint).not.toHaveBeenCalled();
+    expect(promotions.reserve).toHaveBeenCalledWith(expect.objectContaining({ phoneFingerprint: null }));
+  });
+
+  it("keeps the invite rule out of the win-back offer", async () => {
+    const { service, subsRepo, promotions, inviteSignals } = makeService(DISCOUNTED_OFFER);
+    subsRepo.findLatestForUser.mockResolvedValue(LAPSED_SUBSCRIPTION);
+
+    await service.findWinBackOffer(USER.id);
+
+    expect(inviteSignals.invitedAt).not.toHaveBeenCalled();
+    expect(promotions.resolveOffers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.objectContaining({ invitedAt: null, hasPaid: true, phoneFingerprint: null }),
+      }),
+    );
+  });
 
   /** A subscriber whose paid period ran out last month: the win-back audience. */
   const LAPSED_SUBSCRIPTION = {
@@ -300,6 +372,104 @@ describe("SubscriptionsService checkout with a promotion", () => {
     subsRepo.findLatestForUser.mockResolvedValue(LAPSED_SUBSCRIPTION);
 
     await expect(service.findWinBackOffer(USER.id)).resolves.toBeNull();
+  });
+
+  describe("the invite discount seams (findInviteOffer, previewInviteOffer)", () => {
+    const INVITED_OFFER = { ...DISCOUNTED_OFFER, ruleType: "INVITED" as const };
+    const open = (status: string, provider = "FAKE") => ({ id: "sub-open", status, provider });
+
+    it("finds the INVITED offer with the user's full checkout context", async () => {
+      const { service, promotions, identity } = makeService(INVITED_OFFER);
+
+      await expect(service.findInviteOffer(USER.id)).resolves.toMatchObject({
+        planId: plan.id,
+        discountMinor: 4980,
+        promotion: expect.objectContaining({ discountType: "PERCENT" }),
+      });
+      expect(identity.getMe).toHaveBeenCalledWith(USER.id);
+      expect(promotions.resolveOffers).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            userId: USER.id,
+            userCreatedAt: new Date(ME.createdAt),
+            invitedAt: INVITED_AT,
+            hasPaid: false,
+            phoneFingerprint: "fp-advisory",
+          }),
+        }),
+      );
+    });
+
+    it("is null when another promotion wins the plan, because that is not the friend discount", async () => {
+      const { service } = makeService({ ...DISCOUNTED_OFFER, ruleType: "WIN_BACK" as const });
+      await expect(service.findInviteOffer(USER.id)).resolves.toBeNull();
+    });
+
+    it("is null at the list price", async () => {
+      const { service } = makeService(LIST_OFFER);
+      await expect(service.findInviteOffer(USER.id)).resolves.toBeNull();
+    });
+
+    it("is null for a user checkout would refuse (trial, active, past due), without resolving any offer", async () => {
+      for (const status of ["TRIALING", "ACTIVE", "PAST_DUE"]) {
+        const { service, subsRepo, promotions } = makeService(INVITED_OFFER);
+        subsRepo.findOpenForUser.mockResolvedValue(open(status));
+
+        await expect(service.findInviteOffer(USER.id)).resolves.toBeNull();
+        expect(promotions.resolveOffers).not.toHaveBeenCalled();
+      }
+    });
+
+    it("still finds it for a user checkout lets through: an unpaid INCOMPLETE checkout or a coach-sponsored seat", async () => {
+      for (const row of [open("INCOMPLETE"), open("ACTIVE", "SPONSOR")]) {
+        const { service, subsRepo } = makeService(INVITED_OFFER);
+        subsRepo.findOpenForUser.mockResolvedValue(row);
+
+        await expect(service.findInviteOffer(USER.id)).resolves.toMatchObject({ discountMinor: 4980 });
+      }
+    });
+
+    it("is null while the web cannot sell a plan", async () => {
+      const { service, promotions } = makeService(INVITED_OFFER, { "payments.web.enabled": false });
+      await expect(service.findInviteOffer(USER.id)).resolves.toBeNull();
+      expect(promotions.resolveOffers).not.toHaveBeenCalled();
+    });
+
+    it("previews the live INVITED promotion for the plans the web sells, with no user lookup", async () => {
+      const { service, promotions, identity, subsRepo } = makeService(LIST_OFFER);
+      const summary = { id: "p1", discountType: "PERCENT", discountValue: 30 };
+      promotions.previewByRule.mockResolvedValue(summary);
+
+      await expect(service.previewInviteOffer()).resolves.toBe(summary);
+
+      expect(promotions.previewByRule).toHaveBeenCalledWith("INVITED", [
+        { id: plan.id, name: plan.name, priceMinor: plan.priceMinor },
+      ]);
+      expect(identity.getMe).not.toHaveBeenCalled();
+      expect(subsRepo.findOpenForUser).not.toHaveBeenCalled();
+    });
+
+    it("previews nothing while the web cannot sell a plan", async () => {
+      const { service, promotions } = makeService(LIST_OFFER, { "payments.web.enabled": false });
+      promotions.previewByRule.mockResolvedValue({ id: "p1" });
+
+      await expect(service.previewInviteOffer()).resolves.toBeNull();
+      expect(promotions.previewByRule).not.toHaveBeenCalled();
+    });
+
+    it("reports a blocking subscription by the same rule checkout refuses on", async () => {
+      const { service, subsRepo } = makeService(LIST_OFFER);
+      const blocks = async (row: unknown) => {
+        subsRepo.findOpenForUser.mockResolvedValue(row);
+        return service.hasCheckoutBlockingSubscription(USER.id);
+      };
+
+      expect(await blocks(undefined)).toBe(false);
+      expect(await blocks(open("INCOMPLETE"))).toBe(false);
+      expect(await blocks(open("ACTIVE", "SPONSOR"))).toBe(false);
+      expect(await blocks(open("TRIALING"))).toBe(true);
+      expect(await blocks(open("ACTIVE"))).toBe(true);
+    });
   });
 
   it("sends the discounted amount to the provider, keeping the list price intact", async () => {

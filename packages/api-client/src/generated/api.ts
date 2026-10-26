@@ -463,6 +463,84 @@ export interface CreateNotebookDto { [key: string]: unknown }
 
 export interface UpdateNotebookDto { [key: string]: unknown }
 
+export interface InviteJoinedFriendDto {
+  displayName: string;
+}
+
+export type InviteDiscountViewDtoDiscountType = typeof InviteDiscountViewDtoDiscountType[keyof typeof InviteDiscountViewDtoDiscountType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InviteDiscountViewDtoDiscountType = {
+  PERCENT: 'PERCENT',
+  FIXED: 'FIXED',
+} as const;
+
+export interface InviteDiscountViewDto {
+  discountType: InviteDiscountViewDtoDiscountType;
+  /** Percent for PERCENT, kuruş for FIXED: what checkout really applies. */
+  discountValue: number;
+  /** True when the discount waits for a verified phone number. */
+  phoneRequired: boolean;
+}
+
+/**
+ * @nullable
+ */
+export type InviteRedeemedDtoDiscount = InviteDiscountViewDto | null;
+
+export interface InviteRedeemedDto {
+  inviterDisplayName: string;
+  /** @nullable */
+  discount: InviteRedeemedDtoDiscount;
+}
+
+export type InvitePreviewDiscountDtoDiscountType = typeof InvitePreviewDiscountDtoDiscountType[keyof typeof InvitePreviewDiscountDtoDiscountType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvitePreviewDiscountDtoDiscountType = {
+  PERCENT: 'PERCENT',
+  FIXED: 'FIXED',
+} as const;
+
+export interface InvitePreviewDiscountDto {
+  discountType: InvitePreviewDiscountDtoDiscountType;
+  /** Percent for PERCENT, kuruş for FIXED: what checkout really applies. */
+  discountValue: number;
+}
+
+/**
+ * @nullable
+ */
+export type InviteCodeViewDtoRedeemed = InviteRedeemedDto | null;
+
+/**
+ * What a friend gets with this code now (the public preview's discount); null when none is live.
+ * @nullable
+ */
+export type InviteCodeViewDtoFriendDiscount = InvitePreviewDiscountDto | null;
+
+export interface InviteCodeViewDto {
+  code: string;
+  rewardCoin: number;
+  /** Newest first, at most 20. */
+  joined: InviteJoinedFriendDto[];
+  /** Everyone who joined with the code; `joined` is only the newest 20 live accounts. */
+  joinedCount: number;
+  convertedCount: number;
+  /** @nullable */
+  redeemed: InviteCodeViewDtoRedeemed;
+  canRedeem: boolean;
+  /** Checkout would refuse this user now (e.g. a trial): never promise them the invite discount. */
+  checkoutBlocked: boolean;
+  /**
+   * What a friend gets with this code now (the public preview's discount); null when none is live.
+   * @nullable
+   */
+  friendDiscount: InviteCodeViewDtoFriendDiscount;
+}
+
 export type RewardLedgerEntryDtoUnit = typeof RewardLedgerEntryDtoUnit[keyof typeof RewardLedgerEntryDtoUnit];
 
 
@@ -505,6 +583,17 @@ export interface UnseenRewardsDto {
 export interface DeepAnalysisDto { [key: string]: unknown }
 
 export interface RedeemInviteDto { [key: string]: unknown }
+
+/**
+ * @nullable
+ */
+export type InvitePreviewViewDtoDiscount = InvitePreviewDiscountDto | null;
+
+export interface InvitePreviewViewDto {
+  inviterDisplayName: string;
+  /** @nullable */
+  discount: InvitePreviewViewDtoDiscount;
+}
 
 export interface CreateZoneDto { [key: string]: unknown }
 
@@ -1176,6 +1265,8 @@ export interface MentorshipWeeklyReportResponseDto {
   /** @nullable */
   brief: MentorshipWeeklyReportResponseDtoBrief;
 }
+
+export interface ApproveQuestionDto { [key: string]: unknown }
 
 export interface UpdateUserStatusDto { [key: string]: unknown }
 
@@ -7137,7 +7228,7 @@ export const economyControllerLedger = async ( options?: RequestInit): Promise<e
 
 
 export type economyControllerInviteResponse200 = {
-  data: void
+  data: InviteCodeViewDto
   status: 200
 }
     
@@ -7438,6 +7529,46 @@ export const economyControllerRedeem = async (redeemInviteDto: RedeemInviteDto, 
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       redeemInviteDto,)
+  }
+);}
+
+
+
+export type invitePreviewControllerPreviewResponse200 = {
+  data: InvitePreviewViewDto
+  status: 200
+}
+
+export type invitePreviewControllerPreviewResponse404 = {
+  data: void
+  status: 404
+}
+    
+export type invitePreviewControllerPreviewResponseSuccess = (invitePreviewControllerPreviewResponse200) & {
+  headers: Headers;
+};
+export type invitePreviewControllerPreviewResponseError = (invitePreviewControllerPreviewResponse404) & {
+  headers: Headers;
+};
+
+export type invitePreviewControllerPreviewResponse = (invitePreviewControllerPreviewResponseSuccess | invitePreviewControllerPreviewResponseError)
+
+export const getInvitePreviewControllerPreviewUrl = (code: string,) => {
+
+
+  
+
+  return `/v1/economy/invite/preview/${code}`
+}
+
+export const invitePreviewControllerPreview = async (code: string, options?: RequestInit): Promise<invitePreviewControllerPreviewResponse> => {
+  
+  return http<invitePreviewControllerPreviewResponse>(getInvitePreviewControllerPreviewUrl(code),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
   }
 );}
 
@@ -10455,7 +10586,7 @@ export type mentorshipCoachControllerListBriefHistoryResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type mentorshipCoachControllerListBriefHistoryResponseSuccess = (mentorshipCoachControllerListBriefHistoryResponse200) & {
   headers: Headers;
 };
@@ -10466,19 +10597,19 @@ export type mentorshipCoachControllerListBriefHistoryResponse = (mentorshipCoach
 export const getMentorshipCoachControllerListBriefHistoryUrl = (studentId: string,) => {
 
 
-
+  
 
   return `/v1/mentorship/students/${studentId}/brief-history`
 }
 
 export const mentorshipCoachControllerListBriefHistory = async (studentId: string, options?: RequestInit): Promise<mentorshipCoachControllerListBriefHistoryResponse> => {
-
+  
   return http<mentorshipCoachControllerListBriefHistoryResponse>(getMentorshipCoachControllerListBriefHistoryUrl(studentId),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -11345,6 +11476,107 @@ export const mentorshipWeeklyReportControllerGet = async (studentId: string,
   {      
     ...options,
     method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminAdReviewsControllerPreviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminAdReviewsControllerPreviewResponseSuccess = (adminAdReviewsControllerPreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAdReviewsControllerPreviewResponse = (adminAdReviewsControllerPreviewResponseSuccess)
+
+export const getAdminAdReviewsControllerPreviewUrl = (questionId: string,) => {
+
+
+  
+
+  return `/v1/admin/ads/questions/${questionId}`
+}
+
+export const adminAdReviewsControllerPreview = async (questionId: string, options?: RequestInit): Promise<adminAdReviewsControllerPreviewResponse> => {
+  
+  return http<adminAdReviewsControllerPreviewResponse>(getAdminAdReviewsControllerPreviewUrl(questionId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminAdReviewsControllerApproveResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminAdReviewsControllerApproveResponseSuccess = (adminAdReviewsControllerApproveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAdReviewsControllerApproveResponse = (adminAdReviewsControllerApproveResponseSuccess)
+
+export const getAdminAdReviewsControllerApproveUrl = (questionId: string,) => {
+
+
+  
+
+  return `/v1/admin/ads/questions/${questionId}`
+}
+
+export const adminAdReviewsControllerApprove = async (questionId: string,
+    approveQuestionDto: ApproveQuestionDto, options?: RequestInit): Promise<adminAdReviewsControllerApproveResponse> => {
+  
+  return http<adminAdReviewsControllerApproveResponse>(getAdminAdReviewsControllerApproveUrl(questionId),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      approveQuestionDto,)
+  }
+);}
+
+
+
+export type adminAdReviewsControllerRevokeResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminAdReviewsControllerRevokeResponseSuccess = (adminAdReviewsControllerRevokeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAdReviewsControllerRevokeResponse = (adminAdReviewsControllerRevokeResponseSuccess)
+
+export const getAdminAdReviewsControllerRevokeUrl = (questionId: string,) => {
+
+
+  
+
+  return `/v1/admin/ads/questions/${questionId}`
+}
+
+export const adminAdReviewsControllerRevoke = async (questionId: string, options?: RequestInit): Promise<adminAdReviewsControllerRevokeResponse> => {
+  
+  return http<adminAdReviewsControllerRevokeResponse>(getAdminAdReviewsControllerRevokeUrl(questionId),
+  {      
+    ...options,
+    method: 'DELETE'
     
     
   }

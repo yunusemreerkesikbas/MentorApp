@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -100,6 +100,52 @@ export class InviteRepository {
         })
         .from(inviteRedemptions);
       return rows[0] ?? { invited: 0, converted: 0 };
+    });
+  }
+
+  /** The friends who joined with this inviter's code, newest first. Ids only; names come from identity. */
+  listJoinedByInviter(
+    inviterUserId: string,
+    limit: number,
+  ): Promise<Array<{ invitedUserId: string; redeemedAt: Date }>> {
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({ invitedUserId: inviteRedemptions.invitedUserId, redeemedAt: inviteRedemptions.redeemedAt })
+        .from(inviteRedemptions)
+        .where(eq(inviteRedemptions.inviterUserId, inviterUserId))
+        .orderBy(desc(inviteRedemptions.redeemedAt), desc(inviteRedemptions.id))
+        .limit(limit),
+    );
+  }
+
+  /** Everyone who joined with this inviter's code, whatever happened to them since. A number, no names. */
+  countJoinedByInviter(inviterUserId: string): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(inviteRedemptions)
+        .where(eq(inviteRedemptions.inviterUserId, inviterUserId));
+      return rows[0]?.n ?? 0;
+    });
+  }
+
+  /**
+   * Friends of this inviter who paid and whose payment still stands: CONVERTED, minus the ones whose
+   * reward was settled by a refund (`REFUNDED` before the reward, `REVERSED` after it).
+   */
+  countConvertedByInviter(inviterUserId: string): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(inviteRedemptions)
+        .where(
+          and(
+            eq(inviteRedemptions.inviterUserId, inviterUserId),
+            eq(inviteRedemptions.status, "CONVERTED"),
+            sql`coalesce(${inviteRedemptions.rewardOutcome}, '') not in ('REFUNDED', 'REVERSED')`,
+          ),
+        );
+      return rows[0]?.n ?? 0;
     });
   }
 

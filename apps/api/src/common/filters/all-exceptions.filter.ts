@@ -22,6 +22,18 @@ interface ApiErrorBody extends ApiError {
 const HEALTH_PATH = /\/health(\/ready)?$/;
 
 /**
+ * A DomainError's string/number details double as `{placeholder}` values in its catalog message
+ * (e.g. `{ days: 7 }` fills "ilk {days} günde"). Nested values never become message text.
+ */
+function scalarMessageArgs(details: unknown): Record<string, string | number> | undefined {
+  if (!details || typeof details !== "object" || Array.isArray(details)) return undefined;
+  const entries = Object.entries(details).filter(
+    (entry): entry is [string, string | number] => typeof entry[1] === "string" || typeof entry[1] === "number",
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+/**
  * Global exception filter — every API error leaves as a localized `ApiError { code, message, details? }`.
  *
  * Guardrails (§engineering-principles / backend standard):
@@ -51,11 +63,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let status: number = HttpStatus.INTERNAL_SERVER_ERROR;
     let code: string = ErrorCode.INTERNAL_ERROR;
     let details: unknown;
+    let messageArgs: Record<string, string | number> | undefined;
 
     if (exception instanceof DomainError) {
       status = exception.httpStatus;
       code = String(exception.code);
       details = exception.details; // authored, safe to expose
+      messageArgs = scalarMessageArgs(details);
       if (status === HttpStatus.TOO_MANY_REQUESTS && details && typeof details === "object" &&
           "retryAfter" in details && Number.isInteger(details.retryAfter) && Number(details.retryAfter) > 0) {
         res.setHeader("Retry-After", String(details.retryAfter));
@@ -73,7 +87,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     const i18n = this.currentI18n();
-    const message = this.translateCode(i18n, code, this.retryAfterSeconds(res, code));
+    const message = this.translateCode(i18n, code, this.retryAfterSeconds(res, code), messageArgs);
     if (code === ErrorCode.VALIDATION_ERROR) {
       details = this.localizeFieldDetails(i18n, details);
     }
@@ -118,13 +132,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   /** Resolve a localized message by error code; fall back to the code if i18n is unavailable. */
-  private translateCode(i18n: I18nContext | undefined, code: string, seconds?: number): string {
+  private translateCode(
+    i18n: I18nContext | undefined,
+    code: string,
+    seconds?: number,
+    args?: Record<string, string | number>,
+  ): string {
     if (seconds !== undefined) {
       const retryKey = seconds === 1 ? "errors.TOO_MANY_REQUESTS_RETRY_ONE" : "errors.TOO_MANY_REQUESTS_RETRY";
       const retry = this.lookup(i18n, retryKey, { seconds });
       if (retry) return retry;
     }
-    return this.lookup(i18n, `errors.${code}`) ?? code;
+    return this.lookup(i18n, `errors.${code}`, args) ?? code;
   }
 
   private lookup(i18n: I18nContext | undefined, key: string, args?: Record<string, unknown>): string | undefined {

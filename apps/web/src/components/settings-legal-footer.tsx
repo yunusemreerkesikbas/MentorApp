@@ -20,19 +20,14 @@ export function SettingsLegalFooter() {
     // A `nav`, not a `footer`: inside `<aside>` a footer loses its contentinfo landmark.
     <nav className="px-3" aria-label={translate("footer_heading")}>
       <ul className="flex flex-wrap gap-y-1.5 text-xs leading-5 text-[var(--color-secondary)]">
-        {LEGAL_SLUGS.map((slug) => (
+        {LEGAL_SLUGS.map((slug, index) => (
           <li key={slug}>
             <Link href={{ pathname: "/settings/legal/[slug]", params: { slug } }} className={LINK_CLASS}>
               {locale === "en" ? LEGAL_DOCUMENTS[slug].en.title : LEGAL_DOCUMENTS[slug].tr.title}
             </Link>
-            <span aria-hidden className="mx-1.5">·</span>
+            {index < LEGAL_SLUGS.length - 1 ? <span aria-hidden className="mx-1.5">·</span> : null}
           </li>
         ))}
-        <li>
-          <a href="/icon-credits.txt" target="_blank" rel="noreferrer" className={LINK_CLASS}>
-            {translate("footer_icon_credits")}
-          </a>
-        </li>
       </ul>
     </nav>
   );

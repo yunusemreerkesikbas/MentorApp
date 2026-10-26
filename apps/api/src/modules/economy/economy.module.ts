@@ -11,6 +11,7 @@ import { EconomyStatsService } from "./application/economy-stats.service";
 import { ForumEventsListener } from "./application/forum-events.listener";
 import { ThreadPostedListener } from "./application/thread-posted.listener";
 import { InviteService } from "./application/invite.service";
+import { InviteViewService } from "./application/invite-view.service";
 import { InviteEventsListener } from "./application/invite-events.listener";
 import { RefundEventsListener } from "./application/refund-events.listener";
 import { QuestService } from "./application/quest.service";
@@ -21,6 +22,7 @@ import { LedgerRepository } from "./infrastructure/ledger.repository";
 import { InviteRepository } from "./infrastructure/invite.repository";
 import { QuestRepository } from "./infrastructure/quest.repository";
 import { EconomyController } from "./presentation/economy.controller";
+import { InvitePreviewController } from "./presentation/invite-preview.controller";
 
 /**
  * W6 — Light economy (§3). Slice 1: ledger + balances + reward engine + admin adjust. Slice 2a:
@@ -29,7 +31,7 @@ import { EconomyController } from "./presentation/economy.controller";
  */
 @Module({
   imports: [PaymentsModule, IdentityModule, CoachingModule],
-  controllers: [EconomyController],
+  controllers: [EconomyController, InvitePreviewController],
   providers: [
     RewardReceiptService,
     QuestTriggerService,
@@ -38,6 +40,7 @@ import { EconomyController } from "./presentation/economy.controller";
     EconomyStatsService,
     LedgerRepository,
     InviteService,
+    InviteViewService,
     InviteRepository,
     InviteEventsListener,
     RefundEventsListener,

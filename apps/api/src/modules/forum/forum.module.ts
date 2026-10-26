@@ -75,6 +75,7 @@ import { ForumPollController } from "./presentation/forum-poll.controller";
     ForumPollRepository,
   ],
   exports: [
+    ForumPublicService,
     ForumService,
     ForumThreadService,
     ForumQaService,

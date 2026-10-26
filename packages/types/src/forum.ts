@@ -559,6 +559,9 @@ export interface PublicAnswerView {
 }
 
 export interface PublicQuestionView {
+  /** Opaque snapshot version, required for reviewed ad inventory. Additive for older clients. */
+  contentRevision?: string;
+  examType?: import("./index.js").ExamType | null;
   id: string;
   title: string;
   body: string;

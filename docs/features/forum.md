@@ -109,6 +109,16 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-25: Reviewed public question advertising.** Public QA responses add an opaque
+  `contentRevision` and server-owned `examType`. The public web question reads fresh and mounts
+  one deferred ad after all answers; Ads requires editor approval of exactly that revision.
+  Unknown/private/unanswered contexts stay closed. Usage: Community admin → Question ad review
+  → inspect all text/answers → approve or revoke. Content or visibility changes invalidate the
+  previous approval; already open snapshots receive no live moderation push. No feed/chat/profile
+  placement was added. Related: `forum-public.service.ts`, `forum-thread.repository.ts`, public
+  question page, `QuestionAdReview.tsx`, [Ads](ads.md),
+  [design](../plans/2026-10-25-reviewed-question-ads.md).
+
 - **Topluluk QA turu 2: erişilebilirlik ve küçük UX (2026-10-10)**
   - **Avatar bağlantıları:** gönderi, yorum, yanıt, soru, cevap ve tepki listesinde avatarı saran profil
     bağlantısının erişilebilir adı yoktu (baş harfler `aria-hidden`). Hemen yanında aynı profile giden ad

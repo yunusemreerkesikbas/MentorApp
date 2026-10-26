@@ -123,9 +123,59 @@ export interface AdminEconomyStatsDto {
   generatedAt: string;
 }
 
-/** GET /v1/economy/invite — stable invite code for the user. */
+/**
+ * The friend discount as the invited user is told about it. `phoneRequired` means "the discount is
+ * waiting, verify your phone to get it": the INVITED promotion is keyed on a verified phone, so
+ * without one checkout would charge the list price.
+ */
+export interface InviteDiscountView {
+  discountType: "PERCENT" | "FIXED";
+  /** The magnitude checkout really applies: percent for PERCENT, kuruş for FIXED. */
+  discountValue: number;
+  phoneRequired: boolean;
+}
+
+/**
+ * GET /v1/economy/invite — the user's own invite card: code, progress as inviter, and (when this
+ * user was invited by someone) their own invitation. Never exposes more than a display name per friend.
+ */
 export interface InviteCodeView {
   code: string;
+  /** Coin the inviter earns when a friend's first real payment succeeds. */
+  rewardCoin: number;
+  /** Friends who joined with this code, newest first, at most 20. Display names only. */
+  joined: { displayName: string }[];
+  /**
+   * Everyone who joined with this code, however many `joined` lists: a number only, so it also counts
+   * friends who are no longer live accounts (erased or suspended) without naming them.
+   */
+  joinedCount: number;
+  /** Friends who paid and whose payment still stands (refunded or reversed ones do not count). */
+  convertedCount: number;
+  /** Set when this user redeemed a friend's code. */
+  redeemed: { inviterDisplayName: string; discount: InviteDiscountView | null } | null;
+  /** False once redeemed, once paid, or when the signup window has closed (same rules as redeem). */
+  canRedeem: boolean;
+  /**
+   * True when checkout would refuse this user now (an open subscription, e.g. a trial; also when the
+   * lookup failed). They may still redeem, but no surface may promise them the invite discount.
+   */
+  checkoutBlocked: boolean;
+  /**
+   * What a friend gets with this user's code right now (the live INVITED promotion, as the public
+   * preview shows it), or null when none is live, the web sells no plan or the lookup failed.
+   */
+  friendDiscount: Omit<InviteDiscountView, "phoneRequired"> | null;
+}
+
+/**
+ * GET /v1/economy/invite/preview/:code — public, what a friend sees before signing up. Only the
+ * inviter's display name: no username, avatar or id. 404 `INVITE_CODE_INVALID` for any unusable code.
+ */
+export interface InvitePreviewView {
+  inviterDisplayName: string;
+  /** Null when no friend discount is live or the web cannot sell a plan. */
+  discount: Omit<InviteDiscountView, "phoneRequired"> | null;
 }
 
 /** POST /v1/economy/invite/redeem — redemption accepted (reward is async on conversion). */

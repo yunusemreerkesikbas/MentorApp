@@ -15,6 +15,8 @@ const makePairs = () => ({
   deleteActive: vi.fn().mockResolvedValue(undefined),
   recordNudge: vi.fn().mockResolvedValue(undefined),
   listRelatedOrActivelyPairedIds: vi.fn().mockResolvedValue([]),
+  hasActiveOrPending: vi.fn().mockResolvedValue(false),
+  tryInsertPending: vi.fn().mockResolvedValue({ id: "p1" }),
 });
 const makeUsers = () => ({
   findByUsernameService: vi.fn(),
@@ -118,6 +120,68 @@ describe("BuddyService.request", () => {
       code: ErrorCode.SOCIAL_BUDDY_REQUEST_EXISTS,
     });
     expect(pairs.insertPending).not.toHaveBeenCalled();
+  });
+});
+
+describe("BuddyService.requestFromInvite", () => {
+  it("inserts a pending request invited → inviter by id and emits BUDDY_REQUESTED flagged viaInvite", async () => {
+    const { svc, pairs, users, events } = make();
+    users.findByIdService.mockResolvedValue({ displayName: "Burak", username: "burak" });
+
+    await expect(svc.requestFromInvite("uInvited", "uInviter")).resolves.toBe(true);
+
+    expect(pairs.tryInsertPending).toHaveBeenCalledWith("uInvited", "uInviter");
+    expect(users.findByUsernameService).not.toHaveBeenCalled();
+    expect(events.emit).toHaveBeenCalledTimes(1);
+    expect(events.emit).toHaveBeenCalledWith("identity.buddy.requested", {
+      recipientId: "uInviter",
+      actorId: "uInvited",
+      actorDisplayName: "Burak",
+      actorUsername: "burak",
+      viaInvite: true,
+    });
+  });
+
+  it("returns false and writes nothing when the addressee already has an active pair", async () => {
+    const { svc, pairs, events } = make();
+    pairs.hasActiveOrPending.mockImplementation(async (id: string) => id === "uInviter");
+
+    await expect(svc.requestFromInvite("uInvited", "uInviter")).resolves.toBe(false);
+
+    expect(pairs.tryInsertPending).not.toHaveBeenCalled();
+    expect(events.emit).not.toHaveBeenCalled();
+  });
+
+  it("returns false and writes nothing when the requester already has an active pair or a pending request", async () => {
+    const { svc, pairs, events } = make();
+    pairs.hasActiveOrPending.mockImplementation(async (id: string) => id === "uInvited");
+
+    await expect(svc.requestFromInvite("uInvited", "uInviter")).resolves.toBe(false);
+
+    expect(pairs.tryInsertPending).not.toHaveBeenCalled();
+    expect(events.emit).not.toHaveBeenCalled();
+  });
+
+  it("returns false and emits nothing when a row between the two appears first (insert conflict)", async () => {
+    const { svc, pairs, events } = make();
+    pairs.tryInsertPending.mockResolvedValue(undefined);
+
+    await expect(svc.requestFromInvite("uInvited", "uInviter")).resolves.toBe(false);
+
+    expect(events.emit).not.toHaveBeenCalled();
+  });
+
+  it("returns false for the same user on both sides", async () => {
+    const { svc, pairs } = make();
+    await expect(svc.requestFromInvite("uA", "uA")).resolves.toBe(false);
+    expect(pairs.tryInsertPending).not.toHaveBeenCalled();
+  });
+
+  it("leaves the plain request event without the viaInvite flag", async () => {
+    const { svc, users, events } = make();
+    users.findByUsernameService.mockResolvedValue(userRow());
+    await svc.request("uA", "bob");
+    expect(events.emit.mock.calls[0]![1]).not.toHaveProperty("viaInvite");
   });
 });
 

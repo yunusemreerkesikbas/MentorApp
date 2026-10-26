@@ -1,38 +1,19 @@
 import { resolveAvatarUrl } from "@/lib/avatar";
 
-const AVATAR_COLORS = [
-  "var(--color-chip)",
-  "var(--color-accent-soft)",
-  "var(--color-streak-soft)",
-  "var(--color-progress-track)",
-  "var(--color-surface-container)",
-];
-
-function colorFor(name: string): string {
-  const value = name.split("").reduce((total, character) => total + character.charCodeAt(0), 0);
-  return AVATAR_COLORS[value % AVATAR_COLORS.length]!;
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0]}${parts.at(-1)![0]}`.toUpperCase();
-}
-
 export interface UserAvatarProps {
   alt?: string;
   className?: string;
   frame?: "default" | "strong";
+  /** Kept on the API for callers; the no-photo fallback is a neutral silhouette, not initials. */
   name: string;
   size?: number;
   src?: string | null;
-  /** The photo failed to load (a broken or expired URL); the caller can fall back to initials. */
+  /** The photo failed to load (a broken or expired URL); the caller can fall back to the silhouette. */
   onError?: () => void;
 }
 
 /** Shared user identity avatar. Content and attachment thumbnails must not use this component. */
-export function UserAvatar({ alt = "", className = "", frame = "default", name, size = 36, src, onError }: UserAvatarProps) {
+export function UserAvatar({ alt = "", className = "", frame = "default", size = 36, src, onError }: UserAvatarProps) {
   const resolvedSrc = resolveAvatarUrl(src ?? null);
   const frameClass =
     frame === "strong"
@@ -49,13 +30,21 @@ export function UserAvatar({ alt = "", className = "", frame = "default", name, 
     );
   }
 
+  // Default avatar: head + shoulders silhouette in theme tokens, so it follows dark mode.
   return (
     <span
       aria-hidden="true"
-      className={`${sharedClass} items-center justify-center font-bold`}
-      style={{ ...style, backgroundColor: colorFor(name || "?"), color: "var(--color-main)", fontSize: Math.max(10, Math.round(size * 0.36)) }}
+      className={`${sharedClass} overflow-hidden`}
+      style={{ ...style, backgroundColor: "var(--color-surface-container)" }}
     >
-      {initials(name || "?")}
+      <svg
+        viewBox="0 0 100 100"
+        className="size-full"
+        style={{ color: "color-mix(in srgb, var(--color-secondary) 38%, var(--color-surface-container))" }}
+      >
+        <circle cx="50" cy="39" r="21" fill="currentColor" />
+        <circle cx="50" cy="98" r="32" fill="currentColor" />
+      </svg>
     </span>
   );
 }

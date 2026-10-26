@@ -135,7 +135,7 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
     <button
       type="button"
       onClick={() => setCouponOpen(true)}
-      className="flex min-h-11 items-center gap-2 self-start text-xs font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      className="flex min-h-11 items-center gap-2 self-center text-xs underline opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       style={{ color: "var(--color-secondary)" }}
     >
       <TagIcon size={16} strokeWidth={1.75} aria-hidden />
@@ -150,8 +150,6 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }}
     >
-      {purchaseEnabled ? couponField : null}
-
       {purchaseEnabled ? (
         <label
           className="flex min-h-11 cursor-pointer items-start gap-3 text-xs leading-relaxed"
@@ -187,7 +185,7 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
           <span>
             {consentText}
             <span
-              className="mt-1 block"
+              className="mt-0.5 block opacity-80"
               style={{ color: "var(--color-secondary)" }}
             >
               <LegalLink slug="mesafeli-satis-sozlesmesi" tone="plain">
@@ -228,7 +226,13 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
           busy={busy}
           onClick={start}
         >
-          {tSub(includesTrial ? "start_trial" : "start_paid")}
+          {includesTrial
+            ? tSub("start_trial", { days: trialDays })
+            : selected
+              ? tSub("start_paid", {
+                  price: formatPrice(selectedDiscount?.chargedPriceMinor ?? selected.priceMinor, locale),
+                })
+              : tSub("start_premium")}
         </Button>
       ) : mode === "store" ? (
         <StoreButtons links={getStoreLinks()} />
@@ -237,6 +241,9 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
           {tSub("coming_soon")}
         </Button>
       )}
+
+      {/* Under the CTA, not above it: a visible coupon prompt sends buyers off to hunt for codes. */}
+      {purchaseEnabled ? couponField : null}
     </motion.div>
   );
 

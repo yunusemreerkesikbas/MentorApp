@@ -26,14 +26,16 @@ export function CoachPersonalizationContext({
         <span className="font-semibold text-[var(--color-body-text)]">
           {t("used_context_label")}
         </span>
-        <span className="ml-auto">{t("why")}</span>
+        <span className="ml-auto shrink-0 whitespace-nowrap">{t("why")}</span>
         <ChevronDown
           className="size-4 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
           aria-hidden
         />
       </summary>
 
-      <div className="mt-1 grid gap-2 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] p-3">
+      {/* A light glass card on the pastel chat backdrop, like the preference and action cards; the
+          grey surface-container slab read as a disabled block. */}
+      <div className="mt-1 grid gap-2 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_72%,transparent)] p-3 shadow-[var(--shadow-card)] backdrop-blur-md">
         {usedEvidence.length > 0 ? (
           <CoachEvidenceList evidence={usedEvidence} />
         ) : null}

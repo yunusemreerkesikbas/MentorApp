@@ -4,10 +4,12 @@ import { RewardReceiptService } from "../application/reward-receipt.service";
 import { EconomyRewardsSeenDto } from "./economy.dto";
 import { ApiBearerAuth, ApiTags, ApiOkResponse, ApiQuery, ApiBody } from "@nestjs/swagger";
 import { I18nService } from "nestjs-i18n";
+import { UserRole } from "@mentor/types";
 import type {
   DeepAnalysisView,
   EconomyBalance,
   EconomyLedgerEntryView,
+  InviteCodeView,
   StreakRescueView,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
@@ -18,9 +20,10 @@ import { DeepAnalysisService } from "../application/deep-analysis.service";
 import { resolveEconomyLang } from "../application/economy-lang";
 import { EconomyService } from "../application/economy.service";
 import { InviteService } from "../application/invite.service";
+import { InviteViewService } from "../application/invite-view.service";
 import { QuestService, type QuestProgressView } from "../application/quest.service";
 import { StreakRescueService } from "../application/streak-rescue.service";
-import { DeepAnalysisDto, EconomyLedgerQueryDto, RedeemInviteDto } from "./economy.dto";
+import { DeepAnalysisDto, EconomyLedgerQueryDto, InviteCodeViewDto, RedeemInviteDto } from "./economy.dto";
 import { toLedgerEntryView, type LedgerCopyFn } from "./ledger-entry-view";
 
 /**
@@ -34,6 +37,7 @@ export class EconomyController {
   constructor(
     private readonly economy: EconomyService,
     private readonly invites: InviteService,
+    private readonly inviteViews: InviteViewService,
     private readonly quests: QuestService,
     private readonly streakRescue: StreakRescueService,
     private readonly deepAnalysis: DeepAnalysisService,
@@ -70,10 +74,16 @@ export class EconomyController {
     return rows.map((row) => toLedgerEntryView(row, t));
   }
 
+  /** The user's invite card: code, joined friends, paying friends, their own invitation and what they can still redeem. */
   @Get("invite")
-  async invite(@CurrentUser() user: RequestUser): Promise<{ code: string }> {
+  @ApiOkResponse({ type: InviteCodeViewDto })
+  async invite(@CurrentUser() user: RequestUser): Promise<InviteCodeView> {
     await this.assertEnabled();
-    return { code: await this.invites.getOrCreateCode(user.id) };
+    // Coaches are outside the invite economy: no code is minted for them (redeem is guarded in the service).
+    if (user.roles.includes(UserRole.COACH)) {
+      throw new DomainError(ErrorCode.INVITE_COACH_NOT_ALLOWED, HttpStatus.FORBIDDEN);
+    }
+    return this.inviteViews.getView(user.id);
   }
 
   @Get("rewards/unseen")

@@ -9,4 +9,9 @@ export class PaymentEvidenceService {
   isRefunded(userId: string, paymentId: string): Promise<boolean> {
     return this.events.isPaymentRefunded(userId, paymentId);
   }
+
+  /** Whether this user ever paid real money: any succeeded charge above zero. A trial alone is not payment. */
+  hasPaid(userId: string): Promise<boolean> {
+    return this.events.hasPositiveCharge(userId);
+  }
 }

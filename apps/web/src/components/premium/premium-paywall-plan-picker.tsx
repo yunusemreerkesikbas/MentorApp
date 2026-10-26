@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import { featuredPlanId, monthlyEquivalentMinor } from "@/lib/paywall-plans";
+import { featuredPlanId, monthlyEquivalentMinor, savingsPercent } from "@/lib/paywall-plans";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import type { PremiumPaywallState } from "./use-premium-paywall";
 
@@ -36,6 +36,8 @@ export function PremiumPaywallPlanPicker({ purchase }: { purchase: PremiumPaywal
         const planOffer =
           cardOffer && cardOffer.discountMinor > 0 ? cardOffer : undefined;
         const isFeatured = plan.id === featuredId;
+        // List prices: a coupon shows its own strike-through, the badge speaks for the plan itself.
+        const savings = isFeatured ? savingsPercent(plan, plans) : undefined;
         const chargedMinor = planOffer?.chargedPriceMinor ?? plan.priceMinor;
         // Every card speaks per month; a longer plan adds the total it is actually charged.
         const perMonth = (minor: number) =>
@@ -69,7 +71,7 @@ export function PremiumPaywallPlanPicker({ purchase }: { purchase: PremiumPaywal
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }}
               >
-                {t("badge_value")}
+                {savings ? t("badge_savings", { percent: savings }) : t("badge_value")}
               </motion.span>
             ) : null}
             <p

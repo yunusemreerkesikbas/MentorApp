@@ -2185,6 +2185,10 @@ deftere fotoğraflı bir yanlış eklenip sayfaya yerleştirildiğinde tetikleni
   `tsc --noEmit` ve `eslint` temiz.
   Dosyalar: `analysis-tab-progress.tsx`, `info-tooltip.tsx`, `messages/{tr,en}.json`.
 
+- **2026-10-25 · Plan uyarlama önizlemesi görsel düzeltme.** Görev kutucukları native `accent-color` yerine paywall'daki özel kutucuğu kullanıyor: `--play-cta` dolgu, `--play-cta-ink` tik (açık temada `--color-btn` siyah olduğu için kutu siyah görünüyordu). Seçili kartın kenarı `has-[:checked]` ile `--play-cta` oluyor, seçilmeyen `--play-line` kalıyor. "Koçun baktıkları" gri zeminsiz bir açılır satır oldu, kanıt listesi ikon hizasında girintili. Dosya: `plan-coach-adaptation-preview.tsx`.
+
+- **2026-10-25 · Odak tekrarı (`/yanlis-defteri?review=focus`) durum ekranları.** Tekrar destesi tam ekran bir pencerede açılıyor. Pencere kapandıktan sonra arkada kalan sayfa önceden tek cümlelik ham bir karttı; artık dar, ortalanmış bir sütun. Üstte ikonlu "Analize dön" linki var. Boş, tekrar yok, kaydedildi ve hata durumları `EmptyState` ile gösteriliyor (Puhu, başlık, açıklama). Bu durumlarda ana buton duruma göre değişiyor ("Aktif sorularla erken çalış", "Diğer sorulara geç" veya "Yeniden dene"), "Yanlış defterine git" ise ikincil buton. Yükleme metni yerine iskelet (skeleton) var. Yeni anahtarlar: `notebook.focusReview.{noDue_title, empty_title, saved_title, notebook}`. Gotcha: buton olarak ikinci bir "Analize dön" ekleme, çünkü `analysis-review.spec.ts` bu linki ada göre tek eleman olarak bulmayı bekliyor. Dosya: `notebook-focus-review.tsx`.
+
 ## Gotchas / Known issues
 
 - **Defter araç çubuğu mobilde sabit başlığın altına kaçıyor (e2e'de kırmızı, 2026-09-05)** — 375px
@@ -5064,3 +5068,42 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   so downloaded text matches the editor. Other screens still use their own typography. Related:
   `vision-board/board/layout.tsx`, `board-font-families.ts`, `board-export.ts`,
   `vision-board.spec.ts`, `apps/web/package.json`.
+- **2026-10-25 — First-visit preference card speaks the chat page's language.** The black
+  (`--color-btn`) chips and save button became the coach page's own: unselected options are the
+  white shadowed pills of the starter chips, the chosen one and "Tercihlerimi kaydet" take
+  `--color-progress` with white text, "Şimdilik atla" is a quiet text button. A 44 px Puhu now heads
+  the card with a bold title (`coach_chat.calibration.title`, split out of `intro`), the questions
+  sit in hairline-divided groups, and the landing's 120 px Puhu is passed as `children` to
+  `CoachCalibrationCard`, which shows it only when the card does not, so the card fits under the
+  greeting on a desktop. Phones hide the starter chips while the card is open
+  (`max-sm:[:root:has([data-coach-calibration])_&]:hidden` on `CoachStarterChips`): answer or skip
+  first. Related: `coach-calibration-card.tsx`, `coach-empty-landing.tsx`,
+  `coach-starter-chips.tsx`, `messages/{tr,en}.json`; e2e "ilk ziyaret tercih kartı" still green.
+- **2026-10-25 — "Neye göre?" panel and action card join the glass-card language.** The opened
+  context panel (`CoachPersonalizationContext`) dropped the grey `--color-surface-container` slab for
+  a translucent surface card (`surface` 72% + `backdrop-blur-md` + `--shadow-card`) on the pastel chat
+  backdrop; "Neye göre?" no longer wraps on phones. `CoachActionCard` matches the first-visit
+  preference card: borderless 92% glass card, label + Sparkles (`--color-progress`) on the left,
+  quiet "Şimdi değil" text button then the blue "Onayla" pill on the right (wraps under the label on
+  phones); the accepted/completed confirmation uses the same glass instead of grey. Behaviour and
+  accessible names are unchanged (e2e "80-minute" still green).
+- **2026-10-25 — "Koçun bildikleri" modal matches the coach chat polish.** Consent is now a switch row
+  (Toggle, --play-cta on, like the settings page) over a hairline instead of a grey slab with an
+  outlined "Hatırlamayı aç/durdur" button, so coach_chat.memory.{pause,resume} were removed. Fact
+  rows are white shadowed cards; edit/forget/close use Solar Linear (Pen 2, Trash Bin Minimalistic,
+  Close) with 40–44 px targets; the edit "Kaydet" is the blue --color-progress pill;
+  "Tümünü temizle" is a quiet danger text button (two-step confirm unchanged). The sidebar trigger
+  keeps its Lucide Brain next to the history panel's own icons.
+- **2026-10-25 — Sector Puhu app-wide (career mascot follows the session user).** The field picked
+  in onboarding / on the goal board now replaces the classic Puhu in every static `PuhuImage`
+  (CompanionBubble, empty states, coach FAB, dialogs…), on the flat `/mascot/career/*.png` set. Every
+  mood variant swaps too (one pose per sector, by decision); "Diğer" / skipped = `null` = classic
+  Puhu. Animated scenes (lamp, auth hang, recap story, welcome clips) stay classic: no sector frames.
+  Source of truth stays `vision_boards.career_group` (coaching); `VisionService.upsert` mirrors it
+  through identity's public `UsersService.setCareerGroup` into `users.career_group` (migration 0127,
+  backfilled), and `toAuthUser` returns it as `AuthUser.careerGroup`, so web and the coming mobile
+  app read it from the session with no extra request. Web: `PuhuImage` reads `useAuth()` when no
+  `career` prop is passed (the goal board still passes its unsaved pick for live preview); the two
+  save sites (onboarding field step when it wrote, goal board submit) patch the auth user via
+  `setUserFromServer` so every Puhu switches without a reload. Gotcha: the mirror write runs after
+  the board tx, so a failure there leaves `users.career_group` one save stale until the next upsert.
