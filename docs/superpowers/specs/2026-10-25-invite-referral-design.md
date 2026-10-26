@@ -1,6 +1,6 @@
 # Arkadaş daveti: ödeyen kullanıcı getiren davet akışı
 
-> 2026-10-25 · Durum: tasarım (onay bekliyor; builder check yapıldı) · Branch: `feature/APP-119`
+> 2026-10-25 · Durum: uygulandı · Branch: `feature/APP-119`
 > İlgili: [`economy.md`](../../features/economy.md), [`docs/copy/voice.md`](../../copy/voice.md),
 > bileşen `apps/web/src/app/[locale]/(app)/profile/_components/economy-invite-card.tsx`.
 

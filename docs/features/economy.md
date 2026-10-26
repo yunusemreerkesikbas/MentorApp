@@ -22,7 +22,11 @@ These rules supersede earlier launch assumptions in the historical timeline.
 | Profile / verified email | 10 Coin each, once |
 | First subscription / entering invite code | Disabled quest IDs retained; no Coin |
 | Weekly effort | 5 active UTC days in one ISO week gives 15 Coin |
-| Successful invite | Inviter receives 20 Coin on the invitee's first positive successful payment |
+| Successful invite | Inviter receives 20 Coin on the invitee's first positive successful payment (a trial, a sponsor, a 0 TL charge and renewals never count; a refund of that payment takes the Coin back). No Coin moves when either side is a coach by then (`reward_outcome = COACH_SKIPPED`) |
+| Invite code | `PUHU-` + 8 characters (no 0/O/1/I). Old `MENTOR-` codes were rewritten to `PUHU-`. Input is case-insensitive. Redeemable only in the first 7 days after signup (`economy.invite.redeem_window_days`, 1 to 90) by someone who has never paid (a trial does not block it). Own code, a second code and coaches (403) are refused |
+| Invite link | `puhukoc.com/davet/PUHU-XXXXXXXX` (`/en/invite/...`), public, noindex. A new signup carries the code through signup and onboarding and it is redeemed once when onboarding ends. A signed-in student confirms with one "Daveti kabul et" button, nothing is redeemed on arrival. Redeeming links the two (study-buddy request, or a mutual follow when a slot is taken) and notifies the inviter |
+| Invitee discount | Not Coin. An automatic `INVITED` promotion (rule `{ withinDays }`, default 30) that FINANCE creates in admin (e.g. 30% on the first period). Web checkout only, needs a verified phone and applies once per phone. Shown on the landing, the card and the paywall only while web sales are on and the campaign is live; otherwise the copy drops the discount sentence. A hand-typed coupon replaces it |
+| Inviter card | Shows own link (Paylaş), joined count, paying-friend count ("1 kişi Premium'a geçti", never names who paid) and, for the invited friend, "{ad} davetiyle geldin!" with the discount or the phone hint |
 | AI chat / weekly deep analysis | 5 / 25 Coin, configured centrally |
 | XP leaderboard / paid streak rescue / rewarded ads | Disabled, enforced by backend |
 
@@ -513,6 +517,51 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   (review READY) is checked BEFORE spending, so an ungeneratable report can't be bought.
 
 ## Geliştirmeler (timeline)
+
+### 2026-10-26 — Davet akışı kapanışı: ses kuralları, başlatma kuralları tablosu, gerçek API geçişi (8/8)
+
+Plan 2026-10-25 tasarımının son görevi. Dokümanlar: `docs/copy/voice.md` (yeni "Davet: enerjik Puhu" bölümü; davet
+overlay'i, `/davet` karşılaması ve iki davet bildirimi Puhu, açıklama satırı, `INVITE_*` hataları ve ölü bağlantı
+kartı companion; `invite_subtitle` / `redeem_pending` companion listesinden çıktı, eski "hak düşer" örnekleri
+yayındaki satırlarla değişti), bu dosyanın "Launch rules" tablosu (kod biçimi, 7 günlük pencere, koç dışlaması,
+`INVITED` indirimi, kart) ve spec durumu "uygulandı".
+
+**Gerçek API geçişi** (dev DB `mentor`, sahte ödeme sağlayıcısı, yalnız `@example.test` hesapları, Playwright ile
+production build). Sonuç 8/8 geçti:
+
+| # | Senaryo | Sonuç | Kanıt |
+| --- | --- | --- | --- |
+| 1 | Davet eden öğrenci Ayarlar > Davet et | geçti | Kart: "%30 indirim arkadaşına, 20 Coin sana. Üstelik birlikte çalışırsınız!", kod `PUHU-7NSLJ7VC`; Paylaş `navigator.share` ile `/davet/PUHU-7NSLJ7VC` verdi |
+| 2 | Bağlantıyı anonim açma, kayıt, onboarding, otomatik kullanım | geçti | Karşılama: "Inviter Test seni davet etti!", kod okunur metin, açıklama satırı, indirim satırı. "Hemen başla" kodu `mentor.pendingReferral`'a yazdı; "Panele git"ten önce istek yok, sonra tek `POST /economy/invite/redeem` 201, toast "Kodun kaydedildi!", sessionStorage boşaldı. İki ayrı arkadaşta tekrarlandı: her biri için `invite_redemptions` tek satır (PENDING) |
+| 3 | Davet eden: bildirim ve katılan sayısı | geçti | `user_notifications`: ilk kullanımda tek `buddyRequestedViaInvite` ("Friend Test davetinle geldi!", `buddy_pairs` PENDING arkadaştan davet edene), ikinci kullanımda (çalışma arkadaşı yeri dolu) tek `inviteJoined`. Kart "1 arkadaşın katıldı · 0 kişi Premium'a geçti" |
+| 4 | Admin formu, `INVITED` %30 kampanyası | geçti (Task 4'ten ertelenen tarayıcı kontrolü) | Kural listesi "Herkes / Yeni kayıt / Aktif gün / Geri kazanım / Davetle gelen"; `withinDays` varsayılanı 30; kayıt `rule_type=INVITED`, `rule_params={"withinDays":30}`, PERCENT 30, 1 dönem, kuponsuz; liste "Davetle gelen · %30 · Otomatik uygulanır" |
+| 5 | Telefon doğrulaması ve indirim | geçti | Doğrulanmamış: kart "İndirim için telefonunu doğrula.", `offers` `discountMinor: 0`, fiyat ₺249,00. Doğrulanmış: kart "İndirimin ödeme ekranında seni bekliyor.", `discountMinor: 7470`, `/abonelik` ₺174,30 ("ilk ödeme ₺174,30, sonraki yenilemeler ₺249,00"). `payments.web.enabled` katalog varsayılanı (true), bayrak değiştirilmedi |
+| 6 | Arkadaşın ödemesi, davet edene Coin | geçti | Checkout `useTrial: false` → `promotion_redemptions` RESERVED 7470; imzalı `payment_succeeded` webhook'u → `invite_redemptions` CONVERTED / `GRANTED`, defter `COIN +20 invite-redemption`, `convertedCount: 1`, kart "2 arkadaşın katıldı · 1 kişi Premium'a geçti" |
+| 7 | Koç | geçti | `GET /economy/invite` ve `POST /economy/invite/redeem` 403 `INVITE_COACH_NOT_ALLOWED`; Ayarlar'da "Davet et" satırı yok; karşılama "Bu davet bağlantısı çalışmıyor." gösterir, "Daveti kabul et" / "Hemen başla" yok, kod saklanmaz |
+| 8 | Küçük harfle kod | geçti | Ayarlar formuna `puhu-7nslj7vc` yazıldı: 201, satırda `PUHU-7NSLJ7VC`, kart "Kodun kaydedildi!" ve "Inviter Test davetiyle geldin!" |
+
+- **Gotchas (geçişte çıkanlar):**
+  - Kimlik doğrulama POST'ları `Origin`'in `APP_URL`'e (admin için `ADMIN_APP_URL`) tam eşit olmasını ister
+    (`AuthOriginGuard`). Başka portta çalışan bir production build'i gerçek API'ye bağlamak için ikinci bir API
+    süreci `PORT=3011 APP_URL=http://localhost:3100 ADMIN_APP_URL=http://localhost:3002` ile açıldı; web
+    `NEXT_PUBLIC_API_URL`'i build sırasında bu porta bağlandı (`WEB_QA_DIST_DIR` ile ayrı dist). Geçişten sonra
+    süreçler kapatıldı, dist silindi.
+  - `apps/api/.env` bugün `ADMIN_APP_URL=http://localhost:3001` içeriyor: `:3002`'deki admin uygulaması bu API'ye
+    giriş yapamaz (403). Bu görevle ilgisiz, `.env`'e dokunulmadı.
+  - Dev `.env`'de `PHONE_FINGERPRINT_SECRET` yok. Doğrulanmış telefonlu davetli bile indirim görmez ve kart sessiz
+    kalır (`getVerifiedPhoneFingerprint` null döner, kapalı varsayılan). İndirimi denemek için süreç ortamına ≥32
+    karakterlik geçici bir sır verildi.
+  - Sahte sağlayıcı anında aktif eder, `checkout_completed` gelmediği için indirim satırı RESERVED kalır
+    (`markApplied` yalnız o olayda çalışır); iyzico yolunda APPLIED olur. Davet edenin Coin'i bundan etkilenmez.
+  - Hesap başına giriş sınırı 15 dakikada 10: aynı hesapla sık giriş yapan bir otomasyon 429 alır. Yeni hesaplarda
+    seviye kutlaması ve "Devam et" spotlight'ı tıklamaları kapatır, otomasyonda önce onları kapat.
+  - Geçiş sırasında admin panosundaki `GET /admin/metrics/coach-feedback` 500 verdi; davetle ilgisi yok, bakılmadı.
+- **Temizlik:** `INVITED` kampanyası admin API'siyle pasife alındı (`is_active = false`), yapılandırma bayrakları
+  değişmedi (`economy.enabled`, `promotions.enabled` açık, `payments.web.*` geçersiz kılma yok). Test hesapları dev
+  DB'de kaldı (`*-mvoevo9w@example.test`: inviter, friend, friendtwo, friendthree, coach, admin).
+- **Related:** `docs/copy/voice.md`, `docs/superpowers/specs/2026-10-25-invite-referral-design.md`,
+  `apps/api/src/config/env.validation.ts`, `apps/api/src/common/auth/auth-origin.guard.ts`,
+  [promotions.md](./promotions.md) 2026-10-25, [payments.md](./payments.md) 2026-10-25.
 
 ### 2026-10-26 — `InviteCodeView.joinedCount`: katılan sayısı listeden ayrıldı
 
