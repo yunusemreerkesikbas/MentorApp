@@ -131,6 +131,19 @@ Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyur
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-26 — INVITED fails closed on a missing fingerprint; coaches get no invite signal.**
+  `reserve`'s `assertPhoneFree`, `disqualify`'s phone-quota check and `evaluateRule`'s INVITED case
+  now test the fingerprint as falsy instead of `=== null` / `!== null`, so a caller that omits it
+  (`undefined`) is `PHONE_REQUIRED` at checkout and RULE_UNMET at resolve, never a phone-free
+  discount. New unit tests: reserve with `phoneFingerprint: undefined` on an INVITED row → 409
+  `PHONE_REQUIRED`; resolve with an undefined fingerprint → list price, no phone count; and "judged by
+  the promotion row, not the offer" (offer resolved as ANYONE, row now INVITED → phone still required).
+  Economy's invite signal (`InviteService.onModuleInit` → `InviteSignalRegistry`) answers null for a
+  user who has the COACH role (one `users` read, only when a redemption exists), so a redeem made
+  before becoming a coach never turns into an INVITED discount.
+  Related: `promotions.service.ts`, `promotion-rule.ts`, `invite.service.ts`,
+  [economy.md](./economy.md) 2026-10-26.
+
 - **2026-10-25 — `previewByRule`: what a rule would give, without a user.** `PromotionsService.previewByRule(ruleType, plans, locale?)`
   returns the summary of the live, code-less promotion of that rule with the biggest discount over the
   given (web-sellable) plans, or null. It checks promotions on, the date window, the global cap and a

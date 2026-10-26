@@ -94,7 +94,8 @@ export function evaluateRule(
     case PromotionRuleType.INVITED: {
       // Phone-once is a quota, not part of the rule: it is counted by the service, under the
       // promotion lock at checkout. A verified phone is part of the rule because it is the key.
-      if (ctx.invitedAt === null || ctx.hasPaid || ctx.phoneFingerprint === null) return false;
+      // `!fingerprint`, not `=== null`: an omitted key fails closed on the money path.
+      if (ctx.invitedAt === null || ctx.hasPaid || !ctx.phoneFingerprint) return false;
       return ctx.now.getTime() - ctx.invitedAt.getTime() <= num(params.withinDays, 30) * DAY_MS;
     }
 

@@ -355,7 +355,8 @@ export class PromotionsService {
     phoneFingerprint: string | null,
     tx: DatabaseTx,
   ): Promise<void> {
-    if (phoneFingerprint === null) {
+    // Falsy, not `=== null`: a caller that leaves the key out must not get a phone-free discount.
+    if (!phoneFingerprint) {
       throw new DomainError(ErrorCode.PROMOTION_NOT_ELIGIBLE, HttpStatus.CONFLICT, {
         reason: "PHONE_REQUIRED",
       });
@@ -502,7 +503,7 @@ export class PromotionsService {
     // The rule already required a fingerprint; the same quota `reserve` re-checks under the lock.
     if (
       promotion.ruleType === PromotionRuleType.INVITED &&
-      ruleContext.phoneFingerprint !== null &&
+      ruleContext.phoneFingerprint &&
       (await this.redemptionsRepo.countActiveForPhone(promotion.id, ruleContext.phoneFingerprint)) > 0
     ) {
       return "PHONE_USED";

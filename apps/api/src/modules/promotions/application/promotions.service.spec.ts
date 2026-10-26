@@ -470,6 +470,15 @@ describe("PromotionsService INVITED signal", () => {
     expect(offer.discountMinor).toBe(0);
   });
 
+  it("withholds it when the caller left the fingerprint out (undefined fails closed, like null)", async () => {
+    const harness = makeService({ live: [invitedRule] });
+    const offer = await resolveMonthly(harness, {
+      context: { ...invitedUser, phoneFingerprint: undefined as unknown as string | null },
+    });
+    expect(offer.discountMinor).toBe(0);
+    expect(harness.redemptionsRepo.countActiveForPhone).not.toHaveBeenCalled();
+  });
+
   it("never counts phones for any other rule type", async () => {
     const harness = makeService({ live: [promo()] });
     await resolveMonthly(harness, { context: invitedUser });
@@ -626,6 +635,44 @@ describe("PromotionsService.reserve", () => {
       await expect(reserveFor(harness, "u1", null)).rejects.toMatchObject({
         code: ErrorCode.PROMOTION_NOT_ELIGIBLE,
         httpStatus: 409,
+        details: { reason: "PHONE_REQUIRED" },
+      });
+      expect(harness.redemptionsRepo.create).not.toHaveBeenCalled();
+    });
+
+    it("fails closed when the caller omits the fingerprint (undefined is not a phone)", async () => {
+      const { harness } = ledger();
+      await expect(
+        harness.service.reserve({
+          tx,
+          offer: { ...offer, ruleType: "INVITED" },
+          userId: "u1",
+          orgId: null,
+          subscriptionId: "sub-u1",
+          phoneFingerprint: undefined as unknown as string | null,
+        }),
+      ).rejects.toMatchObject({
+        code: ErrorCode.PROMOTION_NOT_ELIGIBLE,
+        httpStatus: 409,
+        details: { reason: "PHONE_REQUIRED" },
+      });
+      expect(harness.redemptionsRepo.countActiveForPhone).not.toHaveBeenCalled();
+      expect(harness.redemptionsRepo.create).not.toHaveBeenCalled();
+    });
+
+    it("is judged by the promotion row, not the offer: a row now INVITED still needs the phone", async () => {
+      const { harness } = ledger(); // the row is INVITED
+      await expect(
+        harness.service.reserve({
+          tx,
+          offer: { ...offer, ruleType: "ANYONE" }, // resolved before an admin changed the rule
+          userId: "u1",
+          orgId: null,
+          subscriptionId: "sub-u1",
+          phoneFingerprint: null,
+        }),
+      ).rejects.toMatchObject({
+        code: ErrorCode.PROMOTION_NOT_ELIGIBLE,
         details: { reason: "PHONE_REQUIRED" },
       });
       expect(harness.redemptionsRepo.create).not.toHaveBeenCalled();
