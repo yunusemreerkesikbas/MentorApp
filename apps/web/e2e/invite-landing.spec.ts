@@ -42,14 +42,36 @@ interface Mock {
   preview: Answer;
   /** Answers `POST /economy/invite/redeem`. */
   redeem: Answer;
+  /** Answers `GET /economy/invite`: the signed-in student's own invite view. */
+  invite: Answer;
   /** Holds the preview back until released, to look at the skeleton. */
   previewGate?: Promise<void>;
+  /** Holds the own-invite view back until released. */
+  inviteGate?: Promise<void>;
 }
 
 const OK_PREVIEW: Answer = {
   status: 200,
   body: { inviterDisplayName: "Ayşe", discount: DISCOUNT },
 };
+
+/** `InviteCodeView` for a student who can still use a friend's code (new, never paid, not redeemed). */
+function ownView(over: Record<string, unknown> = {}): Answer {
+  return {
+    status: 200,
+    body: {
+      code: "PUHU-OWNC2345",
+      rewardCoin: 20,
+      joined: [],
+      joinedCount: 0,
+      convertedCount: 0,
+      redeemed: null,
+      canRedeem: true,
+      friendDiscount: DISCOUNT,
+      ...over,
+    },
+  };
+}
 const INVALID_PREVIEW: Answer = {
   status: 404,
   body: { code: "INVITE_CODE_INVALID", message: "Bu davet kodu geçersiz." },
@@ -69,9 +91,10 @@ async function mockApi(page: Page, overrides: Partial<Mock> = {}) {
     session: null,
     preview: OK_PREVIEW,
     redeem: { status: 200, body: { status: "OK" } },
+    invite: ownView(),
     ...overrides,
   };
-  const calls = { preview: [] as string[], redeem: 0 };
+  const calls = { preview: [] as string[], redeem: 0, invite: 0 };
 
   await page.addInitScript(() =>
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
@@ -131,6 +154,11 @@ async function mockApi(page: Page, overrides: Partial<Mock> = {}) {
     if (method === "POST" && path === "/v1/economy/invite/redeem") {
       calls.redeem += 1;
       return json(mock.redeem);
+    }
+    if (method === "GET" && path === "/v1/economy/invite") {
+      calls.invite += 1;
+      await mock.inviteGate;
+      return json(mock.invite);
     }
     if (method === "GET" && path === "/v1/coaching/vision") return json({ status: 200, body: null });
     if (method === "POST" && path === "/v1/coaching/vision") {
@@ -194,6 +222,8 @@ test("a friend sees who invited them, the discount and the code, and nothing is 
   ).toBeVisible();
 
   expect(calls.preview).toEqual([CODE]);
+  // A visitor has no account, so there is no own invite view to ask for.
+  expect(calls.invite).toBe(0);
   // Looking is not choosing: nothing is remembered on page view.
   expect(await stored(page)).toBeNull();
   expect(calls.redeem).toBe(0);
@@ -261,16 +291,25 @@ test("the skeleton holds the place while the invite loads", async ({ page }) => 
   await expect(page.getByRole("status", { name: "Davet yükleniyor" })).toHaveCount(0);
 });
 
-test("a signed-in student accepts with one deliberate click", async ({ page }) => {
+test("a signed-in student who can still use an invite accepts with one deliberate click", async ({ page }) => {
   const calls = await mockApi(page, { session: onboardedStudent });
+  await page.addInitScript(() => {
+    (window as unknown as { economyChanged: number }).economyChanged = 0;
+    window.addEventListener("mentor:economy-changed", () => {
+      (window as unknown as { economyChanged: number }).economyChanged += 1;
+    });
+  });
   await page.goto(`/davet/${CODE}`);
 
   const accept = page.getByRole("button", { name: "Daveti kabul et" });
   await expect(accept).toBeVisible();
+  // Their own view says they can still redeem, so the live discount is honest to show.
+  await expect(page.getByText("Premium'da %30 indirim seni bekliyor.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Hemen başla" })).toHaveCount(0);
   await expect(
     page.getByText("Ayşe katıldığını görecek. Premium'a geçersen ona Coin düşer."),
   ).toBeVisible();
+  expect(calls.invite).toBe(1);
   // Following a shared link never connects anyone by itself.
   expect(calls.redeem).toBe(0);
 
@@ -279,6 +318,76 @@ test("a signed-in student accepts with one deliberate click", async ({ page }) =
   await expect(accept).toHaveCount(0);
   expect(calls.redeem).toBe(1);
   await expect(page.getByRole("link", { name: "Panele git" })).toHaveAttribute("href", "/panel");
+  // The redeem completes the invite quest, so the XP/Coin pills are told to refresh.
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { economyChanged: number }).economyChanged))
+    .toBe(1);
+});
+
+test("a student who already paid or is past the signup window gets a calm notice: no discount, no accept", async ({
+  page,
+}) => {
+  const calls = await mockApi(page, { session: onboardedStudent, invite: ownView({ canRedeem: false }) });
+  await page.goto(`/davet/${CODE}`);
+
+  await expect(page.getByRole("heading", { name: "Bu davet yeni gelenler için." })).toBeVisible();
+  await expect(
+    page.getByText("Davet kodu, kayıttan sonraki ilk günlerde ve ilk ödemeden önce kullanılabiliyor."),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Daveti kabul et" })).toHaveCount(0);
+  await expect(page.getByText(/indirim/)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Panele git" })).toHaveAttribute("href", "/panel");
+  expect(calls.redeem).toBe(0);
+});
+
+test("a student who already came with an invite is told whose, with nothing to accept", async ({ page }) => {
+  const calls = await mockApi(page, {
+    session: onboardedStudent,
+    invite: ownView({
+      canRedeem: false,
+      redeemed: {
+        inviterDisplayName: "Mehmet",
+        discount: { ...DISCOUNT, phoneRequired: false },
+      },
+    }),
+  });
+  await page.goto(`/davet/${CODE}`);
+
+  await expect(page.getByRole("heading", { name: "Mehmet davetiyle geldin!" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Daveti kabul et" })).toHaveCount(0);
+  // Not this link's discount, and not a promise about their own either: the landing stays quiet.
+  await expect(page.getByText(/indirim/)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Panele git" })).toBeVisible();
+  expect(calls.redeem).toBe(0);
+});
+
+test("if their own invite view fails, the accept card stays but promises no discount", async ({ page }) => {
+  await mockApi(page, {
+    session: onboardedStudent,
+    invite: { status: 500, body: { code: "INTERNAL_ERROR", message: "x" } },
+  });
+  await page.goto(`/davet/${CODE}`);
+
+  await expect(page.getByRole("button", { name: "Daveti kabul et" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ayşe seni davet etti!" })).toBeVisible();
+  await expect(page.getByText(/indirim/)).toHaveCount(0);
+});
+
+test("the skeleton also waits for a signed-in student's own invite view", async ({ page }) => {
+  let release!: () => void;
+  const inviteGate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const calls = await mockApi(page, { session: onboardedStudent, inviteGate });
+  await page.goto(`/davet/${CODE}`);
+
+  await expect.poll(() => calls.invite).toBe(1);
+  await expect(page.getByRole("status", { name: "Davet yükleniyor" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Daveti kabul et" })).toHaveCount(0);
+
+  release();
+  await expect(page.getByRole("button", { name: "Daveti kabul et" })).toBeVisible();
+  await expect(page.getByRole("status", { name: "Davet yükleniyor" })).toHaveCount(0);
 });
 
 test("a refused accept says why, in the API's words, and does not pretend", async ({ page }) => {
@@ -319,6 +428,8 @@ test("a coach sees the neutral state and cannot accept", async ({ page }) => {
   await expect(page.getByText(CODE)).toHaveCount(0);
   expect(await stored(page)).toBeNull();
   expect(calls.redeem).toBe(0);
+  // Outside the invite economy: their own view (a 403) is never asked for.
+  expect(calls.invite).toBe(0);
 });
 
 test("a dead link says so and still offers a way in, without a code", async ({ page }) => {

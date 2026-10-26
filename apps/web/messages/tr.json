@@ -2696,6 +2696,8 @@
     "invalid_title": "Bu davet bağlantısı çalışmıyor.",
     "invalid_body": "Gönderen kişiden yeni bir bağlantı isteyebilirsin.",
     "invalid_cta": "Yine de başla",
+    "closed_title": "Bu davet yeni gelenler için.",
+    "closed_body": "Davet kodu, kayıttan sonraki ilk günlerde ve ilk ödemeden önce kullanılabiliyor.",
     "failed_title": "Davet şimdi yüklenmedi.",
     "failed_body": "Biraz sonra bir daha deneyelim.",
     "retry": "Yeniden dene"
@@ -2722,6 +2724,9 @@
     "invite_link_copied": "Bağlantı kopyalandı",
     "invite_progress": "{joined, plural, other {# arkadaşın katıldı}} · {converted, plural, other {# kişi Premium'a geçti}}",
     "invite_progress_empty": "İlk arkadaşını bekliyoruz!",
+    "invite_joined_label": "Katılan arkadaşların",
+    "invite_joined_more": "+{count}",
+    "invite_joined_more_label": "{count} arkadaş daha",
     "invite_close": "Kapat",
     "copy": "Kodu kopyala",
     "copied": "Kopyalandı",

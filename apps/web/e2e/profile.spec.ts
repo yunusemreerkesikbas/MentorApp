@@ -163,7 +163,7 @@ test("economy refresh updates the open balance sheet and celebrates ledger rewar
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/balance")) return json(route, { xp, coinConfirmed: coin, coinPending: 0, level });
     if (path.endsWith("/quests")) return json(route, []);
-    if (path.endsWith("/invite")) return json(route, { code: "MENTOR-TEST" });
+    if (path.endsWith("/invite")) return json(route, inviteView());
     if (path.endsWith("/ledger")) return json(route, rewardAvailable ? [reward] : []);
     if (path.endsWith("/rewards/unseen")) {
       const items = rewardAvailable && !acknowledged ? [reward] : [];
@@ -238,7 +238,10 @@ test("koç ayarlarında Kazanımlar yok, sınav satırı koçluk yaptığı sın
 const INVITE_CODE = "PUHU-TEST2345";
 const percentDiscount = { discountType: "PERCENT", discountValue: 30 };
 
-/** The card as the API returns it for a student who has not been invited and nobody joined yet. */
+/**
+ * The card as the API returns it (`InviteCodeView`) for a student who has not been invited and
+ * nobody joined yet, with a live %30 friend discount.
+ */
 function inviteView(over: Record<string, unknown> = {}) {
   return {
     code: INVITE_CODE,
@@ -248,24 +251,22 @@ function inviteView(over: Record<string, unknown> = {}) {
     convertedCount: 0,
     redeemed: null,
     canRedeem: true,
+    friendDiscount: percentDiscount,
     ...over,
   };
 }
 
 /**
- * Economy ON for the settings page: balance, quests, the invite view and the public preview the
- * card reads for the friend discount (the view itself only carries the viewer's own redemption).
+ * Economy ON for the settings page: balance, quests and the invite view (which carries the friend
+ * discount itself). The public preview is counted, never needed: the card must not ask it.
  * Registered after `mockProfileApi`, so it answers first and hands everything else back.
  */
 async function mockInviteEconomy(
   page: Page,
-  {
-    view,
-    previewDiscount = percentDiscount,
-    onRedeem,
-  }: { view: () => unknown; previewDiscount?: unknown; onRedeem?: () => void },
+  { view, onRedeem }: { view: () => unknown; onRedeem?: () => void },
 ) {
   const redeemBodies: unknown[] = [];
+  const previewRequests: string[] = [];
   await page.route("http://localhost:3001/v1/economy/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -277,8 +278,9 @@ async function mockInviteEconomy(
     if (method === "GET" && path.endsWith("/rewards/unseen")) {
       return json(route, { items: [], total: 0, page: 1, pageSize: 20 });
     }
-    if (method === "GET" && path === `/v1/economy/invite/preview/${INVITE_CODE}`) {
-      return json(route, { inviterDisplayName: "Profil", discount: previewDiscount });
+    if (method === "GET" && path.startsWith("/v1/economy/invite/preview/")) {
+      previewRequests.push(path);
+      return json(route, { inviterDisplayName: "Profil", discount: null });
     }
     if (method === "GET" && path === "/v1/economy/invite") return json(route, view());
     if (method === "POST" && path === "/v1/economy/invite/redeem") {
@@ -291,7 +293,7 @@ async function mockInviteEconomy(
   await page.addInitScript(() =>
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
   );
-  return { redeemBodies };
+  return { redeemBodies, previewRequests };
 }
 
 async function openInviteCard(page: Page) {
@@ -306,23 +308,26 @@ async function openInviteCard(page: Page) {
 test.describe("davet kartı", () => {
   test("başlık, indirimli alt metin ve davet kodu", async ({ page }) => {
     await mockProfileApi(page);
-    await mockInviteEconomy(page, { view: () => inviteView() });
+    const api = await mockInviteEconomy(page, { view: () => inviteView() });
     const { dialog } = await openInviteCard(page);
 
     await expect(dialog.getByRole("heading", { level: 2 })).toHaveText(
       "Arkadaşını getir, birlikte çalışın!",
     );
     await expect(dialog.getByText("Davet et", { exact: true })).toBeVisible();
+    // The discount comes from the view's `friendDiscount`, not from a second (public) lookup.
     await expect(
       dialog.getByText("%30 indirim arkadaşına, 20 Coin sana. Üstelik birlikte çalışırsınız!"),
     ).toBeVisible();
     await expect(dialog.getByText(INVITE_CODE, { exact: true })).toBeVisible();
+    expect(api.previewRequests).toEqual([]);
   });
 
   test("indirim yoksa alt metin yalnız Coin'i söyler", async ({ page }) => {
     await mockProfileApi(page);
-    await mockInviteEconomy(page, { view: () => inviteView(), previewDiscount: null });
+    const api = await mockInviteEconomy(page, { view: () => inviteView({ friendDiscount: null }) });
     const { dialog } = await openInviteCard(page);
+    expect(api.previewRequests).toEqual([]);
 
     await expect(
       dialog.getByText("Arkadaşın Premium'a geçince sana 20 Coin. Üstelik birlikte çalışırsınız!"),
@@ -395,6 +400,48 @@ test.describe("davet kartı", () => {
     await expect(dialog.getByText("İlk arkadaşını bekliyoruz!")).toHaveCount(0);
   });
 
+  test("katılan arkadaşlar isimle görünür, Premium'a geçen kişi işaretlenmez", async ({ page }) => {
+    await mockProfileApi(page);
+    await mockInviteEconomy(page, {
+      view: () =>
+        inviteView({
+          joined: [{ displayName: "Ayşe" }, { displayName: "Mehmet" }],
+          joinedCount: 2,
+          convertedCount: 1,
+        }),
+    });
+    const { dialog } = await openInviteCard(page);
+
+    const friends = dialog.getByRole("list", { name: "Katılan arkadaşların" });
+    await expect(friends).toBeVisible();
+    // Exactly the names: no "+N" (everyone is listed) and no per-person payment marker.
+    await expect(friends.getByRole("listitem")).toHaveText(["Ayşe", "Mehmet"]);
+    await expect(friends.getByText(/Premium|\+/)).toHaveCount(0);
+  });
+
+  test("isimler ilk üçle sınırlı, kalanı +N der ve sayı joinedCount'tan gelir", async ({ page }) => {
+    await mockProfileApi(page);
+    // The view lists the newest 20 live friends and counts all 25.
+    await mockInviteEconomy(page, {
+      view: () =>
+        inviteView({
+          joined: Array.from({ length: 20 }, (_, index) => ({ displayName: `Arkadaş ${index}` })),
+          joinedCount: 25,
+          convertedCount: 3,
+        }),
+    });
+    const { dialog } = await openInviteCard(page);
+
+    const friends = dialog.getByRole("list", { name: "Katılan arkadaşların" });
+    await expect(friends.getByRole("listitem")).toHaveCount(4);
+    await expect(friends.getByRole("listitem").nth(0)).toHaveText("Arkadaş 0");
+    await expect(friends.getByRole("listitem").nth(2)).toHaveText("Arkadaş 2");
+    await expect(friends.getByText("+22", { exact: true })).toBeVisible();
+    // Screen readers hear words, not a bare "+22".
+    await expect(friends.getByText("22 arkadaş daha", { exact: true })).toHaveCount(1);
+    await expect(friends.getByText("Arkadaş 3", { exact: true })).toHaveCount(0);
+  });
+
   test("ilerleme satırı listedeki 20 isimde durmaz, toplam katılanı söyler", async ({ page }) => {
     await mockProfileApi(page);
     // The view lists the newest 20 live friends and counts all 25.
@@ -422,6 +469,8 @@ test.describe("davet kartı", () => {
 
     await expect(dialog.getByText("2 arkadaşın katıldı · 1 kişi Premium'a geçti")).toBeVisible();
     await expect(dialog.getByText("İlk arkadaşını bekliyoruz!")).toHaveCount(0);
+    // Nobody left to name: no list and no orphan "+2" chip, the count line says it all.
+    await expect(dialog.getByRole("list", { name: "Katılan arkadaşların" })).toHaveCount(0);
   });
 
   test("kimse katılmadıysa bekleyen metin görünür", async ({ page }) => {

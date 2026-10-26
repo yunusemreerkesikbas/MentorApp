@@ -8,7 +8,7 @@ import { Button } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { LEDGE, LEDGE_FILLED, PANEL_QUIET_LINK } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
-import { redeemInviteCode } from "@/lib/economy";
+import { notifyEconomyChanged, redeemInviteCode } from "@/lib/economy";
 import { RoomNoticeCard } from "../../../(app)/study-session/_components/room-notice-card";
 import { InviteDetails } from "./invite-details";
 
@@ -31,6 +31,9 @@ export function InviteAccept({ code, preview }: { code: string; preview: InviteP
     try {
       await redeemInviteCode(code);
       setPhase("done");
+      // The redeem completes the invite quest inline: same signal as Ayarlar's redeem, so anything
+      // showing XP/Coin refreshes (the app shell also refreshes on arriving at the panel).
+      notifyEconomyChanged();
     } catch (err) {
       setError(err instanceof ApiClientError ? err.body.message : t("accept_failed"));
       setPhase("idle");

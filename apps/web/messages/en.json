@@ -2696,6 +2696,8 @@
     "invalid_title": "This invite link isn't working.",
     "invalid_body": "You can ask whoever sent it for a new link.",
     "invalid_cta": "Get started anyway",
+    "closed_title": "This invite is for newcomers.",
+    "closed_body": "An invite code works in your first days after signing up, before your first payment.",
     "failed_title": "The invite did not load just now.",
     "failed_body": "Let's try again in a moment.",
     "retry": "Try again"
@@ -2722,6 +2724,9 @@
     "invite_link_copied": "Link copied",
     "invite_progress": "{joined, plural, one {# friend joined} other {# friends joined}} · {converted, plural, other {# went Premium}}",
     "invite_progress_empty": "Waiting for your first friend!",
+    "invite_joined_label": "Friends who joined",
+    "invite_joined_more": "+{count}",
+    "invite_joined_more_label": "{count, plural, one {# more friend} other {# more friends}}",
     "invite_close": "Close",
     "copy": "Copy code",
     "copied": "Copied",

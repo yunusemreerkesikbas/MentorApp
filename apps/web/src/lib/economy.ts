@@ -77,9 +77,8 @@ export function forgetInviteCode(): void {
 
 /**
  * What a friend sees before signing up: the inviter's display name and the live friend discount.
- * Public (no session needed) and throttled; 404 `INVITE_CODE_INVALID` for any unusable code. The
- * card reads it for its own code to learn whether a friend discount is live, because
- * `InviteCodeView` only carries the discount of the viewer's own redemption.
+ * Public (no session needed) and throttled; 404 `INVITE_CODE_INVALID` for any unusable code. Only
+ * the `/davet` landing reads it; the viewer's own card has `InviteCodeView.friendDiscount`.
  */
 export async function fetchInvitePreview(code: string): Promise<InvitePreviewView> {
   return (await http<InvitePreviewView>(

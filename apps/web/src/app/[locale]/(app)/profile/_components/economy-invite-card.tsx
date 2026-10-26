@@ -8,7 +8,6 @@ import { useLocale, useTranslations } from "next-intl";
 import type { InviteCodeView } from "@mentor/types";
 import { formatPromotionMagnitude } from "@/lib/promotions";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
-import { useFriendDiscount } from "@/lib/use-friend-discount";
 import { useIsMounted } from "@/lib/use-is-mounted";
 import { InviteProgress } from "./invite-progress";
 import { InviteRedeemPanel } from "./invite-redeem-panel";
@@ -77,7 +76,6 @@ export function EconomyInviteCard({
   const mounted = useIsMounted();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const friendDiscount = useFriendDiscount(invite.code);
 
   useDialogFocus({
     dialogRef,
@@ -97,18 +95,16 @@ export function EconomyInviteCard({
 
   if (!mounted || typeof document === "undefined") return null;
 
-  // Nothing is promised until the preview answered: the line would otherwise say "Coin only" and
-  // then grow a discount a moment later.
-  const subtitle = !friendDiscount.settled
-    ? null
-    : friendDiscount.discount
-      ? t("invite_subtitle_discount", {
-          discount: formatPromotionMagnitude(friendDiscount.discount, locale, (value) =>
-            paywall("discount_percent", { value }),
-          ),
-          coin: invite.rewardCoin,
-        })
-      : t("invite_subtitle_plain", { coin: invite.rewardCoin });
+  // The view carries the friend discount (null when none is live or its lookup failed), so the
+  // line is final on first paint: the Coin alone, or the discount as well.
+  const subtitle = invite.friendDiscount
+    ? t("invite_subtitle_discount", {
+        discount: formatPromotionMagnitude(invite.friendDiscount, locale, (value) =>
+          paywall("discount_percent", { value }),
+        ),
+        coin: invite.rewardCoin,
+      })
+    : t("invite_subtitle_plain", { coin: invite.rewardCoin });
 
   return createPortal(
     <div
@@ -224,24 +220,23 @@ export function EconomyInviteCard({
                 >
                   {t("invite_headline")}
                 </motion.h2>
-                {/* Two lines reserved, so the ticket below does not jump when the line arrives. */}
+                {/* Two lines reserved, so the ticket below sits the same with either line. */}
                 <div className="mx-auto mt-2.5 min-h-12 max-w-[22rem] sm:mt-2">
-                  {subtitle ? (
-                    <motion.p
-                      className="text-center text-[15px] leading-relaxed text-white/90"
-                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: reduceMotion ? 0 : 0.28 }}
-                    >
-                      {subtitle}
-                    </motion.p>
-                  ) : null}
+                  <motion.p
+                    className="text-center text-[15px] leading-relaxed text-white/90"
+                    initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.28 }}
+                  >
+                    {subtitle}
+                  </motion.p>
                 </div>
 
                 <InviteShareTicket code={invite.code} reduceMotion={reduceMotion} />
                 <InviteProgress
                   joined={invite.joinedCount}
                   converted={invite.convertedCount}
+                  names={invite.joined.map((friend) => friend.displayName)}
                   reduceMotion={reduceMotion}
                 />
               </div>
