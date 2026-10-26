@@ -118,7 +118,7 @@ export const subscription: SubscriptionView = {
     },
   },
   discount: null,
-  trialEligibility: { eligible: false, reason: "PHONE_REQUIRED" },
+  trialEligibility: { phoneVerificationRequired: true, eligible: false, reason: "PHONE_REQUIRED" },
   pendingTrialCheckoutUrl: null,
   pendingCheckoutUrl: null,
 };

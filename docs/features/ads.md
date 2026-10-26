@@ -156,7 +156,7 @@ Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs 
   `pnpm --filter @mentor/web test:e2e:question-ads` (isolated ports 3370/3371, synthetic content,
   no database or real Google requests). Related: `ads-question-review.service.ts`,
   `ad-question-review.repository.ts`, `admin-ad-reviews.controller.ts`, `forum-public.service.ts`,
-  `QuestionAdReview.tsx`, public `forum/question/[id]/page.tsx`, migration `0127`.
+  `QuestionAdReview.tsx`, public `forum/question/[id]/page.tsx`, migration `0128`.
 
 - **2026-10-25 · Public blog index inventory.** Added default-off `knowledge.index`, an admin
   enable switch and validated Google unit path, published list/featured-context verification,

@@ -299,6 +299,7 @@ export const TrialEligibilityResponseDtoReason = {
 } as const;
 
 export interface TrialEligibilityResponseDto {
+  phoneVerificationRequired: boolean;
   eligible: boolean;
   reason: TrialEligibilityResponseDtoReason;
 }
@@ -778,6 +779,35 @@ export interface RespondMentorshipFollowupDto {
 }
 
 export interface RegisterCoachDto { [key: string]: unknown }
+
+/**
+ * @nullable
+ */
+export type CoachRegistrationStateResponseDtoRegistration = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type CoachRegistrationStateResponseDtoInviteBlockedReason = typeof CoachRegistrationStateResponseDtoInviteBlockedReason[keyof typeof CoachRegistrationStateResponseDtoInviteBlockedReason] | null;
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CoachRegistrationStateResponseDtoInviteBlockedReason = {
+  EMAIL_UNVERIFIED: 'EMAIL_UNVERIFIED',
+  PHONE_UNVERIFIED: 'PHONE_UNVERIFIED',
+  NOT_ACTIVE: 'NOT_ACTIVE',
+} as const;
+
+export interface CoachRegistrationStateResponseDto {
+  registrationOpen: boolean;
+  /** @nullable */
+  registration: CoachRegistrationStateResponseDtoRegistration;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  hasCoach: boolean;
+  /** @nullable */
+  inviteBlockedReason: CoachRegistrationStateResponseDtoInviteBlockedReason;
+}
 
 export interface UpdateCoachProfileDto { [key: string]: unknown }
 
@@ -10051,7 +10081,7 @@ export const mentorshipApplicationControllerRegister = async (registerCoachDto: 
 
 
 export type mentorshipApplicationControllerMineResponse200 = {
-  data: void
+  data: CoachRegistrationStateResponseDto
   status: 200
 }
     

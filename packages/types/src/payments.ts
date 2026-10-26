@@ -182,6 +182,7 @@ export interface SubscriptionView {
 }
 
 export interface TrialEligibilityDto {
+  phoneVerificationRequired: boolean;
   eligible: boolean;
   reason: "AVAILABLE" | "PHONE_REQUIRED" | "ACCOUNT_USED" | "PHONE_USED" | "PENDING" | "NO_TRIAL";
 }

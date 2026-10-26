@@ -83,6 +83,7 @@ describe("mentorship followups HTTP and database", () => {
     );
     const config = app.get(ConfigRegistryService);
     await config.set(ids.coach!, "mentorship.enabled", true);
+    await config.set(ids.coach!, "mentorship.phone_verification_required", true);
     await config.set(ids.coach!, "mentorship.followups.enabled", true);
     const relation = await sql(
       // An explicit seat: the column defaults to NONE, and a link waiting for a seat is frozen.
@@ -95,7 +96,7 @@ describe("mentorship followups HTTP and database", () => {
     if (pool) {
       await sql("delete from coach_students where coach_id = $1", [ids.coach]);
       await sql(
-        "delete from config_overrides where key in ('mentorship.enabled','mentorship.followups.enabled')",
+        "delete from config_overrides where key in ('mentorship.enabled','mentorship.followups.enabled','mentorship.phone_verification_required')",
       );
     }
     await app?.close();

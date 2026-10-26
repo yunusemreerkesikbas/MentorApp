@@ -343,3 +343,12 @@ context, language and prompt reuse ready/pending work; different pending input i
 409. Finalization does not accept context changes. Share/PDF responses exclude
 both preparation and context. Authorization and explicit quota-bound generation
 remain unchanged.
+
+
+### 2026-10-15: Additive phone-requirement responses
+
+`GET /v1/mentorship/coach-registration/mine` adds `inviteBlockedReason` (`EMAIL_UNVERIFIED`,
+`PHONE_UNVERIFIED`, `NOT_ACTIVE`, or null). Clients render this authoritative decision instead of
+inferring permission from contact ownership. `GET /v1/subscription` adds
+`trialEligibility.phoneVerificationRequired` for current trial disclosure. Existing routes, request
+bodies and machine error codes remain compatible; SMS availability never implies a requirement.

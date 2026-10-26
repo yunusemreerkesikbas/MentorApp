@@ -115,7 +115,7 @@ export class MentorshipLinkService implements OnModuleInit {
 
   /** Protected coach reads require current verification, including manually granted COACH roles. */
   async assertCoachVerifiedContacts(coachId: string): Promise<void> {
-    const missing = await coachContactVerification(this.users, coachId);
+    const missing = await coachContactVerification(this.users, coachId, Boolean(await this.config.get("mentorship.phone_verification_required")));
     if (missing) {
       throw new DomainError(
         missing === "EMAIL_UNVERIFIED" ? ErrorCode.MENTORSHIP_EMAIL_NOT_VERIFIED : ErrorCode.AUTH_PHONE_REQUIRED,
@@ -502,7 +502,7 @@ export class MentorshipLinkService implements OnModuleInit {
     const link = await this.requireStudentLink(studentId);
     await this.links.setStudentNote(link.id, body);
     if (body === null || link.seat === MentorshipSeat.NONE) return;
-    if ((await coachContactVerification(this.users, link.coachId)) !== null) return;
+    if ((await coachContactVerification(this.users, link.coachId, Boolean(await this.config.get("mentorship.phone_verification_required")))) !== null) return;
     const student = await this.findPerson(studentId);
     this.events.emit(
       MentorshipEventTopic.STUDENT_NOTE_UPDATED,
@@ -607,7 +607,7 @@ export class MentorshipLinkService implements OnModuleInit {
     if (!holdsSeat(link.seat)) return false;
     if (!(await this.config.get("mentorship.seats.sponsorship_enabled"))) return false;
     const [coachVerified, studentVerified, entitlement] = await Promise.all([
-      coachContactVerification(this.users, link.coachId).then((missing) => missing === null),
+      coachContactVerification(this.users, link.coachId, true).then((missing) => missing === null),
       this.users.isPhoneVerified(link.studentId),
       this.entitlement.getEntitlement(link.studentId),
     ]);

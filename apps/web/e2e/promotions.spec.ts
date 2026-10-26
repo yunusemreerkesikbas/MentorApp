@@ -45,7 +45,7 @@ const subscription: SubscriptionView = {
   entitlement: { tier: "FREE", isPremium: false, validUntil: null, reason: "NONE" },
   features: {} as SubscriptionView["features"],
   discount: null,
-  trialEligibility: { eligible: true, reason: "AVAILABLE" },
+  trialEligibility: { phoneVerificationRequired: true, eligible: true, reason: "AVAILABLE" },
   pendingTrialCheckoutUrl: null,
   pendingCheckoutUrl: null,
 };
@@ -125,7 +125,7 @@ async function mockPaywall(page: Page, options: Options = {}) {
     if (method === "GET" && path === "/v1/subscription") return json(route, {
       ...subscription,
       trialEligibility: options.trialUsed
-        ? { eligible: false, reason: "ACCOUNT_USED" }
+        ? { phoneVerificationRequired: true, eligible: false, reason: "ACCOUNT_USED" }
         : subscription.trialEligibility,
     });
 

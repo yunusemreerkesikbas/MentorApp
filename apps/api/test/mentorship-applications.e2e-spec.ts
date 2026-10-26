@@ -142,6 +142,8 @@ describe("mentorship coach registry (e2e)", () => {
     // The coach surface itself, so the panel assertions mean something. The two flags stay
     // independent by design — this suite is the one place both are on at once.
     await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+    // Existing strict-contact scenarios opt in; ordinary coaching defaults to phone-optional.
+    await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.phone_verification_required", true);
     // Accepting a code writes a link only when a seat can be granted.
     await app
       .get(ConfigRegistryService)
@@ -187,6 +189,7 @@ describe("mentorship coach registry (e2e)", () => {
       registration: null,
       emailVerified: false,
       phoneVerified: false,
+      inviteBlockedReason: "EMAIL_UNVERIFIED",
       hasCoach: false,
     });
   });
@@ -266,6 +269,15 @@ describe("mentorship coach registry (e2e)", () => {
     expect(locked.body.code).toBe("AUTH_PHONE_REQUIRED");
     expect((await http().get("/v1/mentorship/overview").set(auth("coach"))).body.inviteCode).toBeNull();
 
+    await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.phone_verification_required", false);
+    try {
+      const optional = await http().post("/v1/mentorship/invite-code").set(auth("coach"));
+      expect(optional.status).toBe(200);
+      const state = await http().get("/v1/mentorship/coach-registration/mine").set(auth("coach"));
+      expect(state.body).toMatchObject({ phoneVerified: false, inviteBlockedReason: null });
+    } finally {
+      await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.phone_verification_required", true);
+    }
     await verifyPhone("coach");
     expect((await http().post("/v1/mentorship/invite-code").set(auth("coach"))).status).toBe(200);
   });
