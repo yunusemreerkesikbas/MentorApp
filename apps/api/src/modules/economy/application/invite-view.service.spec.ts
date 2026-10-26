@@ -97,6 +97,7 @@ describe("InviteViewService", () => {
   let previewError: Error | null;
   let offerError: Error | null;
   let phoneError: Error | null;
+  let blockingError: Error | null;
   let offerLookups: string[];
   let identityLookups: string[][];
   /** Per-user overrides; any other id is a fresh, active student created a day ago. `null` = no such row. */
@@ -126,6 +127,7 @@ describe("InviteViewService", () => {
     previewError = null;
     offerError = null;
     phoneError = null;
+    blockingError = null;
     offerLookups = [];
     identityLookups = [];
     userRows = new Map();
@@ -168,7 +170,10 @@ describe("InviteViewService", () => {
         if (previewError) throw previewError;
         return previewSummary;
       },
-      hasCheckoutBlockingSubscription: async () => blockingSubscription,
+      hasCheckoutBlockingSubscription: async () => {
+        if (blockingError) throw blockingError;
+        return blockingSubscription;
+      },
     };
     const config = {
       get: async (key: string) =>
@@ -412,6 +417,36 @@ describe("InviteViewService", () => {
 
       expect(view.redeemed).toEqual({ inviterDisplayName: "ayse-name", discount: null });
       expect(view.canRedeem).toBe(false);
+    });
+
+    describe("checkoutBlocked (may this user be told about a discount right now)", () => {
+      it("is false for a user with no open subscription", async () => {
+        const { views } = build();
+        expect((await views.getView("burak")).checkoutBlocked).toBe(false);
+      });
+
+      it("is true while an open subscription (a trial) would make checkout refuse, though redeem still works", async () => {
+        const { views } = build();
+        blockingSubscription = true;
+
+        const view = await views.getView("burak");
+
+        expect(view.checkoutBlocked).toBe(true);
+        expect(view.canRedeem).toBe(true);
+      });
+
+      it("fails closed: a failed lookup counts as blocked, never as a promise on unknown state", async () => {
+        const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+        const { views } = build();
+        blockingError = new Error("payments down");
+
+        const view = await views.getView("burak");
+
+        expect(view.checkoutBlocked).toBe(true);
+        expect(view.code).toMatch(/^PUHU-/);
+        expect(warn).toHaveBeenCalled();
+        warn.mockRestore();
+      });
     });
 
     describe("canRedeem", () => {

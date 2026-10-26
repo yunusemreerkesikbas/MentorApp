@@ -11791,6 +11791,10 @@
           "canRedeem": {
             "type": "boolean"
           },
+          "checkoutBlocked": {
+            "type": "boolean",
+            "description": "Checkout would refuse this user now (e.g. a trial): never promise them the invite discount."
+          },
           "friendDiscount": {
             "nullable": true,
             "description": "What a friend gets with this code now (the public preview's discount); null when none is live.",
@@ -11810,6 +11814,7 @@
           "convertedCount",
           "redeemed",
           "canRedeem",
+          "checkoutBlocked",
           "friendDiscount"
         ]
       },

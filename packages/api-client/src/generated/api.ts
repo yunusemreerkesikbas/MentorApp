@@ -532,6 +532,8 @@ export interface InviteCodeViewDto {
   /** @nullable */
   redeemed: InviteCodeViewDtoRedeemed;
   canRedeem: boolean;
+  /** Checkout would refuse this user now (e.g. a trial): never promise them the invite discount. */
+  checkoutBlocked: boolean;
   /**
    * What a friend gets with this code now (the public preview's discount); null when none is live.
    * @nullable

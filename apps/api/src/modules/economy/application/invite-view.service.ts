@@ -39,16 +39,18 @@ export class InviteViewService {
   async getView(userId: string): Promise<InviteCodeView> {
     const user = await this.users.findByIdService(userId);
     if (!user) throw new NotFoundError();
-    const [code, rewardCoin, joinedRows, joinedCount, convertedCount, redemption, block, friendDiscount] = await Promise.all([
-      this.invites.getOrCreateCode(userId),
-      this.config.get("economy.invite.reward_coin"),
-      this.repo.listJoinedByInviter(userId, JOINED_LIST_LIMIT),
-      this.repo.countJoinedByInviter(userId),
-      this.repo.countConvertedByInviter(userId),
-      this.repo.findRedemptionByInvited(userId),
-      this.invites.redeemBlock(user),
-      this.friendDiscount(),
-    ]);
+    const [code, rewardCoin, joinedRows, joinedCount, convertedCount, redemption, block, friendDiscount, checkoutBlocked] =
+      await Promise.all([
+        this.invites.getOrCreateCode(userId),
+        this.config.get("economy.invite.reward_coin"),
+        this.repo.listJoinedByInviter(userId, JOINED_LIST_LIMIT),
+        this.repo.countJoinedByInviter(userId),
+        this.repo.countConvertedByInviter(userId),
+        this.repo.findRedemptionByInvited(userId),
+        this.invites.redeemBlock(user),
+        this.friendDiscount(),
+        this.checkoutBlocked(userId),
+      ]);
     return {
       code,
       rewardCoin,
@@ -58,8 +60,23 @@ export class InviteViewService {
       redeemed: redemption ? await this.redeemedView(userId, redemption.inviterUserId, friendDiscount) : null,
       // No economy flag here: the only caller (GET /economy/invite) answers ECONOMY_DISABLED first.
       canRedeem: block === null,
+      checkoutBlocked,
       friendDiscount,
     };
+  }
+
+  /**
+   * Would checkout refuse this user right now (an open subscription, e.g. a trial)? A trial may still
+   * redeem, but its price is already frozen, so no surface may promise them the invite discount.
+   * A failed lookup counts as blocked: never a promise on unknown state.
+   */
+  private async checkoutBlocked(userId: string): Promise<boolean> {
+    try {
+      return await this.subscriptions.hasCheckoutBlockingSubscription(userId);
+    } catch (err) {
+      this.logger.warn({ err, userId }, "checkout-blocked lookup failed (treated as blocked)");
+      return true;
+    }
   }
 
   /**

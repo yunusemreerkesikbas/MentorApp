@@ -125,6 +125,13 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-26 · Invite landing promises no discount to a trialing student.** `InviteCodeView` gains
+  `checkoutBlocked` (= `SubscriptionsService.hasCheckoutBlockingSubscription`; a failed lookup counts as
+  blocked). A trial may still redeem, but its price is frozen at checkout, so the `/davet` accept card drops
+  the "%X indirim seni bekliyor" line when the student's own view says `checkoutBlocked`; the accept button
+  stays. Closes the residual from the branch review (spec: "deneme sırasında giren arkadaşa indirim
+  uygulanmaz ... kart indirim vaat etmez"). Related: `invite-view.service.ts`, `invite-landing-shell.tsx`,
+  `packages/types/src/economy.ts`, `e2e/invite-landing.spec.ts`.
 - **2026-10-25 · Invite redeem rules: signup window, "never paid" instead of "not premium", coaches out.**
   `InviteService.redeem` now checks, in order: the code is usable (`resolveValidInvite`: exists, owner
   row present, `status = ACTIVE`, no `erasure_started_at`, owner not a coach; otherwise

@@ -67,6 +67,7 @@ function ownView(over: Record<string, unknown> = {}): Answer {
       convertedCount: 0,
       redeemed: null,
       canRedeem: true,
+      checkoutBlocked: false,
       friendDiscount: DISCOUNT,
       ...over,
     },
@@ -359,6 +360,21 @@ test("a student who already came with an invite is told whose, with nothing to a
   await expect(page.getByText(/indirim/)).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Panele git" })).toBeVisible();
   expect(calls.redeem).toBe(0);
+});
+
+test("a student on a trial can still accept, but is promised no discount checkout would not apply", async ({
+  page,
+}) => {
+  const calls = await mockApi(page, { session: onboardedStudent, invite: ownView({ checkoutBlocked: true }) });
+  await page.goto(`/davet/${CODE}`);
+
+  const accept = page.getByRole("button", { name: "Daveti kabul et" });
+  await expect(accept).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ayşe seni davet etti!" })).toBeVisible();
+  await expect(page.getByText(/indirim/)).toHaveCount(0);
+  await accept.click();
+  await expect(page.getByText("Harika, artık birliktesiniz!")).toBeVisible();
+  expect(calls.redeem).toBe(1);
 });
 
 test("if their own invite view fails, the accept card stays but promises no discount", async ({ page }) => {
