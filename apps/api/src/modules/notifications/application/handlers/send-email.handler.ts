@@ -17,13 +17,13 @@ import { NotificationPreferencesRepository } from "../../infrastructure/notifica
 const sendEmailPayloadSchema = z.object({
   to: z.string().email(),
   template: z.string().min(1),
-  variables: z.record(z.unknown()).optional(),
+  variables: z.record(z.string(), z.unknown()).optional(),
   executionGuard: z.object({ type: z.literal("identity-email-token"), tokenHash: z.string().regex(/^[a-f0-9]{64}$/) }).optional(),
 });
 
 const followupDuePayloadSchema = z.object({
   template: z.literal(EmailTemplate.MENTORSHIP_FOLLOWUP_DUE),
-  variables: z.record(z.unknown()).optional(),
+  variables: z.record(z.string(), z.unknown()).optional(),
   executionGuard: z.object({
     type: z.literal("mentorship-followup-due"),
     coachId: z.string().uuid(),

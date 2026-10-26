@@ -1049,7 +1049,7 @@ export const createNotebookSchema = z
   .superRefine((value, ctx) => {
     const result = notebookSubjectFieldsSchema.safeParse(value);
     for (const issue of result.success ? [] : result.error.issues)
-      ctx.addIssue(issue);
+      ctx.addIssue(issue as z.core.$ZodRawIssue);
   });
 export type CreateNotebookInput = z.infer<typeof createNotebookSchema>;
 

@@ -6,7 +6,7 @@ import { SessionReturnReminderHandler } from "./session-return-reminder.handler"
 describe("SessionReturnReminderHandler", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  const USER = "11111111-1111-1111-1111-111111111111";
+  const USER = "11111111-1111-4111-8111-111111111111";
   const db = {
     transaction: async <T>(cb: (tx: unknown) => Promise<T>) =>
       cb({ execute: async () => undefined }),

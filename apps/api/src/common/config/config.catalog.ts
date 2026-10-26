@@ -1,4 +1,4 @@
-import { z, type ZodTypeAny } from "zod";
+import { z } from "zod";
 
 /**
  * Config registry catalog (§9, engineering-principles §2/§8).
@@ -40,11 +40,12 @@ export const ConfigValueType = {
 export type ConfigValueType =
   (typeof ConfigValueType)[keyof typeof ConfigValueType];
 
-export interface ConfigEntryDef {
+/** `T` is the schema output, so `config.get()` stays typed for helper-built entries. */
+export interface ConfigEntryDef<T = unknown> {
   category: string;
   /** UI hint so the admin panel renders the right control. */
   type: ConfigValueType;
-  schema: ZodTypeAny;
+  schema: z.ZodType<T>;
   default: unknown;
   /** Sensitive (money/coin/commission) → bounds + extra confirmation in the UI. */
   sensitive: boolean;
@@ -57,7 +58,7 @@ export interface ConfigEntryDef {
   devOnly?: true;
 }
 
-const flag = (def: boolean, description: string): ConfigEntryDef => ({
+const flag = (def: boolean, description: string): ConfigEntryDef<boolean> => ({
   category: ConfigCategory.FEATURE_FLAGS,
   type: ConfigValueType.BOOLEAN,
   schema: z.boolean(),
@@ -70,7 +71,7 @@ const economyCount = (
   def: number,
   max: number,
   description: string,
-): ConfigEntryDef => ({
+): ConfigEntryDef<number> => ({
   category: ConfigCategory.ECONOMY,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(0).max(max),
@@ -84,7 +85,7 @@ const economyTarget = (
   def: number,
   max: number,
   description: string,
-): ConfigEntryDef => ({
+): ConfigEntryDef<number> => ({
   category: ConfigCategory.ECONOMY,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(1).max(max),
@@ -97,7 +98,7 @@ const aiCount = (
   def: number,
   max: number,
   description: string,
-): ConfigEntryDef => ({
+): ConfigEntryDef<number> => ({
   category: ConfigCategory.AI,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(0).max(max),
@@ -110,7 +111,7 @@ const aiPositiveCount = (
   def: number,
   max: number,
   description: string,
-): ConfigEntryDef => ({
+): ConfigEntryDef<number> => ({
   category: ConfigCategory.AI,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(1).max(max),
@@ -124,7 +125,7 @@ const identityCount = (
   max: number,
   description: string,
   sensitive = false,
-): ConfigEntryDef => ({
+): ConfigEntryDef<number> => ({
   category: ConfigCategory.IDENTITY,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(0).max(max),
@@ -133,7 +134,7 @@ const identityCount = (
   description,
 });
 
-const authCount = (def: number, max: number, description: string): ConfigEntryDef => ({
+const authCount = (def: number, max: number, description: string): ConfigEntryDef<number> => ({
   ...identityCount(def, max, description, true), schema: z.number().int().min(1).max(max),
 });
 
@@ -141,7 +142,7 @@ const notificationCount = (
   def: number,
   max: number,
   description: string,
-): ConfigEntryDef => ({
+): ConfigEntryDef<number> => ({
   category: ConfigCategory.NOTIFICATIONS,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(1).max(max),
@@ -155,7 +156,7 @@ const coachingCount = (
   min: number,
   max: number,
   description: string,
-): ConfigEntryDef => ({
+): ConfigEntryDef<number> => ({
   category: ConfigCategory.COACHING,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(min).max(max),
@@ -164,7 +165,7 @@ const coachingCount = (
   description,
 });
 
-const mentorshipFlag = (def: boolean, description: string): ConfigEntryDef => ({
+const mentorshipFlag = (def: boolean, description: string): ConfigEntryDef<boolean> => ({
   category: ConfigCategory.MENTORSHIP,
   type: ConfigValueType.BOOLEAN,
   schema: z.boolean(),
@@ -173,7 +174,7 @@ const mentorshipFlag = (def: boolean, description: string): ConfigEntryDef => ({
   description,
 });
 
-const mentorshipRatio = (def: number, description: string): ConfigEntryDef => ({
+const mentorshipRatio = (def: number, description: string): ConfigEntryDef<number> => ({
   category: ConfigCategory.MENTORSHIP,
   type: ConfigValueType.NUMBER,
   schema: z.number().min(0).max(1),
@@ -194,7 +195,7 @@ const mentorshipCostCount = (
   min: number,
   max: number,
   description: string,
-): ConfigEntryDef => ({
+): ConfigEntryDef<number> => ({
   category: ConfigCategory.MENTORSHIP,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(min).max(max),
@@ -208,7 +209,7 @@ const mentorshipCount = (
   min: number,
   max: number,
   description: string,
-): ConfigEntryDef => ({
+): ConfigEntryDef<number> => ({
   category: ConfigCategory.MENTORSHIP,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(min).max(max),
@@ -217,7 +218,7 @@ const mentorshipCount = (
   description,
 });
 
-const forumCount = (def: number, min: number, max: number, description: string): ConfigEntryDef => ({
+const forumCount = (def: number, min: number, max: number, description: string): ConfigEntryDef<number> => ({
   category: ConfigCategory.FORUM,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(min).max(max),
@@ -226,7 +227,7 @@ const forumCount = (def: number, min: number, max: number, description: string):
   description,
 });
 
-const adsFlag = (def: boolean, description: string): ConfigEntryDef => ({
+const adsFlag = (def: boolean, description: string): ConfigEntryDef<boolean> => ({
   category: ConfigCategory.ADS,
   type: ConfigValueType.BOOLEAN,
   schema: z.boolean(),
@@ -235,7 +236,7 @@ const adsFlag = (def: boolean, description: string): ConfigEntryDef => ({
   description,
 });
 
-const adsCount = (def: number, min: number, max: number, description: string): ConfigEntryDef => ({
+const adsCount = (def: number, min: number, max: number, description: string): ConfigEntryDef<number> => ({
   category: ConfigCategory.ADS,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(min).max(max),
@@ -244,7 +245,7 @@ const adsCount = (def: number, min: number, max: number, description: string): C
   description,
 });
 
-const promotionsFlag = (def: boolean, description: string): ConfigEntryDef => ({
+const promotionsFlag = (def: boolean, description: string): ConfigEntryDef<boolean> => ({
   category: ConfigCategory.PROMOTIONS,
   type: ConfigValueType.BOOLEAN,
   schema: z.boolean(),
@@ -258,7 +259,7 @@ const promotionsCount = (
   min: number,
   max: number,
   description: string,
-): ConfigEntryDef => ({
+): ConfigEntryDef<number> => ({
   category: ConfigCategory.PROMOTIONS,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(min).max(max),
