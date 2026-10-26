@@ -125,6 +125,14 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-27 — PR #170 conflict resolution
+
+- **What:** Merged current master into the referral branch, preserving ad-unit validation and Zod 4 typed config helpers.
+- **Usage:** No workflow change; referral and ad config keys remain available through the registry.
+- **Gotcha:** Keep both the shared ad-unit schema and concrete string/number helper output types when updating the catalog.
+- **Related files:** `apps/api/src/common/config/config.catalog.ts`.
+
+
 - **2026-10-26 · Invite landing promises no discount to a trialing student.** `InviteCodeView` gains
   `checkoutBlocked` (= `SubscriptionsService.hasCheckoutBlockingSubscription`; a failed lookup counts as
   blocked). A trial may still redeem, but its price is frozen at checkout, so the `/davet` accept card drops
