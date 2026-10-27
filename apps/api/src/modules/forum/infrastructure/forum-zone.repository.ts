@@ -31,6 +31,13 @@ export interface MemberSearchRow {
 export class ForumZoneRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
+  /** One batched visibility proof for rooms in a bounded page context. */
+  async listPublicReviewZones(ids: string[]) {
+    if (ids.length === 0) return [];
+    return withServiceContext(this.db, (tx) => tx.select({ id: forumZones.id, title: forumZones.title, slug: forumZones.slug, updatedAt: forumZones.updatedAt, examType: forumZones.examType })
+      .from(forumZones).where(and(inArray(forumZones.id, ids), eq(forumZones.visibility, "PUBLIC"), eq(forumZones.isArchived, false))));
+  }
+
   async createZone(input: {
     type: string;
     title: string;

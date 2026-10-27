@@ -114,6 +114,12 @@ Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
   row disabled when coverage or any of the five official POI coordinates is unverified.
 
 ### Google Ad Manager (web v1)
+- Existing inventory setup/readiness: follow the [account, site, ads.txt and pilot runbook](../qa/2026-10-26-ads-launch-readiness.md).
+  Existing admin `/config` embeds a SUPER_ADMIN read-only summary for all eight DISPLAY placements;
+  it checks current-process configuration only, never provider/site/privacy approval. Refresh or
+  save an existing setting to reread it. Legacy unit env values use shared Zod Google-path
+  validation; official sample DISPLAY network paths are rejected in production independently
+  of the local preview flag. Public/settings TR/EN disclosure covers the gated inventory.
 - Ad unit paths: `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT` and
   `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT`. Test and production units must be separate.
 - Local manual preview: set `ADS_LOCAL_TEST_ENABLED=true` in `apps/api/.env`, restart the API,
@@ -124,10 +130,13 @@ Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
   is treated as TR for the forced official test unit only. Premium/STAFF and content/age checks
   still apply. Ad blockers may hide the sample. Set the flag to false and restart to leave preview.
   Test ads do not demonstrate production approval, fill or revenue.
-- Staging smoke uses Google's official test inventory only:
-  `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT=/6355419/Travel/Europe/France/Paris` and
-  `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT=/22639388115/rewarded_web_example`. Staging may use rewarded
-  rollout `%100`; production stays `%0` until the separate GAM/domain/legal operation is complete.
+- Official DISPLAY sample `/6355419/Travel/Europe/France/Paris` is for local development;
+  runtime rejects it whenever `NODE_ENV` or `APP_ENV` is production, including production-built
+  staging. Production-built staging smoke therefore needs owned Google inventory with a reviewed
+  test creative/demand setup after external gates, or mocked browser fixtures. The separate
+  rewarded sample is `/22639388115/rewarded_web_example`; production rewarded remains closed
+  without server verification and rollout stays `%0`. A staging build with `NODE_ENV=production`
+  also fails that existing rewarded verification gate; never loosen it for a smoke screenshot.
   The article catalog includes `300x250`, `320x100` and `728x90`; the reading column filters out
   widths it cannot fit. In the 2026-10-14 live SDK rehearsal the official sample returned no-fill
   for `320x100` but filled `300x250`. Keep a supported rectangle in the test request; never infer
@@ -190,6 +199,40 @@ Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
   Changes apply on the next eligibility request; open snapshots have no live moderation push.
   No user-level impression tracking added. See [Google's UGC guidance](https://support.google.com/adsense/answer/1355699?hl=en)
   and [the implementation design](../plans/2026-10-25-reviewed-question-ads.md).
+- Existing community QA (2026-10-26): migrate `0130_community_question_ad_review`, adding nullable
+  approval metadata to the existing table. In the same admin review section, first approve public
+  text, then preview and approve the separate community view, including identities/media and its
+  selected waiting-question rail. Only an exactly matching view qualifies; viewer-specific rails
+  may need another review. Configure `ads.placement.community_question_end.ad_unit_path`; empty
+  disables it, with no env fallback. Leave `.enabled=false` until authenticated-page inventory,
+  safe crawling, privacy and disclosures are verified. Never supply real student accounts or
+  private data to Google. The flag also gates page-context assembly in local sample mode; preview
+  is available while off. Public reapproval/revoke clears community approval; community-only revoke
+  preserves public approval. Writing, files, emoji and dialogs remove pending/filled ads for the
+  visit, with no auto-resume. There is no new page, live polling or per-user impression tracking.
+- Discovery home preparation (2026-10-26): no migration. Admin `/config` adds
+  `ads.placement.community_overview.{enabled,review_approved,ad_unit_path}`. Both flags default
+  false; empty unit disables delivery, with no env fallback. Keep them off pending Google
+  inventory/value, moderation, safe authenticated crawling, privacy and disclosure review. The
+  screen is largely navigation, so eligibility must be established rather than assumed. Local
+  sample mode does not bypass these gates or public-context proof. Never provide real student
+  credentials/private data to Google. Personalized history, buddy relations, nonpublic rooms,
+  failed/incomplete reads and stale rendered sidebars prevent delivery without hiding content.
+  The sole slot is rail-end on desktop and the last content on mobile; personal interactions
+  cancel it for the visit. Verify using `test:e2e:community-ads`; no real Google traffic is used.
+- Reviewed announcement detail (2026-10-26): migrate `0131_ad_review_content_type` through the
+  normal deployment path before starting the new API. It adds a QUESTION-default discriminator
+  to the existing approval table; ANNOUNCEMENT writes/revokes stay separate. In existing admin
+  Forum → Duyuru reklam incelemesi, inspect the initial thread/comments/identities/images/tags/
+  sidebar, then approve its revision. Configure `ads.placement.community_announcement_end.ad_unit_path`;
+  empty disables delivery. Keep `.enabled=false` pending Google inventory/value, safe crawling,
+  moderation, privacy and disclosures. Never provide real student accounts/private data. There
+  is no anonymous announcement inventory; local sample still requires approval and page proof.
+  Hidden nested replies are excluded from the initial review; opening another view/composition
+  cancels the ad. Sidebar truncation (>100), unsupported media, unknown exam or private context
+  fails closed. No automatic refresh or live moderation push. Use `test:e2e:community-ads` for
+  synthetic browser verification. Fresh isolated Postgres tests avoid unrelated shared fixtures;
+  test inventory is not revenue evidence.
 - Public blog index (2026-10-25): configure `ads.placement.knowledge_index.ad_unit_path` in the
   same admin category and leave `.enabled=false` until the index itself passes inventory,
   content-value and privacy review. Empty path disables delivery. The index uses

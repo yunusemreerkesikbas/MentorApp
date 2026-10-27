@@ -2847,7 +2847,9 @@
   },
   "advertisingDisclosure": {
     "heading": "Ücretsiz kullanımda reklamlar",
-    "body": "Türkiye'deki uygun anonim ve Free ziyaretçiler için blog yazısı sonunda tek, kişiselleştirilmemiş reklam otomatik gösterilebilir. Premium ve STAFF reklamsızdır. Analitik tercihin reklam gösterimini değiştirmez. Google reklam iletimi için IP adresini, programatik sınırlı reklam açıkken sahte trafik ve kötüye kullanım tespiti için çerez ve yerel depolamayı kullanabilir; yurt dışında veri işleyebilir. Kişiselleştirilmiş reklam ve davranışsal hedefleme kapalıdır."
+    "body": "Türkiye'deki uygun anonim ve ücretsiz kullanıcılar için, etkinleştirilmiş ekranlarda en fazla bir kişiselleştirilmemiş reklam otomatik gösterilebilir. Analitik tercihin reklam gösterimini değiştirmez. Google reklam iletimi için IP adresini, programatik sınırlı reklam açıkken sahte trafik ve kötüye kullanım tespiti için çerez ve tarayıcı depolamasını kullanabilir; yurt dışında veri işleyebilir. Kişiselleştirilmiş reklam ve davranışsal hedefleme kapalıdır.",
+    "scope": "Uygunluk kontrolleri tamamlanıp reklam alanları açıldığında blog listesi, blog yazıları ve incelenmiş herkese açık soru-cevap sayfaları bu kapsama girebilir. Oturum açanlar için Defterlerim ve Hedef Panosu giriş ekranları, Topluluk Keşfet ile incelenmiş soru ve duyuru detayları da kapsama girebilir. Kapalı alanlarda reklam gösterilmez.",
+    "protections": "Premium ve ekip hesapları reklamsızdır. Defter ve pano editörleri, koçluk görüşmeleri ve odak oturumlarında bu gösterim reklamları yer almaz. Yaş grubu, sınav bağlamı, ülke ve içerik uygunluğu ayrıca kontrol edilir."
   },
   "onboarding": {
     "loading": "Yükleniyor…",

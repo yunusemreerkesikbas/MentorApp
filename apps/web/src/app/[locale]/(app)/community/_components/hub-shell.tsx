@@ -19,6 +19,7 @@ import { HubHero } from "./hub-hero";
 import { HubSupporters, HubTrends } from "./hub-rail";
 import { HubRooms } from "./hub-rooms";
 import { HubWaitingQuestions } from "./hub-waiting-questions";
+import { CommunityOverviewAd } from "./community-overview-ad";
 
 type HubState =
   | { status: "loading" }
@@ -34,6 +35,7 @@ type HubState =
 export function HubShell() {
   const t = useTranslations("community");
   const [state, setState] = useState<HubState>({ status: "loading" });
+  const [buddySafety, setBuddySafety] = useState<"loading" | "safe" | "blocked">("loading");
 
   useEffect(() => {
     let active = true;
@@ -90,7 +92,7 @@ export function HubShell() {
       <div className={PANEL_GRID_CLASS}>
         <div className="flex min-w-0 flex-col gap-5">
           <HubHero quiet={quiet} />
-          <HubWaitingQuestions />
+          {hub ? <HubWaitingQuestions snapshotItems={hub.adContext?.waitingQuestions} /> : null}
           {hub ? (
             <>
               <HubDiscussions hub={hub} />
@@ -104,9 +106,11 @@ export function HubShell() {
           )}
         </div>
         <aside className="flex min-w-0 flex-col gap-5" aria-label={t("hub_rail_label")}>
-          <SessionBuddyCard className={`${PANEL_CARD} flex flex-col gap-3`} partnerOnly />
+          <SessionBuddyCard className={`${PANEL_CARD} flex flex-col gap-3`} partnerOnly
+            onAdSafetyChange={(safe) => setBuddySafety((current) => current === "blocked" ? current : safe ? "safe" : "blocked")} />
           {hub ? <HubSupporters people={hub.supporters} /> : null}
           {hub ? <HubTrends tags={hub.trendingTags} /> : null}
+          <CommunityOverviewAd contentRevision={hub?.adContext?.contentRevision} sidebarRooms={hub?.adContext?.sidebarRooms} buddySafe={buddySafety === "safe"} />
         </aside>
       </div>
     </main>

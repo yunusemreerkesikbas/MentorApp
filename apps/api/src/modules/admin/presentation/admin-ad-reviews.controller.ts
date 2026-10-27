@@ -25,6 +25,30 @@ export class AdminAdReviewsController {
   @Get(":questionId")
   preview(@Param() params: QuestionParamsDto) { return this.reviews.preview(params.questionId); }
 
+  @Get(":questionId/community")
+  previewCommunity(@Param() params: QuestionParamsDto, @CurrentUser() actor: RequestUser) {
+    return this.reviews.previewCommunity(params.questionId, actor);
+  }
+
+  @Put(":questionId/community")
+  @Audit(AuditAction.AD_COMMUNITY_QUESTION_APPROVE)
+  async approveCommunity(@Param() params: QuestionParamsDto, @Body() body: ApproveQuestionDto,
+    @CurrentUser() actor: RequestUser, @Req() req: AuditableRequest) {
+    const before = await this.reviews.previewCommunity(params.questionId, actor);
+    const after = await this.reviews.approveCommunity(params.questionId, actor, body.contentRevision);
+    this.audit(req, params.questionId, before.approval, after.approval);
+    return after;
+  }
+
+  @Delete(":questionId/community")
+  @Audit(AuditAction.AD_COMMUNITY_QUESTION_REVOKE)
+  async revokeCommunity(@Param() params: QuestionParamsDto, @CurrentUser() actor: RequestUser, @Req() req: AuditableRequest) {
+    const before = await this.reviews.previewCommunity(params.questionId, actor);
+    await this.reviews.revokeCommunity(params.questionId);
+    this.audit(req, params.questionId, before.approval, null);
+    return { revoked: true };
+  }
+
   @Put(":questionId")
   @Audit(AuditAction.AD_QUESTION_APPROVE)
   async approve(@Param() params: QuestionParamsDto, @Body() body: ApproveQuestionDto,

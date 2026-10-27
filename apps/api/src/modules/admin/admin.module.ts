@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 import { AdminAdReviewsController } from "./presentation/admin-ad-reviews.controller";
+import { AdminAdAnnouncementsController } from "./presentation/admin-ad-announcements.controller";
+import { AdminAdsReadinessController } from "./presentation/admin-ads-readiness.controller";
 import { AccountModule } from "../account/account.module";
 import { AdsModule } from "../ads/ads.module";
 import { AiModule } from "../ai/ai.module";
@@ -53,6 +55,8 @@ import { AdminForumController } from "./presentation/admin-forum.controller";
   ],
   controllers: [
     AdminAdReviewsController,
+    AdminAdAnnouncementsController,
+    AdminAdsReadinessController,
     AdminUsersController,
     AdminConfigController,
     AdminEconomyController,

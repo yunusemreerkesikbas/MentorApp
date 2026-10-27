@@ -20,6 +20,9 @@ const PRODUCTION_SECURITY = {
 };
 
 describe("validateEnv", () => {
+  it.each(["<script>alert(1)</script>", "https://example.test/unit", " "])("validates legacy ad units as Google paths: %s", (unit) => {
+    expect(() => validateEnv({ ...REQUIRED, GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT: unit })).toThrow(/GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT/);
+  });
   it("keeps local Google test inventory explicitly opt-in", () => {
     expect(validateEnv(REQUIRED).ADS_LOCAL_TEST_ENABLED).toBe("false");
     expect(validateEnv({ ...REQUIRED, ADS_LOCAL_TEST_ENABLED: "true" }).ADS_LOCAL_TEST_ENABLED).toBe("true");

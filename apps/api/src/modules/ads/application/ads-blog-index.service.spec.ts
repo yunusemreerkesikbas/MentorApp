@@ -27,7 +27,7 @@ function setup(options: { empty?: boolean; featured?: boolean; family?: string; 
     { get: (key: string) => ({ NODE_ENV: "development", APP_URL: "http://localhost:3000", ADS_LOCAL_TEST_ENABLED: options.local ? "true" : "false" })[key] } as never,
     { getEntitlement: async (_id: string, roles: string[]) => ({ isPremium: Boolean(options.premium) || roles.includes("STAFF") }) } as never,
     { getDiscoveryProfile: async () => ({ examType: options.profile ?? "KPSS" }) } as never,
-    {} as never, content as never, {} as never,
+    {} as never, content as never, {} as never, {} as never, {} as never
   );
   return { service, config, content };
 }

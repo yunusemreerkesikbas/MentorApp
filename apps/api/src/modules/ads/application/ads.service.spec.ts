@@ -31,6 +31,7 @@ function setup(
     appEnv?: string;
     appUrl?: string;
     adsDisabled?: boolean;
+    articleUnit?: string;
   } = {},
 ) {
   const sessions: AdRewardSessionRow[] = [];
@@ -84,7 +85,7 @@ function setup(
         if (key === "APP_ENV") return options.appEnv;
         if (key === "APP_URL") return options.appUrl ?? "http://localhost:3000";
         if (key === "ADS_LOCAL_TEST_ENABLED") return options.localTest ? "true" : "false";
-        return key.includes("KNOWLEDGE") ? "/network/article" : "/network/reward";
+        return key.includes("KNOWLEDGE") ? options.articleUnit ?? "/network/article" : "/network/reward";
       },
     } as never,
     { getEntitlement: async () => ({ isPremium }) } as never,
@@ -93,12 +94,18 @@ function setup(
     {
       getInfoArticleBySlug: async () => ({ family: options.articleFamily ?? ExamType.LGS }),
     } as never,
-    {} as never,
+    {} as never, {} as never, {} as never
   );
   return { service, sessions, economy, rewardedCountSince };
 }
 
 describe("AdsService", () => {
+  it.each([{ nodeEnv: "production" }, { appEnv: "production" }])("blocks official sample inventory from the legacy blog environment in %j", async (environment) => {
+    const { service } = setup(false, { ...environment, articleUnit: "/6355419/Travel/Europe/France/Paris" });
+    expect(await service.getPublicPlacement(AdPlacementId.KNOWLEDGE_ARTICLE_END, "lgs-guide", null, "TR"))
+      .toMatchObject({ enabled: false, reason: "TEST_INVENTORY_NOT_ALLOWED", adUnitPath: null });
+  });
+
   it("uses only official test inventory locally without enabling database flags", async () => {
     const view = await setup(false, { localTest: true, adsDisabled: true }).service.getPublicPlacement(
       AdPlacementId.KNOWLEDGE_ARTICLE_END, "lgs-guide", null, null,

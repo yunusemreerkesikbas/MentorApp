@@ -16,12 +16,13 @@ import { ZoneTypeIcon } from "./zone-type-icon";
  * Other people's questions nobody has answered yet. Loads on its own and says nothing until it
  * has a question to show (DESIGN.md §1 rule 7, §10). A question page passes its own id as `exclude`.
  */
-export function HubWaitingQuestions({ exclude }: { exclude?: string }) {
+export function HubWaitingQuestions({ exclude, snapshotItems }: { exclude?: string; snapshotItems?: ForumFeedItem[] }) {
   const t = useTranslations("community");
   const locale = useLocale();
   const [items, setItems] = useState<ForumFeedItem[]>([]);
 
   useEffect(() => {
+    if (snapshotItems !== undefined) return;
     let active = true;
     getForumFeed({ scope: "relevant", sort: "recent", unanswered: true, limit: 4 })
       .then((feed) => {
@@ -31,9 +32,10 @@ export function HubWaitingQuestions({ exclude }: { exclude?: string }) {
     return () => {
       active = false;
     };
-  }, [exclude]);
+  }, [exclude, snapshotItems]);
 
-  if (items.length === 0) return null;
+  const visibleItems = snapshotItems ?? items;
+  if (visibleItems.length === 0) return null;
 
   return (
     <section className={`${PANEL_CARD} flex flex-col gap-1`} aria-labelledby="hub-waiting-title">
@@ -50,7 +52,7 @@ export function HubWaitingQuestions({ exclude }: { exclude?: string }) {
         </Link>
       </div>
       <div className={COMMUNITY_ROW_LIST}>
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <CommunityRow
             key={item.id}
             href={threadHref(item)}

@@ -109,6 +109,42 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-26: Reviewed public announcement detail advertising.** The existing authenticated
+  message detail can append one default-off slot after visible comments. Forum's exported
+  announcement page service verifies PUBLIC/active ANNOUNCEMENT type, known exam context,
+  supported media and complete public sidebars, then additively returns `ThreadDetail.adContext`
+  (opaque revision, exact room and expected sidebars). Ads consumes that service without reading
+  Forum tables. Usage: review the full initial publisher view in the existing admin Forum screen;
+  configure the independent unit/flag only after inventory/privacy review. CHAT/QA/private/poll/
+  coach contexts remain ineligible; ordinary reading survives context failures. Nested replies
+  are outside the initial snapshot; opening them, composing, choosing files or action controls
+  stops advertising. Message state/actions were extracted without changing comment/reaction/
+  bookmark flows. No new page or chat/feed/profile placement. Related: announcement snapshot/page
+  service, thread controller, message detail components/hook, [Ads](ads.md), migration `0131`.
+
+- **2026-10-26: Closed discovery advertising preparation.** Kept the existing home/card content
+  and prepared one rail-end/mobile-bottom slot. `GET /v1/forum/hub` optionally adds `adContext`
+  only after both Ads operational gates and a conservative public-only check. It contains the
+  rendered revision, exact waiting list, expected sidebar rooms and strictest content audience.
+  Use admin `/config` to configure inventory; leave enable/review flags off until inventory,
+  moderation, safe crawling, privacy and disclosure review. Personalized continuation, buddy
+  relations, private/archived rooms and failed/incomplete reads stay ad-free. Persistent sidebars
+  report their actual rendered lists, preventing cached private titles from coexisting with the
+  ad after soft navigation. No cards are hidden for advertising and no new page/table was added.
+  Related: `forum-hub-page.service.ts`, discovery controller, hub/sidebar/buddy components,
+  [Ads](ads.md), [plan](../superpowers/plans/2026-10-26-community-overview-ads.md).
+
+- **2026-10-26: Reviewed advertising on the existing question detail.** A default-off placement
+  follows answers without adding a page. When enabled, `GET /v1/forum/threads/:id` adds optional
+  `pageContext` with the exact server-selected waiting-question rail, public room and opaque
+  `adContentRevision`. Forum builds the publisher snapshot and validates public rooms in one
+  batch; Ads consumes its exported application service. Unavailable context disables advertising,
+  preserving question reading. Usage: approve public text, then separately preview/approve the
+  community view in the existing admin review section. Changed identities/media/tags/rail need
+  review again. Personal composition, attachment selection and dialogs end advertising for the
+  visit. Flag off adds no snapshot reads. Related: `forum-question-page.service.ts`,
+  `community-question-snapshot.ts`, question detail/rail/composer components, [Ads](ads.md).
+
 - **2026-10-25: Reviewed public question advertising.** Public QA responses add an opaque
   `contentRevision` and server-owned `examType`. The public web question reads fresh and mounts
   one deferred ad after all answers; Ads requires editor approval of exactly that revision.

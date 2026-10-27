@@ -100,6 +100,14 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-26: Display inventory preparation in existing settings.** `/config` adds a read-only
+  summary of eight display placements, unit source/status, switches, country and manual review
+  requirements. Usage: refresh the summary or save an existing setting; failures remove stale
+  results. SUPER_ADMIN only, same permission boundary as central config. Gotchas: no provider
+  approval, ads.txt verification or user eligibility is inferred; no new activation endpoint/page.
+  Related: `AdsReadinessSummary.tsx`, config `page.tsx`, `AdminAdsReadinessController`,
+  [setup and rollout](../qa/2026-10-26-ads-launch-readiness.md).
+
 - **2026-10-13 · Free admin launch compute.** The owner-selected low-cost profile keeps
   web/API always on and uses Free compute only for admin. Usage: let the operator UI wake
   before signing in; verify sessions after a restart. Gotchas: cold starts and shared Free

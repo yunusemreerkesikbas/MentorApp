@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { googleAdUnitPathSchema } from "@mentor/validation";
 import { validateProductionSecurity } from "./env-production-locks";
 import { pilotInvitedEmailsSchema } from "./pilot-invited-emails";
 import { isLocalDisplayTestAllowed } from "./local-display-test";
@@ -111,8 +112,8 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().url().optional(),
 
   // Google Ad Manager — public inventory paths, never credentials.
-  GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT: z.string().min(1).optional(),
-  GAM_DASHBOARD_REWARDED_COIN_AD_UNIT: z.string().min(1).optional(),
+  GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT: googleAdUnitPathSchema.refine((value) => value.length > 0).optional(),
+  GAM_DASHBOARD_REWARDED_COIN_AD_UNIT: googleAdUnitPathSchema.refine((value) => value.length > 0).optional(),
   ADS_LOCAL_TEST_ENABLED: z.enum(["false", "true"]).default("false"),
 });
 

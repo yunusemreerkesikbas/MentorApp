@@ -52,6 +52,8 @@ export class AdsController {
       countryCode ?? null,
       query.family ? { family: query.family, category: query.category, page: query.page ?? 1 } : undefined,
       query.questionId && query.contentRevision ? { questionId: query.questionId, contentRevision: query.contentRevision } : undefined,
+      query.contentRevision,
+      query.threadId && query.contentRevision ? { threadId: query.threadId, contentRevision: query.contentRevision } : undefined,
     );
   }
 

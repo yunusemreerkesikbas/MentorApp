@@ -78,6 +78,12 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-25: Keep the existing blog calendar.** Removed the unpublished standalone
+  calendar/guide page and its navigation/sitemap entries. The blog exam card and existing calendar
+  export remain. Kept the independent nullable-response fix: a successful empty calendar response
+  means no upcoming dates; real HTTP/JSON failures remain errors. Usage: existing blog calendar
+  only. Related: `content-api.ts`, `content-calendar-api.spec.ts`, `exam-day-card.tsx`.
+
 - **2026-10-25 · Blog index advertising boundary.** The post list and the new ad rail share a
   request-scoped result for featured/list requests; existing filters, pagination and error/empty
   views are preserved. A single non-sticky ad boundary appears only with rendered article

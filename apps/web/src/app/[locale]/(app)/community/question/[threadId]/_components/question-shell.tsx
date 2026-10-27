@@ -1,16 +1,13 @@
 "use client";
 import { NotebookPen } from "lucide-react";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   ModerationTargetType,
   type AnswerView,
-  type QuestionDetail,
-  type ZoneView,
 } from "@mentor/types";
-import { ApiClientError } from "@mentor/api-client";
 import { FormError } from "@/components/form";
 import {
   PANEL_CARD,
@@ -19,16 +16,7 @@ import {
   PANEL_MAIN_CLASS,
 } from "@/components/panel/panel-styles";
 import { useAuth } from "@/lib/auth-context";
-import { trackCommunityEvent } from "@/lib/analytics";
 import { parseCommunityReturnContext } from "@/lib/community-coach-bridge";
-import {
-  bookmarkPost,
-  bookmarkThread,
-  getQuestion,
-  isForumDisabled,
-  listZones,
-  setHelpfulVote,
-} from "@/lib/forum";
 import { questionUrl } from "@/lib/forum-public";
 import { relativeTime } from "@/lib/relative-time";
 import { ReportButton } from "../../../_components/report-button";
@@ -50,12 +38,8 @@ import { AnswerItem } from "./answer-item";
 import { QuestionRail } from "./question-rail";
 import { CommunityCoachBridge } from "../../../_components/community-coach-bridge";
 import { PostDetailSkeleton } from "../../../_components/post-skeleton";
-
-type State =
-  | { status: "loading" }
-  | { status: "disabled" }
-  | { status: "error"; message: string }
-  | { status: "ready"; detail: QuestionDetail; zone: ZoneView | null };
+import { CommunityQuestionAd } from "./community-question-ad";
+import { useQuestionDetail } from "./use-question-detail";
 
 /**
  * A question on the panel frame: the question card, the answers card ("N cevap", the solution in a
@@ -70,7 +54,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
     intent: searchParams.get("intent"),
   });
   const { user } = useAuth();
-  const [state, setState] = useState<State>({ status: "loading" });
+  const { state, load, onToggleQuestionBookmark, onToggleAnswerBookmark, onToggleHelpful } = useQuestionDetail(threadId);
   /**
    * "Ben de takıldım": the community end of the notebook bridge. Kept as local session state rather
    * than read back from the server: the entry the dialog creates is the student's own row in another
@@ -79,104 +63,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
    */
   const [notebookOpen, setNotebookOpen] = useState(false);
   const [notebookAdded, setNotebookAdded] = useState(false);
-
-  const load = useCallback(async () => {
-    try {
-      const [detail, zones] = await Promise.all([getQuestion(threadId), listZones()]);
-      const zone = zones.items.find((entry) => entry.id === detail.question.zoneId) ?? null;
-      setState({ status: "ready", detail, zone });
-    } catch (err) {
-      if (isForumDisabled(err)) return setState({ status: "disabled" });
-      setState({
-        status: "error",
-        message: err instanceof ApiClientError ? err.body.message : t("error"),
-      });
-    }
-  }, [threadId, t]);
-
-  const onToggleQuestionBookmark = useCallback(
-    (adding: boolean) => {
-      setState((s) =>
-        s.status === "ready"
-          ? { ...s, detail: { ...s.detail, question: { ...s.detail.question, myBookmarked: adding } } }
-          : s,
-      );
-      bookmarkThread(threadId, adding).catch(() =>
-        setState((s) =>
-          s.status === "ready"
-            ? { ...s, detail: { ...s.detail, question: { ...s.detail.question, myBookmarked: !adding } } }
-            : s,
-        ),
-      );
-    },
-    [threadId],
-  );
-
-  const onToggleAnswerBookmark = useCallback((postId: string, adding: boolean) => {
-    const patch = (v: boolean) => (s: State): State =>
-      s.status === "ready"
-        ? {
-            ...s,
-            detail: {
-              ...s.detail,
-              answers: s.detail.answers.map((a) => (a.id === postId ? { ...a, myBookmarked: v } : a)),
-            },
-          }
-        : s;
-    setState(patch(adding));
-    bookmarkPost(postId, adding).catch(() => setState(patch(!adding)));
-  }, []);
-
-  const onToggleHelpful = useCallback(
-    (targetType: "THREAD" | "POST", targetId: string, adding: boolean) => {
-      const bump = <T extends { helpfulVoteCount?: number }>(item: T) => ({
-        ...item,
-        myHelpfulVote: adding,
-        helpfulVoteCount: Math.max(0, (item.helpfulVoteCount ?? 0) + (adding ? 1 : -1)),
-      });
-      setState((current) => {
-        if (current.status !== "ready") return current;
-        const { question, answers } = current.detail;
-        return {
-          ...current,
-          detail:
-            targetType === "THREAD"
-              ? { ...current.detail, question: bump(question) }
-              : { ...current.detail, answers: answers.map((a) => (a.id === targetId ? bump(a) : a)) },
-        };
-      });
-      setHelpfulVote(targetType, targetId, adding).catch(() => void load());
-    },
-    [load],
-  );
-
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      try {
-        const [detail, zones] = await Promise.all([getQuestion(threadId), listZones()]);
-        if (active) {
-          const zone = zones.items.find((entry) => entry.id === detail.question.zoneId) ?? null;
-          setState({ status: "ready", detail, zone });
-          trackCommunityEvent("forum_thread_view", {
-            zone_type: "QA",
-            answered: detail.question.status === "ANSWERED",
-          });
-        }
-      } catch (err) {
-        if (!active) return;
-        if (isForumDisabled(err)) setState({ status: "disabled" });
-        else
-          setState({
-            status: "error",
-            message: err instanceof ApiClientError ? err.body.message : t("error"),
-          });
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [threadId, t]);
+  const [draftQuestionId, setDraftQuestionId] = useState<string | null>(null);
 
   if (state.status === "loading") return <PostDetailSkeleton label={t("loading")} />;
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
@@ -308,14 +195,17 @@ export function QuestionShell({ threadId }: { threadId: string }) {
             )}
           </section>
 
+          {draftQuestionId !== question.id ? <CommunityQuestionAd key={question.id} questionId={question.id} contentRevision={state.detail.pageContext?.adContentRevision} /> : null}
+
           <AnswerComposer
+            onInteraction={() => setDraftQuestionId(question.id)}
             threadId={threadId}
             zoneId={question.zoneId}
             returnIntent={returnContext?.intent ?? null}
             onPosted={() => void load()}
           />
         </div>
-        <QuestionRail question={question} answers={answers} />
+        <QuestionRail question={question} answers={answers} waitingQuestions={state.detail.pageContext?.waitingQuestions ?? undefined} />
       </div>
 
       {notebookOpen ? (

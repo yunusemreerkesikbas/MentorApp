@@ -77,6 +77,15 @@ weekly counts. Existing assignments remain unchanged; new drafts use the existin
 
 ## 6. Service (module) catalog
 
+Display launch diagnostics (2026-10-26): `GET /v1/admin/ads/readiness` requires SUPER_ADMIN, the
+same boundary as central settings. Returns current environment/site origin, global/display
+switches, allowed countries, local preview status, and eight DISPLAY rows with unit source/status,
+enabled flag, configuration issues and required content-check type. No raw unit paths, provider
+requests, user/content reads or writes; `externalVerification` is always `NOT_CHECKED`. An empty
+issue list is not Google/content approval or user eligibility. Production placement delivery
+additively reports `TEST_INVENTORY_NOT_ALLOWED` with no unit path for official sample DISPLAY
+network paths, including explicit legacy environment fallbacks. Rewarded guards are unchanged.
+
 Reviewed public QA advertising (2026-10-25): public/authenticated `forum.question.end` placement
 requests require UUID `questionId` and rendered SHA-256 `contentRevision`. The current public
 Forum snapshot, rendered revision and stored approval must match; unknown exam context fails
@@ -85,6 +94,34 @@ approval; `PUT` accepts `{contentRevision}` and returns 409 for stale previews; 
 All three require EDITOR/full admin; both mutations use the existing audit log. Public question
 responses add optional `contentRevision` and `examType` fields for backward compatibility.
 See [Ads](../features/ads.md) for default-off activation gates and limitations.
+
+Authenticated community QA advertising (2026-10-26): `community.question.end` uses the existing
+authenticated placement endpoint and the same UUID/revision query schema; the anonymous endpoint
+returns 404. `GET/PUT/DELETE /v1/admin/ads/questions/:questionId/community` preview/approve/revoke
+an independent community publisher snapshot (EDITOR/full admin, audited mutations, stale PUT 409).
+Approval requires current public text approval. Reapproving/revoking public text clears community
+approval; community-only revoke retains public approval. When the new flag is enabled,
+`GET /v1/forum/threads/:id` additively returns `pageContext` (public room, exact selected waiting
+questions, nullable `adContentRevision`); absent/failed context cannot authorize ads. Authenticated
+policy verifies rendered/current/approved hashes and the existing audience/country/entitlement rules.
+
+Discovery preparation (2026-10-26): authenticated `community.overview` accepts only the existing
+SHA-256 `contentRevision` query, without a question ID/article. Anonymous delivery is 404. The
+existing `GET /v1/forum/hub` optionally adds `adContext` containing `contentRevision`, exact
+`waitingQuestions`, `sidebarRooms` and `examType` after both default-off enable/operational-review
+gates. Ads rereads Forum's public page proof and compares it with the rendered revision; private,
+personalized, incomplete, stale or unknown-exam contexts remain disabled. Existing clients can
+ignore the additive field. No extra snapshot reads occur with either gate off.
+
+Reviewed announcements (2026-10-26): authenticated `community.announcement.end` uses UUID `threadId`
+and SHA-256 `contentRevision` on the existing placement endpoint; anonymous delivery is 404.
+`GET/PUT/DELETE /v1/admin/ads/announcements/:threadId` provide EDITOR/full-admin preview, approval
+(`{contentRevision}`, stale → 409) and revoke; audit stores approval metadata only. Only PUBLIC,
+active ANNOUNCEMENT publisher views qualify. The existing `GET /v1/forum/threads/:threadId/detail`
+optionally returns `adContext` (rendered revision, server room, expected `sidebarRooms`) while its
+independent flag is enabled. Context errors preserve ordinary reading without an ad. Existing
+clients can ignore the additive field. Approval store `content_type` isolates QUESTION and
+ANNOUNCEMENT records; no new review table or anonymous announcement endpoint is introduced.
 
 Identity phone addition (APP-114): protected `GET /v1/users/me/phone`,
 `POST /v1/users/me/phone/verifications` and

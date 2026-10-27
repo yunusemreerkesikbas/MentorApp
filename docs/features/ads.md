@@ -1,6 +1,22 @@
-# Ads — Google Ad Manager (Blog, reviewed public QA and gated app overviews)
+# Ads — Google Ad Manager (Blog, reviewed Forum content and gated app overviews)
 
 ## Product boundary
+
+- Existing public-room announcement detail: one `community.announcement.end` slot after the
+  initially visible comments. The full publisher snapshot requires editor approval. CHAT, QA,
+  private/archived rooms, polls, coach bridges and unsupported media are excluded from this
+  placement. Personal interaction/composition/files/dialogs end advertising for the visit.
+  Defaults off; no new announcement page or anonymous inventory is added.
+
+- Existing discovery home preparation: one `community.overview` slot at the desktop rail end and
+  after all content on mobile. Existing cards remain. Both enable and independent operational
+  review flags default off; empty unit disables delivery. This is not a Google-approved inventory
+  launch. Personal continuation rows, buddy active/pending states, private/archived rooms and
+  unverified or stale rendered sidebars exclude the view.
+
+- Existing authenticated question detail: one `community.question.end` slot after answers,
+  using a separate editor-approved publisher snapshot. No new page. Text/draft/file interaction
+  or an open dialog removes the ad for that question visit. Defaults off.
 
 - Reviewed public QA pilot: one `forum.question.end` slot after all answers. Only an answered
   public QA snapshot explicitly approved by an editor qualifies. Inventory defaults off.
@@ -45,6 +61,14 @@ AI konuşması Google'a gönderilmez.
 - `GET /v1/admin/ads/questions/:questionId` (preview, EDITOR/full admin)
 - `PUT /v1/admin/ads/questions/:questionId` with `{contentRevision}` (audited approval, stale → 409)
 - `DELETE /v1/admin/ads/questions/:questionId` (audited revoke)
+- `GET /v1/ads/placements/community.question.end?questionId=<uuid>&contentRevision=<sha256>` (session required)
+- `GET /v1/ads/placements/community.overview?contentRevision=<sha256>` (session required;
+  no article slug or invented question ID; rendered/current discovery proofs must match)
+- `GET /v1/ads/placements/community.announcement.end?threadId=<uuid>&contentRevision=<sha256>` (session required)
+- `GET/PUT/DELETE /v1/admin/ads/announcements/:threadId` (EDITOR/full admin preview/approve/revoke;
+  PUT accepts `{contentRevision}`, stale preview → 409; mutations audit approval metadata only)
+- `GET/PUT/DELETE /v1/admin/ads/questions/:questionId/community` (separate preview/approval/revoke;
+  PUT accepts `{contentRevision}`; EDITOR/full admin; mutations audited)
 - `GET /v1/ads/reward-offers/:placementId`
 - `POST /v1/ads/reward-sessions` (`Idempotency-Key: <uuid>` opsiyonel)
 - `POST /v1/ads/reward-sessions/:id/complete`
@@ -58,7 +82,8 @@ registry string, default `TR`; empty disables display everywhere and an unknown 
 fails closed (`REGION_NOT_ENABLED`, additive `/v1` reason). Existing EEA/UK/Switzerland CMP
 restrictions still apply even if those countries are added to the allowlist. Ad units remain
 environment-backed: `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT`, `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT`.
-No new provider or database table is added. Published article validation and the stricter
+Overview inventory adds no provider or table; reviewed QA has its approval store.
+Published article validation and the stricter
 profile/content CHILD or TEEN treatment are preserved. Overview inventory uses only the
 authenticated server-side profile; unknown/missing exam context returns `CONTEXT_UNVERIFIED`.
 Public placement requests for overview inventory return 404; authenticated endpoints require a session.
@@ -76,6 +101,17 @@ validated/audited config API. Keys:
 | Notebook overview | `ads.placement.notebooks_overview.enabled` | `ads.placement.notebooks_overview.ad_unit_path` |
 | Vision discovery | `ads.placement.vision_overview.enabled` | `ads.placement.vision_overview.ad_unit_path` |
 | Reviewed public QA | `ads.placement.forum_question_end.enabled` | `ads.placement.forum_question_end.ad_unit_path` |
+| Existing community question | `ads.placement.community_question_end.enabled` | `ads.placement.community_question_end.ad_unit_path` |
+| Discovery home preparation | `ads.placement.community_overview.enabled` | `ads.placement.community_overview.ad_unit_path` |
+| Reviewed announcement detail | `ads.placement.community_announcement_end.enabled` | `ads.placement.community_announcement_end.ad_unit_path` |
+
+Discovery additionally requires `ads.placement.community_overview.review_approved` (default false).
+This audited operational gate must only be set after Google inventory/value, authenticated-page
+crawling, moderation, privacy and public-disclosure review. It does not certify Google compliance
+or replace moderation/editorial review. A navigation-heavy home may remain unsuitable; preparing a
+slot is not evidence of content value. Keep both flags off until the review establishes eligibility.
+The local official sample path also requires both gates and a verified public view. Do not give
+Google real student credentials or private data to crawl the screen.
 
 Empty overview units disable delivery. An empty article unit explicitly retains the legacy
 `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT` fallback; turn off the article placement to stop delivery.
@@ -136,6 +172,94 @@ real eligible impressions appearing in reporting and zero Google requests for ex
 Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs out of Mentor DB.
 
 ## Geliştirmeler (timeline)
+
+- **2026-10-26: Existing inventory launch preparation.** Existing admin `/config` now embeds a
+  read-only eight-placement summary from SUPER_ADMIN `GET /v1/admin/ads/readiness`; refresh or
+  save config to reread switches, unit source/status and country/review gates. No Google calls,
+  user/content inspection, approvals inferred from configuration or new activation controls.
+  Official sample DISPLAY inventory is blocked in production even when pasted into config/env;
+  legacy unit env values share Zod path validation. Public/settings TR/EN ad disclosure covers
+  gated current screens and ad-free editors. Usage/setup/rollback/external blockers:
+  [launch runbook](../qa/2026-10-26-ads-launch-readiness.md). Gotchas: local configuration does not
+  verify live web ads.txt, Google account/site/demand, private-page crawling or privacy approval;
+  all new production placements remain off. Related: `ads-readiness.service.ts`, `ad-unit.ts`,
+  `admin-ads-readiness.controller.ts`, admin `AdsReadinessSummary.tsx`, `cookie-preferences-content.tsx`,
+  `.env.example`, `e2e/ads-readiness.spec.ts`. No new room, page, inventory or database migration.
+
+- **2026-10-26: Reviewed announcement detail inventory.** Added one lazy 250x250/300x250 slot
+  after all initially visible comments on the existing message detail, exclusively for PUBLIC,
+  active ANNOUNCEMENT rooms. Usage: migrate `0131`, open existing admin Forum → **Duyuru reklam
+  incelemesi**, enter the announcement URL/UUID, inspect text, visible top-level comments,
+  identities/avatars, images, tags and sidebar rooms, then approve the exact revision. Configure
+  the separate unit in `/config`; empty disables delivery with no environment fallback. Keep
+  `.enabled=false` pending Google inventory/content, safe authenticated crawling, moderation,
+  privacy and disclosure review. Local sample mode still requires page context and approval.
+  No real student credentials/private data may be supplied to Google.
+  Gotchas: only the initial publisher view is approved, not hidden nested replies. Reply counts
+  participate in its revision; opening a reply window, comment detail, edit/action controls,
+  files, search or dialogs removes the ad before another view appears. Account navigation and
+  the empty composer are application chrome; existing profile/content moderation remains
+  necessary. Text, edited timestamps, visible comments, identities, images, tags or room changes
+  require review again. Actual persistent sidebars must match the server proof; private, stale,
+  unsupported or incomplete context stays ad-free. The existing sidebar limit is 100 rooms;
+  more results fail closed until complete rendering/proof is supported. No live moderation push,
+  automatic refresh or user impression tracking is added.
+  The legacy `ad_question_reviews` table now has `content_type`, default QUESTION for all existing
+  rows; ANNOUNCEMENT approval/revoke is isolated. No new table/provider; existing reviewer erasure
+  clears both kinds. Revocation still works after content becomes unavailable. Admin preview
+  resolves API-relative images through the shared media URL helper, and CSP permits only the
+  configured API origin in addition to existing image sources. Related: `announcement-ad-snapshot.ts`,
+  `forum-announcement-page.service.ts`, `ads-announcement-review.service.ts`,
+  `admin-ad-announcements.controller.ts`, `AnnouncementAdReview.tsx`, message detail hook/components,
+  migration `0131`, [plan](../superpowers/plans/2026-10-26-announcement-detail-ads.md).
+
+- **2026-10-26: Discovery home preparation, closed delivery.** Added `community.overview` on the
+  existing Keşfet home, desktop rail end/mobile last, with 250x250/300x250 width filtering and
+  existing lazy GPT teardown. Usage: admin `/config` → Reklamlar has independent enable, unit
+  path and `review_approved` controls. Both flags remain false; approval is an operational review
+  checkpoint, not automatic Google certification or per-post editorial approval. No new page,
+  table, provider, sponsor feature or migration. After both gates, Forum returns an opaque public
+  page proof, exact waiting-question list and expected sidebar rooms. Eligibility rereads that
+  view and compares the rendered proof; volatile action/count/presence fields are excluded.
+  Gotchas: a replied, nonempty featured discussion is only a technical minimum, not Google's
+  inventory-value approval. Any continuation/history rows, active/pending buddy relation,
+  private/archived room or failed/incomplete read denies the view. This intentionally restricts
+  coverage without hiding cards. Buddy UI must independently confirm no personal card; both
+  persistent sidebars must match the proof before the slot mounts. Cached private rooms after
+  cross-tab membership changes remain ad-free on soft navigation. Search/dialog/room changes
+  cancel advertising for the visit, without automatic resume. Gates off add no context queries;
+  no active-page moderation push/polling or user impression tracking was added. Shared script
+  `test:e2e:community-ads` covers discovery and existing question inventory with synthetic API/GPT.
+  Related: `forum-hub-page.service.ts`, `AdsService`, discovery controller, `hub-shell.tsx`,
+  `community-overview-ad.tsx`, `community-sidebar-snapshot.tsx`, `session-buddy-card.tsx`,
+  [implementation plan](../superpowers/plans/2026-10-26-community-overview-ads.md).
+
+- **2026-10-26: Existing community question detail inventory.** Added one deferred square slot
+  after answers on the existing authenticated screen. Usage: migrate `0130`, approve the public
+  text in Community admin, then select **Topluluk görünümünü önizle**, inspect every identity,
+  image, attachment, tag, room and waiting-question preview, and approve that exact view. The
+  independent `/community` approval requires current public approval; public reapproval/revoke
+  clears it, while community-only revoke preserves public approval. Audit retains revision/reviewer
+  metadata only; account erasure clears both reviewer identities. Configure the new unit under
+  `/config`; its empty path disables delivery, with no environment fallback. Leave the flag off
+  pending inventory, authenticated-page crawling, privacy and public-disclosure review. Never give
+  Google real student credentials or private data. Local sample mode also needs this placement's
+  flag to assemble page context, and still requires both approvals.
+  Gotchas: recommendations vary by viewer, so only an exactly matching reviewed rail qualifies.
+  Private/archived rooms, coach bridges, polls, inline Markdown media, non-image attachments,
+  unknown exam context and failed rail reads stay ineligible. Flag-off requests preserve the old
+  query path; flag-on detail returns the rail it hashed, with no second client rail read. Text,
+  attachments, emoji and dialog interaction remove filled or pending ads without auto-resuming;
+  content revision changes replace the old slot. No live moderation polling or impression table.
+  Browser suite: `pnpm --filter @mentor/web test:e2e:community-ads` (synthetic API/GPT only).
+  Related: `forum-question-page.service.ts`, `community-question-snapshot.ts`,
+  `ads-question-review.service.ts`, `CommunityQuestionAdReview.tsx`, question detail components,
+  migration `0130`, [plan](../plans/2026-10-26-community-question-ads.md).
+
+- **2026-10-25: Standalone calendar proposal withdrawn.** Removed the unpublished calendar/guide
+  page, its dedicated ad placement/configuration, links and tests at the user's request. Existing
+  blog, notebook, vision and reviewed-question inventory remains the scope. No migration or
+  production activation occurred. Related: shared ads contracts/config and existing ad components.
 
 - **2026-10-25: Reviewed public QA pilot.** Added one lazy square slot after all answers.
   Usage: Community admin → Question ad review → paste a public question URL/UUID → inspect

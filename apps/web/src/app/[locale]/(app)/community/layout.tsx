@@ -5,6 +5,7 @@ import { CommunityQuickReplyProvider } from "./_components/community-quick-reply
 import { ZoneSidebar } from "./_components/zone-sidebar";
 import { ZoneDrawer } from "./_components/zone-drawer";
 import { ZoneDrawerProvider } from "./_components/zone-drawer-context";
+import { CommunitySidebarSnapshotProvider } from "./_components/community-sidebar-snapshot";
 
 /**
  * Community is a dedicated workspace. On desktop the header (title + search) and the rooms share
@@ -14,6 +15,7 @@ import { ZoneDrawerProvider } from "./_components/zone-drawer-context";
 export default function CommunityLayout({ children }: { children: ReactNode }) {
   return (
     <ZoneDrawerProvider>
+      <CommunitySidebarSnapshotProvider>
       <CommunityQuickReplyProvider>
         <div className="community-workspace">
           <ZoneDrawer />
@@ -28,6 +30,7 @@ export default function CommunityLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </CommunityQuickReplyProvider>
+      </CommunitySidebarSnapshotProvider>
     </ZoneDrawerProvider>
   );
 }

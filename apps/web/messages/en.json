@@ -2847,7 +2847,9 @@
   },
   "advertisingDisclosure": {
     "heading": "Ads in free access",
-    "body": "Eligible anonymous and Free visitors in Turkey may automatically see one non-personalized ad at the end of a blog article. Premium and STAFF stay ad-free. Your analytics choice does not change ad delivery. Google may use IP addresses for delivery and, when programmatic limited ads are enabled, cookies and local storage for invalid traffic and abuse detection, with processing abroad. Personalized ads and behavioral targeting are disabled."
+    "body": "Eligible anonymous and free users in Turkey may see at most one non-personalized ad on screens where ads are enabled. Your analytics choice does not change ad delivery. Google may use IP addresses for delivery and, when programmatic limited ads are enabled, cookies and browser storage for invalid traffic and abuse detection, with processing abroad. Personalized ads and behavioral targeting are disabled.",
+    "scope": "Once eligibility checks are complete and placements are enabled, ads may appear on the blog list, blog articles and reviewed public question-and-answer pages. Signed-in users may also see them on the Notebooks and Vision Board entry screens, Community Discover, and reviewed question and announcement details. Disabled placements do not show ads.",
+    "protections": "Premium and staff accounts are ad-free. These display ads do not appear in notebook or board editors, coaching conversations or focus sessions. Age group, exam context, country and content eligibility are checked separately."
   },
   "onboarding": {
     "loading": "Loading…",

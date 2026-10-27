@@ -8,6 +8,7 @@ import {
   type AdEligibilityReason,
   type AdPlacementView,
   type AdQuestionContext,
+  type AdAnnouncementContext,
   type AdRewardCompletionView,
   type AdRewardOfferView,
   type AdRewardSessionView,
@@ -22,10 +23,13 @@ import { EconomyService } from "../../economy/application/economy.service";
 import { UsersService } from "../../identity/application/users.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { evaluateAdPolicy, istanbulDayStart } from "../domain/ad-policy";
-import { AD_PLACEMENTS, ADS_REWARD_REASON, ADS_REWARD_SOURCE, GOOGLE_DISPLAY_TEST_AD_UNIT } from "../domain/ads.constants";
+import { AD_PLACEMENTS, ADS_REWARD_REASON, ADS_REWARD_SOURCE, GOOGLE_DISPLAY_TEST_AD_UNIT, PUBLIC_DISPLAY_PLACEMENTS } from "../domain/ads.constants";
+import { isGoogleTestAdUnit, resolveAdUnit } from "../domain/ad-unit";
 import { AdRewardSessionRepository, type AdRewardSessionRow } from "../infrastructure/ad-reward-session.repository";
 import { resolveBlogAdContext } from "./blog-ad-context";
 import { AdsQuestionReviewService } from "./ads-question-review.service";
+import { ForumHubPageService } from "../../forum/application/forum-hub-page.service";
+import { AdsAnnouncementReviewService } from "./ads-announcement-review.service";
 
 @Injectable()
 export class AdsService {
@@ -38,15 +42,16 @@ export class AdsService {
     private readonly economy: EconomyService,
     private readonly content: ContentService,
     private readonly questionReviews: AdsQuestionReviewService,
+    private readonly hubPages: ForumHubPageService,
+    private readonly announcementReviews: AdsAnnouncementReviewService,
   ) {}
 
   private async adUnitPath(placementId: AdPlacementId): Promise<string | null> {
     const { unitConfigKey, envKey } = AD_PLACEMENTS[placementId];
     const configured = unitConfigKey ? await this.config.get(unitConfigKey) : "";
-    if (configured) return configured;
     // Only the existing blog/reward inventory has an explicit legacy environment fallback.
     const value = envKey ? this.env.get(envKey, { infer: true }) : null;
-    return typeof value === "string" && value.length > 0 ? value : null;
+    return resolveAdUnit(configured, value).path;
   }
 
   private async placement(
@@ -92,6 +97,8 @@ export class AdsService {
       displayAllowedCountries: allowedCountries.split(",").filter(Boolean),
     });
     const adUnitPath = localTest ? GOOGLE_DISPLAY_TEST_AD_UNIT : await this.adUnitPath(placementId);
+    const sampleBlocked = placement.format === "DISPLAY" && isGoogleTestAdUnit(adUnitPath) &&
+      (this.env.get("NODE_ENV", { infer: true }) === "production" || this.env.get("APP_ENV", { infer: true }) === "production");
     const contextUnverified = placement.format === "DISPLAY" && context.contextVerified === false;
     // Google Ad Manager does not provide server-side verification for Rewarded Web. A browser
     // event is forgeable, so production must stay closed until the provider/format can prove it.
@@ -104,6 +111,8 @@ export class AdsService {
       ? decision.reason!
       : !adUnitPath
         ? "PROVIDER_NOT_CONFIGURED"
+        : sampleBlocked
+          ? "TEST_INVENTORY_NOT_ALLOWED"
         : serverVerificationUnavailable
           ? "SERVER_VERIFICATION_UNAVAILABLE"
           : "ELIGIBLE";
@@ -113,11 +122,12 @@ export class AdsService {
       enabled:
         !contextUnverified &&
         !serverVerificationUnavailable &&
+        !sampleBlocked &&
         decision.enabled &&
         Boolean(adUnitPath),
       reason,
       provider: "GOOGLE_AD_MANAGER",
-      adUnitPath: contextUnverified ? null : adUnitPath,
+      adUnitPath: contextUnverified || sampleBlocked ? null : adUnitPath,
       audienceTreatment: decision.audienceTreatment,
       limitedAds: true,
       sizes: placement.sizes,
@@ -132,7 +142,7 @@ export class AdsService {
     blogList?: AdBlogListContext,
     question?: AdQuestionContext,
   ) {
-    if (placementId !== AdPlacementId.KNOWLEDGE_ARTICLE_END && placementId !== AdPlacementId.KNOWLEDGE_INDEX && placementId !== AdPlacementId.FORUM_QUESTION_END) {
+    if (!PUBLIC_DISPLAY_PLACEMENTS.has(placementId)) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     const contentContext = await this.resolveContentContext(placementId, contentSlug, blogList, question);
@@ -153,10 +163,18 @@ export class AdsService {
     countryCode: string | null,
     blogList?: AdBlogListContext,
     question?: AdQuestionContext,
+    hubRevision?: string,
+    announcement?: AdAnnouncementContext,
   ) {
     const [profile, contentContext] = await Promise.all([
       this.users.getDiscoveryProfile(userId),
-      this.resolveContentContext(placementId, contentSlug, blogList, question),
+      placementId === AdPlacementId.COMMUNITY_ANNOUNCEMENT_END
+        ? this.announcementReviews.resolve({ id: userId, roles }, announcement)
+        : placementId === AdPlacementId.COMMUNITY_OVERVIEW
+        ? this.hubPages.resolve({ id: userId, roles }, hubRevision)
+        : placementId === AdPlacementId.COMMUNITY_QUESTION_END
+        ? this.questionReviews.resolveCommunity({ id: userId, roles }, question)
+        : this.resolveContentContext(placementId, contentSlug, blogList, question),
     ]);
     return this.placement(placementId, {
       userId,
@@ -165,7 +183,7 @@ export class AdsService {
       contentExamType: contentContext.examType,
       contextVerified: (placementId === AdPlacementId.NOTEBOOKS_OVERVIEW || placementId === AdPlacementId.VISION_OVERVIEW)
         ? Object.values(ExamType).includes(profile.examType as ExamType)
-        : contentContext.verified,
+        : contentContext.verified && (placementId !== AdPlacementId.COMMUNITY_OVERVIEW || Object.values(ExamType).includes(profile.examType as ExamType)),
       countryCode,
     });
   }

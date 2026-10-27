@@ -28,11 +28,13 @@ export function AnswerComposer({
   zoneId,
   onPosted,
   returnIntent,
+  onInteraction,
 }: {
   threadId: string;
   zoneId: string;
   onPosted: () => void;
   returnIntent: ForumCoachIntent | null;
+  onInteraction?: () => void;
 }) {
   const t = useTranslations("community");
   const [value, setValue] = useState("");
@@ -79,7 +81,8 @@ export function AnswerComposer({
   };
 
   return (
-    <section className={`${PANEL_CARD} flex flex-col gap-3`} aria-labelledby="answer-compose-title">
+    <section className={`${PANEL_CARD} flex flex-col gap-3`} aria-labelledby="answer-compose-title"
+      onFocusCapture={onInteraction} onChangeCapture={onInteraction} onClickCapture={onInteraction}>
       <h2 id="answer-compose-title" className={PANEL_CARD_TITLE}>
         {t("answer_compose_title")}
       </h2>

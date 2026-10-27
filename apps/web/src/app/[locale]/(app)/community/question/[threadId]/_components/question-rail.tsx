@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { AnswerView, ThreadView } from "@mentor/types";
+import type { AnswerView, ThreadView, ForumFeedItem } from "@mentor/types";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 import { AuthorAvatar } from "../../../_components/author-avatar";
 import { AuthorLink } from "../../../_components/author-link";
@@ -10,7 +10,7 @@ import { HubWaitingQuestions } from "../../../_components/hub-waiting-questions"
 type Person = { id: string; name: string; username: string | null; avatarUrl: string | null; role: string };
 
 /** The question page's rail: who is in this question (asker, solver, answerers) and other waiting questions. */
-export function QuestionRail({ question, answers }: { question: ThreadView; answers: AnswerView[] }) {
+export function QuestionRail({ question, answers, waitingQuestions }: { question: ThreadView; answers: AnswerView[]; waitingQuestions?: ForumFeedItem[] }) {
   const t = useTranslations("community");
   const people = new Map<string, Person>([
     [
@@ -58,7 +58,7 @@ export function QuestionRail({ question, answers }: { question: ThreadView; answ
           ))}
         </ul>
       </section>
-      <HubWaitingQuestions exclude={question.id} />
+      <HubWaitingQuestions exclude={question.id} snapshotItems={waitingQuestions} />
     </aside>
   );
 }

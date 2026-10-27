@@ -13,6 +13,7 @@ import { getCommunitySummary } from "@/lib/community";
 import { listZones } from "@/lib/forum";
 import { AuthorAvatar } from "./author-avatar";
 import { ZoneTypeIcon } from "./zone-type-icon";
+import { useReportCommunitySidebar } from "./community-sidebar-snapshot";
 
 /** Fired after a join or leave elsewhere on the page, so "Odaların" regroups without a reload. */
 export const ZONES_CHANGED_EVENT = "community:zones-changed";
@@ -33,11 +34,13 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const activeZoneSlug = params.slug;
   const [rankingEnabled, setRankingEnabled] = useState(false);
   const [zones, setZones] = useState<ZoneView[] | null>(null);
+  const [zonesVerified, setZonesVerified] = useState(false);
+  useReportCommunitySidebar(zonesVerified ? zones : null);
 
   const loadZones = useCallback(() => {
     listZones()
-      .then((res) => setZones(res.items))
-      .catch(() => setZones([]));
+      .then((res) => { setZones(res.items); setZonesVerified(res.total <= res.items.length); })
+      .catch(() => { setZones([]); setZonesVerified(false); });
   }, []);
 
   useEffect(() => {

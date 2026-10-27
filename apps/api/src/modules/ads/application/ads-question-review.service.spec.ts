@@ -13,7 +13,7 @@ function setup() {
     find: vi.fn(async () => ({ questionId, contentRevision: revision, reviewedAt: new Date(), reviewedBy: "editor" })),
     approve: vi.fn(async () => undefined), revoke: vi.fn(async () => undefined),
   };
-  const service = new AdsQuestionReviewService(repo as never, forum as never);
+  const service = new AdsQuestionReviewService(repo as never, forum as never, {} as never);
   return { service, forum, repo, question };
 }
 describe("public question ad review", () => {
@@ -66,7 +66,7 @@ describe("public question ad review", () => {
     const ads = new AdsService({} as never, { get: async (key: string) => config[key] } as never,
       { get: (key: string) => ({ NODE_ENV: "development", APP_URL: "http://localhost:3000", ADS_LOCAL_TEST_ENABLED: local ? "true" : "false" })[key] } as never,
       { getEntitlement: async (_user: string, roles: string[]) => ({ isPremium: roles.includes("STAFF") || roles.includes("PREMIUM_TEST") }) } as never,
-      { getDiscoveryProfile: async () => ({ examType: "KPSS" }) } as never, {} as never, {} as never, reviews);
+      { getDiscoveryProfile: async () => ({ examType: "KPSS" }) } as never, {} as never, {} as never, reviews, {} as never, {} as never);
     const get = (country: string | null = "TR") => ads.getPublicPlacement(AdPlacementId.FORUM_QUESTION_END, null, null, country, undefined, { questionId, contentRevision: revision });
     repo.find.mockResolvedValueOnce(undefined as never);
     expect(await get()).toMatchObject({ enabled: false, reason: "CONTEXT_UNVERIFIED", adUnitPath: null });

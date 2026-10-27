@@ -2,9 +2,12 @@ import { z } from "zod";
 import { listInfoArticlesQuerySchema } from "./content.js";
 
 export const adPlacementIdSchema = z.enum([
+  "community.announcement.end",
+  "community.overview",
   "knowledge.article.end",
   "knowledge.index",
   "forum.question.end",
+  "community.question.end",
   "dashboard.rewarded.coin",
   "notebooks.overview",
   "vision.overview",
@@ -24,12 +27,15 @@ export const adQuestionContextSchema = z.object({
   contentRevision: z.string().regex(/^[a-f0-9]{64}$/),
 });
 export const adQuestionParamsSchema = adQuestionContextSchema.pick({ questionId: true });
+export const adAnnouncementParamsSchema = z.object({ threadId: z.string().uuid() });
+export const adAnnouncementContextSchema = adAnnouncementParamsSchema.extend({ contentRevision: adQuestionContextSchema.shape.contentRevision });
 export const approveAdQuestionSchema = adQuestionContextSchema.pick({ contentRevision: true });
 export const adPlacementQuerySchema = z.object({
   ...adBlogListContextSchema.partial().shape,
   examType: z.enum(["KPSS", "YKS", "LGS"]).optional(),
   contentSlug: z.string().trim().min(1).max(128).optional(),
   ...adQuestionContextSchema.partial().shape,
+  threadId: z.string().uuid().optional(),
 });
 export const createAdRewardSessionSchema = z.object({
   placementId: z.literal("dashboard.rewarded.coin"),

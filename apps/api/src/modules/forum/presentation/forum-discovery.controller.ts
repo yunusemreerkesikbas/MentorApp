@@ -24,6 +24,7 @@ import type {
 import { ModerationTargetType } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { ForumDiscoveryService } from "../application/forum-discovery.service";
+import { ForumHubPageService } from "../application/forum-hub-page.service";
 import { ForumCoachBridgeService } from "../application/forum-coach-bridge.service";
 import {
   FeedQueryDto,
@@ -41,11 +42,12 @@ export class ForumDiscoveryController {
   constructor(
     private readonly discovery: ForumDiscoveryService,
     private readonly coachBridge: ForumCoachBridgeService,
+    private readonly pages: ForumHubPageService,
   ) {}
 
   @Get("hub")
   hub(@CurrentUser() user: RequestUser): Promise<ForumHubView> {
-    return this.discovery.getHub({ id: user.id, roles: user.roles });
+    return this.pages.getHub({ id: user.id, roles: user.roles });
   }
 
   @Get("feed")

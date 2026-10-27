@@ -1,36 +1,11 @@
 "use client";
-
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type CommentView, type ThreadDetail, type ThreadView, type ZoneView } from "@mentor/types";
-import { ApiClientError } from "@mentor/api-client";
 import { FormError } from "@/components/form";
 import { useRouter } from "@/i18n/navigation";
-import {
-  PANEL_CARD_TITLE,
-  PANEL_GRID_CLASS,
-  PANEL_MAIN_CLASS,
-} from "@/components/panel/panel-styles";
-import { replaceReaction } from "@/lib/forum-reactions";
-import { trackCoachEvent, trackCommunityEvent } from "@/lib/analytics";
-import {
-  communityReturnPlaceholderKey,
-  parseCommunityReturnContext,
-} from "@/lib/community-coach-bridge";
-import {
-  bookmarkPost,
-  bookmarkThread,
-  getThreadDetail,
-  isForumDisabled,
-  listZones,
-  postComment,
-  reactPost,
-  reactThread,
-  unreactPost,
-  unreactThread,
-} from "@/lib/forum";
-import type { AttachmentInput } from "@mentor/validation";
+import { PANEL_CARD_TITLE, PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
+import { communityReturnPlaceholderKey, parseCommunityReturnContext } from "@/lib/community-coach-bridge";
 import { CommentRow } from "../../../_components/comment-row";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
 import { CommunityPostCard } from "../../../_components/community-post-card";
@@ -40,12 +15,8 @@ import { CommunityPresenceCard } from "../../../_components/community-presence";
 import { COMMUNITY_CARD_FLUSH } from "../../../_components/community-row";
 import { DetailCrumb } from "../../../_components/detail-crumb";
 import { ZoneMiniCard } from "../../../_components/zone-mini-card";
-
-type State =
-  | { status: "loading" }
-  | { status: "disabled" }
-  | { status: "error"; message: string }
-  | { status: "ready"; thread: ThreadView; comments: CommentView[]; zone: ZoneView | null };
+import { useMessageDetail } from "./use-message-detail";
+import { CommunityAnnouncementAd } from "./community-announcement-ad";
 
 /**
  * Message detail (APP-017) on the panel frame: the post card, then one card with "N yorum", the
@@ -60,158 +31,8 @@ export function MessageShell({ threadId }: { threadId: string }) {
     composer: searchParams.get("composer"),
     intent: searchParams.get("intent"),
   });
-  const [state, setState] = useState<State>({ status: "loading" });
-
-  const apply = useCallback((detail: ThreadDetail, zone: ZoneView | null) => {
-    setState({ status: "ready", thread: detail.thread, comments: detail.comments, zone });
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    Promise.all([getThreadDetail(threadId), listZones()])
-      .then(([detail, zones]) => {
-        if (active) {
-          const zone = zones.items.find((entry) => entry.id === detail.thread.zoneId) ?? null;
-          apply(detail, zone);
-          trackCommunityEvent("forum_thread_view", {
-            zone_type: zone?.type ?? "CHAT",
-            answered: false,
-          });
-        }
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        if (isForumDisabled(err)) return setState({ status: "disabled" });
-        setState({
-          status: "error",
-          message: err instanceof ApiClientError ? err.body.message : t("error"),
-        });
-      });
-    return () => {
-      active = false;
-    };
-  }, [threadId, apply, t]);
-
-  const onToggleThreadReaction = useCallback(
-    (nextEmoji: string | null, previousEmoji: string | null) => {
-      setState((s) =>
-        s.status === "ready" ? { ...s, thread: replaceReaction(s.thread, nextEmoji) } : s,
-      );
-      const call = nextEmoji
-        ? reactThread(threadId, nextEmoji)
-        : previousEmoji
-          ? unreactThread(threadId, previousEmoji)
-          : Promise.resolve();
-      call.catch(() => {
-        setState((s) =>
-          s.status === "ready" ? { ...s, thread: replaceReaction(s.thread, previousEmoji) } : s,
-        );
-      });
-    },
-    [threadId],
-  );
-
-  const onToggleCommentReaction = useCallback((postId: string, nextEmoji: string | null, previousEmoji: string | null) => {
-    const patch = (emoji: string | null) => (comment: CommentView) =>
-      comment.id === postId ? replaceReaction(comment, emoji) : comment;
-    setState((s) => (s.status === "ready" ? { ...s, comments: s.comments.map(patch(nextEmoji)) } : s));
-    const call = nextEmoji
-      ? reactPost(postId, nextEmoji)
-      : previousEmoji
-        ? unreactPost(postId, previousEmoji)
-        : Promise.resolve();
-    call.catch(() => {
-      setState((s) => (s.status === "ready" ? { ...s, comments: s.comments.map(patch(previousEmoji)) } : s));
-    });
-  }, []);
-
-  const onToggleThreadBookmark = useCallback(
-    (adding: boolean) => {
-      setState((s) => (s.status === "ready" ? { ...s, thread: { ...s.thread, myBookmarked: adding } } : s));
-      bookmarkThread(threadId, adding).catch(() => {
-        setState((s) =>
-          s.status === "ready" ? { ...s, thread: { ...s.thread, myBookmarked: !adding } } : s,
-        );
-      });
-    },
-    [threadId],
-  );
-
-  const onToggleCommentBookmark = useCallback((postId: string, adding: boolean) => {
-    setState((s) =>
-      s.status === "ready"
-        ? { ...s, comments: s.comments.map((c) => (c.id === postId ? { ...c, myBookmarked: adding } : c)) }
-        : s,
-    );
-    bookmarkPost(postId, adding).catch(() => {
-      setState((s) =>
-        s.status === "ready"
-          ? { ...s, comments: s.comments.map((c) => (c.id === postId ? { ...c, myBookmarked: !adding } : c)) }
-          : s,
-      );
-    });
-  }, []);
-
-  const onComment = useCallback(
-    async (body: string, attachments: AttachmentInput[]) => {
-      const created = await postComment(threadId, body, attachments);
-      const zoneType = state.status === "ready" ? state.zone?.type ?? "CHAT" : "CHAT";
-      trackCommunityEvent("forum_reply_created", { target: "thread", zone_type: zoneType });
-      if (returnContext) {
-        trackCoachEvent("coach_community_return_reply_created", {
-          intent: returnContext.intent,
-          zone_type: "CHAT",
-        });
-      }
-      setState((s) =>
-        s.status === "ready"
-          ? {
-              ...s,
-              comments: [...s.comments, created],
-              thread: { ...s.thread, commentCount: s.thread.commentCount + 1 },
-            }
-          : s,
-      );
-    },
-    [threadId, state, returnContext],
-  );
-
-  const changeThreadReplyCount = useCallback((delta: 1 | -1) => {
-    setState((current) =>
-      current.status === "ready"
-        ? {
-            ...current,
-            thread: {
-              ...current.thread,
-              commentCount: Math.max(0, current.thread.commentCount + delta),
-            },
-          }
-        : current,
-    );
-  }, []);
-
-  const appendQuickComment = useCallback((created: CommentView) => {
-    setState((current) =>
-      current.status === "ready"
-        ? { ...current, comments: [...current.comments, created] }
-        : current,
-    );
-  }, []);
-
-  const changeCommentReplyCount = useCallback((postId: string, delta: 1 | -1) => {
-    setState((current) =>
-      current.status === "ready"
-        ? {
-            ...current,
-            comments: current.comments.map((comment) =>
-              comment.id === postId
-                ? { ...comment, replyCount: Math.max(0, comment.replyCount + delta) }
-                : comment,
-            ),
-          }
-        : current,
-    );
-  }, []);
+  const { state, onToggleThreadReaction, onToggleThreadBookmark, onToggleCommentReaction, onToggleCommentBookmark, onComment, changeThreadReplyCount, appendQuickComment, changeCommentReplyCount } = useMessageDetail(threadId, returnContext);
+  const [blockedAdThread, setBlockedAdThread] = useState<string | null>(null);
 
   if (state.status === "loading") return <PostDetailSkeleton label={t("loading")} />;
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
@@ -224,9 +45,13 @@ export function MessageShell({ threadId }: { threadId: string }) {
   }
 
   const { thread, comments, zone } = state;
+  const stopAd = () => setBlockedAdThread(thread.id);
 
   return (
-    <main className={PANEL_MAIN_CLASS}>
+    <main className={PANEL_MAIN_CLASS}
+      onClickCapture={(event) => { if (event.target instanceof Element && event.target.closest("button")) stopAd(); }}
+      onFocusCapture={(event) => { if (event.target instanceof Element && event.target.matches('input, textarea, [contenteditable]')) stopAd(); }}
+      onChangeCapture={stopAd}>
       <h1 className="sr-only">{t("post_detail_title")}</h1>
       <DetailCrumb
         items={[
@@ -286,6 +111,7 @@ export function MessageShell({ threadId }: { threadId: string }) {
               </div>
             ) : null}
           </section>
+          {blockedAdThread !== thread.id ? <CommunityAnnouncementAd key={thread.id} threadId={thread.id} context={state.adContext} /> : null}
         </div>
         <aside className="flex min-w-0 flex-col gap-5" aria-label={t("zone_context_title")}>
           {zone ? <ZoneMiniCard zone={zone} /> : null}
