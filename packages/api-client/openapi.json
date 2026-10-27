@@ -7320,7 +7320,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachRegistrationStateResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -11589,6 +11596,9 @@
       "TrialEligibilityResponseDto": {
         "type": "object",
         "properties": {
+          "phoneVerificationRequired": {
+            "type": "boolean"
+          },
           "eligible": {
             "type": "boolean"
           },
@@ -11605,6 +11615,7 @@
           }
         },
         "required": [
+          "phoneVerificationRequired",
           "eligible",
           "reason"
         ]
@@ -11979,6 +11990,10 @@
           "canRedeem": {
             "type": "boolean"
           },
+          "checkoutBlocked": {
+            "type": "boolean",
+            "description": "Checkout would refuse this user now (e.g. a trial): never promise them the invite discount."
+          },
           "friendDiscount": {
             "nullable": true,
             "description": "What a friend gets with this code now (the public preview's discount); null when none is live.",
@@ -11998,6 +12013,7 @@
           "convertedCount",
           "redeemed",
           "canRedeem",
+          "checkoutBlocked",
           "friendDiscount"
         ]
       },
@@ -12480,6 +12496,44 @@
       "RegisterCoachDto": {
         "type": "object",
         "properties": {}
+      },
+      "CoachRegistrationStateResponseDto": {
+        "type": "object",
+        "properties": {
+          "registrationOpen": {
+            "type": "boolean"
+          },
+          "registration": {
+            "type": "object",
+            "nullable": true
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "phoneVerified": {
+            "type": "boolean"
+          },
+          "hasCoach": {
+            "type": "boolean"
+          },
+          "inviteBlockedReason": {
+            "type": "string",
+            "enum": [
+              "EMAIL_UNVERIFIED",
+              "PHONE_UNVERIFIED",
+              "NOT_ACTIVE"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "registrationOpen",
+          "registration",
+          "emailVerified",
+          "phoneVerified",
+          "hasCoach",
+          "inviteBlockedReason"
+        ]
       },
       "UpdateCoachProfileDto": {
         "type": "object",

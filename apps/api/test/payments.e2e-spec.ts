@@ -6,6 +6,7 @@ import * as express from "express";
 import { Pool } from "pg";
 import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 import { signFakeWebhook } from "../src/modules/payments/infrastructure/adapters/fake-payments.adapter";
 
 const SECRET = "test-payments-webhook-secret"; // matches vitest env
@@ -71,9 +72,12 @@ describe("payments (e2e)", () => {
     });
     accessToken = signup.body.accessToken;
     userId = signup.body.user.id;
+    // These existing lifecycle scenarios exercise an explicitly required phone.
+    await app.get(ConfigRegistryService).set(userId, "payments.trial.phone_verification_required", true);
   }, 90_000); // cold module compile under load can exceed the global hookTimeout
 
   afterAll(async () => {
+    if (app && userId) await app.get(ConfigRegistryService).set(userId, "payments.trial.phone_verification_required", false);
     await app?.close();
     await pool?.end();
   });
@@ -106,7 +110,7 @@ describe("payments (e2e)", () => {
     expect(res.status).toBe(200);
     expect(res.body.subscription).toBeNull();
     expect(res.body.entitlement.isPremium).toBe(false);
-    expect(res.body.trialEligibility).toEqual({ eligible: false, reason: "PHONE_REQUIRED" });
+    expect(res.body.trialEligibility).toEqual({ eligible: false, reason: "PHONE_REQUIRED", phoneVerificationRequired: true });
   });
 
   it("rejects a requested trial without a verified phone, before any provider subscription", async () => {
@@ -342,4 +346,30 @@ describe("payments (e2e)", () => {
     expect(after.body.subscription.status).toBe("ACTIVE");
     expect(after.body.entitlement.isPremium).toBe(true);
   });
+
+  it("starts a carded trial without a phone when the independent requirement is off", async () => {
+    const registry = app.get(ConfigRegistryService);
+    await registry.set(userId, "payments.trial.phone_verification_required", false);
+    try {
+      const signup = await request(app.getHttpServer()).post("/v1/auth/signup").send({
+        email: `w4-optional-${RUN}@test.local`, password: "Sifre1234", displayName: "Phone optional",
+        kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true,
+      });
+      expect(signup.status).toBe(201);
+      const headers = { Authorization: `Bearer ${signup.body.accessToken}` };
+      const checkout = await request(app.getHttpServer()).post("/v1/subscription/checkout").set(headers)
+        .send({ planId: "premium-monthly", useTrial: true });
+      expect(checkout.status).toBe(200);
+      const view = await request(app.getHttpServer()).get("/v1/subscription").set(headers);
+      expect(view.body.subscription.status).toBe("TRIALING");
+      expect(view.body.trialEligibility.phoneVerificationRequired).toBe(false);
+      await svc(async (c) => {
+        const claims = await c.query("select phone_fingerprint,status from phone_trial_claims where user_id=$1", [signup.body.user.id]);
+        expect(claims.rows).toEqual([{ phone_fingerprint: null, status: "CONSUMED" }]);
+      });
+    } finally {
+      await registry.set(userId, "payments.trial.phone_verification_required", true);
+    }
+  });
+
 });

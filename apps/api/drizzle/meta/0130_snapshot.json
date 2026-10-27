@@ -1,6 +1,6 @@
 {
-  "id": "07cd3523-ff16-4047-a37d-036a644351ee",
-  "prevId": "69355625-6824-47c1-940a-f50e04e292bd",
+  "id": "69355625-6824-47c1-940a-f50e04e292bd",
+  "prevId": "d8a2f155-92b6-41ba-9565-6c99ad84c311",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -14917,24 +14917,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "community_content_revision": {
-          "name": "community_content_revision",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "community_reviewed_by": {
-          "name": "community_reviewed_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "community_reviewed_at": {
-          "name": "community_reviewed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
@@ -14958,19 +14940,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "reviewed_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "ad_question_reviews_community_reviewed_by_users_id_fk": {
-          "name": "ad_question_reviews_community_reviewed_by_users_id_fk",
-          "tableFrom": "ad_question_reviews",
-          "tableTo": "users",
-          "columnsFrom": [
-            "community_reviewed_by"
           ],
           "columnsTo": [
             "id"
@@ -15992,7 +15961,7 @@
           "name": "phone_fingerprint",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "user_id": {
           "name": "user_id",

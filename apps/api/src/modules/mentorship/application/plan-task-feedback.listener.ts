@@ -1,3 +1,4 @@
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { coachContactVerification } from "./coach-contact-verification";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
@@ -35,6 +36,7 @@ export class PlanTaskFeedbackListener {
     private readonly dropped: MentorshipDroppedAssignmentRepository,
     private readonly users: UsersService,
     private readonly events: EventEmitter2,
+    private readonly config: ConfigRegistryService,
   ) {}
 
   /**
@@ -112,7 +114,7 @@ export class PlanTaskFeedbackListener {
       await emit(
         link,
         people.get(event.userId)?.displayName ?? "",
-        (await coachContactVerification(this.users, link.coachId)) === null,
+        (await coachContactVerification(this.users, link.coachId, Boolean(await this.config.get("mentorship.phone_verification_required")))) === null,
       );
     } catch (err) {
       // Logged, not swallowed silently: the plan change already committed, so throwing here would

@@ -361,7 +361,7 @@ const subscription: SubscriptionView = {
   },
   features: {} as SubscriptionView["features"],
   discount: null,
-  trialEligibility: { eligible: false, reason: "NO_TRIAL" },
+  trialEligibility: { phoneVerificationRequired: true, eligible: false, reason: "NO_TRIAL" },
   pendingTrialCheckoutUrl: null,
   pendingCheckoutUrl: null,
 };

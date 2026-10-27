@@ -12,6 +12,7 @@ function setup(options: {
   contact?: { email: string; displayName: string } | null;
   sendError?: Error;
   dailyEmailEnabled?: boolean;
+  phoneRequired?: boolean;
 } = {}) {
   const tx = { execute: vi.fn().mockResolvedValue(undefined) };
   const db = {
@@ -43,9 +44,9 @@ function setup(options: {
     ),
   };
   const auth = { deliverCurrentEmailToken: vi.fn(async (_hash: string, _to: string, deliver: () => Promise<void>) => deliver()) };
-  const registry = { get: vi.fn().mockResolvedValue(
-    options.dailyEmailEnabled ?? CONFIG_CATALOG["notifications.daily_reminder.email_enabled"].default,
-  ) };
+  const registry = { get: vi.fn(async (key: string) => key === "mentorship.phone_verification_required"
+    ? options.phoneRequired ?? true
+    : options.dailyEmailEnabled ?? CONFIG_CATALOG["notifications.daily_reminder.email_enabled"].default) };
   const handler = Reflect.construct(SendEmailHandler, [
     email,
     db,
@@ -95,7 +96,7 @@ describe("SendEmailHandler", () => {
   it("suppresses due email when a coach changes email after due-count verification", async () => {
     const { handler, users, email, deliveries } = setup({ contact: null });
     await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
-    expect(users.getVerifiedNotificationContact).toHaveBeenCalledWith(COACH);
+    expect(users.getVerifiedNotificationContact).toHaveBeenCalledWith(COACH, true);
     expect(users.getNotificationContact).not.toHaveBeenCalled();
     expect(deliveries.tryRecord).not.toHaveBeenCalled();
     expect(email.sendTransactional).not.toHaveBeenCalled();
@@ -123,7 +124,7 @@ describe("SendEmailHandler", () => {
     await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
 
     expect(followups.getDueCount).toHaveBeenCalledWith(COACH, expect.any(Date));
-    expect(users.getVerifiedNotificationContact).toHaveBeenCalledWith(COACH);
+    expect(users.getVerifiedNotificationContact).toHaveBeenCalledWith(COACH, true);
     expect(email.sendTransactional).toHaveBeenCalledWith({
       to: "coach@test.local",
       template: EmailTemplate.MENTORSHIP_FOLLOWUP_DUE,
@@ -184,4 +185,14 @@ it("drops a previous-day summary instead of sending two summaries today", async 
   await handler.handle(guardedPayload, new Date("2026-09-13T07:00:00Z"));
   expect(followups.getDueCount).not.toHaveBeenCalled();
   expect(email.sendTransactional).not.toHaveBeenCalled();
+});
+
+
+it("passes the phone-optional policy into the final email contact check", async () => {
+  const { handler, users, email } = setup({ phoneRequired: false });
+  users.getVerifiedNotificationContact.mockImplementation(async (_id: string, requirePhone: boolean) =>
+    requirePhone === false ? { email: "coach@test.local", displayName: "Coach" } : null);
+  await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
+  expect(users.getVerifiedNotificationContact).toHaveBeenCalledWith(COACH, false);
+  expect(email.sendTransactional).toHaveBeenCalledOnce();
 });

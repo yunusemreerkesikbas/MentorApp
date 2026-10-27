@@ -63,6 +63,21 @@ describe("Netgsm OTP boundary", () => {
     expect(fetchMock.mock.calls[0]![1].signal!.aborted).toBe(true);
   });
 
+  it.each(["", "   "])("does not accept an empty provider task id: %j", async (jobid) => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ code: "00", jobid })));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await makeAdapter().sendCode("+905321234567", "123456", 5000, 300)).toEqual({ status: "UNKNOWN" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("never calls the provider while transport is disabled", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const adapter = new NetgsmSmsAdapter({ get: () => "disabled" } as never);
+    expect(await adapter.sendCode("+905321234567", "123456", 5000, 300)).toEqual({ status: "FAILED" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("treats malformed/ambiguous acceptance conservatively", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("not JSON")));
     expect(await makeAdapter().sendCode("+905321234567", "123456", 5000, 300)).toEqual({ status: "UNKNOWN" });

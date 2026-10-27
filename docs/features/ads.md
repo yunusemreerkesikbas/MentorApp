@@ -173,6 +173,9 @@ Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs 
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-27: Reconcile PR #172 migration history with master.** Preserve master migrations through `0130`; apply community review and content-type additions as `0131` and `0132`. Usage: run the normal migration command in journal order. Snapshots retain optional trial-phone support and both ad review additions. Related: `apps/api/drizzle/{0131_community_question_ad_review,0132_ad_review_content_type}.sql`, `drizzle/meta`, and `docs/core/integrations.md`.
+
+
 - **2026-10-26: Existing inventory launch preparation.** Existing admin `/config` now embeds a
   read-only eight-placement summary from SUPER_ADMIN `GET /v1/admin/ads/readiness`; refresh or
   save config to reread switches, unit source/status and country/review gates. No Google calls,
@@ -280,7 +283,7 @@ Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs 
   `pnpm --filter @mentor/web test:e2e:question-ads` (isolated ports 3370/3371, synthetic content,
   no database or real Google requests). Related: `ads-question-review.service.ts`,
   `ad-question-review.repository.ts`, `admin-ad-reviews.controller.ts`, `forum-public.service.ts`,
-  `QuestionAdReview.tsx`, public `forum/question/[id]/page.tsx`, migration `0127`.
+  `QuestionAdReview.tsx`, public `forum/question/[id]/page.tsx`, migration `0128`.
 
 - **2026-10-25 · Public blog index inventory.** Added default-off `knowledge.index`, an admin
   enable switch and validated Google unit path, published list/featured-context verification,

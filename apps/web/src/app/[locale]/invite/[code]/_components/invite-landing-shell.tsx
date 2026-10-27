@@ -43,7 +43,8 @@ function exitFor(signedIn: boolean, coach: boolean, onboarded: boolean): InviteN
  * - signed-in, onboarded student who can still use an invite: one button to accept (nothing is
  *   redeemed by arriving). Their own invite view decides this: one who already came with an
  *   invite, or can no longer use one (paid, or past the signup window), gets the calm standing
- *   card with no button and no discount. If that lookup fails, the accept card without the
+ *   card with no button and no discount. One on a trial can still accept, without the discount
+ *   line (checkout would not apply it). If that lookup fails, the accept card without the
  *   discount line: never a promise on unknown state;
  * - anyone else who can use the link (a visitor, or a student mid-onboarding): the welcome, whose
  *   buttons remember the code for the redeem that follows onboarding;
@@ -86,7 +87,9 @@ export function InviteLandingShell({ code: rawCode }: { code: string }) {
       card = <InviteStanding redeemedBy={null} />;
     } else {
       // A failed lookup still lets them accept (the API judges the redeem), but promises nothing.
-      const preview = own.phase === "ready" ? state.preview : { ...state.preview, discount: null };
+      // A trial (open subscription) may redeem too, but checkout would not apply the discount.
+      const honest = own.phase === "ready" && !own.view.checkoutBlocked;
+      const preview = honest ? state.preview : { ...state.preview, discount: null };
       card = <InviteAccept code={code} preview={preview} />;
     }
   } else {

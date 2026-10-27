@@ -125,6 +125,21 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-27 — PR #170 conflict resolution
+
+- **What:** Merged current master into the referral branch, preserving ad-unit validation and Zod 4 typed config helpers.
+- **Usage:** No workflow change; referral and ad config keys remain available through the registry.
+- **Gotcha:** Keep both the shared ad-unit schema and concrete string/number helper output types when updating the catalog.
+- **Related files:** `apps/api/src/common/config/config.catalog.ts`.
+
+
+- **2026-10-26 · Invite landing promises no discount to a trialing student.** `InviteCodeView` gains
+  `checkoutBlocked` (= `SubscriptionsService.hasCheckoutBlockingSubscription`; a failed lookup counts as
+  blocked). A trial may still redeem, but its price is frozen at checkout, so the `/davet` accept card drops
+  the "%X indirim seni bekliyor" line when the student's own view says `checkoutBlocked`; the accept button
+  stays. Closes the residual from the branch review (spec: "deneme sırasında giren arkadaşa indirim
+  uygulanmaz ... kart indirim vaat etmez"). Related: `invite-view.service.ts`, `invite-landing-shell.tsx`,
+  `packages/types/src/economy.ts`, `e2e/invite-landing.spec.ts`.
 - **2026-10-25 · Invite redeem rules: signup window, "never paid" instead of "not premium", coaches out.**
   `InviteService.redeem` now checks, in order: the code is usable (`resolveValidInvite`: exists, owner
   row present, `status = ACTIVE`, no `erasure_started_at`, owner not a coach; otherwise
@@ -156,7 +171,7 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   screen survives being retyped. `@mentor/validation` exports `normalizeInviteCode` (trim, upper
   case, `MENTOR-` to `PUHU-`) and `inviteCodeSchema` (output is the normalized code, shape
   `^PUHU-[0-9A-Z]{8,12}$`); `redeemInviteSchema` uses it, and the global Zod pipe passes
-  `result.data` on, so `InviteService.redeem` always sees the canonical code. Migration 0128
+  `result.data` on, so `InviteService.redeem` always sees the canonical code. Migration 0129
   rewrites existing `invites.code` and `invite_redemptions.code` from `MENTOR-<suffix>` to
   `PUHU-<suffix>`, so codes already shared keep working (legacy suffixes are 8 to 12 chars, hence
   `{8,12}`). Usage: nothing to call, `GET /v1/economy/invite` now returns the new format.
@@ -166,7 +181,7 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   role without BYPASSRLS would otherwise update zero rows silently); coach invitation codes
   (`MENTOR-KOC-…`) are a separate mentorship code and are untouched. Related: `invite.service.ts`,
   `invite.service.spec.ts`, `packages/validation/src/economy.ts`,
-  `apps/api/drizzle/0128_invite_puhu_codes.sql`, `test/economy-invite.e2e-spec.ts`.
+  `apps/api/drizzle/0129_invite_puhu_codes.sql`, `test/economy-invite.e2e-spec.ts`.
 - **2026-10-09 · Verified-email reward fixture follows the serialized token contract.** The
   quest test supplies the expected current email and an enqueue callback when creating its
   verification token. Usage: run `test/economy-quests.e2e-spec.ts`; verification grants ten Coin

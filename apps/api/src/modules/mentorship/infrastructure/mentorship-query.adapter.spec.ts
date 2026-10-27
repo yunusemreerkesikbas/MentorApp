@@ -36,7 +36,7 @@ type Pair = {
   attendedFlags?: string[] | null;
 };
 
-function setup(pairs: Pair[], snapshots: unknown[]) {
+function setup(pairs: Pair[], snapshots: unknown[], requirePhone = true) {
   const listTriageSnapshots = vi.fn(
     async () => new Map(snapshots.map((s) => [(s as { studentId: string }).studentId, s])),
   );
@@ -63,6 +63,7 @@ function setup(pairs: Pair[], snapshots: unknown[]) {
   };
   const config = {
     get: vi.fn(async (key: string) => {
+      if (key === "mentorship.phone_verification_required") return requirePhone;
       if (key === "mentorship.risk.inactive_days") return 3;
       if (key === "mentorship.attention.ttl_days") return 7;
       return key.endsWith("floor") ? 0.5 : 2;
@@ -183,4 +184,14 @@ describe("MentorshipQueryAdapter.listRiskDigestCandidates", () => {
     users.getVerifiedNotificationContact.mockResolvedValueOnce(null as never);
     await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toEqual([]);
   });
+});
+
+
+it("delivers the risk digest contact without requiring an optional phone", async () => {
+  const { adapter, users } = setup([{ coachId: COACH_A, studentId: IDLE }], [idleSnapshot(IDLE)], false);
+  users.isPhoneVerified.mockResolvedValue(false);
+  users.getVerifiedNotificationContact.mockImplementation(async (_id: string, requirePhone: boolean) =>
+    requirePhone === false ? { email: "coach@test.local", displayName: "Coach" } : null as never);
+  expect(await adapter.listRiskDigestCandidates(NOW)).toHaveLength(1);
+  expect(users.getVerifiedNotificationContact).toHaveBeenCalledWith(COACH_A, false);
 });

@@ -23,7 +23,7 @@ export function SubscriptionTrialNotice({ eligibility, trialDays, onPhoneVerifie
       <p className="text-sm text-[var(--color-body)]">
         {t("trial_included", { days: trialDays })}
       </p>
-      <p className="text-caption text-[var(--color-secondary)]">{t("trial_phone_retention")}</p>
+      {eligibility.phoneVerificationRequired ? <p className="text-caption text-[var(--color-secondary)]">{t("trial_phone_retention")}</p> : null}
       {eligibility.reason === "PHONE_REQUIRED" ? (
         <PhoneVerificationCard onStatusChange={(phone) => { if (phone.verified) onPhoneVerified(); }} />
       ) : null}

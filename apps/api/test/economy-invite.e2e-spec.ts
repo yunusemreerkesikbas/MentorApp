@@ -523,6 +523,7 @@ describe("economy invite (e2e)", () => {
         convertedCount: 0,
         redeemed: null,
         canRedeem: true,
+        checkoutBlocked: false, // no subscription yet, so checkout would take them
         friendDiscount: null, // no INVITED promotion is live in this block
       });
     });

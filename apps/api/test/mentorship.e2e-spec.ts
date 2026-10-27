@@ -144,6 +144,8 @@ describe("mentorship (e2e)", () => {
     await app
       .get(ConfigRegistryService)
       .set(userId.admin!, "mentorship.enabled", true);
+    // This authorization suite exercises the explicitly enabled phone requirement.
+    await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.phone_verification_required", true);
     // A link now requires a seat. The default free quota covers this suite's single student.
     await app
       .get(ConfigRegistryService)

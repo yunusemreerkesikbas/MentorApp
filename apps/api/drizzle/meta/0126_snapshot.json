@@ -1,5 +1,5 @@
 {
-  "id": "b7713a6f-4084-4315-8b6d-a7db9a056908",
+  "id": "bf42fc2f-b753-4351-9000-e042da722dc1",
   "prevId": "2b425a84-f3aa-407b-899e-a39a44a7384d",
   "version": "7",
   "dialect": "postgresql",
@@ -14402,12 +14402,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "career_group": {
-          "name": "career_group",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "email_verified_at": {
           "name": "email_verified_at",
           "type": "timestamp with time zone",
@@ -15851,7 +15845,7 @@
           "name": "phone_fingerprint",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "user_id": {
           "name": "user_id",

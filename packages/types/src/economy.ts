@@ -157,6 +157,11 @@ export interface InviteCodeView {
   /** False once redeemed, once paid, or when the signup window has closed (same rules as redeem). */
   canRedeem: boolean;
   /**
+   * True when checkout would refuse this user now (an open subscription, e.g. a trial; also when the
+   * lookup failed). They may still redeem, but no surface may promise them the invite discount.
+   */
+  checkoutBlocked: boolean;
+  /**
    * What a friend gets with this user's code right now (the live INVITED promotion, as the public
    * preview shows it), or null when none is live, the web sells no plan or the lookup failed.
    */

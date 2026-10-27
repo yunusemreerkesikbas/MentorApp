@@ -17,6 +17,10 @@ export class PhoneTrialsRepository {
     return tx ? read(tx) : withServiceContext(this.db, read);
   }
 
+  async findById(id: string, tx: DatabaseTx): Promise<PhoneTrialClaim | undefined> {
+    return (await tx.select().from(phoneTrialClaims).where(eq(phoneTrialClaims.id, id)).limit(1))[0];
+  }
+
   findByFingerprint(fingerprint: string): Promise<PhoneTrialClaim | undefined> {
     return withServiceContext(this.db, async (tx) => (await tx.select().from(phoneTrialClaims)
       .where(eq(phoneTrialClaims.phoneFingerprint, fingerprint)).limit(1))[0]);

@@ -38,6 +38,8 @@ export class InviteCodeViewDto implements InviteCodeView {
   @ApiProperty({ type: "integer" }) convertedCount!: number;
   @ApiProperty({ type: InviteRedeemedDto, nullable: true }) redeemed!: InviteRedeemedDto | null;
   @ApiProperty() canRedeem!: boolean;
+  @ApiProperty({ description: "Checkout would refuse this user now (e.g. a trial): never promise them the invite discount." })
+  checkoutBlocked!: boolean;
   @ApiProperty({
     type: InvitePreviewDiscountDto,
     nullable: true,

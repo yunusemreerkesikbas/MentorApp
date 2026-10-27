@@ -165,7 +165,7 @@ Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyur
   advisory resolve answers `PHONE_USED`; `reserve` re-checks under the existing promotion lock with
   the phone read under the account lock inside the checkout transaction, and refuses with
   `PROMOTION_NOT_ELIGIBLE` + `{ reason: "PHONE_REQUIRED" | "PHONE_USED" }` (409). `ResolvedOffer`
-  now carries `ruleType`. Migration `0129_promotions_invited_rule` (CHECK + column + partial index
+  now carries `ruleType`. Migration `0130_promotions_invited_rule` (CHECK + column + partial index
   `promotion_redemptions_promotion_phone_idx`).
   Usage: FINANCE creates a code-less `Davetle gelen` campaign in admin `/promotions` (proposal: 30%,
   `appliesToPeriods: 1`), with `promotions.enabled` on and web sales open. Nothing else to wire.

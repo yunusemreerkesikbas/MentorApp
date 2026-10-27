@@ -5100,7 +5100,7 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   mood variant swaps too (one pose per sector, by decision); "Diğer" / skipped = `null` = classic
   Puhu. Animated scenes (lamp, auth hang, recap story, welcome clips) stay classic: no sector frames.
   Source of truth stays `vision_boards.career_group` (coaching); `VisionService.upsert` mirrors it
-  through identity's public `UsersService.setCareerGroup` into `users.career_group` (migration 0126,
+  through identity's public `UsersService.setCareerGroup` into `users.career_group` (migration 0127,
   backfilled), and `toAuthUser` returns it as `AuthUser.careerGroup`, so web and the coming mobile
   app read it from the session with no extra request. Web: `PuhuImage` reads `useAuth()` when no
   `career` prop is passed (the goal board still passes its unsaved pick for live preview); the two
