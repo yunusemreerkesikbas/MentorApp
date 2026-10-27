@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
 import type { ConfigEntry } from "@/lib/types";
 import { configHint } from "./config-hints";
+import { AdsReadinessSummary } from "./AdsReadinessSummary";
 
 const CATEGORY_LABELS: Record<string, string> = {
     "feature-flags": "Özellik bayrakları",
@@ -34,6 +35,7 @@ export default function ConfigPage() {
     const [loading, setLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
     const [busyKey, setBusyKey] = useState<string | null>(null);
+    const [configVersion, setConfigVersion] = useState(0);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -41,6 +43,7 @@ export default function ConfigPage() {
         try {
             const { data } = await apiClient.get<ConfigEntry[]>("/admin/config");
             setEntries(data);
+            setConfigVersion((value) => value + 1);
         } catch {
             setEntries([]);
             setHasError(true);
@@ -70,6 +73,7 @@ export default function ConfigPage() {
                 { value },
             );
             setEntries(data);
+            setConfigVersion((value) => value + 1);
             Swal.fire({ icon: "success", title: "Kaydedildi", timer: 1000, showConfirmButton: false });
         } catch (err) {
             const message =
@@ -97,7 +101,9 @@ export default function ConfigPage() {
                     <div className="card"><AsyncState status="error" title="Ayarlar yüklenemedi" description="Yapılandırma kayıtları alınamadı. Bağlantıyı kontrol edip yeniden deneyin." onRetry={() => void load()} /></div>
                 ) : categories.length === 0 ? (
                     <div className="card"><AsyncState status="empty" title="Ayar bulunamadı" description="Düzenlenebilir bir yapılandırma kaydı bulunmuyor." /></div>
-                ) : categories.map((category) => (
+                ) : <>
+                {entries.some((entry) => entry.category === "ads") ? <AdsReadinessSummary key={configVersion} /> : null}
+                {categories.map((category) => (
                     <FormSection title={categoryLabel(category)} key={category}>
                         <div className="admin-config-list">
                             {entries.filter((entry) => entry.category === category).map((entry) => (
@@ -111,6 +117,7 @@ export default function ConfigPage() {
                         </div>
                     </FormSection>
                 ))}
+                </>}
             </div>
         </>
     );

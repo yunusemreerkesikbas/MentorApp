@@ -1268,6 +1268,8 @@ export interface MentorshipWeeklyReportResponseDto {
 
 export interface ApproveQuestionDto { [key: string]: unknown }
 
+export interface ApproveAnnouncementDto { [key: string]: unknown }
+
 export interface UpdateUserStatusDto { [key: string]: unknown }
 
 export interface UpdateConfigDto { [key: string]: unknown }
@@ -11579,6 +11581,241 @@ export const adminAdReviewsControllerRevoke = async (questionId: string, options
     method: 'DELETE'
     
     
+  }
+);}
+
+
+
+export type adminAdReviewsControllerPreviewCommunityResponse200 = {
+  data: void
+  status: 200
+}
+
+export type adminAdReviewsControllerPreviewCommunityResponseSuccess = (adminAdReviewsControllerPreviewCommunityResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAdReviewsControllerPreviewCommunityResponse = (adminAdReviewsControllerPreviewCommunityResponseSuccess)
+
+export const getAdminAdReviewsControllerPreviewCommunityUrl = (questionId: string,) => {
+
+
+
+
+  return `/v1/admin/ads/questions/${questionId}/community`
+}
+
+export const adminAdReviewsControllerPreviewCommunity = async (questionId: string, options?: RequestInit): Promise<adminAdReviewsControllerPreviewCommunityResponse> => {
+
+  return http<adminAdReviewsControllerPreviewCommunityResponse>(getAdminAdReviewsControllerPreviewCommunityUrl(questionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type adminAdReviewsControllerApproveCommunityResponse200 = {
+  data: void
+  status: 200
+}
+
+export type adminAdReviewsControllerApproveCommunityResponseSuccess = (adminAdReviewsControllerApproveCommunityResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAdReviewsControllerApproveCommunityResponse = (adminAdReviewsControllerApproveCommunityResponseSuccess)
+
+export const getAdminAdReviewsControllerApproveCommunityUrl = (questionId: string,) => {
+
+
+
+
+  return `/v1/admin/ads/questions/${questionId}/community`
+}
+
+export const adminAdReviewsControllerApproveCommunity = async (questionId: string,
+    approveQuestionDto: ApproveQuestionDto, options?: RequestInit): Promise<adminAdReviewsControllerApproveCommunityResponse> => {
+
+  return http<adminAdReviewsControllerApproveCommunityResponse>(getAdminAdReviewsControllerApproveCommunityUrl(questionId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      approveQuestionDto,)
+  }
+);}
+
+
+
+export type adminAdReviewsControllerRevokeCommunityResponse200 = {
+  data: void
+  status: 200
+}
+
+export type adminAdReviewsControllerRevokeCommunityResponseSuccess = (adminAdReviewsControllerRevokeCommunityResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAdReviewsControllerRevokeCommunityResponse = (adminAdReviewsControllerRevokeCommunityResponseSuccess)
+
+export const getAdminAdReviewsControllerRevokeCommunityUrl = (questionId: string,) => {
+
+
+
+
+  return `/v1/admin/ads/questions/${questionId}/community`
+}
+
+export const adminAdReviewsControllerRevokeCommunity = async (questionId: string, options?: RequestInit): Promise<adminAdReviewsControllerRevokeCommunityResponse> => {
+
+  return http<adminAdReviewsControllerRevokeCommunityResponse>(getAdminAdReviewsControllerRevokeCommunityUrl(questionId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export type adminAdAnnouncementsControllerPreviewResponse200 = {
+  data: void
+  status: 200
+}
+
+export type adminAdAnnouncementsControllerPreviewResponseSuccess = (adminAdAnnouncementsControllerPreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAdAnnouncementsControllerPreviewResponse = (adminAdAnnouncementsControllerPreviewResponseSuccess)
+
+export const getAdminAdAnnouncementsControllerPreviewUrl = (threadId: string,) => {
+
+
+
+
+  return `/v1/admin/ads/announcements/${threadId}`
+}
+
+export const adminAdAnnouncementsControllerPreview = async (threadId: string, options?: RequestInit): Promise<adminAdAnnouncementsControllerPreviewResponse> => {
+
+  return http<adminAdAnnouncementsControllerPreviewResponse>(getAdminAdAnnouncementsControllerPreviewUrl(threadId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type adminAdAnnouncementsControllerApproveResponse200 = {
+  data: void
+  status: 200
+}
+
+export type adminAdAnnouncementsControllerApproveResponseSuccess = (adminAdAnnouncementsControllerApproveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAdAnnouncementsControllerApproveResponse = (adminAdAnnouncementsControllerApproveResponseSuccess)
+
+export const getAdminAdAnnouncementsControllerApproveUrl = (threadId: string,) => {
+
+
+
+
+  return `/v1/admin/ads/announcements/${threadId}`
+}
+
+export const adminAdAnnouncementsControllerApprove = async (threadId: string,
+    approveAnnouncementDto: ApproveAnnouncementDto, options?: RequestInit): Promise<adminAdAnnouncementsControllerApproveResponse> => {
+
+  return http<adminAdAnnouncementsControllerApproveResponse>(getAdminAdAnnouncementsControllerApproveUrl(threadId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      approveAnnouncementDto,)
+  }
+);}
+
+
+
+export type adminAdAnnouncementsControllerRevokeResponse200 = {
+  data: void
+  status: 200
+}
+
+export type adminAdAnnouncementsControllerRevokeResponseSuccess = (adminAdAnnouncementsControllerRevokeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAdAnnouncementsControllerRevokeResponse = (adminAdAnnouncementsControllerRevokeResponseSuccess)
+
+export const getAdminAdAnnouncementsControllerRevokeUrl = (threadId: string,) => {
+
+
+
+
+  return `/v1/admin/ads/announcements/${threadId}`
+}
+
+export const adminAdAnnouncementsControllerRevoke = async (threadId: string, options?: RequestInit): Promise<adminAdAnnouncementsControllerRevokeResponse> => {
+
+  return http<adminAdAnnouncementsControllerRevokeResponse>(getAdminAdAnnouncementsControllerRevokeUrl(threadId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export type adminAdsReadinessControllerGetReadinessResponse200 = {
+  data: void
+  status: 200
+}
+
+export type adminAdsReadinessControllerGetReadinessResponseSuccess = (adminAdsReadinessControllerGetReadinessResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAdsReadinessControllerGetReadinessResponse = (adminAdsReadinessControllerGetReadinessResponseSuccess)
+
+export const getAdminAdsReadinessControllerGetReadinessUrl = () => {
+
+
+
+
+  return `/v1/admin/ads/readiness`
+}
+
+export const adminAdsReadinessControllerGetReadiness = async ( options?: RequestInit): Promise<adminAdsReadinessControllerGetReadinessResponse> => {
+
+  return http<adminAdsReadinessControllerGetReadinessResponse>(getAdminAdsReadinessControllerGetReadinessUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

@@ -299,6 +299,12 @@ export interface AnswerView {
 export interface QuestionDetail {
   question: ThreadView;
   answers: AnswerView[];
+  /** One server-owned rendered rail snapshot; absent while community ad inventory is off. */
+  pageContext?: {
+    zone: { id: string; title: string; slug: string } | null;
+    waitingQuestions: ForumFeedItem[] | null;
+    adContentRevision: string | null;
+  };
 }
 
 /**
@@ -471,6 +477,8 @@ export interface ForumFeed {
 }
 
 export interface ForumHubView {
+  /** Available only after both operational gates and a conservative public-context check. */
+  adContext?: { contentRevision: string; waitingQuestions: ForumFeedItem[]; sidebarRooms: ZoneView[]; examType: "KPSS" | "YKS" | "LGS" | null };
   featured: ForumFeedItem | null;
   continueDiscussions: ForumFeedItem[];
   trendingTags: Array<ForumTagView & { threadCount: number }>;
@@ -540,6 +548,8 @@ export interface ForumActivityFeed {
 export interface ThreadDetail {
   thread: ThreadView;
   comments: CommentView[];
+  /** Reviewed announcement inventory only; absent for other detail types and while disabled. */
+  adContext?: { contentRevision: string; sidebarRooms: ZoneView[]; zone: ZoneView };
 }
 
 /** GET /v1/forum/posts/:postId — a focused comment with its direct replies (oldest-first). */

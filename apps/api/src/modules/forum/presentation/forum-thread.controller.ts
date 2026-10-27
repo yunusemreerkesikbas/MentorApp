@@ -29,6 +29,7 @@ import {
   type RequestUser,
 } from "../../../common/auth/current-user";
 import { ForumThreadService } from "../application/forum-thread.service";
+import { ForumAnnouncementPageService } from "../application/forum-announcement-page.service";
 import {
   AttachmentUploadUrlDto,
   CopyAttachmentDto,
@@ -49,7 +50,7 @@ import {
 @ApiBearerAuth()
 @Controller("forum")
 export class ForumThreadController {
-  constructor(private readonly threads: ForumThreadService) {}
+  constructor(private readonly threads: ForumThreadService, private readonly pages: ForumAnnouncementPageService) {}
 
   /** One-use validated upload capability; the client PUTs then sends `key` on create. */
   @Post("attachments/upload-url")
@@ -123,7 +124,7 @@ export class ForumThreadController {
     @CurrentUser() user: RequestUser,
     @Param("threadId") threadId: string,
   ): Promise<ThreadDetail> {
-    return this.threads.getThreadDetail(user.id, threadId, user.roles);
+    return this.pages.getDetail({ id: user.id, roles: user.roles }, threadId);
   }
 
   // ponytail: static rate-limit; mirror the thread-post limit until abuse data warrants config.

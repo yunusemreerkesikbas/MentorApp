@@ -6,6 +6,9 @@ export const ADS_REWARD_SOURCE = "ad_reward";
 export const ADS_REWARD_REASON = "ad.reward.completed";
 // Official sample inventory, never the publisher's revenue inventory.
 export const GOOGLE_DISPLAY_TEST_AD_UNIT = "/6355419/Travel/Europe/France/Paris";
+export const PUBLIC_DISPLAY_PLACEMENTS: ReadonlySet<AdPlacementId> = new Set([
+  AdPlacementId.KNOWLEDGE_ARTICLE_END, AdPlacementId.KNOWLEDGE_INDEX, AdPlacementId.FORUM_QUESTION_END,
+]);
 
 export const AD_PLACEMENTS: Record<
   AdPlacementId,
@@ -15,6 +18,23 @@ export const AD_PLACEMENTS: Record<
     envKey: keyof Env | null;
   }
 > = {
+  [AdPlacementId.COMMUNITY_ANNOUNCEMENT_END]: {
+    id: AdPlacementId.COMMUNITY_ANNOUNCEMENT_END, format: "DISPLAY", sizes: [[250, 250], [300, 250]],
+    configKey: "ads.placement.community_announcement_end.enabled", unitConfigKey: "ads.placement.community_announcement_end.ad_unit_path", envKey: null,
+  },
+  [AdPlacementId.COMMUNITY_OVERVIEW]: {
+    id: AdPlacementId.COMMUNITY_OVERVIEW, format: "DISPLAY", sizes: [[250, 250], [300, 250]],
+    configKey: "ads.placement.community_overview.enabled",
+    unitConfigKey: "ads.placement.community_overview.ad_unit_path", envKey: null,
+  },
+  [AdPlacementId.COMMUNITY_QUESTION_END]: {
+    id: AdPlacementId.COMMUNITY_QUESTION_END,
+    format: "DISPLAY",
+    sizes: [[250, 250], [300, 250]],
+    configKey: "ads.placement.community_question_end.enabled",
+    unitConfigKey: "ads.placement.community_question_end.ad_unit_path",
+    envKey: null,
+  },
   [AdPlacementId.FORUM_QUESTION_END]: {
     id: AdPlacementId.FORUM_QUESTION_END,
     format: "DISPLAY",

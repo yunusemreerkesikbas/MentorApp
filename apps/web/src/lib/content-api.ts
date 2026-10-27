@@ -147,7 +147,9 @@ export async function fetchExamCalendarByFamily(
   if (!res.ok) {
     throw new Error(`Calendar fetch failed: ${res.status}`);
   }
-  return (await res.json()) as ExamCalendarDto | null;
+  // Nest may serialize a nullable calendar as an empty 200 body when no upcoming exam exists.
+  const payload = (await res.text()).trim();
+  return payload ? JSON.parse(payload) as ExamCalendarDto | null : null;
 }
 
 export async function recordArticleView(slug: string): Promise<void> {

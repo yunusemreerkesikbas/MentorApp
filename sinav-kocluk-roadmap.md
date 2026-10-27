@@ -383,6 +383,38 @@ Ek gelir             → sponsorlu/öne-çıkarma (Faz 2-3, dikkatli)
 - Basit kurum lisansı **Faz 2'ye cash tamponu** olarak öne çekilebilir (taslakta Faz 3'tü).
 
 ### Karar: Kontrollü reklam + sponsorlu keşif
+- **YAYIN HAZIRLIĞI (2026-10-26):** Yeni sayfa/oda/alan eklemeden mevcut sekiz gösterim alanı
+  için yönetim panelindeki Ayarlar ekranına salt okunur hazırlık özeti eklendi. Kapalı anahtarlar,
+  eksik/test birimleri, ayar kaynağı ve ülke sınırları gösterilir; Google veya hukuk onayı
+  varsayılmaz. Üretimde resmî test envanteri engellenir. Seçilen Google hesabında AdSense hesabı
+  bulunmadı; kayıt formu bağlantı hatası nedeniyle tamamlanmadı. Hesap, gerçek envanter, alan adı,
+  ads.txt ve gizlilik kontrolleri bitmeden üretim açılmaz. İlk pilot blog yazısı sonu; diğer alanlar
+  kendi uygunluk onayına kadar kapalı kalır. [Kurulum ve geri alma rehberi](docs/qa/2026-10-26-ads-launch-readiness.md).
+- **REVİZYON (2026-10-26, herkese açık duyuru detayı):** Mevcut duyuru detayında ilk görünümün
+  yorumlarının ardından tek Google limited alanı hazırlanır. Yalnız açık ve arşivlenmemiş
+  ANNOUNCEMENT odaları uygundur; sohbet/özel oda/akış/profil kapsamı genişlemez. Duyuru, görünür
+  yorumlar, yazarlar, görseller, etiketler ve oda listesi birlikte incelenip sürümü onaylanır;
+  değişince yeniden onay gerekir. Alt yanıtlar ayrı görünümde açılırken, yazma/dosya/düzenleme
+  işlemleri başladığında reklam kaldırılır. Soru ve duyuru onayları mevcut depoda tür ayrımıyla
+  yalıtılır. Alan ve birim admin'den bağımsız yönetilir, varsayılan kapalıdır. Google envanter,
+  güvenli tarama, moderasyon, gizlilik ve bilgilendirmeler doğrulanmadan üretime açılmaz.
+- **HAZIRLIK (2026-10-26, Topluluk Keşfet):** Mevcut ekran ve kartlar korunarak masaüstünde sağ
+  sütunun sonunda, mobilde tüm içeriğin ardından tek reklam alanı hazırlanır. Alan ve ayrı
+  uygunluk onayı varsayılan kapalıdır. Gezinme ağırlıklı ekranın Google içerik değeri, güvenli
+  tarama, moderasyon, gizlilik ve bilgilendirme uygunluğu doğrulanmadan açılmaz. Kişisel devam
+  satırları, yol arkadaşı ilişkisi/istekleri veya özel oda bilgisi olan görünümlerde reklam yoktur.
+  Görünen oda listesi güncel sunucu kanıtıyla eşleşmelidir; eski özel oda başlıkları da reklamı
+  engeller. Yeni sayfa, içerik tasarımı, sponsor sistemi veya kullanıcı bazlı takip tablosu eklenmez.
+- **REVİZYON (2026-10-26, mevcut Topluluk soru detayı):** Yeni sayfa açmadan mevcut soru ekranında
+  cevapların sonuna tek Google limited alanı hazırlanır. Herkese açık metin onayına ek olarak
+  yazar kimlikleri, görseller, etiketler, oda ve yan panel sorularını kapsayan ayrı görünüm onayı
+  gerekir. Görünüm değişince onay geçersizleşir; farklı okuyucunun önerileri eşleşmiyorsa reklam
+  sunulmaz. Cevap yazma, dosya seçme veya pencere açma reklamı kaldırır. Alan varsayılan kapalıdır;
+  Google envanter/tarama/gizlilik uygunluğu ve bilgilendirmeler doğrulanmadan açılmaz. Akış, sohbet
+  ve profiller kapsam dışıdır. Mevcut tabloya yalnız ayrı onay bilgileri eklenir.
+- **KAPSAM DÜZELTMESİ (2026-10-25):** Ayrı Sınav Takvimi ve Rehberi sayfası ve ona özel reklam
+  alanı kaldırıldı. Bu aşamada blogdaki mevcut takvim kartı yeterlidir; reklam çalışmaları mevcut
+  onaylı ekranlar üzerinden sürdürülür.
 - **REVİZYON (2026-10-25, incelenmiş herkese açık soru-cevap):** Cevapların sonunda tek Google
   limited alanı hazırlanır. Yönetici soru ve tüm cevapları önizleyip içerik sürümünü onaylar;
   soru/cevap veya görünürlük değişince yeniden inceleme gerekir. Görünen sürüm, güncel sürüm ve
@@ -417,7 +449,8 @@ Ek gelir             → sponsorlu/öne-çıkarma (Faz 2-3, dikkatli)
   doğrulamalara bırakılır; bu pilot bunların satış altyapısını içermez.
 - Genel ürün akışına klasik banner/CPM reklamı yayılmaz. İstisna: bilgi merkezi sonunda tek
   contextual limited banner, yukarıdaki koşullarla blog ana sayfası ve Defterlerim/Vision Board ana ekranlarında tek
-  Google limited alanı ve Free dashboard'da tamamen gönüllü Coin rewarded reklamı. Premium
+  Google limited alanı, ayrıca yukarıdaki ayrı inceleme koşuluyla herkese açık ve mevcut Topluluk
+  soru detaylarında tek alan ve Free dashboard'da tamamen gönüllü Coin rewarded reklamı. Premium
   ve STAFF tamamen reklamsızdır; görev/seans/mood/koç akışına reklam girmez. Interstitial, sticky ve
   app-open reklam yapılmaz. Bu dar sınır gelir ihtiyacı ile "yoldaşlık" güvenini birlikte korur.
 - Bunun yerine **marketplace'in native uzantısı:**

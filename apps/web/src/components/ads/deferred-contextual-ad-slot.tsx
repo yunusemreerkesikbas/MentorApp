@@ -17,6 +17,8 @@ export function DeferredContextualAdSlot({
   examType,
   blogList,
   question,
+  hubRevision,
+  announcement,
   className = "",
 }: ContextualAdSlotProps & { className?: string }) {
   const boundary = useRef<HTMLDivElement>(null);
@@ -43,7 +45,7 @@ export function DeferredContextualAdSlot({
       data-ad-placement={placementId}
       className={`${!nearViewport && placementId === AdPlacementId.KNOWLEDGE_ARTICLE_END ? "min-h-[250px]" : "min-h-px"} ${className}`}
     >
-      {nearViewport ? <ContextualAdSlot placementId={placementId} contentSlug={contentSlug} examType={examType} blogList={blogList} question={question} /> : null}
+      {nearViewport ? <ContextualAdSlot placementId={placementId} contentSlug={contentSlug} examType={examType} blogList={blogList} question={question} hubRevision={hubRevision} announcement={announcement} /> : null}
     </div>
   );
 }

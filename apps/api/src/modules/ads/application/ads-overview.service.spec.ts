@@ -33,7 +33,7 @@ function setup(options: { examType?: string | null; local?: boolean; production?
     { getDiscoveryProfile: async () => ({ examType: options.examType === undefined ? ExamType.YKS : options.examType }) } as never,
     {} as never,
     content as never,
-    {} as never,
+    {} as never, {} as never, {} as never
   );
   return { service, config, content, setPremium: () => { premium = true; } };
 }
@@ -42,6 +42,12 @@ describe.each(OVERVIEWS)("%s display placement", (placementId) => {
   const prefix = `ads.placement.${placementId.replace(".", "_")}`;
   const get = (service: AdsService, country: string | null = "TR", roles: string[] = []) =>
     service.getPlacement(placementId, "user", roles, null, country);
+
+  it("blocks copied official test units in a production runtime", async () => {
+    const { service, config } = setup({ production: true });
+    config[`${prefix}.ad_unit_path`] = "/6355419/Travel/Europe/France/Paris";
+    expect(await get(service)).toMatchObject({ enabled: false, reason: "TEST_INVENTORY_NOT_ALLOWED", adUnitPath: null });
+  });
 
   it("uses server profile without looking up an article", async () => {
     const { service, content } = setup();

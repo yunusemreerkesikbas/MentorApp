@@ -11,6 +11,7 @@ import type {
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { ForumDiscoveryService } from "../application/forum-discovery.service";
 import { ForumQaService } from "../application/forum-qa.service";
+import { ForumQuestionPageService } from "../application/forum-question-page.service";
 import { CreateAnswerDto, SearchQueryDto } from "./forum.dto";
 
 /**
@@ -25,6 +26,7 @@ export class ForumQaController {
   constructor(
     private readonly qa: ForumQaService,
     private readonly discovery: ForumDiscoveryService,
+    private readonly pages: ForumQuestionPageService,
   ) {}
 
   @Get("search")
@@ -42,7 +44,7 @@ export class ForumQaController {
     @CurrentUser() user: RequestUser,
     @Param("threadId") threadId: string,
   ): Promise<QuestionDetail> {
-    return this.qa.getQuestion(user.id, threadId);
+    return this.pages.getQuestion({ id: user.id, roles: user.roles }, threadId);
   }
 
   // ponytail: static rate-limit; config-driven once abuse data warrants (shared note with thread post).

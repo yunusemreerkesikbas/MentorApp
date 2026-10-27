@@ -51,7 +51,7 @@ export async function mockBlogAds(page: Page, options: { empty?: boolean; blocke
         reason: denied ? "PREMIUM_AD_FREE" : "ELIGIBLE", provider: "GOOGLE_AD_MANAGER",
         adUnitPath: denied ? null : state.adUnitPath,
         audienceTreatment: "CHILD", limitedAds: true,
-        sizes: path.endsWith(".overview") || path.endsWith("knowledge.index") || path.endsWith("forum.question.end") ? [[250, 250], [300, 250]] : [[320, 100], [300, 250], [728, 90]],
+        sizes: path.endsWith(".overview") || path.endsWith("knowledge.index") || path.endsWith("question.end") || path.endsWith("announcement.end") ? [[250, 250], [300, 250]] : [[320, 100], [300, 250], [728, 90]],
       });
     }
     if (path.endsWith("/view")) return json(route, null, 204);

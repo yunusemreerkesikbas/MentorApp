@@ -1,4 +1,5 @@
 import apiClient from "@/lib/apiClient";
+import { resolveMediaUrl } from "@/lib/media-url";
 import type { ArticleImageUploadUrl } from "@/lib/types";
 
 export const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
@@ -10,11 +11,7 @@ export const escapeAttribute = (value: string) => value
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
 
-export const resolveUploadUrl = (url: string) => {
-    if (/^https?:\/\//.test(url)) return url;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/v1";
-    return new URL(url, apiUrl).toString();
-};
+export const resolveUploadUrl = resolveMediaUrl;
 
 export async function imageDimensions(file: File): Promise<{ width: number; height: number }> {
     const objectUrl = URL.createObjectURL(file);

@@ -28,6 +28,8 @@ export function CookiePreferencesContent() {
       <section aria-label={adCopy("heading")} className="mt-7">
         <h2 className="text-lg font-bold text-[var(--color-main)]">{adCopy("heading")}</h2>
         <p className="mt-2 leading-relaxed text-[var(--color-secondary)]">{adCopy("body")}</p>
+        <p className="mt-2 leading-relaxed text-[var(--color-secondary)]">{adCopy("scope")}</p>
+        <p className="mt-2 leading-relaxed text-[var(--color-secondary)]">{adCopy("protections")}</p>
       </section>
     </main>
   );

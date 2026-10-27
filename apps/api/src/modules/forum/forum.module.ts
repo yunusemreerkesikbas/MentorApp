@@ -1,4 +1,7 @@
 import { Module } from "@nestjs/common";
+import { ForumQuestionPageService } from "./application/forum-question-page.service";
+import { ForumHubPageService } from "./application/forum-hub-page.service";
+import { ForumAnnouncementPageService } from "./application/forum-announcement-page.service";
 import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
 import { IdentityModule } from "../identity/identity.module";
 import { ForumService } from "./application/forum.service";
@@ -50,6 +53,9 @@ import { ForumPollController } from "./presentation/forum-poll.controller";
     ForumPollController,
   ],
   providers: [
+    ForumAnnouncementPageService,
+    ForumHubPageService,
+    ForumQuestionPageService,
     CronSecretGuard,
     ForumService,
     ForumThreadService,
@@ -75,6 +81,9 @@ import { ForumPollController } from "./presentation/forum-poll.controller";
     ForumPollRepository,
   ],
   exports: [
+    ForumAnnouncementPageService,
+    ForumHubPageService,
+    ForumQuestionPageService,
     ForumPublicService,
     ForumService,
     ForumThreadService,

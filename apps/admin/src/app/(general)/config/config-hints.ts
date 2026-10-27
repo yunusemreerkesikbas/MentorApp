@@ -1,5 +1,12 @@
 /** Operator-facing hints for `/config`. Fallback is the catalog `description` if a key is new. */
 export const CONFIG_HINTS: Record<string, string> = {
+    "ads.placement.community_announcement_end.enabled": "Yalnız incelenmiş herkese açık duyuru detayında yorumların ardından tek reklamı açar. Sohbet ve özel odalarda çalışmaz. Google envanter/tarama/gizlilik incelemesi tamamlanmadan açma.",
+    "ads.placement.community_announcement_end.ad_unit_path": "Duyuru detayı için Google reklam birimi yolu. Boşsa reklam yoktur, ortam ayarına dönüş yapılmaz. Topluluk panelinde görünüm onayı da gerekir.",
+    "ads.placement.community_overview.enabled": "Keşfet ana ekranında tek reklam alanını hazırlar. Varsayılan kapalıdır. Ayrı uygunluk onayı ve güvenli sayfa bağlamı da gerekir.",
+    "ads.placement.community_overview.review_approved": "Google envanter/içerik, güvenli tarama, moderasyon, gizlilik ve bilgilendirme incelemeleri tamamlanınca açılır. Otomatik Google onayı değildir. Sadece alanı açmak reklam sunmaz.",
+    "ads.placement.community_overview.ad_unit_path": "Keşfet için Google reklam birimi yolu, örnek: /123456/community. Boşsa reklam gösterilmez. Üretim uygunluğu doğrulanmadan açma.",
+    "ads.placement.community_question_end.enabled": "Mevcut Topluluk soru detayında cevapların ardından tek reklamı açar. Herkese açık metin onayına ek olarak yazarlar, görseller ve yan panel için ayrı görünüm onayı gerekir. Google ve gizlilik incelemesi tamamlanmadan açma.",
+    "ads.placement.community_question_end.ad_unit_path": "Topluluk soru detayı için Google birim yolu. Boşsa reklam gösterilmez. Örnek: /123456/community-question. Yerleşim yalnız oturumlu kullanıcılara uygundur.",
     "ads.placement.forum_question_end.enabled": "Yalnız yönetici tarafından incelenmiş herkese açık soru-cevapların sonunda tek reklam gösterir. Soru veya cevap değişirse yeniden onay gerekir. Google envanter ve gizlilik incelemesi tamamlanmadan açma.",
     "ads.placement.forum_question_end.ad_unit_path": "Soru-cevap için Google reklam birimi yolu, örnek: /123456/forum-question. Boşsa reklam gösterilmez. Topluluk panelinden ayrıca içerik onayı gerekir.",
     "dev.email.console_enabled": "Açıkken e-posta gönderilmez; alıcı, şablon ve link API konsoluna basılır. Kapatınca prod gibi Postmark'la gider. Yalnız stage/dev'de görünür.",

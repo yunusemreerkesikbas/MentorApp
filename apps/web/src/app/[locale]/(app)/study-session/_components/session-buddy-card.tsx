@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Hand } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { BuddySuggestionRef, BuddyViewDto } from "@mentor/types";
@@ -45,29 +45,34 @@ type State =
 export function SessionBuddyCard({
   className = SESSION_CARD_CLASS,
   partnerOnly = false,
-}: { className?: string; partnerOnly?: boolean } = {}) {
+  onAdSafetyChange,
+}: { className?: string; partnerOnly?: boolean; onAdSafetyChange?: (safe: boolean) => void } = {}) {
   const t = useTranslations("session");
   const titleId = useId();
   const dialog = useMentorDialog();
   const { error: showErrorToast, success: showSuccessToast } = useMentorToast();
   const [state, setState] = useState<State>({ status: "loading" });
   const [busy, setBusy] = useState(false);
+  const safetyCallback = useRef(onAdSafetyChange);
+  useEffect(() => { safetyCallback.current = onAdSafetyChange; }, [onAdSafetyChange]);
+  const reportSafety = useCallback((view: BuddyViewDto | null) => safetyCallback.current?.(Boolean(view && !view.active && !view.outgoing && view.incoming.length === 0)), []);
 
   // An empty body (204) is "nothing to show", not a view: rendering it would crash the whole page.
   const load = useCallback(() => {
     getBuddy()
-      .then((view) => setState(view ? { status: "ready", view } : { status: "hidden" }))
-      .catch(() => setState({ status: "hidden" }));
-  }, []);
+      .then((view) => { reportSafety(view); setState(view ? { status: "ready", view } : { status: "hidden" }); })
+      .catch(() => { reportSafety(null); setState({ status: "hidden" }); });
+  }, [reportSafety]);
 
   // Silent refetch for polling — a transient failure must not hide the card.
   const refresh = useCallback(() => {
     getBuddy()
       .then((view) => {
+        reportSafety(view);
         if (view) setState({ status: "ready", view });
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => { reportSafety(null); });
+  }, [reportSafety]);
 
   useEffect(() => {
     load();

@@ -100,6 +100,14 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-26: Display inventory preparation in existing settings.** `/config` adds a read-only
+  summary of eight display placements, unit source/status, switches, country and manual review
+  requirements. Usage: refresh the summary or save an existing setting; failures remove stale
+  results. SUPER_ADMIN only, same permission boundary as central config. Gotchas: no provider
+  approval, ads.txt verification or user eligibility is inferred; no new activation endpoint/page.
+  Related: `AdsReadinessSummary.tsx`, config `page.tsx`, `AdminAdsReadinessController`,
+  [setup and rollout](../qa/2026-10-26-ads-launch-readiness.md).
+
 ### 2026-10-15 · Separate phone requirement controls
 
 - The existing config registry screen exposes `mentorship.phone_verification_required` and sensitive `payments.trial.phone_verification_required`, both false by default, using existing schema validation and server-side audit.

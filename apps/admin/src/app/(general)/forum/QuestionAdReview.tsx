@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { AdQuestionReviewView } from "@mentor/types";
 import apiClient from "@/lib/apiClient";
+import { CommunityQuestionAdReview } from "./CommunityQuestionAdReview";
 
 export function QuestionAdReview() {
     const [input, setInput] = useState("");
@@ -75,6 +76,7 @@ export function QuestionAdReview() {
                             onClick={() => void review(false)}>Onayı kaldır</button>
                     </div>
                     <p className="text-muted mt-3 mb-0">Bu onay reklamı tek başına açmaz. Reklam alanı ve Google birim yolu merkezi ayarlardan yönetilir. Onay ve kaldırma işlemleri denetim kaydına yazılır.</p>
+                    <CommunityQuestionAdReview key={`${questionId}:${view.question?.contentRevision}:${view.approved}`} questionId={questionId} />
                 </> : null}
             </div>
         </section>

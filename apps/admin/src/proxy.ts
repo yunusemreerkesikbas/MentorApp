@@ -18,7 +18,7 @@ export function contentSecurityPolicy(nonce: string): string {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
     // The adopted Bootstrap template uses React style props and library-generated style elements.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' blob: data: https:",
+    `img-src ${connectSources} blob: data: https:`,
     "font-src 'self' data:",
     `connect-src ${connectSources}`,
     "object-src 'none'",

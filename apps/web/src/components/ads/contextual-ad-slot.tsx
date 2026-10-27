@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { AdPlacementId, type ExamType, type AdQuestionContext } from "@mentor/types";
+import { AdPlacementId, type ExamType, type AdQuestionContext, type AdAnnouncementContext } from "@mentor/types";
 import type { AdBlogListContext } from "@mentor/validation";
 import { useAuth } from "@/lib/auth-context";
 import { fetchAdPlacement, fetchPublicAdPlacement } from "@/lib/ads";
@@ -17,6 +17,8 @@ export interface ContextualAdSlotProps {
   examType?: ExamType;
   blogList?: AdBlogListContext;
   question?: AdQuestionContext;
+  hubRevision?: string;
+  announcement?: AdAnnouncementContext;
 }
 
 /** Mounted by the deferred boundary only when it approaches the viewport. */
@@ -26,8 +28,12 @@ export function ContextualAdSlot({
   examType,
   blogList,
   question,
+  hubRevision,
+  announcement,
 }: ContextualAdSlotProps) {
   const questionId = question?.questionId;
+  const announcementId = announcement?.threadId;
+  const announcementRevision = announcement?.contentRevision;
   const contentRevision = question?.contentRevision;
   const family = blogList?.family;
   const category = blogList?.category;
@@ -70,8 +76,9 @@ export function ContextualAdSlot({
     stopCurrent.current = stop;
     const listContext = family ? { family, category, page: page ?? 1 } : undefined;
     const questionContext = questionId && contentRevision ? { questionId, contentRevision } : undefined;
+    const announcementContext = announcementId && announcementRevision ? { threadId: announcementId, contentRevision: announcementRevision } : undefined;
     void (status === "authenticated"
-      ? fetchAdPlacement(placementId, contentSlug, listContext, questionContext)
+      ? fetchAdPlacement(placementId, contentSlug, listContext, questionContext, hubRevision, announcementContext)
       : fetchPublicAdPlacement(placementId, contentSlug, examType, listContext, questionContext))
       .then(async (policy) => {
         if (cancelled) return;
@@ -103,7 +110,7 @@ export function ContextualAdSlot({
       })
       .catch(() => { if (!cancelled) { stop(); setRenderState("empty"); } });
     return stop;
-  }, [canRequest, category, contentRevision, contentSlug, examType, family, page, placementId, questionId, slotId, status, user, revision]);
+  }, [canRequest, category, contentRevision, contentSlug, examType, family, page, placementId, questionId, slotId, status, user, revision, hubRevision, announcementId, announcementRevision]);
 
   return (
     <aside ref={containerRef} aria-label={t("label")} className={!canRequest || renderState === "empty" ? "hidden" : "my-4 flex flex-col items-center"}>

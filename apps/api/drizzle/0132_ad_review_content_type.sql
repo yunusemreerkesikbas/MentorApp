@@ -1,0 +1,1 @@
+ALTER TABLE "ad_question_reviews" ADD COLUMN "content_type" text DEFAULT 'QUESTION' NOT NULL;
