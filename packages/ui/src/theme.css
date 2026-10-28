@@ -364,7 +364,19 @@ html.dark {
   --color-focus-ring: #ffd15c;
 }
 
-/* The coach page ("Sabah turu") is morning: a paper nav bar and the app's blue focus ring. */
+/*
+ * The coach page ("Sabah turu") is morning: a paper nav bar and the app's blue focus ring. On the
+ * landing, only the nav turns to paper, while the paper section is under it (`data-day`, set by the
+ * scene's scroll loop); the night and the footer keep the dark bar.
+ */
+.landing-city-theme[data-day] .landing-nav {
+  --landing-nav-bg: rgba(255, 253, 247, 0.94);
+  --landing-nav-line: #eadfcb;
+  --landing-nav-ink: #0f2233;
+  --logo-pupil: #1a5fa3;
+  --color-focus-ring: #1d6fbf;
+}
+
 .landing-city-theme.landing-day {
   --landing-nav-bg: rgba(255, 253, 247, 0.94);
   --landing-nav-line: #eadfcb;

@@ -25,10 +25,10 @@ export async function LandingNav({
   const [t, c] = await Promise.all([getTranslations("landing"), getTranslations("coaches")]);
   const coaches = variant === "coaches";
   return (
-    <header className="fixed inset-x-0 top-0 z-30 px-3 pt-3 sm:px-4 sm:pt-4">
+    <header className="landing-nav fixed inset-x-0 top-0 z-30 px-3 pt-3 sm:px-4 sm:pt-4">
       <nav
         aria-label={t("nav_label")}
-        className="mx-auto flex h-14 max-w-6xl items-center gap-1 rounded-[var(--play-radius)] border border-[var(--landing-nav-line)] bg-[var(--landing-nav-bg)] pl-4 pr-2 sm:h-16 sm:gap-3 sm:pl-8 lg:pl-10"
+        className="mx-auto flex h-14 max-w-6xl items-center gap-1 rounded-[var(--play-radius)] border border-[var(--landing-nav-line)] bg-[var(--landing-nav-bg)] pl-4 pr-2 transition-[background-color,border-color] duration-300 motion-reduce:transition-none sm:h-16 sm:gap-3 sm:pl-8 lg:pl-10"
       >
         <Link href="/" className={`inline-flex min-h-11 items-center text-xl text-[var(--landing-nav-ink)] sm:text-2xl ${FOCUS}`}>
           <Logo />

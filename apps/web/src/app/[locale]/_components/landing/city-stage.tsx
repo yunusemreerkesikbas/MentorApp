@@ -94,6 +94,12 @@ export function CityStage({
     const panelEls = Array.from(root.querySelectorAll<HTMLElement>(".lc-panel"));
     if (!track || !stage || !sky || !stars || !moon || !sun || !scrim || !rooms) return;
 
+    // Outside this component, on the same page: the paper section after the dawn and the fixed nav.
+    // While the paper is under the nav, the page root gets `data-day` and the nav turns to paper.
+    const page = root.closest<HTMLElement>(".landing-city-theme");
+    const paper = document.querySelector<HTMLElement>(".landing-paper");
+    const nav = document.querySelector<HTMLElement>(".landing-nav");
+
     const wideMq = window.matchMedia(WIDE);
     const stillMq = window.matchMedia(STILL);
     let raf = 0;
@@ -165,6 +171,12 @@ export function CityStage({
         current = next;
         root.dataset.stop = String(next);
         setStop(next);
+      }
+
+      if (page && paper) {
+        const line = nav ? nav.getBoundingClientRect().bottom : 0;
+        const sheet = paper.getBoundingClientRect();
+        page.toggleAttribute("data-day", sheet.top <= line && sheet.bottom > line);
       }
       root.dataset.ready = "";
     };
