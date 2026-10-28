@@ -29,6 +29,7 @@ describe("metadata routes", () => {
   it("lists the landing and each exam's blog hub", async () => {
     expect(await sitemap()).toEqual([
       { url: "https://mentor.example/", changeFrequency: "weekly", priority: 1 },
+      { url: "https://mentor.example/koclar", changeFrequency: "monthly", priority: 0.8 },
       { url: "https://mentor.example/blog", changeFrequency: "weekly", priority: 0.6 },
       { url: "https://mentor.example/blog?family=YKS", changeFrequency: "weekly", priority: 0.6 },
       { url: "https://mentor.example/blog?family=LGS", changeFrequency: "weekly", priority: 0.6 },

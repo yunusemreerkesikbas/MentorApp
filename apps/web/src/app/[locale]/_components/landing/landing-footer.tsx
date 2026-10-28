@@ -11,7 +11,7 @@ const FOOTER_LINK =
  * other language is linked: the English page is a courtesy copy (noindex), Turkish is canonical.
  */
 export async function LandingFooter() {
-  const [t, locale] = await Promise.all([getTranslations("landing"), getLocale()]);
+  const [t, coaches, locale] = await Promise.all([getTranslations("landing"), getTranslations("coaches"), getLocale()]);
   const other =
     locale === "en"
       ? ({ locale: "tr", label: "Türkçe" } as const)
@@ -32,6 +32,11 @@ export async function LandingFooter() {
           <li>
             <Link href="/knowledge" className={FOOTER_LINK}>
               {t("blog")}
+            </Link>
+          </li>
+          <li>
+            <Link href="/for-coaches" className={FOOTER_LINK}>
+              {coaches("nav_coaches")}
             </Link>
           </li>
           <li>

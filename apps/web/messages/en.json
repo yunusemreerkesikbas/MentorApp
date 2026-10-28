@@ -69,6 +69,109 @@
       "subtitle": "Study, share, and support each other with people preparing for the same exam."
     }
   },
+  "coaches": {
+    "meta_title": "For coaches | PuhuKoç",
+    "meta_description": "Your students' plans, sessions and weekly story in one place. Take your morning round and know who needs you. Your first 3 students are free.",
+    "nav_students": "For students",
+    "nav_coaches": "For coaches",
+    "nav_round": "How it works",
+    "cta": "Start as a coach",
+    "pill": "For coaches",
+    "title": "Who studied last night, <em>at a glance.</em>",
+    "lead": "Your students' plans, sessions and weekly story in one place. Take your morning round and know who needs you.",
+    "free": "Your first 3 students are free.",
+    "summary_label": "This morning at a glance",
+    "summary1": "5 studied yesterday",
+    "summary2": "2 went quiet",
+    "summary3": "1 empty seat",
+    "tag_sessions": "{count} sessions",
+    "tag_quiet": "quiet {count} days",
+    "tag_plan_done": "plan done",
+    "tag_plan_slipped": "plan slipped",
+    "tag_mock": "logged a test",
+    "tag_seat": "empty seat",
+    "round": {
+      "time": "07:30",
+      "title": "Who should you check on today?",
+      "body": "Your round is ready: students who went quiet or whose plan slipped come first. The round moves on as you check on each one and ends when everyone is seen.",
+      "sheet": "Morning round",
+      "waiting": "4 waiting",
+      "label": "Sample round: Ayşe done, Mert next",
+      "others": "others",
+      "done": "Round done",
+      "action": "Check on Mert"
+    },
+    "week": {
+      "time": "07:45",
+      "title": "Read a week at a glance.",
+      "body": "Study minutes, streak, plan rate and recent practice tests on one page. You see right away what's on track and where to step in.",
+      "span": "last 14 days",
+      "strip_label": "Study minutes over the last 14 days; the last 3 days are empty",
+      "streak": "day longest streak",
+      "net": "last test net",
+      "plan_rate": "plan rate",
+      "mood": "Mood: <em>tired</em> · last 2 days"
+    },
+    "plan": {
+      "time": "08:00",
+      "title": "Build the week together.",
+      "body": "Place tasks on days and send the draft to your student. If you like, ask the AI for a draft based on their history, then edit it yourself.",
+      "sheet": "Mert's week",
+      "draft": "draft",
+      "days": "Mon,Tue,Wed,Thu,Fri",
+      "task_turkish": "Turkish 25 min",
+      "task_review": "Review 15 min",
+      "task_math": "Maths 40 min",
+      "task_reading": "Reading 25 min",
+      "task_mock": "Practice test",
+      "task_geometry": "Geometry 30 min",
+      "task_add": "+ task",
+      "send": "Send to student",
+      "ai": "Ask the AI for a draft"
+    },
+    "trust": {
+      "time": "08:15",
+      "title": "Your student can open up.",
+      "body": "You don't see your student's conversations with the AI; you only see where they need support. That line makes it easier for them to trust you.",
+      "theirs": "Student's conversation",
+      "lock": "You don't see this conversation",
+      "yours": "What you see",
+      "signal1": "Low motivation · 2 days",
+      "signal2": "Plan slipped",
+      "signal3": "Session rhythm on track"
+    },
+    "invite": {
+      "time": "08:30",
+      "title": "Connect with an invite code.",
+      "body": "Share your code; once your student joins and agrees, they're added to your morning round. Your first 3 students are free.",
+      "sheet": "Your invite code",
+      "hint": "share, connect",
+      "copy": "Copy",
+      "step1": "Send the code to your student",
+      "step2": "They join with the code and agree",
+      "step3": "They're added to your morning round",
+      "seats": "First 3 seats free"
+    },
+    "faq": {
+      "pill": "FAQ",
+      "title": "Questions coaches ask",
+      "q1": "Do I need approval to become a coach?",
+      "a1": "No. You sign up as a coach, fill in your profile and share your invite code right away.",
+      "q2": "What if my student already uses PuhuKoç?",
+      "a2": "They connect with your invite code; their plan, sessions and history stay as they are. They can end the connection any time.",
+      "q3": "How many students can I work with?",
+      "a3": "Your first 3 students are free. When extra seats go on sale, you'll see them here.",
+      "q4": "How is my student's privacy protected?",
+      "a4": "You don't see your student's conversations with the AI. You see plan, session, test and support signals; the connection is made with your student's consent.",
+      "q5": "Does the AI coach in my place?",
+      "a5": "No. The AI prepares summaries and drafts for you; you make the call. It never makes up official dates or procedures."
+    },
+    "final": {
+      "done": "round done",
+      "title": "Your morning round is ready.",
+      "body": "Share your code today; your first 3 students are free."
+    }
+  },
   "landing": {
     "nav_label": "Main menu",
     "blog": "Blog",
@@ -85,7 +188,8 @@
       "pill": "For coaches",
       "title": "All your students on one screen.",
       "body": "Follow your students' plans, sessions and weekly reports in one place. Be there where they get stuck.",
-      "cta": "Start as a coach"
+      "cta": "Start as a coach",
+      "more": "See a coach's morning"
     },
     "faq": {
       "pill": "FAQ",

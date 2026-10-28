@@ -69,6 +69,109 @@
       "subtitle": "Aynı sınava hazırlananlarla çalış, paylaş ve birbirine güç ver."
     }
   },
+  "coaches": {
+    "meta_title": "Koçlar için | PuhuKoç",
+    "meta_description": "Öğrencilerinin planı, seansları ve haftalık hikâyesi tek yerde. Sabah turuna çık, kime bakman gerektiğini bil. İlk 3 öğrencin ücretsiz.",
+    "nav_students": "Öğrenciler için",
+    "nav_coaches": "Koçlar için",
+    "nav_round": "Nasıl çalışır",
+    "cta": "Koç olarak başla",
+    "pill": "Koçlar için",
+    "title": "Dün gece kim çalıştı, <em>bir bakışta gör.</em>",
+    "lead": "Öğrencilerinin planı, seansları ve haftalık hikâyesi tek yerde. Sabah turuna çık, kime bakman gerektiğini bil.",
+    "free": "İlk 3 öğrencin ücretsiz.",
+    "summary_label": "Bu sabahın özeti",
+    "summary1": "5 kişi dün çalıştı",
+    "summary2": "2 kişi sessiz",
+    "summary3": "1 boş koltuk",
+    "tag_sessions": "{count} seans",
+    "tag_quiet": "{count} gün sessiz",
+    "tag_plan_done": "plan tamam",
+    "tag_plan_slipped": "planı kaydı",
+    "tag_mock": "deneme girdi",
+    "tag_seat": "boş koltuk",
+    "round": {
+      "time": "07:30",
+      "title": "Bugün kime bakmalısın?",
+      "body": "Turun hazır: önce son günlerde sessizleşen ya da planı kayan öğrencilerin gelir. Birine baktıkça tur ilerler, hepsi bitince tur tamam.",
+      "sheet": "Sabah turu",
+      "waiting": "4 kişi bekliyor",
+      "label": "Örnek tur: Ayşe tamam, sıradaki Mert",
+      "others": "diğerleri",
+      "done": "Tur tamam",
+      "action": "Mert'e bak"
+    },
+    "week": {
+      "time": "07:45",
+      "title": "Bir haftayı tek bakışta oku.",
+      "body": "Çalışma dakikaları, seri, plan oranı ve son denemeler aynı sayfada. Neyin yolunda gittiğini ve nereye dokunman gerektiğini hemen görürsün.",
+      "span": "son 14 gün",
+      "strip_label": "Son 14 günün çalışma dakikaları; son 3 gün boş",
+      "streak": "gün en uzun seri",
+      "net": "son deneme neti",
+      "plan_rate": "plan oranı",
+      "mood": "Ruh hâli: <em>yorgun</em> · son 2 gün"
+    },
+    "plan": {
+      "time": "08:00",
+      "title": "Haftayı birlikte kur.",
+      "body": "Görevleri günlere yerleştir, taslağı öğrencine gönder. İstersen yapay zekâdan öğrencinin geçmişine bakan bir taslak iste, sonra kendin düzenle.",
+      "sheet": "Mert'in haftası",
+      "draft": "taslak",
+      "days": "Pzt,Sal,Çar,Per,Cum",
+      "task_turkish": "Türkçe 25 dk",
+      "task_review": "Tekrar 15 dk",
+      "task_math": "Matematik 40 dk",
+      "task_reading": "Paragraf 25 dk",
+      "task_mock": "Deneme",
+      "task_geometry": "Geometri 30 dk",
+      "task_add": "+ görev",
+      "send": "Öğrencine gönder",
+      "ai": "Yapay zekâdan taslak iste"
+    },
+    "trust": {
+      "time": "08:15",
+      "title": "Öğrencin içini rahatça döker.",
+      "body": "Öğrencinin yapay zekâyla konuşmalarını sen görmezsin; sana yalnızca nerede desteğe ihtiyacı olduğu düşer. Bu sınır, öğrencinin sana güvenmesini kolaylaştırır.",
+      "theirs": "Öğrencinin konuşması",
+      "lock": "Bu konuşmayı sen görmezsin",
+      "yours": "Senin gördüğün",
+      "signal1": "Motivasyon düşük · 2 gün",
+      "signal2": "Planı kaydı",
+      "signal3": "Seans ritmi yerinde"
+    },
+    "invite": {
+      "time": "08:30",
+      "title": "Davet koduyla bağlan.",
+      "body": "Kodunu paylaş; öğrencin katılıp onay verince sabah turuna eklenir. İlk 3 öğrencin ücretsiz.",
+      "sheet": "Davet kodun",
+      "hint": "paylaş, bağlan",
+      "copy": "Kopyala",
+      "step1": "Kodu öğrencine gönder",
+      "step2": "Öğrencin kodla katılır, onay verir",
+      "step3": "Sabah turuna eklenir",
+      "seats": "İlk 3 koltuk ücretsiz"
+    },
+    "faq": {
+      "pill": "SSS",
+      "title": "Koçların sorduğu sorular",
+      "q1": "Koç olmak için onay gerekiyor mu?",
+      "a1": "Hayır. Koç olarak kaydolur, profilini doldurur ve davet kodunu hemen paylaşırsın.",
+      "q2": "Öğrencim zaten PuhuKoç kullanıyorsa ne olur?",
+      "a2": "Davet kodunla bağlanır; planı, seansları ve geçmişi olduğu gibi kalır. Bağlantıyı istediği zaman bitirebilir.",
+      "q3": "Kaç öğrenciyle çalışabilirim?",
+      "a3": "İlk 3 öğrencin ücretsiz. Ek koltuklar satışa açıldığında burada göreceksin.",
+      "q4": "Öğrencimin gizliliği nasıl korunuyor?",
+      "a4": "Öğrencinin yapay zekâyla konuşmalarını görmezsin. Plan, seans, deneme ve ihtiyaç sinyallerini görürsün; bağlantı öğrencinin onayıyla kurulur.",
+      "q5": "Yapay zekâ benim yerime mi koçluk yapıyor?",
+      "a5": "Hayır. Yapay zekâ sana özet ve taslak hazırlar, kararı sen verirsin. Resmi tarih ya da süreç uydurmaz."
+    },
+    "final": {
+      "done": "tur tamam",
+      "title": "Sabah turun hazır.",
+      "body": "Kodunu bugün paylaş, ilk 3 öğrencin ücretsiz."
+    }
+  },
   "landing": {
     "nav_label": "Ana menü",
     "blog": "Blog",
@@ -85,7 +188,8 @@
       "pill": "Koçlar için",
       "title": "Öğrencilerin tek ekranda.",
       "body": "Öğrencilerinin planını, seanslarını ve haftalık raporunu tek yerden takip et. Takıldıkları yerde yanlarında ol.",
-      "cta": "Koç olarak başla"
+      "cta": "Koç olarak başla",
+      "more": "Koç sabahını gör"
     },
     "faq": {
       "pill": "SSS",

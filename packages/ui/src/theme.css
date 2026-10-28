@@ -350,14 +350,31 @@ html.dark {
   --landing-on-night: #ffffff;
   --landing-on-night-soft: #c9d6ea;
   --landing-on-night-line: rgba(255, 255, 255, 0.45);
-  /** The floating nav bar over the scene. */
-  --landing-frost: rgba(9, 20, 38, 0.84);
-  --landing-frost-line: rgba(255, 255, 255, 0.08);
+  /** The floating nav bar: frosted night over the scene (`.landing-day` turns it to paper). */
+  --landing-nav-bg: rgba(9, 20, 38, 0.84);
+  --landing-nav-line: rgba(255, 255, 255, 0.08);
+  --landing-nav-ink: #ffffff;
+  --landing-nav-cta: var(--play-cta);
+  --landing-nav-cta-ink: var(--play-cta-ink);
+  --landing-nav-cta-edge: var(--play-cta-edge);
   --landing-footer: #0f2233;
   --landing-footer-line: rgba(255, 255, 255, 0.12);
   --logo-pupil: #55acee;
   /* Every surface so far sits on the night; a light section re-scopes this. */
   --color-focus-ring: #ffd15c;
+}
+
+/* The coach page ("Sabah turu") is morning: a paper nav bar and the app's blue focus ring. */
+.landing-city-theme.landing-day {
+  --landing-nav-bg: rgba(255, 253, 247, 0.94);
+  --landing-nav-line: #eadfcb;
+  --landing-nav-ink: #0f2233;
+  /* The coach CTA is coach ink, as in the page itself. */
+  --landing-nav-cta: #26377f;
+  --landing-nav-cta-ink: #ffffff;
+  --landing-nav-cta-edge: #1a2659;
+  --logo-pupil: #1a5fa3;
+  --color-focus-ring: #1d6fbf;
 }
 
 /* After the dawn: warm paper with dark ink, the coach band in coach blue. */

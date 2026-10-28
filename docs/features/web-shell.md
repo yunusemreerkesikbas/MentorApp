@@ -67,6 +67,40 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-28 · Coach page `/koclar` ("Sabah turu", EN `/coaches`).**
+  - **The page:**
+    - The landing's apartment at 07:00, with paper tags on the windows (who studied last night;
+      Mert's dark window "3 gün sessiz").
+    - Five clipboards of a coach's morning, each with the real screen's look:
+      - 07:30 the round
+      - 07:45 a two-week strip
+      - 08:00 the week plan
+      - 08:15 the trust line
+      - 08:30 the invite code
+    - A coach FAQ (FAQPage JSON-LD) and "Sabah turun hazır.".
+  - **Price:** only "İlk 3 öğrencin ücretsiz" is mentioned.
+  - **Indexing:** TR is indexed and in the sitemap; EN is noindex.
+  - **Coach CTAs** (→ `/kayit?rol=koc`) show only while coach signup is open.
+  - **Links:** the landing nav "Koçlar için", the coach band "Koç sabahını gör" and the footer point
+    here.
+  - **How it works:**
+    - The hero needs no script. At rest the landing camera has no depth difference, so one 1600×1000
+      "world" box, scaled to cover a `container-type: size` stage with `cqw`/`cqh`, reproduces the
+      canvas framing.
+    - It reuses the landing's art (`SceneImg`, AVIF + WebP), nav (`variant="coaches"`, a daytime
+      bar via `.landing-day`), footer and FAQ (`landing-paper.tsx` `PaperFaq`).
+  - **Copy change from the canvas:** "Yapay zekâya yazdıkları öğrencide kalır" became "the coach does
+    not see the AI conversations" (same reason as the landing FAQ).
+  - **Gotchas:**
+    - Paragraph styles are scoped to `.kc-step-copy p`; the clipboards are full of `<p>`.
+    - A long-running `next dev` may keep serving stale messages and modules after many edits (raw
+      `coaches.title`); check on a fresh build.
+  - **Related:**
+    - `[locale]/for-coaches/{page.tsx,_components/*}`
+    - `i18n/routing.ts`
+    - `app/sitemap.ts`
+    - `e2e/landing.spec.ts`
+
 - **2026-10-28 · Landing "Işıklı şehir", stop E: polish.**
   - **Measured on a production build:** LCP is the headline text at about 0.9s (desktop and
     phone). The scene stays hidden until its first frame, so it is never the LCP element, and the

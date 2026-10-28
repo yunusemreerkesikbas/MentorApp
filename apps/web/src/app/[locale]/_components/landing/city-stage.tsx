@@ -1,10 +1,10 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- layer art is placed in world px and scaled by the camera; next/image's responsive sizing does not apply. */
+/* eslint-disable @next/next/no-img-element -- the stars are a plain decorative SVG over the sky. */
 
 import "@fontsource-variable/caveat/wght.css";
 import "./city-stage.css";
-import { useEffect, useRef, useState, type CSSProperties, type ImgHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   CAMERA_KEYS,
   STOP_COUNT,
@@ -28,6 +28,7 @@ import {
   YOURS_WINDOW,
   type SceneArt,
 } from "./city-scene";
+import { SceneImg, sceneBackground } from "./scene-img";
 
 const WIDE = "(min-width: 1024px)";
 const STILL = "(prefers-reduced-motion: reduce)";
@@ -40,23 +41,6 @@ export interface CityBell {
   name: string;
   stop: number;
   label: string;
-}
-
-/** Every art file ships as AVIF (about half the bytes) next to the WebP it falls back to. */
-const avif = (webp: string) => webp.replace(/\.webp$/, ".avif");
-
-function SceneImg({ src, ...img }: { src: string } & Omit<ImgHTMLAttributes<HTMLImageElement>, "src">) {
-  return (
-    <picture>
-      <source type="image/avif" srcSet={avif(src)} />
-      <img src={src} alt="" decoding="async" {...img} />
-    </picture>
-  );
-}
-
-/** A CSS background with the same AVIF-then-WebP choice, for art that must not load until shown. */
-function sceneBackground(webp: string): CSSProperties {
-  return { backgroundImage: `image-set(url(${avif(webp)}) type("image/avif"), url(${webp}) type("image/webp"))` };
 }
 
 function Art({ art, priority }: { art: SceneArt; priority?: boolean }) {

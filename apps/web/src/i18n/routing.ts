@@ -11,6 +11,8 @@ export const routing = defineRouting({
     "/": "/",
     /** The 4-slide welcome. `/` is the landing; its "Ücretsiz başla" comes here, then `/kayit`. */
     "/welcome": { tr: "/hosgeldin", en: "/welcome" },
+    /** The public page for coaches ("Sabah turu"). Not `/koc` (the AI chat) nor `/koc-ol` (signed-in switch). */
+    "/for-coaches": { tr: "/koclar", en: "/coaches" },
     "/login": { tr: "/giris", en: "/login" },
     "/signup": { tr: "/kayit", en: "/signup" },
     "/verify-email": { tr: "/eposta-dogrula", en: "/verify-email" },

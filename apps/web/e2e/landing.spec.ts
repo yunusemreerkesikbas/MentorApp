@@ -83,6 +83,26 @@ test("SSS, arama motorlarına FAQPage olarak da yayınlanır", async ({ request 
   expect(faq?.mainEntity?.map((q) => q.name)).toContain("PuhuKoç ücretsiz mi?");
 });
 
+test("koç sayfası menüden açılır ve sabah turunu anlatır", async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.name.startsWith("desktop"), "the section links are desktop only");
+  await asVisitor(page);
+  await page.goto("/");
+  await page.getByRole("navigation", { name: "Ana menü" }).getByRole("link", { name: "Koçlar için" }).click();
+  await expect(page).toHaveURL(/\/koclar$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Dün gece kim çalıştı, bir bakışta gör." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bugün kime bakmalısın?" })).toBeAttached();
+  await expect(page.getByRole("heading", { name: "Koçların sorduğu sorular" })).toBeAttached();
+});
+
+test("koç sayfası indekslenir, İngilizcesi indekslenmez", async ({ request }) => {
+  const tr = await (await request.get("/koclar")).text();
+  expect(tr).not.toMatch(/<meta name="robots" content="noindex/i);
+  expect(tr).toMatch(/<link rel="canonical" href="https?:\/\/[^"]+\/koclar"/i);
+  expect(tr).toContain('"@type":"FAQPage"');
+  const en = await (await request.get("/en/coaches")).text();
+  expect(en).toMatch(/<meta name="robots" content="noindex, follow"/i);
+});
+
 test("azaltılmış harekette notlar kamera olmadan alt alta görünür", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await asVisitor(page);
