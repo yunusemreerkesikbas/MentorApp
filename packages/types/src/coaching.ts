@@ -1424,3 +1424,12 @@ export interface NotebookImageUploadUrlDto {
   expiresAt: string;
   maxBytes: number;
 }
+
+/**
+ * The landing's live line ("Son 24 saatte {n} kişi burada çalıştı"): distinct people with a
+ * completed or ongoing study session started in the last 24 hours. `null` below the configured
+ * threshold (`coaching.public_pulse.min_people`), and the landing then shows no line at all.
+ */
+export interface PublicPulseView {
+  studiedLast24h: number | null;
+}

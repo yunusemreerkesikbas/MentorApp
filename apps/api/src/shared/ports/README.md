@@ -9,7 +9,7 @@ ports, not on a concrete provider → if the provider changes, the code doesn't.
 | `LlmTextPort` / `LlmVisionPort` | OpenAI / Gemini | §8 AI architecture |
 | `PaymentsPort` | iyzico | §7 payments |
 | `StoragePort` | Cloudflare R2 | §8 storage |
-| `EmailPort` | Postmark | §8 email |
+| `EmailPort` | Resend | §8 email |
 | `JobQueuePort` | **MVP:** Render Cron + jobs table · **Phase 2:** BullMQ+Redis | §7/§8 queue |
 
 For now only the contracts are defined; adapters are added as the relevant modules are developed.

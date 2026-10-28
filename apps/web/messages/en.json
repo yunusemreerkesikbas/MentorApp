@@ -69,6 +69,138 @@
       "subtitle": "Study, share, and support each other with people preparing for the same exam."
     }
   },
+  "landing": {
+    "nav_label": "Main menu",
+    "blog": "Blog",
+    "login": "Sign in",
+    "start": "Start for free",
+    "has_account": "I already have an account",
+    "tagline": "Your exam companion",
+    "hero_title": "Yours isn't the <glow>only window</glow> lit tonight.",
+    "hero_lead": "A daily plan, friends who study at the same hours, and with Premium an AI coach who knows you. Let's walk the road together.",
+    "how_it_works": "How it works",
+    "faq_nav": "FAQ",
+    "counter": "{count, number} people studied here in the last 24 hours.",
+    "coach_band": {
+      "pill": "For coaches",
+      "title": "All your students on one screen.",
+      "body": "Follow your students' plans, sessions and weekly reports in one place. Be there where they get stuck.",
+      "cta": "Start as a coach"
+    },
+    "faq": {
+      "pill": "FAQ",
+      "title": "Frequently asked",
+      "q1": "Is PuhuKoç free?",
+      "a1": "Plan, sessions, desk and community are free. Chatting with the AI coach and deeper analysis are part of Premium.",
+      "q2": "What does the AI coach do, and not do?",
+      "a2": "It talks knowing your plan and your study history, and keeps you on track. It never makes up official dates or procedures; it shows those from verified sources. It does not solve exam questions.",
+      "q3": "Which exams is it for?",
+      "a3": "It's designed for everyone on the road to an exam. Exam-specific content and official info cards are added exam by exam.",
+      "q4": "Is my data safe?",
+      "a4": "Your data is protected under KVKK. If you have a coach, they don't see your conversations with the AI coach, only what you need.",
+      "q5": "I have a coach. What changes?",
+      "a5": "You connect with your coach's invite code. Your coach sees your plan and weekly report and builds your week with you.",
+      "q6": "Can I use it on my phone?",
+      "a6": "Yes. PuhuKoç runs in the browser; pick up where you left off on your phone or your computer."
+    },
+    "final": {
+      "title": "Your window is waiting.",
+      "body": "Let's take the first step together tonight."
+    },
+    "skip_story": "Skip the story",
+    "scroll_hint": "Scroll, let's look through the windows",
+    "plate": "No {no}",
+    "intercom_title": "PUHU APT.",
+    "intercom_label": "Building doorbells",
+    "bell_label": "Flat {no}, {name}: go to the window",
+    "puhu": {
+      "name": "Puhu",
+      "title": "Studying alone wears you out.",
+      "body": "Months of studying on your own wear anyone down. Here someone is by your side every evening: your coach, your friends at the desk, and us.",
+      "scribble": "here every evening"
+    },
+    "coach": {
+      "name": "Coach",
+      "title": "Your coach is there when it gets hard.",
+      "body": "Write when your mood drops or you don't know where to start. Your coach answers knowing your plan and your study history.",
+      "scribble": "tap, get an answer",
+      "feelings_label": "Pick a feeling",
+      "feeling1": "I don't feel like studying today",
+      "reply1": "Days like this happen. Let's not set a big goal today. One 25-minute session is enough; when it's done, we'll look at how it went together.",
+      "step1": "Small step: one 25-minute session",
+      "feeling2": "My scores dropped",
+      "reply2": "A lower result got to you, I get it. Let's not change course over one practice test. Let's look at your last three; whichever topic needs another pass, we start there.",
+      "step2": "Small step: look at the last three tests together",
+      "feeling3": "I don't know where to start",
+      "reply3": "Everything looks urgent at once, I know. Let's pick one topic today. A small step on the task that has waited longest in your plan.",
+      "step3": "Small step: the first task in your plan",
+      "empty": "Pick a feeling and see how your coach answers.",
+      "demo_note": "This is a sample answer. The AI coach is part of Premium."
+    },
+    "plan": {
+      "name": "Plan",
+      "title": "Today's study is ready.",
+      "body": "Let's build your week around your goal and your time. A short path every day, a chest at the end of the week.",
+      "scribble": "small steps, long road",
+      "step1": "Turkish",
+      "step1_time": "25 min",
+      "step2": "Maths",
+      "step2_time": "40 min",
+      "step3": "Review",
+      "step3_time": "15 min",
+      "step4": "Weekly",
+      "step4_time": "chest"
+    },
+    "desk": {
+      "name": "Desk",
+      "title": "One desk, everyone on their own clock.",
+      "body": "Sit at a desk with your friends. Everyone starts their own session; you study quietly, side by side.",
+      "scribble": "the empty seat is yours",
+      "seat1": "Elif",
+      "seat1_state": "Focused · 18 min",
+      "seat2": "Mert",
+      "seat2_state": "On a break",
+      "seat_me": "You",
+      "seat_me_state": "Focused · 7 min",
+      "seat_empty": "Empty seat",
+      "seat_empty_state": "Invite a friend"
+    },
+    "community": {
+      "name": "Community",
+      "title": "Ask, lend a hand, move forward together.",
+      "body": "Share the question you're stuck on, answer one you know. In the weekly league your effort shows.",
+      "scribble": "applause for effort",
+      "cheer": "You studied 5 days this week. You're doing great!",
+      "row1": "Zeynep",
+      "row1_xp": "640 XP",
+      "row_me": "You",
+      "row_me_xp": "520 XP",
+      "row3": "Can",
+      "row3_xp": "480 XP"
+    },
+    "analysis": {
+      "name": "Analysis",
+      "title": "Let your practice tests tell you their story.",
+      "body": "Enter your practice test results and we'll see which topic is waiting for you. A short story every week: what went well, what's next.",
+      "scribble": "a little more each week",
+      "story": "This week's story: Reading is steady. Geometry is next."
+    },
+    "yours": {
+      "name": "You",
+      "title": "This window is empty. Want it to be yours?",
+      "body": "Which field are you heading for? Pick one and let's see who lights up your window.",
+      "scribble": "we're neighbours now",
+      "choose_label": "Pick your field",
+      "lit_title": "Your window is lit.",
+      "line": "Let's take the first step towards {field} together tonight.",
+      "none_line": "You can pick your field later. Let's take the first step together tonight.",
+      "cta": "Start with this field"
+    },
+    "dawn": {
+      "title": "A little closer every night.",
+      "body": "Let's walk the road to exam morning together, in small steps."
+    }
+  },
   "auth": {
     "turnstile": {
       "error": "The security check could not load. You can try again.",

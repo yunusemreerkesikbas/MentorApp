@@ -8,7 +8,7 @@ const message = {
 };
 
 /** `consoleSwitch` answers only the key the router must read; any other key reads undefined. */
-function setup(options: { consoleSwitch: boolean[]; postmarkToken?: string }) {
+function setup(options: { consoleSwitch: boolean[]; resendKey?: string }) {
   const answers = [...options.consoleSwitch];
   const registry = {
     get: vi.fn(async (key: string) =>
@@ -16,57 +16,57 @@ function setup(options: { consoleSwitch: boolean[]; postmarkToken?: string }) {
     ),
   };
   const env = {
-    get: (key: string) => (key === "POSTMARK_TOKEN" ? options.postmarkToken : undefined),
+    get: (key: string) => (key === "RESEND_API_KEY" ? options.resendKey : undefined),
   };
   const consoleSink = { sendTransactional: vi.fn(async () => undefined) };
-  const postmark = { sendTransactional: vi.fn(async () => undefined) };
+  const resend = { sendTransactional: vi.fn(async () => undefined) };
   const adapter = new RoutingEmailAdapter(
     env as never,
     registry as never,
     consoleSink as never,
-    postmark as never,
+    resend as never,
   );
-  return { adapter, consoleSink, postmark };
+  return { adapter, consoleSink, resend };
 }
 
 describe("RoutingEmailAdapter", () => {
-  it("prints to the console while the switch is on, even with Postmark configured", async () => {
-    const { adapter, consoleSink, postmark } = setup({ consoleSwitch: [true], postmarkToken: "t" });
+  it("prints to the console while the switch is on, even with Resend configured", async () => {
+    const { adapter, consoleSink, resend } = setup({ consoleSwitch: [true], resendKey: "t" });
 
     await adapter.sendTransactional(message);
 
     expect(consoleSink.sendTransactional).toHaveBeenCalledWith(message);
-    expect(postmark.sendTransactional).not.toHaveBeenCalled();
+    expect(resend.sendTransactional).not.toHaveBeenCalled();
   });
 
-  it("delivers through Postmark when the switch is off and a token is set", async () => {
-    const { adapter, consoleSink, postmark } = setup({ consoleSwitch: [false], postmarkToken: "t" });
+  it("delivers through Resend when the switch is off and a token is set", async () => {
+    const { adapter, consoleSink, resend } = setup({ consoleSwitch: [false], resendKey: "t" });
 
     await adapter.sendTransactional(message);
 
-    expect(postmark.sendTransactional).toHaveBeenCalledWith(message);
+    expect(resend.sendTransactional).toHaveBeenCalledWith(message);
     expect(consoleSink.sendTransactional).not.toHaveBeenCalled();
   });
 
-  it("falls back to the console when no Postmark token is configured", async () => {
-    const { adapter, consoleSink, postmark } = setup({ consoleSwitch: [false] });
+  it("falls back to the console when no Resend token is configured", async () => {
+    const { adapter, consoleSink, resend } = setup({ consoleSwitch: [false] });
 
     await adapter.sendTransactional(message);
 
     expect(consoleSink.sendTransactional).toHaveBeenCalledWith(message);
-    expect(postmark.sendTransactional).not.toHaveBeenCalled();
+    expect(resend.sendTransactional).not.toHaveBeenCalled();
   });
 
   it("reads the switch per message, so an admin flip needs no restart", async () => {
-    const { adapter, consoleSink, postmark } = setup({
+    const { adapter, consoleSink, resend } = setup({
       consoleSwitch: [true, false],
-      postmarkToken: "t",
+      resendKey: "t",
     });
 
     await adapter.sendTransactional(message);
     await adapter.sendTransactional(message);
 
     expect(consoleSink.sendTransactional).toHaveBeenCalledTimes(1);
-    expect(postmark.sendTransactional).toHaveBeenCalledTimes(1);
+    expect(resend.sendTransactional).toHaveBeenCalledTimes(1);
   });
 });

@@ -15,7 +15,7 @@ full layering (domain/application/infrastructure/presentation).
 | `ai` | Context Builder + Memory Profile + LLM/RAG orchestration (Ports & Adapters) | MVP |
 | `content` | Knowledge-center A-layer (InfoArticle + trust metadata), calendar, pgvector RAG source | MVP |
 | `payments` | iyzico subscription/trial/refund, e-archive, idempotent webhook, entitlement | MVP |
-| `notifications` | web push + email (Postmark), contextual/scheduled notifications, `JobQueuePort` jobs | MVP |
+| `notifications` | web push + email (Resend), contextual/scheduled notifications, `JobQueuePort` jobs | MVP |
 | `admin` | Lean admin: content editor, user management, refund, metrics, audit, feature flags, config registry | MVP |
 | `economy` | XP/Coin ledger (append-only), quests/invites, abuse shields | Phase 2 |
 | `ads` | Placement policy, limited contextual inventory, rewarded Coin sessions | MVP (web v1) |

@@ -45,9 +45,9 @@ export interface LegalDoc {
 export const PLACEHOLDER_MARKER = "{{";
 
 const CONTROLLER_TR =
-  "Yunus Emre Erkesikbaş, Mustafa Sabri Küçükaşçı Caddesi No: 28/B, Karatay/Konya, info@mentor.com";
+  "Yunus Emre Erkesikbaş, Mustafa Sabri Küçükaşçı Caddesi No: 28/B, Karatay/Konya, destek@puhukoc.com";
 const CONTROLLER_EN =
-  "Yunus Emre Erkesikbaş, Mustafa Sabri Küçükaşçı Avenue No: 28/B, Karatay/Konya, Türkiye, info@mentor.com";
+  "Yunus Emre Erkesikbaş, Mustafa Sabri Küçükaşçı Avenue No: 28/B, Karatay/Konya, Türkiye, destek@puhukoc.com";
 
 const LEGAL_COPY = {
   kvkk: {
@@ -65,7 +65,7 @@ Veriler; hesabın kurulması ve güvenli işletilmesi, sözleşmenin ifası, ça
 
 ## Aktarım ve Yurt Dışı Hizmet Sağlayıcıları
 
-Hizmetin çalışması için veriler, amaçla sınırlı ve gerekli olduğu ölçüde Neon (veritabanı), Cloudflare (güvenlik, Turnstile ve R2 depolama), Postmark (işlemsel e-posta), iyzico (ödeme), Sentry (hata izleme), Google (OAuth, sınırlı reklamlar ve yalnız izin verilirse Analytics), OpenAI (metin ve içerik tabanlı AI işlemleri) ve Gemini (görselden konu sınıflandırma) gibi hizmet sağlayıcılarla paylaşılabilir. AI sağlayıcılarına mümkün olduğunca kişisel veriden arındırılmış özet gönderilir; ödeme, kimlik ve iletişim bilgileri AI istemlerine kasıtlı olarak dahil edilmez. Sağlayıcıların yurt dışında bulunması veya yurt dışındaki altyapıdan hizmet vermesi halinde KVKK'nın yurt dışı aktarım hükümleri uygulanır.
+Hizmetin çalışması için veriler, amaçla sınırlı ve gerekli olduğu ölçüde Neon (veritabanı), Cloudflare (güvenlik, Turnstile ve R2 depolama), Resend (işlemsel e-posta), iyzico (ödeme), Sentry (hata izleme), Google (OAuth, sınırlı reklamlar ve yalnız izin verilirse Analytics), OpenAI (metin ve içerik tabanlı AI işlemleri) ve Gemini (görselden konu sınıflandırma) gibi hizmet sağlayıcılarla paylaşılabilir. AI sağlayıcılarına mümkün olduğunca kişisel veriden arındırılmış özet gönderilir; ödeme, kimlik ve iletişim bilgileri AI istemlerine kasıtlı olarak dahil edilmez. Sağlayıcıların yurt dışında bulunması veya yurt dışındaki altyapıdan hizmet vermesi halinde KVKK'nın yurt dışı aktarım hükümleri uygulanır.
 
 ## Saklama ve Güvenlik
 
@@ -75,7 +75,7 @@ Veriler yalnız işleme amacı, sözleşme ilişkisi, güvenlik ihtiyacı ve uyg
 
 ## İlgili Kişinin Hakları ve Başvuru
 
-KVKK m.11 uyarınca verilerinizin işlenip işlenmediğini öğrenme, bilgi isteme, amacı ve amaca uygun kullanımı öğrenme, aktarılan kişileri bilme, düzeltme, silme veya yok etme isteme, bu işlemlerin alıcılara bildirilmesini isteme, yalnız otomatik analiz sonucu aleyhe bir sonuca itiraz etme ve zararın giderilmesini talep etme haklarına sahipsiniz. Kimliğinizi doğrulamaya elverişli talebinizi **info@mentor.com** adresine veya yukarıdaki posta adresine iletebilirsiniz.`,
+KVKK m.11 uyarınca verilerinizin işlenip işlenmediğini öğrenme, bilgi isteme, amacı ve amaca uygun kullanımı öğrenme, aktarılan kişileri bilme, düzeltme, silme veya yok etme isteme, bu işlemlerin alıcılara bildirilmesini isteme, yalnız otomatik analiz sonucu aleyhe bir sonuca itiraz etme ve zararın giderilmesini talep etme haklarına sahipsiniz. Kimliğinizi doğrulamaya elverişli talebinizi **destek@puhukoc.com** adresine veya yukarıdaki posta adresine iletebilirsiniz.`,
     en: `## Data Controller
 
 The data controller under Turkish Law No. 6698 is Yunus Emre Erkesikbaş at ${CONTROLLER_EN}. This notice explains personal-data processing in the PuhuKoç web application. The Turkish version is binding.
@@ -90,13 +90,13 @@ Data is used to create and secure accounts, perform the service contract, provid
 
 ## Providers and International Transfers
 
-Necessary data may be shared, in a purpose-limited way, with Neon, Cloudflare, Postmark, iyzico, Sentry, Google, OpenAI, and Gemini. AI requests use data-minimised summaries where possible and intentionally exclude payment and direct identity details. International-transfer requirements under applicable Turkish law are followed when a provider operates abroad.
+Necessary data may be shared, in a purpose-limited way, with Neon, Cloudflare, Resend, iyzico, Sentry, Google, OpenAI, and Gemini. AI requests use data-minimised summaries where possible and intentionally exclude payment and direct identity details. International-transfer requirements under applicable Turkish law are followed when a provider operates abroad.
 
 ## Retention, Security and Your Rights
 
 Eligible anonymous and Free visitors in Turkey may automatically see one non-personalized Google ad at the end of a blog article. Premium and STAFF stay ad-free. Analytics choices do not change ad delivery; Google Analytics loads only after separate acceptance. Personalized ads and behavioral targeting are disabled. Google may use IP addresses for delivery and, when programmatic limited ads are enabled, cookies and local storage for invalid traffic and abuse detection, with processing abroad. See [Google's data-use explanation](https://policies.google.com/technologies/partner-sites). The stricter child/teen protection of the profile and article is applied; profiles, exam results and AI conversations are not sent to the ad provider. Analytics choices can be changed in [cookie preferences](/en/cookie-preferences); rejecting analytics does not remove ads.
 
-Data is retained only for the service, security, legal duty, or dispute period that requires it. Account deletion removes or anonymises profile data and behavioural free text, while limited payment, security, dispute, and append-only ledger records may remain where legally necessary. You may exercise the rights listed in Article 11 of Law No. 6698 by writing to **info@mentor.com** or the postal address above.`,
+Data is retained only for the service, security, legal duty, or dispute period that requires it. Account deletion removes or anonymises profile data and behavioural free text, while limited payment, security, dispute, and append-only ledger records may remain where legally necessary. You may exercise the rights listed in Article 11 of Law No. 6698 by writing to **destek@puhukoc.com** or the postal address above.`,
   },
   privacy: {
     tr: `## Kapsam
@@ -113,7 +113,7 @@ Bilgiler hesabı çalıştırmak, kişisel çalışma deneyimi sunmak, ilerlemey
 
 ## Sağlayıcılar, Analitik ve AI
 
-Altyapıda Neon, Cloudflare, Postmark, iyzico ve Sentry; giriş, sınırlı reklamlar ve izinli analitikte Google; AI metin işlemlerinde OpenAI; görsel konu sınıflandırmada Gemini kullanılabilir. Google Analytics yalnız açık tercih sonrasında yüklenir. AI sağlayıcılarına gönderilen içerik veri minimizasyonu ve maskeleme kurallarına tabidir; yine de kullanıcıların e-posta, telefon, kimlik veya ödeme bilgilerini sohbetlere yazmaması gerekir.
+Altyapıda Neon, Cloudflare, Resend, iyzico ve Sentry; giriş, sınırlı reklamlar ve izinli analitikte Google; AI metin işlemlerinde OpenAI; görsel konu sınıflandırmada Gemini kullanılabilir. Google Analytics yalnız açık tercih sonrasında yüklenir. AI sağlayıcılarına gönderilen içerik veri minimizasyonu ve maskeleme kurallarına tabidir; yine de kullanıcıların e-posta, telefon, kimlik veya ödeme bilgilerini sohbetlere yazmaması gerekir.
 
 ## Tercihleriniz ve Güvenlik
 
@@ -121,7 +121,7 @@ Altyapıda Neon, Cloudflare, Postmark, iyzico ve Sentry; giriş, sınırlı rekl
 
 Türkiye'deki uygun anonim ve Free ziyaretçilere blog yazısı sonunda tek, kişiselleştirilmemiş Google reklamı otomatik gösterilebilir. Premium ve STAFF reklamsızdır. Analitik tercihi reklam gösterimini değiştirmez; Google Analytics yalnız ayrı kabul sonrasında yüklenir. Kişiselleştirilmiş reklam ve davranışsal hedefleme kapalıdır. Google, reklamı iletmek için IP adresini; programatik sınırlı reklam açıkken sahte trafik ve kötüye kullanım tespiti için çerez ve yerel depolamayı kullanabilir ve yurt dışında veri işleyebilir. Google'ın [veri kullanımı açıklaması](https://policies.google.com/technologies/partner-sites) bu işlemeyi açıklar. Profilde veya içerikte daha sıkı çocuk/genç reklam koruması uygulanır; profil, sınav sonucu ve AI görüşmeleri reklam sağlayıcısına gönderilmez. Analitik tercihi [çerez tercihleri](/cerez-tercihleri) ekranında değiştirilebilir; analitiği reddetmek reklamları kaldırmaz.
 
-Analitik tercihi çerez tercihleri ekranından değiştirilebilir. AI hafızası ve insan koçluğu paylaşımı kendi ekranlarından yönetilir. Hesap ayarlarından verilerinize erişebilir, düzeltme isteyebilir veya hesap silme sürecini başlatabilirsiniz. Sorular ve hak talepleri **info@mentor.com** adresine gönderilebilir.`,
+Analitik tercihi çerez tercihleri ekranından değiştirilebilir. AI hafızası ve insan koçluğu paylaşımı kendi ekranlarından yönetilir. Hesap ayarlarından verilerinize erişebilir, düzeltme isteyebilir veya hesap silme sürecini başlatabilirsiniz. Sorular ve hak talepleri **destek@puhukoc.com** adresine gönderilebilir.`,
     en: `## Scope
 
 This policy explains in plain language how PuhuKoç uses information across accounts, AI coaching, study tools, community, human coaching, subscriptions, and support. The Turkish KVKK Notice contains the binding legal detail.
@@ -134,7 +134,7 @@ Information is used to operate accounts, personalise study tools, show progress,
 
 ## Providers, Analytics and AI
 
-PuhuKoç may use Neon, Cloudflare, Postmark, iyzico, Sentry, Google, OpenAI, and Gemini. Google Analytics loads only after an affirmative choice. AI payloads are minimised and masked, but users should not type identity, contact, or payment details into chats.
+PuhuKoç may use Neon, Cloudflare, Resend, iyzico, Sentry, Google, OpenAI, and Gemini. Google Analytics loads only after an affirmative choice. AI payloads are minimised and masked, but users should not type identity, contact, or payment details into chats.
 
 ## Controls
 
@@ -142,7 +142,7 @@ PuhuKoç may use Neon, Cloudflare, Postmark, iyzico, Sentry, Google, OpenAI, and
 
 Eligible anonymous and Free visitors in Turkey may automatically see one non-personalized Google ad at the end of a blog article. Premium and STAFF stay ad-free. Analytics choices do not change ad delivery; Google Analytics loads only after separate acceptance. Personalized ads and behavioral targeting are disabled. Google may use IP addresses for delivery and, when programmatic limited ads are enabled, cookies and local storage for invalid traffic and abuse detection, with processing abroad. See [Google's data-use explanation](https://policies.google.com/technologies/partner-sites). The stricter child/teen protection of the profile and article is applied; profiles, exam results and AI conversations are not sent to the ad provider. Analytics choices can be changed in [cookie preferences](/en/cookie-preferences); rejecting analytics does not remove ads.
 
-Analytics choices can be changed on the cookie-preferences page. AI memory and human-coaching sharing have their own controls. Account settings provide access, correction, and deletion paths. Questions may be sent to **info@mentor.com**.`,
+Analytics choices can be changed on the cookie-preferences page. AI memory and human-coaching sharing have their own controls. Account settings provide access, correction, and deletion paths. Questions may be sent to **destek@puhukoc.com**.`,
   },
   terms: {
     tr: `## Taraflar ve Kabul
@@ -151,7 +151,7 @@ Bu Kullanım Koşulları, hizmet sağlayıcı Yunus Emre Erkesikbaş ile PuhuKo�
 
 ## Hesap ve Güvenlik
 
-Kullanıcı doğru bilgi vermek, giriş bilgilerini korumak ve hesabındaki faaliyetlerden sorumludur. Hesap devredilemez. Şüpheli kullanım derhal **info@mentor.com** adresine bildirilmelidir. PuhuKoç, güvenliği korumak için oturumları sonlandırabilir veya doğrulama isteyebilir.
+Kullanıcı doğru bilgi vermek, giriş bilgilerini korumak ve hesabındaki faaliyetlerden sorumludur. Hesap devredilemez. Şüpheli kullanım derhal **destek@puhukoc.com** adresine bildirilmelidir. PuhuKoç, güvenliği korumak için oturumları sonlandırabilir veya doğrulama isteyebilir.
 
 ## Hizmetin Kullanımı
 
@@ -211,11 +211,11 @@ Paketin adı, kapsamı, vergiler dahil toplam bedeli, faturalama dönemi, varsa 
 
 ## Cayma, İptal ve İade
 
-Emredici tüketici mevzuatındaki cayma hakları saklıdır. Cayma hakkının mevcut olduğu durumlarda kullanıcı on dört gün içinde açık bir bildirimle **info@mentor.com** adresine başvurabilir. Hizmetin derhal başlamasına ilişkin onay, tüketilmiş dönem, kampanya koşulları ve mevzuattaki dijital içerik/hizmet istisnaları iade değerlendirmesinde dikkate alınır. Teknik hata veya mükerrer tahsilat talepleri ayrıca incelenir.
+Emredici tüketici mevzuatındaki cayma hakları saklıdır. Cayma hakkının mevcut olduğu durumlarda kullanıcı on dört gün içinde açık bir bildirimle **destek@puhukoc.com** adresine başvurabilir. Hizmetin derhal başlamasına ilişkin onay, tüketilmiş dönem, kampanya koşulları ve mevzuattaki dijital içerik/hizmet istisnaları iade değerlendirmesinde dikkate alınır. Teknik hata veya mükerrer tahsilat talepleri ayrıca incelenir.
 
 ## Başvuru ve Uyuşmazlık
 
-Destek, iptal ve cayma bildirimleri **info@mentor.com** adresine iletilir. Kullanıcının tüketici hakem heyeti, tüketici mahkemesi ve diğer kanuni mercilere başvuru hakkı saklıdır.`,
+Destek, iptal ve cayma bildirimleri **destek@puhukoc.com** adresine iletilir. Kullanıcının tüketici hakem heyeti, tüketici mahkemesi ve diğer kanuni mercilere başvuru hakkı saklıdır.`,
     en: `## Parties and Subject
 
 Provider: ${CONTROLLER_EN}. The customer is the user purchasing a PuhuKoç subscription online. This agreement governs the distance sale of the digital subscription shown in the order summary. The Turkish version is binding.
@@ -226,11 +226,11 @@ The plan, scope, tax-inclusive total, billing period, trial, and discount are di
 
 ## Performance, Withdrawal and Refunds
 
-Access begins after payment or trial confirmation. If the user expressly asks for immediate digital performance before the withdrawal period expires, a statutory digital-service exception may apply; the checkout must show that consequence before confirmation. Where withdrawal remains available, notice may be sent within fourteen days to **info@mentor.com**. Immediate-performance consent, consumed periods, campaign terms, duplicate charges, technical failure, and mandatory law are considered in a refund review.
+Access begins after payment or trial confirmation. If the user expressly asks for immediate digital performance before the withdrawal period expires, a statutory digital-service exception may apply; the checkout must show that consequence before confirmation. Where withdrawal remains available, notice may be sent within fourteen days to **destek@puhukoc.com**. Immediate-performance consent, consumed periods, campaign terms, duplicate charges, technical failure, and mandatory law are considered in a refund review.
 
 ## Disputes
 
-Support and cancellation notices may be sent to **info@mentor.com**. Mandatory consumer authority and court rights remain unaffected.`,
+Support and cancellation notices may be sent to **destek@puhukoc.com**. Mandatory consumer authority and court rights remain unaffected.`,
   },
   preInfo: {
     tr: `## Sağlayıcı Bilgileri
@@ -247,7 +247,7 @@ Vergiler dahil toplam bedel, ödeme yöntemi, deneme süresi, indirimli dönem v
 
 ## İfa, Cayma ve Şikâyet
 
-Dijital hizmet ödeme veya deneme onayından sonra hesapta açılır. On dört günlük cayma hakkı ve dijital hizmetin derhal başlamasına ilişkin kanuni istisnalar satın alma onayında ayrıca belirtilir. Cayma veya destek talebi **info@mentor.com** adresine gönderilebilir. Kullanıcının tüketici hakem heyeti ve tüketici mahkemesine başvuru hakkı saklıdır.
+Dijital hizmet ödeme veya deneme onayından sonra hesapta açılır. On dört günlük cayma hakkı ve dijital hizmetin derhal başlamasına ilişkin kanuni istisnalar satın alma onayında ayrıca belirtilir. Cayma veya destek talebi **destek@puhukoc.com** adresine gönderilebilir. Kullanıcının tüketici hakem heyeti ve tüketici mahkemesine başvuru hakkı saklıdır.
 
 ## Kayıt ve Onay
 
@@ -262,7 +262,7 @@ Depending on the selected plan, PuhuKoç provides time-limited access to study p
 
 ## Performance, Renewal and Withdrawal
 
-Access begins after payment or trial confirmation. Recurring plans renew for the displayed period until cancelled. The fourteen-day withdrawal framework and any exception for immediate digital performance are shown before confirmation. Notices may be sent to **info@mentor.com** and mandatory consumer remedies remain available.
+Access begins after payment or trial confirmation. Recurring plans renew for the displayed period until cancelled. The fourteen-day withdrawal framework and any exception for immediate digital performance are shown before confirmation. Notices may be sent to **destek@puhukoc.com** and mandatory consumer remedies remain available.
 
 ## Records
 
@@ -271,7 +271,7 @@ Before ordering, the user can access the order summary, this information form, a
   refund: {
     tr: `## Cayma Süresi ve Bildirim
 
-Tüketici mevzuatının cayma hakkı tanıdığı durumlarda kullanıcı, sözleşmenin kurulduğu tarihten itibaren on dört gün içinde gerekçe göstermeden **info@mentor.com** adresine açık bir bildirim gönderebilir. Bildirimde hesap e-postası ve işlemi bulmaya yarayan ödeme referansı yer almalıdır; kart bilgisinin tamamı gönderilmemelidir.
+Tüketici mevzuatının cayma hakkı tanıdığı durumlarda kullanıcı, sözleşmenin kurulduğu tarihten itibaren on dört gün içinde gerekçe göstermeden **destek@puhukoc.com** adresine açık bir bildirim gönderebilir. Bildirimde hesap e-postası ve işlemi bulmaya yarayan ödeme referansı yer almalıdır; kart bilgisinin tamamı gönderilmemelidir.
 
 ## Dijital Hizmet İstisnası
 
@@ -286,7 +286,7 @@ Aboneliğin iptali sonraki yenilemeyi durdurur; aksi emredici mevzuattan doğmad
 Talep alındığında abonelik, erişim başlangıcı, ayrı onaylar, kullanım ve tahsilat kaydı incelenir; sonuç kullanıcıya e-posta ile bildirilir. Kullanıcının tüketici hakem heyeti, tüketici mahkemesi ve diğer kanuni mercilere başvuru hakkı saklıdır.`,
     en: `## Withdrawal Notice
 
-Where mandatory consumer law provides a right of withdrawal, the user may send an unambiguous notice within fourteen days of contracting to **info@mentor.com**. The notice should include the account email and payment reference, but never the full card details. The Turkish version is binding.
+Where mandatory consumer law provides a right of withdrawal, the user may send an unambiguous notice within fourteen days of contracting to **destek@puhukoc.com**. The notice should include the account email and payment reference, but never the full card details. The Turkish version is binding.
 
 ## Digital-Service Exception
 
@@ -306,7 +306,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "kvkk-aydinlatma": {
     slug: "kvkk-aydinlatma",
     status: "FINAL",
-    updatedAt: "2026-10-13",
+    updatedAt: "2026-10-28",
     tr: {
       title: "KVKK Aydınlatma Metni",
       body: LEGAL_COPY.kvkk.tr,
@@ -320,7 +320,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "gizlilik-politikasi": {
     slug: "gizlilik-politikasi",
     status: "FINAL",
-    updatedAt: "2026-10-13",
+    updatedAt: "2026-10-28",
     tr: {
       title: "Gizlilik Politikası",
       body: LEGAL_COPY.privacy.tr,
@@ -334,7 +334,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "kullanim-kosullari": {
     slug: "kullanim-kosullari",
     status: "FINAL",
-    updatedAt: "2026-10-13",
+    updatedAt: "2026-10-28",
     tr: {
       title: "Kullanım Koşulları",
       body: LEGAL_COPY.terms.tr,
@@ -348,7 +348,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "mesafeli-satis-sozlesmesi": {
     slug: "mesafeli-satis-sozlesmesi",
     status: "FINAL",
-    updatedAt: "2026-10-13",
+    updatedAt: "2026-10-28",
     tr: {
       title: "Mesafeli Satış Sözleşmesi",
       body: LEGAL_COPY.distance.tr,
@@ -362,7 +362,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "on-bilgilendirme-formu": {
     slug: "on-bilgilendirme-formu",
     status: "FINAL",
-    updatedAt: "2026-10-13",
+    updatedAt: "2026-10-28",
     tr: {
       title: "Ön Bilgilendirme Formu",
       body: LEGAL_COPY.preInfo.tr,
@@ -376,7 +376,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "iade-ve-cayma-hakki": {
     slug: "iade-ve-cayma-hakki",
     status: "FINAL",
-    updatedAt: "2026-10-13",
+    updatedAt: "2026-10-28",
     tr: {
       title: "İade ve Cayma Hakkı",
       body: LEGAL_COPY.refund.tr,

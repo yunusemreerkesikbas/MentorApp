@@ -145,6 +145,24 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-28 · Public pulse for the landing (`GET /v1/coaching/public/pulse`).** The landing's
+  "Son 24 saatte {n} kişi burada çalıştı." comes from here: `{ studiedLast24h }`, the number of
+  distinct people with a COMPLETED or IN_PROGRESS session that started in the last 24 hours. Abandoned
+  sessions do not count. Below `coaching.public_pulse.min_people` (config, default 100) it answers
+  `null`, and the landing shows no line.
+  - **Access:** public and anonymous (one count, no ids), on its own `@Public()` controller with a
+    30/min throttle.
+  - **Reading the data:** the read runs in `withServiceContext`, because `study_sessions` has
+    per-user RLS and would otherwise count 0.
+  - **Caching:** the web server caches the answer for 5 minutes (`src/lib/public-pulse.ts`), so the
+    API has no cache of its own.
+  - **Gotchas:**
+    - Staff and QA accounts are counted; above a threshold of 100 they are noise.
+    - Add an index on `study_sessions(started_at)` if the count slows down.
+  - **Related:** `application/public-pulse.service{,.spec}.ts`,
+    `infrastructure/public-pulse.repository.ts`, `presentation/public-pulse.controller.ts`,
+    `PublicPulseView` in `@mentor/types`.
+
 - **2026-10-14 · "Koçla planla" waits in a scene of its own ("Hafta kuruluyor").** Between
   "Önizlemeyi hazırla" and the preview sheet the wizard used to close and only the button's spinner
   showed. Now the wizard stays open and `PlanCoachAdaptationStage` opens over it as its last step:

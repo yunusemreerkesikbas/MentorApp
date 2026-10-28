@@ -87,9 +87,9 @@ const envSchema = z.object({
   CLOUDFLARE_ACCESS_TEAM_DOMAIN: z.string().url().optional(),
   CLOUDFLARE_ACCESS_AUD: z.string().min(8).max(256).optional(),
 
-  // Email — Postmark (§8)
-  POSTMARK_TOKEN: z.string().optional(),
-  POSTMARK_FROM: z.string().email().optional(),
+  // Email — Resend. Production must use a verified sender and never console delivery.
+  RESEND_API_KEY: z.string().trim().optional(),
+  RESEND_FROM: z.string().trim().email().optional(),
 
   // OTP transport is disabled until Netgsm and its IP/sender restrictions are configured.
   SMS_PROVIDER: z.enum(["disabled", "netgsm"]).default("disabled"),
@@ -270,11 +270,18 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       message: "CRON_SECRET is required in production (Render Cron auth).",
     });
   }
-  if (env.NODE_ENV === "production" && !env.POSTMARK_TOKEN) {
+  if (env.NODE_ENV === "production" && !env.RESEND_API_KEY) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ["POSTMARK_TOKEN"],
-      message: "POSTMARK_TOKEN is required in production.",
+      path: ["RESEND_API_KEY"],
+      message: "RESEND_API_KEY is required in production.",
+    });
+  }
+  if (env.NODE_ENV === "production" && !env.RESEND_FROM) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["RESEND_FROM"],
+      message: "RESEND_FROM must be a verified sender in production.",
     });
   }
 });

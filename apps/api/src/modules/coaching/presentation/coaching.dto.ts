@@ -40,7 +40,14 @@ import {
   updateStudyRoomSchema,
   joinStudyRoomSchema,
 } from "@mentor/validation";
+import { ApiProperty } from "@nestjs/swagger";
+import type { PublicPulseView } from "@mentor/types";
 import { createZodDto } from "../../../common/validation/zod-dto";
+
+export class PublicPulseViewDto implements PublicPulseView {
+  @ApiProperty({ type: Number, nullable: true, description: "People who studied in the last 24 hours; null below the threshold." })
+  studiedLast24h!: number | null;
+}
 
 export class CreatePlanTaskDto extends createZodDto(createPlanTaskSchema) {}
 export class CreatePlanEventDto extends createZodDto(createPlanEventSchema) {}

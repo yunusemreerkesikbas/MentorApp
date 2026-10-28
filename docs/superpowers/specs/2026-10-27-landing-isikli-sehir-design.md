@@ -8,6 +8,41 @@ yaratıcı bir landing istiyor. Görsel ve video promptlarını biz veriyoruz, s
 görsel, Kling video). Adımlar birlikte kararlaştırılıyor. Sonuç: indekslenen, hikaye anlatan ve kayda götüren
 bir `/`.
 
+## Güncellemeler (2026-10-28, tuval sürüm 19)
+Bu bölüm aşağıdaki metnin önüne geçer.
+
+- **Sanat:** Gerçek sanat yerleşti (L1–L4, I1–I6, 10 kariyer Puhu'su).
+  - L3 cephesinde 8 pencere ve alt ortada kapı var.
+  - Pencere eşlemesi:
+    - üst sıra: Puhu · senin penceren · koç
+    - orta sıra: plan · süs · masa
+    - alt sıra: topluluk · kapı · analiz
+- **Güven bandı kaldırıldı:** Şafaktan sonra sırasıyla koç bandı, SSS, kapanış ve footer gelir. `trust-band.tsx` yapılmaz. Blog'a nav ve footer'dan gidilir.
+- **"Pencere" dili:** Yalnızca hikâyede kalır, bilgi ve butonlarda açık dil kullanılır.
+  - **Hero:** "Bu gece ışığı yanan tek pencere seninki değil."
+  - **Sayaç:** "Son 24 saatte {n} kişi burada çalıştı."
+  - **Durak 7 butonu:** "Bu alanla başla"
+- **Kartlar:** Pencereden düşmüş kâğıt notlar.
+  - Çizgili, kareli ya da düz kâğıt, hafif eğim, renkli bant.
+  - Mavi emaye kapı plakası, adı yalın (No 1 Puhu, No 2 Sen, No 3 Koç, No 4 Plan, No 6 Masa, No 7 Topluluk, No 8 Analiz).
+  - Caveat el yazısıyla kenar notu.
+  - Ürün arayüzü ataşla tutturulmuş küçük ekran olarak.
+  - Alan seçici anahtar etiketi biçiminde.
+- **Navigasyon:** Durak noktalarının yerine "PUHU APT." zil paneli gelir; bir zile basınca kamera o pencereye gider.
+- **Ayrı koç sayfası** (`/koclar`, EN `/coaches`; tuvalde `Koclar` ve `KoclarPhone` panoları). Ana sayfadaki koç bandı kısa kalır. Nav'daki "Koçlar için", bandın "Koç sabahını gör" linki ve footer bu sayfaya gider.
+  - **Ton:** "Sabah turu, aynı dünya." Aynı apartman sabah 07:00'de görünür. Kamera yok, katmanlar hafif paralaksla kayar.
+  - **Pencereler:** Her pencerede öğrencinin dünkü durumunu gösteren kâğıt bir etiket asılı (✓ 2 seans, ! 3 gün sessiz, + boş koltuk). Sessiz öğrencinin penceresi karanlıktır. Telefonda etiketlerin yerini üç özet çipi alır.
+  - **Hero:** "Dün gece kim çalıştı, bir bakışta gör." · "Koç olarak başla" (`/kayit?rol=koc`) · "Zaten hesabım var" · "İlk 3 öğrencin ücretsiz."
+  - **Saatli duraklar** (her biri gerçek UI parçası taşıyan bir klipsli pano):
+    - 07:30 "Bugün kime bakmalısın?": Koçun turu.
+    - 07:45 "Bir haftayı tek bakışta oku.": 14 günlük şerit, seri, deneme, plan oranı, ruh hâli.
+    - 08:00 "Haftayı birlikte kur.": Haftalık plan ve yapay zekâ taslağı.
+    - 08:15 "Öğrencin içini rahatça döker.": Kilitli konuşma ve koçun gördüğü sinyaller (AI→koç güven çizgisi).
+    - 08:30 "Davet koduyla bağlan.": Kod, 3 adım, koltuklar.
+  - **Kapanış:** Koç SSS'si (onay, mevcut öğrenci, kaç öğrenci, gizlilik, AI'nın rolü), ardından "Sabah turun hazır." ve footer.
+  - **Fiyat:** Yalnızca "İlk 3 öğrencin ücretsiz" geçer. Paket fiyatı ve ödeme kanalı yazılmaz.
+  - **Kod turu notu:** Sayfa server render, indekslenir ve kendi FAQ JSON-LD'sini taşır. `fetchCoachSignupOpen` false ise CTA'lar gizlenir, bilgi kalır.
+
 ## Kararlar
 **Kullanıcının kararları (2026-10-27):**
 - Konsept **A · Işıklı şehir**: gece başlar, şafakla biter. Her pencere bir özellik, finalde ziyaretçinin penceresi yanar.
@@ -150,7 +185,7 @@ Her dosya en fazla ~250 satır olur.
   - **RLS:** `study_sessions` kullanıcı bazlı RLS'li. Sorgu `withServiceContext` içinde çalışmazsa sayı hep 0 döner. Kopyalanacak örnek `coaching/infrastructure/cohort-evidence.repository.ts:63-79` (İstanbul gün kesimi de orada).
   - Hesap: `count(distinct user_id)`, `started_at >= now() - interval '24 hours'` ve `status in ('COMPLETED','IN_PROGRESS')`.
   - `ponytail:` personel/QA hesapları ayıklanmaz. Eşik 30'un üstünde bunlar yuvarlama hatası kadar. Gerçek kullanıcı sayısı küçükken fark ederse rol filtresi eklenir.
-  - Eşik: `config.catalog.ts:154-166` `coachingCount` ile bir `coaching.*` sayısal anahtarı (öneri 30). Altındaysa `null` döner.
+  - Eşik: `config.catalog.ts:154-166` `coachingCount` ile bir `coaching.*` sayısal anahtarı (karar: 100). Altındaysa `null` döner.
   - Web ucu sunucuda fetch düzeyinde `revalidate: 300` ile çağırır. Hata olursa `null` gelir ve satır gizlenir.
   - `ponytail:` API'de önbellek yok, çünkü fetch önbelleği çağrıyı 5 dakikaya bir sınırlıyor. Tablo büyürse `started_at` indeksi eklenir.
   - Service spec iki şeyi test eder: eşik ve zaman penceresi.
@@ -284,11 +319,17 @@ Geliştirme sırasında yalnızca ilgili spec'ler çalıştırılır (`pnpm --fi
   - OS koyu modunda sahnenin aynı kalması,
   - 375px'te çerez bannerı açıkken CTA'nın görünür kalması.
 
-## Açık konular (tuval incelemesinde / kod turundan önce)
-- Hero başlığı ve alt metin (3 varyant).
-- Demodaki Premium notunun dili. Ücretsiz AI vaadi olmadan nasıl söylenecek.
-- Sayaç eşiği (öneri 30).
-- Branch: İş APP-119'la ilgisiz (PR #170 açık). Kod turunda aynı branch mı (alışkanlığın), yeni branch mı (landing kodu davet PR'ına girmesin)?
+## Açık konular
+Şunlar 2026-10-28'de kapandı (tuval sürüm 21):
+- **Hero başlığı:** "Bu gece ışığı yanan tek pencere seninki değil." Diğer iki varyant kod turuna girmez.
+- **Alt metin:** "Günlük bir plan, aynı saatlerde çalışan arkadaşlar ve Premium'da seni tanıyan bir yapay zekâ koç. Yolu birlikte yürüyelim." Ücretsiz parçalarla başlar, çünkü hemen altında "Ücretsiz başla" var.
+- **Demo notu:** "Bu bir örnek cevap. Yapay zekâ koç Premium'da." Deneme süresi yazılmaz; web satın alma kanalı bayrakla kapalı.
+- **Sayaç eşiği:** 100. Küçük sayılar zayıf okunur. Değer config'de, deploy etmeden değişir.
+- **Şehir silüeti:** İstanbul görünümü kalır, metinde şehir adı geçmez.
+- **Branch:** Kod turu mevcut branch'te (`master`) yapılır.
+- **Sanat sırası:** Kod turu sanatı beklemez. L3'ün 2× büyütülmüş hâli ve "Henüz karar vermedim" için oturan Puhu geldiğinde yalnızca görsel dosyaları değişir.
+
+Hâlâ açık:
 - OG görselinin gece şehriyle yenilenmesi (sonra).
 
 ## Ek A · Görsel promptları (taslak)

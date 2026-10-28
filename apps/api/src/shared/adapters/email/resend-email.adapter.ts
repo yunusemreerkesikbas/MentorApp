@@ -6,10 +6,7 @@ import type { EmailPort } from "../../ports/email.port";
 import { EMAIL_COPY_KEY } from "../../notifications/constants";
 import { assertSafeHttpUrl, escapeHtml } from "./email-html.util";
 
-interface PostmarkResponse {
-  ErrorCode?: number;
-  Message?: string;
-}
+const EMAIL_REQUEST_TIMEOUT_MS = 10_000;
 
 function emailLang(vars: Record<string, unknown>): string {
   const raw = String(vars.lang ?? "tr").toLowerCase();
@@ -17,12 +14,11 @@ function emailLang(vars: Record<string, unknown>): string {
 }
 
 /**
- * Postmark transactional email adapter (§8). Only reached with POSTMARK_TOKEN set:
- * `RoutingEmailAdapter` sends everything else to the console sink.
+ * Resend transactional adapter. Console delivery remains restricted to dev tooling.
  * Student-facing sentences live in `notifications.email.*` i18n — HTML is only a skeleton.
  */
 @Injectable()
-export class PostmarkEmailAdapter implements EmailPort {
+export class ResendEmailAdapter implements EmailPort {
   constructor(
     private readonly config: ConfigService<Env, true>,
     private readonly i18n: I18nService,
@@ -33,35 +29,30 @@ export class PostmarkEmailAdapter implements EmailPort {
     template: string;
     variables?: Record<string, unknown>;
   }): Promise<void> {
-    const token = this.config.get("POSTMARK_TOKEN", { infer: true }) ?? "";
+    const token = this.config.get("RESEND_API_KEY", { infer: true }) ?? "";
     const from =
-      this.config.get("POSTMARK_FROM", { infer: true }) ?? "noreply@puhukoc.com";
+      this.config.get("RESEND_FROM", { infer: true }) ?? "noreply@puhukoc.com";
     const vars = input.variables ?? {};
     const lang = emailLang(vars);
     const copy = this.emailCopy(input.template, vars, lang);
     const htmlBody = this.renderHtml(input.template, vars, copy);
     const textBody = this.renderText(input.template, vars, copy);
 
-    const res = await fetch("https://api.postmarkapp.com/email", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "X-Postmark-Server-Token": token,
-      },
-      body: JSON.stringify({
-        From: from,
-        To: input.to,
-        Subject: copy.subject,
-        HtmlBody: htmlBody,
-        TextBody: textBody,
-        MessageStream: "outbound",
-      }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ from, to: input.to, subject: copy.subject, html: htmlBody, text: textBody }),
+        signal: AbortSignal.timeout(EMAIL_REQUEST_TIMEOUT_MS),
+      });
+    } catch {
+      // Provider/network errors can echo recipients, auth links or credentials into job logs.
+      throw new Error("Resend request failed");
+    }
 
     if (!res.ok) {
-      const body = (await res.json().catch(() => ({}))) as PostmarkResponse;
-      throw new Error(body.Message ?? `Postmark error ${res.status}`);
+      throw new Error(`Resend delivery failed (HTTP ${res.status})`);
     }
   }
 

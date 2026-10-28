@@ -26,6 +26,11 @@ const routeFiles = {
     buildManifest:
       "server/app/[locale]/(app)/dashboard/page/build-manifest.json",
   },
+  // The public landing ("Işıklı şehir"). Its art is images, not JS; this guards the scene's script.
+  landing: {
+    clientReferenceManifest: "server/app/[locale]/page_client-reference-manifest.js",
+    buildManifest: "server/app/[locale]/page/build-manifest.json",
+  },
 };
 
 const limits = {
@@ -33,6 +38,8 @@ const limits = {
   articleTotalBytes: 985 * 1024,
   dashboardRouteAttributableBytes: 760 * 1024,
   dashboardTotalBytes: 1295 * 1024,
+  landingRouteAttributableBytes: 400 * 1024,
+  landingTotalBytes: 985 * 1024,
   articleFontPreloadCount: 2,
   rootMessageBytes: 1024,
   welcomeMessageBytes: 2048,
@@ -50,6 +57,8 @@ function renderSummary(report) {
     ["Article total JS", kib(report.metrics.articleTotalBytes), "985 KiB"],
     ["Dashboard route-attributable JS", kib(report.metrics.dashboardRouteAttributableBytes), "760 KiB"],
     ["Dashboard total JS", kib(report.metrics.dashboardTotalBytes), "1295 KiB"],
+    ["Landing route-attributable JS", kib(report.metrics.landingRouteAttributableBytes), "400 KiB"],
+    ["Landing total JS", kib(report.metrics.landingTotalBytes), "985 KiB"],
     ["Article font preloads", String(report.metrics.articleFontPreloadCount), "2"],
     ["Root client messages", `${report.metrics.rootMessageBytes} B`, "1024 B"],
     ["Welcome client messages", `${report.metrics.welcomeMessageBytes} B`, "2048 B"],
@@ -66,9 +75,10 @@ function renderSummary(report) {
 }
 
 async function main() {
-  const [article, dashboard, messages] = await Promise.all([
+  const [article, dashboard, landing, messages] = await Promise.all([
     measureRoute(nextDir, routeFiles.article),
     measureRoute(nextDir, routeFiles.dashboard),
+    measureRoute(nextDir, routeFiles.landing),
     measureMessageScopes({
       messagesDir: join(appDir, "messages"),
       scopesPath: join(appDir, "src", "i18n", "route-message-scopes.json"),
@@ -80,6 +90,8 @@ async function main() {
     articleTotalBytes: article.totalBytes,
     dashboardRouteAttributableBytes: dashboard.routeAttributableBytes,
     dashboardTotalBytes: dashboard.totalBytes,
+    landingRouteAttributableBytes: landing.routeAttributableBytes,
+    landingTotalBytes: landing.totalBytes,
     articleFontPreloadCount: article.fontPreloadCount,
     rootMessageBytes: messages.root.maxBytes,
     welcomeMessageBytes: messages.welcome.maxBytes,
@@ -89,7 +101,7 @@ async function main() {
   const report = {
     version: 1,
     generatedAt: new Date().toISOString(),
-    routes: { article, dashboard },
+    routes: { article, dashboard, landing },
     messages,
     metrics,
     limits,

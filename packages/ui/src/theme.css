@@ -112,6 +112,14 @@
   --text-title--line-height: 1.3;
   --text-display: 28px;
   --text-display--line-height: 1.2;
+  /* Landing hero headline only (DESIGN.md §8.8): in the phone's bottom sheet, then from `lg`. */
+  --text-hero: 30px;
+  --text-hero--line-height: 1.1;
+  --text-hero-lg: 64px;
+  --text-hero-lg--line-height: 1.04;
+  /* Landing section headings after the scene (coach band, FAQ, closing) from `lg`. */
+  --text-section: 40px;
+  --text-section--line-height: 1.1;
 
   /* Radius — uniform */
   --radius-card: 10px;
@@ -327,6 +335,50 @@ html.dark {
   --play-window-light: #fff3d1;
   --play-window-lamp: #ffd15c;
   --play-window-glow: rgba(255, 209, 92, 0.45);
+}
+
+/*
+ * Landing "Işıklı şehir" (DESIGN.md §8.8). The night → dawn sky is the story, so the scene keeps
+ * one palette and never follows `html.dark`. Values come from the approved design canvas.
+ */
+.landing-city-theme {
+  --landing-night-top: #07122a;
+  --landing-night-bottom: #1b3563;
+  /** Lamp light: the headline's lit words and the eyebrow. Same yellow as `--play-window-lamp`. */
+  --landing-lamp: #ffd15c;
+  --landing-lamp-line: rgba(255, 209, 92, 0.45);
+  --landing-on-night: #ffffff;
+  --landing-on-night-soft: #c9d6ea;
+  --landing-on-night-line: rgba(255, 255, 255, 0.45);
+  /** The floating nav bar over the scene. */
+  --landing-frost: rgba(9, 20, 38, 0.84);
+  --landing-frost-line: rgba(255, 255, 255, 0.08);
+  --landing-footer: #0f2233;
+  --landing-footer-line: rgba(255, 255, 255, 0.12);
+  --logo-pupil: #55acee;
+  /* Every surface so far sits on the night; a light section re-scopes this. */
+  --color-focus-ring: #ffd15c;
+}
+
+/* After the dawn: warm paper with dark ink, the coach band in coach blue. */
+.landing-city-theme .landing-paper {
+  --landing-paper: #fff5e6;
+  --landing-ink: #0f2233;
+  --landing-ink-soft: #3d4e63;
+  --landing-paper-line: #ead9bc;
+  --landing-pill: #f7e3c1;
+  --landing-pill-ink: #6e420e;
+  /* The coach ink (`--coach-accent` light value), fixed here because the page never goes dark. */
+  --landing-coach: #26377f;
+  --landing-coach-soft: #d5dcf5;
+  --landing-coach-pill: rgba(255, 255, 255, 0.14);
+  --color-focus-ring: #1d6fbf;
+}
+
+/* The shared PublicFooter reads `--color-main/secondary`; on the landing it sits on the night ink. */
+.landing-city-theme .landing-footer {
+  --color-main: #ffffff;
+  --color-secondary: #c9d6ea;
 }
 
 /*

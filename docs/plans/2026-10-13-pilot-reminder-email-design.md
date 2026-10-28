@@ -1,8 +1,13 @@
 # Pilot reminder email control
 
-The owner selected an invited 20–50-person pilot, an operating budget ceiling of USD 50,
-and the existing Postmark Free plan (100 messages/month). On 2026-10-13 they selected
+The earlier proposal used an invited 20–50-person pilot
+and the existing Postmark Free plan (100 messages/month). On 2026-10-13 the owner selected
 in-app/push daily reminders and reserved email for account verification/reset flows.
+
+> Current cost direction (2026-10-28): free plans first, measured need before bounded paid
+> usage, no fixed total-budget target. Resend replaces Postmark and invited mode stays off.
+> This reminder-control design remains valid; its historical provider/cohort assumptions do not
+> select today's launch profile. See [current plan](2026-10-28-free-first-launch.md).
 
 ## Decision
 

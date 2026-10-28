@@ -289,7 +289,7 @@ export const CONFIG_CATALOG = {
     sensitive: true,
     devOnly: true,
     description:
-      "Staging/dev only: print every email (verification and reset links included) to the API stdout instead of sending it. Off = deliver through Postmark like production. Hidden and always off in production.",
+      "Staging/dev only: print every email (verification and reset links included) to the API stdout instead of sending it. Off = deliver through Resend like production. Hidden and always off in production.",
   },
   "storage.upload.active_per_user": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1).max(4), default: 1, sensitive: false, description: "Maximum simultaneous upload tickets/streams per user." },
   "storage.upload.daily_bytes": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1048576).max(1073741824), default: 104857600, sensitive: false, description: "Daily UTC upload byte budget per user; failed uploads consume the reserved cap." },
@@ -753,6 +753,12 @@ export const CONFIG_CATALOG = {
     60,
     3600,
     "Min actual focus seconds for a session to count toward streak, XP quests, and effort milestones.",
+  ),
+  "coaching.public_pulse.min_people": coachingCount(
+    100,
+    1,
+    1_000_000,
+    "Landing counter: below this many people studying in the last 24h the line is hidden (small numbers read as empty).",
   ),
   "coaching.weekly_recap.ready_mock_exam_count": coachingCount(
     1,

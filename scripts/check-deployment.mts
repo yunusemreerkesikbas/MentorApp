@@ -120,7 +120,8 @@ for (const config of blueprints) {
   assert.equal(value(api, "AI_PROVIDER"), "openai");
   assert.equal(value(api, "VISION_PROVIDER"), "gemini");
   assert.equal(value(api, "STORAGE_PROVIDER"), "r2");
-  const suppliedSecrets = ["DATABASE_URL", "DATABASE_MIGRATION_URL", "EDGE_ORIGIN_SECRET", "POSTMARK_TOKEN", "TURNSTILE_SECRET_KEY",
+  assert.equal(value(api, "RESEND_FROM"), "noreply@puhukoc.com");
+  const suppliedSecrets = ["DATABASE_URL", "DATABASE_MIGRATION_URL", "EDGE_ORIGIN_SECRET", "RESEND_API_KEY", "TURNSTILE_SECRET_KEY",
     "CLOUDFLARE_ACCESS_TEAM_DOMAIN", "CLOUDFLARE_ACCESS_AUD", "OPENAI_API_KEY", "GEMINI_API_KEY"];
   for (const key of suppliedSecrets) {
     assert.deepEqual(api.envVars.find((env) => env.key === key), { key, sync: false }, `${api.name}: ${key} must be supplied separately`);

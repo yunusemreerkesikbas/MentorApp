@@ -1,5 +1,12 @@
 # Invited production pilot: draft plan
 
+> Superseded for launch decisions on 2026-10-28 by
+> [free-first launch preparation](../docs/plans/2026-10-28-free-first-launch.md).
+> Public registration is intended; invited mode stays off. Expected initial usage is at most
+> eight people. Resend replaces Postmark. Use suitable free plans first, and consider paid
+> usage only with measured need and verified spending controls. The historical work below
+> records earlier implementation; it does not authorize provisioning or current allocations.
+
 Date: 2026-10-13. Status: registration/admission source package complete in PR #157;
 measured cost profile prepared, approved daily-email control in PR #158 under full CI.
 Release-profile decisions and provisioning remain pending.
@@ -15,8 +22,9 @@ or evidence of deployment.
 - First release: an invited pilot of 20-50 users on `puhukoc.com`.
 - Admission method: an explicitly configured list of invited email addresses. No invitation-code
   system is part of the first pilot. Enforce the same admission decision for password and Google signup.
-- Total monthly operating budget ceiling: USD 50; minimize cost while measuring performance.
-  This is a planning ceiling, not authorization to create paid resources or accept overage terms.
+- Start with suitable free plans; justify the lowest-cost paid alternative with measurements
+  and verified consumption controls. There is no fixed total monthly operating-budget target.
+  This is not authorization to create paid resources or accept overage terms.
 - No permanent staging. Preserve the archived work and retained Neon/R2 resources.
 - Keep the existing NestJS/Next.js/Neon/Render/Cloudflare boundaries and production protections.
 - Keep `info@mentor.com`. Do not copy staging credentials into production.
@@ -56,7 +64,7 @@ Sources checked 2026-10-13: [Render pricing](https://render.com/pricing),
 [cron billing](https://render.com/docs/cronjobs),
 [Neon Free limits](https://neon.com/blog/neon-free-plan-1-gb-per-project),
 [Postmark pricing](https://postmarkapp.com/pricing).
-These are published prices/limits, not an account-specific quote or a promise of a USD 50 bill.
+These are historical published prices/limits, not an account-specific quote or an invoice cap.
 Latest account evidence, local measurements, current pricing corrections and the approximately
 USD 37–38 lean base proposal: PR #158, `docs/qa/2026-10-13-pilot-cost-profile.md`.
 Render's actual Hobby allowance is 5 GB outbound / 500 build minutes / two custom domains.
@@ -74,8 +82,8 @@ student web/API responsive; evaluate infrequent admin use and only necessary sch
 Measure notification polling, idle DB activity and email latency before changing scheduling.
 Do not replace the queue architecture or omit maintenance merely to lower the estimate.
 
-Acceptance: an itemized account-aware estimate fits below USD 50 with a usage/tax reserve;
-DB quota and provider-stop behavior are explicit; no assumption that budget alerts hard-cap billing.
+Acceptance: suitable free services are evaluated before any paid alternative; fixed and variable
+charges, quota exhaustion and enforceable stop behavior are explicit. Budget alerts do not cap billing.
 Verification: read-only account/provider checks, local idle/load measurements, notification tests.
 Dependencies: none. Likely files: deployment runbook, Render profile, notification runner/catalog
 only if measurements justify a subsequent scoped change. Checkpoint: approve the deployment profile.

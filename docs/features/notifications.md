@@ -7,8 +7,8 @@
 
 Notifications is the async backbone. It owns the `JobQueuePort` adapter (Postgres `jobs` table,
 `FOR UPDATE SKIP LOCKED`), an auto-polling `JobRunnerService` (handler registry + retry/dead-letter),
-the email pipeline (`EMAIL_PORT` = `RoutingEmailAdapter`: Postmark, or the stdout console sink in dev
-tooling when `dev.email.console_enabled` is on or `POSTMARK_TOKEN` is unset), and
+the email pipeline (`EMAIL_PORT` = `RoutingEmailAdapter`: Resend, or the stdout console sink in dev
+tooling when `dev.email.console_enabled` is on or `RESEND_API_KEY` is unset), and
 web push (`push_subscriptions`, `notification_preferences`, `notification_deliveries` dedupe). It also
 hosts the **Config Registry** — the runtime, admin-editable business-config mechanism distinct from
 `@nestjs/config` (env/secrets). Domain triggers: payments events → dunning/welcome emails; coaching
@@ -25,7 +25,7 @@ daily reminder (no session + no mood today).
   is guarded by `CRON_SECRET`. `@Public()` but requires `x-cron-secret` or
   `Authorization: Bearer <CRON_SECRET>`; secret comparison is constant-time (`crypto.timingSafeEqual`).
 - **Email:** `EMAIL_PORT` moved to NotificationsModule (was identity). Identity auth emails enqueue
-  `notifications.send-email`. Postmark HTML escape + http(s) URL validation (`email-html.util.ts`).
+  `notifications.send-email`. Resend HTML escape + http(s) URL validation (`email-html.util.ts`).
   `RoutingEmailAdapter` picks the sink per message; `LoggerEmailAdapter` writes one
   `[email:console]` line to stdout (the pino boundary drops freeform text) and refuses outside dev
   tooling (`isDevToolingAllowed`, driven by `APP_ENV`).
@@ -56,8 +56,8 @@ daily reminder (no session + no mood today).
 ```bash
 # Local env (see .env.example)
 CRON_SECRET=...min-32-chars...
-POSTMARK_TOKEN=          # optional dev; required in production
-POSTMARK_FROM=noreply@example.com
+RESEND_API_KEY=          # optional dev; required in production
+RESEND_FROM=noreply@puhukoc.com  # verified sender required in production
 # APP_ENV=staging        # staging only (runs NODE_ENV=production); unlocks dev.email.console_enabled
 VAPID_PUBLIC_KEY=...
 VAPID_PRIVATE_KEY=...
@@ -114,6 +114,24 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 | `PATCH /v1/admin/config/:key` | Update a config/flag value (SUPER_ADMIN, audited) |
 
 ## Geliştirmeler (timeline)
+
+- **2026-10-28 · Free-first delivery and launch controls.** Replaced Postmark with Resend behind
+  the existing `EmailPort`, retaining backend TR/EN templates, HTML/link safety, queue retries
+  and send-time token/preference guards. Production now requires `RESEND_API_KEY` and a verified
+  `RESEND_FROM`; dev-only console routing is preserved. HTTP requests have a ten-second timeout;
+  errors expose only a safe status, never the provider body or recipient/auth link. **Usage:**
+  configure Resend Free, verify the domain and keep Transactional Overages plus open/click
+  tracking disabled. **Gotchas:** source configuration cannot enforce account billing settings;
+  actual quota exhaustion/inbox delivery and Render cold starts remain live acceptance gates.
+  The optional paid Blueprint is not selected by the free-first plan. Resend Free and disabled
+  pay-as-you-go were verified. The owner imported the three approved DNS records; their exact
+  public values match and Resend marks the domain Verified. The owner approved a Sending access
+  key scoped to `puhukoc.com`, saved only in the ignored manual acceptance env, and one owner-
+  address transport test. The provider recorded Sent/Delivered; the owner then confirmed Gmail
+  Inbox receipt and supplied a screenshot showing the correct sender. Real cold-start signup/
+  reset acceptance remains pending. Production credentials are not configured. No paid
+  resource, billing or live application flag changed. Related: `resend-email.adapter.ts`, routing/module/env tests, `.env.example`,
+  `render.yaml`, `check-deployment.mts`, [current cost evidence](../qa/2026-10-28-free-first-launch.md).
 
 - **2026-10-25 · Invite joined notifications (Puhu).** New `InviteEventsListener`
   (`listeners/invite-events.listener.ts`) subscribes to `economy.invite.redeemed` and tells the inviter who
@@ -513,7 +531,7 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 - **Cron endpoints are `@Public()`** but require `x-cron-secret` or `Authorization: Bearer <CRON_SECRET>`.
 - **`withServiceContext` runs inside job claim/complete** — unit tests must mock `db.transaction` with
   `tx.execute`.
-- **Postmark is US-hosted** — disclose in KVKK/privacy copy when email is enabled.
+- **Resend processes transactional email** — keep the provider/transfer disclosure current; disable open/click tracking for auth links.
 - **Daily reminders dedupe** via `notification_deliveries` key `daily-reminder:{userId}:{YYYY-MM-DD}`.
 - **Session return reminder** uses `+24h` UTC (not user TZ); may land near the daily reminder window —
   different copy/opt-in; user TZ = backlog. SCHEDULE channel dedupe is per target UTC day.

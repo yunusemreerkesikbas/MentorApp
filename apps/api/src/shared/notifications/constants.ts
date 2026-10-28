@@ -19,7 +19,7 @@ export const JobName = {
 } as const;
 export type JobName = (typeof JobName)[keyof typeof JobName];
 
-/** Transactional email template ids (Postmark alias or internal key). */
+/** Transactional email template ids (internal template key). */
 export const EmailTemplate = {
   VERIFY_EMAIL: "identity.verify-email",
   RESET_PASSWORD: "identity.reset-password",

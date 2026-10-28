@@ -511,6 +511,29 @@ There is no separate symbol and no mascot in it; Puhu stays in the art (§8.1). 
 - Lockups, dark and single-ink versions: the design canvas linked from
   `docs/features/web-shell.md`.
 
+### 8.8 Landing "Işıklı şehir" (2026-10-28)
+
+The public `/` is a night city that a scroll-driven camera flies through, window to window, until
+dawn. Spec: `docs/superpowers/specs/2026-10-27-landing-isikli-sehir-design.md`; usage and gotchas:
+`docs/features/web-shell.md`.
+
+- **A scene, not a surface.** It keeps its own palette and never follows `html.dark`. The chrome
+  tokens are `.landing-city-theme` in `@mentor/ui` theme.css (`--landing-*`: night sky, lamp,
+  frost nav, footer ink, and the paper section after the dawn). The objects in the scene (paper,
+  washi tape, enamel door plates, rooms, doorbells) keep theirs as `--lc-*` in
+  `_components/landing/city-stage.css`, the same rule as the notebook desk.
+- **Type:** `--text-hero` 30px (the phone's bottom sheet) and `--text-hero-lg` 64px from `lg`;
+  `--text-section` 40px for the headings after the scene. Handwriting (plates, margin notes) is
+  Caveat, the notebook's hand face.
+- **Layout:** from 1024px the note sits beside the window as a tilted paper note. Below that it is
+  the bottom sheet (`--play-sheet-radius`), with the window kept in the top part of the screen.
+- **Lamp vs ink:** on the night, the lit words, the eyebrow and the focus ring are lamp yellow
+  (`--landing-lamp`). On paper the focus ring is the app's blue, because yellow disappears on cream.
+- **CTA:** the play ledge (`--play-cta`) everywhere. Outlines are drawn per ground: white on the
+  night, paper line on the paper.
+- **Art** lives in `public/visuals/landing/` as an AVIF + WebP pair. Rooms load only once the
+  camera moves in.
+
 ---
 
 ## 9. Motion scale (rich, guarded)

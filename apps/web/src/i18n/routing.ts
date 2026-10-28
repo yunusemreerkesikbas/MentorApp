@@ -9,6 +9,8 @@ export const routing = defineRouting({
   alternateLinks: false,
   pathnames: {
     "/": "/",
+    /** The 4-slide welcome. `/` is the landing; its "Ücretsiz başla" comes here, then `/kayit`. */
+    "/welcome": { tr: "/hosgeldin", en: "/welcome" },
     "/login": { tr: "/giris", en: "/login" },
     "/signup": { tr: "/kayit", en: "/signup" },
     "/verify-email": { tr: "/eposta-dogrula", en: "/verify-email" },

@@ -43,6 +43,27 @@ Same rules as above: short, warm, one `!` per sentence, at most one emoji per li
 - **Never name who paid.** Joined friends may be named (they typed the code); Premium conversions are a count
   only (“1 kişi Premium'a geçti”). No FOMO (“kaçırma”), no guilt toward a friend who has not joined.
 
+## Landing: Puhu tells the story (2026-10-28)
+
+The public `/` (`landing.*`) is told by **Puhu**: the hero, the window notes, the margin scribbles,
+the dawn. It talks to someone who has not signed up yet, so it stays warm and plain rather than
+energetic: no `!` in the story, and the only one on the page is the league demo's cheer line.
+
+- **"Pencere" is the story's word, not a label's.** It belongs in the headline and the notes ("Bu
+  gece ışığı yanan tek pencere seninki değil.", "Penceren yandı."). Facts, buttons and plates use
+  plain words: "Son 24 saatte {n} kişi burada çalıştı.", "Bu alanla başla", door plates with bare
+  names ("Masa", not "Masa penceresi").
+- **Generic "sınav".** The landing never names an exam (KPSS, YKS…).
+- **Premium is said, not hidden.** The lead names the free parts first and says "Premium'da" for
+  the AI coach. The coach demo ends with "Bu bir örnek cevap. Yapay zekâ koç Premium'da." Never
+  promise a trial here: the web purchase channel is flag-gated.
+- **Stay companion:**
+  - the coach demo's canned replies (they show the coach's voice);
+  - the FAQ answers about data, KVKK, payment and what the AI does not do;
+  - the cookie card.
+- **No numbers we cannot back.** The live count comes from the API and hides below its threshold.
+  Demo cards (seats, league, minutes) are illustrations, never claims.
+
 ## Coach chat vs chrome
 
 - **Coach chat (LLM + mood/motivation/nextAction/calibration fallbacks)** uses the **companion** register. First person: “Ben buradayım.” Address the student as **sen**. Short sentences. No guilt. Same mouth as a serious mood reply.

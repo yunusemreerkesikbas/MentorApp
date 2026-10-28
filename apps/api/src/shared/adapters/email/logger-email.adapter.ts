@@ -6,7 +6,7 @@ import type { EmailPort } from "../../ports/email.port";
 /**
  * Console EmailPort sink for dev tooling (local, CI, APP_ENV=staging): prints the whole message,
  * links and tokens included, so verify/reset flows run without an inbox. `RoutingEmailAdapter`
- * picks it per message (admin switch `dev.email.console_enabled`, or no POSTMARK_TOKEN).
+ * picks it per message (admin switch `dev.email.console_enabled`, or no RESEND_API_KEY).
  *
  * Writes to stdout on purpose: the app logger (observability/logger.config.ts) drops every
  * freeform message, which is right for everything else and would swallow the link. This class
@@ -29,7 +29,7 @@ export class LoggerEmailAdapter implements EmailPort {
     variables?: Record<string, unknown>;
   }): Promise<void> {
     if (!this.devTooling) {
-      // Unreachable while production requires POSTMARK_TOKEN and reads the switch as off. Failing
+      // Unreachable while production requires RESEND_API_KEY and reads the switch as off. Failing
       // the job beats dropping the mail silently or printing a token into production logs.
       throw new Error("Console email is disabled outside dev tooling (APP_ENV=production).");
     }
