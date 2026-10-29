@@ -59,8 +59,8 @@ function woodTile(
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
-/** Long dark streaks: the fine grain. */
-const WOOD_FINE = woodTile(
+/** Long dark streaks: the fine grain. Also the landing's "Sabah masası", which shows this desk. */
+export const WOOD_FINE = woodTile(
   640,
   420,
   "0.0035 0.1",
@@ -69,7 +69,7 @@ const WOOD_FINE = woodTile(
   "0 0 0 0 0.09  0 0 0 0 0.05  0 0 0 0 0.02  2.2 0 0 0 -0.95",
 );
 /** Broad pale bands: the figure of the board. */
-const WOOD_BROAD = woodTile(
+export const WOOD_BROAD = woodTile(
   900,
   520,
   "0.0022 0.045",

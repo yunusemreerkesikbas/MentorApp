@@ -42,6 +42,37 @@ Bu bölüm aşağıdaki metnin önüne geçer.
   - **Kapanış:** Koç SSS'si (onay, mevcut öğrenci, kaç öğrenci, gizlilik, AI'nın rolü), ardından "Sabah turun hazır." ve footer.
   - **Fiyat:** Yalnızca "İlk 3 öğrencin ücretsiz" geçer. Paket fiyatı ve ödeme kanalı yazılmaz.
   - **Kod turu notu:** Sayfa server render, indekslenir ve kendi FAQ JSON-LD'sini taşır. `fetchCoachSignupOpen` false ise CTA'lar gizlenir, bilgi kalır.
+- **Sabah masası** (2026-10-29, kullanıcı onayı; önce tuval, sonra kod; görsel üretimi yok). Landing'in hiç değinmediği üç özellik için yeni bir bölüm.
+  - **Yer:** Şafaktan (durak 8) hemen sonra, koç bandından önce; kâğıt bölümün ilk parçası. Gece "yalnız değilsin" der, sabah "kendi araçların".
+  - **Sahne (tuval v28, kullanıcının kararı):** Yeni görsel üretilmez; sahne uygulamanın kendi Defterlerim masasıdır, gündüz temasında (`components/notebook-desk`: duvar, pencere, güneş, ahşap masa, güneş lekesi; değerler `notebook-desk.css`'ten). Üstünde:
+    - Kitap yığınında okuyan Puhu (`mascot/puhu/desk/*`) ve ürünün kendi balonu: "Yanlış Defterini en öne koydum. Bugün 2 tekrar seni bekliyor."
+    - Masada gerçek defter kapakları: "Yanlış Defterim" (lacivert, "Bugün 2 tekrar" sarı notu, sekmeler, kurdele) ve "Matematik Defteri". Masaüstünde solda "Yeni defter" paketi.
+    - Duvarda çiviye asılı gerçek ahşap hedef çerçevesi (`vision-board` `WOOD_GRAIN`). İçinde dolu bir pano (tuval v30), tamamen uygulamanın kendi parçalarıyla:
+      - mantar zemin (`BOARD_TEXTURE_STYLES.cork`);
+      - Kolaj şablonunun foto yuvaları (`board-templates.ts`);
+      - ortada kâğıt kart üstünde "Bilgisayar Mühendisi" ve iğneli "Konya";
+      - uygulamanın kendi çıkartmaları: bant, "Dream big" kartı, kep, yıldız, parıltı, kalp, gökkuşağı ve yazılım Puhu'su.
+      - Dört foto Puhu dünyası tarzında, kullanıcı üretecek (Prompts panosu V1–V4: kampüs, kod, Konya gün doğumu, mezuniyet). Gelene kadar renkli yer tutucular duruyor.
+    - Masada standa yaslanmış gerçekçi telefon (çerçeve, kamera adası, yan tuşlar). Ekranda hikâyenin kendi kareleri ve süsleri döner:
+      - karşılama ("Haftan hazır, hadi bir bakalım!");
+      - odak (265, dünya haritası, çiçek, gümüş kıvrım);
+      - seri (4 gün);
+      - kod adı (Nebula Dalgıcı karakter görseli).
+      - Üstte her karede dolan ilerleme çubukları ve duraklat / ses / kapat düğmeleri var. Döngü 4 × 3 sn; hareket azaltmada odak karesi sabit kalır.
+    - Kodda mümkün olduğunca ürün bileşenleri yeniden kullanılır (masa arka planı, kapak, çerçeve); statik demo verisiyle çizilemeyenler hafif kopya olur. Kod turunda bakılacak.
+  - **Kartlar:** Her nesneye pencere notlarıyla aynı dilde bir kâğıt not. Mini arayüzler gerçek ekranların süslenmiş küçük halleri.
+    - **1 Defterlerim:** "Yanlışların kaybolmaz." Fotoğrafla ya da yazarak ekle, dersini ve konusunu sen seç, tekrar günü gelince Puhu defteri masana koyar; her ders için ayrı defter de açılır. Otomatik konu ayırma vaadi yok. Mini: açık defter (sol "Bu defterin sahibi", sağ "İçindekiler" ve tekrar çipleri) + "2 soru tekrar zamanı".
+    - **2 Hedef panosu:** "Hedefin gözünün önünde." Mini: çiviye asılı aynı dolu pano (büyük hali) + "Duvar kâğıdı yap" / "Paylaş". Yapay zekâ notu anılmaz.
+    - **3 Haftanın hikâyesi:** "Her hafta bir hikâye." Gün, odak dakikası, parlayan ders; "Hafta dolu geçtiyse bir de kod adın olur." Mini: hikâyenin kendi renkleri ve süsleriyle üç ekran yelpazesi (lila "4 gün", mercan "265" + dünya, kod adı karakteri). Premium anılmaz: yapay zekâ gösterilmiyor; ücretsiz hikâye de "Puhu'dan bir not" ile biter.
+  - **Davranış:** Masaüstünde sahne 2:1, üstünde nesnelere numaralı 3 iğne; altında 3 not yan yana. İğne ya da not seçilince ikisi birlikte yanar (sarı). Telefonda sahne 4:3 (yanlardan kırpılır, iğnelerin telefon konumu ayrı), altında "Defter · Pano · Hikâye" sekmeleri ve yalnız seçili not; üç not da DOM'da kalır.
+  - **Yan iş:** Analiz notundan "Her hafta kısa bir hikâye" cümlesi çıktı; kartı "Sıradaki odak: Geometri" oldu. Başlıkta "hikâyesini" yazımı ürünle aynı (â).
+  - **Kod (2026-10-29, tuval v31'den):** `#sabah`, koç bandından önce.
+    - Sahne sabit 1040 × 520 bir sahne: SVG + Defterlerim'in kendi ahşap dokusu, üstünde yazı taşıyan her şey HTML.
+    - Pano `BoardFrame` içinde; mantar, foto yuvaları ve çıkartmalar tek bir pişmiş görsel, hedef kartı yazı.
+    - Demo uygulamanın kendi mesaj anahtarlarını kullanır; landing metni `landing.morning.*` (`landing.desk` şehrin Masa durağı).
+    - Ayrıntılar ve gotcha'lar: `docs/features/web-shell.md` 2026-10-29.
+    - Kullanıcının isteğiyle 1. notun mini arayüzü açık defter yerine tekrar destesi oldu (kart kart sorular, Takıldım / Çözdüm). Metin tekrar takvimine uyar: çözdüğün kart seyrekleşir, takıldığın 2 gün sonra döner. Tuval bu değişikliği göstermiyor.
+  - **Kapsam dışı:** Geri sayım, seri, davet (kullanıcı "üçü yeter" dedi).
 
 ## Kararlar
 **Kullanıcının kararları (2026-10-27):**

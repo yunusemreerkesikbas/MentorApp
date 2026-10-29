@@ -97,6 +97,38 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-29 · Live Turnstile widget provisioned.** With explicit owner approval, created the
+  free Managed `puhukoc.com (Spin)` widget for the apex plus localhost/127.0.0.1, with
+  pre-clearance off. Saved the keypair only to the approved ignored local acceptance file;
+  no extra account API token or production env change. The real Siteverify dummy-token check
+  accepts the stored secret. The automated browser attempt hit Cloudflare 300030; after the
+  owner completed the challenge manually, real local Nest login returned 200 and same-token
+  replay returned 400, with matched hostname/action and provider duplicate rejection. The
+  diagnostic then closed automatically. Usage/gotchas: production Next.js/Render acceptance
+  remains open; production keeps the exact apex hostname check. See
+  [setup evidence](../qa/2026-10-29-turnstile-preflight.md).
+
+- **2026-10-29 · Turnstile launch preflight.** Mapped the existing signup/login/recovery/phone
+  actions and verified strict provider success, hostname/action checks, fail-closed production
+  configuration and replay rejection in focused tests (87/87 with env validation). No new form
+  or service is needed. Cloudflare lists no widget yet; setup is waiting for specific approval
+  after automatic review blocked opening Spin. Usage/gotchas:
+  [preflight evidence](../qa/2026-10-29-turnstile-preflight.md). Real provider/browser acceptance,
+  provisioning and production credentials remain open; SMS stays disabled.
+
+- **2026-10-28 · Auth mail keeps its request language.** Verification/resend and password-reset
+  jobs now capture the resolved request language and a matching web route before entering the
+  queue. English requests use English mail and `/en/verify-email` or `/en/reset-password`;
+  Turkish/default requests retain their existing paths. **Usage:** the existing `Accept-Language`
+  handling applies; no new flag or credential is needed. **Gotchas:** work without an HTTP
+  language context, and legacy jobs without `lang`, retain Turkish. Token expiry/consumption,
+  send-time guards and signup admission are unchanged. A real local API/DB/queue diagnostic
+  passed first with provider HTTP mocked, then with two explicitly approved real Resend
+  messages. Both are Delivered; replay and old-password/session rejection passed, and the
+  local API closed. The owner then confirmed verification in Inbox but reset in Spam; reset
+  Inbox acceptance and hosting cold starts remain open. Related: `auth.service.ts`, `auth-email-variables.ts`,
+  `auth.service.spec.ts`, [acceptance evidence](../qa/2026-10-28-auth-email-acceptance.md).
+
 - **2026-10-28 · Launch contact/provider update.** Public TR/EN legal documents now identify
   Resend and the owner-selected `destek@puhukoc.com` support/application channel, dated
   2026-10-28. The email-port migration preserves verification/reset send-time guards and the

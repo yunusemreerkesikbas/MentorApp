@@ -13,6 +13,23 @@ optional; source checks do not prove that production services or domains are liv
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-29 · R2 names versus public domain.** Clarified that existing `mentor-*` buckets
+  are dev/test, retained `puhu-s1-*` buckets are staging, and planned EU production uses
+  `puhu-prod-*` with `media.puhukoc.com` only on the public bucket. Corrected the production
+  naming example, marked CORS placeholders as dev-only and separated budget alerts from
+  spending stops. Use [storage-r2.md](../core/storage-r2.md) with the deployment profile;
+  no live bucket, object, token, DNS or CORS setting was changed.
+
+- **2026-10-29 · External production migrations for Free hosting.** `db:migrate` now uses a
+  dedicated config requiring an explicit direct owner URL in production, rejecting Neon
+  poolers/query host overrides without logging values. The API no longer requires this
+  credential; restricted runtime-role and other production checks remain. Local fallback
+  and offline generation remain available. Use the
+  [attended procedure](../qa/2026-10-29-free-hosting-preparation.md) before a separately
+  authorized deployment. No live migration, credential upload or scheduler activation.
+  Related: `drizzle.migrate.config.ts`, `migration-database-url{,.spec}.ts`, API package
+  script, `env.validation{,.spec}.ts`, `.env.example`, `docs/core/deployment.md`.
+
 - **2026-10-13 · Production scope and deferred staging.** Narrowed PR #156 to owned production
   preparation. Removed staging Blueprints/bootstrap scripts/indexing changes and incomplete
   admin-disable/external-migration tests; existing production security remains unchanged.

@@ -402,6 +402,10 @@ html.dark {
   --landing-coach-soft: #d5dcf5;
   --landing-coach-pill: rgba(255, 255, 255, 0.14);
   --color-focus-ring: #1d6fbf;
+  /* The blog's own pieces (cover, category line) read the app tokens; pin them to paper here. */
+  --color-main: #0f2233;
+  --color-secondary: #5f7086;
+  --color-surface: #fffdf6;
 }
 
 /* The shared PublicFooter reads `--color-main/secondary`; on the landing it sits on the night ink. */

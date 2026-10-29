@@ -11,6 +11,26 @@
 > board görsel yüklemesi tarayıcıda uçtan uca doğrulandı. **Kalan:** production için ayrı,
 > `-J eu` bucket çifti — bugünkü kurulum yalnız dev/test.
 
+## Current naming and launch scope (2026-10-29)
+
+Bucket names are resource identifiers; they do not have to match `puhukoc.com`. Keep the
+existing `mentor-public` / `mentor-private` dev/test buckets and their data. The separate
+retained staging pair is `puhu-s1-public` / `puhu-s1-private`.
+
+The planned production pair is **`puhu-prod-public` / `puhu-prod-private`**, jurisdiction
+**`eu`**, with **`https://media.puhukoc.com`** attached only to the public bucket. These are
+already the values in `deployment.md` and the optional paid `render.yaml`; this workflow
+has not provisioned them or migrated existing objects. Commands using `mentor-*` below
+describe dev/test unless explicitly marked production. Renaming existing resources is not
+a prerequisite for the domain change.
+
+Production acceptance requires matching bucket env values, scoped credentials, exact CORS
+origins and CSP origins. `infra/r2/cors-*.json` still contains localhost and `mentor.example`
+development placeholders; prepare a production policy allowing only the intended
+`https://puhukoc.com` / `https://admin.puhukoc.com` origins before applying it to production.
+Bucket labels do not replace access controls or billing stops. Follow the
+[free-first spending/release gates](../qa/2026-10-28-free-first-launch.md) before provisioning.
+
 ## Ne saklıyoruz
 
 İki bucket. Ayrım keyfi değil: deneme, yanlış defteri ve hayal panosu fotoğrafları kişisel veri;
@@ -46,9 +66,14 @@ Dashboard → **R2 Object Storage** → açılış ekranındaki etkinleştirme a
 dashboard'dan yapılabiliyor; wrangler'ın karşılığı yok.
 
 **Ne kadara mal olur:** aylık ücretsiz kota **10 GB depolama · 1M Class A (yazma/listeleme) ·
-10M Class B (okuma)**, ve R2'de **egress her zaman ücretsiz** — bu projenin öngörülebilir
-kullanımı kotanın çok altında. Aşımda: $0.015/GB-ay, $4.50/M Class A, $0.36/M Class B.
-Yine de §7'deki bütçe alarmını kurmakta fayda var.
+10M Class B (okuma)** (Standard storage), ve R2'de **egress ücretsiz**.
+Aşımda: $0.015/GB-ay, $4.50/M Class A, $0.36/M Class B.
+
+The free allowance is shared account usage, not a hard invoice cap. Budget alerts notify
+only; they do not stop usage or charges. An enforceable account-wide R2 spending stop has
+not been verified. Do not enable production usage until the free-first release gates are
+met. Sources: [R2 pricing](https://developers.cloudflare.com/r2/pricing/),
+[budget alert behavior](https://developers.cloudflare.com/billing/manage/budget-alerts/).
 
 ## 1 · Bucket'ları oluştur
 
@@ -66,9 +91,10 @@ için ortam kurmayı tekrarlanabilir kılıyor.
 jurisdiction'da açılmış bir bucket o endpoint'te **404 verir**.
 
 - **Test/geliştirme:** yukarıdaki komutlar (jurisdiction yok), `.env`'de `R2_JURISDICTION=auto`.
-- **Production:** `npx wrangler r2 bucket create mentor-public -J eu` (dashboard'da
-  **Specify jurisdiction → EU**). `render.yaml`'da `R2_JURISDICTION: eu` sabit ve KVKK açısından
-  doğru olan bu.
+- **Production (planned, not executed):** create `puhu-prod-public` and `puhu-prod-private`
+  with `-J eu` (dashboard: **Specify jurisdiction → EU**). Keep `R2_JURISDICTION=eu` and
+  the matching bucket names. Do not reuse the dev/test commands or apply the optional paid
+  Blueprint as part of a Free rehearsal.
 
 Test ve production bucket'ları zaten ayrı olmalı, dolayısıyla farklı jurisdiction sorun değil.
 
@@ -146,8 +172,11 @@ R2_JURISDICTION=auto
 Altısı da zorunlu — biri eksikse API **boot etmez** (`env.validation.ts`). Production'da
 `STORAGE_PROVIDER=fake` ayrıca yasak.
 
-**Render:** `render.yaml`'da bu anahtarlar `sync: false`, yani değerleri dashboard'dan giriliyor
-(`STORAGE_PROVIDER` ve `R2_JURISDICTION` hariç — onlar dosyada sabit).
+Ayrıca **`apps/web/.env.local`** (veya production'da `mentor-web` ortam değişkenleri) içinde tarayıcı CSP'sinin (`img-src`, `connect-src`, `media-src`) R2 görsellerine izin vermesi için `WEB_CSP_STORAGE_ORIGINS` tanımlanmalıdır (`@aws-sdk/client-s3` varsayılan olarak virtual-hosted style kullandığı için private bucket adı subdomain olarak başa gelir: `https://pub-....r2.dev,https://mentor-private.<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`; EU production'da `https://media.puhukoc.com,https://puhu-prod-private.<R2_ACCOUNT_ID>.eu.r2.cloudflarestorage.com`).
+
+**Optional paid Render Blueprint:** `render.yaml` already pins the production bucket names,
+media URL and EU jurisdiction; account/access credentials are supplied separately with
+`sync: false`. Source values do not create the R2 buckets or authorize deployment.
 
 ## 6 · Doğrula
 
@@ -170,8 +199,11 @@ Ardından `pnpm dev` ile tarayıcıda, **giriş yapmış halde**:
 
 ## 7 · Custom domain'e geçiş
 
-Domain belirlendiğinde: bucket → **Settings** → **Custom Domains** → **Connect Domain**
-(domain Cloudflare'da olmalı). Sonra:
+The selected public media domain is `media.puhukoc.com`. After the production gates pass,
+attach it only to `puhu-prod-public`: bucket → **Settings** → **Custom Domains** →
+**Connect Domain**. Keep `puhu-prod-private` private; the bucket name need not match the domain.
+Cloudflare documents [custom-domain attachment](https://developers.cloudflare.com/r2/buckets/public-buckets/)
+as a setting on the selected bucket. Then:
 
 1. `R2_PUBLIC_BASE_URL`'i yeni domain'e çevir. Mutlak URL saklanmaz; public nesneler yalnız key
    tutar ve URL her okumada türetilir. Özel defter/pano nesneleri bu public domain'i kullanmaz.
@@ -214,8 +246,8 @@ Başarısız toplam sıfır olmadan geçiş tamamlanmış sayılmaz.
   süpürmesi var. `avatars/` ve `content/` için yok — oralarda yükleme hep bir kayda bağlanıyor.
 - **Lifecycle (opsiyonel):** bucket → Settings → Object lifecycle rules → tamamlanmamış multipart
   upload'ları 7 gün sonra iptal et. Tek parça PUT kullandığımız için risk düşük, bedava sigorta.
-- **Kullanım alarmı:** R2 → Overview → **Create budget alert** ile hesap düzeyinde dolar eşiği
-  kur. Ücretsiz kota (10 GB · 1M Class A · 10M Class B) bu proje için fazlasıyla yeterli;
-  alarm sürpriz bir döngü/yanlış yapılandırmaya karşı.
+- **Budget alerts:** Manage Account → Billing → Billable Usage. Alerts do not cap or pause
+  usage. Check the shared allowance and actual stop controls; do not assume the Free quota
+  or a notification prevents an unexpected invoice.
 - **Orphan süpürmesinin işlem maliyeti ihmal edilebilir:** `listObjects` bir **Class A** işlem ve
   süpürme 6 saatte bir çalışıyor — API instance başına ayda ~120 istek, 1M'lik kotaya karşı hiç.

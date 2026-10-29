@@ -1,0 +1,1149 @@
+/*
+ * "Sabah masası" (landing-desk.tsx). The scene is the Defterlerim desk in its day theme: the colours
+ * below are the day tokens of `components/notebook-desk/notebook-desk.css`, the board frame is the
+ * vision board's, the phone plays the weekly story in its own colours (`--recap-*` in globals.css).
+ * Like the city stage, the landing keeps its scene palette here rather than in theme.css.
+ */
+.ld-root {
+  --ld-paper: #fffdf6;
+  --ld-ink: #0f2233;
+  --ld-ink-soft: #3d4e63;
+  --ld-blue: #1a5fa3;
+  --ld-plate: #1d4f9f;
+  --ld-picked: #ffd15c;
+  --ld-picked-ink: #5a3a08;
+  --ld-hand: "Caveat Variable", "Segoe Print", cursive;
+  --ld-print: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --ld-coral: #ff5b49;
+  --ld-lavender: #afb1ff;
+  --ld-mint: #16d0a6;
+  /* Paper takes the app's blue ring. */
+  --color-focus-ring: #1d6fbf;
+}
+
+/* ---- The stage: 1040 × 520 units. A phone shows the middle two thirds at 4:3. ---- */
+.ld-frame {
+  position: relative;
+  margin-top: 32px;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #efe5d8;
+  box-shadow: 0 30px 60px -30px rgba(70, 45, 15, 0.45);
+}
+
+.ld-stage {
+  /* One stage unit. Read by children, so `cqw` resolves against this container. */
+  --u: calc(100cqw / 1040);
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  translate: -50% 0;
+  container-type: inline-size;
+}
+
+@media (max-width: 639px) {
+  .ld-frame {
+    margin-top: 22px;
+    aspect-ratio: 4 / 3;
+    border-radius: 18px;
+  }
+
+  .ld-stage {
+    width: 150%;
+  }
+}
+
+.ld-scene,
+.ld-room {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ld-room {
+  display: block;
+}
+
+.ld-sunpatch {
+  mix-blend-mode: soft-light;
+}
+
+.ld-at {
+  position: absolute;
+  left: calc(var(--x) * var(--u));
+  top: calc(var(--y) * var(--u));
+  width: calc(var(--w) * var(--u));
+  height: calc(var(--h) * var(--u));
+  margin: 0;
+}
+
+/* The desk top: grain tiles over the wood, the shade from the wall, the lit front edge. */
+.ld-wood {
+  position: absolute;
+  inset: calc(210 * var(--u)) 0 0;
+  background-color: #b88757;
+}
+
+.ld-grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--grain);
+  background-repeat: repeat;
+  background-size: calc(var(--tile-w) * var(--u)) calc(var(--tile-h) * var(--u));
+}
+
+.ld-wood::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.32) 0, rgba(0, 0, 0, 0.05) 45%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.16) 100%);
+}
+
+.ld-wood::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: calc(7 * var(--u));
+  background: #d4a77a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* ---- Props that carry words ---- */
+.ld-bubble {
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+  border-radius: calc(14 * var(--u));
+  background: #ffffff;
+  color: #1d1a16;
+  font-size: calc(12 * var(--u));
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.ld-bubble::after {
+  content: "";
+  position: absolute;
+  left: calc(80 * var(--u));
+  top: 100%;
+  border: calc(8 * var(--u)) solid transparent;
+  border-top-color: #ffffff;
+  border-left-width: calc(4 * var(--u));
+}
+
+.ld-wallboard {
+  height: auto;
+}
+
+.ld-parcel {
+  rotate: 4deg;
+  border-radius: calc(4 * var(--u));
+  background:
+    linear-gradient(90deg, transparent calc(52 * var(--u)), #f3e3c3 0 calc(59 * var(--u)), transparent 0),
+    linear-gradient(180deg, transparent calc(64 * var(--u)), #f3e3c3 0 calc(71 * var(--u)), transparent 0),
+    #c9a272;
+  box-shadow: calc(6 * var(--u)) calc(8 * var(--u)) calc(12 * var(--u)) rgba(0, 0, 0, 0.25);
+}
+
+.ld-parcel-tag {
+  position: absolute;
+  left: calc(22 * var(--u));
+  top: calc(30 * var(--u));
+  padding: calc(1 * var(--u)) calc(14 * var(--u)) calc(1 * var(--u)) calc(6 * var(--u));
+  background: #fbf6ea;
+  clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
+  color: #2a2118;
+  font: 700 calc(12 * var(--u)) / 1.3 var(--ld-hand);
+  white-space: nowrap;
+}
+
+.ld-book {
+  border-radius: calc(6 * var(--u));
+  background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.07) 0 calc(2 * var(--u)), transparent 0 calc(6 * var(--u)));
+  box-shadow: calc(8 * var(--u)) calc(12 * var(--u)) calc(14 * var(--u)) rgba(0, 0, 0, 0.3);
+}
+
+.ld-book.is-navy {
+  rotate: -2deg;
+  background-color: #2b3b5e;
+}
+
+.ld-book.is-grey {
+  rotate: 1.5deg;
+  background-color: #6b7484;
+}
+
+/* The spiral: a column of rings down the spine. */
+.ld-book::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--u));
+  top: calc(6 * var(--u));
+  bottom: calc(4 * var(--u));
+  width: calc(9 * var(--u));
+  background: radial-gradient(circle, #c3c8d2 calc(4.2 * var(--u)), transparent calc(4.6 * var(--u))) 0 0 / calc(9 * var(--u)) calc(12 * var(--u)) repeat-y;
+}
+
+.ld-book-label {
+  position: absolute;
+  left: calc(22 * var(--u));
+  top: calc(28 * var(--u));
+  right: calc(18 * var(--u));
+  padding: calc(8 * var(--u)) calc(10 * var(--u));
+  border-radius: calc(5 * var(--u));
+  background: #fbf6ea;
+  color: #22283a;
+  box-shadow: 0 calc(2 * var(--u)) calc(5 * var(--u)) rgba(0, 0, 0, 0.22);
+}
+
+.ld-book-label b {
+  display: block;
+  font: 700 calc(18 * var(--u)) / 0.95 var(--ld-hand);
+}
+
+.ld-book-label b.is-print {
+  font: 700 calc(15 * var(--u)) / 1.08 var(--ld-print);
+  color: #1f2433;
+}
+
+.ld-book-label small {
+  display: block;
+  margin-top: calc(4 * var(--u));
+  font-size: calc(8 * var(--u));
+  font-weight: 800;
+  color: #6a5f4f;
+}
+
+.ld-book-sticky {
+  position: absolute;
+  left: calc(78 * var(--u));
+  top: calc(126 * var(--u));
+  width: calc(68 * var(--u));
+  min-height: calc(54 * var(--u));
+  padding: calc(7 * var(--u)) calc(7 * var(--u));
+  rotate: -5deg;
+  background: linear-gradient(172deg, #ffeb94, #ffd659);
+  color: #3b2f12;
+  font: 700 calc(16 * var(--u)) / 1.05 var(--ld-hand);
+  box-shadow: 0 calc(5 * var(--u)) calc(6 * var(--u)) calc(-3 * var(--u)) rgba(0, 0, 0, 0.5);
+}
+
+.ld-book-tab {
+  position: absolute;
+  right: calc(-8 * var(--u));
+  width: calc(10 * var(--u));
+  height: calc(22 * var(--u));
+  border-radius: 0 calc(3 * var(--u)) calc(3 * var(--u)) 0;
+}
+
+.ld-book-tab.is-blue {
+  top: calc(32 * var(--u));
+  background: #8ec1f4;
+}
+
+.ld-book-tab.is-green {
+  top: calc(62 * var(--u));
+  background: #9fd8b0;
+}
+
+.ld-book-ribbon {
+  position: absolute;
+  left: calc(100 * var(--u));
+  top: calc(206 * var(--u));
+  width: calc(7 * var(--u));
+  height: calc(30 * var(--u));
+  rotate: 6deg;
+  background: #c0392b;
+}
+
+.ld-book-tape {
+  position: absolute;
+  right: calc(-12 * var(--u));
+  top: calc(4 * var(--u));
+  padding: 0 calc(8 * var(--u));
+  rotate: 32deg;
+  background: #f4b6c2;
+  color: #1d2433;
+  font: 700 calc(9 * var(--u)) / 1.45 var(--ld-hand);
+}
+
+/* ---- The goal board (BoardFrame outside, the board's own cqw units inside) ---- */
+.ld-board {
+  position: relative;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+.ld-board-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ld-goal {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  rotate: -1.5deg;
+  border-radius: 0.6cqw;
+  background: #fffdf8;
+  box-shadow: 0 0.6cqw 1.2cqw rgba(59, 36, 16, 0.35);
+  color: #14213d;
+  font-weight: 1000;
+  line-height: 1;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.ld-goal-city {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  margin-top: 0.35em;
+  color: #b4442d;
+  font-weight: 800;
+}
+
+.ld-goal-city svg {
+  width: 1em;
+  height: 1em;
+}
+
+/* ---- The phone and the story it plays ---- */
+.ld-phone {
+  rotate: -3deg;
+}
+
+.ld-phone-body {
+  position: absolute;
+  left: calc(8 * var(--u));
+  top: 0;
+  width: calc(118 * var(--u));
+  height: calc(240 * var(--u));
+  border-radius: calc(20 * var(--u));
+  background: #1c1c22;
+  box-shadow: inset 0 0 0 calc(1.5 * var(--u)) #3d3d48, calc(6 * var(--u)) calc(12 * var(--u)) calc(14 * var(--u)) rgba(0, 0, 0, 0.3);
+}
+
+.ld-phone-key {
+  position: absolute;
+  width: calc(4 * var(--u));
+  border-radius: calc(2 * var(--u));
+  background: #2a2a31;
+}
+
+.ld-phone-key.is-1 {
+  left: calc(5 * var(--u));
+  top: calc(56 * var(--u));
+  height: calc(22 * var(--u));
+}
+
+.ld-phone-key.is-2 {
+  left: calc(5 * var(--u));
+  top: calc(84 * var(--u));
+  height: calc(34 * var(--u));
+}
+
+.ld-phone-key.is-3 {
+  left: calc(125 * var(--u));
+  top: calc(74 * var(--u));
+  height: calc(44 * var(--u));
+}
+
+.ld-screen {
+  position: absolute;
+  inset: calc(5 * var(--u));
+  overflow: hidden;
+  border-radius: calc(15 * var(--u));
+  color: #000000;
+  text-align: center;
+}
+
+.ld-island {
+  position: absolute;
+  left: calc(44 * var(--u));
+  top: calc(11 * var(--u));
+  width: calc(30 * var(--u));
+  height: calc(9 * var(--u));
+  border-radius: calc(4.5 * var(--u));
+  background: #000000;
+}
+
+.ld-stand {
+  position: absolute;
+  left: 0;
+  top: calc(232 * var(--u));
+  width: calc(134 * var(--u));
+  height: calc(26 * var(--u));
+  background: linear-gradient(180deg, #c8935a 0 35%, #a8774a 35%);
+  clip-path: polygon(0 0, 100% 0, 100% 35%, 91% 100%, 9% 100%, 0 35%);
+}
+
+.ld-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 calc(8 * var(--u));
+  opacity: 0;
+  animation: ld-story 12s infinite;
+}
+
+.ld-slide b {
+  font-weight: 1000;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.ld-slide small {
+  font-weight: 900;
+}
+
+.ld-slide strong {
+  font-weight: 1000;
+  line-height: 1;
+}
+
+.ld-slide.is-welcome {
+  justify-content: flex-end;
+  padding-bottom: calc(50 * var(--u));
+  background: var(--ld-coral);
+  font-size: calc(12 * var(--u));
+}
+
+.ld-slide.is-welcome small {
+  margin-top: calc(6 * var(--u));
+  font-size: calc(6.5 * var(--u));
+  opacity: 0.65;
+}
+
+.ld-slide.is-focus {
+  padding-top: calc(52 * var(--u));
+  background: var(--ld-coral);
+  font-size: calc(9.4 * var(--u));
+}
+
+.ld-slide.is-focus strong {
+  margin-top: calc(10 * var(--u));
+  font-size: calc(34 * var(--u));
+}
+
+.ld-slide.is-focus small {
+  font-size: calc(8 * var(--u));
+}
+
+.ld-globe {
+  width: calc(62 * var(--u));
+  margin-top: calc(6 * var(--u));
+}
+
+.ld-slide.is-run {
+  justify-content: center;
+  background: var(--ld-lavender);
+  font-size: calc(9 * var(--u));
+}
+
+.ld-slide.is-run strong {
+  font-size: calc(46 * var(--u));
+}
+
+.ld-slide.is-code {
+  padding-top: calc(46 * var(--u));
+  background-color: #141833;
+  background-position: 50% 40%;
+  background-size: cover;
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.ld-slide.is-code::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 35%;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.6), transparent);
+}
+
+.ld-slide.is-code small,
+.ld-slide.is-code b {
+  position: relative;
+}
+
+.ld-slide.is-code small {
+  font-size: calc(5.6 * var(--u));
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.ld-slide.is-code b {
+  font-size: calc(11.5 * var(--u));
+}
+
+.ld-decor {
+  position: absolute;
+}
+
+.ld-decor.is-floral {
+  left: calc(-15 * var(--u));
+  bottom: calc(-9 * var(--u));
+  width: calc(52 * var(--u));
+}
+
+.ld-decor.is-wiggle {
+  right: calc(-8 * var(--u));
+  bottom: calc(22 * var(--u));
+  width: calc(34 * var(--u));
+}
+
+.ld-decor.is-floral-top {
+  right: calc(-21 * var(--u));
+  top: calc(-5 * var(--u));
+  width: calc(48 * var(--u));
+}
+
+.ld-decor.is-wiggle-low {
+  left: calc(-7 * var(--u));
+  bottom: calc(7 * var(--u));
+  width: calc(40 * var(--u));
+}
+
+/* Four screens, three seconds each; each bar fills during its own screen. */
+.ld-slide.s2 {
+  animation-delay: -9s;
+}
+
+.ld-slide.s3 {
+  animation-delay: -6s;
+}
+
+.ld-slide.s4 {
+  animation-delay: -3s;
+}
+
+@keyframes ld-story {
+  0%,
+  23% {
+    opacity: 1;
+  }
+
+  25%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.ld-bars {
+  position: absolute;
+  left: calc(7 * var(--u));
+  right: calc(7 * var(--u));
+  top: calc(21 * var(--u));
+  display: flex;
+  gap: calc(3 * var(--u));
+}
+
+.ld-bar {
+  flex: 1;
+  height: calc(2.2 * var(--u));
+  overflow: hidden;
+  border-radius: calc(1.1 * var(--u));
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.ld-bar b {
+  display: block;
+  height: 100%;
+  background: #ffffff;
+  transform-origin: 0 50%;
+  animation: 12s linear infinite;
+}
+
+.ld-bar.b1 b { animation-name: ld-bar-1; }
+.ld-bar.b2 b { animation-name: ld-bar-2; }
+.ld-bar.b3 b { animation-name: ld-bar-3; }
+.ld-bar.b4 b { animation-name: ld-bar-4; }
+
+@keyframes ld-bar-1 { 0% { scale: 0 1; } 25%, 100% { scale: 1 1; } }
+@keyframes ld-bar-2 { 0%, 25% { scale: 0 1; } 50%, 100% { scale: 1 1; } }
+@keyframes ld-bar-3 { 0%, 50% { scale: 0 1; } 75%, 100% { scale: 1 1; } }
+@keyframes ld-bar-4 { 0%, 75% { scale: 0 1; } 100% { scale: 1 1; } }
+
+.ld-controls {
+  position: absolute;
+  right: calc(3.4 * var(--u));
+  top: calc(29.5 * var(--u));
+  width: calc(37 * var(--u));
+}
+
+.ld-glare {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0 30%, transparent 30%);
+  pointer-events: none;
+}
+
+/* ---- Pins on the scene, tabs below it ---- */
+.ld-pin {
+  position: absolute;
+  left: calc(var(--x) * var(--u));
+  top: calc(var(--y) * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  translate: -50% -50%;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ld-paper);
+  color: var(--ld-plate);
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(255, 253, 246, 0.45), 0 8px 18px -6px rgba(40, 25, 10, 0.55);
+  transition: scale 0.2s ease, background-color 0.2s ease;
+}
+
+.ld-pin.is-on {
+  scale: 1.1;
+  background: var(--ld-picked);
+  color: var(--ld-picked-ink);
+  box-shadow: 0 0 0 6px rgba(255, 209, 92, 0.45), 0 8px 18px -6px rgba(40, 25, 10, 0.55);
+}
+
+.ld-pin:focus-visible,
+.ld-tab:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+.ld-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.ld-tab {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--landing-pill);
+  color: var(--landing-pill-ink);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ld-tab.is-on {
+  background: var(--ld-ink);
+  color: #ffffff;
+}
+
+/* ---- The three paper notes ---- */
+.ld-notes {
+  display: grid;
+  gap: 26px;
+  margin-top: 30px;
+  align-items: start;
+}
+
+.ld-note {
+  position: relative;
+  padding: 30px 22px 22px;
+  border-radius: 4px 4px 7px 7px;
+  background-color: var(--ld-paper);
+  color: var(--ld-ink);
+  rotate: var(--tilt);
+  box-shadow: 0 2px 4px rgba(3, 10, 24, 0.12), 0 28px 46px -24px rgba(3, 10, 24, 0.45);
+  transition: rotate 0.25s ease, translate 0.25s ease, box-shadow 0.25s ease;
+}
+
+.ld-note.is-on {
+  rotate: 0deg;
+  translate: 0 -6px;
+  box-shadow: 0 0 0 3px var(--ld-picked), 0 28px 46px -20px rgba(3, 10, 24, 0.5);
+}
+
+@media (min-width: 1024px) {
+  .ld-notes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ld-tabs {
+    display: none;
+  }
+}
+
+/* One note at a time until there is room for three. */
+@media (max-width: 1023px) {
+  .ld-note:not(.is-on) {
+    display: none;
+  }
+
+  .ld-note.is-on {
+    translate: none;
+  }
+}
+
+.ld-note.is-lined {
+  background-image: repeating-linear-gradient(180deg, transparent 0 33px, rgba(85, 172, 238, 0.16) 33px 34px);
+  background-position: 0 26px;
+}
+
+.ld-note.is-grid {
+  background-image: linear-gradient(rgba(85, 172, 238, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(85, 172, 238, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.ld-tape {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  width: 128px;
+  height: 32px;
+  margin-left: -64px;
+  background: var(--tape);
+  opacity: 0.9;
+  rotate: -3deg;
+  clip-path: polygon(3% 0, 97% 0, 100% 18%, 97% 36%, 100% 54%, 97% 72%, 100% 90%, 97% 100%, 3% 100%, 0 82%, 3% 64%, 0 46%, 3% 28%, 0 10%);
+}
+
+.ld-plate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+
+/* The enamel door plate of the window notes. */
+.ld-plate b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 5px;
+  background: var(--ld-plate);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 2px var(--ld-plate), inset 0 0 0 3.5px rgba(255, 255, 255, 0.85), 0 2px 0 rgba(3, 10, 24, 0.25);
+}
+
+.ld-plate span {
+  font: 700 25px / 1 var(--ld-hand);
+  color: var(--ld-blue);
+}
+
+.ld-note h3 {
+  margin: 12px 0 8px;
+  font-size: 21px;
+  line-height: 1.2;
+  font-weight: 900;
+  text-wrap: balance;
+}
+
+.ld-body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ld-ink-soft);
+}
+
+/*
+ * The three minis share one height, so the tilted notes end on about the same line whatever their
+ * body text. Each centres its content in that box.
+ */
+.ld-mini {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 300px;
+  margin-top: 14px;
+}
+
+/*
+ * Note 1: the review deck as the notebook deals it: the app's due pill, counter and answer
+ * buttons, laid straight on the paper. The app's dark backdrop is a dimmed screen, not part of it.
+ */
+.ld-review {
+  align-items: center;
+}
+
+.ld-review-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+}
+
+.ld-review-top .ld-due {
+  margin-top: 0;
+}
+
+.ld-review-count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(15, 34, 51, 0.12);
+  color: var(--ld-ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ld-deck {
+  position: relative;
+  width: 62%;
+  margin-right: 42px;
+  height: 164px;
+  margin-top: 12px;
+}
+
+.ld-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 18px -10px rgba(0, 0, 0, 0.6);
+}
+
+.ld-card.is-back.is-1 {
+  rotate: 4deg;
+  translate: 22px 6px;
+}
+
+.ld-card.is-back.is-2 {
+  rotate: 8deg;
+  translate: 42px 14px;
+}
+
+.ld-card.is-back {
+  justify-content: flex-end;
+  background: #e9e6df;
+}
+
+/* The subject peeks out at the right, the way the app's card list shows the deck. */
+.ld-card.is-back .ld-card-subject {
+  text-align: right;
+}
+
+.ld-card.is-front {
+  rotate: -2deg;
+  padding: 7px 7px 0;
+}
+
+/* A photographed page: lined paper, a printed question, a pencil answer. */
+.ld-card-paper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 10px 8px;
+  border-radius: 4px;
+  background: #f1eee6 repeating-linear-gradient(180deg, transparent 0 17px, rgba(85, 172, 238, 0.14) 17px 18px);
+  color: #2b2b2b;
+}
+
+.ld-q {
+  font-family: var(--ld-print);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.ld-q-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ld-q-options .is-circled {
+  justify-self: start;
+  padding: 0 5px;
+  border: 1.6px solid #2c5fd1;
+  border-radius: 999px;
+}
+
+.ld-q-hand {
+  align-self: flex-end;
+  margin-top: auto;
+  rotate: -6deg;
+  color: #2c5fd1;
+  font: 700 20px / 1 var(--ld-hand);
+}
+
+.ld-card-subject {
+  display: block;
+  padding: 5px 8px;
+  background: #ffffff;
+  color: var(--ld-ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ld-card.is-front .ld-card-subject {
+  margin: 0 -7px;
+  background: #cfe3fb;
+}
+
+.ld-review-ask {
+  margin-top: 26px;
+  color: var(--ld-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ld-review-actions {
+  display: flex;
+  gap: 22px;
+  margin-top: 8px;
+}
+
+.ld-answer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--ld-ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ld-answer i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+
+.ld-answer svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ld-answer.is-missed i {
+  border: 2px solid #c9ced6;
+  background: #ffffff;
+  color: var(--ld-ink-soft);
+}
+
+.ld-answer.is-solved i {
+  color: #ffffff;
+}
+
+.ld-answer.is-solved i {
+  background: #2e8b57;
+}
+.ld-due {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin-top: 12px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #cfe3fb;
+  color: var(--ld-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Note 2: the board on its nail, and what the editor offers next. */
+.ld-hung {
+  margin-top: 12px;
+}
+
+.ld-cord {
+  display: block;
+  width: 76%;
+  margin: 0 auto -1px;
+  overflow: visible;
+}
+
+.ld-board-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.ld-board-actions span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(15, 34, 51, 0.1);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ld-board-actions .is-share {
+  color: var(--ld-blue);
+}
+
+/* Note 3: three screens of the story, fanned out. */
+.ld-fan {
+  position: relative;
+}
+
+.ld-fan-card {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 37%;
+  height: 226px;
+  margin-top: -106px;
+  padding: 18px 8px 10px;
+  overflow: hidden;
+  border-radius: 12px;
+  color: #000000;
+  text-align: center;
+  box-shadow: 0 14px 22px -12px rgba(3, 10, 24, 0.55);
+}
+
+.ld-fan-card small {
+  font-size: 12px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.ld-fan-card strong {
+  margin: 6px 0;
+  font-size: 50px;
+  line-height: 1;
+  font-weight: 1000;
+}
+
+.ld-fan-card.is-focus {
+  left: 31.5%;
+  margin-top: -120px;
+  z-index: 3;
+  background: var(--ld-coral);
+}
+
+.ld-fan-card.is-run {
+  left: 2%;
+  z-index: 2;
+  align-items: flex-start;
+  padding-left: 12px;
+  rotate: -7deg;
+  background: var(--ld-lavender);
+  text-align: left;
+}
+
+.ld-fan-card.is-run strong {
+  font-size: 58px;
+}
+
+.ld-fan-card.is-code {
+  right: 2%;
+  z-index: 1;
+  justify-content: flex-start;
+  padding: 22px 8px 10px 20px;
+  rotate: 7deg;
+  background-color: #141833;
+  background-position: 50% 40%;
+  background-size: cover;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+
+.ld-fan-card.is-code em {
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.ld-fan-card.is-code span {
+  font-size: 16px;
+  line-height: 1.1;
+  font-weight: 1000;
+}
+
+/* The focus line is one long word; the streak line has to fit left of the middle card. */
+.ld-fan-card.is-focus small:first-of-type {
+  font-size: 10px;
+}
+
+.ld-fan-card.is-run small {
+  max-width: 72px;
+}
+.ld-fan-globe {
+  width: 64px;
+  margin-top: 6px;
+}
+
+.ld-fan-bars {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 7px;
+  display: flex;
+  gap: 3px;
+}
+
+.ld-fan-bars i {
+  flex: 1;
+  height: 2.5px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.ld-fan-bars i.is-on {
+  background: #ffffff;
+}
+
+/* Still: the focus screen stays up, half its bar filled; pins and notes stop easing. */
+@media (prefers-reduced-motion: reduce) {
+  .ld-slide,
+  .ld-bar b {
+    animation: none;
+  }
+
+  .ld-slide.s2 {
+    opacity: 1;
+  }
+
+  .ld-bar.b2 b {
+    scale: 0.6 1;
+  }
+
+  .ld-bar.b3 b,
+  .ld-bar.b4 b {
+    scale: 0 1;
+  }
+
+  .ld-pin,
+  .ld-note {
+    transition: none;
+  }
+}

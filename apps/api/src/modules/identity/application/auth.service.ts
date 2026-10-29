@@ -3,6 +3,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { IdentityEventTopic } from "../domain/identity.events";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { I18nContext } from "nestjs-i18n";
 import * as argon2 from "argon2";
 import { ADMIN_PANEL_ROLES, UserRole, type AuthUser } from "@mentor/types";
 import type {
@@ -33,6 +34,7 @@ import { hashToken, TokenService, type IssuedTokens } from "./token.service";
 import { TurnstileService } from "./turnstile.service";
 import { AuthRateLimitService } from "./auth-rate-limit.service";
 import { assertSignupAdmission } from "./signup-admission";
+import { authEmailVariables } from "./auth-email-variables";
 
 export interface AuthResult {
   user: AuthUser;
@@ -265,7 +267,7 @@ export class AuthService {
           )) * 1000
         : RESET_PASSWORD_TTL_MS;
     const appUrl = this.config.get("APP_URL", { infer: true });
-    const path = type === EmailTokenType.VERIFY_EMAIL ? "eposta-dogrula" : "sifre-sifirla";
+    const variables = authEmailVariables(appUrl, type, raw, I18nContext.current()?.lang);
     const template =
       type === EmailTokenType.VERIFY_EMAIL
         ? EmailTemplate.VERIFY_EMAIL
@@ -275,7 +277,7 @@ export class AuthService {
         expiresAt: new Date(Date.now() + ttl),
       }, user.email, (transaction) => this.queue.enqueue(JobName.SEND_EMAIL, {
           to: user.email, template,
-          variables: { displayName: user.displayName, link: `${appUrl}/${path}?token=${raw}` },
+          variables: { displayName: user.displayName, ...variables },
           executionGuard: { type: "identity-email-token", tokenHash: hashToken(raw) },
         }, { transaction }));
     } catch (err) {

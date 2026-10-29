@@ -9,7 +9,6 @@ import {
   UserRole,
   type AuthUser,
   type EconomyBalance,
-  type ExamType,
 } from "@mentor/types";
 import { Logo, NotificationBell } from "@mentor/ui";
 
@@ -34,7 +33,6 @@ import {
   parseAppSidebarCookie,
 } from "@/lib/app-sidebar";
 import { useAuth } from "@/lib/auth-context";
-import { blogHref } from "@/lib/blog-href";
 import { isCoach } from "@/lib/coach-surface";
 import { useEconomySnapshot } from "@/lib/economy-store";
 import { greetingKeyForHour } from "@/lib/greeting";
@@ -58,10 +56,9 @@ const TAB_EASE = [0.22, 1, 0.36, 1] as const;
  * bounces a coach away from (APP-090). Rendering them for a coach would be five links that all
  * redirect, which is worse than no link at all.
  *
- * It is set here rather than derived from `isStudentOnlyPath(href)` on purpose: `/knowledge` is a
- * student route by feel but is deliberately NOT blocked (a coach relays official exam facts to
- * their students), while APP-091 made `/plan` role-aware. Keeping the flags explicit makes both
- * exceptions visible.
+ * It is set here rather than derived from `isStudentOnlyPath(href)` on purpose: APP-091 made
+ * `/plan` role-aware, and keeping the flags explicit keeps that exception visible. The blog left
+ * the app nav on 2026-10-28; it is reached from the public landing ("Blog'dan") and its own header.
  */
 const NAV_ITEMS = [
   /* Human-coach surface (W8) and, since APP-090, the coach's home. `/students` (TR `/kocluk`) is
@@ -92,7 +89,6 @@ const NAV_ITEMS = [
     icon: "analysis",
     studentOnly: true,
   },
-  { href: "/knowledge", labelKey: "knowledge", icon: "knowledge" },
   /* Sidebar-only for now: the mobile tab pill is full at five, and the notebook's own return
      path is the review notification, not a tab the user hunts for. */
   {
@@ -102,7 +98,15 @@ const NAV_ITEMS = [
     sidebarOnly: true,
     studentOnly: true,
   },
-  { href: "/community", labelKey: "community", icon: "community", sidebarOnly: true },
+  /* In the student's tab pill since 2026-10-28, in the slot the blog left (Koç stays in the middle). */
+  { href: "/community", labelKey: "community", icon: "community" },
+  /* The coach's public profile: the fifth tab of their pill, so Öğrencilerim stays in the middle. */
+  {
+    href: "/students/profile",
+    labelKey: "coach_profile",
+    icon: "coachProfile",
+    roles: [UserRole.COACH],
+  },
   {
     href: "/settings",
     labelKey: "settings",
@@ -113,10 +117,6 @@ const NAV_ITEMS = [
 
 type NavItem = (typeof NAV_ITEMS)[number];
 
-/** Blog is public and filtered by `?family=`; a member lands on their own exam's list. */
-function navHref(href: NavItem["href"], examType: ExamType | null | undefined) {
-  return href === "/knowledge" && examType ? blogHref({ family: examType }) : href;
-}
 
 const SIDEBAR_ITEMS = NAV_ITEMS.filter(
   (i) => !("sidebarExclude" in i && i.sidebarExclude),
@@ -327,7 +327,6 @@ function DesktopSidebar({
               item={item}
               label={t(item.labelKey)}
               active={isNavActive(pathname, item.href)}
-              examType={user?.examType}
             />
           ))}
         </div>
@@ -378,7 +377,6 @@ function DesktopSidebar({
               item={item}
               label={t(item.labelKey)}
               active={isNavActive(pathname, item.href)}
-              examType={user?.examType}
             />
           ))}
         </div>
@@ -419,7 +417,6 @@ function MobileTabBar({
           item={item}
           label={t(item.labelKey)}
           active={isNavActive(pathname, item.href)}
-          examType={user?.examType}
           reduceMotion={Boolean(reduceMotion)}
           transition={tabTransition}
         />
@@ -432,14 +429,12 @@ function MobileTabLink({
   item,
   label,
   active,
-  examType,
   reduceMotion,
   transition,
 }: {
   item: NavItem;
   label: string;
   active: boolean;
-  examType: ExamType | null | undefined;
   reduceMotion: boolean;
   transition:
     | { duration: number }
@@ -478,7 +473,7 @@ function MobileTabLink({
 
   return (
     <Link
-      href={navHref(item.href, examType)}
+      href={item.href}
       aria-current={active ? "page" : undefined}
       aria-label={label}
       className="relative flex h-full min-w-0 flex-1 items-center justify-center px-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
@@ -703,19 +698,17 @@ function NavLink({
   item,
   label,
   active,
-  examType,
 }: {
   item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
-  examType: ExamType | null | undefined;
 }) {
   const Icon = item.icon;
   const tone = ACTIVE_NAV_TONE;
 
   return (
     <Link
-      href={navHref(item.href, examType)}
+      href={item.href}
       aria-current={active ? "page" : undefined}
       className={`flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-base transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${
         active
@@ -738,19 +731,17 @@ function CollapsedNavLink({
   item,
   label,
   active,
-  examType,
 }: {
   item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
-  examType: ExamType | null | undefined;
 }) {
   const Icon = item.icon;
   const tone = ACTIVE_NAV_TONE;
 
   return (
     <Link
-      href={navHref(item.href, examType)}
+      href={item.href}
       aria-current={active ? "page" : undefined}
       aria-label={label}
       className={`group relative flex size-11 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${

@@ -1,4 +1,5 @@
 import { HttpStatus } from "@nestjs/common";
+import { I18nContext } from "nestjs-i18n";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -16,6 +17,7 @@ const USER = {
 function makeService(count: number) {
   const usersRepo = {
     findByIdService: vi.fn(async () => USER),
+    findByEmailService: vi.fn(async () => USER),
   };
   const emailTokenRepo = {
     countVerificationResendAttemptsSince: vi.fn(async () => count),
@@ -35,7 +37,7 @@ function makeService(count: number) {
     }),
   };
   const queue = {
-    enqueue: vi.fn(async () => undefined),
+    enqueue: vi.fn(async (_name: string, _payload: unknown) => undefined),
   };
   const storage = {
     getPublicUrl: vi.fn((key: string) => `/storage/${key}`),
@@ -45,12 +47,12 @@ function makeService(count: number) {
     usersRepo as never,
     emailTokenRepo as never,
     {} as never,
-    {} as never,
+    { assertValid: vi.fn(async () => undefined) } as never,
     config as never,
     configRegistry as never,
     queue as never,
     storage as never,
-    {} as never, {} as never,
+    {} as never, { consumeAccount: vi.fn(async () => ({ allowed: true })) } as never,
   );
 
   return { emailTokenRepo, queue, service };
@@ -201,6 +203,48 @@ describe("AuthService.resendVerificationEmail", () => {
       expect(queue.enqueue).toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
+    }
+  });
+});
+
+describe("AuthService queued email locale", () => {
+  it.each([
+    { locale: "en", lang: "en", path: "/en/verify-email" },
+    { locale: "en-US", lang: "en", path: "/en/verify-email" },
+    { locale: "tr", lang: "tr", path: "/eposta-dogrula" },
+    { locale: undefined, lang: "tr", path: "/eposta-dogrula" },
+  ])("preserves $locale for verification copy and its destination", async ({ locale, lang, path }) => {
+    const context = vi.spyOn(I18nContext, "current").mockReturnValue(
+      locale ? { lang: locale } as never : undefined,
+    );
+    const { queue, service } = makeService(0);
+    try {
+      await service.resendVerificationEmail(USER.id);
+      const payload = queue.enqueue.mock.calls[0]?.[1] as unknown as {
+        variables: { lang: string; link: string };
+      };
+      expect(payload.variables.lang).toBe(lang);
+      expect(new URL(payload.variables.link).pathname).toBe(path);
+      expect(new URL(payload.variables.link).searchParams.get("token")).toBeTruthy();
+    } finally {
+      context.mockRestore();
+    }
+  });
+
+  it("keeps an English reset email on the English reset page", async () => {
+    const context = vi.spyOn(I18nContext, "current").mockReturnValue({ lang: "en" } as never);
+    const { queue, service } = makeService(0);
+    try {
+      await service.forgotPassword({ email: USER.email });
+      const payload = queue.enqueue.mock.calls[0]?.[1] as unknown as {
+        template: string;
+        variables: { lang: string; link: string };
+      };
+      expect(payload.template).toBe("identity.reset-password");
+      expect(payload.variables.lang).toBe("en");
+      expect(new URL(payload.variables.link).pathname).toBe("/en/reset-password");
+    } finally {
+      context.mockRestore();
     }
   });
 });

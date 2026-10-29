@@ -52,6 +52,7 @@ export class DailyReminderService {
         "COACH",
         NotificationCopyKey.DAILY_REMINDER,
         "/study-session",
+        { dedupeKey },
       );
 
       if (!emailOn && !pushOn) {

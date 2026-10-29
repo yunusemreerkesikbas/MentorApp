@@ -180,7 +180,7 @@
     "has_account": "Zaten hesabım var",
     "tagline": "Sınav yoldaşın",
     "hero_title": "Bu gece ışığı yanan <glow>tek pencere</glow> seninki değil.",
-    "hero_lead": "Günlük bir plan, aynı saatlerde çalışan arkadaşlar ve Premium'da seni tanıyan bir yapay zekâ koç. Yolu birlikte yürüyelim.",
+    "hero_lead": "Sınava hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı: günlük planın, odak seansların ve aynı saatlerde çalışan arkadaşların tek yerde.",
     "how_it_works": "Nasıl çalışır",
     "faq_nav": "SSS",
     "counter": "Son 24 saatte {count, number} kişi burada çalıştı.",
@@ -190,6 +190,43 @@
       "body": "Öğrencilerinin planını, seanslarını ve haftalık raporunu tek yerden takip et. Takıldıkları yerde yanlarında ol.",
       "cta": "Koç olarak başla",
       "more": "Koç sabahını gör"
+    },
+    "blog_section": {
+      "pill": "Blog",
+      "title": "Sınav yolunda işine yarayacak yazılar",
+      "all": "Tüm yazılar"
+    },
+    "morning": {
+      "pill": "Sabah",
+      "title": "Sabah olunca masanda neler var?",
+      "lead": "Gece yanındaydık. Gün doğunca masanda kendi araçların seni bekliyor.",
+      "notebook": {
+        "name": "Defterlerim",
+        "tab": "Defter",
+        "title": "Yanlışların kaybolmaz.",
+        "body": "Yanlış soruyu fotoğrafla ya da yazarak ekle, dersine ve konusuna koy. Tekrar günü gelince sorular kart kart önüne gelir. Çözdüğün kart giderek seyrekleşir, takıldığın 2 gün sonra yine karşında.",
+        "question": "3x − 5 = 2x + 4 ise x kaçtır?",
+        "subject_turkish": "Türkçe",
+        "subject_history": "Tarih",
+        "math": "Matematik Defteri",
+        "math_tape": "Matematik"
+      },
+      "board": {
+        "name": "Hedef panosu",
+        "tab": "Pano",
+        "title": "Hedefin gözünün önünde.",
+        "body": "Hedef şehrini haritada seç, alanını ve kendi fotoğraflarını panona as. İstersen duvar kâğıdı yap, toplulukla paylaş.",
+        "goal": "Bilgisayar Mühendisi",
+        "city": "Konya"
+      },
+      "story": {
+        "name": "Haftanın hikâyesi",
+        "tab": "Hikâye",
+        "title": "Her hafta bir hikâye.",
+        "body": "Kaç gün çalıştın, kaç dakika odaklandın, hangi ders parladı: hafta bitince hepsi kısa bir hikâye olur. Hafta dolu geçtiyse bir de kod adın olur.",
+        "dates": "20 – 26 Ekim",
+        "codename": "Nebula Dalgıcı"
+      }
     },
     "faq": {
       "pill": "SSS",
@@ -284,10 +321,10 @@
     },
     "analysis": {
       "name": "Analiz",
-      "title": "Denemelerin sana hikayesini anlatsın.",
-      "body": "Deneme sonuçlarını gir, hangi konunun seni beklediğini birlikte görelim. Her hafta kısa bir hikaye: ne iyi gitti, sırada ne var.",
+      "title": "Denemelerin sana hikâyesini anlatsın.",
+      "body": "Deneme sonuçlarını gir, hangi konunun seni beklediğini birlikte görelim.",
       "scribble": "her hafta biraz daha",
-      "story": "Haftanın hikayesi: Paragrafta istikrar yerinde. Sırada geometri var."
+      "story": "Sıradaki odak: Geometri. Paragrafta istikrar yerinde."
     },
     "yours": {
       "name": "Sen",
@@ -388,6 +425,7 @@
     "profile": "Profil",
     "settings": "Ayarlar",
     "community": "Topluluk",
+    "coach_profile": "Koç profili",
     "language_toggle_label": "Dil seç",
     "theme_toggle_label": "Tema",
     "theme_to_dark": "Koyu temaya geç",

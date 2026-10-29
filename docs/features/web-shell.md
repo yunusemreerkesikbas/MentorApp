@@ -67,6 +67,79 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-29 · Landing "Sabah masası": the notebook, the goal board and the story of the week.**
+  - **Where:** the first paper section after the dawn (`#sabah`), before the coach band. It shows
+    three free features the night story never mentioned.
+  - **The scene is the app's own desk.** It shows the Defterlerim desk in its day theme, on a fixed
+    1040 × 520 stage. The vector parts are SVG; the desk grain is `desk-backdrop.tsx`'s own tiles
+    (`WOOD_FINE` / `WOOD_BROAD`, now exported). On it:
+    - Puhu reading on his book stack, with the app's bubble.
+    - The Yanlış Defterim cover with its "Bugün 2 tekrar" sticky note.
+    - The goal board inside the vision board's own `BoardFrame`.
+    - A phone that cycles four weekly-story screens.
+  - **Real words:** the demo uses the app's own message keys (`notebooks.*`, `notebook.*`,
+    `vision.board.*`, `analysis.recap.*`), so `/en` shows the English app. Only the sample contents
+    are landing copy (`landing.morning.*`).
+  - **Layout:** three numbered pins on the scene light up together with their paper note.
+    - From `lg`: the three notes sit side by side.
+    - Below `lg`: "Defter · Pano · Hikâye" tabs show one note at a time (all three stay in the DOM).
+    - Below `sm`: the stage keeps its coordinates and shows its middle two thirds at 4:3.
+    - Reduced motion: the phone holds the focus screen.
+  - **Art:**
+    - `public/visuals/landing/desk-*`, AVIF + WebP, all lazy. The board is one baked image: the
+      Kolaj template's photo slots, the app's stickers, and four Puhu-world photos from the owner
+      (originals in gitignored `art-source.local/landing-board/`). The goal card is text over it.
+    - The JS budget still passes (landing route 352.6 / 400 KiB).
+  - **Gotchas:**
+    - `landing.desk` is already the city's "Masa" stop. A second `desk` key in the JSON silently
+      lost to it, and the section showed the stop's title; hence `landing.morning`.
+    - `boardImageSrc` sends any relative photo URL to the API host, so demo photos can't go through
+      `BoardItemView`.
+    - `BOARD_TEXTURE_STYLES` lives in a client module; the cork is baked into the image.
+  - **No Premium line:** no AI is shown, and the free story ends with "Puhu'dan bir not".
+  - **Same day, the notebook note shows the review deck** (owner's request), not the open notebook.
+    - The deck is what the app deals: "3 soru tekrar zamanı", "1 / 3", cards by subject, and
+      "Bu sefer çözebildin mi?" with Takıldım / Çözdüm (`notebook.review_*`).
+    - The copy follows `notebook-review.policy.ts`: a solved card comes back less often (2 → 7 → 21
+      days); a missed one is back in 2 days.
+    - The question card is HTML, a made-up equation, so the landing never shows a real exam question
+      or generated text.
+  - **Balance pass:**
+    - The three minis share one height (`.ld-mini`, 300px) so the notes end on about the same line.
+    - The deck sits on the paper without the app's dark backdrop, which is a dimmed screen there.
+    - The story cards are larger (226px).
+  - **Related:**
+    - `_components/landing/{landing-desk,desk-picker,desk-scene,desk-room,desk-board,desk-story}.tsx`
+    - `landing-desk.css`
+    - `e2e/landing.spec.ts`
+
+- **2026-10-28 · Blog moves from the app nav to the landing.**
+  - **Landing:** a "Blog'dan" section sits between the coach band and the FAQ: the 3 latest posts as
+    cards (the blog's own `ArticleCover` and `PostMeta`) and "Tüm yazılar".
+    - It streams in Suspense and is cached for an hour.
+    - With no posts or no API, there is no section.
+    - Post titles may name an exam; this is the one exception to the landing's generic "sınav" rule.
+  - **App nav:** the Blog item is gone from the sidebar and the phone tab bar.
+    - The student's tab bar is Anasayfa · Plan · Koç · Analiz · Topluluk; Topluluk left
+      sidebar-only.
+    - The coach's tab bar is Plan · Topluluk · Öğrencilerim · Koç profili (new nav item →
+      `/kocluk/profil`) · Ayarlar.
+    - The raised home stays in the centre for both.
+    - `isNavActive` lets a nested item own its pages, so on `/kocluk/profil` only "Koç profili" is
+      active.
+  - **Reaching the blog:** members still get there from Ayarlar ("Uygulama desteği"), notifications
+    and the blog's own header.
+  - **Gotchas:**
+    - The paper section pins `--color-main/secondary/surface` so the blog's pieces keep the landing
+      palette.
+    - `knowledge.spec.ts`'s API mock now answers the hub's `knowledge.index` ad slot; that red
+      predated this change.
+  - **Related:**
+    - `_components/landing/landing-blog.tsx`
+    - `components/app-nav{,-icon}.tsx`
+    - `lib/nav-active{,.spec}.ts`
+    - `e2e/{knowledge,coach-home}.spec.ts`
+
 - **2026-10-28 · Coach page `/koclar` ("Sabah turu", EN `/coaches`).**
   - **The page:**
     - The landing's apartment at 07:00, with paper tags on the windows (who studied last night;

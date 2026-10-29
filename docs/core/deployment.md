@@ -51,6 +51,8 @@ Resolve these items before authorizing production provisioning:
   Domain purchase alone does not enable hosting, mail delivery, payments or ads.
 - Verify support/legal receipt at `destek@puhukoc.com`, forwarded to
   `erkesikbasyunusemre@gmail.com`. `noreply@puhukoc.com` is the separate sending identity.
+  Receiving DNS, the verified destination and this support-only forwarding rule passed a
+  real Gmail Inbox test on 2026-10-28. Catch-all remains off; see the current evidence above.
 
 ## 2. Render and database
 
@@ -66,7 +68,10 @@ Resolve these items before authorizing production provisioning:
    `0.0.0.0` and consume Render's `PORT`. Local starts retain their original ports.
 4. Create the production Neon EU database with pgvector. `DATABASE_URL` is the pooled restricted
    runtime connection; `DATABASE_MIGRATION_URL` is the direct migration-owner connection used
-   by the existing pre-deploy migration command. The runtime role must not own DB objects,
+   by the migration command, not required by the API runtime. Free services use an attended
+   external migration step and omit that owner credential from the API environment; see
+   [the procedure and limits](../qa/2026-10-29-free-hosting-preparation.md). The retained optional
+   paid Blueprint still supplies it for pre-deploy. The runtime role must not own DB objects,
    bypass RLS, inherit privileged roles or create roles/databases. Startup inspection rejects
    unsafe roles. Keep both URLs out of Git and public environment variables.
 5. Create a restore point and run the existing forward-only migration chain with the owner
@@ -202,7 +207,7 @@ bootstrap by design; health endpoints remain available. Do not weaken the origin
 - Create scoped production EU R2 credentials and separate public/private buckets. Attach the
   media domain only to the public bucket; keep private/public-development `r2.dev` access off.
   Restrict upload/read CORS to production origins and run `storage:check`.
-- Set web `WEB_CSP_STORAGE_ORIGINS` to exact public-media and EU R2 origins used by signed URLs.
+- Set web `WEB_CSP_STORAGE_ORIGINS` to exact public-media and EU R2 origins used by signed URLs (note that S3 virtual-hosted presigned GET URLs use `https://<R2_PRIVATE_BUCKET>.<R2_ACCOUNT_ID>.eu.r2.cloudflarestorage.com`).
   No wildcards or paths. Validate uploads, private downloads and CSP in browsers.
 
 Follow [storage-r2.md](./storage-r2.md) for storage permissions and release checks.
@@ -215,8 +220,13 @@ Follow [storage-r2.md](./storage-r2.md) for storage permissions and release chec
   incoming mail separately. Domain verification and one owner-approved Sent/Delivered transport
   test passed on 2026-10-28; see [the live evidence](../qa/2026-10-28-free-first-launch.md).
   Set a domain-scoped sending key and verified sender. Disable open/click tracking for auth mail.
-  Sender verification does not create an inbox: configure Cloudflare support forwarding separately
-  and verify actual receipt. Do not reuse staging secrets or enable a paid delivery fallback.
+  Sender verification does not create an inbox: Cloudflare support forwarding was separately
+  configured and its Gmail Inbox test passed on 2026-10-28. Forwarding does not configure Gmail
+  to send as the support address. Do not reuse staging secrets or enable a paid delivery fallback.
+  Root DMARC now has a single non-enforcing `v=DMARC1; p=none;` TXT record (published and public-DNS
+  verified on 2026-10-28). Keep one record; do not re-import it. Test new auth messages using
+  reachable production HTTPS links and inspect DMARC plus Inbox placement before enforcing
+  quarantine/reject. The earlier local reset message reached Spam; this acceptance remains open.
 - Configure Google OAuth's three variables together if enabled; register the exact callback
   and check authorized domains/consent-screen status before public signup.
 - Payments remain disabled; SMS and sponsorship stay behind existing acceptance gates. Do not

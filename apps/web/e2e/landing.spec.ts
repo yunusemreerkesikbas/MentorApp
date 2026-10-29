@@ -111,6 +111,34 @@ test("azaltılmış harekette notlar kamera olmadan alt alta görünür", async 
   // At the top of the page, with no scrolling: every note is already laid out at full opacity.
   await expect(page.locator('.lc-panel[data-stop="4"]')).toHaveCSS("opacity", "1");
   await expect(page.getByRole("heading", { name: "Aynı masada, herkes kendi saatinde." })).toBeAttached();
+  // The morning desk's phone holds one story screen instead of cycling.
+  await expect(page.locator(".ld-slide.s2")).toHaveCSS("opacity", "1");
+  await expect(page.locator(".ld-slide.s1")).toHaveCSS("opacity", "0");
+});
+
+test("sabah masası: iğne kendi notunu öne çıkarır, telefonda notlar sekmeyle gelir", async ({ page }, testInfo) => {
+  await asVisitor(page);
+  await page.goto("/#sabah");
+  const desk = page.locator("#sabah");
+  await expect(desk.getByRole("heading", { level: 2, name: "Sabah olunca masanda neler var?" })).toBeVisible();
+  // The demo speaks the app's own words (notebooks.desk.bubble_due).
+  await expect(desk.getByText("Yanlış Defterini en öne koydum. Bugün 2 tekrar seni bekliyor.")).toBeAttached();
+
+  const pin = desk.getByRole("button", { name: "Hedef panosu" });
+  await pin.click();
+  await expect(pin).toHaveAttribute("aria-pressed", "true");
+  await expect(desk.getByRole("heading", { level: 3, name: "Hedefin gözünün önünde." })).toBeVisible();
+
+  const notebook = desk.getByRole("heading", { level: 3, name: "Yanlışların kaybolmaz." });
+  if (testInfo.project.name.startsWith("desktop")) {
+    await expect(notebook).toBeVisible();
+    return;
+  }
+  // Below lg: one note at a time.
+  await expect(notebook).toBeHidden();
+  await desk.getByRole("button", { name: "Hikâye", exact: true }).click();
+  await expect(desk.getByRole("heading", { level: 3, name: "Her hafta bir hikâye." })).toBeVisible();
+  await expect(desk.getByRole("heading", { level: 3, name: "Hedefin gözünün önünde." })).toBeHidden();
 });
 
 test("tanıtımı görmüş ziyaretçi Ücretsiz başla ile kayda gider", async ({ page }) => {

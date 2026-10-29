@@ -533,6 +533,11 @@ dawn. Spec: `docs/superpowers/specs/2026-10-27-landing-isikli-sehir-design.md`; 
   night, paper line on the paper.
 - **Art** lives in `public/visuals/landing/` as an AVIF + WebP pair. Rooms load only once the
   camera moves in.
+- **Sabah masası (2026-10-29):** the morning section shows the product as the product draws it. It
+  is the Defterlerim desk in its day theme (`notebook-desk.css` day tokens, the desk's own grain
+  tiles), with the vision board's `BoardFrame` and the weekly story's coral, lavender and mint.
+  Its palette is `--ld-*` in `_components/landing/landing-desk.css`. The picked pin and note share
+  the lamp yellow `#FFD15C`.
 
 ---
 

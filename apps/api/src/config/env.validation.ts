@@ -27,7 +27,7 @@ const envSchema = z.object({
 
   // DB — Postgres (local docker / Neon). Required: the app cannot function without it (fail-fast).
   DATABASE_URL: z.string().url(),
-  /** Direct (non-pooler) URL used only by migration tooling and Render pre-deploy. */
+  /** Optional legacy deployment value; required/validated by migration tooling, not runtime. */
   DATABASE_MIGRATION_URL: z.string().url().optional(),
 
   // Auth — own JWT (§8). Required since W0 identity (fail-fast).
@@ -151,14 +151,6 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       message: "Phone OTP and fingerprint secrets must be different." });
   }
   // Production safety lock: the fake payments provider must never reach production.
-  if (env.NODE_ENV === "production" && !env.DATABASE_MIGRATION_URL) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["DATABASE_MIGRATION_URL"],
-      message: "DATABASE_MIGRATION_URL is required in production for direct pre-deploy migrations.",
-    });
-  }
-
   if (env.NODE_ENV === "production" && env.PAYMENTS_PROVIDER === "fake") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

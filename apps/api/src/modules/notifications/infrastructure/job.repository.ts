@@ -8,6 +8,7 @@ import { JobStatus } from "../domain/notifications.constants";
 
 export type JobRow = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
+export const INTERRUPTED_JOB_REASON = "Execution interrupted; outcome unknown; manual review required.";
 
 /** Data access for the MVP `jobs` queue table (SERVICE context — no RLS on jobs). */
 @Injectable()
@@ -53,55 +54,85 @@ export class JobRepository {
       .set({
         status: JobStatus.RUNNING,
         attempts: sql<number>`${jobs.attempts} + 1`,
-        updatedAt: new Date(),
+        updatedAt: sql`now()`,
       })
       .where(inArray(jobs.id, ids))
       .returning();
   }
 
-  /** Force a job straight to DEAD (no retry) — for permanent failures like a missing handler. */
-  async markDead(tx: DatabaseTx, id: string, error: string): Promise<void> {
-    await tx
-      .update(jobs)
-      .set({ status: JobStatus.DEAD, lastError: error.slice(0, 2000), updatedAt: new Date() })
-      .where(eq(jobs.id, id));
+  /** Lock only stale RUNNING rows; their provider outcome is unknown, so never replay them. */
+  async quarantineInterrupted(tx: DatabaseTx, limit: number, timeoutSeconds: number): Promise<JobRow[]> {
+    const picked = await tx.execute<{ id: string }>(sql`
+      SELECT id FROM jobs
+      WHERE status = ${JobStatus.RUNNING}
+        AND updated_at < now() - (${timeoutSeconds} * interval '1 second')
+      ORDER BY updated_at, id
+      LIMIT ${limit}
+      FOR UPDATE SKIP LOCKED
+    `);
+    const ids = picked.rows.map((row) => row.id);
+    if (!ids.length) return [];
+    return tx.update(jobs).set({
+      status: JobStatus.DEAD, lastError: INTERRUPTED_JOB_REASON, updatedAt: sql`now()`,
+    }).where(inArray(jobs.id, ids)).returning();
   }
 
-  async markCompleted(tx: DatabaseTx, id: string): Promise<void> {
-    await tx
+  async heartbeat(tx: DatabaseTx, job: JobRow): Promise<boolean> {
+    const updated = await tx.update(jobs).set({ updatedAt: sql`now()` })
+      .where(and(eq(jobs.id, job.id), eq(jobs.status, JobStatus.RUNNING), eq(jobs.attempts, job.attempts)))
+      .returning({ id: jobs.id });
+    return updated.length === 1;
+  }
+
+  /** Force a job straight to DEAD (no retry) — for permanent failures like a missing handler. */
+  async markDead(tx: DatabaseTx, id: string, error: string, attempts: number): Promise<boolean> {
+    const updated = await tx
       .update(jobs)
-      .set({ status: JobStatus.COMPLETED, lastError: null, updatedAt: new Date() })
-      .where(eq(jobs.id, id));
+      .set({ status: JobStatus.DEAD, lastError: error.slice(0, 2000), updatedAt: sql`now()` })
+      .where(and(eq(jobs.id, id), eq(jobs.status, JobStatus.RUNNING), eq(jobs.attempts, attempts)))
+      .returning({ id: jobs.id });
+    return updated.length === 1;
+  }
+
+  async markCompleted(tx: DatabaseTx, id: string, attempts: number): Promise<boolean> {
+    const updated = await tx
+      .update(jobs)
+      .set({ status: JobStatus.COMPLETED, lastError: null, updatedAt: sql`now()` })
+      .where(and(eq(jobs.id, id), eq(jobs.status, JobStatus.RUNNING), eq(jobs.attempts, attempts)))
+      .returning({ id: jobs.id });
+    return updated.length === 1;
   }
 
   async markFailed(
     tx: DatabaseTx,
     row: JobRow,
     error: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const exhausted = row.attempts >= row.maxAttempts;
     if (!exhausted) {
       const delaySec = Math.min(3600, 60 * 2 ** (row.attempts - 1));
-      const nextRunAt = new Date(Date.now() + delaySec * 1000);
-      await tx
+      const updated = await tx
         .update(jobs)
         .set({
           status: JobStatus.PENDING,
           lastError: error.slice(0, 2000),
-          runAt: nextRunAt,
-          updatedAt: new Date(),
+          runAt: sql`now() + (${delaySec} * interval '1 second')`,
+          updatedAt: sql`now()`,
         })
-        .where(eq(jobs.id, row.id));
-      return;
+        .where(and(eq(jobs.id, row.id), eq(jobs.status, JobStatus.RUNNING), eq(jobs.attempts, row.attempts)))
+        .returning({ id: jobs.id });
+      return updated.length === 1;
     }
-    await tx
+    const updated = await tx
       .update(jobs)
       .set({
         status: JobStatus.DEAD,
         lastError: error.slice(0, 2000),
-        updatedAt: new Date(),
+        updatedAt: sql`now()`,
       })
-      .where(eq(jobs.id, row.id));
+      .where(and(eq(jobs.id, row.id), eq(jobs.status, JobStatus.RUNNING), eq(jobs.attempts, row.attempts)))
+      .returning({ id: jobs.id });
+    return updated.length === 1;
   }
 
   async findById(id: string): Promise<JobRow | undefined> {

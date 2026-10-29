@@ -11,23 +11,46 @@ paid overages were verified. Public DNS matches exactly and Resend completed dom
 The domain is Verified. An owner-approved, domain-scoped sending key was saved only to an
 ignored local acceptance file; one transport test reached the provider's Delivered event.
 The owner confirmed this message reached the Gmail Inbox and supplied a screenshot showing
-the correct sender. Cold-start signup/reset delivery remains unverified.
-The owner requested the original checkout/current `master` branch; unrelated landing work is
+the correct sender. The separately approved Cloudflare support-forwarding setup and its
+single-message Gmail Inbox test also passed. The local auth API/queue then passed with two
+approved real messages, both marked Delivered by Resend. The owner confirmed verification in
+Gmail Inbox but reset in Spam; reset Inbox acceptance remains open. Cold-start signup/reset
+delivery remains unverified.
+Reset-message header inspection subsequently confirmed SPF/DKIM PASS and DMARC FAIL; public
+DNS confirmed the missing DMARC policy. After browser recovery, published the non-enforcing
+`v=DMARC1; p=none;` TXT record; Cloudflare and public `1.1.1.1` DNS show the exact value. See the
+auth acceptance record for evidence and the public-HTTPS retest gate. New-message DMARC PASS
+and reset Inbox acceptance remain unverified; DNS publication does not guarantee Inbox.
+The [2026-10-29 Turnstile preflight](2026-10-29-turnstile-preflight.md) verified the existing
+integration and 87 focused tests. The owner subsequently approved the free Managed widget
+and saving its keypair only to the ignored local acceptance file. Provisioning and the
+dummy-secret probe passed. The owner's manual browser challenge then passed the real local
+Nest login (200) and same-token replay rejection (400), after the automated browser attempt
+hit Cloudflare 300030. Production Next.js/Render acceptance remains pending.
+No security guard was relaxed and no account API credential was created.
+The owner requested the original checkout/current branch; unrelated landing work is
 outside this package. Earlier cost profiles are historical alternatives.
+
+Continuation: [local auth email acceptance](2026-10-28-auth-email-acceptance.md) found and fixed
+request-language loss in queued auth mail. Real local API/DB/queue tests passed first with
+provider HTTP mocked, then with actual Resend delivery. Render cold-start acceptance remains open. The current
+[Cloudflare setup guide](https://developers.cloudflare.com/cloudflare-one/setup/) still requires
+payment details even on Zero Trust Free. No Access plan, card/overage terms or security bypass
+was accepted; browser control disconnected before completing a fresh account-level inspection.
 
 ## Provider matrix
 
 Prices/limits checked against primary sources on 2026-10-28. Account observations below are
 session snapshots, not billing settings enforced by the repository. Authorized DNS/domain/key
-setup and the single transport test are recorded separately below.
+setup and the separately approved transport/forwarding/auth tests are recorded separately below.
 
 | Service | Free candidate and limits | Exhaustion / actual stop | Decision and paid gate |
 |---|---|---|---|
 | Render web/API/admin | Hobby; 750 shared running instance-hours/month, 500 build minutes, 5 GB public outbound, two custom domains. Free services sleep after 15 idle minutes; waking takes about a minute. | Free-hour exhaustion suspends Free services. Without a payment method, bandwidth exhaustion suspends services and build exhaustion stops new builds. With a card, bandwidth is billed; the pipeline spend limit covers builds only. | Test a temporary free rehearsal first. Never apply the existing paid Blueprint for that test. Current account has no services/card; preserve that state until acceptance. |
 | Neon Postgres | Free: 100 CU-hours/project/month, 1 GB database storage, 5 GB outbound, six-hour limited restore history. Start at min=max 0.25 CU, approximately 1 GB RAM. | Compute/network exhaustion suspends project compute; storage-growing writes fail at the Free storage limit. Free does not bill overages. | Suitable only if measured active time fits the quota. No organization upgrade or larger compute without a separate cost proposal. |
-| Resend transactional email | Free verified before the test: 0/3,000 monthly and 0/100 daily messages; three included domains. One test message was subsequently accepted and marked Delivered. | Actual Transactional/Automations/Inboxes pay-as-you-go switches are off and disabled on Free. Quota exhaustion blocks sending; delivery errors retain existing queue retry/expiry guards without a paid fallback. | Source migration is ready. `puhukoc.com` added in eu-west-1; sending DNS matches and the domain is Verified, receiving remains off and custom tracking is not configured. A domain-scoped Sending access key exists only in the ignored local acceptance file; production credentials remain unconfigured. |
-| Cloudflare DNS, Turnstile, Email Routing | Use Free plans. Turnstile Free supports 20 widgets and unlimited challenges. Inbound Email Routing is free. | Product limits are not permissions to enable paid products. Keep unrelated account workloads unchanged. | The three Resend sending DNS records are published; website/receiving DNS and Turnstile remain unconfigured. Support forwarding is not yet configured. No paid Workers/email-sending product is needed for Resend. |
-| Cloudflare Access | Evaluate Access Free for the operator only; retain the existing admin/API Access checks. | Account setup currently requires a card/overage authorization the owner previously declined. The free-plan label is not proof that those terms are acceptable. | Live admin acceptance remains blocked. Do not accept overage terms or bypass guards to make the profile cheaper. |
+| Resend transactional email | Free verified before testing: 0/3,000 monthly and 0/100 daily messages; three included domains. This workflow subsequently sent four approved messages: direct delivery, support forwarding, auth verification and password reset; all four are marked Delivered. | Actual Transactional/Automations/Inboxes pay-as-you-go switches are off and disabled on Free. Quota exhaustion blocks sending; delivery errors retain existing queue retry/expiry guards without a paid fallback. | Source migration is ready. `puhukoc.com` added in eu-west-1; sending DNS matches and the domain is Verified. Resend receiving remains off; inbound support uses Cloudflare instead. Custom tracking is not configured. The sending key exists only in the ignored local acceptance file; production credentials remain unconfigured. |
+| Cloudflare DNS, Turnstile, Email Routing | Use Free plans. Turnstile Free supports 20 widgets and unlimited challenges. Inbound Email Routing is free. | Product limits are not permissions to enable paid products. Keep unrelated account workloads unchanged. | The three Resend sending records, five Cloudflare receiving records and one non-enforcing DMARC TXT record are published. Support forwarding to the verified Gmail address is Active; its Inbox test passed, catch-all is Disabled. One approved Managed Turnstile widget is created; its local keypair, dummy-secret probe and real local Nest login/replay acceptance passed. Production Next.js/Render acceptance and website DNS remain open. No paid Workers/email-sending product was enabled. |
+| Cloudflare Access | Evaluate Access Free for the operator only; retain the existing admin/API Access checks. | Current seat-management documentation states that new users are blocked once all subscription seats are consumed. This bounds seats, not other metered Cloudflare products or the whole account invoice. | Account onboarding still requires payment details. The owner's earlier refusal of card/overage terms remains in force; no activation or bypass was performed. Verify the actual Free subscription/checkout before considering a new decision. |
 | Cloudflare R2 Standard | Shared Free allowance: 10 GB-month storage, 1M Class A and 10M Class B operations; internet egress is free. | R2 bills storage/operations above the allowance. Budget alerts do not stop them. No account-wide hard billing stop has been verified. | Retain existing unrelated/dev/staging buckets. Do not enable production uploads/public media until enforceable request/storage controls or a suitable bounded alternative have been verified. |
 | Sentry | Evaluate Developer Free for one operator, with error monitoring only. No Replay or tracing in the initial cost profile. | Confirm the actual account plan/quota and paid-overage behavior before supplying production DSNs. A DSN does not enforce spending settings. | API integration exists. Web has only an environment slot, not an initialized browser SDK; do not claim browser monitoring is working. |
 | OpenAI / Gemini | AI stays off during acceptance; do not assume API credits or privacy-suitable free usage. | Application cap selected: `ai.budget.monthly_cap_usd_cents=100` before activation. The catalog's `0` means unlimited, not zero spend. App accounting/reservations are not a provider invoice cap. | Verify model availability/prices, all billable paths, conservative reservations and provider stop/top-up controls before enabling limited coach AI. Unknown model prices must not be treated as zero-cost permission. |
@@ -42,10 +65,41 @@ Sources: [Render Free](https://render.com/docs/free),
 [Turnstile plans](https://developers.cloudflare.com/turnstile/plans/),
 [email pricing](https://developers.cloudflare.com/email-service/platform/pricing/),
 [Access setup](https://developers.cloudflare.com/cloudflare-one/setup/),
+[Access seat exhaustion](https://developers.cloudflare.com/cloudflare-one/team-and-resources/users/seat-management/),
 [R2 pricing](https://developers.cloudflare.com/r2/pricing/),
 [Cloudflare alerts](https://developers.cloudflare.com/billing/manage/budget-alerts/),
 [Sentry plans](https://sentry.io/pricing/),
 [AdSense cost](https://support.google.com/adsense/answer/32850?hl=en).
+
+## Hosting account recheck, 2026-10-29
+
+Read-only account inspection; no service, database, branch, credential or billing setting
+was created or changed. The original checkout remains on `feature/APP-121`.
+
+- Render's **Puhukoc** workspace shows Hobby, no card on file, no pending charges, zero
+  included services, and unused monthly allowances (750 instance-hours, 500 build minutes,
+  5 GB bandwidth and two custom domains). Workspace Build Pipeline shows an existing
+  **USD 0 monthly spend limit**. This stops additional builds after included minutes are
+  exhausted; it is not a general invoice or bandwidth cap. Preserve the no-card state.
+- The connected Neon organization reports **Free**. Its existing `puhu-s1` project
+  (`nameless-surf-42172578`) is in Frankfurt, PostgreSQL 16, with min=max **0.25 CU**,
+  a 1 GiB branch logical-size limit and six-hour history retention. Its only listed branch
+  is `staging`, currently **archived**; its endpoint is **idle**. No SQL was run, connection
+  string retrieved, branch unarchived or endpoint started. These observations do not
+  establish production readiness, database-role safety or live quota/resume acceptance.
+- The endpoint reports `suspend_timeout_seconds=0`; preserve that raw observation rather
+  than interpreting it as an always-on setting. Current official Free-plan documentation
+  specifies a fixed five-minute idle suspension. Confirm actual resume/sleep during the
+  attended rehearsal. Do not change account settings to resolve an untested assumption.
+- Next: resolve the migration credential/command ownership and unattended maintenance
+  procedure described below, then prepare the isolated Free rehearsal against a reviewed
+  commit. Existing Access/storage gates remain open. Keep the archived staging data and
+  local-only acceptance secrets intact; neither is a production deployment input.
+
+Sources: account read APIs (`list_projects`, `describe_project`, `list_organizations`,
+`list_branches`, `list_postgres_endpoints`), Render workspace Billing/Build Pipeline UI,
+[Render Free](https://render.com/docs/free), [Neon pricing](https://neon.com/pricing),
+[Neon idle suspension](https://neon.com/docs/introduction/scale-to-zero).
 
 ## Local queue measurement
 
@@ -133,18 +187,21 @@ The following compatibility work is required before a runnable rehearsal can be 
 
 1. **Migrations:** Free has no pre-deploy command, one-off jobs or shell access. Run the existing
    `pnpm --filter @mentor/api db:migrate` from a trusted operator environment against a new,
-   isolated database before API deployment; never migrate during each API wake-up. The current
-   production validator still requires `DATABASE_MIGRATION_URL` at runtime, although the pool
-   uses `DATABASE_URL`. Review that ownership/credential requirement before implementing an
-   external-only migration setup; do not invent a placeholder URL, bypass role checks or weaken
-   the validator to get a green startup. No validation behavior was changed in this step.
+   isolated database before API deployment; never migrate during each API wake-up. The
+   [2026-10-29 source adaptation](2026-10-29-free-hosting-preparation.md) moves the explicit
+   production migration connection requirement into a dedicated Drizzle config. The runtime
+   needs only its restricted `DATABASE_URL`; role/security checks remain. Operator execution,
+   dedicated roles and recovery acceptance are still pending. Do not invent placeholder URLs.
 2. **Scheduled work:** the queue poller operates only while the API runs. An attended rehearsal
    can call the existing secret-protected daily-reminder, notebook-review, mentorship-digest
    and subscription-expiry endpoints, then inspect persisted results and queue catch-up.
    The optional paid Blueprint schedules three of these; notebook review has a separate
    controller endpoint but no matching trigger in that Blueprint/workflows. A permanent Free
-   scheduler, including missed-run handling, is still unresolved. Do not add a paid fourth cron
-   silently or use manual rehearsal calls as evidence of unattended production maintenance.
+   scheduler, including missed-run handling, is still unresolved. A public-repository standard
+   GitHub runner is a free candidate. The [queue source fixes](2026-10-29-queue-recovery.md)
+   now dedupe inbox retries and quarantine uncertain interrupted jobs with owner-selected
+   manual review; live monitoring/restart acceptance remains open. No scheduler was activated. Do not add a paid
+   fourth cron silently or use manual calls as proof of unattended production maintenance.
 3. **Wake-up acceptance:** close test clients and stop test traffic for actual sleep. Observe
    the first cold auth/cron request, its response body, queue timestamps and received mail.
    Require the expected API result, not just HTTP success. A timeout is a failed run. Preserve
@@ -178,8 +235,9 @@ Sources: [Render Free limitations](https://render.com/docs/free),
    propagation/sanitization only. Account controls are not configured by this source package.
 5. **Production safety:** separate restricted runtime/direct migration roles, independent secrets,
    restore/rollback, origin denials, Access/MFA, Turnstile and actual mail DNS/receipt must pass.
-   `puhukoc.com` is registered; A/API/admin/media and receiving MX remain unconfigured. Use
-   `noreply@puhukoc.com` for sending and forward `destek@puhukoc.com` to the selected Gmail inbox.
+   `puhukoc.com` is registered; A/API/admin/media remain unconfigured. Resend sending and
+   Cloudflare receiving/support forwarding passed separate single-message Gmail Inbox tests.
+   Cold-start application auth mail remains a separate gate.
 6. **Release:** public signup is intended, `signup.pilot.enabled=false`; eight people is an
    initial usage assumption. Before public traffic, explicitly keep `ai.enabled=false`, ads,
    payments, SMS and sponsorship behind their existing gates. Source defaults/live overrides
@@ -216,8 +274,12 @@ Approved and published records, with CNAME proxy disabled (the imported BIND fil
 | CNAME | `send` | `send.forge.rmta.net` |
 
 The account offered these actual Resend Forge CNAME records, not a guessed legacy Amazon SES
-MX/SPF recipe. There were no existing Cloudflare DNS records at preparation. Root MX/SPF/DMARC,
-support forwarding, production site DNS, Access and Turnstile have not been configured.
+MX/SPF recipe. There were no existing Cloudflare DNS records at preparation. The five receiving
+records and support forwarding were subsequently approved and configured as recorded below.
+Root DMARC was subsequently published as `v=DMARC1; p=none;` and verified through public DNS
+after the auth-mail Spam investigation. The approved Managed Turnstile widget was subsequently
+created, and real local login/replay acceptance passed through the owner's normal browser.
+Production site DNS, rendering/hostname/cold-start acceptance and Access remain open.
 
 
 The browser control connection later disappeared and could not be restored through the
@@ -238,7 +300,8 @@ file is for manual local acceptance; it is not automatically loaded by the appli
 One owner-approved transport test was sent from `noreply@puhukoc.com` to
 `erkesikbasyunusemre@gmail.com` at 09:36 UTC (12:36 TRT) on 2026-10-28. The API accepted it
 with HTTP 200, and the provider UI recorded both **Sent** and **Delivered**, message ID
-`01a181de-75c0-7d14-928b-c5913957e1bc`. No automatic retries or additional messages were sent.
+`01a181de-75c0-7d14-928b-c5913957e1bc`. No automatic retry or extra send occurred under that
+initial approval; the separately approved support test is recorded below.
 The local one-shot diagnostic reserves its result file before sending and supplies an
 idempotency key; rerunning it fails before another send. Evidence is retained in
 `.artifacts/deployment/free-first/resend-transport-result.json` and
@@ -246,39 +309,48 @@ idempotency key; rerunning it fails before another send. Evidence is retained in
 Delivered alone confirms recipient-server acceptance. The owner subsequently confirmed
 receipt and supplied a screenshot showing **Gelen Kutusu** and `noreply@puhukoc.com` as sender.
 Inbox receipt is therefore verified for this one Gmail message; this does not establish
-delivery reliability across recipients or future messages. No additional test was sent.
+delivery reliability across recipients or future messages.
 This direct transport test did not exercise signup, reset, application queueing,
 Render cold starts or the 180-second verification window. Those release gates remain open.
 
-## Support mail routing preparation, not activated
+## Support mail routing, verified
 
-The Cloudflare account's Email Routing page has no onboarded domains. The `puhukoc.com`
-onboarding form was advanced only to **Verify DNS records**; **Activate was not clicked**.
-The existing zone contained exactly the three approved Resend records, with no root MX/SPF.
-The proposed routing records are:
+After reviewing the prepared settings, the owner explicitly approved the five receiving DNS
+records, Gmail destination verification, the support-only forwarding rule and one test.
+Cloudflare Email Routing was activated only for `puhukoc.com` on 2026-10-28. The existing zone
+contained exactly the three approved Resend records; these were retained. Published additions:
 
-| Type | Name | Proposed value | Priority |
+| Type | Name | Published value | Priority |
 |---|---|---|---:|
 | MX | `@` | `route1.mx.cloudflare.net.` | 33 |
 | MX | `@` | `route2.mx.cloudflare.net.` | 76 |
 | MX | `@` | `route3.mx.cloudflare.net.` | 24 |
-| TXT | `cf2024-1._domainkey` | Exact public DKIM key shown by the Cloudflare activation form | n/a |
+| TXT | `cf2024-1._domainkey` | Exact public DKIM key supplied by the Cloudflare activation form | n/a |
 | TXT | `@` | `v=spf1 include:_spf.mx.cloudflare.net ~all` | n/a |
 
-These are a reviewed draft, not published DNS or a universal priority recipe. Preserve the
-Resend selector and CNAMEs. Re-read the current provider form before applying anything.
-Only `destek@puhukoc.com` is intended to forward to `erkesikbasyunusemre@gmail.com`; do not
-enable a catch-all or change other domains/account destinations. Destination verification
-and the routing rule have not been submitted. Browser control disconnected before a review
-screenshot could be captured; no support DNS or forwarding was changed. On resuming, browser
-control recovered and the same five proposed records were rechecked. The destination page
-contains no existing addresses; the selected Gmail was prepared in the form without submitting.
-Review images are retained in `.artifacts/deployment/free-first/support-routing-dns-review.jpg`,
-`support-routing-dns-txt-review.jpg` and `support-routing-target-review.jpg`. Specific owner
-approval was requested for these DNS records, destination verification, the single-address
-forwarding rule and one routing test; it remains pending. No Activate/Add address action occurred.
+Public DNS confirmed all three exact MX targets/priorities, one root SPF record and the
+Cloudflare DKIM selector. The Resend return-path CNAME still points to its approved target.
+The Gmail verification email was opened only in the selected account and its official
+Cloudflare verification link completed the approved destination setup. The destination list
+subsequently showed **Verified**. No verification token was printed or retained in evidence.
+The routing page shows exactly one rule: `destek@puhukoc.com` ->
+`erkesikbasyunusemre@gmail.com`, **Active**. Catch-all is **Disabled**; the domain overview shows
+Routing **Enabled**, one domain, one destination and one rule. No unrelated domain, existing
+destination, paid product or billing setting changed.
 
-Cloudflare requires a verified destination before activating a forwarding rule. Test from a
-different sender account afterward; same-sender/destination tests can be suppressed by the
-mail provider. Sources: [routing setup](https://developers.cloudflare.com/email-service/get-started/route-emails/),
+One message from `noreply@puhukoc.com` to `destek@puhukoc.com` was accepted with HTTP 200 at
+10:19:58 UTC on 2026-10-28, ID `01a18206-1281-7881-84d8-55ce4adbfa68`. Its subject is
+`PuhuKoç destek yönlendirme testi`. The selected Gmail account showed it in **Gelen Kutusu**,
+with sender `noreply@puhukoc.com` and recipient `destek`. The sender is different from the
+Gmail forwarding destination, avoiding same-account test suppression. The one-shot diagnostic
+reserves a result file before sending and uses an idempotency key; no retry or second routing
+test was sent. This confirms one real receiving/forwarding path, not all mail clients or future
+delivery reliability. Gmail sending as `destek@puhukoc.com` was not configured by forwarding.
+
+Evidence under `.artifacts/deployment/free-first/`: `support-routing-dns-check.json`,
+`support-routing-test-result.json`, `support-destination-verified.jpg`,
+`support-routing-active.jpg`, `support-routing-domain-active.jpg`, and
+`support-routing-inbox-received.jpg`. No credential or verification URL is included.
+
+Sources: [routing setup](https://developers.cloudflare.com/email-service/get-started/route-emails/),
 [destination verification](https://developers.cloudflare.com/email-service/configuration/email-routing-addresses/).

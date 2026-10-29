@@ -520,6 +520,10 @@ export const CONFIG_CATALOG = {
     3600,
     "How often API instances poll the jobs table for pending notification/email jobs.",
   ),
+  "notifications.jobs.running_timeout_seconds": {
+    ...notificationCount(900, 86400, "Quarantine interrupted jobs after this many seconds without a heartbeat. Outcomes require manual review; never automatically replay."),
+    schema: z.number().int().min(60).max(86400),
+  },
   "notifications.daily_reminder.email_enabled": flag(
     true,
     "Send student daily-reminder emails. Disable for the pilot to preserve the transactional email quota; inbox and opted-in push remain enabled.",

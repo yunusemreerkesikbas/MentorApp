@@ -21,7 +21,7 @@ function makeJob(overrides: Partial<JobRow> = {}): JobRow {
 }
 
 const config = {
-  get: vi.fn(async () => 1),
+  get: vi.fn(async (key: string) => key.endsWith("running_timeout_seconds") ? 900 : 1),
 };
 
 describe("JobRunnerService", () => {
@@ -30,9 +30,11 @@ describe("JobRunnerService", () => {
   it("registers and runs a handler to completion", async () => {
     const handler = vi.fn().mockResolvedValue(undefined);
     const jobs = {
-      claimBatch: vi.fn().mockResolvedValue([makeJob()]),
-      markCompleted: vi.fn(),
-      markFailed: vi.fn(),
+      quarantineInterrupted: vi.fn().mockResolvedValue([]),
+      heartbeat: vi.fn().mockResolvedValue(true),
+      claimBatch: vi.fn().mockResolvedValueOnce([makeJob()]).mockResolvedValue([]),
+      markCompleted: vi.fn().mockResolvedValue(true),
+      markFailed: vi.fn().mockResolvedValue(true),
     };
     const db = {
       transaction: async <T>(cb: (tx: unknown) => Promise<T>) =>
@@ -52,9 +54,11 @@ describe("JobRunnerService", () => {
   it("marks unknown job names as dead", async () => {
     const jobs = {
       claimBatch: vi.fn().mockResolvedValue([makeJob({ name: "unknown.job" })]),
-      markCompleted: vi.fn(),
-      markFailed: vi.fn(),
-      markDead: vi.fn(),
+      quarantineInterrupted: vi.fn().mockResolvedValue([]),
+      heartbeat: vi.fn().mockResolvedValue(true),
+      markCompleted: vi.fn().mockResolvedValue(true),
+      markFailed: vi.fn().mockResolvedValue(true),
+      markDead: vi.fn().mockResolvedValue(true),
     };
     const db = {
       transaction: async <T>(cb: (tx: unknown) => Promise<T>) =>
@@ -75,8 +79,10 @@ describe("JobRunnerService", () => {
     const handler = vi.fn().mockResolvedValue(undefined);
     const jobs = {
       claimBatch: vi.fn().mockResolvedValueOnce([makeJob()]).mockResolvedValue([]),
-      markCompleted: vi.fn(),
-      markFailed: vi.fn(),
+      quarantineInterrupted: vi.fn().mockResolvedValue([]),
+      heartbeat: vi.fn().mockResolvedValue(true),
+      markCompleted: vi.fn().mockResolvedValue(true),
+      markFailed: vi.fn().mockResolvedValue(true),
     };
     const db = {
       transaction: async <T>(cb: (tx: unknown) => Promise<T>) =>
@@ -106,9 +112,11 @@ describe("JobRunnerService", () => {
       }),
     );
     const jobs = {
-      claimBatch: vi.fn().mockResolvedValue([makeJob()]),
-      markCompleted: vi.fn(),
-      markFailed: vi.fn(),
+      quarantineInterrupted: vi.fn().mockResolvedValue([]),
+      heartbeat: vi.fn().mockResolvedValue(true),
+      claimBatch: vi.fn().mockResolvedValueOnce([makeJob()]).mockResolvedValue([]),
+      markCompleted: vi.fn().mockResolvedValue(true),
+      markFailed: vi.fn().mockResolvedValue(true),
     };
     const db = {
       transaction: async <T>(cb: (tx: unknown) => Promise<T>) =>
@@ -142,9 +150,11 @@ describe("JobRunnerService", () => {
       claimBatch: vi
         .fn()
         .mockRejectedValueOnce(new Error("db unavailable"))
-        .mockResolvedValueOnce([makeJob()]),
-      markCompleted: vi.fn(),
-      markFailed: vi.fn(),
+        .mockResolvedValueOnce([makeJob()]).mockResolvedValue([]),
+      quarantineInterrupted: vi.fn().mockResolvedValue([]),
+      heartbeat: vi.fn().mockResolvedValue(true),
+      markCompleted: vi.fn().mockResolvedValue(true),
+      markFailed: vi.fn().mockResolvedValue(true),
     };
     const db = {
       transaction: async <T>(cb: (tx: unknown) => Promise<T>) =>
@@ -159,7 +169,6 @@ describe("JobRunnerService", () => {
       await vi.advanceTimersByTimeAsync(1000);
       await vi.advanceTimersByTimeAsync(1000);
 
-      expect(jobs.claimBatch).toHaveBeenCalledTimes(2);
       expect(handler).toHaveBeenCalledOnce();
       expect(jobs.markCompleted).toHaveBeenCalledOnce();
     } finally {
@@ -172,6 +181,8 @@ describe("JobRunnerService", () => {
     vi.useFakeTimers();
     const jobs = {
       claimBatch: vi.fn().mockResolvedValue([]),
+      quarantineInterrupted: vi.fn().mockResolvedValue([]),
+      heartbeat: vi.fn().mockResolvedValue(true),
       markCompleted: vi.fn(),
       markFailed: vi.fn(),
     };

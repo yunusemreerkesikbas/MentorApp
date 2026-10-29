@@ -29,6 +29,11 @@ daily reminder (no session + no mood today).
   `RoutingEmailAdapter` picks the sink per message; `LoggerEmailAdapter` writes one
   `[email:console]` line to stdout (the pino boundary drops freeform text) and refuses outside dev
   tooling (`isDevToolingAllowed`, driven by `APP_ENV`).
+- **Interrupted executions:** claim jobs one at a time; active work refreshes its heartbeat.
+  After `notifications.jobs.running_timeout_seconds` (default 900), abandoned RUNNING rows
+  become DEAD for manual review, never automatic replay. Attempt/status fences reject stale
+  worker writes. A completion-write failure after successful delivery does not create a retry.
+  Scans run only while the API is active; Sentry delivery remains an operational prerequisite.
 - **Web Push:** VAPID keypair. The browser subscribes through `apps/web/src/lib/web-push.ts`, driven
   by the push toggle in profile/settings (on subscribes, off unsubscribes); `sw.js` shows and routes
   the notification. Event-driven senders opt in per call with
@@ -114,6 +119,45 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 | `PATCH /v1/admin/config/:key` | Update a config/flag value (SUPER_ADMIN, audited) |
 
 ## Geliştirmeler (timeline)
+
+- **2026-10-29 · Retry-safe inbox and interrupted-job quarantine.** Daily inbox reminders now
+  use the existing per-user/UTC-day dedupe index. The runner claims one job at a time, keeps
+  active executions fresh and atomically quarantines expired RUNNING rows without replay,
+  as selected by the owner. Attempt/status fences prevent late writes; completion storage
+  failure after a successful side effect no longer schedules it again. Use the central
+  900-second timeout and review DEAD metadata/provider state before any feature-specific
+  fresh action. Ordinary handler retries remain; no exactly-once guarantee, schema change,
+  provider call, scheduler or paid infrastructure. Related: `daily-reminder.service.ts`,
+  `job-runner.service.ts`, `job.repository.ts`, `config.catalog.ts`,
+  [QA and operator limits](../qa/2026-10-29-queue-recovery.md).
+
+- **2026-10-29 · Free hosting account recheck.** Read-only Render/Neon inspection confirmed
+  Hobby without a card and the existing zero-dollar additional build limit, plus the existing
+  Free Neon project's fixed 0.25 CU endpoint and archived staging branch. Use the
+  [hosting evidence](../qa/2026-10-28-free-first-launch.md#hosting-account-recheck-2026-10-29)
+  before preparing a rehearsal. Migration ownership and unattended maintenance remain open;
+  no service, database, key, scheduler or billing setting was changed.
+
+- **2026-10-28 · Auth-mail Spam investigation.** The owner reported verification in Inbox and
+  reset in Spam. Read-only Gmail original-message results show SPF/DKIM PASS and DMARC FAIL;
+  public DNS confirmed the missing DMARC policy. Resend also flags the diagnostic's HTTP
+  localhost link. After browser recovery, published a single non-enforcing `p=none` TXT record;
+  Cloudflare lists it with TTL Auto and public `1.1.1.1` DNS returns the exact value. Kept the
+  selected sender and existing routing records. Use real HTTPS auth links for an explicitly
+  approved mailbox retest; new-message DMARC PASS and Inbox remain unverified. No extra mail,
+  whitelist, paid feature or production deployment. Related:
+  [auth acceptance](../qa/2026-10-28-auth-email-acceptance.md).
+
+- **2026-10-28 · Support inbox forwarding accepted.** After explicit owner approval, activated
+  Cloudflare Email Routing for `puhukoc.com` with its three MX and two TXT records, retaining
+  all three Resend sending records. Verified the selected Gmail destination and created only
+  `destek@puhukoc.com` -> `erkesikbasyunusemre@gmail.com`; the rule is Active and catch-all is
+  Disabled. **Usage:** incoming support/legal mail now reaches that Gmail inbox. A single
+  approved Resend-to-support test reached Gmail's Inbox with the expected sender/recipient.
+  **Gotchas:** forwarding does not configure Gmail send-as; cold-start application auth mail
+  and the remaining hosting/security gates are still open. No paid feature or billing setting
+  changed. Related: [live evidence](../qa/2026-10-28-free-first-launch.md),
+  [deployment](../core/deployment.md), `resend-email.adapter.ts`.
 
 - **2026-10-28 · Free-first delivery and launch controls.** Replaced Postmark with Resend behind
   the existing `EmailPort`, retaining backend TR/EN templates, HTML/link safety, queue retries

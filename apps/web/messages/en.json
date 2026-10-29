@@ -180,7 +180,7 @@
     "has_account": "I already have an account",
     "tagline": "Your exam companion",
     "hero_title": "Yours isn't the <glow>only window</glow> lit tonight.",
-    "hero_lead": "A daily plan, friends who study at the same hours, and with Premium an AI coach who knows you. Let's walk the road together.",
+    "hero_lead": "An AI-powered study companion for exam prep: your daily plan, focus sessions and friends who study at the same hours, all in one place.",
     "how_it_works": "How it works",
     "faq_nav": "FAQ",
     "counter": "{count, number} people studied here in the last 24 hours.",
@@ -190,6 +190,43 @@
       "body": "Follow your students' plans, sessions and weekly reports in one place. Be there where they get stuck.",
       "cta": "Start as a coach",
       "more": "See a coach's morning"
+    },
+    "blog_section": {
+      "pill": "Blog",
+      "title": "Reads for the road to your exam",
+      "all": "All posts"
+    },
+    "morning": {
+      "pill": "Morning",
+      "title": "What's on your desk in the morning?",
+      "lead": "We kept you company all night. When the sun comes up, your own tools are waiting on your desk.",
+      "notebook": {
+        "name": "Notebooks",
+        "tab": "Notebook",
+        "title": "Your mistakes don't get lost.",
+        "body": "Add a question you got wrong with a photo or by typing it, and file it under its subject and topic. When it's time to review, your questions come back one card at a time. A card you get right comes back less and less often; one you miss is back in 2 days.",
+        "question": "If 3x − 5 = 2x + 4, what is x?",
+        "subject_turkish": "Turkish",
+        "subject_history": "History",
+        "math": "Math Notebook",
+        "math_tape": "Math"
+      },
+      "board": {
+        "name": "Goal board",
+        "tab": "Board",
+        "title": "Your goal, always in sight.",
+        "body": "Pick your target city on the map, then pin your field and your own photos to your board. Make it a wallpaper or share it with the community if you like.",
+        "goal": "Computer Engineer",
+        "city": "Konya"
+      },
+      "story": {
+        "name": "Story of the week",
+        "tab": "Story",
+        "title": "A story every week.",
+        "body": "How many days you studied, how many minutes you focused, which subject shone: when the week ends, it all becomes a short story. If the week was full, you get a codename too.",
+        "dates": "Oct 20 – 26",
+        "codename": "Nebula Diver"
+      }
     },
     "faq": {
       "pill": "FAQ",
@@ -285,9 +322,9 @@
     "analysis": {
       "name": "Analysis",
       "title": "Let your practice tests tell you their story.",
-      "body": "Enter your practice test results and we'll see which topic is waiting for you. A short story every week: what went well, what's next.",
+      "body": "Enter your practice test results and we'll see which topic is waiting for you.",
       "scribble": "a little more each week",
-      "story": "This week's story: Reading is steady. Geometry is next."
+      "story": "Next focus: Geometry. Reading is steady."
     },
     "yours": {
       "name": "You",
@@ -388,6 +425,7 @@
     "profile": "Profile",
     "settings": "Settings",
     "community": "Community",
+    "coach_profile": "Coach profile",
     "language_toggle_label": "Select language",
     "theme_toggle_label": "Theme",
     "theme_to_dark": "Switch to dark theme",
