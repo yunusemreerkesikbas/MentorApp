@@ -1,6 +1,6 @@
 import { Global, Module } from "@nestjs/common";
 import { LoggerEmailAdapter } from "../../shared/adapters/email/logger-email.adapter";
-import { PostmarkEmailAdapter } from "../../shared/adapters/email/postmark-email.adapter";
+import { ResendEmailAdapter } from "../../shared/adapters/email/resend-email.adapter";
 import { RoutingEmailAdapter } from "../../shared/adapters/email/routing-email.adapter";
 import { PushEndpointPolicy } from "../../shared/adapters/push/push-endpoint-policy";
 import { WebPushAdapter } from "../../shared/adapters/push/web-push.adapter";
@@ -103,14 +103,14 @@ import { NotificationsController } from "./presentation/notifications.controller
     AnnouncementRepository,
     CronSecretGuard,
     LoggerEmailAdapter,
-    PostmarkEmailAdapter,
+    ResendEmailAdapter,
     RoutingEmailAdapter,
     WebPushAdapter,
     {
       provide: JOB_QUEUE_PORT,
       useExisting: PostgresJobQueueAdapter,
     },
-    // Per-message choice between console and Postmark (admin switch dev.email.console_enabled).
+    // Per-message choice between console and Resend (admin switch dev.email.console_enabled).
     { provide: EMAIL_PORT, useExisting: RoutingEmailAdapter },
     { provide: PUSH_PORT, useExisting: WebPushAdapter },
   ],

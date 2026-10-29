@@ -6,6 +6,7 @@ import { UserRole } from "@mentor/types";
 import { useRouter } from "@/i18n/navigation";
 import { trackProductEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
+import { clearLandingCareer, readLandingCareer } from "@/lib/landing-career";
 import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 import { OnboardingDirectionProvider } from "./onboarding-direction";
 import {
@@ -43,6 +44,12 @@ export function OnboardingWizard() {
     careerGroup: null,
     reminder: false,
   });
+  // The field picked at the landing's "your window": it preselects the field step and nothing else,
+  // so a coach (who never sees that step) does not end with a field they did not choose.
+  const [landingCareer] = useState(() => {
+    const picked = readLandingCareer();
+    return picked && picked !== "none" ? picked : null;
+  });
 
   /*
    * Which wizard this is, read off the real principal rather than a remembered intent (APP-089).
@@ -70,6 +77,7 @@ export function OnboardingWizard() {
       trackProductEvent("tutorial_complete", {});
     }
     sessionStorage.removeItem(SESSION_KEY);
+    clearLandingCareer();
   }, []);
 
   if (!user) return null;
@@ -133,10 +141,11 @@ export function OnboardingWizard() {
             progress={progress}
             examType={examType}
             motivation={motivation}
-            initial={summary.careerGroup}
+            initial={summary.careerGroup ?? landingCareer}
             replaceOwnVision={visionWritten}
             onBack={() => back("field")}
             onSaved={(careerGroup, wrote) => {
+              clearLandingCareer();
               if (wrote) {
                 setVisionWritten(true);
                 // The API mirrored the field onto the user; match it so every Puhu switches now.

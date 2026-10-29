@@ -4,24 +4,24 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import type { Env } from "../../../config/env.validation";
 import type { EmailPort } from "../../ports/email.port";
 import { LoggerEmailAdapter } from "./logger-email.adapter";
-import { PostmarkEmailAdapter } from "./postmark-email.adapter";
+import { ResendEmailAdapter } from "./resend-email.adapter";
 
 /**
  * EMAIL_PORT. Chooses the delivery per message, so flipping the admin switch
  * `dev.email.console_enabled` takes effect without a restart. The registry reads that switch as off
- * in production, and production requires POSTMARK_TOKEN, so production always sends.
+ * in production, and production requires RESEND_API_KEY, so production always sends.
  */
 @Injectable()
 export class RoutingEmailAdapter implements EmailPort {
-  private readonly postmarkConfigured: boolean;
+  private readonly resendConfigured: boolean;
 
   constructor(
     env: ConfigService<Env, true>,
     private readonly registry: ConfigRegistryService,
     private readonly consoleSink: LoggerEmailAdapter,
-    private readonly postmark: PostmarkEmailAdapter,
+    private readonly resend: ResendEmailAdapter,
   ) {
-    this.postmarkConfigured = Boolean(env.get("POSTMARK_TOKEN", { infer: true }));
+    this.resendConfigured = Boolean(env.get("RESEND_API_KEY", { infer: true }));
   }
 
   async sendTransactional(input: {
@@ -30,7 +30,7 @@ export class RoutingEmailAdapter implements EmailPort {
     variables?: Record<string, unknown>;
   }): Promise<void> {
     const toConsole =
-      (await this.registry.get("dev.email.console_enabled")) || !this.postmarkConfigured;
-    await (toConsole ? this.consoleSink : this.postmark).sendTransactional(input);
+      (await this.registry.get("dev.email.console_enabled")) || !this.resendConfigured;
+    await (toConsole ? this.consoleSink : this.resend).sendTransactional(input);
   }
 }

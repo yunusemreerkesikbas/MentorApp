@@ -1,8 +1,8 @@
 # Production deployment
 
 > Source preparation only. PR #156 does not provision services, change DNS, accept billing
-> terms, deploy production or merge itself. Domain ownership and an existing Postmark account
-> are confirmed; production infrastructure and live acceptance remain outstanding.
+> terms, deploy production or merge itself. Domain ownership is confirmed. The selected email
+> provider is now Resend; production infrastructure, account setup and live acceptance remain outstanding.
 
 ## Domains
 
@@ -20,6 +20,15 @@ Noindex does not replace authentication or Cloudflare Access.
 
 ## 1. Release prerequisites and budget
 
+**Current owner direction, 2026-10-28:** evaluate suitable free plans first. There is no fixed
+total monthly spending target. Consider the cheapest suitable paid alternative only after
+measurements establish the need and its fixed/variable charges and enforceable stop controls
+are understood. Keep auto-upgrades, paid overages and auto-recharge off. An alert is not a cap.
+The current `render.yaml` remains an **optional paid always-on alternative**, not the selected
+launch profile. Do not apply it just to perform the free-plan evaluation. See
+[the current plan](../plans/2026-10-28-free-first-launch.md) and
+[provider limits and evidence](../qa/2026-10-28-free-first-launch.md).
+
 Permanent staging is not a prerequisite. Local/CI tests use isolated test databases and fake
 providers. Full CI must pass on the exact reviewed commit before publication. An optional
 temporary rehearsal can validate provider integration before the first release or critical
@@ -27,27 +36,29 @@ auth/payment/migration/storage changes; see [deferred-staging.md](./deferred-sta
 
 Resolve these items before authorizing production provisioning:
 
-- Approve the Render service/cron/domain/build/traffic budget, Neon compute/storage limits and
-  provider usage budgets. `render.yaml` uses two single-instance paid web services, a Free
-  admin service and three daily cron jobs (the low-cost launch profile below).
+- Evaluate Render Free and Neon Free in a rehearsal first, including cold-start auth mail,
+  aggregate quotas and maintenance jobs. Only then consider the optional paid `render.yaml`,
+  with two single-instance paid web services, a Free admin and three daily cron jobs.
+  Agree fixed/variable charges and enforceable controls before selecting a paid profile.
   Manual deploy settings do not prevent billing or an initial Blueprint deployment.
 - Obtain dedicated production runtime/migration DB URLs and JWT, rate-limit, edge, cron and
-  VAPID secrets. Supply production OpenAI, Gemini, R2, Turnstile, Postmark and Sentry settings.
+  VAPID secrets. Supply production OpenAI, Gemini, R2, Turnstile, Resend and Sentry settings.
   A Gemini credential is currently missing. Never promote `.env.staging` credentials to prod.
 - Resolve admin Access activation: the observed Cloudflare Free checkout required permission
   to charge a card for quota overage. The owner declined it. Do not accept those terms or
   weaken existing Access guards. Admin publication remains blocked pending an acceptable setup.
-- Verify the Postmark sending domain, DNS/TLS, storage permissions and actual provider flows.
+- Verify the Resend sending domain, Free/overage settings, DNS/TLS, storage permissions and actual provider flows.
   Domain purchase alone does not enable hosting, mail delivery, payments or ads.
-- Confirm `info@mentor.com` is operational for support/legal contact. Keep that address until
-  the owner decides otherwise; `noreply@puhukoc.com` is a separate proposed sending identity.
+- Verify support/legal receipt at `destek@puhukoc.com`, forwarded to
+  `erkesikbasyunusemre@gmail.com`. `noreply@puhukoc.com` is the separate sending identity.
 
 ## 2. Render and database
 
 1. Follow the existing [security release checklist](./security-release-checklist.md) and
    [integration guide](./integrations.md). Connect only this repository to Render. The actual
    release branch is `master`; changing the default/protected branch is a separate task.
-2. After budget and release approval, apply `render.yaml`. Every service has
+2. If free-plan acceptance fails and the paid alternative clears cost/release gates, apply
+   `render.yaml`. Every service has
    `autoDeployTrigger: off`. Initial provisioning or Blueprint sync can still deploy; do not
    treat this setting as a provisioning approval gate.
 3. Native Node services use Frankfurt/EU and Node 22.22.0. Frozen installs include dev build
@@ -69,10 +80,11 @@ Resolve these items before authorizing production provisioning:
    The paid API's existing `JobRunnerService` handles the queue automatically; its secret-
    protected `process-jobs` HTTP endpoint remains available for manual catch-up.
 
-### Low-cost launch profile and overage controls
+### Optional paid always-on alternative and overage controls
 
-Owner-selected on 2026-10-13: keep the reader-facing web and API always on; accept cold starts
-only for admin. This keeps Next.js server rendering, API jobs and all security gates intact.
+Earlier direction on 2026-10-13: keep the reader-facing web and API always on; accept cold
+starts only for admin. This is an alternative retained for comparison. The 2026-10-28 direction
+requires evaluating free plans first and does not approve the paid resources in this table.
 
 | Render item | Launch choice | Monthly base, USD |
 |---|---|---:|
@@ -97,10 +109,12 @@ The other schedules remain 06:00, 07:00 and 03:30 UTC. Their HTTP calls fail on 
 A timeout is a failed maintenance run: inspect the provider logs and queue, then retry through
 the protected endpoint after checking its result. It is not successful task completion.
 
-Admin Free can sleep after 15 minutes idle and take about a minute to wake. Its 750 monthly
-Free instance hours are shared across the workspace; adding more Free services can exhaust
-them. This operator-only trade-off was accepted; do not move web/API to Free or auto-upgrade
-admin. Keep Access enabled before publication and test admin sessions after wake/restart.
+Render Free can sleep after 15 minutes idle and take about a minute to wake. Its 750 monthly
+Free instance hours are shared across the workspace. Evaluate the combined web/API/admin
+runtime rather than assuming one full month per service. Free web/API acceptance is pending:
+the existing paid Blueprint must not be relabeled Free without validating migrations, queue
+delivery and scheduled maintenance. Do not auto-upgrade. Keep Access enabled before publication
+and test admin sessions after wake/restart.
 See [Free limitations](https://render.com/docs/free).
 
 **Observed account settings, 2026-10-13:** Puhukoc is on Hobby; no services, payment card,
@@ -119,7 +133,7 @@ monthly spend limit**. These observations are not settings guaranteed by the Blu
   [bandwidth billing](https://render.com/docs/outbound-bandwidth) and
   [pipeline limits](https://render.com/docs/build-pipeline#setting-a-spend-limit).
 - At launch, verify one paid instance per service, no autoscaling, the billed domain count
-  and the workspace notification address. During the pilot, check Billing and per-service
+  and the workspace notification address. During initial use, check Billing and per-service
   Metrics daily. At 400 pipeline minutes or 4 GB bandwidth (80% of included usage), investigate
   before more usage accumulates. Provider emails warn about approaching/exceeded usage;
   notification is not automatic cost containment.
@@ -130,7 +144,8 @@ monthly spend limit**. These observations are not settings guaranteed by the Blu
   `ai.budget.monthly_cap_usd_cents`; the catalog's `0` default means **no cap**, not zero spend.
   Provider safety and live acceptance gates remain required before opening paid resources.
 
-`pnpm check:deployment` rejects a paid admin, Free web/API, extra instances/autoscaling,
+`pnpm check:deployment` validates the optional paid Blueprint: it rejects a paid admin,
+Free web/API in that particular profile, extra instances/autoscaling,
 the redundant queue cron, changed daily schedules or unbounded/unauthenticated cron HTTP.
 It checks source configuration, not live billing settings or a hard account budget.
 
@@ -171,7 +186,7 @@ bootstrap by design; health endpoints remain available. Do not weaken the origin
 | `R2_PUBLIC_BASE_URL` | `https://media.puhukoc.com` |
 | R2 buckets / jurisdiction | `puhu-prod-public`, `puhu-prod-private` / `eu` |
 | Optional OAuth callback | `https://api.puhukoc.com/v1/auth/google/callback` |
-| `POSTMARK_FROM` / `VAPID_SUBJECT` | `noreply@puhukoc.com` / `https://puhukoc.com` |
+| `RESEND_FROM` / `VAPID_SUBJECT` | `noreply@puhukoc.com` / `https://puhukoc.com` |
 
 - Overwrite `x-mentor-origin-secret` in a Request Header Transform Rule scoped only to
   `api.puhukoc.com`, using production `EDGE_ORIGIN_SECRET`. Preserve `CF-Connecting-IP`.
@@ -194,9 +209,14 @@ Follow [storage-r2.md](./storage-r2.md) for storage permissions and release chec
 
 ## 5. Email and other integrations
 
-- Verify `puhukoc.com` in Postmark with the exact DKIM TXT and Return-Path CNAME records.
-  Keep CNAME DNS-only and one coherent SPF/DMARC policy compatible with existing mail routing.
-  Sender verification does not create an inbox. Decide how replies to `noreply` are handled.
+- Use Resend Free with Transactional Overages disabled. Verify `puhukoc.com` using the exact
+  records supplied by Resend; the current Forge setup uses one DKIM TXT and two DNS-only
+  CNAMEs, not a legacy SES MX/SPF recipe. Keep one coherent root SPF/DMARC policy when adding
+  incoming mail separately. Domain verification and one owner-approved Sent/Delivered transport
+  test passed on 2026-10-28; see [the live evidence](../qa/2026-10-28-free-first-launch.md).
+  Set a domain-scoped sending key and verified sender. Disable open/click tracking for auth mail.
+  Sender verification does not create an inbox: configure Cloudflare support forwarding separately
+  and verify actual receipt. Do not reuse staging secrets or enable a paid delivery fallback.
 - Configure Google OAuth's three variables together if enabled; register the exact callback
   and check authorized domains/consent-screen status before public signup.
 - Payments remain disabled; SMS and sponsorship stay behind existing acceptance gates. Do not
@@ -232,4 +252,4 @@ Provider references: [Render Blueprint](https://render.com/docs/blueprint-spec),
 [Cloudflare DNS for Render](https://render.com/docs/configure-cloudflare-dns),
 [Universal SSL coverage](https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/),
 [Full (strict)](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/),
-[Postmark verification](https://postmarkapp.com/support/article/how-do-i-verify-a-domain).
+[Resend verification](https://resend.com/docs/dashboard/domains/introduction).

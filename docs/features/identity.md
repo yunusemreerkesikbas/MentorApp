@@ -97,6 +97,14 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-28 · Launch contact/provider update.** Public TR/EN legal documents now identify
+  Resend and the owner-selected `destek@puhukoc.com` support/application channel, dated
+  2026-10-28. The email-port migration preserves verification/reset send-time guards and the
+  existing signup policy; invited mode is not enabled. **Usage:** complete domain/sender and
+  receiving-mail acceptance before publishing. **Gotchas:** copy changes do not verify mail
+  receipt or establish provider/legal approval. Related: web `lib/legal.ts`, legal registry
+  tests, notifications delivery adapter and the free-first deployment runbook.
+
 - **`DisplayIdentity.active` (2026-10-25)** — `UsersService.listDisplayIdentities` now also says whether each
   person is a live account: `active = status === "ACTIVE" && erasureStartedAt == null`
   (`UsersRepository.listDisplayByIds` selects `status` and `erasureStartedAt`). Why: KVKK erasure

@@ -45,7 +45,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("welcome skip opens the final account choice and desktop auth split", async ({ page }, testInfo) => {
-  await page.goto("/");
+  await page.goto("/hosgeldin");
   await expect(page.getByRole("heading", { name: "Selam, ben Puhu." })).toBeVisible();
 
   await page.getByRole("button", { name: "Atla" }).click();
@@ -83,13 +83,13 @@ test("signup's consent checkboxes are named by their sentences", async ({ page }
 
 test("welcome remains immediately usable with reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/hosgeldin");
   await expect(page.getByRole("heading", { name: "Selam, ben Puhu." })).toBeVisible();
   await expect(page.getByRole("button", { name: "Devam et" })).toBeEnabled();
 });
 
 test("welcome steps through the day with Devam et and the slide dots", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/hosgeldin");
 
   const copyLayer = page.locator('[aria-live="polite"] .t-stagger');
   await copyLayer.evaluate((element) => element.setAttribute("data-transition-probe", "stable"));
@@ -199,6 +199,53 @@ test("a student answers one question per screen and lands on their summary", asy
   await expect(summary).toContainText("Alan: Eğitim");
   // No push in this browser, so no promise of a reminder.
   await expect(summary).not.toContainText("Hatırlatma açık");
+});
+
+test("the field picked on the landing opens the field step already selected", async ({ page }) => {
+  let user: AuthUser = { ...onboardingUser };
+  let vision: Record<string, unknown> | null = null;
+  await page.addInitScript(() => window.localStorage.setItem("mentor_landing_career", "YAZILIM"));
+  await page.route("http://localhost:3001/v1/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    const headers = {
+      "access-control-allow-origin": request.headers().origin ?? "http://localhost:3100",
+      "access-control-allow-credentials": "true",
+      "access-control-allow-headers": "content-type, authorization, accept-language",
+      "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS",
+    };
+    const json = (body: unknown) =>
+      route.fulfill({ status: 200, contentType: "application/json", headers, body: JSON.stringify(body) });
+    if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+    if (request.method() === "POST" && path === "/v1/auth/refresh") {
+      return json({ accessToken: "test-token", expiresIn: 3600, user });
+    }
+    if (request.method() === "PATCH" && path === "/v1/users/me") {
+      user = { ...user, ...(request.postDataJSON() as Partial<AuthUser>) };
+      return json(user);
+    }
+    if (request.method() === "GET" && path === "/v1/coaching/vision") return json(null);
+    if (request.method() === "POST" && path === "/v1/coaching/vision") {
+      vision = request.postDataJSON() as Record<string, unknown>;
+      return json(vision);
+    }
+    return route.fulfill({ status: 204, headers });
+  });
+
+  await page.goto("/onboarding");
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("radio", { name: "YKS" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("radio", { name: "Ailem için" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+
+  await expect(page.getByRole("radio", { name: "Yazılım & Bilişim" })).toBeChecked();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await expect.poll(() => vision).toMatchObject({ careerGroup: "YAZILIM" });
+  // Used once: a later onboarding on this device starts clean.
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem("mentor_landing_career")))
+    .toBeNull();
 });
 
 test("a coach's invite link survives signup and onboarding", async ({ page }) => {

@@ -48,7 +48,8 @@ describe("community hub (Keşfet) contract", () => {
     const sidebar = readComponent("zone-sidebar.tsx");
     expect(sidebar).not.toContain('t("messages_count"');
     expect(sidebar).not.toContain('t("error")');
-    expect(sidebar).toContain(".catch(() => setZones([]))");
+    // A failed room list falls back to none (with or without a block body), so the nav still renders.
+    expect(sidebar).toMatch(/\.catch\(\(\) => \{?\s*setZones\(\[\]\)/);
   });
 
   it("names the workspace once and leaves the person to the sidebar, not a header chip", () => {

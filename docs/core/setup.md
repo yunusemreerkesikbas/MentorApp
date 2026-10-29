@@ -34,12 +34,14 @@ Queue + email + push live in the **notifications** module — see [features/noti
 
 | File | Variables |
 |---|---|
-| `apps/api/.env` | `CRON_SECRET` (≥32 chars), optional `POSTMARK_TOKEN` + `POSTMARK_FROM`, `VAPID_*` |
+| `apps/api/.env` | `CRON_SECRET` (≥32 chars), optional `RESEND_API_KEY` + `RESEND_FROM`, `VAPID_*` |
 | `apps/web/.env.local` | `NEXT_PUBLIC_API_URL=http://localhost:3001/v1`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (= API public key) |
 
 Copy W5 keys from [`.env.example`](../.env.example). Generate VAPID: `npx web-push generate-vapid-keys`.
 
-Without `POSTMARK_TOKEN`, emails are **logged** (not sent). Without VAPID, push jobs log only; profil shows a config hint until web public key is set. Restart `pnpm dev` after env changes.
+Without `RESEND_API_KEY`, emails are **logged** only in local/dev tooling; production refuses
+startup without a key and verified `RESEND_FROM`. Without VAPID, push jobs log only; profil
+shows a config hint until web public key is set. Restart `pnpm dev` after env changes.
 
 **Run the job runner manually** (Render Cron equivalent):
 

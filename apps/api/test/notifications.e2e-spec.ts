@@ -17,10 +17,10 @@ describe("notifications queue (e2e)", () => {
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     process.env.JWT_ACCESS_SECRET ??= "test-secret-test-secret-test-secret!!";
     process.env.CRON_SECRET = cronSecret;
-    // Force the console email sink regardless of a local .env POSTMARK_TOKEN, so the send-email
+    // Force the console email sink regardless of a local .env RESEND_API_KEY, so the send-email
     // job completes deterministically (matches CI, where no token is set). An empty value is kept
     // by dotenv (it never overrides an already-set process.env var).
-    process.env.POSTMARK_TOKEN = "";
+    process.env.RESEND_API_KEY = "";
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();

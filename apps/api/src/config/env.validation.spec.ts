@@ -20,6 +20,30 @@ const PRODUCTION_SECURITY = {
 };
 
 describe("validateEnv", () => {
+  const emailProduction = {
+    ...REQUIRED, ...PRODUCTION_SECURITY, NODE_ENV: "production", DATABASE_MIGRATION_URL: REQUIRED.DATABASE_URL,
+    PAYMENTS_PROVIDER: "disabled", AI_PROVIDER: "openai", OPENAI_API_KEY: "key", VISION_PROVIDER: "openai",
+    STORAGE_PROVIDER: "r2", R2_ACCOUNT_ID: "account", R2_ACCESS_KEY_ID: "access", R2_SECRET_ACCESS_KEY: "secret",
+    R2_PUBLIC_BUCKET: "public", R2_PRIVATE_BUCKET: "private", R2_PUBLIC_BASE_URL: "https://media.mentor.test",
+    CRON_SECRET: "c".repeat(32), RESEND_API_KEY: "re_test", RESEND_FROM: "noreply@puhukoc.com",
+  };
+
+  it("accepts production email with Resend credentials and no legacy provider token", () => {
+    expect(() => validateEnv(emailProduction)).not.toThrow();
+  });
+
+  it.each(["RESEND_API_KEY", "RESEND_FROM"])("requires %s for production delivery", (key) => {
+    expect(() => validateEnv({ ...emailProduction, [key]: undefined })).toThrow(new RegExp(key));
+  });
+
+  it("rejects blank Resend credentials instead of enabling a console fallback", () => {
+    expect(() => validateEnv({ ...emailProduction, RESEND_API_KEY: " " })).toThrow(/RESEND_API_KEY/);
+  });
+
+  it("allows an empty optional key in a local env file for dev-only console delivery", () => {
+    expect(() => validateEnv({ ...REQUIRED, RESEND_API_KEY: "" })).not.toThrow();
+  });
+
   it.each(["<script>alert(1)</script>", "https://example.test/unit", " "])("validates legacy ad units as Google paths: %s", (unit) => {
     expect(() => validateEnv({ ...REQUIRED, GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT: unit })).toThrow(/GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT/);
   });
@@ -84,7 +108,7 @@ describe("validateEnv", () => {
       R2_PRIVATE_BUCKET: "private-bucket",
       R2_PUBLIC_BASE_URL: "https://media.mentor.test",
       CRON_SECRET: "c".repeat(32),
-      POSTMARK_TOKEN: "postmark-token",
+      RESEND_API_KEY: "resend-token", RESEND_FROM: "noreply@puhukoc.com",
     });
 
     expect(env.PAYMENTS_PROVIDER).toBe("disabled");
@@ -106,7 +130,7 @@ describe("validateEnv", () => {
         R2_PRIVATE_BUCKET: "private-bucket",
         R2_PUBLIC_BASE_URL: "https://media.mentor.test",
         CRON_SECRET: "c".repeat(32),
-        POSTMARK_TOKEN: "postmark-token",
+        RESEND_API_KEY: "resend-token", RESEND_FROM: "noreply@puhukoc.com",
       }),
     ).toThrow(/DATABASE_MIGRATION_URL/);
   });
@@ -131,7 +155,7 @@ describe("validateEnv", () => {
         IYZICO_API_KEY: "key",
         IYZICO_SECRET_KEY: "secret",
         CRON_SECRET: "c".repeat(32),
-        POSTMARK_TOKEN: "postmark-token",
+        RESEND_API_KEY: "resend-token", RESEND_FROM: "noreply@puhukoc.com",
       }),
     ).toThrow(/AI_PROVIDER=fake/);
   });
@@ -162,7 +186,7 @@ describe("validateEnv", () => {
         IYZICO_API_KEY: "key",
         IYZICO_SECRET_KEY: "secret",
         CRON_SECRET: "c".repeat(32),
-        POSTMARK_TOKEN: "postmark-token",
+        RESEND_API_KEY: "resend-token", RESEND_FROM: "noreply@puhukoc.com",
       }),
     ).toThrow(/OPENAI_API_KEY/);
   });
@@ -176,7 +200,7 @@ describe("validateEnv", () => {
         IYZICO_API_KEY: "k",
         IYZICO_SECRET_KEY: "s",
         CRON_SECRET: "c".repeat(32),
-        POSTMARK_TOKEN: "noreply@mentor.test",
+        RESEND_API_KEY: "noreply@mentor.test", RESEND_FROM: "noreply@puhukoc.com",
         VISION_PROVIDER: "fake",
       }),
     ).toThrow(/VISION_PROVIDER=fake/);
@@ -191,7 +215,7 @@ describe("validateEnv", () => {
         IYZICO_API_KEY: "k",
         IYZICO_SECRET_KEY: "s",
         CRON_SECRET: "c".repeat(32),
-        POSTMARK_TOKEN: "noreply@mentor.test",
+        RESEND_API_KEY: "noreply@mentor.test", RESEND_FROM: "noreply@puhukoc.com",
         STORAGE_PROVIDER: "fake",
       }),
     ).toThrow(/STORAGE_PROVIDER=fake/);
@@ -234,7 +258,7 @@ describe("validateEnv", () => {
       PAYMENTS_PROVIDER: "disabled", AI_PROVIDER: "openai", OPENAI_API_KEY: "key", VISION_PROVIDER: "openai",
       STORAGE_PROVIDER: "r2", R2_ACCOUNT_ID: "account", R2_ACCESS_KEY_ID: "access", R2_SECRET_ACCESS_KEY: "secret",
       R2_PUBLIC_BUCKET: "public", R2_PRIVATE_BUCKET: "private", R2_PUBLIC_BASE_URL: "https://media.mentor.test",
-      CRON_SECRET: "c".repeat(32), POSTMARK_TOKEN: "token",
+      CRON_SECRET: "c".repeat(32), RESEND_API_KEY: "token", RESEND_FROM: "noreply@puhukoc.com",
     };
     expect(() => validateEnv({ ...production, ...override })).toThrow(/Invalid environment/);
   });

@@ -30,7 +30,7 @@ test("sitemap ve robots yalnız geçerli localized kökleri yayınlar", async ({
   const locations = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(
     ([, location]) => new URL(location).pathname,
   );
-  expect(locations).not.toContain("/");
+  expect(locations).toContain("/");
   expect(locations).not.toContain("/tr");
   expect(locations).not.toContain("/en");
 
@@ -40,10 +40,16 @@ test("sitemap ve robots yalnız geçerli localized kökleri yayınlar", async ({
   expect(robots).toMatch(/Sitemap: https?:\/\/[^\s]+\/sitemap\.xml/);
 });
 
-test("welcome ve private yüzeyler noindex direktifini crawler'a gösterir", async ({
+test("landing indekslenir; welcome ve private yüzeyler noindex direktifini gösterir", async ({
   request,
 }) => {
-  const welcome = await (await request.get("/")).text();
+  const landing = await (await request.get("/")).text();
+  expect(landing).not.toMatch(/<meta name="robots" content="noindex/i);
+  expect(landing).toMatch(/<link rel="canonical" href="https?:\/\/[^"]+"/i);
+  const englishLanding = await (await request.get("/en")).text();
+  expect(englishLanding).toMatch(/<meta name="robots" content="noindex, follow"/i);
+
+  const welcome = await (await request.get("/hosgeldin")).text();
   expect(welcome).toMatch(
     /<meta name="robots" content="noindex, follow"/i,
   );

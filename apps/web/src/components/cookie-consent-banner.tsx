@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { isPublicConsentBannerPath } from "@/lib/consent-banner-path";
@@ -15,10 +16,26 @@ export function CookieConsentBanner({ analytics, analyticsHydrated, analyticsEna
   const pathname = usePathname();
   const { status } = useAuth();
   const showAnalytics = status === "anonymous" && analyticsEnabled && analyticsHydrated && analytics.consent === null && isPublicConsentBannerPath(pathname);
+  const ref = useRef<HTMLElement>(null);
+
+  // `--consent-banner-height` on <html> while the card is open, so a page's own bottom UI (the
+  // landing's bottom sheet) can sit above it instead of under it.
+  useLayoutEffect(() => {
+    const card = ref.current;
+    if (!showAnalytics || !card) return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() => root.style.setProperty("--consent-banner-height", `${card.offsetHeight}px`));
+    observer.observe(card);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--consent-banner-height");
+    };
+  }, [showAnalytics]);
+
   if (!showAnalytics) return null;
 
   return (
-    <section role="dialog" aria-label={t("title")} className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-2xl rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-lg">
+    <section ref={ref} role="dialog" aria-label={t("title")} className="cookie-consent-banner fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-2xl rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-lg">
       <h2 className="font-bold text-[var(--color-main)] font-[family-name:var(--font-heading)]">{t("title")}</h2>
       <Choice title={t("analytics_title")} body={t("body")} accept={analytics.accept} reject={analytics.reject} />
       <Link className="mt-3 inline-block text-sm text-[var(--color-main)] underline" href="/cookie-preferences">{t("details")}</Link>

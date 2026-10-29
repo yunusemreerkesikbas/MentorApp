@@ -11,7 +11,8 @@ if (webUrl !== "http://localhost:3100" || apiUrl !== "http://localhost:3101/v1" 
 }
 
 const routes = [
-  { name: "welcome", path: "/", authenticated: false },
+  { name: "landing", path: "/", authenticated: false },
+  { name: "welcome", path: "/hosgeldin", authenticated: false },
   { name: "article", path: "/blog/kpss-basvuru-sureci", authenticated: false },
   { name: "dashboard", path: "/panel", authenticated: true },
   { name: "analysis", path: "/analiz", authenticated: true },

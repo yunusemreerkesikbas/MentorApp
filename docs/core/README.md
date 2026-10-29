@@ -18,7 +18,7 @@
 ## Setup & operations
 
 - **[setup.md](./setup.md)** — local setup (Node/pnpm/Docker/Postgres), env files, W5 notifications smoke test, ports, troubleshooting.
-- **[integrations.md](./integrations.md)** — account + environment wiring for Neon / OpenAI / Gemini / iyzico / Cloudflare R2+Turnstile+Access / Postmark / Sentry / Render.
+- **[integrations.md](./integrations.md)** — account + environment wiring for Neon / OpenAI / Gemini / iyzico / Cloudflare R2+Turnstile+Access / Resend / Sentry / Render.
 - **[deployment.md](./deployment.md)** — production `puhukoc.com` setup, release prerequisites, DNS/TLS, deployment and rollback.
 - **[deferred-staging.md](./deferred-staging.md)** — recoverable staging work, retained resources and optional temporary rehearsal.
 - **[security-release-checklist.md](./security-release-checklist.md)** — production session/key rotation, restricted DB role, private-media migration and browser/security release gates.

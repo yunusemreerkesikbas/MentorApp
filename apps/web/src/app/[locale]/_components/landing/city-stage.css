@@ -1,0 +1,1112 @@
+/*
+ * The landing's night city (docs/superpowers/specs/2026-10-27-landing-isikli-sehir-design.md).
+ *
+ * A physical scene owns its palette (same reasoning as the notebook desk): paper, tape, door plates
+ * and lamp light are objects, and a surface retune must not repaint them. It never follows html.dark.
+ * Phone first: the note is a bottom sheet under the window. From 1024px it is a paper note beside the
+ * window; city-camera's `wide` keys assume that same breakpoint.
+ */
+
+.lc-root {
+  --lc-paper: #fffdf6;
+  --lc-ink: #0f2233;
+  --lc-ink-soft: #3d4e63;
+  --lc-ink-quiet: #5f7086;
+  --lc-blue: #1a5fa3;
+  --lc-plate: #1d4f9f;
+  --lc-scribble: #ffe08a;
+  --lc-line: #c3d3e8;
+  --lc-well: #f4f6fa;
+  --lc-warm: #fff2d6;
+  --lc-warm-ink: #5a3a08;
+  --lc-room-light: #ffe6ae;
+  --lc-room-mid: #f5b565;
+  --lc-room-dark: #b9733a;
+  --lc-window-glow: 0 0 70px 18px rgba(255, 205, 120, 0.6);
+  --lc-note-shadow: 0 2px 4px rgba(3, 10, 24, 0.18), 0 28px 46px -20px rgba(3, 10, 24, 0.72);
+  --lc-sheet-shadow: 0 -10px 40px -10px rgba(3, 10, 24, 0.5);
+  --lc-mini-shadow: 0 0 0 1px rgba(15, 34, 51, 0.07), 0 14px 26px -14px rgba(3, 10, 24, 0.5);
+  --lc-hand: "Caveat Variable", "Segoe Print", cursive;
+  --lc-moon-size: 40px;
+  --lc-sun-size: 100px;
+  --lc-note-title: 23px;
+  --lc-note-body: 15px;
+  --lc-plate-hand: 22px;
+}
+
+@media (min-width: 1024px) {
+  .lc-root {
+    --lc-moon-size: 56px;
+    --lc-sun-size: 150px;
+    --lc-note-title: 34px;
+    --lc-note-body: 17px;
+    --lc-plate-hand: 25px;
+  }
+}
+
+/* ---------- Track, stage, scene ---------- */
+
+.lc-track {
+  position: relative;
+}
+
+.lc-anchor {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.lc-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--landing-night-top);
+}
+
+/* Hidden until the first frame is written: the layers have no position before the script runs. */
+.lc-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.6s ease-out;
+}
+
+.lc-root[data-ready] .lc-scene {
+  opacity: 1;
+}
+
+.lc-sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--landing-night-top), var(--landing-night-bottom));
+}
+
+.lc-stars {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 72%;
+  object-fit: cover;
+}
+
+.lc-moon,
+.lc-sun {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+}
+
+.lc-moon {
+  width: var(--lc-moon-size);
+  height: var(--lc-moon-size);
+  background: radial-gradient(circle at 38% 35%, #fffbea, #f2dfa8 70%);
+  box-shadow: 0 0 40px 10px rgba(255, 236, 190, 0.35);
+}
+
+.lc-sun {
+  width: var(--lc-sun-size);
+  height: var(--lc-sun-size);
+  opacity: 0;
+  background: radial-gradient(circle, #fff0bf, #ffc36e 72%);
+  box-shadow: 0 0 120px 40px rgba(255, 190, 110, 0.55);
+}
+
+.lc-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2400px;
+  height: 1400px;
+  transform-origin: 0 0;
+}
+
+/* GPU layers only while the camera moves; at rest the art re-rasters sharp at the new zoom. */
+.lc-root[data-moving] .lc-layer {
+  will-change: transform;
+}
+
+.lc-art {
+  position: absolute;
+  display: block;
+  max-width: none;
+  height: auto;
+}
+
+.lc-rooms {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.lc-win {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--lc-room-mid);
+  transition: box-shadow 0.5s;
+}
+
+/* Curtain light at the window's edges, over whatever the room shows. */
+.lc-win::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 238, 210, 0.6),
+    rgba(255, 238, 210, 0) 15%,
+    rgba(255, 238, 210, 0) 85%,
+    rgba(255, 238, 210, 0.6)
+  );
+}
+
+.lc-root[data-stop="1"] .lc-win[data-stop="1"],
+.lc-root[data-stop="2"] .lc-win[data-stop="2"],
+.lc-root[data-stop="3"] .lc-win[data-stop="3"],
+.lc-root[data-stop="4"] .lc-win[data-stop="4"],
+.lc-root[data-stop="5"] .lc-win[data-stop="5"],
+.lc-root[data-stop="6"] .lc-win[data-stop="6"] {
+  box-shadow: var(--lc-window-glow);
+}
+
+/* The warm wall a room's art stands against. */
+.lc-room {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 90% at 30% 18%,
+    var(--lc-room-light) 0%,
+    var(--lc-room-mid) 55%,
+    var(--lc-room-dark) 100%
+  );
+}
+
+.lc-room-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+}
+
+.lc-room-art.is-cover {
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+
+/* The visitor's own window: the facade's dark glass until a field is picked, then their room and Puhu. */
+.lc-win-yours {
+  background: transparent;
+}
+
+.lc-win-yours::after,
+.lc-win-yours > * {
+  display: none;
+}
+
+.lc-root[data-career] .lc-win-yours {
+  background: var(--lc-room-mid);
+}
+
+.lc-root[data-career] .lc-win-yours::after,
+.lc-root[data-career] .lc-win-yours > * {
+  display: block;
+}
+
+.lc-root[data-career][data-stop="7"] .lc-win-yours {
+  box-shadow: var(--lc-window-glow);
+}
+
+/* The room is drawn wider than the window and centred on the chair; Puhu sits behind the desk. */
+.lc-oda {
+  position: absolute;
+  left: -54%;
+  bottom: 0;
+  width: 160%;
+  aspect-ratio: 1536 / 1020;
+}
+
+.lc-oda-art {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+}
+
+.lc-oda-front {
+  clip-path: inset(74.61% 0 0 0);
+}
+
+.lc-career,
+.lc-undecided {
+  position: absolute;
+  bottom: 19%;
+}
+
+.lc-career {
+  left: 44.6%;
+  width: 41%;
+  aspect-ratio: 360 / 320;
+  background-size: 500% 200%;
+}
+
+.lc-undecided {
+  left: 46.9%;
+  width: 36.5%;
+  aspect-ratio: 1;
+  background-size: contain;
+}
+
+.lc-root[data-career="none"] .lc-win-yours .lc-career,
+.lc-root:not([data-career="none"]) .lc-win-yours .lc-undecided {
+  display: none;
+}
+
+/* careers.webp: five across, two down, in this order. */
+.lc-root[data-career="SAGLIK"] .lc-career { background-position: 0 0; }
+.lc-root[data-career="MUHENDISLIK"] .lc-career { background-position: 25% 0; }
+.lc-root[data-career="YAZILIM"] .lc-career { background-position: 50% 0; }
+.lc-root[data-career="HUKUK_KAMU"] .lc-career { background-position: 75% 0; }
+.lc-root[data-career="EGITIM"] .lc-career { background-position: 100% 0; }
+.lc-root[data-career="ISLETME"] .lc-career { background-position: 0 100%; }
+.lc-root[data-career="SOSYAL_ILETISIM"] .lc-career { background-position: 25% 100%; }
+.lc-root[data-career="SANAT_TASARIM"] .lc-career { background-position: 50% 100%; }
+.lc-root[data-career="FEN"] .lc-career { background-position: 75% 100%; }
+.lc-root[data-career="MIMARLIK"] .lc-career { background-position: 100% 100%; }
+
+.lc-glass {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 45%);
+}
+
+.lc-scrim {
+  display: none;
+}
+
+/* ---------- Panels ---------- */
+
+.lc-panel {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Before the script: the hero is the only panel showing. */
+.lc-panel[data-stop="0"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lc-sheet {
+  /* Paper takes the app's blue ring; the lamp yellow of the night is invisible on cream. */
+  --color-focus-ring: #1d6fbf;
+  position: relative;
+  border-radius: var(--play-sheet-radius) var(--play-sheet-radius) 0 0;
+  padding: 26px 20px 24px;
+  background-color: var(--lc-paper);
+  color: var(--lc-ink);
+  box-shadow: var(--lc-sheet-shadow);
+}
+
+.lc-eyebrow {
+  display: none;
+}
+
+.lc-hero h1 {
+  margin: 0 0 8px;
+  font-size: var(--text-hero);
+  line-height: var(--text-hero--line-height);
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.lc-glow {
+  color: var(--lc-blue);
+}
+
+.lc-lead {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--lc-ink-soft);
+  text-wrap: pretty;
+}
+
+.lc-text-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--lc-blue);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.lc-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  color: var(--lc-ink-quiet);
+}
+
+.lc-hint {
+  display: none;
+}
+
+.lc-tape {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  width: 128px;
+  height: 32px;
+  margin-left: -64px;
+  background: var(--tape);
+  opacity: 0.9;
+  rotate: -3deg;
+  clip-path: polygon(3% 0, 97% 0, 100% 18%, 97% 36%, 100% 54%, 97% 72%, 100% 90%, 97% 100%, 3% 100%, 0 82%, 3% 64%, 0 46%, 3% 28%, 0 10%);
+}
+
+.lc-note.is-lined {
+  background-image: repeating-linear-gradient(180deg, transparent 0 33px, rgba(85, 172, 238, 0.16) 33px 34px);
+  background-position: 0 26px;
+}
+
+.lc-note.is-grid {
+  background-image:
+    linear-gradient(rgba(85, 172, 238, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(85, 172, 238, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.lc-plate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* An enamel door plate: white rim inside the blue, slight lift. */
+.lc-plate b {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 5px;
+  background: var(--lc-plate);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  box-shadow: inset 0 0 0 2px var(--lc-plate), inset 0 0 0 3.5px rgba(255, 255, 255, 0.85), 0 2px 0 rgba(3, 10, 24, 0.25);
+}
+
+.lc-plate span {
+  font: 700 var(--lc-plate-hand) / 1 var(--lc-hand);
+  color: var(--lc-blue);
+}
+
+.lc-note h2,
+.lc-dawn h2 {
+  margin: 10px 0 6px;
+  font-size: var(--lc-note-title);
+  line-height: 1.12;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.lc-body {
+  margin: 0;
+  font-size: var(--lc-note-body);
+  line-height: 1.55;
+  color: var(--lc-ink-soft);
+}
+
+.lc-quiet {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--lc-ink-quiet);
+}
+
+.lc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.lc-chip {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 2px solid #d9e3f0;
+  background: #ffffff;
+  color: var(--lc-ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lc-chip[aria-pressed="true"] {
+  border-color: var(--play-cta);
+  background: #e4eefe;
+}
+
+.lc-chip:focus-visible,
+.lc-key:has(input:focus-visible) {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* The career picker's chips are key tags: a punched hole, a warm tag once picked. */
+/* `.lc-chip.lc-key` so the desktop chip padding below cannot pull the text over the hole. */
+.lc-chip.lc-key {
+  position: relative;
+  padding-left: 30px;
+  border-radius: 8px 18px 18px 8px;
+  border-color: #e8dcc0;
+  background: #fff9ec;
+}
+
+.lc-key::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--lc-paper);
+  box-shadow: inset 0 0 0 2px #c9b68a;
+}
+
+.lc-key input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.lc-key:has(input:checked) {
+  border-color: #f2b544;
+  background: #ffe7a3;
+  box-shadow: 0 0 0 3px rgba(242, 181, 68, 0.25), 0 0 18px rgba(255, 201, 77, 0.45);
+}
+
+.lc-reply {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 18px 18px 18px 6px;
+  background: #f0f4fa;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1e2f45;
+}
+
+.lc-reply.is-empty {
+  color: var(--lc-ink-quiet);
+}
+
+.lc-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--lc-warm);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--lc-warm-ink);
+}
+
+.lc-scribble {
+  display: none;
+}
+
+/* Product UI clipped onto the note. */
+.lc-mini {
+  position: relative;
+  margin-top: 12px;
+  padding: 14px 12px 12px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: var(--lc-mini-shadow);
+}
+
+.lc-clip {
+  position: absolute;
+  top: -17px;
+  left: 26px;
+  color: #8796ae;
+}
+
+.lc-nodes {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.lc-nodes::before {
+  content: "";
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  top: 22px;
+  border-top: 3px dashed var(--lc-line);
+}
+
+.lc-node {
+  position: relative;
+  display: flex;
+  width: 25%;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--lc-ink-soft);
+  text-align: center;
+}
+
+.lc-node b {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 3px var(--lc-line);
+  color: var(--lc-blue);
+}
+
+.lc-node.is-done b {
+  background: var(--play-cta);
+  box-shadow: 0 3px 0 var(--play-cta-edge);
+  color: var(--play-cta-ink);
+}
+
+.lc-node.is-now b {
+  background: var(--landing-lamp);
+  box-shadow: 0 3px 0 #e0a92a;
+  color: var(--lc-warm-ink);
+}
+
+.lc-seats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.lc-seat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--lc-well);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--lc-ink);
+}
+
+.lc-seat b {
+  display: flex;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 14px;
+  color: var(--lc-ink);
+}
+
+.lc-seat small {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lc-ink-quiet);
+}
+
+.lc-seat.is-me {
+  box-shadow: inset 0 0 0 2px var(--play-cta);
+}
+
+.lc-seat.is-empty {
+  background: transparent;
+  outline: 2px dashed #c3cdda;
+  outline-offset: -2px;
+}
+
+.lc-cheer {
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--lc-warm);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--lc-warm-ink);
+}
+
+.lc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lc-ink-soft);
+}
+
+.lc-row span:last-child {
+  margin-left: auto;
+}
+
+.lc-row.is-me {
+  background: #e4eefe;
+  color: var(--lc-blue);
+}
+
+.lc-bars {
+  display: flex;
+  height: 86px;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 0 6px;
+}
+
+.lc-bars i {
+  flex: 1;
+  border-radius: 8px 8px 3px 3px;
+  background: #9dc7ee;
+}
+
+.lc-bars i.is-now {
+  background: var(--play-cta);
+}
+
+.lc-bars i.is-dip {
+  background: #c3cbd6;
+}
+
+.lc-story {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lc-ink);
+}
+
+.lc-intercom {
+  display: none;
+}
+
+/*
+ * The cookie card (`cookie-consent-banner.tsx`) publishes its height while open. On a phone the
+ * bottom sheet rises above it (24px = the card's own 16px offset + a gap) and rounds all corners;
+ * on a desktop the card moves to the bottom right, away from the notes on the left.
+ */
+.lc-panel {
+  bottom: calc(var(--consent-banner-height, -24px) + 24px);
+}
+
+:root[style*="--consent-banner-height"] .lc-sheet {
+  border-radius: var(--play-sheet-radius);
+}
+
+@media (min-width: 1024px) {
+  body:has(.lc-root) .cookie-consent-banner {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: 420px;
+    margin: 0;
+  }
+}
+
+/* Hero line under the CTAs: a lamp dot and the live count. */
+.lc-pulse {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lc-ink-soft);
+}
+
+.lc-pulse i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffc766;
+  box-shadow: 0 0 0 5px rgba(255, 199, 102, 0.22);
+}
+
+/* The closing: Puhu's window once more, framed and glowing on the paper. */
+.lc-bigwin {
+  position: relative;
+  width: 200px;
+  height: 230px;
+  margin-bottom: 40px;
+  overflow: hidden;
+  border-radius: 18px;
+  box-shadow: 0 0 0 10px #22406e, 0 0 80px 18px rgba(255, 190, 96, 0.4);
+}
+
+/* ---------- From 1024px: notes beside the window ---------- */
+
+@media (min-width: 1024px) {
+  .lc-scrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(6, 14, 32, 0.92) 0%, rgba(6, 14, 32, 0.74) 34%, rgba(6, 14, 32, 0) 50%);
+  }
+
+  .lc-panel {
+    left: 6%;
+    right: auto;
+    bottom: auto;
+    top: 50%;
+    width: 520px;
+    translate: 0 -50%;
+  }
+
+  .lc-panel[data-kind="hero"] {
+    width: 600px;
+  }
+
+  .lc-panel[data-kind="dawn"] {
+    left: 50%;
+    top: 15%;
+    width: 680px;
+    translate: -50% 0;
+    text-align: center;
+  }
+
+  .lc-hero,
+  .lc-dawn {
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .lc-hero {
+    /* On a wide screen the hero sits on the night itself, so the lamp ring comes back. */
+    --color-focus-ring: var(--landing-lamp);
+    color: var(--landing-on-night);
+  }
+
+  .lc-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--landing-lamp-line);
+    color: var(--landing-lamp);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .lc-hero h1 {
+    margin: 16px 0 14px;
+    font-size: var(--text-hero-lg);
+    line-height: var(--text-hero-lg--line-height);
+  }
+
+  .lc-glow {
+    color: var(--landing-lamp);
+  }
+
+  .lc-lead {
+    max-width: 540px;
+    margin: 0 0 28px;
+    font-size: 19px;
+    color: var(--landing-on-night-soft);
+  }
+
+  .lc-links {
+    display: none;
+  }
+
+  .lc-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 22px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #8fa3c0;
+  }
+
+  .lc-hint .lc-text-link {
+    color: var(--landing-on-night-soft);
+  }
+
+  .lc-pulse {
+    margin-top: 22px;
+    font-size: 15px;
+    color: var(--landing-on-night-soft);
+  }
+
+  .lc-dawn h2 {
+    font-size: 48px;
+  }
+
+  .lc-dawn .lc-body {
+    color: #3d3550;
+  }
+
+  .lc-chip {
+    padding: 9px 16px;
+    font-size: 15px;
+  }
+
+  .lc-reply {
+    margin-top: 14px;
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+
+  .lc-note {
+    border-radius: 4px 4px 7px 7px;
+    padding: 38px 34px 28px;
+    rotate: var(--tilt, 0deg);
+    box-shadow: var(--lc-note-shadow);
+  }
+
+  /* The edge facing the window catches its warm light. */
+  .lc-note::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(100deg, rgba(255, 196, 110, 0) 60%, rgba(255, 196, 110, 0.2));
+  }
+
+  .lc-note h2 {
+    margin: 14px 0 10px;
+  }
+
+  .lc-scribble {
+    position: absolute;
+    left: calc(100% + 16px);
+    top: 30px;
+    display: flex;
+    width: 122px;
+    flex-direction: column;
+    gap: 2px;
+    color: var(--lc-scribble);
+    font: 700 23px / 1.05 var(--lc-hand);
+    rotate: -5deg;
+    pointer-events: none;
+  }
+
+  .lc-scribble svg {
+    margin-left: 36px;
+  }
+
+  .lc-scribble.is-above {
+    left: auto;
+    right: 4px;
+    top: -62px;
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    rotate: -3deg;
+  }
+
+  .lc-mini {
+    margin-top: 22px;
+    padding: 18px 16px 16px;
+    rotate: -0.8deg;
+  }
+
+  .lc-intercom {
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    z-index: 6;
+    display: block;
+    width: 136px;
+    padding: 12px 9px 9px;
+    border-radius: 12px;
+    translate: 0 -50%;
+    background: linear-gradient(160deg, #3a4660, #202939);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 18px 32px -14px rgba(0, 0, 0, 0.75);
+  }
+
+  .lc-intercom-title {
+    display: block;
+    margin-bottom: 8px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: var(--landing-on-night-soft);
+  }
+
+  .lc-bell {
+    display: flex;
+    width: 100%;
+    min-height: 32px;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 4px;
+    border-radius: 6px;
+    text-decoration: none;
+  }
+
+  .lc-bell b {
+    flex: none;
+    width: 16px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 800;
+    color: #9db0cc;
+  }
+
+  .lc-bell span {
+    flex: 1;
+    padding: 4px 7px;
+    border-radius: 3px;
+    background: #f3ead3;
+    color: #2a2a2a;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  }
+
+  .lc-bell i {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #e8d7a8, #9c8450);
+    box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.45);
+  }
+
+  .lc-bell[aria-current] i {
+    background: radial-gradient(circle at 40% 35%, #fff4c2, #ffc94d);
+    box-shadow: 0 0 10px 3px rgba(255, 201, 77, 0.7);
+  }
+
+  .lc-bell[aria-current] span,
+  .lc-bell:hover span {
+    background: #fff6da;
+  }
+
+  .lc-bell:focus-visible {
+    outline: 3px solid var(--landing-lamp);
+    outline-offset: 2px;
+  }
+}
+
+/* ---------- Reduced motion: no camera, the notes stack under one wide shot ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .lc-track {
+    height: auto !important;
+  }
+
+  .lc-anchor,
+  .lc-intercom {
+    display: none;
+  }
+
+  .lc-stage {
+    position: relative;
+    height: auto;
+    overflow: visible;
+    padding-bottom: 48px;
+  }
+
+  .lc-scene {
+    position: relative;
+    height: 100svh;
+    transition: none;
+  }
+
+  .lc-panel {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    width: auto;
+    max-width: 640px;
+    margin: 32px auto 0;
+    translate: none;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .lc-sheet {
+    border-radius: var(--play-sheet-radius);
+    margin: 0 12px;
+  }
+
+  .lc-panel[data-kind="hero"] {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: calc(100% - 100svh);
+    margin: 0;
+    max-width: none;
+  }
+
+  .lc-panel[data-kind="dawn"] .lc-dawn {
+    padding: 32px;
+    background: #fff1dc;
+  }
+
+  @media (min-width: 1024px) {
+    .lc-panel[data-kind="hero"] {
+      left: 6%;
+      right: auto;
+      top: 50svh;
+      bottom: auto;
+      width: 600px;
+      translate: 0 -50%;
+    }
+
+    .lc-panel[data-kind="hero"] .lc-sheet {
+      margin: 0;
+    }
+
+    .lc-panel[data-kind="dawn"] {
+      left: auto;
+      width: auto;
+    }
+  }
+}

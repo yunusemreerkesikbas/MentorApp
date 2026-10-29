@@ -32,6 +32,6 @@ describe("legal document registry", () => {
 
     expect(notice).toContain("Yunus Emre Erkesikbaş");
     expect(notice).toContain("Mustafa Sabri Küçükaşçı Caddesi No: 28/B");
-    expect(notice).toContain("info@mentor.com");
+    expect(notice).toContain("destek@puhukoc.com");
   });
 });

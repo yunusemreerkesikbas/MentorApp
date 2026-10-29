@@ -40,8 +40,9 @@ feature logic — each feature's UI is documented in its own feature doc.
 pnpm --filter @mentor/web dev
 
 # Public:
-http://localhost:3000/                    # pre-auth welcome slider (first visit)
-http://localhost:3000/giris               # return visitors after welcome seen
+http://localhost:3000/                    # public landing "Işıklı şehir" (indexed)
+http://localhost:3000/hosgeldin           # welcome slider, behind "Ücretsiz başla"
+http://localhost:3000/kayit               # return visitors after welcome seen
 http://localhost:3000/bilgi/[slug]        # public SEO article
 
 # Authenticated (after /giris):
@@ -59,11 +60,197 @@ http://localhost:3000/panel               # daily ritual hub
 
 | Surface          | Route           | Notes                                                                                        |
 | ---------------- | --------------- | -------------------------------------------------------------------------------------------- |
-| Pre-auth welcome | `/`             | 3-slide Puhu carousel; first visit only → then `/giris`; auth users → panel/onboarding       |
+| Landing          | `/`             | Public, indexed (TR canonical, `/en` noindex); auth users → panel/onboarding                 |
+| Pre-auth welcome | `/hosgeldin`    | 4-scene Puhu carousel; once seen → `/kayit`; auth users → panel/onboarding                   |
 | App nav          | `(app)/layout`  | DESIGN 63px tab bar + safe-area inset; sidebar on desktop; active top indicator (main color) |
 | Auth shell       | `(auth)/layout` | shared `AuthShell` (Mentor branding, motion card, "Ana sayfaya dön")                         |
 
 ## Geliştirmeler (timeline)
+
+- **2026-10-28 · Coach page `/koclar` ("Sabah turu", EN `/coaches`).**
+  - **The page:**
+    - The landing's apartment at 07:00, with paper tags on the windows (who studied last night;
+      Mert's dark window "3 gün sessiz").
+    - Five clipboards of a coach's morning, each with the real screen's look:
+      - 07:30 the round
+      - 07:45 a two-week strip
+      - 08:00 the week plan
+      - 08:15 the trust line
+      - 08:30 the invite code
+    - A coach FAQ (FAQPage JSON-LD) and "Sabah turun hazır.".
+  - **Price:** only "İlk 3 öğrencin ücretsiz" is mentioned.
+  - **Indexing:** TR is indexed and in the sitemap; EN is noindex.
+  - **Coach CTAs** (→ `/kayit?rol=koc`) show only while coach signup is open.
+  - **Links:** the landing nav "Koçlar için", the coach band "Koç sabahını gör" and the footer point
+    here.
+  - **How it works:**
+    - The hero needs no script. At rest the landing camera has no depth difference, so one 1600×1000
+      "world" box, scaled to cover a `container-type: size` stage with `cqw`/`cqh`, reproduces the
+      canvas framing.
+    - It reuses the landing's art (`SceneImg`, AVIF + WebP), nav (`variant="coaches"`, a daytime
+      bar via `.landing-day`), footer and FAQ (`landing-paper.tsx` `PaperFaq`).
+  - **Copy change from the canvas:** "Yapay zekâya yazdıkları öğrencide kalır" became "the coach does
+    not see the AI conversations" (same reason as the landing FAQ).
+  - **Gotchas:**
+    - Paragraph styles are scoped to `.kc-step-copy p`; the clipboards are full of `<p>`.
+    - A long-running `next dev` may keep serving stale messages and modules after many edits (raw
+      `coaches.title`); check on a fresh build.
+  - **Related:**
+    - `[locale]/for-coaches/{page.tsx,_components/*}`
+    - `i18n/routing.ts`
+    - `app/sitemap.ts`
+    - `e2e/landing.spec.ts`
+
+- **2026-10-28 · Landing "Işıklı şehir", stop E: polish.**
+  - **Measured on a production build:** LCP is the headline text at about 0.9s (desktop and
+    phone). The scene stays hidden until its first frame, so it is never the LCP element, and the
+    planned pre-composed hero still was dropped.
+  - **Images:** every scene image now ships as AVIF with a WebP fallback (`<picture>`, and
+    `image-set()` for CSS backgrounds). The first view went from 649 KB to about 350 KB.
+  - **Budget:** `check-web-performance-budgets.mjs` now guards `/`: route JS 351/400 KiB, total
+    894/985 KiB.
+  - **Accessibility:**
+    - Tab order runs nav → CTAs → "Hikayeyi atla" → the coach chips, and focusing a chip brings
+      the camera to its note.
+    - There is one h1, and the landmarks are header, main nav, main, doorbell nav and footer.
+    - The focus ring on paper is now the app's blue (lamp yellow vanished on cream).
+  - **Dark mode:** `html.dark` leaves the scene and the paper section unchanged; only the app-wide
+    cookie card follows the theme.
+  - **Fix:** the sitemap and canonical entry for the landing is `https://…/` with a trailing slash,
+    because `production-indexing.spec.ts` requires every URL to start with the domain plus `/`.
+  - **Docs:** DESIGN.md §8.8 (scene palette, type and layout rules) and a "Landing" section in
+    `docs/copy/voice.md`.
+  - **Gotcha:** `community-hub-redesign.spec.ts` fails on master independently of the landing (it
+    looks for a `.catch(() => setZones([]))` the component no longer has).
+
+- **2026-10-28 · Landing "Işıklı şehir", stop D: counter, coach band, FAQ and cookie card.**
+  - **Counter:** the hero shows "Son 24 saatte {n} kişi burada çalıştı." from
+    `GET /v1/coaching/public/pulse` (see coaching.md).
+    - It streams in its own Suspense, so the headline never waits for it.
+    - The server caches it for 5 minutes.
+    - Below the threshold (100), or with no API, there is no line.
+  - **After the dawn:** a paper section slides over the last frame:
+    - The coach band (→ `/kayit?rol=koc`) is hidden while coach signup is closed, again in its own
+      Suspense.
+    - The FAQ (6 questions, native `<details>`) is also published as FAQPage JSON-LD, with a nonce.
+    - The closing has Puhu's window framed, with "Ücretsiz başla" and "Zaten hesabım var".
+    - The nav gains "SSS".
+  - **Cookie card:** the analytics card now also shows on `/`.
+    - It publishes `--consent-banner-height` on `<html>` while open.
+    - On a phone the landing's bottom sheet rises above it; on a desktop the card sits bottom right,
+      away from the notes.
+  - **Copy changes from the canvas:**
+    - "Verilerim güvende mi?" now states the coach trust line instead of "aranızda kalır", because
+      AI messages go to a provider abroad.
+    - "Bir koçum var" now says the student connects with the coach's code.
+  - **Gotchas:**
+    - The paper section re-scopes `--color-focus-ring` (the night's lamp yellow is invisible on
+      cream).
+    - The "Koçlar için" nav link and "Koç sabahını gör" wait for the `/koclar` page.
+  - **Related:**
+    - `_components/landing/{landing-after,landing-counter}.tsx`
+    - `src/lib/public-pulse{,.spec}.ts`
+    - `components/cookie-consent-banner.tsx`
+    - `lib/consent-banner-path{,.spec}.ts`
+
+- **2026-10-28 · Landing "Işıklı şehir", stop C: koç demo and career picker.**
+  - **Koç demo:** the coach's note gets three feeling chips; picking one shows a canned companion
+    reply and a small step, announced through `aria-live`. There is no live AI on the public page,
+    and the note says "Bu bir örnek cevap. Yapay zekâ koç Premium'da."
+  - **Career picker:** "your window" offers the 10 career groups plus "Henüz karar vermedim" as key
+    tags. A pick lights the dark top-middle window with that field's Puhu at the desk and adds
+    "Bu alanla başla" (→ `/hosgeldin`).
+  - **Carrying the pick into onboarding:**
+    - The pick is kept in `localStorage` (`mentor_landing_career`, `src/lib/landing-career.ts`).
+    - The onboarding field step opens with it selected.
+    - It is cleared once the field step saves or onboarding finishes.
+    - It seeds only that step, never the summary, so a coach (who skips the step) never carries a
+      field they did not choose.
+  - **Usage:** labels come from the server as props (career names from `vision.career`), so there
+    is still no `landing` client message scope.
+  - **Gotchas:**
+    - The scene and the picker meet through `data-career` on `.lc-root`; CSS shows the room and the
+      sprite cell (`careers.webp`, 5×2).
+    - The lit window uses CSS backgrounds, so nothing loads before a pick.
+    - Rooms load once the camera leaves the wide shot, not on the first scroll event. A visit that
+      opens at `/#durak-N` scrolls before the script runs and would otherwise show bare walls.
+    - Note body text uses `.lc-body`, not `.lc-note p`, which outranked every paragraph-based card.
+    - "Henüz karar vermedim" uses a cropped sticker pose (`puhu-undecided.webp`) until the seated
+      version is drawn.
+  - **Related:**
+    - `_components/landing/{ask-puhu-demo,career-picker}.tsx`
+    - `src/lib/landing-career{,.spec}.ts`
+    - `(onboarding)/_components/onboarding-wizard.tsx`
+    - `e2e/landing.spec.ts`
+    - `e2e/onboarding-redesign.spec.ts`
+
+- **2026-10-28 · Landing "Işıklı şehir", stop B: the city scene and camera.** The hero now sits
+  on a scroll-driven night city. Scrolling flies a camera from window to window across 9 stops:
+  the hero, Puhu, the coach, plan, desk, community, analysis, your window, then dawn. Each window
+  has a paper note with the flat's door plate.
+  - **How it works:**
+    - The track is 980svh with a 100svh sticky stage. Scroll stays native.
+    - One rAF write per frame places the four art layers, the sky, moon, sun and the notes.
+    - React renders again only when the stop changes; the doorbells and the window glow follow
+      `data-stop`.
+    - The camera math is pure and tested: `city-camera.ts` (13 tests).
+    - The positions measured on the canvas are in `city-scene.ts`.
+  - **Navigation:** "Nasıl çalışır", "Hikayeyi atla" and the desktop "PUHU APT." doorbell panel
+    are plain `#durak-N` anchors laid out in the track. They work without JS; with JS the stage
+    turns them into a smooth camera move. Tabbing into a note that is off screen brings the camera
+    to it.
+  - **Layouts:**
+    - Under 1024px the note is a bottom sheet under the window, using the `tall` camera keys.
+    - Reduced motion drops the camera: one wide shot with the hero, then the notes stacked.
+  - **Usage:** art lives in `public/visuals/landing/` (README there). Replacing the facade means
+    re-measuring `WINDOWS` in `city-scene.ts`. The scene keeps its own palette in `city-stage.css`
+    (the notebook-desk pattern) and never follows `html.dark`.
+  - **Gotchas:**
+    - The scene stays hidden until the first frame: the layers have no position before the script.
+    - `will-change` is set only while scrolling (`data-moving`), so the art re-rasters sharp at rest.
+    - The rooms' art loads on the first scroll; at the wide shot only Puhu's window shows inside.
+    - Still to come:
+      - Koç demo chips and the career picker that lights "your" window (stop C).
+      - Counter, coach band and FAQ (stop D).
+      - LCP image and AVIF work (stop E).
+    - On `next dev`, the first `/hosgeldin` → `/kayit` hop can exceed Playwright's 5s, so judge e2e
+      on a production build.
+  - **Related:**
+    - `_components/landing/city-{camera,camera.spec,scene,stage,panels}.ts(x)`
+    - `city-stage.css`
+    - `e2e/landing.spec.ts`
+
+- **2026-10-28 · Landing "Işıklı şehir", stop A: route and skeleton.** `/` is a public,
+  server-rendered landing again. It is indexed: TR canonical, `/en` is noindex, and `/` is listed in
+  the sitemap. The welcome slider moved to `/hosgeldin` (EN `/welcome`); "Ücretsiz başla" goes
+  there, and a visitor who has already seen it is sent on to `/kayit` instead of `/giris`.
+  - **What a visitor sees:** floating nav (wordmark, Blog, Giriş yap, Ücretsiz başla), the hero
+    with headline, lead and the two CTAs on the night sky, then a footer with Blog, the other
+    language and the shared `PublicFooter` legal links.
+  - **Signed in:** a signed-in visitor is redirected client-side to `postAuthDestination()`. The
+    page never waits for that, because the web origin has no server-side session signal.
+  - **Theme:** scoped `.landing-city-theme` tokens in `@mentor/ui` theme.css (`--landing-*`, plus
+    `--text-hero` and `--text-hero-lg`). The scene never follows `html.dark`.
+  - **Usage:** design and the later stops (B camera scene, C demo and career picker, D counter,
+    coach band, FAQ and consent, E polish) are in
+    `docs/superpowers/specs/2026-10-27-landing-isikli-sehir-design.md`.
+  - **Gotchas:**
+    - No `landing` client message scope yet: every string is rendered on the server. Add one when
+      the client islands arrive (stop C).
+    - The nav links "Nasıl çalışır", "Koçlar için" and "SSS" arrive with their sections.
+    - Links in the app to `/` (blog header, legal chrome, after account deletion) now land on the
+      landing.
+  - **Related:**
+    - `[locale]/page.tsx`
+    - `[locale]/welcome/page.tsx`
+    - `[locale]/_components/landing/*`
+    - `_components/welcome/welcome-guard.tsx`
+    - `i18n/routing.ts`
+    - `app/sitemap.ts`
+    - `e2e/landing.spec.ts`
+    - `e2e/routing.spec.ts`
+    - `e2e/onboarding-redesign.spec.ts`
+    - `scripts/qa-performance-baseline.mjs`
 
 - **2026-10-10 · PR #154 conflict resolution.** The proxy matcher tests retain the blog
   pilot's `/ads.txt` bypass and master's protected `/images` regression. Member-profile

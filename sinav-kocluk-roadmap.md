@@ -527,7 +527,7 @@ Aktif kullanıcı başı **LLM maliyeti** (en kritik), **katkı marjı**, **CAC 
 | AI — vision | **Gemini Flash** | foto→konu-kategorize (ucuz + güçlü vision) |
 | Auth | **Kendi JWT** (NestJS, refresh rotasyon, Passport+argon2) | authZ zaten custom → bütünlük; per-MAU maliyet yok, lock-in yok |
 | Ödeme | iyzico (abonelik → Faz 3 marketplace alt-üye-işyeri) | |
-| E-posta | **Postmark** (transactional) | doğrulama/şifre-reset/fatura-bildirim/dunning/trial-hatırlatma; SPF/DKIM/DMARC; *(US → KVKK aktarım ifşa; toplu pazarlama gerekirse sonra ek araç)* |
+| E-posta | **Resend** (transactional) | doğrulama/şifre-reset/fatura-bildirim/dunning/trial-hatırlatma; SPF/DKIM/DMARC; *(US → KVKK aktarım ifşa; toplu pazarlama gerekirse sonra ek araç)* |
 | Hata izleme | Sentry | |
 
 ### Neden Neon (Supabase değil)
@@ -550,7 +550,7 @@ Cloudflare (ön kapı/edge):
 - Uygulama: **Render (PaaS)**, Docker'lı, **tek bölge Frankfurt/AB** (KVKK/GDPR + Neon'a bitişik).
 - DB: Neon (AB bölgesi). Kuyruk: Render Cron + jobs tablosu (`JobQueuePort` arkasında). CI/CD: GitHub Actions + Docker. *(Redis + BullMQ Faz 2'de eklenir.)*
 - **Kubernetes YOK** (MVP'de gereksiz); PaaS orkestrasyonu halleder → gerçek ölçekte managed K8s (DOKS vb.).
-- **Maliyet kalkanı:** Neon max-CU sınırı + bütçe uyarısı + Cloudflare edge rate limit (Faz 2: + Redis) → sürpriz fatura yok.
+- **Maliyet yaklaşımı (2026-10-28):** Önce uygun ücretsiz planlar denenir; ölçülen ihtiyaç varsa en ucuz uygun ücretli seçenek değerlendirilir. Neon max-CU, proje tüketim kotaları ve Cloudflare edge rate limit ayrı kontrollerdir. Bütçe uyarısı kullanımı veya faturayı durdurmaz. Otomatik ücretli geçiş/bakiye yükleme açılmaz; ücretli kullanımdan önce sabit ve değişken ücretler ile gerçek durdurma sınırları doğrulanır (Faz 2: + Redis).
 
 ### Tek API mimari notu
 Tek API hem web hem mobile'a hizmet eder → **API versiyonlu (`/v1`) ve geriye-uyumlu** olmalı (mobil kullanıcı zorla güncellenemez). OpenAPI → tip-güvenli client codegen (orval) → `api-client` paketi web+mobil paylaşır.

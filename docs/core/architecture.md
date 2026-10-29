@@ -51,7 +51,7 @@ Internally NestJS `EventEmitter`; moves to a queue if modules split out (same co
 - **WebSocket Gateway** (Socket.io) presence/neighborhood/live room — **Phase 2**; Redis adapter at scale.
 
 ## Cost & security shield
-Cloudflare edge rate-limit + Turnstile (MVP) · Neon max-CU + budget alert · idempotent webhook ·
+Cloudflare edge rate-limit + Turnstile (MVP) · Neon max-CU + project consumption quotas · idempotent webhook ·
 admin behind Cloudflare Access · card data at iyzico (PCI not ours).
 
 ## Diagram (high level)
@@ -64,7 +64,7 @@ admin behind Cloudflare Access · card data at iyzico (PCI not ours).
    ▼
 [ apps/api — NestJS modular monolith ]
    ├─ modules (identity/coaching/ai/content/payments/notifications/admin ...)
-   ├─ shared/ports → adapters (OpenAI/Gemini/iyzico/R2/Postmark)
+   ├─ shared/ports → adapters (OpenAI/Gemini/iyzico/R2/Resend)
    ├─ JobQueuePort: Render Cron + jobs table (MVP) → BullMQ+Redis (Phase 2)
    └─ Drizzle (pg Pool) → [ Postgres + pgvector (RLS via SET LOCAL) ]   (local docker / Neon)
 ```

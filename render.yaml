@@ -1,4 +1,6 @@
-# Production Blueprint. Apply only after release/budget approval. Setup: docs/core/deployment.md.
+# Optional paid always-on Blueprint, not the selected free-first launch profile.
+# Apply only after measured free-plan evaluation and bounded-cost release approval.
+# Setup and remaining billing gates: docs/core/deployment.md.
 # Existing service names are retained to avoid replacing deployed resources.
 services:
   - type: web
@@ -85,9 +87,9 @@ services:
         value: signup
       - key: TURNSTILE_VERIFY_TIMEOUT_MS
         value: 5000
-      - key: POSTMARK_TOKEN
+      - key: RESEND_API_KEY
         sync: false
-      - key: POSTMARK_FROM
+      - key: RESEND_FROM
         value: noreply@puhukoc.com
       - key: CRON_SECRET
         generateValue: true

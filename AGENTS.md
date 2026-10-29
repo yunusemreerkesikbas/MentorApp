@@ -30,7 +30,7 @@ that pain?
 - **DB driver:** single `pg` Pool (`drizzle-orm/node-postgres`) — works local + Neon; tx-scoped RLS via `withUserContext` / `SET LOCAL` (§8).
 - **Edge: Cloudflare** (WAF/RateLimit/Turnstile/R2/Images/Access). **Hosting: Render.**
 - **AI: OpenAI (text, GPT-5) + Gemini Flash (vision)** + rule engine (hybrid) + pgvector RAG.
-- **Auth: own JWT** (refresh rotation, argon2). **Payments: iyzico.** **Email: Postmark.** **Monitoring: Sentry.**
+- **Auth: own JWT** (refresh rotation, argon2). **Payments: iyzico.** **Email: Resend.** **Monitoring: Sentry.**
 
 ## 2. Module map (bounded contexts — §8)
 

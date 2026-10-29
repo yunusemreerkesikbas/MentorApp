@@ -9,7 +9,10 @@ import { isWelcomeSeen } from "@/lib/welcome-seen";
 
 const subscribeWelcomeSeen = () => () => undefined;
 
-/** Redirect authenticated users and return visitors who already saw the welcome slider. */
+/**
+ * Redirect authenticated users, and send return visitors who already saw the slider straight to
+ * sign-up: they reached `/hosgeldin` through "Ücretsiz başla", so they came to make an account.
+ */
 export function WelcomeGuard({ children }: { children: ReactNode }) {
   const t = useTranslations("welcome");
   const router = useRouter();
@@ -28,7 +31,7 @@ export function WelcomeGuard({ children }: { children: ReactNode }) {
       return;
     }
     if (welcomeSeen) {
-      router.replace("/login");
+      router.replace("/signup");
     }
   }, [status, user, router, welcomeSeen]);
 

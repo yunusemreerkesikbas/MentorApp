@@ -9,7 +9,7 @@ export const CONFIG_HINTS: Record<string, string> = {
     "ads.placement.community_question_end.ad_unit_path": "Topluluk soru detayı için Google birim yolu. Boşsa reklam gösterilmez. Örnek: /123456/community-question. Yerleşim yalnız oturumlu kullanıcılara uygundur.",
     "ads.placement.forum_question_end.enabled": "Yalnız yönetici tarafından incelenmiş herkese açık soru-cevapların sonunda tek reklam gösterir. Soru veya cevap değişirse yeniden onay gerekir. Google envanter ve gizlilik incelemesi tamamlanmadan açma.",
     "ads.placement.forum_question_end.ad_unit_path": "Soru-cevap için Google reklam birimi yolu, örnek: /123456/forum-question. Boşsa reklam gösterilmez. Topluluk panelinden ayrıca içerik onayı gerekir.",
-    "dev.email.console_enabled": "Açıkken e-posta gönderilmez; alıcı, şablon ve link API konsoluna basılır. Kapatınca prod gibi Postmark'la gider. Yalnız stage/dev'de görünür.",
+    "dev.email.console_enabled": "Açıkken e-posta gönderilmez; alıcı, şablon ve link API konsoluna basılır. Kapatınca prod gibi Resend'le gider. Yalnız stage/dev'de görünür.",
     "storage.upload.active_per_user": "Kullanıcı başına aynı anda kaç yükleme bileti veya akışı açık kalabilir.",
     "storage.upload.daily_bytes": "Kullanıcının gün içinde (UTC) yükleyebileceği bayt tavanı. Başarısız yükleme de rezervi yer.",
     "storage.upload.ticket_seconds": "Tek kullanımlık yükleme biletinin saniye cinsinden ömrü.",

@@ -60,6 +60,9 @@ import { PlanTaskController } from "./presentation/plan-task.controller";
 import { PlanEventController } from "./presentation/plan-event.controller";
 import { StudyRoomController } from "./presentation/study-room.controller";
 import { StudySessionController } from "./presentation/study-session.controller";
+import { PublicPulseController } from "./presentation/public-pulse.controller";
+import { PublicPulseService } from "./application/public-pulse.service";
+import { PublicPulseRepository } from "./infrastructure/public-pulse.repository";
 
 /**
  * W2 — coaching bounded context: daily loop (plan tasks · Pomodoro sessions · read-time streak)
@@ -80,8 +83,11 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MockExamController,
     MistakeNotebookController,
     NotebooksController,
+    PublicPulseController,
   ],
   providers: [
+    PublicPulseRepository,
+    PublicPulseService,
     NotebookReviewRepository,
     NotebookReviewService,
     PlanEventService,

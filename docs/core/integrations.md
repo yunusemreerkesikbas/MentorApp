@@ -13,7 +13,7 @@
 | **iyzico** | Subscription/payments | `IYZICO_*` | MVP |
 | **Cloudflare R2** | Object storage — **two buckets**: public (avatars, forum ekleri, makale görselleri) + private (`mock-exams/`, `notebook/`, `vision-board/`). Kurulum: [`storage-r2.md`](./storage-r2.md) | `STORAGE_PROVIDER`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_BUCKET`, `R2_PRIVATE_BUCKET`, `R2_PUBLIC_BASE_URL`, `R2_JURISDICTION` | MVP |
 | **Cloudflare Turnstile** | Bot/Sybil | `TURNSTILE_SECRET_KEY`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | MVP |
-| **Postmark** | Transactional email | `POSTMARK_TOKEN` | MVP |
+| **Resend** | Transactional email, Free first | `RESEND_API_KEY`, `RESEND_FROM` | MVP |
 | **Sentry** | Error monitoring | `SENTRY_DSN` | MVP |
 | **Google Analytics / Search Console** | Consent-gated article analytics + ownership verification | `NEXT_PUBLIC_GA_MEASUREMENT_ID`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | MVP |
 | **Google Maps Platform** | Lazy photorealistic 3D campus tour | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | YKS beta |
@@ -211,8 +211,21 @@ Sources checked 2026-10-05: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms
 - R2 bucket (zero egress) → `R2_*`. Turnstile site (signup/forum) → secret + public site key.
 - The admin panel sits behind **Cloudflare Access** (Zero Trust) (§9) — via the dashboard, not env.
 
-### Postmark (email)
-- Server token → `POSTMARK_TOKEN`. Verify SPF/DKIM/DMARC. (US → KVKK transfer disclosure §8.)
+### Resend (email)
+- Use Free first (3,000 emails/month, 100/day). Keep **Transactional Overages** disabled;
+  exhaustion stops sending instead of authorizing paid fallback. Check the actual team settings.
+- Verify `puhukoc.com` with Resend's exact SPF/DKIM records and a coherent DMARC policy;
+  use a sending-only, domain-scoped `RESEND_API_KEY` and verified `RESEND_FROM=noreply@puhukoc.com`.
+- Existing `EmailPort` templates stay in backend TR/EN catalogs. Production requires both values;
+  local/staging console delivery remains dev-only. Requests time out after ten seconds and
+  failures enter existing queue retries without logging raw provider bodies or auth links.
+- Disable domain open/click tracking. Receiving support mail is separate: Cloudflare Email
+  Routing forwards `destek@puhukoc.com` to the owner-selected Gmail inbox. Verify actual receipt.
+- Account/login, domain acceptance, live quota controls and inbox delivery are outstanding.
+  Keep the provider/foreign-transfer disclosure current. No SDK or new public API is needed.
+- References: [pricing/overages](https://resend.com/pricing),
+  [domain verification](https://resend.com/docs/dashboard/domains/introduction),
+  [send API](https://resend.com/docs/api-reference/emails/send-email).
 
 ### Sentry
 - Project (node + nextjs) → `SENTRY_DSN`.
