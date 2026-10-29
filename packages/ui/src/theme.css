@@ -178,8 +178,9 @@ html {
    */
   --premium-ring-from: #2f55d4;
   --premium-ring-to: #f2b544;
-  --premium-badge-bg: #1e2a5a;
-  --premium-badge-ink: #ffd76a;
+  --premium-badge-bg: #c4b8e0;
+  --premium-badge-gradient: linear-gradient(135deg, #7eb6e8 0%, #c4b8e0 52%, #f3a6c8 100%);
+  --premium-badge-ink: #12141a;
   /*
    * Coach identity (DESIGN.md §2.5): ink blue marks what a human coach did. The coach's workspace
    * chrome uses it, and so does the student side for the tasks and notes that came from their

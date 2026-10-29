@@ -13,6 +13,57 @@ optional; source checks do not prove that production services or domains are liv
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-29 · Core-trial release verification and backend quota corrections.** Recorded
+  local builds, quality/dependency/secret checks and the limitations of interrupted broad
+  API/browser runs. Fixed quota races, nested policy/taxonomy pool reads and growing page
+  grandfathering; final focused API regressions and source hashes are in the
+  [verification report](../qa/2026-10-29-core-trial-release-verification.md).
+  Usage: continue full web/security/CI checks after the owner's ongoing UI handoff.
+  Gotchas: no deployment, provider/DNS/billing change or full-workspace green claim;
+  aggregate upload spending and hosted acceptance remain separate gates. Historical Google
+  sample-key provenance was traced to the original public template sources without key
+  testing, history rewrites or new secret-scan exclusions.
+
+- **2026-10-29 · Closed-admin mode implemented locally.** Added `ADMIN_ACCESS_MODE` with
+  preserved `cloudflare` default and explicit `disabled` mode denying admin API/auth before
+  handlers, identity lookup or Access verification. Only issuer/audience requirements are
+  conditional; edge, origins, Turnstile, DB-role and provider requirements remain. Usage and
+  no-admin support/rollback limits: [deployment profile](../core/deployment.md#closed-admin-core-only-free-trial).
+  RED reproduced the missing mode; 161/161 focused validation/guard/local-HTTP tests passed,
+  with API typecheck and owned-file lint. AI provider tests passed 30/30 separately. Related:
+  `env.validation.ts`, `env-production-locks.ts`, `cloudflare-access.guard.ts`, three boundary
+  test files, `.env.example`. No live setting, secret, deployment, billing or owner quota edit.
+  Independent review found no blocking issue; final evidence and deferred release gates:
+  [implementation record](../qa/2026-10-29-closed-trial-implementation.md).
+
+- **2026-10-29 · Core-only trial scope confirmed.** The owner confirmed forum and human
+  coaching stay closed alongside admin, AI, payments, SMS and ads. Plan, focus sessions,
+  analysis, notebooks and account flows remain in scope. Updated the
+  [design](../plans/2026-10-29-admin-closed-pilot-design.md) and split local implementation
+  into independent [admin](../superpowers/plans/2026-10-29-admin-closed-trial.md) and
+  [AI-off](../superpowers/plans/2026-10-29-ai-provider-kill-switch.md) plans. Usage: review
+  the plans before implementation. Gotchas: coach signup has its own separate flag;
+  no runtime behavior, live flag or deployment changed in this planning step.
+
+- **2026-10-29 · Current launch review and selected closed-admin direction.** Rechecked public
+  DNS, Render, Neon, Resend, Turnstile, Access onboarding, R2 and Sentry without changing
+  provider settings. Current HEAD CI run 577 fails API job-interruption tests; its secret scan
+  and web budgets passed. The owner selected a small-user Free trial and requested an
+  admin-closed design. The detailed design is proposed, not implemented or release-approved.
+  Usage: follow the [current review](../qa/2026-10-29-launch-readiness-review.md) and
+  [design](../plans/2026-10-29-admin-closed-pilot-design.md). Gotchas: AI-off does not gate the
+  inspected embedding path, default exam dates are stale, and storage/cold-start/recovery
+  acceptance remains open. No owner source edit, credential, deployment or billing change.
+
+- **2026-10-29 · Local platform release preflight.** Dependency audit has no critical/high
+  findings at the existing policy threshold; optional-paid deployment checks, platform
+  lint/typecheck and API/admin builds passed at their execution time. Public DNS is still
+  unbound. Added sleeping Render Free `robots.txt`/SEO acceptance to the checklist. The broad
+  API run hit its operator time limit and source changed during owner quota/landing work,
+  so full CI is not claimed. Its queue fixture isolation issue was reproduced and corrected
+  only in the guarded e2e setup. Usage and remaining gates:
+  [platform preflight](../qa/2026-10-29-platform-release-preflight.md). No cloud/billing change.
+
 - **2026-10-29 · Approved Sentry error-only acceptance.** Created EU `puhu-api` after explicit
   approval, kept its ingestion connection in the ignored local acceptance env, and verified
   one synthetic event as PUHU-API-1 (HTTP 200; Events 1 / Users 0). No billing/repo/AI/production

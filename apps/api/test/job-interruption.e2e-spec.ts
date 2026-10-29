@@ -1,6 +1,6 @@
 import { eq, inArray, sql } from "drizzle-orm";
 import * as Sentry from "@sentry/nestjs";
-import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createDatabase, createPool } from "../src/database/drizzle";
 import { withServiceContext } from "../src/database/rls";
 import { jobs } from "../src/database/schema";
@@ -17,6 +17,8 @@ describe("interrupted jobs (PostgreSQL)", () => {
   const repository = new JobRepository(db);
   const ids: string[] = [];
   const config = { get: async (key: string) => key.endsWith("running_timeout_seconds") ? 900 : 10 };
+  // The runner consumes the whole queue; earlier sequential e2e suites leave pending jobs.
+  beforeAll(() => withServiceContext(db, (tx) => tx.delete(jobs)));
   const create = async (values: Partial<NewJob> = {}) => {
     const row = await repository.insert({ name: "interruption.fixture", payload: { privateValue: "fixture-only" }, ...values });
     ids.push(row.id);

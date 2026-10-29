@@ -18,6 +18,7 @@ import type {
 import { loadViewerExamTaxonomy } from "@/lib/exam-taxonomy";
 import { useRouter } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
+import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { deleteNotebook, fetchNotebooks } from "@/lib/notebook";
 import { notebookOpening, useNotebookOpening } from "@/lib/notebook-opening";
 import { playNotebookSfx } from "@/lib/notebook-sfx";
@@ -82,6 +83,7 @@ export function NotebooksShell() {
   const reduceMotion = useReducedMotion() ?? false;
   const { theme } = useTheme();
   const { confirm } = useMentorDialog();
+  const { openPaywall } = usePremiumPaywall();
   const opening = useNotebookOpening();
   const [items, setItems] = useState<NotebookSummaryDto[]>([]);
   const [page, setPage] = useState(1);
@@ -286,6 +288,32 @@ export function NotebooksShell() {
 
   const customCount = items.filter((item) => item.kind === "CUSTOM").length;
   const mistake = items.find((item) => item.kind === "MISTAKE") ?? null;
+  const activeLimits = mistake?.limits ?? items[0]?.limits;
+
+  function openCustomLimitPaywall() {
+    openPaywall({
+      headline: t("quota_custom_title"),
+      subtitle:
+        activeLimits?.maxCustomNotebooks === 0
+          ? t("quota_custom_premium_only")
+          : t("quota_custom_limit_reached", {
+              max: activeLimits?.maxCustomNotebooks ?? 0,
+            }),
+    });
+  }
+
+  function handleCreateClick() {
+    if (
+      activeLimits &&
+      !activeLimits.isPremium &&
+      activeLimits.maxCustomNotebooks !== null &&
+      activeLimits.customNotebookCount >= activeLimits.maxCustomNotebooks
+    ) {
+      openCustomLimitPaywall();
+      return;
+    }
+    setForm("new");
+  }
   // The copy flies in its place; under reduced motion there is no copy, so the book stays put.
   const awayKey = opening.underway && !reduceMotion ? (opening.start?.book.key ?? null) : null;
   const litId = activeId ?? mistake?.id ?? items[0]?.id ?? null;
@@ -316,7 +344,7 @@ export function NotebooksShell() {
     >
       <DeskBackdrop />
       <div className="desk-content relative mx-auto w-full max-w-[1360px] px-4 pb-20 sm:px-6 lg:px-10">
-        <DeskHeader />
+        <DeskHeader limits={activeLimits} onUpgrade={openCustomLimitPaywall} />
 
         <DeskPuhu
           className="desk-puhu-spot"
@@ -368,7 +396,7 @@ export function NotebooksShell() {
               label={t("create")}
               lifted={packageActive}
               onActive={setPackageActive}
-              onOpen={() => setForm("new")}
+              onOpen={handleCreateClick}
             />
           ) : null}
         </section>
@@ -429,6 +457,8 @@ export function NotebooksShell() {
         <NotebookFormDialog
           current={form === "new" ? null : form}
           exam={exam}
+          limits={activeLimits}
+          onUpgrade={openCustomLimitPaywall}
           onClose={() => setForm(null)}
           onSaved={(saved) =>
             void handleSaved(saved, form === "new", form === "new" && customCount === 0)

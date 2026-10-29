@@ -3,11 +3,13 @@
 import { useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { ApiClientError } from "@mentor/api-client";
 import type {
   ExamSubjectDto,
   NotebookCoverColor,
   NotebookCoverMaterial,
   NotebookDto,
+  NotebookLimitsDto,
   NotebookSummaryDto,
 } from "@mentor/types";
 import { NOTEBOOK_COVER_COLORS, NOTEBOOK_COVER_MATERIALS } from "@mentor/types";
@@ -40,13 +42,17 @@ const SHEET_QUERY = "(max-width: 639px)";
 export function NotebookFormDialog({
   current,
   exam,
+  limits,
   onClose,
   onSaved,
+  onUpgrade,
 }: {
   current: NotebookSummaryDto | null;
   exam: ExamChoice | null;
+  limits?: NotebookLimitsDto;
   onClose: () => void;
   onSaved: (saved: NotebookDto) => void;
+  onUpgrade?: () => void;
 }) {
   const t = useTranslations("notebooks.form");
   const notebookT = useTranslations("notebook");
@@ -76,7 +82,16 @@ export function NotebookFormDialog({
     current?.cover.material ?? DEFAULT_COVER.material,
   );
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const maxCustom = limits?.maxCustomNotebooks ?? null;
+  const customLimitReached = Boolean(
+    !current &&
+      limits &&
+      !limits.isPremium &&
+      maxCustom !== null &&
+      limits.customNotebookCount >= maxCustom,
+  );
 
   useLayoutEffect(() => {
     const node = dialogRef.current;
@@ -98,8 +113,13 @@ export function NotebookFormDialog({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (customLimitReached) {
+      onClose();
+      onUpgrade?.();
+      return;
+    }
     setSaving(true);
-    setError(false);
+    setErrorMessage(null);
     try {
       const selectedExamId = subjectRef
         ? current?.examId && subjectRef === current.subjectRef
@@ -120,8 +140,17 @@ export function NotebookFormDialog({
             cover: { color, material },
           });
       onSaved(saved);
-    } catch {
-      setError(true);
+    } catch (err) {
+      if (
+        err instanceof ApiClientError &&
+        (err.body.code === "COACHING_NOTEBOOK_CUSTOM_LIMIT_EXCEEDED" ||
+          err.body.code === "PAYMENT_PREMIUM_REQUIRED")
+      ) {
+        onClose();
+        onUpgrade?.();
+        return;
+      }
+      setErrorMessage(err instanceof ApiClientError ? err.message : t("error"));
     } finally {
       setSaving(false);
     }
@@ -244,9 +273,9 @@ export function NotebookFormDialog({
             </div>
           </div>
         </div>
-        {error ? (
+        {errorMessage ? (
           <p role="alert" className="nb-form-error">
-            {t("error")}
+            {errorMessage}
           </p>
         ) : null}
         <div className="nb-form-actions">
@@ -258,7 +287,11 @@ export function NotebookFormDialog({
           >
             {t("cancel")}
           </button>
-          <Button type="submit" busy={saving} disabled={title.trim().length === 0}>
+          <Button
+            type="submit"
+            busy={saving}
+            disabled={title.trim().length === 0}
+          >
             {t("save")}
           </Button>
         </div>

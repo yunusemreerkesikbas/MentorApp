@@ -217,6 +217,7 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
   const reviews: Array<{ id: string; solved: boolean }> = [];
   const patches: Array<{ id: string; body: Record<string, unknown> }> = [];
   const deletes: string[] = [];
+  const deletedEntries = new Set<string>();
   const indexQueries: Array<Record<string, string | null>> = [];
 
   const defaultNotebook: NotebookOverviewDto["notebook"] = {
@@ -314,7 +315,7 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
       return json(route, overview);
     }
     if (method === "GET" && path === "/v1/coaching/notebook/reviews/due") {
-      return json(route, options.due ?? []);
+      return json(route, (options.due ?? []).filter((entry) => !deletedEntries.has(entry.id)));
     }
     // The index: every entry, whether or not it is on a page or due today.
     if (method === "GET" && path === "/v1/coaching/notebook/entries") {
@@ -327,6 +328,7 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
       const errorType = url.searchParams.get("errorType");
       const status = url.searchParams.get("status");
       const items = pool
+        .filter((entry) => !deletedEntries.has(entry.id))
         .filter((entry) => !subject || entry.subjectRef === subject)
         .filter((entry) => !errorType || entry.errorType === errorType)
         .filter((entry) => !status || entry.status === status);
@@ -374,7 +376,16 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
       /\/v1\/coaching\/notebook\/entries\/([^/]+)$/,
     );
     if (method === "DELETE" && entryMatch) {
-      deletes.push(entryMatch[1]!);
+      const entryId = entryMatch[1]!;
+      deletes.push(entryId);
+      if (!deletedEntries.has(entryId)) {
+        overview.entryCount = Math.max(0, overview.entryCount - 1);
+        if (options.due?.some((entry) => entry.id === entryId)) {
+          overview.dueCount = Math.max(0, overview.dueCount - 1);
+          overview.notebook.dueCount = overview.dueCount;
+        }
+        deletedEntries.add(entryId);
+      }
       return json(route, null, 204);
     }
     if (method === "PATCH" && entryMatch) {

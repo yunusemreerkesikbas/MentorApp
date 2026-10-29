@@ -53,7 +53,7 @@ describe("AI provider privacy boundary", () => {
     const adapter = new PrivacyPreservingLlmAdapter(delegate, {
       acquire: vi.fn(async () => "budget-id"),
       release: vi.fn(async () => undefined),
-    } as never);
+    } as never, { get: async () => true } as never);
     const original = {
       system: "Verified source: https://osym.gov.tr/article",
       user: "Bana emre@example.com üzerinden yaz",
@@ -80,7 +80,7 @@ describe("AI provider privacy boundary", () => {
     const adapter = new PrivacyPreservingLlmAdapter(delegate, {
       acquire: vi.fn(async () => null),
       release: vi.fn(async () => undefined),
-    } as never);
+    } as never, { get: async () => true } as never);
 
     await adapter.embed("Source: https://osym.gov.tr/contact@example.com");
 
@@ -96,6 +96,7 @@ describe("AI provider privacy boundary", () => {
         embed: vi.fn(),
       } as unknown as LlmPort,
       { acquire: vi.fn(async () => "budget-id"), release } as never,
+      { get: async () => true } as never,
     );
 
     await expect(adapter.complete({ system: "system", user: "user" })).rejects.toThrow(

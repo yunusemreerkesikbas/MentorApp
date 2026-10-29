@@ -3,6 +3,15 @@
 > 2026-09-05 güvenlik paketinin gerçek Cloudflare, Render, Neon ve R2 ortamında tamamlanması için.
 > Yerel testlerin geçtiğini üretim ayarlarının doğrulandığı anlamına getirmez.
 
+## Closed-admin trial exception (2026-10-29)
+
+The owner-selected core-only trial uses `ADMIN_ACCESS_MODE=disabled` and publishes no admin
+frontend. Verify denial of every admin API/auth operation even with an existing privileged
+session or Access assertion. Only Access enrollment/issuer/audience requirements are deferred
+in this explicit mode; all other production security and live acceptance gates below remain.
+Default/cloudflare mode and any later admin publication still require full Access/MFA.
+See [the deployment profile](deployment.md#closed-admin-core-only-free-trial).
+
 ## Dağıtım sırası
 
 1. Kısıtlı runtime DB rolünü ve ayrı migration rolünü hazırla. Runtime rolü superuser, BYPASSRLS,

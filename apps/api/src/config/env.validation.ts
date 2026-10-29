@@ -21,6 +21,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
   APP_URL: z.string().url().default("http://localhost:3000"),
   ADMIN_APP_URL: z.string().url().default("http://localhost:3002"),
+  /** disabled closes all admin HTTP access; it never permits admin without Access. */
+  ADMIN_ACCESS_MODE: z.enum(["cloudflare", "disabled"]).default("cloudflare"),
 
   // Comma-separated allowed CORS origins. Required HTTPS origins in production.
   CORS_ORIGINS: z.string().optional(),

@@ -598,6 +598,43 @@ export class MistakeNotebookRepository {
     };
   }
 
+  async lockQuotaUsage(tx: DatabaseTx, userId: string): Promise<void> {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${"coaching:notebook:" + userId}, 0))`,
+    );
+  }
+
+  async countUserQuotaUsage(
+    tx: DatabaseTx,
+    userId: string,
+  ): Promise<{ entryCount: number; photoCount: number; customNotebookCount: number }> {
+    const [[entries], [customs]] = await Promise.all([
+      tx
+        .select({
+          entryCount: sql<number>`count(*)::int`,
+          photoCount: sql<number>`(count(${mistakeNotebookEntries.storageKey}) + count(${mistakeNotebookEntries.solutionStorageKey}))::int`,
+        })
+        .from(mistakeNotebookEntries)
+        .where(eq(mistakeNotebookEntries.userId, userId)),
+      tx
+        .select({
+          customNotebookCount: sql<number>`count(*)::int`,
+        })
+        .from(notebookTable)
+        .where(
+          and(
+            eq(notebookTable.userId, userId),
+            eq(notebookTable.kind, "CUSTOM"),
+          ),
+        ),
+    ]);
+    return {
+      entryCount: entries?.entryCount ?? 0,
+      photoCount: entries?.photoCount ?? 0,
+      customNotebookCount: customs?.customNotebookCount ?? 0,
+    };
+  }
+
   async findPage(
     tx: DatabaseTx,
     userId: string,

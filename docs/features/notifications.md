@@ -120,6 +120,14 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-29 · Shared test-queue isolation.** The broad release preflight exposed pending
+  jobs left by earlier e2e suites. Interrupted-job tests now clear only the explicitly guarded
+  test database's queue once before the suite; existing per-test cleanup and serial execution
+  remain. Use the normal e2e configuration with an isolated `_test` database. No production
+  runner, retry, quarantine, provider or schema behavior changed. Related:
+  `test/job-interruption.e2e-spec.ts`,
+  [preflight evidence and limits](../qa/2026-10-29-platform-release-preflight.md).
+
 - **2026-10-29 · Retry-safe inbox and interrupted-job quarantine.** Daily inbox reminders now
   use the existing per-user/UTC-day dedupe index. The runner claims one job at a time, keeps
   active executions fresh and atomically quarantines expired RUNNING rows without replay,

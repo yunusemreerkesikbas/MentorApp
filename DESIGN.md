@@ -501,9 +501,9 @@ There is no separate symbol and no mascot in it; Puhu stays in the art (§8.1). 
 - **Two drawings:** `cut="large"` at 24px and up (eye 0.52em, tracking -0.03em, glint);
   `cut="small"` (the default) below 24px: eye 0.56em, pupil larger in the ring, tracking
   +0.005em, no glint. The caller's class sets the type size.
-- **Minimum** 13px. Below that only the eye is used: the favicon
-  (`/img/brand/puhukoc-icon.svg`) and the app icon (`/img/brand/puhukoc-apple-icon.png`) are the
-  eye in `--play-cta-ink` on a `--play-cta` tile.
+- **Minimum** 13px. Below that the Puhu mascot is used: the favicon
+  (`/favicon.ico`, `/img/brand/puhukoc-icon.png`, `/img/brand/puhukoc-icon.svg`) and the app icon (`/img/brand/puhukoc-apple-icon.png`) are the Puhu mascot.
+
 - **Share image:** `/img/brand/puhukoc-og-{tr,en}.png`, 1200×630, the logo with the slogan on
   the white blob canvas. The admin sidebar uses a PNG of the logo (`apps/admin/public/images/puhukoc/`).
 - **Clear space:** one eye diameter on every side.

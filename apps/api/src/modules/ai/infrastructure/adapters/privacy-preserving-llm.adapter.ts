@@ -1,4 +1,7 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { ConfigRegistryService } from "../../../../common/config/config-registry.service";
+import { DomainError } from "../../../../common/errors/domain-error";
+import { ErrorCode } from "../../../../common/errors/error-code";
 import type {
   LlmCompleteInput,
   LlmPort,
@@ -60,9 +63,11 @@ export class PrivacyPreservingLlmAdapter implements LlmPort {
   constructor(
     @Inject(RAW_LLM_PORT) private readonly delegate: LlmPort,
     private readonly budget: AiBudgetGuard,
+    private readonly config: ConfigRegistryService,
   ) {}
 
   async complete(input: LlmCompleteInput): Promise<LlmResult> {
+    await this.assertEnabled();
     const budgetReservationId = await this.budget.acquire();
     try {
       const result = await this.delegate.complete(minimizeInput(input));
@@ -77,6 +82,7 @@ export class PrivacyPreservingLlmAdapter implements LlmPort {
   }
 
   async *completeStream(input: LlmCompleteInput): AsyncIterable<LlmStreamEvent> {
+    await this.assertEnabled();
     const budgetReservationId = await this.budget.acquire();
     let handedOff = false;
     try {
@@ -98,8 +104,15 @@ export class PrivacyPreservingLlmAdapter implements LlmPort {
     }
   }
 
-  embed(text: string): Promise<number[]> {
+  async embed(text: string): Promise<number[]> {
+    await this.assertEnabled();
     // Embeddings are restricted to verified editorial content by the caller.
     return this.delegate.embed(text);
+  }
+
+  private async assertEnabled(): Promise<void> {
+    if (!(await this.config.get("ai.enabled"))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
   }
 }

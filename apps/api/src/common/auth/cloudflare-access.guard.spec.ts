@@ -14,15 +14,42 @@ function context(path: string, assertion?: string) {
 }
 
 describe("CloudflareAccessGuard", () => {
-  const setup = (nodeEnv = "production", accessEmail = "admin@mentor.test", appEmail = "admin@mentor.test") => {
+  const setup = (nodeEnv = "production", accessEmail = "admin@mentor.test", appEmail = "admin@mentor.test", mode = "cloudflare") => {
     const verify = vi.fn(async () => ({ email: accessEmail }));
+    const identity = vi.fn(async () => ({ email: appEmail }));
     const guard = new CloudflareAccessGuard(
-      { get: vi.fn(() => nodeEnv) } as never,
+      { get: vi.fn((key: string) => key === "NODE_ENV" ? nodeEnv : key === "ADMIN_ACCESS_MODE" ? mode : undefined) } as never,
       { verify } as never,
-      { getAdminAccessIdentity: vi.fn(async () => ({ email: appEmail })) } as never,
+      { getAdminAccessIdentity: identity } as never,
     );
-    return { guard, verify };
+    return { guard, verify, identity };
   };
+
+  it.each([
+    "/v1/admin/config", "/v1/admin/users", "/v1/admin/content/articles", "/v1/admin/ai/reembed",
+    "/v1/auth/admin/login", "/v1/auth/admin/refresh", "/v1/auth/admin/logout",
+    "/V1/ADMIN/USERS/?page=1", "/admin", "/auth/admin/login?next=1",
+  ])("denies closed admin route %s even with privileged identity", async (path) => {
+    const { guard, verify, identity } = setup("production", undefined, undefined, "disabled");
+    await expect(guard.canActivate(context(path, "signed-assertion"))).rejects.toMatchObject({
+      code: "FORBIDDEN", httpStatus: 403,
+    });
+    expect(verify).not.toHaveBeenCalled();
+    expect(identity).not.toHaveBeenCalled();
+  });
+
+  it("does not let a development environment override explicit admin closure", async () => {
+    const { guard } = setup("development", undefined, undefined, "disabled");
+    await expect(guard.canActivate(context("/v1/admin/users"))).rejects.toMatchObject({ httpStatus: 403 });
+  });
+
+  it.each(["/v1/users/me", "/v1/auth/login", "/v1/auth/refresh", "/v1/health/ready", "/v1/internal/cron/process-jobs", "/v1/administrator"])(
+    "leaves ordinary route %s usable in closed-admin mode", async (path) => {
+      const { guard, verify } = setup("production", undefined, undefined, "disabled");
+      await expect(guard.canActivate(context(path))).resolves.toBe(true);
+      expect(verify).not.toHaveBeenCalled();
+    },
+  );
 
   it("does not apply the Access gate to non-admin API routes", async () => {
     const { guard, verify } = setup();

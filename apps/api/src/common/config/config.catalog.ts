@@ -166,6 +166,15 @@ const coachingCount = (
   description,
 });
 
+const coachingFlag = (def: boolean, description: string): ConfigEntryDef<boolean> => ({
+  category: ConfigCategory.COACHING,
+  type: ConfigValueType.BOOLEAN,
+  schema: z.boolean(),
+  default: def,
+  sensitive: false,
+  description,
+});
+
 const mentorshipFlag = (def: boolean, description: string): ConfigEntryDef<boolean> => ({
   category: ConfigCategory.MENTORSHIP,
   type: ConfigValueType.BOOLEAN,
@@ -842,6 +851,34 @@ export const CONFIG_CATALOG = {
     2,
     3,
     "Evidence channels required for the weekly Cosmic Maestro title.",
+  ),
+  "coaching.notebook.photo.free_enabled": coachingFlag(
+    true,
+    "Allow free users to upload question and solution photos in the Mistake Notebook up to the free photo limit.",
+  ),
+  "coaching.notebook.photo.free_limit": coachingCount(
+    5,
+    0,
+    500,
+    "Maximum total stored photos (question + solution) a free user may keep in the Mistake Notebook (0 = disabled).",
+  ),
+  "coaching.notebook.custom.free_limit": coachingCount(
+    1,
+    0,
+    50,
+    "Maximum custom notebooks a free user may create alongside the system Mistake Notebook (0 = Premium only).",
+  ),
+  "coaching.notebook.pages.free_limit": coachingCount(
+    20,
+    1,
+    200,
+    "Maximum pages per notebook for a free user (Premium users may use up to 200 pages).",
+  ),
+  "coaching.notebook.entries.free_limit": coachingCount(
+    50,
+    1,
+    1000,
+    "Maximum total entries a free user may store in the Mistake Notebook.",
   ),
   "ai.features.coach.chat.free_enabled": flag(
     false,

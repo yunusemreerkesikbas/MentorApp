@@ -23,7 +23,7 @@ describe("BudgetedVisionAdapter", () => {
     const adapter = new BudgetedVisionAdapter(delegate, {
       acquire: vi.fn(async () => "budget-id"),
       release: vi.fn(async () => undefined),
-    } as never);
+    } as never, { get: async () => true } as never);
 
     await expect(adapter.categorizeImage(input)).resolves.toMatchObject({
       budgetReservationId: "budget-id",
@@ -35,6 +35,7 @@ describe("BudgetedVisionAdapter", () => {
     const adapter = new BudgetedVisionAdapter(
       { categorizeImage: vi.fn(async () => { throw new Error("vision down"); }) },
       { acquire: vi.fn(async () => "budget-id"), release } as never,
+      { get: async () => true } as never,
     );
 
     await expect(adapter.categorizeImage(input)).rejects.toThrow("vision down");

@@ -1613,6 +1613,12 @@ eklendi.
   with the economy off). Left open: the sidebar still shows a coach's XP/coin pills, the skeleton
   still draws a Kazanımlar block for a coach, and onboarding's `kpss_level` step asks a coach the
   student question.
+- **2026-10-29 — Favicon and brand icons unified with Puhu mascot.** Replaced the legacy blue
+  eye-in-circle favicon and apple icon across the entire workspace with the canonical Puhu mascot
+  (`puhu-default.png`). Generated multi-size `apps/web/public/favicon.ico` (16, 32, 48px),
+  `apps/admin/src/app/favicon.ico`, apple touch icon (`puhukoc-apple-icon.png`, 180×180),
+  `puhukoc-icon.png` (192×192), and SVG wrappers for web and admin collapsed sidebar.
+  `layout.tsx` metadata updated to reference `/favicon.ico`, PNG, SVG, and apple icon.
 - **2026-10-15 — Coach: the three open economy traces closed.** (1) `AppNav` passes `balance =
   null` for a coach, so `EconomyPills` ("Coin ve XP") is gone from both the desktop
   `SidebarIdentity` and the mobile top bar. A coach has nothing to spend coin on, and the XP they do

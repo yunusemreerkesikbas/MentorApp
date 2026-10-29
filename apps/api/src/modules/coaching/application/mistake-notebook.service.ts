@@ -1,4 +1,5 @@
 import { NotebookReviewRepository } from "../infrastructure/notebook-review.repository";
+import { NotebookQuotaService } from "./notebook-quota.service";
 import { randomUUID } from "node:crypto";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
@@ -61,6 +62,11 @@ interface ExamTaxonomy {
   topics: Array<{ subjectSlug: string; slug: string; name: string }>;
 }
 
+interface NotebookLabelTaxonomy {
+  subjects: ReadonlySet<string>;
+  topics: ReadonlyArray<{ subjectSlug: string; slug: string }>;
+}
+
 /** Public prefix all notebook photos live under; the orphan sweep lists exactly this. */
 export const NOTEBOOK_PREFIX = "notebook/";
 /** An object younger than this belongs to a card the user has not finished composing. */
@@ -117,13 +123,15 @@ export class MistakeNotebookService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly reviewHistory: NotebookReviewRepository,
     @Optional() private readonly events?: EventEmitter2,
+    @Optional() private readonly quota?: NotebookQuotaService,
   ) {}
 
   async listNotebooks(
-    actor: { userId: string; orgId: string | null },
+    actor: { userId: string; orgId: string | null; roles?: string[] },
     query: ListNotebooksQuery,
   ): Promise<Paginated<NotebookSummaryDto>> {
-    const result = await withUserContext(
+    const policy = await this.quota?.resolvePolicy(actor.userId, actor.roles);
+    const { result, limits } = await withUserContext(
       this.db,
       { userId: actor.userId },
       async (tx) => {
@@ -132,11 +140,24 @@ export class MistakeNotebookService {
           actor.userId,
           actor.orgId,
         );
-        return this.notebook.listNotebooks(tx, actor.userId, query, new Date());
+        return {
+          result: await this.notebook.listNotebooks(
+            tx,
+            actor.userId,
+            query,
+            new Date(),
+          ),
+          limits: await this.quota?.resolveLimits(
+            tx,
+            actor.userId,
+            policy!,
+          ),
+        };
       },
     );
+    const items = await this.toNotebookDtos(result.items);
     return {
-      items: await this.toNotebookDtos(result.items),
+      items: limits ? items.map((item) => ({ ...item, limits })) : items,
       total: result.total,
       page: query.page,
       pageSize: query.pageSize,
@@ -144,31 +165,52 @@ export class MistakeNotebookService {
   }
 
   async createNotebook(
-    actor: { userId: string; orgId: string | null },
+    actor: { userId: string; orgId: string | null; roles?: string[] },
     input: CreateNotebookInput,
   ): Promise<NotebookDto> {
     await this.assertNotebookSubject(
       input.examId ?? null,
       input.subjectRef ?? null,
     );
-    const row = await withUserContext(this.db, { userId: actor.userId }, (tx) =>
-      this.notebook.createNotebook(tx, actor.userId, actor.orgId, {
-        examId: input.examId ?? null,
-        subjectRef: input.subjectRef ?? null,
-        title: input.title.trim(),
-        coverColor: input.cover.color,
-        coverMaterial: input.cover.material,
-      }),
+    const policy = await this.quota?.resolvePolicy(actor.userId, actor.roles);
+    const row = await withUserContext(
+      this.db,
+      { userId: actor.userId },
+      async (tx) => {
+        await this.quota?.assertCanCreateCustomNotebook(
+          tx,
+          actor.userId,
+          policy!,
+        );
+        return this.notebook.createNotebook(tx, actor.userId, actor.orgId, {
+          examId: input.examId ?? null,
+          subjectRef: input.subjectRef ?? null,
+          title: input.title.trim(),
+          coverColor: input.cover.color,
+          coverMaterial: input.cover.material,
+        });
+      },
     );
     return this.toNotebookDto(row);
   }
 
-  async getNotebook(userId: string, notebookId: string): Promise<NotebookDto> {
-    const row = await withUserContext(this.db, { userId }, (tx) =>
-      this.notebook.findNotebook(tx, userId, notebookId),
+  async getNotebook(
+    userId: string,
+    notebookId: string,
+    rolesHint?: string[],
+  ): Promise<NotebookDto> {
+    const policy = await this.quota?.resolvePolicy(userId, rolesHint);
+    const { row, limits } = await withUserContext(
+      this.db,
+      { userId },
+      async (tx) => ({
+        row: await this.notebook.findNotebook(tx, userId, notebookId),
+        limits: await this.quota?.resolveLimits(tx, userId, policy!),
+      }),
     );
     if (!row) throw new NotFoundError({ reason: "notebook_missing" });
-    return this.toNotebookDto(row);
+    const dto = await this.toNotebookDto(row);
+    return limits ? { ...dto, limits } : dto;
   }
 
   async updateNotebook(
@@ -226,9 +268,13 @@ export class MistakeNotebookService {
     });
   }
 
-  async getOverview(userId: string): Promise<NotebookOverviewDto> {
+  async getOverview(
+    userId: string,
+    rolesHint?: string[],
+  ): Promise<NotebookOverviewDto> {
     const now = new Date();
-    const { counts, notebook } = await withUserContext(
+    const policy = await this.quota?.resolvePolicy(userId, rolesHint);
+    const { counts, notebook, limits } = await withUserContext(
       this.db,
       { userId },
       async (tx) => {
@@ -240,6 +286,7 @@ export class MistakeNotebookService {
         return {
           counts: await this.notebook.countsFor(tx, userId, now, system.id),
           notebook: await this.notebook.findNotebook(tx, userId, system.id),
+          limits: await this.quota?.resolveLimits(tx, userId, policy!),
         };
       },
     );
@@ -251,6 +298,7 @@ export class MistakeNotebookService {
         pageCount: counts.pageCount,
         dueCount: counts.dueCount,
       },
+      ...(limits ? { limits } : {}),
     };
   }
 
@@ -390,11 +438,12 @@ export class MistakeNotebookService {
     userId: string,
     pageIndex: number,
     doc: NotebookPageDocInput,
+    rolesHint?: string[],
   ): Promise<NotebookPageDto> {
     const system = await withUserContext(this.db, { userId }, (tx) =>
       this.notebook.ensureMistakeNotebook(tx, userId, null),
     );
-    return this.putNotebookPage(userId, system.id, pageIndex, doc);
+    return this.putNotebookPage(userId, system.id, pageIndex, doc, rolesHint);
   }
 
   async putNotebookPage(
@@ -402,8 +451,10 @@ export class MistakeNotebookService {
     notebookId: string,
     pageIndex: number,
     doc: NotebookPageDocInput,
+    rolesHint?: string[],
   ): Promise<NotebookPageDto> {
     assertPageIndex(pageIndex);
+    const policy = await this.quota?.resolvePolicy(userId, rolesHint);
     const entryIds = doc.items.flatMap((item) =>
       item.kind === "entry" ? [item.entryId] : [],
     );
@@ -411,6 +462,13 @@ export class MistakeNotebookService {
     const entries = await withUserContext(this.db, { userId }, async (tx) => {
       const book = await this.notebook.findNotebook(tx, userId, notebookId);
       if (!book) throw new NotFoundError({ reason: "notebook_missing" });
+      await this.quota?.assertCanSavePage(
+        tx,
+        userId,
+        notebookId,
+        pageIndex,
+        policy!,
+      );
       if (book.kind === "CUSTOM" && entryIds.length > 0) {
         throw new ValidationFailedError({
           reason: "custom_notebook_entry_forbidden",
@@ -500,6 +558,7 @@ export class MistakeNotebookService {
   async createEntry(
     userId: string,
     input: CreateNotebookEntryInput,
+    rolesHint?: string[],
   ): Promise<NotebookEntryDto> {
     this.assertOwnStorageKey(userId, input.storageKey);
     this.assertOwnStorageKey(userId, input.solutionStorageKey);
@@ -509,8 +568,18 @@ export class MistakeNotebookService {
       input.topicRef,
     );
 
+    const addedPhotos =
+      (input.storageKey ? 1 : 0) + (input.solutionStorageKey ? 1 : 0);
+    const policy = await this.quota?.resolvePolicy(userId, rolesHint);
+
     const row = await withUserContext(this.db, { userId }, async (tx) => {
       await this.notebook.ensureMistakeNotebook(tx, userId, null);
+      await this.quota?.assertCanCreateEntry(
+        tx,
+        userId,
+        addedPhotos,
+        policy!,
+      );
       return this.notebook.createEntry(tx, userId, {
         examId: input.examId,
         mockExamId: input.mockExamId ?? null,
@@ -558,23 +627,32 @@ export class MistakeNotebookService {
     userId: string,
     entryId: string,
     patch: UpdateNotebookEntryInput,
+    rolesHint?: string[],
   ): Promise<NotebookEntryDto> {
+    const labelsChanged = patch.subjectRef !== undefined || patch.topicRef !== undefined;
+    const taxonomy = labelsChanged ? await this.readEntryLabelTaxonomy(userId, entryId) : undefined;
+    const policy = await this.quota?.resolvePolicy(userId, rolesHint);
     const row = await withUserContext(this.db, { userId }, async (tx) => {
+      if (policy && !policy.isPremium) await this.notebook.lockQuotaUsage(tx, userId);
       const existing = await this.notebook.findEntry(tx, userId, entryId);
       if (!existing)
         throw new NotFoundError({ reason: "notebook_entry_missing" });
 
       // Labels are validated against the entry's own exam, not the request's: a patch never moves
       // an entry between exams, so the taxonomy it must satisfy is already fixed.
-      if (patch.subjectRef !== undefined || patch.topicRef !== undefined) {
+      if (labelsChanged) {
         await this.assertLabelsBelongToExam(
           existing.examId,
           patch.subjectRef ?? existing.subjectRef,
           patch.topicRef ?? existing.topicRef,
+          taxonomy!,
         );
       }
 
       this.assertOwnStorageKey(userId, patch.solutionStorageKey);
+      if (patch.solutionStorageKey && !existing.solutionStorageKey) {
+        await this.quota?.assertCanUploadPhoto(tx, userId, 1, policy!);
+      }
 
       const updated = await this.notebook.updateEntry(tx, userId, entryId, {
         ...(patch.subjectRef !== undefined
@@ -753,12 +831,13 @@ export class MistakeNotebookService {
 
     // Best-effort, outside the transaction: a deleted mistake must not keep living at a public R2
     // URL (KVKK), but a storage hiccup must not undo a delete that already landed.
-    if (removed.storageKey) {
+    for (const key of [removed.storageKey, removed.solutionStorageKey]) {
+      if (!key) continue;
       try {
-        await this.storage.deleteObject(removed.storageKey);
+        await this.storage.deleteObject(key);
       } catch {
         this.logger.warn(
-          `Notebook: could not delete object ${removed.storageKey} for user ${userId}`,
+          `Notebook: could not delete object ${key} for user ${userId}`,
         );
       }
     }
@@ -768,7 +847,14 @@ export class MistakeNotebookService {
     userId: string,
     sessionId: string,
     contentType: (typeof NOTEBOOK_IMAGE_MIMES)[number],
+    rolesHint?: string[],
   ): Promise<NotebookImageUploadUrlDto> {
+    if (this.quota) {
+      const policy = await this.quota.resolvePolicy(userId, rolesHint);
+      await withUserContext(this.db, { userId }, (tx) =>
+        this.quota!.assertCanUploadPhoto(tx, userId, 1, policy),
+      );
+    }
     const key = `${NOTEBOOK_PREFIX}${userId}/${randomUUID()}.${EXTENSIONS[contentType]}`;
     const result = await this.storage.createUploadUrl({ key, contentType, ownerId: userId, sessionId });
     return {
@@ -824,10 +910,25 @@ export class MistakeNotebookService {
    * request from inventing one. An invented slug would render as a raw slug in the UI and pollute
    * the weakness map with a subject that does not exist.
    */
+  private async readEntryLabelTaxonomy(userId: string, entryId: string): Promise<NotebookLabelTaxonomy> {
+    const entry = await withUserContext(this.db, { userId }, (tx) =>
+      this.notebook.findEntry(tx, userId, entryId),
+    );
+    if (!entry) throw new NotFoundError({ reason: "notebook_entry_missing" });
+    // An entry cannot move to another exam. Resolve content before the write transaction,
+    // then validate the freshly locked row's merged labels without borrowing another client.
+    const [subjects, topics] = await Promise.all([
+      this.content.getValidSubjectSlugsForExam(entry.examId),
+      this.content.listExamTopicsByExamId(entry.examId),
+    ]);
+    return { subjects, topics };
+  }
+
   private async assertLabelsBelongToExam(
     examId: string,
     subjectRef: string | null | undefined,
     topicRef: string | null | undefined,
+    taxonomy?: NotebookLabelTaxonomy,
   ): Promise<void> {
     if (!subjectRef) {
       // A topic without its subject has nothing to hang from; the pair is set together or not set.
@@ -835,12 +936,12 @@ export class MistakeNotebookService {
         throw new ValidationFailedError({ reason: "topic_without_subject" });
       return;
     }
-    const subjects = await this.content.getValidSubjectSlugsForExam(examId);
+    const subjects = taxonomy?.subjects ?? await this.content.getValidSubjectSlugsForExam(examId);
     if (!subjects.has(subjectRef)) {
       throw new ValidationFailedError({ reason: "unknown_subject_ref" });
     }
     if (!topicRef) return;
-    const topics = await this.content.listExamTopicsByExamId(examId);
+    const topics = taxonomy?.topics ?? await this.content.listExamTopicsByExamId(examId);
     const known = topics.some(
       (topic) => topic.subjectSlug === subjectRef && topic.slug === topicRef,
     );

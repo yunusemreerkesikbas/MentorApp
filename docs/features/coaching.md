@@ -145,6 +145,28 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-29 · Atomic notebook quotas and transaction policy.** Resolve entitlement and
+  all quota configuration before opening a user transaction. Free creation/attachment checks
+  share a per-user transaction advisory lock with their writes; solution edits lock before
+  rereading current attachment state. Label taxonomy is prefetched outside the write
+  transaction, then checked against merged labels from the reread row. An exact saved page remains editable after a limit
+  reduction, while the growing row count cannot extend the allowance. The collection HTTP
+  fixture now uses STAFF/Premium for multiple-book pagination and a separate Free user for
+  ten simultaneous creates. Usage: existing configured limits and endpoints are unchanged.
+  Gotcha: per-user quotas do not reserve presigned uploads or bound the shared R2 invoice;
+  aggregate storage/operation acceptance remains open. Related: `notebook-quota.service.ts`,
+  `mistake-notebook.{service,repository}.ts`, their unit tests, `test/notebooks.e2e-spec.ts`,
+  and [release verification](../qa/2026-10-29-core-trial-release-verification.md).
+
+- **2026-10-29 · Free-tier notebook quotas managed from Admin `/config`.** Added five central config keys under `ConfigCategory.COACHING` enforced by `NotebookQuotaService`: `coaching.notebook.photo.free_enabled` (boolean, default `true`), `coaching.notebook.photo.free_limit` (number, default `5`), `coaching.notebook.custom.free_limit` (number, default `1`), `coaching.notebook.pages.free_limit` (number, default `20`), and `coaching.notebook.entries.free_limit` (number, default `50`). `GET /v1/coaching/notebooks`, `GET /v1/coaching/notebooks/:id`, and `GET /v1/coaching/notebook` now attach `limits: NotebookLimitsDto` so the web client renders live usage badges (`{used}/{max}`) and opens `PremiumPaywallModal` (`usePremiumPaywall().openPaywall` with contextual `headline` and `subtitle`) instead of disabling controls when a Free user reaches a limit across `/notebooks` (`DeskHeader`, `NotebooksShell`, `NotebookFormDialog`) and `/notebook` (`NotebookAddPanel`, `NotebookShell`, `useNotebookTurns`).
+  - **Usage:** Adjust any of the five `coaching.notebook.*` keys in Admin `/config` (`SUPER_ADMIN`); changes take effect immediately via `ConfigRegistryService`.
+  - **Gotchas:**
+    - Both `storageKey` (question photo) and `solutionStorageKey` (solution photo) on `mistake_notebook_entries` count toward `coaching.notebook.photo.free_limit`, and deleting an entry removes both objects from R2 storage.
+    - When `coaching.notebook.photo.free_enabled = false`, `coaching.notebook.photo.free_limit = 0`, or `coaching.notebook.custom.free_limit = 0`, the feature acts as Premium-only and throws `PAYMENT_PREMIUM_REQUIRED` (403); when a positive quota is exhausted, localized `COACHING_NOTEBOOK_*_LIMIT_EXCEEDED` (403) is thrown.
+    - Existing pages above `coaching.notebook.pages.free_limit` are grandfathered: editing an already-written page is always allowed, and only creating a new page at `pageIndex >= maxPages` is blocked.
+    - `CoachingEntitlementRegistry` bridges `EntitlementService.isPremium` into `CoachingModule` at module init without introducing a circular `CoachingModule ↔ PaymentsModule` import.
+  - **Related:** `config.catalog.ts`, `coaching-entitlement.registry.ts`, `notebook-quota.service{,.spec}.ts`, `mistake-notebook.service.ts`, `mistake-notebook.repository.ts`, `notebook-limit-callout.tsx`, `notebook-add-panel.tsx`, `notebook-shell.tsx`, `use-notebook-turns.tsx`, `notebooks-shell.tsx`, `desk-header.tsx`, `notebook-form-dialog.tsx`.
+
 - **2026-10-28 · Public pulse for the landing (`GET /v1/coaching/public/pulse`).** The landing's
   "Son 24 saatte {n} kişi burada çalıştı." comes from here: `{ studiedLast24h }`, the number of
   distinct people with a COMPLETED or IN_PROGRESS session that started in the last 24 hours. Abandoned

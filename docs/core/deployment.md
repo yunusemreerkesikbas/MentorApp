@@ -18,6 +18,43 @@ HttpOnly, SameSite=Lax cookies; do not add a shared cookie Domain attribute. Web
 URLs and sitemap use the apex; admin sends `X-Robots-Tag: noindex, nofollow, noarchive`.
 Noindex does not replace authentication or Cloudflare Access.
 
+## Closed-admin core-only Free trial
+
+The owner selected this profile on 2026-10-29. Set `ADMIN_ACCESS_MODE=disabled` on the
+API and do not deploy `mentor-admin` or attach its public domain/Render alias. The API
+denies all `/v1/admin/**` and `/v1/auth/admin/**` requests before admin handlers, including
+old privileged sessions and supplied Access assertions. Omit/unset Access issuer/audience
+variables; empty values still fail schema validation. The default `cloudflare` mode keeps
+the existing production Access requirements and identity verification.
+
+Keep `NODE_ENV=production` and all other production security/provider requirements.
+`ADMIN_APP_URL` and its explicit CORS entry remain reserved values; they do not grant
+access to a denied route. Do not remove modules or supply invented credentials.
+
+Before the first start, use the attended operator procedure with the separate migration
+connection to prepare and verify the intended database, reviewed content and these
+persisted flags: `ai.enabled=false`, `ai.budget.monthly_cap_usd_cents=100`,
+`forum.enabled=false`, `mentorship.enabled=false`, `mentorship.applications.open=false`,
+`mentorship.risk_digest.enabled=false`, `mentorship.seats.sponsorship_enabled=false`,
+and `ads.enabled=false`. Keep checkout/billing channels off, `PAYMENTS_PROVIDER=disabled`
+and `SMS_PROVIDER=disabled`. Public signup remains the selected direction; expected
+trial users are not an account-count or invoice cap. Verify effective values, not only
+catalog defaults. The registry caches overrides per process: an attended offline change
+requires controlled restart and verification. No live flag was changed in source preparation.
+
+The operator UI is unavailable in this mode. Prepare scoped support/incident procedures
+before admitting users; if intervention cannot be performed safely, pause admission/the
+trial. Do not add a public bootstrap endpoint or generic SQL console. Reopening admin
+requires explicit cloudflare mode plus working Access/MFA before deploying its frontend.
+Retain a compatible closed-mode artifact for rollback; older code again requires Access.
+
+The provider boundary now rejects text, streaming, embedding and vision operations when
+AI is off. Already-started calls are not cancelled; queued embeddings fail through the
+existing retry/dead-letter policy. Enabling AI later still requires embedding cost-accounting
+and provider-spending acceptance; the positive app cap does not establish those controls.
+Free cold starts/quotas, R2 spending, real mail, restricted DB role, recovery and full CI
+remain release gates. This profile does not apply the optional paid Blueprint below.
+
 ## 1. Release prerequisites and budget
 
 **Current owner direction, 2026-10-28:** evaluate suitable free plans first. There is no fixed
@@ -44,7 +81,7 @@ Resolve these items before authorizing production provisioning:
 - Obtain dedicated production runtime/migration DB URLs and JWT, rate-limit, edge, cron and
   VAPID secrets. Supply production OpenAI, Gemini, R2, Turnstile, Resend and Sentry settings.
   A Gemini credential is currently missing. Never promote `.env.staging` credentials to prod.
-- Resolve admin Access activation: the observed Cloudflare Free checkout required permission
+- For an admin-enabled deployment, resolve Access activation: the observed Cloudflare Free checkout required permission
   to charge a card for quota overage. The owner declined it. Do not accept those terms or
   weaken existing Access guards. Admin publication remains blocked pending an acceptable setup.
 - Verify the Resend sending domain, Free/overage settings, DNS/TLS, storage permissions and actual provider flows.
@@ -118,8 +155,8 @@ Render Free can sleep after 15 minutes idle and take about a minute to wake. Its
 Free instance hours are shared across the workspace. Evaluate the combined web/API/admin
 runtime rather than assuming one full month per service. Free web/API acceptance is pending:
 the existing paid Blueprint must not be relabeled Free without validating migrations, queue
-delivery and scheduled maintenance. Do not auto-upgrade. Keep Access enabled before publication
-and test admin sessions after wake/restart.
+delivery and scheduled maintenance. Do not auto-upgrade. Admin-enabled publication requires
+Access and session checks after wake/restart; the selected trial instead denies all admin access.
 See [Free limitations](https://render.com/docs/free).
 
 **Observed account settings, 2026-10-13:** Puhukoc is on Hobby; no services, payment card,

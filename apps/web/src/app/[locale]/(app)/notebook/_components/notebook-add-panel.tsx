@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import type { ExamSubjectDto, ExamTopicDto, NotebookEntryDto } from "@mentor/types";
+import { ApiClientError } from "@mentor/api-client";
+import type {
+  ExamSubjectDto,
+  ExamTopicDto,
+  NotebookEntryDto,
+  NotebookLimitsDto,
+} from "@mentor/types";
 import { NOTEBOOK_ERROR_TYPES, type NotebookErrorType } from "@mentor/types";
 import { TextAreaField } from "@mentor/ui";
 import { FormError } from "@/components/form";
@@ -16,6 +22,8 @@ import {
   uploadNotebookImage,
 } from "@/lib/notebook";
 import { measureImageAspect } from "@/lib/notebook-image-aspect";
+import { usePremiumPaywall } from "@/lib/premium-paywall";
+import { NotebookQuotaBadge } from "./notebook-limit-callout";
 
 interface NotebookAddPanelProps {
   examId: string;
@@ -23,6 +31,7 @@ interface NotebookAddPanelProps {
   mockExamId: string | null;
   subjects: ExamSubjectDto[];
   topics: ExamTopicDto[];
+  limits?: NotebookLimitsDto;
   /** `aspect` is the uploaded photo's own width/height, null for a text-only mistake. */
   onCreated: (entry: NotebookEntryDto, aspect: number | null) => void;
   /** A photo dragged onto a page from the computer, taken as if it had been picked here. */
@@ -46,11 +55,13 @@ export function NotebookAddPanel({
   mockExamId,
   subjects,
   topics,
+  limits,
   onCreated,
   droppedPhoto = null,
   onCancel,
 }: NotebookAddPanelProps) {
   const t = useTranslations("notebook");
+  const { openPaywall } = usePremiumPaywall();
   const fileRef = useRef<HTMLInputElement>(null);
   const solutionFileRef = useRef<HTMLInputElement>(null);
 
@@ -66,8 +77,73 @@ export function NotebookAddPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const stagedPhotos = (photo ? 1 : 0) + (solutionPhoto ? 1 : 0);
+  const usedPhotos = (limits?.photoCount ?? 0) + stagedPhotos;
+  const maxPhotos = limits?.maxPhotos ?? null;
+  const photoDisabledByAdmin = Boolean(
+    limits && !limits.isPremium && !limits.photoUploadEnabled && maxPhotos === 0,
+  );
+  const canPickMorePhotos =
+    !limits ||
+    limits.isPremium ||
+    (limits.photoUploadEnabled && (maxPhotos === null || usedPhotos < maxPhotos));
+
+  const usedEntries = limits?.entryCount ?? 0;
+  const maxEntries = limits?.maxEntries ?? null;
+  const entryLimitReached = Boolean(
+    limits && !limits.isPremium && maxEntries !== null && usedEntries >= maxEntries,
+  );
+
+  function openPhotoLimitPaywall() {
+    openPaywall({
+      headline: t("quota_photo_limit_title"),
+      subtitle: photoDisabledByAdmin
+        ? t("quota_photo_premium_only")
+        : t("quota_photo_limit_reached", { max: maxPhotos ?? 0 }),
+    });
+  }
+
+  function openEntryLimitPaywall() {
+    openPaywall({
+      headline: t("quota_entry_limit_title"),
+      subtitle: t("quota_entry_limit_reached", { max: maxEntries ?? 0 }),
+    });
+  }
+
+  function requestQuestionPhotoPick() {
+    if (entryLimitReached) {
+      openEntryLimitPaywall();
+      return;
+    }
+    if (!canPickMorePhotos) {
+      openPhotoLimitPaywall();
+      return;
+    }
+    fileRef.current?.click();
+  }
+
+  function requestSolutionPhotoPick() {
+    if (entryLimitReached) {
+      openEntryLimitPaywall();
+      return;
+    }
+    if (!canPickMorePhotos) {
+      openPhotoLimitPaywall();
+      return;
+    }
+    solutionFileRef.current?.click();
+  }
+
   async function handleFile(file: File | null) {
     if (!file) return;
+    if (entryLimitReached) {
+      openEntryLimitPaywall();
+      return;
+    }
+    if (!canPickMorePhotos) {
+      openPhotoLimitPaywall();
+      return;
+    }
     if (!isSupportedNotebookImage(file)) return setError(t("error_type_unsupported"));
     if (!isWithinNotebookImageLimit(file)) return setError(t("error_too_big"));
 
@@ -77,8 +153,16 @@ export function NotebookAddPanel({
       const uploaded = await uploadNotebookImage(file);
       const aspect = await measureImageAspect(uploaded.url).catch(() => null);
       setPhoto({ ...uploaded, aspect });
-    } catch {
-      setError(t("error_upload"));
+    } catch (err) {
+      if (
+        err instanceof ApiClientError &&
+        (err.body.code === "COACHING_NOTEBOOK_PHOTO_LIMIT_EXCEEDED" ||
+          err.body.code === "PAYMENT_PREMIUM_REQUIRED")
+      ) {
+        openPhotoLimitPaywall();
+        return;
+      }
+      setError(err instanceof ApiClientError ? err.message : t("error_upload"));
     } finally {
       setBusy(false);
     }
@@ -102,6 +186,14 @@ export function NotebookAddPanel({
    */
   async function handleSolutionFile(file: File | null) {
     if (!file) return;
+    if (entryLimitReached) {
+      openEntryLimitPaywall();
+      return;
+    }
+    if (!canPickMorePhotos) {
+      openPhotoLimitPaywall();
+      return;
+    }
     if (!isSupportedNotebookImage(file)) return setError(t("error_type_unsupported"));
     if (!isWithinNotebookImageLimit(file)) return setError(t("error_too_big"));
 
@@ -110,8 +202,16 @@ export function NotebookAddPanel({
     try {
       const uploaded = await uploadNotebookImage(file);
       setSolutionPhoto({ key: uploaded.key, url: uploaded.url });
-    } catch {
-      setError(t("error_upload"));
+    } catch (err) {
+      if (
+        err instanceof ApiClientError &&
+        (err.body.code === "COACHING_NOTEBOOK_PHOTO_LIMIT_EXCEEDED" ||
+          err.body.code === "PAYMENT_PREMIUM_REQUIRED")
+      ) {
+        openPhotoLimitPaywall();
+        return;
+      }
+      setError(err instanceof ApiClientError ? err.message : t("error_upload"));
     } finally {
       setBusy(false);
     }
@@ -119,6 +219,10 @@ export function NotebookAddPanel({
 
   async function handleSubmit() {
     if (!errorType) return;
+    if (entryLimitReached) {
+      openEntryLimitPaywall();
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -135,8 +239,23 @@ export function NotebookAddPanel({
         solutionNote: solutionNote.trim() || null,
       });
       onCreated(entry, photo?.aspect ?? null);
-    } catch {
-      setError(t("error_save"));
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        if (err.body.code === "COACHING_NOTEBOOK_ENTRY_LIMIT_EXCEEDED") {
+          openEntryLimitPaywall();
+          setBusy(false);
+          return;
+        }
+        if (
+          err.body.code === "COACHING_NOTEBOOK_PHOTO_LIMIT_EXCEEDED" ||
+          err.body.code === "PAYMENT_PREMIUM_REQUIRED"
+        ) {
+          openPhotoLimitPaywall();
+          setBusy(false);
+          return;
+        }
+      }
+      setError(err instanceof ApiClientError ? err.message : t("error_save"));
       setBusy(false);
     }
   }
@@ -148,6 +267,31 @@ export function NotebookAddPanel({
       <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
         {t("add_subtitle")}
       </p>
+
+      {limits && !limits.isPremium ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {maxEntries !== null ? (
+            <NotebookQuotaBadge
+              label={t("quota_entries_badge", {
+                used: Math.min(usedEntries, maxEntries),
+                max: maxEntries,
+              })}
+              full={entryLimitReached}
+              onClick={entryLimitReached ? openEntryLimitPaywall : undefined}
+            />
+          ) : null}
+          {maxPhotos !== null && maxPhotos > 0 ? (
+            <NotebookQuotaBadge
+              label={t("quota_photos_badge", {
+                used: Math.min(usedPhotos, maxPhotos),
+                max: maxPhotos,
+              })}
+              full={!canPickMorePhotos}
+              onClick={!canPickMorePhotos ? openPhotoLimitPaywall : undefined}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       <FormError message={error} />
 
@@ -167,7 +311,7 @@ export function NotebookAddPanel({
             variant="secondary"
             fullWidth
             disabled={busy}
-            onClick={() => fileRef.current?.click()}
+            onClick={requestQuestionPhotoPick}
           >
             {t("add_photo")}
           </NotebookCompactButton>
@@ -255,7 +399,7 @@ export function NotebookAddPanel({
             variant="secondary"
             fullWidth
             disabled={busy}
-            onClick={() => solutionFileRef.current?.click()}
+            onClick={requestSolutionPhotoPick}
           >
             {t("add_solution_photo")}
           </NotebookCompactButton>
@@ -281,7 +425,11 @@ export function NotebookAddPanel({
       </div>
 
       <div className="flex gap-2">
-        <NotebookCompactButton busy={busy} disabled={!errorType} onClick={() => void handleSubmit()}>
+        <NotebookCompactButton
+          busy={busy}
+          disabled={!errorType}
+          onClick={() => void handleSubmit()}
+        >
           {t("add_submit")}
         </NotebookCompactButton>
         <NotebookCompactButton variant="secondary" disabled={busy} onClick={onCancel}>
