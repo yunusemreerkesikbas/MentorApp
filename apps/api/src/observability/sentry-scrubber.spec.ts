@@ -3,6 +3,42 @@ import { describe, expect, it } from "vitest";
 import { scrubSentryEvent } from "./sentry-scrubber";
 
 describe("Sentry privacy boundary", () => {
+  const jobId = "a2a7f126-79e4-4f02-8dc4-ec80815cbf26";
+
+  it("keeps a job UUID and known job name so a quarantined execution can be found", () => {
+    const result = scrubSentryEvent({
+      tags: { jobId, jobName: "notifications.send-email", recipient: "private@example.test" },
+      extra: { payload: { token: "private-token" } },
+    });
+    expect(result.tags).toEqual({ jobId, jobName: "notifications.send-email" });
+    expect(JSON.stringify(result)).not.toContain("private");
+  });
+
+  it("keeps the UUID but drops an unrecognized or sensitive job name", () => {
+    const result = scrubSentryEvent({ tags: { jobId, jobName: "private@example.test" } });
+    expect(result.tags).toEqual({ jobId });
+    expect(JSON.stringify(result)).not.toContain("private@example.test");
+  });
+
+  it("omits stack traces when no approved frames remain", () => {
+    const result = scrubSentryEvent({ exception: { values: [
+      { type: "Error" },
+      { type: "Error", stacktrace: { frames: [{ filename: "/private/diary.txt" }] } },
+    ] } });
+    expect(result.exception?.values).toEqual([
+      { type: "Error", value: "Error details omitted" },
+      { type: "Error", value: "Error details omitted" },
+    ]);
+  });
+
+  it.each(["private@example.test", "https://example.test/?token=private", "not-a-uuid"])(
+    "does not accept arbitrary data as a job ID (%s)", (value) => {
+      const result = scrubSentryEvent({ tags: { jobId: value, jobName: "notifications.send-email" } });
+      expect(result.tags).toEqual({});
+      expect(JSON.stringify(result)).not.toContain(value);
+    },
+  );
+
   it("drops request data, breadcrumbs, user context, provider payloads and exception messages", () => {
     const event: Event = {
       event_id: "a".repeat(32), level: "error", environment: "production",

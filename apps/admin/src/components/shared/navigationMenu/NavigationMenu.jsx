@@ -17,7 +17,7 @@ const NavigationManu = () => {
             <div className="navbar-wrapper">
                 <div className="m-header">
                     <Link href="/" className="b-brand">
-                        {/* PuhuKoç logo (DESIGN.md §8.7), rendered from the web's Logo; the eye when collapsed. */}
+                        {/* PuhuKoç logo (DESIGN.md §8.7), rendered from the web's Logo; the Puhu mascot when collapsed. */}
                         <img src="/images/puhukoc/puhukoc-wordmark.png" alt="PuhuKoç" height="28" className="logo logo-lg" />
                         <img src="/images/puhukoc/puhukoc-icon.svg" alt="PuhuKoç" width="32" height="32" className="logo logo-sm" />
                     </Link>

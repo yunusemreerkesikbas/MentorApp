@@ -3,6 +3,7 @@ import type {
   AuthUser,
   ExamCalendarDto,
   NotebookDto,
+  NotebookLimitsDto,
   NotebookPageDto,
   NotebookSummaryDto,
 } from "@mentor/types";
@@ -77,6 +78,7 @@ interface MockApiOptions {
   initialCustoms?: NotebookDto[];
   failPageTwoOnce?: boolean;
   failFirstPageAfterDeleteOnce?: boolean;
+  limits?: NotebookLimitsDto;
 }
 
 async function mockApi(page: Page, options: MockApiOptions = {}) {
@@ -167,7 +169,7 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
       const pageSize = Number(url.searchParams.get("pageSize") ?? 12);
       const items = all.slice((requestedPage - 1) * pageSize, requestedPage * pageSize);
       return json(route, {
-        items,
+        items: options.limits ? items.map((item) => ({ ...item, limits: options.limits })) : items,
         total: all.length,
         page: requestedPage,
         pageSize,
@@ -239,6 +241,26 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
   });
   return state;
 }
+
+test("sayfalama sunucunun toplam defter kotasını düşürmez", async ({ page }) => {
+  const initialCustoms = Array.from({ length: 12 }, (_, index): NotebookDto => ({
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    kind: "CUSTOM", title: `Defter ${index + 1}`, examId: null, subjectRef: null,
+    subjectName: null, cover: { color: "navy", material: "cloth" }, pageCount: 0,
+    dueCount: 0, createdAt: "2026-08-25T10:00:00.000Z", updatedAt: "2026-08-25T10:00:00.000Z",
+  }));
+  await mockApi(page, { initialCustoms, limits: {
+    isPremium: false, maxPages: 20, maxCustomNotebooks: 12, customNotebookCount: 12,
+    maxEntries: 50, entryCount: 0, photoUploadEnabled: true, maxPhotos: 5, photoCount: 0,
+  } });
+  await page.goto("/defterlerim");
+  await expect(page.locator("article")).toHaveCount(12);
+  const quotaButton = page.getByRole("button", { name: "Özel defter: 12 / 12" });
+  await expect(quotaButton).toBeVisible();
+  expect((await quotaButton.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await page.getByRole("button", { name: "Yeni defter", exact: true }).click();
+  await expect(page.getByLabel("Defter adı")).toHaveCount(0);
+});
 
 test("koleksiyondan ders defteri oluşturulur, serbest editör açılır ve defter silinir", async ({
   page,

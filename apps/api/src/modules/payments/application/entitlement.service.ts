@@ -1,4 +1,5 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional } from "@nestjs/common";
+import { CoachingEntitlementRegistry } from "../../coaching/application/coaching-entitlement.registry";
 import { SubscriptionStatus, SubscriptionTier, UserRole, type EntitlementDto } from "@mentor/types";
 import { UsersRepository } from "../../identity/infrastructure/users.repository";
 import { GRACE_PERIOD_DAYS } from "../domain/payments.constants";
@@ -19,7 +20,16 @@ export class EntitlementService {
   constructor(
     private readonly subscriptions: SubscriptionsRepository,
     private readonly users: UsersRepository,
-  ) {}
+    @Optional() private readonly coachingEntitlement?: CoachingEntitlementRegistry,
+  ) {
+    this.coachingEntitlement?.register(async (userId, rolesHint) => {
+      const ent = await this.getEntitlement(userId, rolesHint);
+      return ent.isPremium;
+    });
+  }
+
+
+
 
   /**
    * @param rolesHint roles already at hand (e.g. from the verified JWT) — skips a user

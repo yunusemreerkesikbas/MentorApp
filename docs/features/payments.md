@@ -403,6 +403,14 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 - `SubscriptionsService.hasCheckoutBlockingSubscription(userId)` and the module-level `blocksCheckout(open)`: the one definition of "checkout answers `PAYMENT_ALREADY_SUBSCRIBED`" (open and not `INCOMPLETE` and not `SPONSOR`). `checkout` uses it too, so an advertised discount and a refused purchase cannot drift apart.
 - Usage: economy's `InviteViewService.getView` / `getPreview` are the callers; nothing else should advertise the friend discount without going through these. Gotcha: both discounts are web-checkout only, so a store-only catalog returns null everywhere. Related: `subscriptions.service.ts`, `promotions.service.ts`, `economy/application/invite.service.ts`, [economy.md](./economy.md) 2026-10-25.
 
+### 2026-10-29 — Paywall UX polish: open/close motion, zero-CLS checkout skeleton, monochrome benefits & trial callout
+
+- **Open/close choreography:** `PremiumPaywallModal` now manages a `closing` phase (`requestClose`) with asymmetric open/close durations (`250ms` open with `scale: 0.96, y: 12, blur(2px)` -> `150ms` close on desktop; `280ms` -> `180ms` slide on mobile sheet) and synchronized backdrop fade.
+- **Kupon alanı akordeon açılış/kapanış:** `PremiumPaywallFooter` içindeki kupon alanı `AnimatePresence mode="wait"` ile donatıldı; toggle butonu, kupon giriş formu (kapatma butonu ve Escape desteğiyle) ve uygulanan kod kartı arasında akıcı yükseklik ve opaklık geçişi (`0.22s` / `0.16s`, `[0.22, 1, 0.36, 1]`) sağlandı.
+- **Zero-CLS checkout skeleton:** While plans and eligibility load (`loading === true`), `PaywallCheckoutSkeleton` renders dimensionally matched `min-h-[96px]` plan card placeholders, consent disclosure lines, `60px` CTA button placeholder, and coupon toggle placeholder while `PremiumPaywallFooter` returns `null`, preventing the modal from flashing "Çok yakında" or jumping in height when plans resolve.
+- **Visual & copy polish:** Replaced the wireframe `PREMİUM` tag with an aurora gradient pill, hid the native scrollbar track on `premium-paywall-body`, unified benefit icons to monochrome inside translucent glass tiles (`PremiumPaywallBenefits`), added dynamic top-row highlighting for notebook quota triggers (`highlightNotebook`), and enhanced the 7-day trial callout badge + per-plan trial tag (`plan_trial_tag`).
+- **Related files:** `apps/web/src/components/premium/{premium-paywall-modal,premium-paywall-benefits,premium-paywall-plan-picker,premium-paywall-footer}.tsx`, `apps/web/messages/{tr,en}.json`.
+
 ## Gotchas / Known issues
 
 - **Coach seats read payments twice, and never write it (W8 phase B, 2026-09-27).** The seat on a

@@ -25,7 +25,7 @@
     "seed:mentorship-followups": "ts-node -T scripts/seed-mentorship-followups.ts",
     "seed:mentorship-weekly-report": "ts-node -T scripts/seed-mentorship-weekly-report.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "drizzle-kit migrate --config=drizzle.migrate.config.ts",
     "db:studio": "drizzle-kit studio",
     "clean": "rimraf dist .turbo tsconfig.tsbuildinfo",
     "seed:universities": "node scripts/build-university-seed.mjs",

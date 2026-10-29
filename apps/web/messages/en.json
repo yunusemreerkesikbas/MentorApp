@@ -180,7 +180,7 @@
     "has_account": "I already have an account",
     "tagline": "Your exam companion",
     "hero_title": "Yours isn't the <glow>only window</glow> lit tonight.",
-    "hero_lead": "A daily plan, friends who study at the same hours, and with Premium an AI coach who knows you. Let's walk the road together.",
+    "hero_lead": "An AI-powered study companion for exam prep: your daily plan, focus sessions and friends who study at the same hours, all in one place.",
     "how_it_works": "How it works",
     "faq_nav": "FAQ",
     "counter": "{count, number} people studied here in the last 24 hours.",
@@ -190,6 +190,43 @@
       "body": "Follow your students' plans, sessions and weekly reports in one place. Be there where they get stuck.",
       "cta": "Start as a coach",
       "more": "See a coach's morning"
+    },
+    "blog_section": {
+      "pill": "Blog",
+      "title": "Reads for the road to your exam",
+      "all": "All posts"
+    },
+    "morning": {
+      "pill": "Morning",
+      "title": "What's on your desk in the morning?",
+      "lead": "We kept you company all night. When the sun comes up, your own tools are waiting on your desk.",
+      "notebook": {
+        "name": "Notebooks",
+        "tab": "Notebook",
+        "title": "Your mistakes don't get lost.",
+        "body": "Add a question you got wrong with a photo or by typing it, and file it under its subject and topic. When it's time to review, your questions come back one card at a time.",
+        "question": "If 3x − 5 = 2x + 4, what is x?",
+        "subject_turkish": "Turkish",
+        "subject_history": "History",
+        "math": "Math Notebook",
+        "math_tape": "Math"
+      },
+      "board": {
+        "name": "Goal board",
+        "tab": "Board",
+        "title": "Your goal, always in sight.",
+        "body": "Pick your target city on the map, then pin your field and your own photos to your board. Make it a wallpaper or share it with the community if you like.",
+        "goal": "Computer Engineer",
+        "city": "Konya"
+      },
+      "story": {
+        "name": "Story of the week",
+        "tab": "Story",
+        "title": "A story every week.",
+        "body": "How many days you studied, how many minutes you focused, which subject shone: when the week ends, it all becomes a short story. If the week was full, you get a codename too.",
+        "dates": "Oct 20 – 26",
+        "codename": "Nebula Diver"
+      }
     },
     "faq": {
       "pill": "FAQ",
@@ -285,9 +322,9 @@
     "analysis": {
       "name": "Analysis",
       "title": "Let your practice tests tell you their story.",
-      "body": "Enter your practice test results and we'll see which topic is waiting for you. A short story every week: what went well, what's next.",
+      "body": "Enter your practice test results and we'll see which topic is waiting for you.",
       "scribble": "a little more each week",
-      "story": "This week's story: Reading is steady. Geometry is next."
+      "story": "Next focus: Geometry. Reading is steady."
     },
     "yours": {
       "name": "You",
@@ -388,6 +425,7 @@
     "profile": "Profile",
     "settings": "Settings",
     "community": "Community",
+    "coach_profile": "Coach profile",
     "language_toggle_label": "Select language",
     "theme_toggle_label": "Theme",
     "theme_to_dark": "Switch to dark theme",
@@ -1290,24 +1328,24 @@
     "badge_savings": "Save {percent}%",
     "per_month": "/mo",
     "total_for_months": "{price} per {months} months",
-    "headline": "Get exam-ready with your coach",
-    "headline_coach": "Your coach is one message away",
-    "headline_plan": "Build your plan with your coach",
-    "headline_vision": "A coach note for your goal",
-    "headline_analysis": "Your week, as your coach sees it",
-    "headline_mood": "However you feel, your coach hears it",
-    "headline_ghost": "Your progress, told by your coach",
-    "headline_greeting": "Start the day with your coach",
-    "headline_session": "A coach note after every session",
-    "subtitle": "An AI coach that knows your plan and your week, by your side every day.",
-    "benefit_coach_title": "Ask the moment you're stuck",
-    "benefit_coach_desc": "An AI coach that knows your plan and history answers for you.",
-    "benefit_daily_title": "A personal note every day",
-    "benefit_daily_desc": "Morning greeting, a mood note, a word on every session.",
-    "benefit_analysis_title": "Your coach reads your week",
-    "benefit_analysis_desc": "Weekly story, deep analysis, you versus past you.",
-    "benefit_plan_title": "Plan slipped? Your coach fixes it",
-    "benefit_plan_desc": "Build the week with your coach, get a note on your goal.",
+    "headline": "Your exam prep superpower is ready!",
+    "headline_coach": "Your coach is always one message away!",
+    "headline_plan": "Build your plan with your coach and keep the pace!",
+    "headline_vision": "A personal coach touch on your vision board!",
+    "headline_analysis": "See your week through your coach’s eyes!",
+    "headline_mood": "However you feel, your coach is right here!",
+    "headline_ghost": "Let your coach narrate every step of your progress!",
+    "headline_greeting": "Start every day with your coach’s energy!",
+    "headline_session": "Instant coach feedback after every session!",
+    "subtitle": "Remove all limits and move full speed toward your goal with an AI coach that knows your rhythm.",
+    "benefit_coach_title": "24/7 personal AI coach & instant feedback",
+    "benefit_coach_desc": "Knows your plan and history, guiding you the moment you get stuck.",
+    "benefit_daily_title": "Personal coach notes for every day, mood & session",
+    "benefit_daily_desc": "Morning check-ins, mood support, and a coach note after every focus session.",
+    "benefit_analysis_title": "Deep weekly analytics, report card & progress comparison",
+    "benefit_analysis_desc": "Compare your nets and focus rhythm with past weeks to spot gaps fast.",
+    "benefit_plan_title": "Smart AI plan adaptation whenever your schedule slips",
+    "benefit_plan_desc": "If your plan slips, your coach rebuilds your week while your notebook archive never fills up.",
     "subscribe": "Bring the coach along",
     "close": "Close",
     "loading": "Loading…",
@@ -1324,7 +1362,12 @@
     "coupon_copy_failed": "Copy failed",
     "promotion_apply_cta": "Apply and continue",
     "promotion_dismiss": "Maybe later",
-    "valid_until": "Valid until {date}"
+    "valid_until": "Valid until {date}",
+    "trial_zero_today": "Pay ₺0 today, cancel anytime",
+    "plan_trial_tag": "First {days} days free",
+    "benefit_notebook_title": "Unlimited notebooks, pages & question photos",
+    "benefit_notebook_desc": "Archive all your subject notebooks and mistake photos without limits.",
+    "benefit_adfree_title": "Ad-free, distraction-free study experience"
   },
   "campaign": {
     "eyebrow": "7-day free trial",
@@ -2245,6 +2288,11 @@
   "notebooks": {
     "title": "My notebooks",
     "subtitle": "Track mistakes or create a calm study space for each subject.",
+    "quota_custom_badge": "Custom notebooks: {used} / {max}",
+    "quota_custom_title": "Open as many custom notebooks as you need",
+    "quota_custom_limit_reached": "You can create up to {max} custom notebooks on the free plan. Switch to Premium to open more.",
+    "quota_custom_premium_only": "Custom subject notebooks are included with Premium. You can keep using your Mistake Notebook for free.",
+    "upgrade_cta": "Switch to Premium",
     "create": "New notebook",
     "pages": "{count} pages",
     "due": "{count} reviews today",
@@ -2326,6 +2374,16 @@
       "matte": "Matte"
     },
     "cover_title": "My Mistake Notebook",
+    "quota_entries_badge": "Questions: {used} / {max}",
+    "quota_photos_badge": "Photos: {used} / {max}",
+    "quota_photo_limit_title": "Add unlimited photos to your notebook",
+    "quota_entry_limit_title": "Grow your mistake notebook without limits",
+    "quota_photo_limit_reached": "You've used your free photo allowance ({max}). You can still add the question without a photo, or switch to Premium for unlimited photos.",
+    "quota_photo_premium_only": "Adding photos to the notebook is currently included with Premium. You can save the question without a photo or switch to Premium.",
+    "quota_entry_limit_reached": "You can save up to {max} questions in your Mistake Notebook on the free plan. Keep reviewing your current cards or switch to Premium for unlimited entries.",
+    "quota_page_limit_title": "Add more pages to your notebook",
+    "quota_page_limit_reached": "Your notebook opens up to {max} pages on the free plan. Switch to Premium for thicker notebooks.",
+    "upgrade_cta": "Switch to Premium",
     "cover_subtitle": "{entries} mistakes · {healed} healed",
     "cover_custom_subtitle": "{pages} pages · This is your study space",
     "cover_open": "Open the notebook",
@@ -4102,7 +4160,6 @@
     "brief_history_open": "Show earlier briefs",
     "brief_history_empty": "There is no other brief for this student.",
     "brief_history_more": "Load older",
-
     "followup_response_PENDING": "Awaiting response",
     "report_plan_week": "Plan the week",
     "report_more_actions": "More actions",
@@ -4377,6 +4434,5 @@
     "followup_page_of": "Page {page} of {pages}",
     "invite_copied_short": "Copied",
     "planning_unsaved_edit": "Save the change in the form first, or cancel it."
-
   }
 }

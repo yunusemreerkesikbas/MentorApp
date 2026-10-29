@@ -151,6 +151,7 @@ test("İngilizce otomatik reklam ve bilgilendirme", async ({ page }) => {
   await expect(page.getByRole("complementary", { name: "Advertisement", exact: true })).toContainText("Test inventory");
   await page.goto("/en/cookie-preferences");
   const ads = page.getByRole("region", { name: "Ads in free access" });
-  await expect(ads).toContainText("automatically");
+  await expect(ads).toContainText("Your analytics choice does not change ad delivery.");
+  await expect(ads).toContainText("Personalized ads and behavioral targeting are disabled.");
   await expect(ads.getByRole("button")).toHaveCount(0);
 });

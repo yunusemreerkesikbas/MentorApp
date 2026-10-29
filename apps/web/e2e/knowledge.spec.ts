@@ -148,16 +148,13 @@ test("eski /bilgi adresleri /blog'a kalıcı yönlenir", async ({ page }) => {
   await expect(page).toHaveURL(/\/blog\?category=GENERAL$/);
 });
 
-/** The app's own Blog item, active: the sidebar's on desktop, the tab bar's on a phone. */
-function activeBlogNav(page: Page) {
-  return page.getByRole("link", { name: "Blog", exact: true }).and(page.locator('[aria-current="page"]'));
-}
-
 test("üye hub'da uygulamanın menüsünü görür, ziyaretçi barını görmez", async ({ page }) => {
   const api = await mockKnowledgeApi(page);
   await page.goto("/blog");
 
-  await expect(activeBlogNav(page)).toBeVisible();
+  // The app's own menu, which no longer carries a Blog item (it left the nav on 2026-10-28).
+  await expect(page.getByRole("link", { name: "Plan", exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Blog", exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Giriş yap" })).toHaveCount(0);
   expect(api.unexpected).toEqual([]);
@@ -259,7 +256,7 @@ test("üye yazıda da uygulamanın menüsünü görür; yeniden yüklemede menü
 
   await page.goto(`/blog/${article.slug}`);
 
-  await expect(activeBlogNav(page)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Plan", exact: true }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Giriş yap" })).toHaveCount(0);
   await expect(page.locator("html")).toHaveAttribute("data-blog-member", "");
 
@@ -536,6 +533,20 @@ async function mockKnowledgeApi(
     }
     if (method === "GET" && path === "/v1/subscription") {
       return json(route, subscription);
+    }
+    // The hub's list slot (knowledge.index, since 2026-10-25) answers like the article's: switched off.
+    if (method === "GET" && path.startsWith("/v1/ads/placements/knowledge.index")) {
+      return json(route, {
+        id: "knowledge.index",
+        format: "DISPLAY",
+        enabled: false,
+        reason: "PREMIUM_AD_FREE",
+        provider: "GOOGLE_AD_MANAGER",
+        adUnitPath: null,
+        audienceTreatment: "NONE",
+        limitedAds: true,
+        sizes: [[320, 100], [728, 90]],
+      });
     }
     if (
       method === "GET" &&

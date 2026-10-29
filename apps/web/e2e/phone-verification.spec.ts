@@ -377,7 +377,7 @@ for (const locale of ["tr", "en"] as const) {
     await expect(page.getByRole("heading", { name: locale === "tr" ? "Telefon doğrulaması" : "Phone verification", exact: true })).toHaveCount(0);
     await expect(page.getByText(locale === "tr" ? "Deneme başladığında telefonunun" : "When your trial starts,", { exact: false })).toHaveCount(0);
     await page.getByRole("checkbox").check();
-    const start = page.getByRole("button", { name: locale === "tr" ? "Denemeyi başlat" : "Start trial" });
+    const start = page.getByRole("button", { name: locale === "tr" ? "7 gün ücretsiz başla" : "Start 7 days free", exact: true });
     await expect(start).toBeEnabled();
     await start.click();
     await expect.poll(() => api.checkout).toEqual({ planId: "premium-monthly", useTrial: true });

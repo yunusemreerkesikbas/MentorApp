@@ -1,4 +1,5 @@
 import { disableAuthRateLimits } from "./app-harness";
+import { UserRole } from "@mentor/types";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
@@ -58,6 +59,9 @@ describe("notebook collection (e2e)", () => {
     tokenA = a.accessToken;
     tokenB = b.accessToken;
     userA = a.user.id;
+    // Multiple-book pagination belongs to Premium; B exercises the default Free cap below.
+    const { UsersService } = await import("../src/modules/identity/application/users.service");
+    await moduleRef.get(UsersService).addRole(userA, UserRole.STAFF);
   }, 90_000);
 
   afterAll(async () => {
@@ -236,5 +240,34 @@ describe("notebook collection (e2e)", () => {
       [customA],
     );
     expect(pages.rows[0]?.count).toBe(0);
+  });
+
+  it("serializes concurrent Free notebook creation without exhausting the pool", async () => {
+    const responses = await Promise.all(Array.from({ length: 10 }, (_, index) =>
+      request(app.getHttpServer()).post("/v1/coaching/notebooks").set(authB()).send({
+        title: `Concurrent ${index}`, examId: null, subjectRef: null,
+        cover: { color: "navy", material: "cloth" },
+      }),
+    ));
+    expect(responses.filter((response) => response.status === 201)).toHaveLength(1);
+    expect(responses.filter((response) => response.status === 403)).toHaveLength(9);
+    for (const response of responses.filter((item) => item.status === 403)) {
+      expect(response.body.code).toBe("COACHING_NOTEBOOK_CUSTOM_LIMIT_EXCEEDED");
+    }
+  });
+
+  it("updates labels concurrently without borrowing connections inside the user lock", async () => {
+    const calendar = await request(app.getHttpServer())
+      .get("/v1/content/exams/kpss-lisans-2026/calendar");
+    expect(calendar.status).toBe(200);
+    const entry = await request(app.getHttpServer())
+      .post("/v1/coaching/notebook/entries").set(authB())
+      .send({ examId: calendar.body.exam.id, subjectRef: "turkce", errorType: "CARELESS", source: "OWN" });
+    expect(entry.status).toBe(201);
+    const updates = await Promise.all(Array.from({ length: 10 }, (_, index) =>
+      request(app.getHttpServer()).patch(`/v1/coaching/notebook/entries/${entry.body.id}`)
+        .set(authB()).send({ subjectRef: "turkce", note: `Concurrent label ${index}` }),
+    ));
+    expect(updates.map((response) => response.status)).toEqual(Array.from({ length: 10 }, () => 200));
   });
 });

@@ -49,7 +49,7 @@ export class MistakeNotebookController {
 
   @Get()
   getOverview(@CurrentUser() user: RequestUser): Promise<NotebookOverviewDto> {
-    return this.notebook.getOverview(user.id);
+    return this.notebook.getOverview(user.id, user.roles);
   }
 
   /** Entries whose review moment has arrived — the "bugün tekrar" strip. */
@@ -88,7 +88,7 @@ export class MistakeNotebookController {
     @CurrentUser() user: RequestUser,
     @Body() dto: NotebookImageUploadUrlDto,
   ): Promise<NotebookImageUploadUrlResponse> {
-    return this.notebook.createUploadUrl(user.id, user.sessionId, dto.contentType);
+    return this.notebook.createUploadUrl(user.id, user.sessionId, dto.contentType, user.roles);
   }
 
   @Post("entries")
@@ -96,7 +96,7 @@ export class MistakeNotebookController {
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateNotebookEntryDto,
   ): Promise<NotebookEntryDto> {
-    return this.notebook.createEntry(user.id, dto);
+    return this.notebook.createEntry(user.id, dto, user.roles);
   }
 
   @Get("entries/:id")
@@ -110,7 +110,7 @@ export class MistakeNotebookController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateNotebookEntryDto,
   ): Promise<NotebookEntryDto> {
-    return this.notebook.updateEntry(user.id, id, dto);
+    return this.notebook.updateEntry(user.id, id, dto, user.roles);
   }
 
   /** "Could you do it this time?" — one boolean, and the interval ladder does the rest. */
@@ -174,6 +174,6 @@ export class MistakeNotebookController {
     @Param("index", ParseIntPipe) index: number,
     @Body() dto: PutNotebookPageDto,
   ): Promise<NotebookPageDto> {
-    return this.notebook.putPage(user.id, index, dto.doc);
+    return this.notebook.putPage(user.id, index, dto.doc, user.roles);
   }
 }

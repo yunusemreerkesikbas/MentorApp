@@ -18,6 +18,10 @@ const PremiumPaywallModal = dynamic(
 
 export interface PaywallOpenOptions {
   sourceFeature?: PremiumFeatureId;
+  /** Optional contextual headline when opened from a quota/usage limit (e.g. notebook limits). */
+  headline?: string;
+  /** Optional contextual subtitle explaining which free limit was reached. */
+  subtitle?: string;
   /**
    * A coupon to apply on open, so a campaign surface can hand the user straight to a discounted
    * paywall instead of asking them to retype what it just showed them. Advisory: the paywall
@@ -38,10 +42,14 @@ const PremiumPaywallContext = createContext<PremiumPaywallContextValue | null>(
 export function PremiumPaywallProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [sourceFeature, setSourceFeature] = useState<PremiumFeatureId | undefined>();
+  const [headline, setHeadline] = useState<string | undefined>();
+  const [subtitle, setSubtitle] = useState<string | undefined>();
   const [code, setCode] = useState<string | undefined>();
 
   const openPaywall = useCallback((options?: PaywallOpenOptions) => {
     setSourceFeature(options?.sourceFeature);
+    setHeadline(options?.headline);
+    setSubtitle(options?.subtitle);
     setCode(options?.code);
     setOpen(true);
   }, []);
@@ -61,6 +69,8 @@ export function PremiumPaywallProvider({ children }: { children: ReactNode }) {
       {open ? (
         <PremiumPaywallModal
           sourceFeature={sourceFeature}
+          headline={headline}
+          subtitle={subtitle}
           initialCode={code}
           onClose={closePaywall}
         />

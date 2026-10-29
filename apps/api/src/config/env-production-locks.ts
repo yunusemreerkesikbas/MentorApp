@@ -16,6 +16,7 @@ interface ProductionSecurityEnv {
   NODE_ENV: string;
   APP_URL: string;
   ADMIN_APP_URL: string;
+  ADMIN_ACCESS_MODE: "cloudflare" | "disabled";
   EDGE_ORIGIN_SECRET?: string;
   AUTH_RATE_LIMIT_SECRET: string;
   JWT_ACCESS_SECRET: string;
@@ -49,6 +50,8 @@ export function validateProductionSecurity(env: ProductionSecurityEnv, ctx: z.Re
   if (!env.TURNSTILE_EXPECTED_HOSTNAME || env.TURNSTILE_EXPECTED_HOSTNAME !== appUrl?.hostname) {
     issue("TURNSTILE_EXPECTED_HOSTNAME", "TURNSTILE_EXPECTED_HOSTNAME must match the APP_URL hostname in production.");
   }
+  // The remaining checks concern Access only; disabled mode denies admin routes entirely.
+  if (env.ADMIN_ACCESS_MODE === "disabled") return;
   let accessDomain: URL | undefined;
   try {
     accessDomain = env.CLOUDFLARE_ACCESS_TEAM_DOMAIN

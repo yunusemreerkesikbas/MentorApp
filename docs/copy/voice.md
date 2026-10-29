@@ -53,10 +53,14 @@ energetic: no `!` in the story, and the only one on the page is the league demo'
   gece ışığı yanan tek pencere seninki değil.", "Penceren yandı."). Facts, buttons and plates use
   plain words: "Son 24 saatte {n} kişi burada çalıştı.", "Bu alanla başla", door plates with bare
   names ("Masa", not "Masa penceresi").
-- **Generic "sınav".** The landing never names an exam (KPSS, YKS…).
-- **Premium is said, not hidden.** The lead names the free parts first and says "Premium'da" for
-  the AI coach. The coach demo ends with "Bu bir örnek cevap. Yapay zekâ koç Premium'da." Never
-  promise a trial here: the web purchase channel is flag-gated.
+- **Generic "sınav".** The landing never names an exam (KPSS, YKS…), except in the "Blog'dan" cards,
+  which show the posts' own titles.
+- **Say what it is, first.** The hero lead names the product before anything else: "Sınava
+  hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı: …" (2026-10-28, user's call; it also
+  carries the search phrase). "Yapay zekâ destekli" describes the product, not a free AI coach.
+- **Premium is said where AI is shown.** The coach demo ends with "Bu bir örnek cevap. Yapay zekâ
+  koç Premium'da." and the FAQ answers "ücretsiz mi?". Never promise a trial here: the web purchase
+  channel is flag-gated.
 - **Stay companion:**
   - the coach demo's canned replies (they show the coach's voice);
   - the FAQ answers about data, KVKK, payment and what the AI does not do;

@@ -1,9 +1,10 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { CheckIcon } from "@solar-icons/react/linear/check";
+import { CloseIcon } from "@solar-icons/react/linear/close";
 import { TagIcon } from "@solar-icons/react/linear/tag";
 import { Button } from "@mentor/ui";
 import { FormError } from "@/components/form";
@@ -12,6 +13,50 @@ import { getStoreLinks } from "@/lib/purchase-mode";
 import { StoreButtons } from "./store-buttons";
 import { PendingCheckout } from "./pending-checkout";
 import type { PremiumPaywallState } from "./use-premium-paywall";
+
+const EASE_SMOOTH_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const couponContainerVariants: Variants = {
+  hidden: { opacity: 0, height: 0, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    height: "auto",
+    scale: 1,
+    transition: {
+      duration: 0.22,
+      ease: EASE_SMOOTH_OUT,
+    },
+  },
+  exit: {
+    opacity: 0,
+    height: 0,
+    scale: 0.98,
+    transition: {
+      duration: 0.16,
+      ease: EASE_SMOOTH_OUT,
+    },
+  },
+};
+
+const couponToggleVariants: Variants = {
+  hidden: { opacity: 0, y: 4 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.18,
+      ease: EASE_SMOOTH_OUT,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -4,
+    transition: {
+      duration: 0.12,
+      ease: EASE_SMOOTH_OUT,
+    },
+  },
+};
 
 function formatPrice(minor: number, locale: string): string {
   return (minor / 100).toLocaleString(locale === "en" ? "en-GB" : "tr-TR", {
@@ -27,7 +72,7 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
   const locale = useLocale();
   const reduceMotion = useReducedMotion();
   const {
-    includesTrial, selected, selectedDiscount, appliedCode, clearCoupon, couponOpen,
+    loading, includesTrial, selected, selectedDiscount, appliedCode, clearCoupon, couponOpen,
     couponInput, setCouponInput, applyCoupon, couponBusy, couponError, setCouponOpen,
     pendingCheckout, view, pendingTrial, purchaseEnabled, consent, setConsent, mode,
     error, busy, checkout,
@@ -38,6 +83,8 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
   // The CTA stays live; pressed without consent it points at the box instead of starting checkout.
   const [consentAsked, setConsentAsked] = useState(false);
   const consentMissing = consentAsked && !consent;
+
+  if (loading) return null;
 
   function start() {
     if (!consent) {
@@ -73,86 +120,133 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
       ? tSub("trial_consent_days", { days: trialDays })
       : tSub("paid_consent", { price: formatPrice(selected?.priceMinor ?? 0, locale) });
 
-  const couponField = appliedCode ? (
-    <div
-      className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2 text-xs"
-      style={{ backgroundColor: "var(--color-surface-container)" }}
-    >
-      <span
-        className="flex items-center gap-2 font-semibold"
-        style={{ color: "var(--color-main)" }}
-      >
-        <TagIcon size={16} strokeWidth={1.75} aria-hidden />
-        {t("coupon_applied")}: {appliedCode}
-      </span>
-      <button
-        type="button"
-        onClick={() => void clearCoupon()}
-        className="min-h-11 px-2 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        {t("coupon_clear")}
-      </button>
-    </div>
-  ) : couponOpen ? (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          inputMode="text"
-          autoComplete="off"
-          aria-label={t("coupon_label")}
-          placeholder={t("coupon_placeholder")}
-          value={couponInput}
-          onChange={(event) => setCouponInput(event.target.value.toUpperCase())}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              void applyCoupon();
-            }
-          }}
-          maxLength={32}
-          className="min-h-11 flex-1 rounded-[var(--radius-card)] border px-3 text-sm uppercase tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{
-            backgroundColor: "var(--color-bg)",
-            borderColor: "var(--color-border)",
-            color: "var(--color-main)",
-          }}
-        />
-        <Button
-          variant="secondary"
-          className="!min-h-11 !px-4 !py-2 !text-sm"
-          busy={couponBusy}
-          disabled={couponInput.trim().length === 0}
-          onClick={() => void applyCoupon()}
+  const couponField = (
+    <AnimatePresence mode="wait" initial={false}>
+      {appliedCode ? (
+        <motion.div
+          key="applied"
+          variants={reduceMotion ? undefined : couponContainerVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="overflow-hidden"
         >
-          {t("coupon_apply")}
-        </Button>
-      </div>
-      <FormError message={couponError} />
-    </div>
-  ) : (
-    <button
-      type="button"
-      onClick={() => setCouponOpen(true)}
-      className="flex min-h-11 items-center gap-2 self-center text-xs underline opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-      style={{ color: "var(--color-secondary)" }}
-    >
-      <TagIcon size={16} strokeWidth={1.75} aria-hidden />
-      {t("coupon_toggle")}
-    </button>
+          <div
+            className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2 text-xs"
+            style={{ backgroundColor: "var(--color-surface-container)" }}
+          >
+            <span
+              className="flex items-center gap-2 font-semibold"
+              style={{ color: "var(--color-main)" }}
+            >
+              <TagIcon size={16} strokeWidth={1.75} aria-hidden />
+              {t("coupon_applied")}: {appliedCode}
+            </span>
+            <button
+              type="button"
+              onClick={() => void clearCoupon()}
+              className="min-h-11 px-2 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              {t("coupon_clear")}
+            </button>
+          </div>
+        </motion.div>
+      ) : couponOpen ? (
+        <motion.div
+          key="form"
+          variants={reduceMotion ? undefined : couponContainerVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="overflow-hidden"
+        >
+          <div className="flex flex-col gap-2 pb-0.5 pt-0.5">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <input
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                aria-label={t("coupon_label")}
+                placeholder={t("coupon_placeholder")}
+                value={couponInput}
+                onChange={(event) => setCouponInput(event.target.value.toUpperCase())}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void applyCoupon();
+                  } else if (event.key === "Escape") {
+                    event.stopPropagation();
+                    setCouponOpen(false);
+                  }
+                }}
+                maxLength={32}
+                className="min-h-11 flex-1 rounded-[var(--radius-card)] border px-3 text-sm uppercase tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                style={{
+                  backgroundColor: "var(--color-bg)",
+                  borderColor: "var(--color-border)",
+                  color: "var(--color-main)",
+                }}
+              />
+              <Button
+                variant="secondary"
+                className="!min-h-11 !shrink-0 !px-4 !py-2 !text-sm"
+                busy={couponBusy}
+                disabled={couponInput.trim().length === 0}
+                onClick={() => void applyCoupon()}
+              >
+                {t("coupon_apply")}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setCouponOpen(false)}
+                aria-label={t("close")}
+                className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-secondary)] transition-colors duration-150 hover:bg-[var(--color-surface-container)] hover:text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              >
+                <CloseIcon size={18} strokeWidth={2} aria-hidden />
+              </button>
+            </div>
+            <FormError message={couponError} />
+          </div>
+        </motion.div>
+      ) : (
+        <motion.div
+          key="toggle"
+          variants={reduceMotion ? undefined : couponToggleVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="flex justify-center"
+        >
+          <button
+            type="button"
+            onClick={() => setCouponOpen(true)}
+            className="flex min-h-11 items-center gap-2 self-center text-xs underline opacity-80 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            <TagIcon size={16} strokeWidth={1.75} aria-hidden />
+            {t("coupon_toggle")}
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 
-  const footer = pendingCheckout ? <PendingCheckout checkoutUrl={view?.pendingCheckoutUrl ?? view?.pendingTrialCheckoutUrl ?? null} isTrial={pendingTrial} /> : (
+  const footer = pendingCheckout ? (
+    <PendingCheckout
+      checkoutUrl={view?.pendingCheckoutUrl ?? view?.pendingTrialCheckoutUrl ?? null}
+      isTrial={pendingTrial}
+    />
+  ) : (
     <motion.div
       className="flex flex-col gap-2 lg:gap-3"
-      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }}
+      transition={{ duration: 0.2, ease: EASE_SMOOTH_OUT }}
     >
       {purchaseEnabled ? (
         <label
-          className="flex min-h-11 cursor-pointer items-start gap-3 text-xs leading-relaxed"
+          className="flex min-h-11 cursor-pointer items-start gap-3 text-[11px] leading-relaxed"
           style={{ color: "var(--color-body)" }}
         >
           <span className="relative mt-0.5 grid size-5 shrink-0 place-items-center">
@@ -222,7 +316,13 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
         <Button
           fullWidth
           className="min-h-[60px]"
-          disabled={!view || !selected || !selected.purchaseEnabled || view.entitlement.isPremium || (includesTrial && !view.trialEligibility.eligible)}
+          disabled={
+            !view ||
+            !selected ||
+            !selected.purchaseEnabled ||
+            view.entitlement.isPremium ||
+            (includesTrial && !view.trialEligibility.eligible)
+          }
           busy={busy}
           onClick={start}
         >
@@ -230,7 +330,10 @@ export function PremiumPaywallFooter({ purchase }: { purchase: PremiumPaywallSta
             ? tSub("start_trial", { days: trialDays })
             : selected
               ? tSub("start_paid", {
-                  price: formatPrice(selectedDiscount?.chargedPriceMinor ?? selected.priceMinor, locale),
+                  price: formatPrice(
+                    selectedDiscount?.chargedPriceMinor ?? selected.priceMinor,
+                    locale,
+                  ),
                 })
               : tSub("start_premium")}
         </Button>

@@ -45,7 +45,7 @@ export class NotebooksController {
     @Query() query: ListNotebooksQueryDto,
   ): Promise<Paginated<NotebookSummaryDto>> {
     return this.notebooks.listNotebooks(
-      { userId: user.id, orgId: user.orgId },
+      { userId: user.id, orgId: user.orgId, roles: user.roles },
       query,
     );
   }
@@ -56,7 +56,7 @@ export class NotebooksController {
     @Body() dto: CreateNotebookDto,
   ): Promise<NotebookDto> {
     return this.notebooks.createNotebook(
-      { userId: user.id, orgId: user.orgId },
+      { userId: user.id, orgId: user.orgId, roles: user.roles },
       dto,
     );
   }
@@ -66,7 +66,7 @@ export class NotebooksController {
     @CurrentUser() user: RequestUser,
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<NotebookDto> {
-    return this.notebooks.getNotebook(user.id, id);
+    return this.notebooks.getNotebook(user.id, id, user.roles);
   }
 
   @Patch(":id")
@@ -112,6 +112,6 @@ export class NotebooksController {
     @Param("index", ParseIntPipe) index: number,
     @Body() dto: PutNotebookPageDto,
   ): Promise<NotebookPageDto> {
-    return this.notebooks.putNotebookPage(user.id, id, index, dto.doc);
+    return this.notebooks.putNotebookPage(user.id, id, index, dto.doc, user.roles);
   }
 }

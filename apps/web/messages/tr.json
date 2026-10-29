@@ -180,7 +180,7 @@
     "has_account": "Zaten hesabım var",
     "tagline": "Sınav yoldaşın",
     "hero_title": "Bu gece ışığı yanan <glow>tek pencere</glow> seninki değil.",
-    "hero_lead": "Günlük bir plan, aynı saatlerde çalışan arkadaşlar ve Premium'da seni tanıyan bir yapay zekâ koç. Yolu birlikte yürüyelim.",
+    "hero_lead": "Sınava hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı: günlük planın, odak seansların ve aynı saatlerde çalışan arkadaşların tek yerde.",
     "how_it_works": "Nasıl çalışır",
     "faq_nav": "SSS",
     "counter": "Son 24 saatte {count, number} kişi burada çalıştı.",
@@ -190,6 +190,43 @@
       "body": "Öğrencilerinin planını, seanslarını ve haftalık raporunu tek yerden takip et. Takıldıkları yerde yanlarında ol.",
       "cta": "Koç olarak başla",
       "more": "Koç sabahını gör"
+    },
+    "blog_section": {
+      "pill": "Blog",
+      "title": "Sınav yolunda işine yarayacak yazılar",
+      "all": "Tüm yazılar"
+    },
+    "morning": {
+      "pill": "Sabah",
+      "title": "Sabah olunca masanda neler var?",
+      "lead": "Gece yanındaydık. Gün doğunca masanda kendi araçların seni bekliyor.",
+      "notebook": {
+        "name": "Defterlerim",
+        "tab": "Defter",
+        "title": "Yanlışların kaybolmaz.",
+        "body": "Yanlış soruyu fotoğrafla ya da yazarak ekle, dersine ve konusuna koy. Tekrar günü gelince sorular kart kart önüne gelir.",
+        "question": "3x − 5 = 2x + 4 ise x kaçtır?",
+        "subject_turkish": "Türkçe",
+        "subject_history": "Tarih",
+        "math": "Matematik Defteri",
+        "math_tape": "Matematik"
+      },
+      "board": {
+        "name": "Hedef panosu",
+        "tab": "Pano",
+        "title": "Hedefin gözünün önünde.",
+        "body": "Hedef şehrini haritada seç, alanını ve kendi fotoğraflarını panona as. İstersen duvar kâğıdı yap, toplulukla paylaş.",
+        "goal": "Bilgisayar Mühendisi",
+        "city": "Konya"
+      },
+      "story": {
+        "name": "Haftanın hikâyesi",
+        "tab": "Hikâye",
+        "title": "Her hafta bir hikâye.",
+        "body": "Kaç gün çalıştın, kaç dakika odaklandın, hangi ders parladı: hafta bitince hepsi kısa bir hikâye olur. Hafta dolu geçtiyse bir de kod adın olur.",
+        "dates": "20 – 26 Ekim",
+        "codename": "Nebula Dalgıcı"
+      }
     },
     "faq": {
       "pill": "SSS",
@@ -284,10 +321,10 @@
     },
     "analysis": {
       "name": "Analiz",
-      "title": "Denemelerin sana hikayesini anlatsın.",
-      "body": "Deneme sonuçlarını gir, hangi konunun seni beklediğini birlikte görelim. Her hafta kısa bir hikaye: ne iyi gitti, sırada ne var.",
+      "title": "Denemelerin sana hikâyesini anlatsın.",
+      "body": "Deneme sonuçlarını gir, hangi konunun seni beklediğini birlikte görelim.",
       "scribble": "her hafta biraz daha",
-      "story": "Haftanın hikayesi: Paragrafta istikrar yerinde. Sırada geometri var."
+      "story": "Sıradaki odak: Geometri. Paragrafta istikrar yerinde."
     },
     "yours": {
       "name": "Sen",
@@ -388,6 +425,7 @@
     "profile": "Profil",
     "settings": "Ayarlar",
     "community": "Topluluk",
+    "coach_profile": "Koç profili",
     "language_toggle_label": "Dil seç",
     "theme_toggle_label": "Tema",
     "theme_to_dark": "Koyu temaya geç",
@@ -1290,24 +1328,24 @@
     "badge_savings": "%{percent} tasarruf",
     "per_month": "/ay",
     "total_for_months": "{months} ayda {price}",
-    "headline": "Sınava koçunla hazırlan",
-    "headline_coach": "Koçun bir mesaj uzağında",
-    "headline_plan": "Planını koçunla kur",
-    "headline_vision": "Hedefine koçundan bir not",
-    "headline_analysis": "Haftana koçun gözüyle bak",
-    "headline_mood": "Nasıl hissediyorsan, koçun duysun",
-    "headline_ghost": "İlerlemeni koçun anlatsın",
-    "headline_greeting": "Güne koçunla başla",
-    "headline_session": "Her seansa koçundan bir yorum",
-    "subtitle": "Planını ve haftanı bilen AI koçun her gün yanında.",
-    "benefit_coach_title": "Takıldığın an sor",
-    "benefit_coach_desc": "Planını ve geçmişini bilen AI koç, sana göre cevaplar.",
-    "benefit_daily_title": "Her gün kişisel bir not",
-    "benefit_daily_desc": "Sabah selamı, ruh haline ve her seansına özel yorum.",
-    "benefit_analysis_title": "Haftanı koçun yorumlasın",
-    "benefit_analysis_desc": "Haftalık hikâye, derin analiz, geçmişteki senle kıyas.",
-    "benefit_plan_title": "Plan kayarsa koç toparlar",
-    "benefit_plan_desc": "Haftanı koçla kur, hedef panona koç notu al.",
+    "headline": "Sınav yolunda süper gücün hazır!",
+    "headline_coach": "Koçun her an bir mesaj uzağında!",
+    "headline_plan": "Planını koçunla kur, tempoyu yakala!",
+    "headline_vision": "Hedef panona koçundan özel dokunuş!",
+    "headline_analysis": "Haftana koçun gözüyle derinlemesine bak!",
+    "headline_mood": "Nasıl hissediyorsan koçun yanında!",
+    "headline_ghost": "İlerlemeni koçun adım adım anlatsın!",
+    "headline_greeting": "Her güne koçunun enerjisiyle başla!",
+    "headline_session": "Her seans sonunda koçundan anında yorum!",
+    "subtitle": "Sınırları kaldır, seni ve ritmini tanıyan AI koçunla hedefine tam gaz ilerle.",
+    "benefit_coach_title": "7/24 kişisel AI koç ve anında geri bildirim",
+    "benefit_coach_desc": "Planını ve geçmişini bilir; takıldığın an sana özel yol gösterir.",
+    "benefit_daily_title": "Her güne, ruh haline ve seansa özel koç notu",
+    "benefit_daily_desc": "Sabah selamı, moduna göre destek ve her odak seansı sonunda koç yorumu.",
+    "benefit_analysis_title": "Derin haftalık analiz, karne ve gelişim kıyaslaması",
+    "benefit_analysis_desc": "Netlerini ve odak ritmini geçmişteki senle kıyasla, eksiklerini anında yakala.",
+    "benefit_plan_title": "Planın kaydığında AI ile anında yeni rota",
+    "benefit_plan_desc": "Planın kayarsa koçun haftanı yeniden kurar; defter ve soru arşivin hiç dolmaz.",
     "subscribe": "Koçunu yanına al",
     "close": "Kapat",
     "loading": "Yükleniyor…",
@@ -1324,7 +1362,12 @@
     "coupon_copy_failed": "Kopyalanamadı",
     "promotion_apply_cta": "Uygula ve devam et",
     "promotion_dismiss": "Sonra bakarım",
-    "valid_until": "{date} tarihine kadar geçerli"
+    "valid_until": "{date} tarihine kadar geçerli",
+    "trial_zero_today": "Bugün ₺0 ödersin, istediğin an iptal et",
+    "plan_trial_tag": "İlk {days} gün ücretsiz",
+    "benefit_notebook_title": "Sınırsız ders defteri, sayfa ve soru fotoğrafı",
+    "benefit_notebook_desc": "Tüm ders defterlerini ve yanlış sorularının fotoğraflarını sınır olmadan arşivle.",
+    "benefit_adfree_title": "Reklamsız, tamamen odaklanmış çalışma deneyimi"
   },
   "campaign": {
     "eyebrow": "7 gün ücretsiz deneme",
@@ -2245,6 +2288,11 @@
   "notebooks": {
     "title": "Defterlerim",
     "subtitle": "Yanlışlarını takip et veya kendine ders ders çalışma alanları aç.",
+    "quota_custom_badge": "Özel defter: {used} / {max}",
+    "quota_custom_title": "İstediğin kadar özel defter aç",
+    "quota_custom_limit_reached": "Ücretsiz planda en fazla {max} özel defter açabilirsin. Daha fazla ders defteri için Premium'a geçebilirsin.",
+    "quota_custom_premium_only": "Özel ders defteri oluşturmak Premium'a dahildir. Yanlış Defterini ücretsiz kullanmaya devam edebilirsin.",
+    "upgrade_cta": "Premium'a geç",
     "create": "Yeni defter",
     "pages": "{count} sayfa",
     "due": "Bugün {count} tekrar",
@@ -2326,6 +2374,16 @@
       "matte": "Düz"
     },
     "cover_title": "Yanlış Defterim",
+    "quota_entries_badge": "Soru hakkı: {used} / {max}",
+    "quota_photos_badge": "Fotoğraf hakkı: {used} / {max}",
+    "quota_photo_limit_title": "Defterine sınırsız fotoğraf ekle",
+    "quota_entry_limit_title": "Yanlış defterini sınırsız büyüt",
+    "quota_photo_limit_reached": "Ücretsiz fotoğraf hakkın ({max}) doldu. Soruyu fotoğrafsız ekleyebilir veya sınırsız fotoğraf için Premium'a geçebilirsin.",
+    "quota_photo_premium_only": "Deftere fotoğraf eklemek şu an Premium'a dahildir. Soruyu fotoğrafsız kaydedebilir veya Premium'a geçebilirsin.",
+    "quota_entry_limit_reached": "Ücretsiz planda Yanlış Defterine en fazla {max} soru ekleyebilirsin. Mevcut sorularını tekrar etmeye devam edebilir veya sınırsız kayıt için Premium'a geçebilirsin.",
+    "quota_page_limit_title": "Defterine yeni sayfalar ekle",
+    "quota_page_limit_reached": "Ücretsiz planda defterin {max} sayfaya kadar açılır. Daha kalın defterler için Premium'a geçebilirsin.",
+    "upgrade_cta": "Premium'a geç",
     "cover_subtitle": "{entries} yanlış · {healed} tanesi iyileşti",
     "cover_custom_subtitle": "{pages} sayfa · Burası senin çalışma alanın",
     "cover_open": "Defteri aç",
@@ -4103,7 +4161,6 @@
     "brief_history_open": "Önceki brifingleri aç",
     "brief_history_empty": "Bu öğrenci için başka brifing yok.",
     "brief_history_more": "Daha eskisini yükle",
-
     "report_plan_week": "Haftayı planla",
     "report_more_actions": "Diğer işlemler",
     "report_actions_label": "Öğrenciyle ilgili işlemler",
@@ -4377,6 +4434,5 @@
     "followup_page_of": "Sayfa {page} / {pages}",
     "invite_copied_short": "Kopyalandı",
     "planning_unsaved_edit": "Formdaki değişikliği önce kaydet ya da vazgeç."
-
   }
 }

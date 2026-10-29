@@ -3,12 +3,13 @@
 import { useTranslations } from "next-intl";
 
 /**
- * The PREMIUM label (DESIGN.md §7): the cape's clasp, gold on night blue (~9:1 at 11px).
- * A word rather than a crown, because the crown needed explaining and the word does not.
- * The copy is already upper case in the messages: CSS `uppercase` under `lang="tr"` would turn
- * the I into İ.
+ * The canonical PREMIUM badge across the app (Paywall modal header, Dashboard membership card,
+ * PremiumLockNudge triggers, Plan AI adaptation preview, Coach gate, and Sidebar coach standing).
+ * Uses the aurora gradient pill (`#7eb6e8 → #c4b8e0 → #f3a6c8`) with dark `#12141a` ink (~10:1
+ * contrast on both light and dark surfaces).
  *
- * `label` swaps the word, not the clasp: a coach's plan reads "KOÇ PRO" in the same gold.
+ * The copy is already upper case (`PREMIUM`) in messages: CSS `uppercase` under `lang="tr"` would
+ * turn the I into İ. `label` swaps the word for coach standing (`KOÇ PRO`).
  */
 export function PremiumBadge({
   className = "",
@@ -21,7 +22,13 @@ export function PremiumBadge({
 
   return (
     <span
-      className={`inline-flex h-[22px] shrink-0 items-center rounded-full bg-[var(--premium-badge-bg)] px-2 text-micro font-black tracking-[0.06em] text-[var(--premium-badge-ink)] ${className}`.trim()}
+      className={`inline-flex h-[22px] shrink-0 items-center rounded-full px-2.5 text-micro font-black tracking-[0.06em] shadow-xs ${className}`.trim()}
+      style={{
+        backgroundImage:
+          "var(--premium-badge-gradient, linear-gradient(135deg, #7eb6e8 0%, #c4b8e0 52%, #f3a6c8 100%))",
+        backgroundColor: "var(--premium-badge-bg)",
+        color: "var(--premium-badge-ink)",
+      }}
     >
       {label ?? t("premium_badge")}
     </span>

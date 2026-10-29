@@ -13,6 +13,102 @@ optional; source checks do not prove that production services or domains are liv
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-29 · Core-trial release verification and backend quota corrections.** Recorded
+  local builds, quality/dependency/secret checks and the limitations of interrupted broad
+  API/browser runs. Fixed quota races, nested policy/taxonomy pool reads and growing page
+  grandfathering; final focused API regressions and source hashes are in the
+  [verification report](../qa/2026-10-29-core-trial-release-verification.md).
+  Usage: continue full web/security/CI checks after the owner's ongoing UI handoff.
+  Gotchas: no deployment, provider/DNS/billing change or full-workspace green claim;
+  aggregate upload spending and hosted acceptance remain separate gates. Historical Google
+  sample-key provenance was traced to the original public template sources without key
+  testing, history rewrites or new secret-scan exclusions.
+
+- **2026-10-29 · Closed-admin mode implemented locally.** Added `ADMIN_ACCESS_MODE` with
+  preserved `cloudflare` default and explicit `disabled` mode denying admin API/auth before
+  handlers, identity lookup or Access verification. Only issuer/audience requirements are
+  conditional; edge, origins, Turnstile, DB-role and provider requirements remain. Usage and
+  no-admin support/rollback limits: [deployment profile](../core/deployment.md#closed-admin-core-only-free-trial).
+  RED reproduced the missing mode; 161/161 focused validation/guard/local-HTTP tests passed,
+  with API typecheck and owned-file lint. AI provider tests passed 30/30 separately. Related:
+  `env.validation.ts`, `env-production-locks.ts`, `cloudflare-access.guard.ts`, three boundary
+  test files, `.env.example`. No live setting, secret, deployment, billing or owner quota edit.
+  Independent review found no blocking issue; final evidence and deferred release gates:
+  [implementation record](../qa/2026-10-29-closed-trial-implementation.md).
+
+- **2026-10-29 · Core-only trial scope confirmed.** The owner confirmed forum and human
+  coaching stay closed alongside admin, AI, payments, SMS and ads. Plan, focus sessions,
+  analysis, notebooks and account flows remain in scope. Updated the
+  [design](../plans/2026-10-29-admin-closed-pilot-design.md) and split local implementation
+  into independent [admin](../superpowers/plans/2026-10-29-admin-closed-trial.md) and
+  [AI-off](../superpowers/plans/2026-10-29-ai-provider-kill-switch.md) plans. Usage: review
+  the plans before implementation. Gotchas: coach signup has its own separate flag;
+  no runtime behavior, live flag or deployment changed in this planning step.
+
+- **2026-10-29 · Current launch review and selected closed-admin direction.** Rechecked public
+  DNS, Render, Neon, Resend, Turnstile, Access onboarding, R2 and Sentry without changing
+  provider settings. Current HEAD CI run 577 fails API job-interruption tests; its secret scan
+  and web budgets passed. The owner selected a small-user Free trial and requested an
+  admin-closed design. The detailed design is proposed, not implemented or release-approved.
+  Usage: follow the [current review](../qa/2026-10-29-launch-readiness-review.md) and
+  [design](../plans/2026-10-29-admin-closed-pilot-design.md). Gotchas: AI-off does not gate the
+  inspected embedding path, default exam dates are stale, and storage/cold-start/recovery
+  acceptance remains open. No owner source edit, credential, deployment or billing change.
+
+- **2026-10-29 · Local platform release preflight.** Dependency audit has no critical/high
+  findings at the existing policy threshold; optional-paid deployment checks, platform
+  lint/typecheck and API/admin builds passed at their execution time. Public DNS is still
+  unbound. Added sleeping Render Free `robots.txt`/SEO acceptance to the checklist. The broad
+  API run hit its operator time limit and source changed during owner quota/landing work,
+  so full CI is not claimed. Its queue fixture isolation issue was reproduced and corrected
+  only in the guarded e2e setup. Usage and remaining gates:
+  [platform preflight](../qa/2026-10-29-platform-release-preflight.md). No cloud/billing change.
+
+- **2026-10-29 · Approved Sentry error-only acceptance.** Created EU `puhu-api` after explicit
+  approval, kept its ingestion connection in the ignored local acceptance env, and verified
+  one synthetic event as PUHU-API-1 (HTTP 200; Events 1 / Users 0). No billing/repo/AI/production
+  connection was enabled. Explicitly disabled SDK logs, which bypass the event scrubber;
+  a real-SDK offline regression reproduced the previous leak path. Also omit sanitized
+  empty stack traces after the accepted event exposed a processing warning. Usage/gotchas:
+  [preflight record](../qa/2026-10-29-storage-monitoring-preflight.md); the empty-frame fix
+  is verified locally, with no second live event. Related: `instrument{,.spec}.ts`,
+  `sentry-scrubber{,.spec}.ts`. Production wiring and full CI remain separate gates.
+
+- **2026-10-29 · Upload scope and Sentry account verification.** The owner retained first-release
+  uploads and owns the pre-launch notebook quota; no quota or upload-disable mode was added.
+  Sentry PuhuKoc is in the EU, with an automatic Business trial and no payment method.
+  Official docs confirm fallback to Developer without upgrading. An error-only `puhu-api`
+  draft awaits approval for creation, ignored local connection storage and one synthetic
+  event; no project, credential, billing or telemetry change has been made. Usage/gotchas:
+  [preflight record](../qa/2026-10-29-storage-monitoring-preflight.md). R2 has no verified
+  invoice stop; a per-user image count alone does not close that gate.
+
+- **2026-10-29 · Storage spending and safe queue-error context.** Read-only R2/Billing
+  inspection confirmed zero observed billable R2 cost and an unchanged existing USD 10
+  notification, with no verified billing stop. Upload deferral versus first-release image
+  support is an owner scope decision; no feature was disabled. Sentry needs account login.
+  Its privacy boundary now preserves only a job UUID and allowlisted notification job name,
+  keeping payloads/PII excluded so quarantine can be investigated. Usage and gotchas:
+  [preflight record](../qa/2026-10-29-storage-monitoring-preflight.md). Related:
+  `sentry-scrubber{,.spec}.ts`. No live setting, DSN or telemetry send.
+
+- **2026-10-29 · R2 names versus public domain.** Clarified that existing `mentor-*` buckets
+  are dev/test, retained `puhu-s1-*` buckets are staging, and planned EU production uses
+  `puhu-prod-*` with `media.puhukoc.com` only on the public bucket. Corrected the production
+  naming example, marked CORS placeholders as dev-only and separated budget alerts from
+  spending stops. Use [storage-r2.md](../core/storage-r2.md) with the deployment profile;
+  no live bucket, object, token, DNS or CORS setting was changed.
+
+- **2026-10-29 · External production migrations for Free hosting.** `db:migrate` now uses a
+  dedicated config requiring an explicit direct owner URL in production, rejecting Neon
+  poolers/query host overrides without logging values. The API no longer requires this
+  credential; restricted runtime-role and other production checks remain. Local fallback
+  and offline generation remain available. Use the
+  [attended procedure](../qa/2026-10-29-free-hosting-preparation.md) before a separately
+  authorized deployment. No live migration, credential upload or scheduler activation.
+  Related: `drizzle.migrate.config.ts`, `migration-database-url{,.spec}.ts`, API package
+  script, `env.validation{,.spec}.ts`, `.env.example`, `docs/core/deployment.md`.
+
 - **2026-10-13 · Production scope and deferred staging.** Narrowed PR #156 to owned production
   preparation. Removed staging Blueprints/bootstrap scripts/indexing changes and incomplete
   admin-disable/external-migration tests; existing production security remains unchanged.

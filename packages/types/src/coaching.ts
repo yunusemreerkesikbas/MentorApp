@@ -1286,6 +1286,7 @@ export interface NotebookSummaryDto {
   /** Populated for the system notebook and zero for custom notebooks. */
   dueCount: number;
   updatedAt: string;
+  limits?: NotebookLimitsDto;
 }
 
 export interface NotebookDto extends NotebookSummaryDto {
@@ -1367,6 +1368,7 @@ export interface NotebookOverviewDto {
   entryCount: number;
   dueCount: number;
   healedCount: number;
+  limits?: NotebookLimitsDto;
 }
 
 export interface NotebookPageDto {
@@ -1432,4 +1434,24 @@ export interface NotebookImageUploadUrlDto {
  */
 export interface PublicPulseView {
   studiedLast24h: number | null;
+}
+
+export interface NotebookLimitsDto {
+  isPremium: boolean;
+  /** Max pages per notebook for this user (200 on Premium, config-driven on Free). */
+  maxPages: number;
+  /** Max custom notebooks (`CUSTOM`) allowed (null = unlimited on Premium, config-driven on Free). */
+  maxCustomNotebooks: number | null;
+  /** Current custom notebook (`CUSTOM`) count owned by the user. */
+  customNotebookCount: number;
+  /** Max total entries in the Mistake Notebook (null = unlimited on Premium, config-driven on Free). */
+  maxEntries: number | null;
+  /** Current total entries in the user's Mistake Notebook. */
+  entryCount: number;
+  /** Whether the user can upload at least one more notebook photo right now. */
+  photoUploadEnabled: boolean;
+  /** Max stored photos across notebook entries (null = unlimited on Premium, 0 if disabled, else config limit on Free). */
+  maxPhotos: number | null;
+  /** Current stored photo count (`storageKey` + `solutionStorageKey`) across the user's entries. */
+  photoCount: number;
 }

@@ -35,6 +35,8 @@ import type {
 } from "@mentor/types";
 import { NOTEBOOK_PAGE_CANVAS, type NotebookPageItem } from "@mentor/types";
 import type { NotebookCoverDoc } from "@mentor/types";
+import { NOTEBOOK_MAX_PAGES } from "@mentor/validation";
+import { usePremiumPaywall } from "@/lib/premium-paywall";
 
 import { FormError } from "@/components/form";
 import {
@@ -85,7 +87,7 @@ import { NotebookInsideCover } from "@/components/notebook-desk/notebook-book";
 import { NotebookContentsPage } from "@/components/notebook-desk/notebook-contents-page";
 import { playNotebookSfx } from "@/lib/notebook-sfx";
 import { useNotebookPageCache } from "./use-notebook-page-cache";
-import { useNotebookTurns } from "./use-notebook-turns";
+import { turnTarget, useNotebookTurns } from "./use-notebook-turns";
 import { NotebookTextInlineEditor } from "@/components/notebook/notebook-text-inline-editor";
 import { NotebookImageLightbox } from "@/components/notebook/notebook-image-lightbox";
 import { loadExamTaxonomyBySlug, loadViewerExamTaxonomy } from "@/lib/exam-taxonomy";
@@ -160,6 +162,7 @@ interface ExamContext {
 export function NotebookShell({ notebookId }: { notebookId?: string }) {
   const t = useTranslations("notebook");
   const deskT = useTranslations("notebooks");
+  const { openPaywall } = usePremiumPaywall();
   const toast = useMentorToast();
   const reduceMotion = useReducedMotion();
   const { user } = useAuth();
@@ -377,6 +380,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
             entryCount: 0,
             dueCount: 0,
             healedCount: 0,
+            ...(notebook.limits ? { limits: notebook.limits } : {}),
           });
           setCover({ ...notebook.cover, title: notebook.title });
         } catch {
@@ -649,6 +653,11 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     [cover, ownerName, contentsData, t],
   );
 
+  const effectiveMaxPages = Math.max(
+    overview?.pageCount ?? 0,
+    overview?.limits?.maxPages ?? NOTEBOOK_MAX_PAGES,
+  );
+
   const turns = useNotebookTurns({
     view,
     setView,
@@ -665,6 +674,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     setRightMeta,
     cache: pageCache,
     notebookId,
+    maxPages: effectiveMaxPages,
     dueIds: dueIdSet,
     faces: turnFaces,
     onPlaced: (left) => {
@@ -694,10 +704,43 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         playNotebookSfx("close");
         return;
       }
+      if (
+        dir > 0 &&
+        view.kind === "spread" &&
+        turnTarget(
+          { view, side: isMobile ? mobileSide : "right" },
+          1,
+          isMobile,
+          effectiveMaxPages,
+        ) === null
+      ) {
+        if (
+          overview?.limits &&
+          !overview.limits.isPremium &&
+          overview.limits.maxPages !== null
+        ) {
+          openPaywall({
+            headline: t("quota_page_limit_title"),
+            subtitle: t("quota_page_limit_reached", {
+              max: overview.limits.maxPages,
+            }),
+          });
+        }
+        return;
+      }
       setFocusedSide(dir > 0 ? "left" : "right");
       void turns.start(dir);
     },
-    [turns, view.kind, isMobile, mobileSide],
+    [
+      turns,
+      view,
+      isMobile,
+      mobileSide,
+      effectiveMaxPages,
+      overview,
+      openPaywall,
+      t,
+    ],
   );
 
   /** Takes a page by its corner: the turn follows the pointer from here (`NotebookPageCurl`). */
@@ -770,6 +813,22 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         }
         return;
       }
+      if (
+        id === "add" &&
+        (activePanel !== "add" || detailCollapsed) &&
+        overview?.limits &&
+        !overview.limits.isPremium &&
+        overview.limits.maxEntries !== null &&
+        overview.limits.entryCount >= overview.limits.maxEntries
+      ) {
+        openPaywall({
+          headline: t("quota_entry_limit_title"),
+          subtitle: t("quota_entry_limit_reached", {
+            max: overview.limits.maxEntries,
+          }),
+        });
+        return;
+      }
       if (activePanel === id) {
         setDetailCollapsed((collapsed) => !collapsed);
       } else {
@@ -777,7 +836,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         setDetailCollapsed(false);
       }
     },
-    [activePanel, leftPage, rightPage],
+    [activePanel, detailCollapsed, leftPage, rightPage, overview, openPaywall, t],
   );
 
   /**
@@ -941,6 +1000,32 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
           : null,
       );
       setDroppedPhoto(null);
+      const addedPhotos = (entry.url ? 1 : 0) + (entry.solutionUrl ? 1 : 0);
+      setOverview((current) => {
+        if (!current) return current;
+        const limits = current.limits;
+        const nextPhotos = limits ? limits.photoCount + addedPhotos : 0;
+        return {
+          ...current,
+          entryCount: current.entryCount + 1,
+          ...(limits
+            ? {
+                limits: {
+                  ...limits,
+                  entryCount: limits.entryCount + 1,
+                  photoCount: nextPhotos,
+                  photoUploadEnabled: limits.isPremium
+                    ? true
+                    : Boolean(
+                        limits.photoUploadEnabled &&
+                          (limits.maxPhotos === null ||
+                            nextPhotos < limits.maxPhotos),
+                      ),
+                },
+              }
+            : {}),
+        };
+      });
       // The add form is finished with, so get out of the way and show the card that just landed.
       // Placing from the index is the opposite: the student is browsing a list and may well place
       // another, so that path deliberately leaves the panel open.
@@ -1034,14 +1119,27 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
               dueCount: wasDue
                 ? Math.max(0, current.dueCount - 1)
                 : current.dueCount,
+              ...(current.limits
+                ? {
+                    limits: {
+                      ...current.limits,
+                      entryCount: Math.max(0, current.limits.entryCount - 1),
+                    },
+                  }
+                : {}),
             }
           : current,
       );
+      if (!notebookId) {
+        void fetchNotebookOverview()
+          .then(setOverview)
+          .catch(() => undefined);
+      }
       setSingleReview(null);
       setEditingEntry(null);
       setIndexRefreshKey((key) => key + 1);
     },
-    [leftPage, rightPage],
+    [leftPage, rightPage, notebookId],
   );
 
   /** Ids already on one of the two open pages — what the index checks before offering to place. */
@@ -1103,11 +1201,44 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         placeEntryOnPage(drop.entry, aspect, { side, point });
         return;
       }
+      if (
+        overview?.limits &&
+        !overview.limits.isPremium &&
+        overview.limits.maxEntries !== null &&
+        overview.limits.entryCount >= overview.limits.maxEntries
+      ) {
+        openPaywall({
+          headline: t("quota_entry_limit_title"),
+          subtitle: t("quota_entry_limit_reached", {
+            max: overview.limits.maxEntries,
+          }),
+        });
+        return;
+      }
+      if (
+        overview?.limits &&
+        !overview.limits.isPremium &&
+        (!overview.limits.photoUploadEnabled ||
+          (overview.limits.maxPhotos !== null &&
+            overview.limits.photoCount >= overview.limits.maxPhotos))
+      ) {
+        openPaywall({
+          headline: t("quota_photo_limit_title"),
+          subtitle:
+            !overview.limits.photoUploadEnabled &&
+            overview.limits.maxPhotos === 0
+              ? t("quota_photo_premium_only")
+              : t("quota_photo_limit_reached", {
+                  max: overview.limits.maxPhotos ?? 0,
+                }),
+        });
+        return;
+      }
       setDroppedPhoto({ file: drop.file, nonce: Date.now(), side, point });
       setActivePanel("add");
       setDetailCollapsed(false);
     },
-    [leftPage, rightPage, placeEntryOnPage, placedEntryIds],
+    [leftPage, rightPage, placeEntryOnPage, placedEntryIds, overview, openPaywall, t],
   );
 
   const transfer = useNotebookPageTransfer({
@@ -1222,7 +1353,14 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
   /** Where a page can be taken by its corner: never across the cover, never mid-turn or mid-drawing. */
   const canTurnBack =
     view.kind === "spread" || (isMobile && view.kind === "contents" && mobileSide === "right");
-  const canTurnForward = view.kind !== "cover";
+  const canTurnForward =
+    view.kind !== "cover" &&
+    turnTarget(
+      { view, side: isMobile ? mobileSide : "right" },
+      1,
+      isMobile,
+      effectiveMaxPages,
+    ) !== null;
   const pageLabel =
     view.kind === "cover"
       ? t("cover_label")
@@ -1719,6 +1857,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                               ? focused.selected
                               : null
                           }
+                          limits={overview?.limits}
                           onCreated={handleCreated}
                           droppedPhoto={droppedPhoto}
                           onAddSticker={(asset) =>

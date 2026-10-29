@@ -5,6 +5,8 @@ import { getTranslations } from "next-intl/server";
 import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { fetchCoachSignupOpen } from "@/lib/coach-signup";
+import { LandingBlog } from "./landing-blog";
+import { LandingMorning } from "./landing-morning";
 import { LEDGE_ON_PAPER, PAGE_FRAME, PAPER_PILL, PAPER_TITLE, PaperFaq } from "./landing-paper";
 
 const FAQ = [1, 2, 3, 4, 5, 6] as const;
@@ -53,7 +55,7 @@ async function CoachBand() {
   );
 }
 
-/** After the dawn: the coach band, the questions people ask, and one more way in. */
+/** After the dawn: the morning desk, the coach band, the blog, the questions people ask, and one more way in. */
 export async function LandingAfter() {
   const [t, nonce] = await Promise.all([
     getTranslations("landing"),
@@ -63,8 +65,12 @@ export async function LandingAfter() {
   return (
     // Slides over the last frame of the scene, like a page turning up from the bottom.
     <div className="landing-paper relative z-10 -mt-7 rounded-t-[var(--play-sheet-radius)] bg-[var(--landing-paper)] text-[var(--landing-ink)]">
+      <LandingMorning />
       <Suspense fallback={null}>
         <CoachBand />
+      </Suspense>
+      <Suspense fallback={null}>
+        <LandingBlog />
       </Suspense>
 
       <PaperFaq

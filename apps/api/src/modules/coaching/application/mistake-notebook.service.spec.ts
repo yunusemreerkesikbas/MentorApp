@@ -298,6 +298,41 @@ describe("MistakeNotebookService", () => {
     });
   });
 
+  it("loads patched-label taxonomy outside the user transaction", async () => {
+    let transactionDepth = 0;
+    const db = {
+      transaction: async <T>(callback: (tx: unknown) => Promise<T>): Promise<T> => {
+        transactionDepth += 1;
+        try { return await callback({ execute: async () => undefined }); }
+        finally { transactionDepth -= 1; }
+      },
+    };
+    const content = makeContentFake();
+    const readSubjects = content.getValidSubjectSlugsForExam;
+    const readTopics = content.listExamTopicsByExamId;
+    vi.spyOn(content, "getValidSubjectSlugsForExam").mockImplementation(async () => {
+      expect(transactionDepth).toBe(0);
+      return readSubjects();
+    });
+    vi.spyOn(content, "listExamTopicsByExamId").mockImplementation(async () => {
+      expect(transactionDepth).toBe(0);
+      return readTopics();
+    });
+    ctx.repo.entries.set(ENTRY, makeEntryRow());
+    const service = new MistakeNotebookService(db as never, ctx.repo as never,
+      content as never, ctx.storage as never, new NotebookReviewRepository());
+    await service.updateEntry(USER, ENTRY, { subjectRef: "matematik", topicRef: "problemler" });
+  });
+
+  it("validates patched labels against the entry reread in the write transaction", async () => {
+    ctx.repo.entries.set(ENTRY, makeEntryRow({ subjectRef: "matematik" }));
+    vi.spyOn(ctx.repo, "findEntry")
+      .mockResolvedValueOnce(makeEntryRow({ subjectRef: "matematik" }))
+      .mockResolvedValueOnce(makeEntryRow({ subjectRef: "tarih" }));
+    await expect(ctx.service.updateEntry(USER, ENTRY, { topicRef: "problemler" }))
+      .rejects.toMatchObject({ details: { reason: "unknown_subject_ref" } });
+  });
+
   describe("createEntry", () => {
     it("schedules the first review, so nothing enters the book unscheduled", async () => {
       const before = Date.now();

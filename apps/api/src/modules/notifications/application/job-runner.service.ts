@@ -6,14 +6,12 @@ import {
   type OnModuleInit,
 } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
-import { eq } from "drizzle-orm";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
-import { jobs } from "../../../database/schema";
 import type { JobHandler } from "../domain/job-handler";
-import { JobRepository, type JobRow } from "../infrastructure/job.repository";
+import { INTERRUPTED_JOB_REASON, JobRepository, type JobRow } from "../infrastructure/job.repository";
 
 export interface ProcessJobsResult {
   processed: number;
@@ -32,6 +30,7 @@ export class JobRunnerService implements OnModuleInit, OnModuleDestroy {
   private readonly handlers = new Map<string, JobHandler>();
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private polling = false;
+  private recoveryAfterMs = 0;
 
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
@@ -73,18 +72,53 @@ export class JobRunnerService implements OnModuleInit, OnModuleDestroy {
 
   async processBatch(batchSize = 25): Promise<ProcessJobsResult> {
     const result: ProcessJobsResult = { processed: 0, completed: 0, failed: 0, dead: 0 };
+    if (batchSize <= 0) return result;
+    const timeoutSeconds = await this.config.get("notifications.jobs.running_timeout_seconds");
+    const now = Date.now();
+    if (now >= this.recoveryAfterMs) {
+      const interrupted = await withServiceContext(this.db, (tx) => this.jobs.quarantineInterrupted(tx, batchSize, timeoutSeconds));
+      // A full page may leave more abandoned jobs. Drain them on the next bounded batch.
+      this.recoveryAfterMs = interrupted.length === batchSize ? 0 : now + timeoutSeconds * 1000;
+      result.processed = result.dead = interrupted.length;
+      for (const job of interrupted) this.captureDeadJob(job, INTERRUPTED_JOB_REASON);
+    }
 
-    const claimed = await withServiceContext(this.db, async (tx) => this.jobs.claimBatch(tx, batchSize));
-    result.processed = claimed.length;
-
-    for (const job of claimed) {
-      const outcome = await this.dispatch(job);
+    while (result.processed < batchSize) {
+      // Unstarted jobs must stay PENDING if this process disappears during a slow handler.
+      const [job] = await withServiceContext(this.db, (tx) => this.jobs.claimBatch(tx, 1));
+      if (!job) break;
+      result.processed += 1;
+      const outcome = await this.dispatchWithHeartbeat(job, timeoutSeconds);
       if (outcome === "completed") result.completed += 1;
       else if (outcome === "dead") result.dead += 1;
       else result.failed += 1;
     }
 
     return result;
+  }
+
+  private async dispatchWithHeartbeat(job: JobRow, timeoutSeconds: number) {
+    let pending: Promise<unknown> | undefined;
+    const timer = setInterval(() => {
+      if (pending) return;
+      pending = withServiceContext(this.db, (tx) => this.jobs.heartbeat(tx, job))
+        .catch(() => this.logger.warn({ event: "job.heartbeat_failed", jobId: job.id, jobName: job.name }))
+        .finally(() => { pending = undefined; });
+    }, timeoutSeconds * 1000 / 3);
+    timer.unref?.();
+    try {
+      return await this.dispatch(job);
+    } finally {
+      clearInterval(timer);
+      await pending;
+    }
+  }
+
+  private lostExecution(job: JobRow): "failed" {
+    Sentry.captureException(new Error("Job result discarded: execution no longer owns the job."), {
+      tags: { jobName: job.name, jobId: job.id },
+    });
+    return "failed";
   }
 
   private async processDueJobs(): Promise<void> {
@@ -106,37 +140,38 @@ export class JobRunnerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async dispatch(job: JobRow): Promise<"completed" | "retry" | "dead"> {
+  private async dispatch(job: JobRow): Promise<"completed" | "failed" | "dead"> {
     const handler = this.handlers.get(job.name);
     if (!handler) {
       // A missing handler is a permanent failure — retrying won't register one. Mark DEAD
       // directly so the result count matches the row state (markFailed would reschedule).
       this.logger.error(`No handler for job ${job.name} (${job.id})`);
+      const updated = await withServiceContext(this.db, (tx) =>
+        this.jobs.markDead(tx, job.id, `No handler registered for ${job.name}`, job.attempts));
+      if (!updated) return this.lostExecution(job);
       this.captureDeadJob(job, `No handler registered for ${job.name}`);
-      await withServiceContext(this.db, async (tx) => {
-        await this.jobs.markDead(tx, job.id, `No handler registered for ${job.name}`);
-      });
       return "dead";
     }
 
     try {
       await handler(job.payload);
-      await withServiceContext(this.db, async (tx) => {
-        await this.jobs.markCompleted(tx, job.id);
-      });
-      return "completed";
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Job ${job.name} (${job.id}) failed: ${message}`);
-      let exhausted = false;
-      await withServiceContext(this.db, async (tx) => {
-        const rows = await tx.select().from(jobs).where(eq(jobs.id, job.id)).limit(1);
-        const current = rows[0] ?? job;
-        exhausted = current.attempts >= current.maxAttempts;
-        await this.jobs.markFailed(tx, current, message);
-      });
+      const exhausted = job.attempts >= job.maxAttempts;
+      const updated = await withServiceContext(this.db, (tx) => this.jobs.markFailed(tx, job, message));
+      if (!updated) return this.lostExecution(job);
       if (exhausted) this.captureDeadJob(job, message);
-      return exhausted ? "dead" : "retry";
+      return exhausted ? "dead" : "failed";
+    }
+
+    // The side effect succeeded. A lost DB acknowledgement must not turn it into a retry.
+    try {
+      const updated = await withServiceContext(this.db, (tx) => this.jobs.markCompleted(tx, job.id, job.attempts));
+      if (!updated) return this.lostExecution(job);
+      return "completed";
+    } catch {
+      throw new Error("Job completion could not be recorded; manual review required.");
     }
   }
 }

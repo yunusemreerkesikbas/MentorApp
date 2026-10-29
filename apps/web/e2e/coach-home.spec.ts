@@ -734,7 +734,7 @@ test.describe("davet ve koltuklar", () => {
     // The student's silhouette: the role's home sits raised in the centre, where a student has Koç.
     const links = tabs.getByRole("link");
     await expect(links).toHaveCount(5);
-    for (const [index, name] of ["Plan", "Blog", "Öğrencilerim", "Topluluk", "Ayarlar"].entries()) {
+    for (const [index, name] of ["Plan", "Topluluk", "Öğrencilerim", "Koç profili", "Ayarlar"].entries()) {
       await expect(links.nth(index), name).toHaveAccessibleName(name);
     }
     await expect(links.nth(2)).toHaveAttribute("data-elevated", "true");

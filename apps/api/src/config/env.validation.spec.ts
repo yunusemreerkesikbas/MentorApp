@@ -113,26 +113,10 @@ describe("validateEnv", () => {
 
     expect(env.PAYMENTS_PROVIDER).toBe("disabled");
   });
-  it("requires a direct migration database URL in production", () => {
-    expect(() =>
-      validateEnv({
-        ...REQUIRED,
-        NODE_ENV: "production",
-        PAYMENTS_PROVIDER: "disabled",
-        AI_PROVIDER: "openai",
-        OPENAI_API_KEY: "openai-key",
-        VISION_PROVIDER: "openai",
-        STORAGE_PROVIDER: "r2",
-        R2_ACCOUNT_ID: "account",
-        R2_ACCESS_KEY_ID: "access",
-        R2_SECRET_ACCESS_KEY: "secret",
-        R2_PUBLIC_BUCKET: "public-bucket",
-        R2_PRIVATE_BUCKET: "private-bucket",
-        R2_PUBLIC_BASE_URL: "https://media.mentor.test",
-        CRON_SECRET: "c".repeat(32),
-        RESEND_API_KEY: "resend-token", RESEND_FROM: "noreply@puhukoc.com",
-      }),
-    ).toThrow(/DATABASE_MIGRATION_URL/);
+  it("starts the production runtime without a migration-owner credential", () => {
+    const env = validateEnv({ ...emailProduction, DATABASE_MIGRATION_URL: undefined });
+    expect(env.DATABASE_URL).toBe(REQUIRED.DATABASE_URL);
+    expect(env.DATABASE_MIGRATION_URL).toBeUndefined();
   });
 
 

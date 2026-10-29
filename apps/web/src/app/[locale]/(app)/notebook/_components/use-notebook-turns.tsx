@@ -52,16 +52,24 @@ export interface Place {
 }
 
 /** Where one turn goes from `place`, or null where a turn is not the way to move (the cover). */
-export function turnTarget(place: Place, delta: 1 | -1, single: boolean): Place | null {
+export function turnTarget(
+  place: Place,
+  delta: 1 | -1,
+  single: boolean,
+  maxPages = NOTEBOOK_MAX_PAGES,
+): Place | null {
   const { view, side } = place;
   if (view.kind === "cover") return null;
   if (single) {
-    if (delta > 0 && side === "left") return { view, side: "right" };
+    if (delta > 0 && side === "left") {
+      if (view.kind === "spread" && view.left + 1 >= maxPages) return null;
+      return { view, side: "right" };
+    }
     if (delta < 0 && side === "right") return { view, side: "left" };
   }
   const next = nextView(view, delta);
   if (next.kind === "cover") return null;
-  if (next.kind === "spread" && next.left + 1 >= NOTEBOOK_MAX_PAGES) return null;
+  if (next.kind === "spread" && next.left >= Math.max(1, maxPages)) return null;
   return { view: next, side: delta > 0 ? "left" : "right" };
 }
 
@@ -121,6 +129,7 @@ export function useNotebookTurns({
   setRightMeta,
   cache,
   notebookId,
+  maxPages = NOTEBOOK_MAX_PAGES,
   dueIds,
   faces,
   onPlaced,
@@ -140,6 +149,7 @@ export function useNotebookTurns({
   setRightMeta: Dispatch<SetStateAction<NotebookPageDto | null>>;
   cache: PageCache;
   notebookId?: string;
+  maxPages?: number;
   dueIds: ReadonlySet<string>;
   faces: TurnFaces;
   /** Told which spread a turn already put in place from the cache (null: it did not). */
@@ -262,7 +272,7 @@ export function useNotebookTurns({
       if (running.current) return true;
       const single = isMobile;
       const from: Place = { view, side: single ? mobileSide : delta > 0 ? "right" : "left" };
-      const target = turnTarget(from, delta, single);
+      const target = turnTarget(from, delta, single, maxPages);
       if (!target) return false;
       running.current = true;
       stash();
@@ -353,7 +363,7 @@ export function useNotebookTurns({
       );
       return true;
     },
-    [isMobile, view, mobileSide, stash, bookRef, reduceMotion, cache, finish, faceOf],
+    [isMobile, view, mobileSide, maxPages, stash, bookRef, reduceMotion, cache, finish, faceOf],
   );
 
   /** From the contents page straight to the spread a page lies in, riffling past the rest. */

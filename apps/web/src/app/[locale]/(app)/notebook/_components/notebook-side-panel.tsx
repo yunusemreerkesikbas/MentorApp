@@ -7,6 +7,7 @@ import type {
   ExamTopicDto,
   NotebookCoverDoc,
   NotebookEntryDto,
+  NotebookLimitsDto,
   NotebookPaper,
   VisionBoardTextItem,
   VisionSticker,
@@ -103,6 +104,7 @@ export interface NotebookSidePanelProps {
   } | null;
   /** The focused page's selected note, when there is one — drives the "text" category's controls. */
   selectedText: VisionBoardTextItem | null;
+  limits?: NotebookLimitsDto;
   onCreated: (entry: NotebookEntryDto, aspect: number | null) => void;
   /** A photo dragged onto a page from the computer: the add form opens with it already in. */
   droppedPhoto?: { file: File; nonce: number } | null;
@@ -156,6 +158,7 @@ export function NotebookSidePanel({
   exam,
   indexExam,
   selectedText,
+  limits,
   onCreated,
   droppedPhoto,
   onAddSticker,
@@ -289,8 +292,9 @@ export function NotebookSidePanel({
         <NotebookAddPanel
           examId={exam.id}
           mockExamId={mockExamId}
-            subjects={exam.subjects}
-            topics={exam.topics}
+          subjects={exam.subjects}
+          topics={exam.topics}
+          limits={limits}
           onCreated={onCreated}
           droppedPhoto={droppedPhoto ?? null}
           onCancel={onCollapse}

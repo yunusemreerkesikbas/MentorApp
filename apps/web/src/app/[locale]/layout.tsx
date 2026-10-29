@@ -62,9 +62,13 @@ export async function generateMetadata({
     applicationName: "PuhuKoç",
     title: m.title,
     description: m.description,
-    // The logo's eye (DESIGN.md §8.7); under /img so the locale proxy leaves it alone.
+    // Puhu mascot favicon & app icon (DESIGN.md §8.7); under /img & /favicon.ico so locale proxy leaves it alone.
     icons: {
-      icon: { url: "/img/brand/puhukoc-icon.svg", type: "image/svg+xml" },
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/img/brand/puhukoc-icon.png", type: "image/png", sizes: "32x32" },
+        { url: "/img/brand/puhukoc-icon.svg", type: "image/svg+xml" },
+      ],
       apple: "/img/brand/puhukoc-apple-icon.png",
     },
     openGraph: {
@@ -121,18 +125,18 @@ export default async function LocaleLayout({
       <body suppressHydrationWarning>
         <BackgroundBlobs />
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <ToastProviderShell>
-            <DialogProviderShell>
-              <BottomSheetProviderShell>
-                <AuthProvider>
+          <AuthProvider>
+            <ToastProviderShell>
+              <DialogProviderShell>
+                <BottomSheetProviderShell>
                   <AnalyticsConsentProvider nonce={nonce}>
                     <WebVitalsReporter />
                     <CloudTransitionProvider>{children}</CloudTransitionProvider>
                   </AnalyticsConsentProvider>
-                </AuthProvider>
-              </BottomSheetProviderShell>
-            </DialogProviderShell>
-          </ToastProviderShell>
+                </BottomSheetProviderShell>
+              </DialogProviderShell>
+            </ToastProviderShell>
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

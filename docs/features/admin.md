@@ -100,6 +100,8 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-29: Free-tier notebook quota settings in `/config`.** Added Turkish operator hints (`config-hints.ts`) and catalog definitions (`config.catalog.ts`) for five `COACHING` keys governing Free-user notebook limits: `coaching.notebook.photo.free_enabled`, `coaching.notebook.photo.free_limit`, `coaching.notebook.custom.free_limit`, `coaching.notebook.pages.free_limit`, and `coaching.notebook.entries.free_limit`. Usage: edit under Admin `/config` (`SUPER_ADMIN`); setting photo or custom-notebook limit to `0` (or toggling `photo.free_enabled` off) turns that capability into a Premium-only feature. Gotchas: existing notebook pages above a lowered `pages.free_limit` remain editable (grandfathered). Related: `config.catalog.ts`, `config-hints.ts`, [`coaching.md`](./coaching.md).
+
 - **2026-10-26: Display inventory preparation in existing settings.** `/config` adds a read-only
   summary of eight display placements, unit source/status, switches, country and manual review
   requirements. Usage: refresh the summary or save an existing setting; failures remove stale

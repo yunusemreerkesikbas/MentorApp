@@ -7,6 +7,8 @@ import { IdentityModule } from "../identity/identity.module";
 import { MoodService } from "./application/mood.service";
 import { DailyQuestSignalService } from "./application/daily-quest-signal.service";
 import { MistakeNotebookService } from "./application/mistake-notebook.service";
+import { CoachingEntitlementRegistry } from "./application/coaching-entitlement.registry";
+import { NotebookQuotaService } from "./application/notebook-quota.service";
 import { NotebookForumListener } from "./application/notebook-forum.listener";
 import { MockExamService } from "./application/mock-exam.service";
 import { AnalysisService } from "./application/analysis.service";
@@ -94,6 +96,8 @@ import { PublicPulseRepository } from "./infrastructure/public-pulse.repository"
     PlanItemService,
     PlanService,
     MistakeNotebookService,
+    CoachingEntitlementRegistry,
+    NotebookQuotaService,
     NotebookForumListener,
     DailyQuestSignalService,
     SessionService,
@@ -148,6 +152,8 @@ import { PublicPulseRepository } from "./infrastructure/public-pulse.repository"
     CoachingAchievementEvidenceService,
     DailyQuestSignalService,
     MistakeNotebookService,
+    CoachingEntitlementRegistry,
+    NotebookQuotaService,
     MockExamService,
     AnalysisService,
     MoodService,

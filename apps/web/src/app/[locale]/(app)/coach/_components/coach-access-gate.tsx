@@ -8,6 +8,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import type { CoachAccessDto } from "@mentor/types";
 import { Button, Card, Chip, SectionHeading } from "@mentor/ui";
 import { PuhuCoachBubble } from "@/components/puhu-coach-bubble";
+import { PremiumBadge } from "@/components/premium/premium-badge";
 import { safeInternalReturnTo } from "@/lib/community-coach-bridge";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 
@@ -109,13 +110,13 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
           className="flex flex-col items-center"
         />
         <Card className="flex w-full flex-col items-start gap-3">
-          <Chip>
-            {isRateLimited
-              ? t("chip_rate_limited")
-              : isInsufficientCoin
-                ? t("chip_insufficient")
-                : t("chip_premium")}
-          </Chip>
+          {isRateLimited ? (
+            <Chip>{t("chip_rate_limited")}</Chip>
+          ) : isInsufficientCoin ? (
+            <Chip>{t("chip_insufficient")}</Chip>
+          ) : (
+            <PremiumBadge />
+          )}
           <SectionHeading as="h2" subtitle={subtitle}>
             {isRateLimited
               ? t("heading_rate_limited")

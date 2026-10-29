@@ -103,6 +103,17 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-29 · Global provider kill-switch.** Text completion, consumed streams, embeddings
+  (including already queued article jobs) and vision now read `ai.enabled` at the decorated
+  provider boundary and return existing localized `AI_DISABLED` (404) before provider calls
+  or reservations when off. Usage: persist the false override before the trial's first start;
+  offline override edits require restart because the registry is process-cached. Gotchas:
+  in-flight calls are not cancelled, disabled queued embeddings use normal job retries/dead
+  handling, and enabled embedding accounting/provider invoice caps remain separate gates.
+  RED reproduced ten missing-boundary failures; 30/30 focused AI tests passed GREEN.
+  Related: `privacy-preserving-llm.adapter{,.spec}.ts`, `budgeted-vision.adapter{,.spec}.ts`,
+  `ai-provider-kill-switch.spec.ts`. No live provider call or flag change.
+
 - **Topluluktan gelen görev kaynağını koruyor; ilk tercih kartı selamlamaya binmiyor (2026-10-10)**
   - **Kaynak (F-04):** topluluk kökenli bir sohbette kabul edilen "Plana ekle" `AI_COACH` olarak
     kaydediliyordu; web `POST /v1/coach/conversations/:id/plan-tasks`'i hiç çağırmadığı için
