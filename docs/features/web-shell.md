@@ -100,17 +100,38 @@ http://localhost:3000/panel               # daily ritual hub
   - **Same day, the notebook note shows the review deck** (owner's request), not the open notebook.
     - The deck is what the app deals: "3 soru tekrar zamanı", "1 / 3", cards by subject, and
       "Bu sefer çözebildin mi?" with Takıldım / Çözdüm (`notebook.review_*`).
-    - The copy follows `notebook-review.policy.ts`: a solved card comes back less often (2 → 7 → 21
-      days); a missed one is back in 2 days.
+    - The copy says only that questions come back card by card. The owner cut the line about the
+      2 → 7 → 21 day ladder (`notebook-review.policy.ts`), in TR and EN alike.
     - The question card is HTML, a made-up equation, so the landing never shows a real exam question
       or generated text.
+  - **Naming:**
+    - The section is "morning" in code: `landing-morning.tsx`, the `morning-*` files, CSS `lm-`,
+      and copy in `landing.morning`.
+    - Users see "Sabah" (`#sabah`).
+    - The `Desk*` / `desk-*` names are left for the objects drawn on the desk (wall, wood, board).
+    - "desk" alone would collide with the city's Masa stop (`landing.desk`) and with
+      `notebook-desk`.
+  - **Phone pass (below `sm`):** the stage shows at about half size (one unit ≈ 0.5px).
+    - Puhu's bubble moves inside the crop and clear of the rounded corner (`--x/--y/--w` live in
+      CSS for this), widens, and gets a fixed 8.5px type; it had been 5.8px and cut at the left edge.
+    - The pins drop to 30px and keep a 44px tap area through `::before`; the tabs do the same job.
+  - **Motion, as in the app:**
+    - **Puhu reads.** CSS cycles the Defterlerim sprites (`desk-puhu-*`): left page, right page, a
+      blink back to the left. The frames cut and never fade (two pupil positions fading read as four
+      eyes). The feet swing ±7° about each ankle.
+    - **The board swings about its nail.** It is the panel's hung-board sway (`hung-board-sway.ts`),
+      as damped CSS keyframes of about 1.4 s, pushed and never looped. About 3° the first time the
+      scene is in view, 1.5° when a mouse comes over the board (away from its side), and 1.5° when
+      its pin is picked.
+    - The island flips `data-sway` so each push restarts the animation, and the cord and nail swing
+      with the board. Reduced motion turns all of it off.
   - **Balance pass:**
-    - The three minis share one height (`.ld-mini`, 300px) so the notes end on about the same line.
+    - The three minis share one height (`.lm-mini`, 300px) so the notes end on about the same line.
     - The deck sits on the paper without the app's dark backdrop, which is a dimmed screen there.
     - The story cards are larger (226px).
   - **Related:**
-    - `_components/landing/{landing-desk,desk-picker,desk-scene,desk-room,desk-board,desk-story}.tsx`
-    - `landing-desk.css`
+    - `_components/landing/{landing-morning,morning-picker,morning-scene,morning-story,desk-room,desk-board}.tsx`
+    - `landing-morning.css`
     - `e2e/landing.spec.ts`
 
 - **2026-10-28 · Blog moves from the app nav to the landing.**

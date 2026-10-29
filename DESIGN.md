@@ -536,7 +536,7 @@ dawn. Spec: `docs/superpowers/specs/2026-10-27-landing-isikli-sehir-design.md`; 
 - **Sabah masası (2026-10-29):** the morning section shows the product as the product draws it. It
   is the Defterlerim desk in its day theme (`notebook-desk.css` day tokens, the desk's own grain
   tiles), with the vision board's `BoardFrame` and the weekly story's coral, lavender and mint.
-  Its palette is `--ld-*` in `_components/landing/landing-desk.css`. The picked pin and note share
+  Its palette is `--lm-*` in `_components/landing/landing-morning.css`. The picked pin and note share
   the lamp yellow `#FFD15C`.
 
 ---

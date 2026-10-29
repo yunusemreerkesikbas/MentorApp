@@ -13,6 +13,34 @@ optional; source checks do not prove that production services or domains are liv
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-29 · Approved Sentry error-only acceptance.** Created EU `puhu-api` after explicit
+  approval, kept its ingestion connection in the ignored local acceptance env, and verified
+  one synthetic event as PUHU-API-1 (HTTP 200; Events 1 / Users 0). No billing/repo/AI/production
+  connection was enabled. Explicitly disabled SDK logs, which bypass the event scrubber;
+  a real-SDK offline regression reproduced the previous leak path. Also omit sanitized
+  empty stack traces after the accepted event exposed a processing warning. Usage/gotchas:
+  [preflight record](../qa/2026-10-29-storage-monitoring-preflight.md); the empty-frame fix
+  is verified locally, with no second live event. Related: `instrument{,.spec}.ts`,
+  `sentry-scrubber{,.spec}.ts`. Production wiring and full CI remain separate gates.
+
+- **2026-10-29 · Upload scope and Sentry account verification.** The owner retained first-release
+  uploads and owns the pre-launch notebook quota; no quota or upload-disable mode was added.
+  Sentry PuhuKoc is in the EU, with an automatic Business trial and no payment method.
+  Official docs confirm fallback to Developer without upgrading. An error-only `puhu-api`
+  draft awaits approval for creation, ignored local connection storage and one synthetic
+  event; no project, credential, billing or telemetry change has been made. Usage/gotchas:
+  [preflight record](../qa/2026-10-29-storage-monitoring-preflight.md). R2 has no verified
+  invoice stop; a per-user image count alone does not close that gate.
+
+- **2026-10-29 · Storage spending and safe queue-error context.** Read-only R2/Billing
+  inspection confirmed zero observed billable R2 cost and an unchanged existing USD 10
+  notification, with no verified billing stop. Upload deferral versus first-release image
+  support is an owner scope decision; no feature was disabled. Sentry needs account login.
+  Its privacy boundary now preserves only a job UUID and allowlisted notification job name,
+  keeping payloads/PII excluded so quarantine can be investigated. Usage and gotchas:
+  [preflight record](../qa/2026-10-29-storage-monitoring-preflight.md). Related:
+  `sentry-scrubber{,.spec}.ts`. No live setting, DSN or telemetry send.
+
 - **2026-10-29 · R2 names versus public domain.** Clarified that existing `mentor-*` buckets
   are dev/test, retained `puhu-s1-*` buckets are staging, and planned EU production uses
   `puhu-prod-*` with `media.puhukoc.com` only on the public bucket. Corrected the production

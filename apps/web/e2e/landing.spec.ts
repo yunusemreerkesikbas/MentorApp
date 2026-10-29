@@ -112,8 +112,8 @@ test("azaltılmış harekette notlar kamera olmadan alt alta görünür", async 
   await expect(page.locator('.lc-panel[data-stop="4"]')).toHaveCSS("opacity", "1");
   await expect(page.getByRole("heading", { name: "Aynı masada, herkes kendi saatinde." })).toBeAttached();
   // The morning desk's phone holds one story screen instead of cycling.
-  await expect(page.locator(".ld-slide.s2")).toHaveCSS("opacity", "1");
-  await expect(page.locator(".ld-slide.s1")).toHaveCSS("opacity", "0");
+  await expect(page.locator(".lm-slide.s2")).toHaveCSS("opacity", "1");
+  await expect(page.locator(".lm-slide.s1")).toHaveCSS("opacity", "0");
 });
 
 test("sabah masası: iğne kendi notunu öne çıkarır, telefonda notlar sekmeyle gelir", async ({ page }, testInfo) => {
@@ -127,6 +127,8 @@ test("sabah masası: iğne kendi notunu öne çıkarır, telefonda notlar sekmey
   const pin = desk.getByRole("button", { name: "Hedef panosu" });
   await pin.click();
   await expect(pin).toHaveAttribute("aria-pressed", "true");
+  // Picking the board pushes it: the swing restarts (it alternates between two names).
+  await expect(desk.locator(".lm-stage")).toHaveAttribute("data-sway", /^[01]$/);
   await expect(desk.getByRole("heading", { level: 3, name: "Hedefin gözünün önünde." })).toBeVisible();
 
   const notebook = desk.getByRole("heading", { level: 3, name: "Yanlışların kaybolmaz." });

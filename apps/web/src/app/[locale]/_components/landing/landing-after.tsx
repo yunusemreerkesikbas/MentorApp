@@ -6,7 +6,7 @@ import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { fetchCoachSignupOpen } from "@/lib/coach-signup";
 import { LandingBlog } from "./landing-blog";
-import { LandingDesk } from "./landing-desk";
+import { LandingMorning } from "./landing-morning";
 import { LEDGE_ON_PAPER, PAGE_FRAME, PAPER_PILL, PAPER_TITLE, PaperFaq } from "./landing-paper";
 
 const FAQ = [1, 2, 3, 4, 5, 6] as const;
@@ -65,7 +65,7 @@ export async function LandingAfter() {
   return (
     // Slides over the last frame of the scene, like a page turning up from the bottom.
     <div className="landing-paper relative z-10 -mt-7 rounded-t-[var(--play-sheet-radius)] bg-[var(--landing-paper)] text-[var(--landing-ink)]">
-      <LandingDesk />
+      <LandingMorning />
       <Suspense fallback={null}>
         <CoachBand />
       </Suspense>

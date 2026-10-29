@@ -14,7 +14,7 @@ The `/` landing's night city. These files only work as a set, so they share a fo
 
 | `careers.webp` | The ten career Puhus at the desk, 5 across and 2 down (order in `city-stage.css`) |
 | `puhu-undecided.webp` | "Henüz karar vermedim" (a cropped sticker pose until a seated one is drawn) |
-| `desk-puhu.webp` | "Sabah masası": the Defterlerim desk Puhu (`mascot/puhu/desk/read-left.png` plus both feet) as one image |
+| `desk-puhu-*.webp` | "Sabah masası": the Defterlerim desk Puhu's sprites (`mascot/puhu/desk/`): `left`, `right`, `blink` eye frames and both feet, all on the set's shared canvas so they stack |
 | `desk-board.webp` | "Sabah masası": the filled goal board, 1620 × 1080 shrunk to 810. Cork, the Kolaj template's photo slots, the app's stickers. The goal card is left empty for the page's text |
 | `desk-recap-*.webp` | "Sabah masası": smaller copies of the weekly story's art (`visuals/weekly-recap-2023/`, `img/character/nebula-diver.png`) |
 

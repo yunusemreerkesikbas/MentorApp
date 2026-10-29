@@ -37,8 +37,10 @@ current state privately before invoking a feature-specific fresh action. Do not 
 auth links, recipient details or secrets into monitoring/comments. For expired auth mail,
 request a fresh verification/reset action; do not resend a stored expired link.
 
-Quarantined rows and discarded stale-owner results emit Sentry errors tagged only with job
-ID/name. Heartbeat failures log static metadata without raw errors or payloads. Actual Sentry
+Quarantined rows and discarded stale-owner results supply Sentry with job ID/name. The
+[monitoring preflight fix](2026-10-29-storage-monitoring-preflight.md) now preserves a valid
+job UUID and only allowlisted notification job names through the privacy scrubber; other
+names stay omitted. Heartbeat failures log static metadata without raw errors or payloads. Actual Sentry
 configuration/receipt is still a live release gate. A sleeping/quota-suspended API cannot scan
 or alert until it runs again. The timeout is not a completion deadline or delivery guarantee.
 

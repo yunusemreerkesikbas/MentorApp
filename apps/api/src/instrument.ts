@@ -9,6 +9,8 @@ if (process.env.SENTRY_DSN) {
     dsn: process.env.SENTRY_DSN,
     environment: process.env.APP_ENV ?? process.env.NODE_ENV ?? "development",
     sendDefaultPii: false,
+    // Logs bypass the error-event privacy filter.
+    enableLogs: false,
     // Automatic HTTP/SQL instrumentation can collect URLs, queries and provider payloads.
     defaultIntegrations: false,
     integrations: [Sentry.onUncaughtExceptionIntegration(), Sentry.onUnhandledRejectionIntegration()],

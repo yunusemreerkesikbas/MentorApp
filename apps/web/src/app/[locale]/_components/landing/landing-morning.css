@@ -1,28 +1,28 @@
 /*
- * "Sabah masası" (landing-desk.tsx). The scene is the Defterlerim desk in its day theme: the colours
+ * "Sabah masası" (landing-morning.tsx). The scene is the Defterlerim desk in its day theme: the colours
  * below are the day tokens of `components/notebook-desk/notebook-desk.css`, the board frame is the
  * vision board's, the phone plays the weekly story in its own colours (`--recap-*` in globals.css).
  * Like the city stage, the landing keeps its scene palette here rather than in theme.css.
  */
-.ld-root {
-  --ld-paper: #fffdf6;
-  --ld-ink: #0f2233;
-  --ld-ink-soft: #3d4e63;
-  --ld-blue: #1a5fa3;
-  --ld-plate: #1d4f9f;
-  --ld-picked: #ffd15c;
-  --ld-picked-ink: #5a3a08;
-  --ld-hand: "Caveat Variable", "Segoe Print", cursive;
-  --ld-print: "Fraunces Variable", Georgia, "Times New Roman", serif;
-  --ld-coral: #ff5b49;
-  --ld-lavender: #afb1ff;
-  --ld-mint: #16d0a6;
+.lm-root {
+  --lm-paper: #fffdf6;
+  --lm-ink: #0f2233;
+  --lm-ink-soft: #3d4e63;
+  --lm-blue: #1a5fa3;
+  --lm-plate: #1d4f9f;
+  --lm-picked: #ffd15c;
+  --lm-picked-ink: #5a3a08;
+  --lm-hand: "Caveat Variable", "Segoe Print", cursive;
+  --lm-print: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --lm-coral: #ff5b49;
+  --lm-lavender: #afb1ff;
+  --lm-mint: #16d0a6;
   /* Paper takes the app's blue ring. */
   --color-focus-ring: #1d6fbf;
 }
 
 /* ---- The stage: 1040 × 520 units. A phone shows the middle two thirds at 4:3. ---- */
-.ld-frame {
+.lm-frame {
   position: relative;
   margin-top: 32px;
   aspect-ratio: 2 / 1;
@@ -32,7 +32,7 @@
   box-shadow: 0 30px 60px -30px rgba(70, 45, 15, 0.45);
 }
 
-.ld-stage {
+.lm-stage {
   /* One stage unit. Read by children, so `cqw` resolves against this container. */
   --u: calc(100cqw / 1040);
   position: absolute;
@@ -45,34 +45,34 @@
 }
 
 @media (max-width: 639px) {
-  .ld-frame {
+  .lm-frame {
     margin-top: 22px;
     aspect-ratio: 4 / 3;
     border-radius: 18px;
   }
 
-  .ld-stage {
+  .lm-stage {
     width: 150%;
   }
 }
 
-.ld-scene,
-.ld-room {
+.lm-scene,
+.lm-room {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-.ld-room {
+.lm-room {
   display: block;
 }
 
-.ld-sunpatch {
+.lm-sunpatch {
   mix-blend-mode: soft-light;
 }
 
-.ld-at {
+.lm-at {
   position: absolute;
   left: calc(var(--x) * var(--u));
   top: calc(var(--y) * var(--u));
@@ -82,13 +82,13 @@
 }
 
 /* The desk top: grain tiles over the wood, the shade from the wall, the lit front edge. */
-.ld-wood {
+.lm-wood {
   position: absolute;
   inset: calc(210 * var(--u)) 0 0;
   background-color: #b88757;
 }
 
-.ld-grain {
+.lm-grain {
   position: absolute;
   inset: 0;
   opacity: var(--grain);
@@ -96,14 +96,14 @@
   background-size: calc(var(--tile-w) * var(--u)) calc(var(--tile-h) * var(--u));
 }
 
-.ld-wood::after {
+.lm-wood::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.32) 0, rgba(0, 0, 0, 0.05) 45%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.16) 100%);
 }
 
-.ld-wood::before {
+.lm-wood::before {
   content: "";
   position: absolute;
   inset: 0 0 auto;
@@ -114,7 +114,7 @@
 }
 
 /* ---- Props that carry words ---- */
-.ld-bubble {
+.lm-bubble {
   padding: calc(10 * var(--u)) calc(14 * var(--u));
   border-radius: calc(14 * var(--u));
   background: #ffffff;
@@ -124,7 +124,7 @@
   line-height: 1.4;
 }
 
-.ld-bubble::after {
+.lm-bubble::after {
   content: "";
   position: absolute;
   left: calc(80 * var(--u));
@@ -134,11 +134,7 @@
   border-left-width: calc(4 * var(--u));
 }
 
-.ld-wallboard {
-  height: auto;
-}
-
-.ld-parcel {
+.lm-parcel {
   rotate: 4deg;
   border-radius: calc(4 * var(--u));
   background:
@@ -148,7 +144,7 @@
   box-shadow: calc(6 * var(--u)) calc(8 * var(--u)) calc(12 * var(--u)) rgba(0, 0, 0, 0.25);
 }
 
-.ld-parcel-tag {
+.lm-parcel-tag {
   position: absolute;
   left: calc(22 * var(--u));
   top: calc(30 * var(--u));
@@ -156,28 +152,28 @@
   background: #fbf6ea;
   clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
   color: #2a2118;
-  font: 700 calc(12 * var(--u)) / 1.3 var(--ld-hand);
+  font: 700 calc(12 * var(--u)) / 1.3 var(--lm-hand);
   white-space: nowrap;
 }
 
-.ld-book {
+.lm-book {
   border-radius: calc(6 * var(--u));
   background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.07) 0 calc(2 * var(--u)), transparent 0 calc(6 * var(--u)));
   box-shadow: calc(8 * var(--u)) calc(12 * var(--u)) calc(14 * var(--u)) rgba(0, 0, 0, 0.3);
 }
 
-.ld-book.is-navy {
+.lm-book.is-navy {
   rotate: -2deg;
   background-color: #2b3b5e;
 }
 
-.ld-book.is-grey {
+.lm-book.is-grey {
   rotate: 1.5deg;
   background-color: #6b7484;
 }
 
 /* The spiral: a column of rings down the spine. */
-.ld-book::before {
+.lm-book::before {
   content: "";
   position: absolute;
   left: calc(-1 * var(--u));
@@ -187,7 +183,7 @@
   background: radial-gradient(circle, #c3c8d2 calc(4.2 * var(--u)), transparent calc(4.6 * var(--u))) 0 0 / calc(9 * var(--u)) calc(12 * var(--u)) repeat-y;
 }
 
-.ld-book-label {
+.lm-book-label {
   position: absolute;
   left: calc(22 * var(--u));
   top: calc(28 * var(--u));
@@ -199,17 +195,17 @@
   box-shadow: 0 calc(2 * var(--u)) calc(5 * var(--u)) rgba(0, 0, 0, 0.22);
 }
 
-.ld-book-label b {
+.lm-book-label b {
   display: block;
-  font: 700 calc(18 * var(--u)) / 0.95 var(--ld-hand);
+  font: 700 calc(18 * var(--u)) / 0.95 var(--lm-hand);
 }
 
-.ld-book-label b.is-print {
-  font: 700 calc(15 * var(--u)) / 1.08 var(--ld-print);
+.lm-book-label b.is-print {
+  font: 700 calc(15 * var(--u)) / 1.08 var(--lm-print);
   color: #1f2433;
 }
 
-.ld-book-label small {
+.lm-book-label small {
   display: block;
   margin-top: calc(4 * var(--u));
   font-size: calc(8 * var(--u));
@@ -217,7 +213,7 @@
   color: #6a5f4f;
 }
 
-.ld-book-sticky {
+.lm-book-sticky {
   position: absolute;
   left: calc(78 * var(--u));
   top: calc(126 * var(--u));
@@ -227,11 +223,11 @@
   rotate: -5deg;
   background: linear-gradient(172deg, #ffeb94, #ffd659);
   color: #3b2f12;
-  font: 700 calc(16 * var(--u)) / 1.05 var(--ld-hand);
+  font: 700 calc(16 * var(--u)) / 1.05 var(--lm-hand);
   box-shadow: 0 calc(5 * var(--u)) calc(6 * var(--u)) calc(-3 * var(--u)) rgba(0, 0, 0, 0.5);
 }
 
-.ld-book-tab {
+.lm-book-tab {
   position: absolute;
   right: calc(-8 * var(--u));
   width: calc(10 * var(--u));
@@ -239,17 +235,17 @@
   border-radius: 0 calc(3 * var(--u)) calc(3 * var(--u)) 0;
 }
 
-.ld-book-tab.is-blue {
+.lm-book-tab.is-blue {
   top: calc(32 * var(--u));
   background: #8ec1f4;
 }
 
-.ld-book-tab.is-green {
+.lm-book-tab.is-green {
   top: calc(62 * var(--u));
   background: #9fd8b0;
 }
 
-.ld-book-ribbon {
+.lm-book-ribbon {
   position: absolute;
   left: calc(100 * var(--u));
   top: calc(206 * var(--u));
@@ -259,7 +255,7 @@
   background: #c0392b;
 }
 
-.ld-book-tape {
+.lm-book-tape {
   position: absolute;
   right: calc(-12 * var(--u));
   top: calc(4 * var(--u));
@@ -267,24 +263,24 @@
   rotate: 32deg;
   background: #f4b6c2;
   color: #1d2433;
-  font: 700 calc(9 * var(--u)) / 1.45 var(--ld-hand);
+  font: 700 calc(9 * var(--u)) / 1.45 var(--lm-hand);
 }
 
 /* ---- The goal board (BoardFrame outside, the board's own cqw units inside) ---- */
-.ld-board {
+.lm-board {
   position: relative;
   overflow: hidden;
   container-type: inline-size;
 }
 
-.ld-board-art {
+.lm-board-art {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-.ld-goal {
+.lm-goal {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -301,7 +297,7 @@
   text-wrap: balance;
 }
 
-.ld-goal-city {
+.lm-goal-city {
   display: flex;
   align-items: center;
   gap: 0.4em;
@@ -310,17 +306,17 @@
   font-weight: 800;
 }
 
-.ld-goal-city svg {
+.lm-goal-city svg {
   width: 1em;
   height: 1em;
 }
 
 /* ---- The phone and the story it plays ---- */
-.ld-phone {
+.lm-phone {
   rotate: -3deg;
 }
 
-.ld-phone-body {
+.lm-phone-body {
   position: absolute;
   left: calc(8 * var(--u));
   top: 0;
@@ -331,32 +327,32 @@
   box-shadow: inset 0 0 0 calc(1.5 * var(--u)) #3d3d48, calc(6 * var(--u)) calc(12 * var(--u)) calc(14 * var(--u)) rgba(0, 0, 0, 0.3);
 }
 
-.ld-phone-key {
+.lm-phone-key {
   position: absolute;
   width: calc(4 * var(--u));
   border-radius: calc(2 * var(--u));
   background: #2a2a31;
 }
 
-.ld-phone-key.is-1 {
+.lm-phone-key.is-1 {
   left: calc(5 * var(--u));
   top: calc(56 * var(--u));
   height: calc(22 * var(--u));
 }
 
-.ld-phone-key.is-2 {
+.lm-phone-key.is-2 {
   left: calc(5 * var(--u));
   top: calc(84 * var(--u));
   height: calc(34 * var(--u));
 }
 
-.ld-phone-key.is-3 {
+.lm-phone-key.is-3 {
   left: calc(125 * var(--u));
   top: calc(74 * var(--u));
   height: calc(44 * var(--u));
 }
 
-.ld-screen {
+.lm-screen {
   position: absolute;
   inset: calc(5 * var(--u));
   overflow: hidden;
@@ -365,7 +361,7 @@
   text-align: center;
 }
 
-.ld-island {
+.lm-island {
   position: absolute;
   left: calc(44 * var(--u));
   top: calc(11 * var(--u));
@@ -375,7 +371,7 @@
   background: #000000;
 }
 
-.ld-stand {
+.lm-stand {
   position: absolute;
   left: 0;
   top: calc(232 * var(--u));
@@ -385,7 +381,7 @@
   clip-path: polygon(0 0, 100% 0, 100% 35%, 91% 100%, 9% 100%, 0 35%);
 }
 
-.ld-slide {
+.lm-slide {
   position: absolute;
   inset: 0;
   display: flex;
@@ -393,68 +389,68 @@
   align-items: center;
   padding: 0 calc(8 * var(--u));
   opacity: 0;
-  animation: ld-story 12s infinite;
+  animation: lm-story 12s infinite;
 }
 
-.ld-slide b {
+.lm-slide b {
   font-weight: 1000;
   line-height: 1.15;
   text-wrap: balance;
 }
 
-.ld-slide small {
+.lm-slide small {
   font-weight: 900;
 }
 
-.ld-slide strong {
+.lm-slide strong {
   font-weight: 1000;
   line-height: 1;
 }
 
-.ld-slide.is-welcome {
+.lm-slide.is-welcome {
   justify-content: flex-end;
   padding-bottom: calc(50 * var(--u));
-  background: var(--ld-coral);
+  background: var(--lm-coral);
   font-size: calc(12 * var(--u));
 }
 
-.ld-slide.is-welcome small {
+.lm-slide.is-welcome small {
   margin-top: calc(6 * var(--u));
   font-size: calc(6.5 * var(--u));
   opacity: 0.65;
 }
 
-.ld-slide.is-focus {
+.lm-slide.is-focus {
   padding-top: calc(52 * var(--u));
-  background: var(--ld-coral);
+  background: var(--lm-coral);
   font-size: calc(9.4 * var(--u));
 }
 
-.ld-slide.is-focus strong {
+.lm-slide.is-focus strong {
   margin-top: calc(10 * var(--u));
   font-size: calc(34 * var(--u));
 }
 
-.ld-slide.is-focus small {
+.lm-slide.is-focus small {
   font-size: calc(8 * var(--u));
 }
 
-.ld-globe {
+.lm-globe {
   width: calc(62 * var(--u));
   margin-top: calc(6 * var(--u));
 }
 
-.ld-slide.is-run {
+.lm-slide.is-run {
   justify-content: center;
-  background: var(--ld-lavender);
+  background: var(--lm-lavender);
   font-size: calc(9 * var(--u));
 }
 
-.ld-slide.is-run strong {
+.lm-slide.is-run strong {
   font-size: calc(46 * var(--u));
 }
 
-.ld-slide.is-code {
+.lm-slide.is-code {
   padding-top: calc(46 * var(--u));
   background-color: #141833;
   background-position: 50% 40%;
@@ -463,7 +459,7 @@
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
-.ld-slide.is-code::before {
+.lm-slide.is-code::before {
   content: "";
   position: absolute;
   inset: 0 0 auto;
@@ -471,12 +467,12 @@
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.6), transparent);
 }
 
-.ld-slide.is-code small,
-.ld-slide.is-code b {
+.lm-slide.is-code small,
+.lm-slide.is-code b {
   position: relative;
 }
 
-.ld-slide.is-code small {
+.lm-slide.is-code small {
   font-size: calc(5.6 * var(--u));
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -484,52 +480,52 @@
   opacity: 0.85;
 }
 
-.ld-slide.is-code b {
+.lm-slide.is-code b {
   font-size: calc(11.5 * var(--u));
 }
 
-.ld-decor {
+.lm-decor {
   position: absolute;
 }
 
-.ld-decor.is-floral {
+.lm-decor.is-floral {
   left: calc(-15 * var(--u));
   bottom: calc(-9 * var(--u));
   width: calc(52 * var(--u));
 }
 
-.ld-decor.is-wiggle {
+.lm-decor.is-wiggle {
   right: calc(-8 * var(--u));
   bottom: calc(22 * var(--u));
   width: calc(34 * var(--u));
 }
 
-.ld-decor.is-floral-top {
+.lm-decor.is-floral-top {
   right: calc(-21 * var(--u));
   top: calc(-5 * var(--u));
   width: calc(48 * var(--u));
 }
 
-.ld-decor.is-wiggle-low {
+.lm-decor.is-wiggle-low {
   left: calc(-7 * var(--u));
   bottom: calc(7 * var(--u));
   width: calc(40 * var(--u));
 }
 
 /* Four screens, three seconds each; each bar fills during its own screen. */
-.ld-slide.s2 {
+.lm-slide.s2 {
   animation-delay: -9s;
 }
 
-.ld-slide.s3 {
+.lm-slide.s3 {
   animation-delay: -6s;
 }
 
-.ld-slide.s4 {
+.lm-slide.s4 {
   animation-delay: -3s;
 }
 
-@keyframes ld-story {
+@keyframes lm-story {
   0%,
   23% {
     opacity: 1;
@@ -541,7 +537,7 @@
   }
 }
 
-.ld-bars {
+.lm-bars {
   position: absolute;
   left: calc(7 * var(--u));
   right: calc(7 * var(--u));
@@ -550,7 +546,7 @@
   gap: calc(3 * var(--u));
 }
 
-.ld-bar {
+.lm-bar {
   flex: 1;
   height: calc(2.2 * var(--u));
   overflow: hidden;
@@ -558,7 +554,7 @@
   background: rgba(255, 255, 255, 0.4);
 }
 
-.ld-bar b {
+.lm-bar b {
   display: block;
   height: 100%;
   background: #ffffff;
@@ -566,24 +562,24 @@
   animation: 12s linear infinite;
 }
 
-.ld-bar.b1 b { animation-name: ld-bar-1; }
-.ld-bar.b2 b { animation-name: ld-bar-2; }
-.ld-bar.b3 b { animation-name: ld-bar-3; }
-.ld-bar.b4 b { animation-name: ld-bar-4; }
+.lm-bar.b1 b { animation-name: lm-bar-1; }
+.lm-bar.b2 b { animation-name: lm-bar-2; }
+.lm-bar.b3 b { animation-name: lm-bar-3; }
+.lm-bar.b4 b { animation-name: lm-bar-4; }
 
-@keyframes ld-bar-1 { 0% { scale: 0 1; } 25%, 100% { scale: 1 1; } }
-@keyframes ld-bar-2 { 0%, 25% { scale: 0 1; } 50%, 100% { scale: 1 1; } }
-@keyframes ld-bar-3 { 0%, 50% { scale: 0 1; } 75%, 100% { scale: 1 1; } }
-@keyframes ld-bar-4 { 0%, 75% { scale: 0 1; } 100% { scale: 1 1; } }
+@keyframes lm-bar-1 { 0% { scale: 0 1; } 25%, 100% { scale: 1 1; } }
+@keyframes lm-bar-2 { 0%, 25% { scale: 0 1; } 50%, 100% { scale: 1 1; } }
+@keyframes lm-bar-3 { 0%, 50% { scale: 0 1; } 75%, 100% { scale: 1 1; } }
+@keyframes lm-bar-4 { 0%, 75% { scale: 0 1; } 100% { scale: 1 1; } }
 
-.ld-controls {
+.lm-controls {
   position: absolute;
   right: calc(3.4 * var(--u));
   top: calc(29.5 * var(--u));
   width: calc(37 * var(--u));
 }
 
-.ld-glare {
+.lm-glare {
   position: absolute;
   inset: 0;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0 30%, transparent 30%);
@@ -591,7 +587,7 @@
 }
 
 /* ---- Pins on the scene, tabs below it ---- */
-.ld-pin {
+.lm-pin {
   position: absolute;
   left: calc(var(--x) * var(--u));
   top: calc(var(--y) * var(--u));
@@ -603,8 +599,8 @@
   translate: -50% -50%;
   border: 0;
   border-radius: 50%;
-  background: var(--ld-paper);
-  color: var(--ld-plate);
+  background: var(--lm-paper);
+  color: var(--lm-plate);
   font-size: 17px;
   font-weight: 900;
   cursor: pointer;
@@ -612,26 +608,26 @@
   transition: scale 0.2s ease, background-color 0.2s ease;
 }
 
-.ld-pin.is-on {
+.lm-pin.is-on {
   scale: 1.1;
-  background: var(--ld-picked);
-  color: var(--ld-picked-ink);
+  background: var(--lm-picked);
+  color: var(--lm-picked-ink);
   box-shadow: 0 0 0 6px rgba(255, 209, 92, 0.45), 0 8px 18px -6px rgba(40, 25, 10, 0.55);
 }
 
-.ld-pin:focus-visible,
-.ld-tab:focus-visible {
+.lm-pin:focus-visible,
+.lm-tab:focus-visible {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
 }
 
-.ld-tabs {
+.lm-tabs {
   display: flex;
   gap: 8px;
   margin-top: 14px;
 }
 
-.ld-tab {
+.lm-tab {
   flex: 1;
   min-height: 44px;
   border: 0;
@@ -643,68 +639,68 @@
   cursor: pointer;
 }
 
-.ld-tab.is-on {
-  background: var(--ld-ink);
+.lm-tab.is-on {
+  background: var(--lm-ink);
   color: #ffffff;
 }
 
 /* ---- The three paper notes ---- */
-.ld-notes {
+.lm-notes {
   display: grid;
   gap: 26px;
   margin-top: 30px;
   align-items: start;
 }
 
-.ld-note {
+.lm-note {
   position: relative;
   padding: 30px 22px 22px;
   border-radius: 4px 4px 7px 7px;
-  background-color: var(--ld-paper);
-  color: var(--ld-ink);
+  background-color: var(--lm-paper);
+  color: var(--lm-ink);
   rotate: var(--tilt);
   box-shadow: 0 2px 4px rgba(3, 10, 24, 0.12), 0 28px 46px -24px rgba(3, 10, 24, 0.45);
   transition: rotate 0.25s ease, translate 0.25s ease, box-shadow 0.25s ease;
 }
 
-.ld-note.is-on {
+.lm-note.is-on {
   rotate: 0deg;
   translate: 0 -6px;
-  box-shadow: 0 0 0 3px var(--ld-picked), 0 28px 46px -20px rgba(3, 10, 24, 0.5);
+  box-shadow: 0 0 0 3px var(--lm-picked), 0 28px 46px -20px rgba(3, 10, 24, 0.5);
 }
 
 @media (min-width: 1024px) {
-  .ld-notes {
+  .lm-notes {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .ld-tabs {
+  .lm-tabs {
     display: none;
   }
 }
 
 /* One note at a time until there is room for three. */
 @media (max-width: 1023px) {
-  .ld-note:not(.is-on) {
+  .lm-note:not(.is-on) {
     display: none;
   }
 
-  .ld-note.is-on {
+  .lm-note.is-on {
     translate: none;
   }
 }
 
-.ld-note.is-lined {
+.lm-note.is-lined {
   background-image: repeating-linear-gradient(180deg, transparent 0 33px, rgba(85, 172, 238, 0.16) 33px 34px);
   background-position: 0 26px;
 }
 
-.ld-note.is-grid {
+.lm-note.is-grid {
   background-image: linear-gradient(rgba(85, 172, 238, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(85, 172, 238, 0.12) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-.ld-tape {
+.lm-tape {
   position: absolute;
   top: -16px;
   left: 50%;
@@ -717,7 +713,7 @@
   clip-path: polygon(3% 0, 97% 0, 100% 18%, 97% 36%, 100% 54%, 97% 72%, 100% 90%, 97% 100%, 3% 100%, 0 82%, 3% 64%, 0 46%, 3% 28%, 0 10%);
 }
 
-.ld-plate {
+.lm-plate {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -725,7 +721,7 @@
 }
 
 /* The enamel door plate of the window notes. */
-.ld-plate b {
+.lm-plate b {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -733,19 +729,19 @@
   height: 30px;
   padding: 0 9px;
   border-radius: 5px;
-  background: var(--ld-plate);
+  background: var(--lm-plate);
   color: #ffffff;
   font-size: 14px;
   font-weight: 800;
-  box-shadow: inset 0 0 0 2px var(--ld-plate), inset 0 0 0 3.5px rgba(255, 255, 255, 0.85), 0 2px 0 rgba(3, 10, 24, 0.25);
+  box-shadow: inset 0 0 0 2px var(--lm-plate), inset 0 0 0 3.5px rgba(255, 255, 255, 0.85), 0 2px 0 rgba(3, 10, 24, 0.25);
 }
 
-.ld-plate span {
-  font: 700 25px / 1 var(--ld-hand);
-  color: var(--ld-blue);
+.lm-plate span {
+  font: 700 25px / 1 var(--lm-hand);
+  color: var(--lm-blue);
 }
 
-.ld-note h3 {
+.lm-note h3 {
   margin: 12px 0 8px;
   font-size: 21px;
   line-height: 1.2;
@@ -753,18 +749,18 @@
   text-wrap: balance;
 }
 
-.ld-body {
+.lm-body {
   margin: 0;
   font-size: 15px;
   line-height: 1.55;
-  color: var(--ld-ink-soft);
+  color: var(--lm-ink-soft);
 }
 
 /*
  * The three minis share one height, so the tilted notes end on about the same line whatever their
  * body text. Each centres its content in that box.
  */
-.ld-mini {
+.lm-mini {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -776,32 +772,32 @@
  * Note 1: the review deck as the notebook deals it: the app's due pill, counter and answer
  * buttons, laid straight on the paper. The app's dark backdrop is a dimmed screen, not part of it.
  */
-.ld-review {
+.lm-review {
   align-items: center;
 }
 
-.ld-review-top {
+.lm-review-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   align-self: stretch;
 }
 
-.ld-review-top .ld-due {
+.lm-review-top .lm-due {
   margin-top: 0;
 }
 
-.ld-review-count {
+.lm-review-count {
   padding: 2px 8px;
   border-radius: 999px;
   background: #ffffff;
   box-shadow: 0 0 0 1px rgba(15, 34, 51, 0.12);
-  color: var(--ld-ink);
+  color: var(--lm-ink);
   font-size: 11px;
   font-weight: 800;
 }
 
-.ld-deck {
+.lm-deck {
   position: relative;
   width: 62%;
   margin-right: 42px;
@@ -809,7 +805,7 @@
   margin-top: 12px;
 }
 
-.ld-card {
+.lm-card {
   position: absolute;
   inset: 0;
   display: flex;
@@ -820,33 +816,33 @@
   box-shadow: 0 10px 18px -10px rgba(0, 0, 0, 0.6);
 }
 
-.ld-card.is-back.is-1 {
+.lm-card.is-back.is-1 {
   rotate: 4deg;
   translate: 22px 6px;
 }
 
-.ld-card.is-back.is-2 {
+.lm-card.is-back.is-2 {
   rotate: 8deg;
   translate: 42px 14px;
 }
 
-.ld-card.is-back {
+.lm-card.is-back {
   justify-content: flex-end;
   background: #e9e6df;
 }
 
 /* The subject peeks out at the right, the way the app's card list shows the deck. */
-.ld-card.is-back .ld-card-subject {
+.lm-card.is-back .lm-card-subject {
   text-align: right;
 }
 
-.ld-card.is-front {
+.lm-card.is-front {
   rotate: -2deg;
   padding: 7px 7px 0;
 }
 
 /* A photographed page: lined paper, a printed question, a pencil answer. */
-.ld-card-paper {
+.lm-card-paper {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -857,14 +853,14 @@
   color: #2b2b2b;
 }
 
-.ld-q {
-  font-family: var(--ld-print);
+.lm-q {
+  font-family: var(--lm-print);
   font-size: 12.5px;
   font-weight: 700;
   line-height: 1.3;
 }
 
-.ld-q-options {
+.lm-q-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px 8px;
@@ -872,59 +868,59 @@
   font-weight: 700;
 }
 
-.ld-q-options .is-circled {
+.lm-q-options .is-circled {
   justify-self: start;
   padding: 0 5px;
   border: 1.6px solid #2c5fd1;
   border-radius: 999px;
 }
 
-.ld-q-hand {
+.lm-q-hand {
   align-self: flex-end;
   margin-top: auto;
   rotate: -6deg;
   color: #2c5fd1;
-  font: 700 20px / 1 var(--ld-hand);
+  font: 700 20px / 1 var(--lm-hand);
 }
 
-.ld-card-subject {
+.lm-card-subject {
   display: block;
   padding: 5px 8px;
   background: #ffffff;
-  color: var(--ld-ink);
+  color: var(--lm-ink);
   font-size: 11px;
   font-weight: 800;
 }
 
-.ld-card.is-front .ld-card-subject {
+.lm-card.is-front .lm-card-subject {
   margin: 0 -7px;
   background: #cfe3fb;
 }
 
-.ld-review-ask {
+.lm-review-ask {
   margin-top: 26px;
-  color: var(--ld-ink);
+  color: var(--lm-ink);
   font-size: 12px;
   font-weight: 800;
 }
 
-.ld-review-actions {
+.lm-review-actions {
   display: flex;
   gap: 22px;
   margin-top: 8px;
 }
 
-.ld-answer {
+.lm-answer {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: var(--ld-ink);
+  color: var(--lm-ink);
   font-size: 11px;
   font-weight: 800;
 }
 
-.ld-answer i {
+.lm-answer i {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -933,7 +929,7 @@
   border-radius: 50%;
 }
 
-.ld-answer svg {
+.lm-answer svg {
   width: 20px;
   height: 20px;
   fill: none;
@@ -943,20 +939,20 @@
   stroke-linejoin: round;
 }
 
-.ld-answer.is-missed i {
+.lm-answer.is-missed i {
   border: 2px solid #c9ced6;
   background: #ffffff;
-  color: var(--ld-ink-soft);
+  color: var(--lm-ink-soft);
 }
 
-.ld-answer.is-solved i {
+.lm-answer.is-solved i {
   color: #ffffff;
 }
 
-.ld-answer.is-solved i {
+.lm-answer.is-solved i {
   background: #2e8b57;
 }
-.ld-due {
+.lm-due {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
@@ -964,31 +960,31 @@
   padding: 0 12px;
   border-radius: 999px;
   background: #cfe3fb;
-  color: var(--ld-ink);
+  color: var(--lm-ink);
   font-size: 12px;
   font-weight: 800;
 }
 
 /* Note 2: the board on its nail, and what the editor offers next. */
-.ld-hung {
+.lm-hung {
   margin-top: 12px;
 }
 
-.ld-cord {
+.lm-cord {
   display: block;
   width: 76%;
   margin: 0 auto -1px;
   overflow: visible;
 }
 
-.ld-board-actions {
+.lm-board-actions {
   display: flex;
   justify-content: center;
   gap: 8px;
   margin-top: 14px;
 }
 
-.ld-board-actions span {
+.lm-board-actions span {
   display: inline-flex;
   align-items: center;
   min-height: 30px;
@@ -1000,16 +996,16 @@
   font-weight: 800;
 }
 
-.ld-board-actions .is-share {
-  color: var(--ld-blue);
+.lm-board-actions .is-share {
+  color: var(--lm-blue);
 }
 
 /* Note 3: three screens of the story, fanned out. */
-.ld-fan {
+.lm-fan {
   position: relative;
 }
 
-.ld-fan-card {
+.lm-fan-card {
   position: absolute;
   top: 50%;
   display: flex;
@@ -1027,41 +1023,41 @@
   box-shadow: 0 14px 22px -12px rgba(3, 10, 24, 0.55);
 }
 
-.ld-fan-card small {
+.lm-fan-card small {
   font-size: 12px;
   line-height: 1.15;
   font-weight: 900;
 }
 
-.ld-fan-card strong {
+.lm-fan-card strong {
   margin: 6px 0;
   font-size: 50px;
   line-height: 1;
   font-weight: 1000;
 }
 
-.ld-fan-card.is-focus {
+.lm-fan-card.is-focus {
   left: 31.5%;
   margin-top: -120px;
   z-index: 3;
-  background: var(--ld-coral);
+  background: var(--lm-coral);
 }
 
-.ld-fan-card.is-run {
+.lm-fan-card.is-run {
   left: 2%;
   z-index: 2;
   align-items: flex-start;
   padding-left: 12px;
   rotate: -7deg;
-  background: var(--ld-lavender);
+  background: var(--lm-lavender);
   text-align: left;
 }
 
-.ld-fan-card.is-run strong {
+.lm-fan-card.is-run strong {
   font-size: 58px;
 }
 
-.ld-fan-card.is-code {
+.lm-fan-card.is-code {
   right: 2%;
   z-index: 1;
   justify-content: flex-start;
@@ -1074,7 +1070,7 @@
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
 }
 
-.ld-fan-card.is-code em {
+.lm-fan-card.is-code em {
   font-size: 9px;
   font-style: normal;
   font-weight: 800;
@@ -1083,26 +1079,26 @@
   opacity: 0.85;
 }
 
-.ld-fan-card.is-code span {
+.lm-fan-card.is-code span {
   font-size: 16px;
   line-height: 1.1;
   font-weight: 1000;
 }
 
 /* The focus line is one long word; the streak line has to fit left of the middle card. */
-.ld-fan-card.is-focus small:first-of-type {
+.lm-fan-card.is-focus small:first-of-type {
   font-size: 10px;
 }
 
-.ld-fan-card.is-run small {
+.lm-fan-card.is-run small {
   max-width: 72px;
 }
-.ld-fan-globe {
+.lm-fan-globe {
   width: 64px;
   margin-top: 6px;
 }
 
-.ld-fan-bars {
+.lm-fan-bars {
   position: absolute;
   left: 8px;
   right: 8px;
@@ -1111,39 +1107,166 @@
   gap: 3px;
 }
 
-.ld-fan-bars i {
+.lm-fan-bars i {
   flex: 1;
   height: 2.5px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.45);
 }
 
-.ld-fan-bars i.is-on {
+.lm-fan-bars i.is-on {
   background: #ffffff;
 }
 
 /* Still: the focus screen stays up, half its bar filled; pins and notes stop easing. */
 @media (prefers-reduced-motion: reduce) {
-  .ld-slide,
-  .ld-bar b {
+  .lm-slide,
+  .lm-bar b {
     animation: none;
   }
 
-  .ld-slide.s2 {
+  .lm-slide.s2 {
     opacity: 1;
   }
 
-  .ld-bar.b2 b {
+  .lm-bar.b2 b {
     scale: 0.6 1;
   }
 
-  .ld-bar.b3 b,
-  .ld-bar.b4 b {
+  .lm-bar.b3 b,
+  .lm-bar.b4 b {
     scale: 0 1;
   }
 
-  .ld-pin,
-  .ld-note {
+  .lm-pin,
+  .lm-note {
     transition: none;
+  }
+}
+
+/* ---- Puhu reading (the Defterlerim desk Puhu, notebook-desk.css) ----
+ * Eye frames cut, never fade: two pupil positions fading through each other read as four eyes.
+ * Left page, right page, a blink back to the left; the feet swing in and out about each ankle. */
+.lm-puhu img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lm-puhu-left { animation: lm-read-left 6s step-end infinite; }
+.lm-puhu-right { opacity: 0; animation: lm-read-right 6s step-end infinite; }
+.lm-puhu-blink { opacity: 0; animation: lm-read-blink 6s step-end infinite; }
+
+@keyframes lm-read-left { 0% { opacity: 1; } 45% { opacity: 0; } 97% { opacity: 1; } }
+@keyframes lm-read-right { 0% { opacity: 0; } 45% { opacity: 1; } 94% { opacity: 0; } }
+@keyframes lm-read-blink { 0% { opacity: 0; } 94% { opacity: 1; } 97% { opacity: 0; } }
+
+.lm-puhu-foot-left,
+.lm-puhu-foot-right {
+  animation: lm-puhu-swing 1.4s ease-in-out infinite alternate;
+}
+
+.lm-puhu-foot-left { transform-origin: 37.8% 84.3%; }
+.lm-puhu-foot-right { transform-origin: 64.7% 86.3%; animation-delay: -1.4s; }
+
+@keyframes lm-puhu-swing {
+  from { rotate: -7deg; }
+  to { rotate: 7deg; }
+}
+
+/* ---- The goal board swings about its nail (hung-board-sway.ts): pushed, never looped ----
+ * A damped swing, about 0.57 s a swing, settled by 1.4 s. The island sets the push (`--sway`, the
+ * first swing's angle) and flips `data-sway` so each push restarts it: about 3° when the scene
+ * comes into view, 1.5° for a mouse coming over the board or its pin being picked. */
+.lm-wallboard {
+  height: auto;
+}
+
+.lm-wall-cord {
+  display: block;
+  width: 100%;
+  margin-bottom: -1px;
+  overflow: visible;
+}
+
+.lm-swing {
+  transform-origin: 50% calc(6 * var(--u));
+}
+
+.lm-stage[data-sway="0"] .lm-swing { animation: lm-sway-a 1.4s linear both; }
+.lm-stage[data-sway="1"] .lm-swing { animation: lm-sway-b 1.4s linear both; }
+
+@keyframes lm-sway-a {
+  0% { rotate: 0deg; animation-timing-function: ease-out; }
+  10% { rotate: var(--sway); animation-timing-function: ease-in-out; }
+  31% { rotate: calc(var(--sway) * -0.6); animation-timing-function: ease-in-out; }
+  51% { rotate: calc(var(--sway) * 0.36); animation-timing-function: ease-in-out; }
+  71% { rotate: calc(var(--sway) * -0.2); animation-timing-function: ease-in-out; }
+  90% { rotate: calc(var(--sway) * 0.08); animation-timing-function: ease-in; }
+  100% { rotate: 0deg; }
+}
+
+@keyframes lm-sway-b {
+  0% { rotate: 0deg; animation-timing-function: ease-out; }
+  10% { rotate: var(--sway); animation-timing-function: ease-in-out; }
+  31% { rotate: calc(var(--sway) * -0.6); animation-timing-function: ease-in-out; }
+  51% { rotate: calc(var(--sway) * 0.36); animation-timing-function: ease-in-out; }
+  71% { rotate: calc(var(--sway) * -0.2); animation-timing-function: ease-in-out; }
+  90% { rotate: calc(var(--sway) * 0.08); animation-timing-function: ease-in; }
+  100% { rotate: 0deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-puhu-left,
+  .lm-puhu-right,
+  .lm-puhu-blink,
+  .lm-puhu-foot-left,
+  .lm-puhu-foot-right,
+  .lm-stage[data-sway] .lm-swing {
+    animation: none;
+  }
+}
+/* ---- Phone (below sm): the stage shows its middle two thirds at about half size ---- */
+.lm-bubble {
+  /* Placed here, not inline, so the phone can move it. */
+  --x: 166;
+  --y: 8;
+  --w: 232;
+}
+
+@media (max-width: 639px) {
+  /* Inside the crop, clear of the rounded corner, wide enough for two readable lines. It may
+     cross the window frame; it is a speech bubble. */
+  .lm-bubble {
+    --x: 190;
+    --y: 12;
+    --w: 340;
+    padding: 5px 8px;
+    border-radius: 10px;
+    font-size: 8.5px;
+  }
+
+  .lm-bubble::after {
+    left: calc(66 * var(--u));
+    border-width: 6px 6px 6px 3px;
+  }
+
+  /* Small pins that still take a 44px tap; the tabs below do the same job. */
+  .lm-pin {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+    box-shadow: 0 0 0 3px rgba(255, 253, 246, 0.45), 0 6px 12px -5px rgba(40, 25, 10, 0.55);
+  }
+
+  .lm-pin.is-on {
+    box-shadow: 0 0 0 4px rgba(255, 209, 92, 0.45), 0 6px 12px -5px rgba(40, 25, 10, 0.55);
+  }
+
+  .lm-pin::before {
+    content: "";
+    position: absolute;
+    inset: -7px;
   }
 }
