@@ -50,6 +50,7 @@ export interface ConfigChangeResult {
 export class ConfigRegistryService {
   private overrides: Map<string, unknown> | null = null;
   private readonly devTooling: boolean;
+  private readonly aiDisabled: boolean;
 
   constructor(
     private readonly repo: ConfigRepository,
@@ -60,6 +61,7 @@ export class ConfigRegistryService {
       NODE_ENV: env.get("NODE_ENV", { infer: true }),
       APP_ENV: env.get("APP_ENV", { infer: true }),
     });
+    this.aiDisabled = env.get("AI_PROVIDER", { infer: true }) === "disabled";
   }
 
   private async ensureLoaded(): Promise<Map<string, unknown>> {
@@ -74,17 +76,15 @@ export class ConfigRegistryService {
     return !this.devTooling && (CONFIG_CATALOG[key] as ConfigEntryDef).devOnly === true;
   }
 
+  private effectiveValue(key: ConfigKey, overrides: Map<string, unknown>): unknown {
+    if (this.isHidden(key) || (key === "ai.enabled" && this.aiDisabled)) return false;
+    return overrides.has(key) ? overrides.get(key) : CONFIG_CATALOG[key].default;
+  }
+
   /** Typed read of a single key: the override if set, otherwise the catalog default. */
   async get<K extends ConfigKey>(key: K): Promise<z.infer<(typeof CONFIG_CATALOG)[K]["schema"]>> {
     const overrides = await this.ensureLoaded();
-    // ponytail: dev-only keys are boolean switches, so "off" is false. A non-boolean dev key (an
-    // OTP bypass code, say) needs its own production value here first.
-    const value = this.isHidden(key)
-      ? false
-      : overrides.has(key)
-        ? overrides.get(key)
-        : CONFIG_CATALOG[key].default;
-    return value as z.infer<(typeof CONFIG_CATALOG)[K]["schema"]>;
+    return this.effectiveValue(key, overrides) as z.infer<(typeof CONFIG_CATALOG)[K]["schema"]>;
   }
 
   /** Catalog + effective values, for the admin panel. */
@@ -97,7 +97,7 @@ export class ConfigRegistryService {
         key,
         category: def.category,
         type: def.type,
-        value: overrides.has(key) ? overrides.get(key) : def.default,
+        value: this.effectiveValue(key, overrides),
         sensitive: def.sensitive,
         description: def.description,
       };
@@ -113,7 +113,7 @@ export class ConfigRegistryService {
       throw new DomainError(ErrorCode.ADMIN_CONFIG_KEY_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     const parsed = CONFIG_CATALOG[key].schema.safeParse(value);
-    if (!parsed.success) {
+    if (!parsed.success || (key === "ai.enabled" && this.aiDisabled && parsed.data === true)) {
       throw new DomainError(ErrorCode.ADMIN_CONFIG_INVALID_VALUE, HttpStatus.BAD_REQUEST);
     }
     const overrides = await this.ensureLoaded();

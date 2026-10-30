@@ -27,6 +27,13 @@ old privileged sessions and supplied Access assertions. Omit/unset Access issuer
 variables; empty values still fail schema validation. The default `cloudflare` mode keeps
 the existing production Access requirements and identity verification.
 
+Set **both** `AI_PROVIDER=disabled` and `VISION_PROVIDER=disabled`; omit OpenAI/Gemini keys.
+This explicit deployment mode rejects all text, streaming, embedding and image-classification
+operations and forces the effective `ai.enabled` value to false, even if its stored override
+is true. The config API cannot enable AI in this mode. Mixed disabled/real provider values
+fail startup. Reopening requires a reviewed deployment selecting real providers with keys,
+then the existing runtime flags, cost/privacy and provider acceptance gates.
+
 Keep `NODE_ENV=production` and all other production security/provider requirements.
 `ADMIN_APP_URL` and its explicit CORS entry remain reserved values; they do not grant
 access to a denied route. Do not remove modules or supply invented credentials.
@@ -80,7 +87,8 @@ The provider boundary now rejects text, streaming, embedding and vision operatio
 AI is off. Already-started calls are not cancelled; queued embeddings fail through the
 existing retry/dead-letter policy. Enabling AI later still requires embedding cost-accounting
 and provider-spending acceptance; the positive app cap does not establish those controls.
-Free cold starts/quotas, R2 spending, real mail, restricted DB role, recovery and full CI
+The source-level disabled mode was added after the original candidate passed CI; require a
+new exact-commit CI result before deploying it. Free cold starts/quotas, R2 spending, real mail, restricted DB role, recovery and full CI
 remain release gates. This profile does not apply the optional paid Blueprint below.
 
 ## 1. Release prerequisites and budget
@@ -107,8 +115,9 @@ Resolve these items before authorizing production provisioning:
   Agree fixed/variable charges and enforceable controls before selecting a paid profile.
   Manual deploy settings do not prevent billing or an initial Blueprint deployment.
 - Obtain dedicated production runtime/migration DB URLs and JWT, rate-limit, edge, cron and
-  VAPID secrets. Supply production OpenAI, Gemini, R2, Turnstile, Resend and Sentry settings.
-  A Gemini credential is currently missing. Never promote `.env.staging` credentials to prod.
+  VAPID secrets. Supply production R2, Turnstile, Resend and Sentry settings. The selected
+  paired-disabled trial needs no OpenAI/Gemini keys; real AI activation requires dedicated
+  provider credentials and acceptance. Never promote `.env.staging` credentials to prod.
 - For an admin-enabled deployment, resolve Access activation: the observed Cloudflare Free checkout required permission
   to charge a card for quota overage. The owner declined it. Do not accept those terms or
   weaken existing Access guards. Admin publication remains blocked pending an acceptable setup.
@@ -295,8 +304,9 @@ Follow [storage-r2.md](./storage-r2.md) for storage permissions and release chec
 - Configure Google OAuth's three variables together if enabled; register the exact callback
   and check authorized domains/consent-screen status before public signup.
 - Payments remain disabled; SMS and sponsorship stay behind existing acceptance gates. Do not
-  select fake providers in production. AI uses real provider wiring with central feature flags
-  and the existing monthly cost cap; configuration does not grant unconditional Free AI.
+  select fake providers in production. The closed trial uses paired disabled AI providers;
+  real AI deployments retain central feature flags and the monthly cost cap. Configuration
+  does not grant unconditional Free AI.
 - Supply API Sentry DSN and verify scrubbed events, readiness alerts and retention. API Sentry
   tags incidents by `APP_ENV`. The web DSN slot alone does not initialize a browser SDK;
   browser reporting remains a separate launch item.

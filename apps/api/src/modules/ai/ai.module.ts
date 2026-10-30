@@ -53,6 +53,7 @@ import { CoachMemoryFactRepository } from "./infrastructure/coach-memory-fact.re
 import { WeeklyReviewCacheRepository } from "./infrastructure/weekly-review-cache.repository";
 import { DailyGreetingRepository } from "./infrastructure/daily-greeting.repository";
 import { FakeLlmAdapter } from "./infrastructure/adapters/fake-llm.adapter";
+import { DisabledAiAdapter } from "./infrastructure/adapters/disabled-ai.adapter";
 import { OpenAiLlmAdapter } from "./infrastructure/adapters/openai-llm.adapter";
 import { GeminiLlmAdapter } from "./infrastructure/adapters/gemini-llm.adapter";
 import { OpenAiVisionAdapter } from "./infrastructure/adapters/openai-vision.adapter";
@@ -146,6 +147,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     CleanupCoachMemoryHandler,
     CronSecretGuard,
     FakeLlmAdapter,
+    DisabledAiAdapter,
     OpenAiLlmAdapter,
     GeminiLlmAdapter,
     PrivacyPreservingLlmAdapter,
@@ -160,14 +162,18 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
         FakeLlmAdapter,
         OpenAiLlmAdapter,
         GeminiLlmAdapter,
+        DisabledAiAdapter,
       ],
       useFactory: (
         config: ConfigService<Env, true>,
         fake: FakeLlmAdapter,
         openai: OpenAiLlmAdapter,
         gemini: GeminiLlmAdapter,
+        disabled: DisabledAiAdapter,
       ) => {
         switch (config.get("AI_PROVIDER", { infer: true })) {
+          case "disabled":
+            return disabled;
           case "openai":
             return openai;
           case "gemini":
@@ -185,14 +191,18 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
         FakeVisionAdapter,
         GeminiVisionAdapter,
         OpenAiVisionAdapter,
+        DisabledAiAdapter,
       ],
       useFactory: (
         config: ConfigService<Env, true>,
         fake: FakeVisionAdapter,
         gemini: GeminiVisionAdapter,
         openai: OpenAiVisionAdapter,
+        disabled: DisabledAiAdapter,
       ) => {
         switch (config.get("VISION_PROVIDER", { infer: true })) {
+          case "disabled":
+            return disabled;
           case "gemini":
             return gemini;
           case "openai":

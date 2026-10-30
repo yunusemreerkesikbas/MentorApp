@@ -13,6 +13,36 @@ optional; source checks do not prove that production services or domains are liv
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-31 · Paired-disabled AI trial startup.** The selected trial now has an explicit
+  credential-free AI mode, preserving real-provider validation and all other production locks.
+  The registry cannot reopen AI in this deployment, and the existing availability endpoint
+  reports it closed. Updated the environment example/runbook; the optional paid Blueprint is
+  unchanged. Usage: set both AI provider fields to `disabled` and omit their keys.
+  Related: [approved design](../plans/2026-10-30-disabled-ai-startup-design.md) and
+  [verification](../qa/2026-10-31-disabled-ai-startup-verification.md). Gotcha: the previous CI result
+  predates this change; require a new exact candidate and hosted acceptance before publication.
+
+- **2026-10-30 · AI-off credential requirement investigated.** Read-only verification of the
+  dedicated rehearsal DB confirmed `ai.enabled=false`. Photo classification and shared AI
+  wrappers reject before provider calls; focused environment/provider/photo suites passed 93/93.
+  Corrected the hosting checklist: an unused Gemini key is not a product requirement for
+  this closed trial. The remaining mismatch is startup validation of a selected Gemini
+  provider before DB flags load. Usage/gotchas: see the updated
+  [hosting record](../qa/2026-10-30-core-trial-ci-and-hosting.md); credential-free closed-mode
+  startup is not implemented yet. No flag, AI provider, credential or deployment was changed.
+
+- **2026-10-30 · Exact-commit full CI and isolated Free database preparation.** Candidate
+  `035f9217` on `feat/core-trial-release-20261030` passed the complete Linux pipeline,
+  ordinary/security/core browsers and web budgets. Preserved the original checkout/index.
+  Verified Render Hobby/no-card/zero-spend settings and prepared an unsubmitted Free API form.
+  Created a separate EU Neon Free rehearsal project, a no-compute blank recovery branch,
+  applied all 133 existing migrations and verified its restricted runtime role, 21 closed-profile
+  settings and rolled-back user isolation. Usage and exact evidence:
+  [CI and hosting record](../qa/2026-10-30-core-trial-ci-and-hosting.md).
+  Gotchas: runtime configuration remains incomplete, Gemini is missing, restore/hosted
+  acceptance is pending, and no service, public DNS or paid setup was activated. Direct owner
+  credentials remain in an ignored operator-only file, outside the separate runtime file.
+
 - **2026-10-30 · Explicit core-trial boundary and browser profiles.** Deployment instructions
   now list independent social/forum/room/economy/coaching/AI/purchase closures and preserve own
   achievements. Browser CI explicitly seeds its ordinary enabled fixture, then restarts the
