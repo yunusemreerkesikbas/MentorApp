@@ -13,6 +13,26 @@ optional; source checks do not prove that production services or domains are liv
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-30 · Explicit core-trial boundary and browser profiles.** Deployment instructions
+  now list independent social/forum/room/economy/coaching/AI/purchase closures and preserve own
+  achievements. Browser CI explicitly seeds its ordinary enabled fixture, then restarts the
+  owned API for the separate closed profile. Usage: follow `docs/core/deployment.md`; the guarded
+  profile script only accepts loopback `_test` databases outside production. Gotcha: registry
+  overrides require restart and document reload; no live database, DNS or provider was changed.
+  Related: browser fixture script/tests, CI workflow, core-trial Playwright config/spec.
+
+- **2026-10-30 · Web handoff and current release checks.** Resumed web verification after the
+  owner confirmed the design work was finished. Corrected overlay auth scope, paginated
+  notebook quota display and the quota button's touch height; synchronized stale browser
+  fixtures with current checkout copy, disclosure and server refresh behavior. Recorded
+  current quality/unit/build/budget/dependency checks and a new social-boundary gap in the
+  selected core-only profile. Usage and exact verification status:
+  [web release verification](../qa/2026-10-30-web-release-verification.md).
+  Gotchas: local browser checks use fake providers and the ordinary test profile, not hosted
+  production acceptance. The owner also approved the project Impeccable update to 4.8.0;
+  product instructions, design context and dependency manifests were unchanged by that update.
+  No deployment, cloud account setting, DNS, billing, commit or push was performed.
+
 - **2026-10-29 · Core-trial release verification and backend quota corrections.** Recorded
   local builds, quality/dependency/secret checks and the limitations of interrupted broad
   API/browser runs. Fixed quota races, nested policy/taxonomy pool reads and growing page

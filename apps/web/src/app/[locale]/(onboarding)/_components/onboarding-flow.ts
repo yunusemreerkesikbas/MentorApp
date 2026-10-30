@@ -71,18 +71,3 @@ export function onboardingProgress(
   const index = questions.indexOf(step);
   return index === -1 ? null : { done: index + 1, total: questions.length + 1 };
 }
-
-/**
- * Where the wizard lets go.
- *
- * A coach lands on their own panel rather than the student dashboard: they just wrote a coach
- * profile, and dropping them into a study plan would be the same mismatch APP-089 fixed. A pending
- * invite still wins for a student, because they followed a link to get here.
- */
-export function onboardingDestination(
-  pendingInvite: string | null,
-  audience: OnboardingAudience = "student",
-): string {
-  if (audience === "coach") return "/students";
-  return pendingInvite ?? "/dashboard";
-}

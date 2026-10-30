@@ -1,4 +1,14 @@
 {
+  "availability": {
+    "loading": "Loading…",
+    "closed_title": "This area is currently closed",
+    "closed_body": "Your personal study tools and account are here. You can continue with your plan, focus sessions and notebooks.",
+    "unavailable_title": "We could not check this area's status",
+    "unavailable_body": "Refresh the page to try again.",
+    "home": "Return to your study space",
+    "account": "Go to your account",
+    "retry": "Try again"
+  },
   "common": {
     "loading": "Loading…",
     "error_unknown": "An unexpected error occurred.",
@@ -1313,6 +1323,8 @@
     "coming_soon": "Coming soon"
   },
   "paywall": {
+    "closed_title": "Membership purchases are currently closed",
+    "closed_body": "You can keep studying with your existing account.",
     "banner_message": "{amount} off is waiting for you: {label}",
     "banner_cta": "Upgrade now",
     "price_before": "Previous price",

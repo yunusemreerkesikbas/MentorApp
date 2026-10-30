@@ -8,7 +8,7 @@ import {
 } from "./web-performance-budgets.mjs";
 
 const appDir = dirname(dirname(fileURLToPath(import.meta.url)));
-const nextDir = join(appDir, ".next");
+const nextDir = join(appDir, process.env.WEB_QA_DIST_DIR || ".next");
 
 const routeFiles = {
   article: {

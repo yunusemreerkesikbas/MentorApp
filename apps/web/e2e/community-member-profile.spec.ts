@@ -1,3 +1,4 @@
+import { browserApiUrl, browserApiOrigin } from "./api.fixture";
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type {
   AchievementCollectionDto,
@@ -31,7 +32,7 @@ const profile: PublicProfile = {
   username: "ayse",
   achievementsEnabled: false,
   achievementShowcase: null,
-  avatarUrl: "http://localhost:3001/test-assets/ayse.svg",
+  avatarUrl: `${browserApiOrigin}/test-assets/ayse.svg`,
   examType: "KPSS",
   createdAt: "2026-01-01T00:00:00.000Z",
   bio: "Her gün biraz daha ileri.",
@@ -779,10 +780,10 @@ async function mockProfileApi(page: Page) {
   // Fixture images live on the API origin: the production CSP `img-src` only allows that origin
   // (plus WEB_CSP_STORAGE_ORIGINS, unset in CI), so a foreign CDN host is blocked and the avatar
   // falls back to the default silhouette.
-  await page.route("http://localhost:3001/test-assets/missing.svg", async (route) => {
+  await page.route(`${browserApiOrigin}/test-assets/missing.svg`, async (route) => {
     await route.fulfill({ status: 404, body: "" });
   });
-  await page.route("http://localhost:3001/test-assets/ayse.svg", async (route) => {
+  await page.route(`${browserApiOrigin}/test-assets/ayse.svg`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "image/svg+xml",
@@ -790,7 +791,7 @@ async function mockProfileApi(page: Page) {
     });
   });
 
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${browserApiUrl}/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname + url.search;
@@ -857,7 +858,7 @@ async function mockProfileApi(page: Page) {
         userId: "member-broken",
         displayName: "Çok Uzun İsimli Bir Topluluk Üyesi Soyadı",
         username: "cok_uzun_kullanici_adi_ile_tasma_kontrolu",
-        avatarUrl: "http://localhost:3001/test-assets/missing.svg",
+        avatarUrl: `${browserApiOrigin}/test-assets/missing.svg`,
       });
     }
     if (method === "GET" && path === "/v1/community/profile/yunus_emre") {

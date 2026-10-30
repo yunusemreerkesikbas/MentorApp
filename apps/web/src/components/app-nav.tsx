@@ -1,4 +1,7 @@
 "use client";
+
+import { useAppAvailability } from "@/lib/app-availability";
+import { blockedAppFeature } from "@/lib/app-feature-routes";
 import { SidebarMinimalisticIcon } from "@solar-icons/react/linear/sidebar-minimalistic";
 import { Coins, Gem } from "lucide-react";
 
@@ -185,6 +188,7 @@ export function AppNav() {
   const t = useTranslations("nav");
   const ui = useTranslations("common");
   const { user } = useAuth();
+  const availability = useAppAvailability();
   const snapshot = useEconomySnapshot();
   // No coin/XP pills for a coach (2026-10-15): every coin sink is a student surface, and the XP a
   // coach earns in the forum already shows on their community profile and the leaderboard.
@@ -244,7 +248,7 @@ export function AppNav() {
 
       {/* The AI companion FAB. Hidden from a coach (APP-090): it opens `/coach`, which the `(app)`
           guard bounces them out of, so for them it is a button that goes nowhere. */}
-      {!pathname.startsWith("/coach") && !hideMobileChrome && !isCoach(user) ? (
+      {availability?.aiCoach && !pathname.startsWith("/coach") && !hideMobileChrome && !isCoach(user) ? (
         <DesktopCoachFab />
       ) : null}
     </>
@@ -264,7 +268,8 @@ function DesktopSidebar({
 }) {
   const t = useTranslations("nav");
   const forceCollapsed = isBoardEditorPath(pathname);
-  const sidebarItems = visibleTo(SIDEBAR_ITEMS, user?.roles);
+  const availability = useAppAvailability();
+  const sidebarItems = visibleTo(SIDEBAR_ITEMS, user?.roles).filter(item => !blockedAppFeature(item.href, user, availability));
   const startsCollapsed = isDefaultCollapsedSidebarPath(pathname);
   const { open: storedOpen, setOpen } = useAppSidebar();
   const [sessionOverride, setSessionOverride] = useState<{
@@ -397,6 +402,7 @@ function MobileTabBar({
   user: AuthUser | null;
 }) {
   const t = useTranslations("nav");
+  const availability = useAppAvailability();
   const reduceMotion = useReducedMotion();
   const tabTransition = reduceMotion
     ? { duration: 0 }
@@ -411,7 +417,7 @@ function MobileTabBar({
         reduceMotion ? { duration: 0 } : { duration: 0.28, ease: TAB_EASE }
       }
     >
-      {tabItemsFor(user?.roles).map((item) => (
+      {tabItemsFor(user?.roles).filter(item => !blockedAppFeature(item.href, user, availability)).map((item) => (
         <MobileTabLink
           key={item.href}
           item={item}

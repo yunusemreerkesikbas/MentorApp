@@ -13,6 +13,7 @@ import { isCelebrationOverlayBlocking } from "@/lib/celebration-queue";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { useSubscription } from "@/lib/subscription-context";
+import { useAppAvailability } from "@/lib/app-availability";
 
 type UseMoodCheckinOptions = {
   initial: MoodCheckinDto | null;
@@ -83,7 +84,8 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
   const { view, loading: subscriptionLoading, refresh } = useSubscription();
   // Derived, not stored: `null` while the shared entitlement read is still settling, which is what
   // the "expect an AI note" branch below keys off.
-  const reflectionAvailable: boolean | null = subscriptionLoading
+  const availability = useAppAvailability();
+  const reflectionAvailable: boolean | null = !availability?.aiCoach ? false : subscriptionLoading
     ? null
     : isPremiumFeatureAvailable(view, "mood.reflection");
 

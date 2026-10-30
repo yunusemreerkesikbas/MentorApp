@@ -535,12 +535,16 @@ async function mockKnowledgeApi(
       return json(route, subscription);
     }
     // The hub's list slot (knowledge.index, since 2026-10-25) answers like the article's: switched off.
-    if (method === "GET" && path.startsWith("/v1/ads/placements/knowledge.index")) {
+    const publicIndexPlacement = path.startsWith("/v1/ads/public/placements/knowledge.index");
+    if (
+      method === "GET" &&
+      (path.startsWith("/v1/ads/placements/knowledge.index") || publicIndexPlacement)
+    ) {
       return json(route, {
         id: "knowledge.index",
         format: "DISPLAY",
         enabled: false,
-        reason: "PREMIUM_AD_FREE",
+        reason: publicIndexPlacement ? "GLOBAL_DISABLED" : "PREMIUM_AD_FREE",
         provider: "GOOGLE_AD_MANAGER",
         adUnitPath: null,
         audienceTreatment: "NONE",

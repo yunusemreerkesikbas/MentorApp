@@ -1,3 +1,4 @@
+import { browserApiUrl } from "./api.fixture";
 import { statSync } from "node:fs";
 import {
   expect,
@@ -171,7 +172,7 @@ async function mockApi(
   await page.addInitScript(() =>
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
   );
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${browserApiUrl}/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const method = request.method();
@@ -1124,7 +1125,7 @@ type SharedFile = { name: string; type: string; size: number };
 test("sayılmayan kısa deneme paylaşılmaz", async ({ page }) => {
   await mockApi(page);
   // Registered after `mockApi`, so it answers the finish first: the server did not count it.
-  await page.route("http://localhost:3001/v1/study-sessions/s-new", (route) =>
+  await page.route(`${browserApiUrl}/study-sessions/s-new`, (route) =>
     route.request().method() === "PATCH"
       ? json(route, { ...sessionAt("s-new", 0, 2, "Matematik"), countsAsFocusSession: false })
       : route.fallback(),

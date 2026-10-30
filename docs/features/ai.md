@@ -103,6 +103,14 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-30 · Core-trial client request suppression.** Public global AI availability now
+  gates automatic daily greetings and ghost narration, alongside mood/vision/session/plan entry
+  controls. Existing premium entitlement does not bypass closure. Rule-based encouragement
+  remains; shared Premium nudges hide when audience purchasing is closed. Browser RED captured
+  both automatic requests and the remaining purchase ask; GREEN expanded core acceptance is
+  20/20, with enabled panel/analysis regressions also passing. Related: `use-daily-greeting.ts`,
+  `use-ghost-narration.ts`, `premium-lock-nudge.tsx` and `core-trial.spec.ts`.
+
 - **2026-10-29 · Global provider kill-switch.** Text completion, consumed streams, embeddings
   (including already queued article jobs) and vision now read `ai.enabled` at the decorated
   provider boundary and return existing localized `AI_DISABLED` (404) before provider calls

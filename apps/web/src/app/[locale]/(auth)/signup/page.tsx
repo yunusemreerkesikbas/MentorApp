@@ -7,6 +7,7 @@ import { CheckBox, SectionHeading, Skeleton } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useAuth } from "@/lib/auth-context";
+import { useAppAvailability } from "@/lib/app-availability";
 import { trackProductEvent } from "@/lib/analytics";
 import { fetchCoachSignupOpen } from "@/lib/coach-signup";
 import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
@@ -49,6 +50,7 @@ export default function SignupPage() {
   const translate = useTranslations("auth.register");
   const ui = useTranslations("common");
   const { signup } = useAuth();
+  const availability = useAppAvailability();
   const isCoach = useCoachIntent();
   const { accept, reject } = useAnalyticsConsent();
   const router = useRouter();
@@ -122,7 +124,7 @@ export default function SignupPage() {
         ...(isCoach ? { intent: "COACH" as const } : {}),
       });
       trackProductEvent("sign_up", { method: "email", intent: isCoach ? "coach" : "student" });
-      const destination = postAuthDestination(user, readAuthNextParam());
+      const destination = postAuthDestination(user, readAuthNextParam(), availability);
       // Fetched while the sheet leaves, so the handover has nothing left to wait for.
       // @ts-expect-error -- a validated internal path, transported as a plain string.
       router.prefetch(destination);

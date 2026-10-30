@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { browserApiUrl } from "./api.fixture";
 import type {
   AuthUser,
   CoachPlanItemDto,
@@ -344,7 +345,7 @@ async function mockCoachPlanApi(
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
   });
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${browserApiUrl}/**`, async (route) => {
     const request = route.request();
     const { pathname } = new URL(request.url());
     const method = request.method();

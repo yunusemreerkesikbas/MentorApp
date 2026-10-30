@@ -120,6 +120,12 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-30 · Suppress closed social signals.** Identity, buddy-activity and invitation
+  listeners check the central social policy before delivery or delivery-marker writes; room
+  listeners use the newly gated room-target service. Usage: social/room closure also suppresses
+  events queued before closure. Gotcha: personal study/progress notifications remain separate.
+  Related: identity/invite/buddy activity listeners, `closed-social-signals.spec.ts` and room tests.
+
 - **2026-10-29 · Shared test-queue isolation.** The broad release preflight exposed pending
   jobs left by earlier e2e suites. Interrupted-job tests now clear only the explicitly guarded
   test database's queue once before the suite; existing per-test cleanup and serial execution

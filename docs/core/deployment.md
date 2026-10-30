@@ -34,13 +34,41 @@ access to a denied route. Do not remove modules or supply invented credentials.
 Before the first start, use the attended operator procedure with the separate migration
 connection to prepare and verify the intended database, reviewed content and these
 persisted flags: `ai.enabled=false`, `ai.budget.monthly_cap_usd_cents=100`,
-`forum.enabled=false`, `mentorship.enabled=false`, `mentorship.applications.open=false`,
+`community.social.enabled=false`, `forum.enabled=false`, `coaching.study_rooms.enabled=false`,
+`community.leaderboard.enabled=false`, `economy.enabled=false`,
+`mentorship.enabled=false`, `mentorship.applications.open=false`,
 `mentorship.risk_digest.enabled=false`, `mentorship.seats.sponsorship_enabled=false`,
 and `ads.enabled=false`. Keep checkout/billing channels off, `PAYMENTS_PROVIDER=disabled`
-and `SMS_PROVIDER=disabled`. Public signup remains the selected direction; expected
+and `SMS_PROVIDER=disabled`. Explicitly set `payments.web.enabled=false`,
+`payments.mobile.enabled=false`, `payments.web.redirect_to_mobile=false`,
+`mentorship.seats.billing_enabled=false` and `mentorship.seats.mobile_billing_enabled=false`.
+Keep `community.achievements.enabled=true` for personal progress, `signup.enabled=true`
+and `signup.pilot.enabled=false`. Public signup remains the selected direction; expected
 trial users are not an account-count or invoice cap. Verify effective values, not only
 catalog defaults. The registry caches overrides per process: an attended offline change
 requires controlled restart and verification. No live flag was changed in source preparation.
+
+The social boundary added on 2026-10-30 is independent of the forum switch. When closed,
+follow/buddy operations, invitation creation/redemption and other-user profiles/achievement
+collections return the existing localized not-found response before side effects. Own profile,
+own achievements, personal summary and cleanup remain available. Stale relation/invitation
+events and room activity do not deliver social notifications or write delivery markers.
+New room sessions check the room switch before opening a transaction; solo work and completion
+of an existing session remain usable. Source-level and local acceptance evidence still require
+complete CI and hosted acceptance before admission.
+
+`GET /v1/app/availability` is a public, uncached allowlist of effective presentation booleans.
+The web loads it once per document, alongside locale messages. Failure shows a closed/unavailable
+state for optional areas while personal tools remain reachable. Document reload retries it;
+server policies remain authoritative when an already-open document becomes stale. Existing coach
+accounts land on settings while human coaching is closed, avoiding redirect loops.
+
+Browser fixtures must use explicit profiles, not production defaults: after migration, run
+`NODE_ENV=test APP_ENV=development node apps/api/scripts/browser-fixture-profile.mjs enabled`
+against a matching loopback `TEST_DATABASE_URL` ending in `_test`, then start the API. The separate
+closed suite selects `core-trial`, restarts the API with admin/payments/SMS disabled and runs
+`playwright.core-trial.config.ts`. This guarded helper is test-only, raises only the fixture signup
+IP limit for repeated test users and is not an operator command for a live database.
 
 The operator UI is unavailable in this mode. Prepare scoped support/incident procedures
 before admitting users; if intervention cannot be performed safely, pause admission/the

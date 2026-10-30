@@ -145,6 +145,23 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-30 · Closed rooms preserve personal work.** New session starts with a room now check
+  `coaching.study_rooms.enabled` before transaction writes, including existing members. Room
+  notification targets also stop while closed. Solo starts, history and finishing an existing
+  session are unchanged. The web hides room/buddy slots and ignores a stale room query while
+  keeping the manual session. Usage: close the room flag and reload; finalization still uses its
+  existing checks. Related: session/study-room services, session shell and core social HTTP suite.
+
+- **2026-10-30 · Preserve the server notebook quota across pagination.** The collection now
+  renders `limits.customNotebookCount` from the API rather than replacing it with the loaded
+  first-page count. The quota upgrade button meets the app's 44px touch-height rule. Usage:
+  a full Free collection keeps the correct usage badge and quota behavior before loading more.
+  The notebook deletion fixture now returns the post-delete overview/list state, matching
+  the server-authoritative refresh. Gotchas: the loaded desk count and total quota usage are
+  different values; these browser fixtures do not prove an aggregate storage spending cap.
+  Related: `notebooks-shell.tsx`, `desk-header.tsx`, `e2e/{notebooks,notebook}.spec.ts`,
+  [web release verification](../qa/2026-10-30-web-release-verification.md).
+
 - **2026-10-29 · Atomic notebook quotas and transaction policy.** Resolve entitlement and
   all quota configuration before opening a user transaction. Free creation/attachment checks
   share a per-user transaction advisory lock with their writes; solution edits lock before

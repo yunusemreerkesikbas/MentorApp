@@ -13,6 +13,7 @@ import { Link } from "@/i18n/navigation";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { formatPromotionMagnitude, pickBannerPromotion } from "@/lib/promotions";
 import { useSubscription } from "@/lib/subscription-context";
+import { useAppAvailability } from "@/lib/app-availability";
 import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 
 /**
@@ -38,11 +39,12 @@ export function MembershipCard({
   const locale = useLocale();
   const { openPaywall } = usePremiumPaywall();
   const { view, loading } = useSubscription();
+  const availability = useAppAvailability();
 
   // Nothing until both answers are in: an upsell that flashes at a member is worse than one that
   // arrives a moment late, and a card that reshuffles under the reader is worse than a beat of
   // silence (the rewarded offer is the faster feed and would otherwise lead, then get bumped).
-  if (loading || !view || promotionOffers === undefined) return null;
+  if (!availability?.studentPurchases || loading || !view || promotionOffers === undefined) return null;
   if (view.entitlement.isPremium) return <PremiumPerks />;
 
   const promotion = pickBannerPromotion(promotionOffers, false);

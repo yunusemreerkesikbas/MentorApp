@@ -15,7 +15,7 @@
     "start:prod": "next start --hostname 0.0.0.0",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test scripts/dev-command.spec.mjs scripts/web-performance-budgets.spec.mjs && vitest run",
+    "test": "node --test scripts/dev-command.spec.mjs scripts/web-performance-budgets.spec.mjs scripts/public-question-api.spec.mjs && vitest run",
     "test:e2e": "playwright test",
     "test:e2e:question-ads": "playwright test --config=playwright.question-ads.config.ts",
     "test:e2e:community-ads": "playwright test --config=playwright.community-ads.config.ts",

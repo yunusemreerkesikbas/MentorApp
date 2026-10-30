@@ -4,6 +4,7 @@ import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useAppAvailability } from "@/lib/app-availability";
 import { postAuthDestination } from "@/lib/post-auth-destination";
 import { isWelcomeSeen } from "@/lib/welcome-seen";
 
@@ -17,6 +18,7 @@ export function WelcomeGuard({ children }: { children: ReactNode }) {
   const t = useTranslations("welcome");
   const router = useRouter();
   const { status, user } = useAuth();
+  const availability = useAppAvailability();
   const welcomeSeen = useSyncExternalStore(
     subscribeWelcomeSeen,
     isWelcomeSeen,
@@ -27,13 +29,13 @@ export function WelcomeGuard({ children }: { children: ReactNode }) {
     if (status === "loading") return;
     if (status === "authenticated" && user) {
       // @ts-expect-error -- a validated internal path, transported as a plain string.
-      router.replace(postAuthDestination(user));
+      router.replace(postAuthDestination(user, null, availability));
       return;
     }
     if (welcomeSeen) {
       router.replace("/signup");
     }
-  }, [status, user, router, welcomeSeen]);
+  }, [status, user, router, welcomeSeen, availability]);
 
   if (status !== "anonymous" || welcomeSeen) {
     return (
