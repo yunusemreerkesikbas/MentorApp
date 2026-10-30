@@ -239,6 +239,9 @@ export class SessionService {
   }
 
   async start(userId: string, input: StartStudySessionInput): Promise<StudySessionDto> {
+    if (input.roomId && !(await this.config.get("coaching.study_rooms.enabled"))) {
+      throw new DomainError(ErrorCode.COACHING_ROOM_DISABLED, HttpStatus.FORBIDDEN);
+    }
     const minFocusSeconds = await this.getMinFocusSeconds();
     const startedAt = input.startedAt ? new Date(input.startedAt) : new Date();
     const plannedFocusMinutes =
@@ -252,7 +255,7 @@ export class SessionService {
           throw new DomainError(ErrorCode.COACHING_TASK_NOT_FOUND, HttpStatus.NOT_FOUND);
         }
       }
-      // Sitting down at a room: membership is the only gate, and the seat is fixed for the
+      // After checking room availability, membership is required and the seat is fixed for the
       // whole session (changing tables mid-focus would mean two rooms showing the same person).
       if (input.roomId) {
         if (!(await this.rooms.isMember(tx, input.roomId, userId))) {

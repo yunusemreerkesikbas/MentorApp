@@ -8,6 +8,7 @@ import { Currency, UserRole } from "@mentor/types";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { SocialAccessPolicy } from "../../../common/config/social-access.policy";
 import { BuddyService } from "../../identity/application/buddy.service";
 import { FollowService } from "../../identity/application/follow.service";
 import { UserStatus } from "../../identity/domain/identity.constants";
@@ -73,6 +74,7 @@ export class InviteService implements OnModuleInit {
     private readonly follows: FollowService,
     private readonly events: EventEmitter2,
     private readonly inviteSignals: InviteSignalRegistry,
+    private readonly social: SocialAccessPolicy,
   ) {}
 
   /**
@@ -84,6 +86,7 @@ export class InviteService implements OnModuleInit {
    */
   onModuleInit(): void {
     this.inviteSignals.register(async (userId) => {
+      if (!(await this.social.isEnabled())) return null;
       if (!(await this.config.get("economy.enabled"))) return null;
       const redemption = await this.repo.findRedemptionByInvited(userId);
       if (!redemption) return null;
@@ -94,6 +97,7 @@ export class InviteService implements OnModuleInit {
 
   /** The user's stable invite code (created on first request). */
   async getOrCreateCode(userId: string): Promise<string> {
+    await this.social.assertEnabled();
     const existing = await this.repo.findByInviter(userId);
     if (existing) return existing.code;
     for (let i = 0; i < 5; i++) {
@@ -111,6 +115,7 @@ export class InviteService implements OnModuleInit {
    * One place for "is this code usable", shared by redeem and the public preview (`InviteViewService`).
    */
   async resolveValidInvite(code: string): Promise<{ invite: InviteRow; owner: UserRow } | undefined> {
+    await this.social.assertEnabled();
     const invite = await this.repo.findByCode(code);
     if (!invite) return undefined;
     const owner = await this.users.findByIdService(invite.inviterUserId);
@@ -139,6 +144,7 @@ export class InviteService implements OnModuleInit {
    * signup window → never paid (a trial alone does not count).
    */
   async redeem(invitedUserId: string, code: string): Promise<{ status: string }> {
+    await this.social.assertEnabled();
     const resolved = await this.resolveValidInvite(code);
     if (!resolved) throw new DomainError(ErrorCode.INVITE_CODE_INVALID, HttpStatus.NOT_FOUND);
     const { invite } = resolved;

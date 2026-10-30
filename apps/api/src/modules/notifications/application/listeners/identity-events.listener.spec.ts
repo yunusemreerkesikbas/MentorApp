@@ -13,7 +13,7 @@ describe("IdentityEventsListener", () => {
 
   beforeEach(() => {
     notifications = makeNotifications();
-    listener = new IdentityEventsListener(notifications as never);
+    listener = new IdentityEventsListener(notifications as never, { isEnabled: async () => true } as never);
   });
 
   it("notifies the followee, naming the follower and linking to their profile", async () => {

@@ -9,6 +9,7 @@ import type {
 } from "@mentor/types";
 import { NotFoundError } from "../../../common/errors/domain-error";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { SocialAccessPolicy } from "../../../common/config/social-access.policy";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { StreakService } from "../../coaching/application/streak.service";
 import { EconomyService } from "../../economy/application/economy.service";
@@ -42,6 +43,7 @@ export class CommunityService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly entitlement: EntitlementService,
     private readonly achievements: AchievementService,
+    private readonly social: SocialAccessPolicy,
   ) {}
 
   async getSummary(userId: string): Promise<CommunitySummary> {
@@ -95,6 +97,7 @@ export class CommunityService {
     if (!user || !user.username || user.status === "BANNED" || user.status === "SUSPENDED") {
       throw new NotFoundError();
     }
+    await this.social.assertSelfOrEnabled(viewerId, user.id);
     const [economyEnabled, achievementsEnabled] = await Promise.all([
       this.config.get("economy.enabled"),
       this.config.get("community.achievements.enabled"),
