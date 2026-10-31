@@ -187,6 +187,7 @@ describe("InviteService", () => {
       follows as never,
       events as never,
       signals,
+      { isEnabled: async () => true, assertEnabled: async () => undefined } as never,
     );
   };
 

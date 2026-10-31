@@ -13,6 +13,101 @@ optional; source checks do not prove that production services or domains are liv
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-31 · Independent readiness checkpoint.** Refreshed public DNS without changes:
+  Cloudflare delegation/mail records exist, while root/API routing is still absent. Pinned the
+  private local profile to `STORAGE_PROVIDER=r2` with bounded mode; credentials and verified
+  gateway origin remain pending, AI stays disabled. Usage: follow the
+  [current verification/action package](../qa/2026-10-31-bounded-trial-storage-verification.md).
+  Recovery now explicitly keeps admission/media closed after a database restore until lifetime
+  usage is reconciled against later object/provider evidence. Gotchas: no secrets were uploaded,
+  no full CI was started, and the owner's final-candidate hold remains in force. Related:
+  `docs/core/storage-r2.md` and the ignored local preparation/evidence files.
+
+- **2026-10-31 · Bounded media implementation.** Storage accounting now guards all trial raw
+  operations with a sealed scope, manifest and durable reservations. The owner also approved
+  a 1 GiB lifetime payload-transfer counter in addition to 500 MiB / 10000 Class A / 100000
+  Class B. Nullable historical transfer facts fail closed instead of inventing zero usage.
+  Migrations 0133–0135 were generated and applied only to guarded loopback test databases.
+  The initialization CLI checks the exact DB role/host and account/bucket scope, precharges
+  two empty-bucket probes and requires attended recovery after uncertainty. Gateway grants
+  use the actual session; core DTOs and study actions survive photo refusal. Usage/rollback:
+  [storage runbook](../core/storage-r2.md#bounded-trial-profile-2026-10-31).
+  Gotchas: payload accounting is not the whole Render workspace's traffic; no provider resource,
+  credential upload, remote migration, DNS, billing or new staging setup was performed.
+  Exact candidate CI and hosted acceptance remain separate gates.
+
+- **2026-10-31 · Aggregate trial-storage design review.** Read-only Cloudflare inspection
+  confirmed USD 0 observed/projected R2 usage, separate empty EU staging buckets and no
+  production bucket pair. The existing USD 10 notification is not a spending stop. The owner
+  retained uploads, selected the existing API as a media gateway, and approved trial-wide
+  limits of 500 MiB, 10,000 Class A and 100,000 Class B attempts without automatic refill.
+  Usage: review the [approved design](../plans/2026-10-31-bounded-trial-storage-design.md) and
+  [implementation plan](../superpowers/plans/2026-10-31-bounded-trial-storage.md) before code.
+  All design sections and the written inline implementation plan are approved. Extra staging cost or
+  staging-specific development is declined. Use the selected single Free trial environment
+  for provider acceptance before admission. Source work started with the durable allowance/manifest,
+  conservative settlement and SERVICE-only RLS. Three config and ten real local PostgreSQL cases
+  pass, including simultaneous final-slot claims and a PUT finishing after cleanup; API typecheck
+  and touched-file lint pass. Prior migrations remain unchanged; 0133 was generated/applied only
+  locally. The guarded raw port now reserves every operation, pins one SDK attempt, and refuses
+  scope changes/direct-mode rollback on a sealed database. The attended initialization CLI requires
+  an exact runtime database/bucket target, retains two precharged probes and marks only confirmed
+  empty buckets ready. Migration 0134 adds attempt IDs without editing 0133. Run the CLI only after
+  separately approved provider setup. Gotchas: gateway/UI enforcement is still in progress; no live bucket, token,
+  DNS, billing or credential upload was performed. Related: `schema-storage-budget.ts`,
+  `storage-budget.repository.ts`, `test/storage-budget.e2e-spec.ts`.
+
+- **2026-10-31 · Paired-disabled AI trial startup.** The selected trial now has an explicit
+  credential-free AI mode, preserving real-provider validation and all other production locks.
+  The registry cannot reopen AI in this deployment, and the existing availability endpoint
+  reports it closed. Updated the environment example/runbook; the optional paid Blueprint is
+  unchanged. Usage: set both AI provider fields to `disabled` and omit their keys.
+  Related: [approved design](../plans/2026-10-30-disabled-ai-startup-design.md) and
+  [verification](../qa/2026-10-31-disabled-ai-startup-verification.md). Candidate `1513a5bb`
+  passed full CI 41131102949 (3,875 API, 1,099 web, 1,386 browser passes). Gotcha: hosted
+  acceptance remains necessary before publication; this CI does not certify future storage code.
+
+- **2026-10-30 · AI-off credential requirement investigated.** Read-only verification of the
+  dedicated rehearsal DB confirmed `ai.enabled=false`. Photo classification and shared AI
+  wrappers reject before provider calls; focused environment/provider/photo suites passed 93/93.
+  Corrected the hosting checklist: an unused Gemini key is not a product requirement for
+  this closed trial. The remaining mismatch is startup validation of a selected Gemini
+  provider before DB flags load. Usage/gotchas: see the updated
+  [hosting record](../qa/2026-10-30-core-trial-ci-and-hosting.md); credential-free closed-mode
+  startup is not implemented yet. No flag, AI provider, credential or deployment was changed.
+
+- **2026-10-30 · Exact-commit full CI and isolated Free database preparation.** Candidate
+  `035f9217` on `feat/core-trial-release-20261030` passed the complete Linux pipeline,
+  ordinary/security/core browsers and web budgets. Preserved the original checkout/index.
+  Verified Render Hobby/no-card/zero-spend settings and prepared an unsubmitted Free API form.
+  Created a separate EU Neon Free rehearsal project, a no-compute blank recovery branch,
+  applied all 133 existing migrations and verified its restricted runtime role, 21 closed-profile
+  settings and rolled-back user isolation. Usage and exact evidence:
+  [CI and hosting record](../qa/2026-10-30-core-trial-ci-and-hosting.md).
+  Gotchas: runtime configuration remains incomplete, Gemini is missing, restore/hosted
+  acceptance is pending, and no service, public DNS or paid setup was activated. Direct owner
+  credentials remain in an ignored operator-only file, outside the separate runtime file.
+
+- **2026-10-30 · Explicit core-trial boundary and browser profiles.** Deployment instructions
+  now list independent social/forum/room/economy/coaching/AI/purchase closures and preserve own
+  achievements. Browser CI explicitly seeds its ordinary enabled fixture, then restarts the
+  owned API for the separate closed profile. Usage: follow `docs/core/deployment.md`; the guarded
+  profile script only accepts loopback `_test` databases outside production. Gotcha: registry
+  overrides require restart and document reload; no live database, DNS or provider was changed.
+  Related: browser fixture script/tests, CI workflow, core-trial Playwright config/spec.
+
+- **2026-10-30 · Web handoff and current release checks.** Resumed web verification after the
+  owner confirmed the design work was finished. Corrected overlay auth scope, paginated
+  notebook quota display and the quota button's touch height; synchronized stale browser
+  fixtures with current checkout copy, disclosure and server refresh behavior. Recorded
+  current quality/unit/build/budget/dependency checks and a new social-boundary gap in the
+  selected core-only profile. Usage and exact verification status:
+  [web release verification](../qa/2026-10-30-web-release-verification.md).
+  Gotchas: local browser checks use fake providers and the ordinary test profile, not hosted
+  production acceptance. The owner also approved the project Impeccable update to 4.8.0;
+  product instructions, design context and dependency manifests were unchanged by that update.
+  No deployment, cloud account setting, DNS, billing, commit or push was performed.
+
 - **2026-10-29 · Core-trial release verification and backend quota corrections.** Recorded
   local builds, quality/dependency/secret checks and the limitations of interrupted broad
   API/browser runs. Fixed quota races, nested policy/taxonomy pool reads and growing page

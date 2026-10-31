@@ -103,6 +103,24 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-31 · Credential-free closed AI deployment.** Select `AI_PROVIDER=disabled` and
+  `VISION_PROVIDER=disabled` together to start without OpenAI/Gemini keys. The rejecting
+  adapter covers completion, lazy streams, embeddings and image classification; the registry
+  forces effective `ai.enabled=false`, keeps reads/listing consistent and rejects attempts to
+  enable it without persistence/events. Real provider key checks and production fake-provider
+  restrictions remain. Usage: the closed-trial section of `docs/core/deployment.md`.
+  Gotcha: reopening needs a reviewed provider/key deployment and existing acceptance gates;
+  a DB toggle alone is insufficient. Related: env validation/tests, AI module, disabled adapter,
+  registry/tests and isolated `disabled-ai-startup.e2e-spec.ts`. Hosted acceptance remains pending.
+
+- **2026-10-30 · Core-trial client request suppression.** Public global AI availability now
+  gates automatic daily greetings and ghost narration, alongside mood/vision/session/plan entry
+  controls. Existing premium entitlement does not bypass closure. Rule-based encouragement
+  remains; shared Premium nudges hide when audience purchasing is closed. Browser RED captured
+  both automatic requests and the remaining purchase ask; GREEN expanded core acceptance is
+  20/20, with enabled panel/analysis regressions also passing. Related: `use-daily-greeting.ts`,
+  `use-ghost-narration.ts`, `premium-lock-nudge.tsx` and `core-trial.spec.ts`.
+
 - **2026-10-29 · Global provider kill-switch.** Text completion, consumed streams, embeddings
   (including already queued article jobs) and vision now read `ai.enabled` at the decorated
   provider boundary and return existing localized `AI_DISABLED` (404) before provider calls

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { BUDDY_NUDGE_COOLDOWN_MS } from "../../identity/application/buddy.service";
 import { BuddyViewService } from "./buddy-view.service";
+import { SocialAccessPolicy } from "../../../common/config/social-access.policy";
 
 const pairRow = (over: Partial<Record<string, unknown>> = {}) => ({
   id: "pair1",
@@ -28,6 +29,7 @@ const make = (opts: {
   eligible?: string[];
   profiles?: unknown[];
   studyingNow?: boolean;
+  socialEnabled?: boolean;
 } = {}) => {
   const buddy = {
     getActivePair: vi.fn(async () => opts.active),
@@ -51,11 +53,21 @@ const make = (opts: {
     streak as never,
     users as never,
     storage as never,
+    new SocialAccessPolicy({ get: async () => opts.socialEnabled ?? true } as never),
   );
   return { svc, buddy, sessions, streak, users };
 };
 
 describe("BuddyViewService.getView", () => {
+  it("denies view and suggestions before reading another user's activity when social is closed", async () => {
+    const f = make({ socialEnabled: false, active: pairRow() });
+    await expect(f.svc.getView("me")).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(f.svc.getSuggestions("me", 3)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(f.buddy.getActivePair).not.toHaveBeenCalled();
+    expect(f.sessions.listRecentCoWorkers).not.toHaveBeenCalled();
+    expect(f.sessions.getTodayFocusMinutes).not.toHaveBeenCalled();
+  });
+
   it("composes the partner's effort fields only (minutes + streak, avatar URL resolved)", async () => {
     const { svc, sessions, streak } = make({
       active: pairRow(),

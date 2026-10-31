@@ -15,6 +15,7 @@ import { SWAY_KICK } from "@/components/vision-board/hung-board-sway";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { useSubscription } from "@/lib/subscription-context";
+import { useAppAvailability } from "@/lib/app-availability";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 
@@ -32,8 +33,9 @@ export function VisionBoardCard() {
   const [loaded, setLoaded] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const { view, loading: subscriptionLoading } = useSubscription();
+  const availability = useAppAvailability();
   // `null` while the shared read settles, so neither the note nor the nudge flashes in first.
-  const premium: boolean | null = subscriptionLoading
+  const premium: boolean | null = !availability?.aiCoach ? null : subscriptionLoading
     ? null
     : isPremiumFeatureAvailable(view, "vision.note");
   const [generating, setGenerating] = useState(false);

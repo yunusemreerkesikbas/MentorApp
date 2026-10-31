@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
+import { AvailableFeature, useAppAvailability } from "@/lib/app-availability";
 import { useTranslations } from "next-intl";
 import type {
   FocusGoalDto,
@@ -52,6 +53,7 @@ import { useSessionTimer } from "./use-session-timer";
  */
 export function StudySessionShell() {
   const t = useTranslations("session");
+  const availability = useAppAvailability();
   const searchParams = useSearchParams();
   const presetParam = searchParams.get("preset");
   const minutesParam = searchParams.get("minutes");
@@ -60,7 +62,7 @@ export function StudySessionShell() {
   const taskIdParam = searchParams.get("taskId");
   const sessionIdParam = searchParams.get("sessionId");
   /** Set by "bu masada çalış" on the room page — the seat this session will occupy. */
-  const roomIdParam = searchParams.get("room");
+  const roomIdParam = availability?.studyRooms ? searchParams.get("room") : null;
   const autoStartExisting = searchParams.get("autostart") === "1";
   const sourceParam = searchParams.get("source");
   const coachSessionTrackedRef = useRef(false);
@@ -406,8 +408,8 @@ export function StudySessionShell() {
             }
             onOpenHistory={() => setHistoryOpen(true)}
           />
-          <SessionRoomList />
-          <SessionBuddyCard />
+          <AvailableFeature feature="studyRooms"><SessionRoomList /></AvailableFeature>
+          <AvailableFeature feature="social"><SessionBuddyCard /></AvailableFeature>
         </>
       }
       drawer={

@@ -43,6 +43,18 @@ function makeService(
 }
 
 describe("SessionService.start", () => {
+  it("refuses an existing room membership while rooms are closed before transaction writes", async () => {
+    const create = vi.fn();
+    const closeStaleOpenSessions = vi.fn();
+    const isMember = vi.fn().mockResolvedValue(true);
+    const touchLastActive = vi.fn();
+    const emit = vi.fn();
+    const config = { get: vi.fn(async (key: string) => key === "coaching.study_rooms.enabled" ? false : 300) };
+    const service = makeService({ create, closeStaleOpenSessions }, { rooms: { isMember, touchLastActive }, events: { emit }, config });
+    await expect(service.start(USER, { preset: "25_5", roomId: "existing-room" })).rejects.toMatchObject({ code: ErrorCode.COACHING_ROOM_DISABLED });
+    for (const spy of [create, closeStaleOpenSessions, isMember, touchLastActive, emit]) expect(spy).not.toHaveBeenCalled();
+  });
+
   it("persists planTaskId when the task belongs to the user", async () => {
     const planTaskId = "00000000-0000-4000-8000-000000000001";
     const findById = vi.fn(async () => ({ id: planTaskId }));

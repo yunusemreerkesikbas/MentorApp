@@ -11,6 +11,9 @@ import { APP_SIDEBAR_BOOTSTRAP_SCRIPT } from "@/lib/app-sidebar";
 import { siteUrl } from "@/lib/forum-public";
 import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 import { AuthProvider } from "@/lib/auth-context";
+import { AppAvailabilityProvider } from "@/lib/app-availability";
+import { fetchAppAvailability } from "@/lib/app-availability-server";
+import { AppFeatureBoundary } from "@/components/app-feature-boundary";
 import { ToastProviderShell } from "@/lib/toast-provider-shell";
 import { DialogProviderShell } from "@/lib/dialog-provider-shell";
 import { BottomSheetProviderShell } from "@/lib/bottom-sheet-provider-shell";
@@ -108,7 +111,8 @@ export default async function LocaleLayout({
   const nonce = (await headers()).get("x-nonce");
   if (!nonce) throw new Error("Document CSP nonce is missing");
   setRequestLocale(locale);
-  const messages = pickMessages(await getMessages(), ROUTE_MESSAGE_SCOPES.root);
+  const [allMessages, availability] = await Promise.all([getMessages(), fetchAppAvailability()]);
+  const messages = pickMessages(allMessages, ROUTE_MESSAGE_SCOPES.root);
 
   return (
     <html
@@ -125,18 +129,22 @@ export default async function LocaleLayout({
       <body suppressHydrationWarning>
         <BackgroundBlobs />
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <AuthProvider>
-            <ToastProviderShell>
-              <DialogProviderShell>
-                <BottomSheetProviderShell>
-                  <AnalyticsConsentProvider nonce={nonce}>
-                    <WebVitalsReporter />
-                    <CloudTransitionProvider>{children}</CloudTransitionProvider>
-                  </AnalyticsConsentProvider>
-                </BottomSheetProviderShell>
-              </DialogProviderShell>
-            </ToastProviderShell>
-          </AuthProvider>
+          <AppAvailabilityProvider availability={availability}>
+            <AuthProvider>
+              <ToastProviderShell>
+                <DialogProviderShell>
+                  <BottomSheetProviderShell>
+                    <AnalyticsConsentProvider nonce={nonce}>
+                      <WebVitalsReporter />
+                      <CloudTransitionProvider>
+                        <AppFeatureBoundary>{children}</AppFeatureBoundary>
+                      </CloudTransitionProvider>
+                    </AnalyticsConsentProvider>
+                  </BottomSheetProviderShell>
+                </DialogProviderShell>
+              </ToastProviderShell>
+            </AuthProvider>
+          </AppAvailabilityProvider>
         </NextIntlClientProvider>
       </body>
     </html>

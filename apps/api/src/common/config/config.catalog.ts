@@ -304,6 +304,11 @@ export const CONFIG_CATALOG = {
   "storage.upload.daily_bytes": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1048576).max(1073741824), default: 104857600, sensitive: false, description: "Daily UTC upload byte budget per user; failed uploads consume the reserved cap." },
   "storage.upload.ticket_seconds": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(30).max(300), default: 300, sensitive: false, description: "Single-use upload ticket lifetime in seconds." },
   "storage.upload.stream_seconds": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(10).max(120), default: 60, sensitive: false, description: "Maximum duration for an authorized upload stream." },
+  "storage.budget.max_stored_bytes": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1).max(524288000), default: 524288000, sensitive: true, description: "Trial-wide stored bytes including unresolved writes; changing the limit never resets usage." },
+  "storage.budget.max_class_a": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1).max(10000), default: 10000, sensitive: true, description: "Trial-lifetime Class A allowance across all users; no automatic refill." },
+  "storage.budget.max_class_b": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1).max(100000), default: 100000, sensitive: true, description: "Trial-lifetime Class B allowance across all users; no automatic refill." },
+  "storage.budget.max_transfer_bytes": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1).max(1073741824), default: 1073741824, sensitive: true, description: "Trial-lifetime media payload transfer bytes across writes and reads; never refilled or refunded by deletion." },
+  "storage.media.read_seconds": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(30).max(300), default: 300, sensitive: false, description: "Owner/session-bound media grant lifetime in seconds." },
   // Purchase channels (APP-096) for student plans. Coach seat plans have their own pair under
   // mentorship.seats.*; both resolve per plan in payments/domain/purchase-channel.ts.
   "payments.web.enabled": flag(
@@ -385,6 +390,7 @@ export const CONFIG_CATALOG = {
     "Gate for the light-economy module (user-facing balance/earning).",
   ),
   "economy.streak_rescue.enabled": flag(false, "Allow Coin purchases of streak freezes."),
+  "community.social.enabled": flag(true, "Expose user relations, other-user profiles and social activity signals; personal progress remains available."),
   "community.leaderboard.enabled": flag(false, "Expose XP rankings; personal XP remains available."),
   "forum.enabled": flag(
     false,

@@ -55,7 +55,7 @@ export class MistakeNotebookController {
   /** Entries whose review moment has arrived — the "bugün tekrar" strip. */
   @Get("reviews/due")
   listDue(@CurrentUser() user: RequestUser): Promise<NotebookEntryDto[]> {
-    return this.notebook.listDue(user.id);
+    return this.notebook.listDue(user.id, { userId: user.id, sessionId: user.sessionId });
   }
 
   /**
@@ -80,7 +80,7 @@ export class MistakeNotebookController {
     @CurrentUser() user: RequestUser,
     @Query() query: ListNotebookEntriesQueryDto,
   ): Promise<Paginated<NotebookEntryDto>> {
-    return this.notebook.listEntries(user.id, query);
+    return this.notebook.listEntries(user.id, query, { userId: user.id, sessionId: user.sessionId });
   }
 
   @Post("entries/image-upload-url")
@@ -96,12 +96,12 @@ export class MistakeNotebookController {
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateNotebookEntryDto,
   ): Promise<NotebookEntryDto> {
-    return this.notebook.createEntry(user.id, dto, user.roles);
+    return this.notebook.createEntry(user.id, dto, user.roles, { userId: user.id, sessionId: user.sessionId });
   }
 
   @Get("entries/:id")
   getEntry(@CurrentUser() user: RequestUser, @Param("id", ParseUUIDPipe) id: string): Promise<NotebookEntryDto> {
-    return this.notebook.getEntry(user.id, id);
+    return this.notebook.getEntry(user.id, id, { userId: user.id, sessionId: user.sessionId });
   }
 
   @Patch("entries/:id")
@@ -110,7 +110,7 @@ export class MistakeNotebookController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateNotebookEntryDto,
   ): Promise<NotebookEntryDto> {
-    return this.notebook.updateEntry(user.id, id, dto, user.roles);
+    return this.notebook.updateEntry(user.id, id, dto, user.roles, { userId: user.id, sessionId: user.sessionId });
   }
 
   /** "Could you do it this time?" — one boolean, and the interval ladder does the rest. */
@@ -124,7 +124,7 @@ export class MistakeNotebookController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: ReviewNotebookEntryDto,
   ): Promise<NotebookEntryDto> {
-    return this.notebook.reviewEntry(user.id, id, dto.solved, dto.reviewId, user.orgId);
+    return this.notebook.reviewEntry(user.id, id, dto.solved, dto.reviewId, user.orgId, { userId: user.id, sessionId: user.sessionId });
   }
 
   /**
@@ -141,7 +141,7 @@ export class MistakeNotebookController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: LinkNotebookThreadDto,
   ): Promise<NotebookEntryDto> {
-    return this.notebook.linkCommunityThread(user.id, id, dto.threadId);
+    return this.notebook.linkCommunityThread(user.id, id, dto.threadId, { userId: user.id, sessionId: user.sessionId });
   }
 
   @Delete("entries/:id")
@@ -165,7 +165,7 @@ export class MistakeNotebookController {
     @CurrentUser() user: RequestUser,
     @Param("index", ParseIntPipe) index: number,
   ): Promise<NotebookPageDto> {
-    return this.notebook.getPage(user.id, index);
+    return this.notebook.getPage(user.id, index, { userId: user.id, sessionId: user.sessionId });
   }
 
   @Put("pages/:index")
@@ -174,6 +174,6 @@ export class MistakeNotebookController {
     @Param("index", ParseIntPipe) index: number,
     @Body() dto: PutNotebookPageDto,
   ): Promise<NotebookPageDto> {
-    return this.notebook.putPage(user.id, index, dto.doc, user.roles);
+    return this.notebook.putPage(user.id, index, dto.doc, user.roles, { userId: user.id, sessionId: user.sessionId });
   }
 }

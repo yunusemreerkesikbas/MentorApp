@@ -1,0 +1,518 @@
+/*
+ * "Odak odası" (landing-focus.tsx). The room is the session page's own backdrop; the controls on
+ * it mirror the session page: frosted dark glass in Kütüphane and Kafe, frosted white in Ev. The
+ * notes below are the landing's paper notes, the same as Sabah masası's.
+ */
+.lf-root {
+  --lf-paper: #fffdf6;
+  --lf-ink: #0f2233;
+  --lf-ink-soft: #3d4e63;
+  --lf-ink-quiet: #5f7086;
+  --lf-blue: #1a5fa3;
+  --lf-plate: #1d4f9f;
+  --lf-hand: "Caveat Variable", "Segoe Print", cursive;
+  --color-focus-ring: #1d6fbf;
+}
+
+/* ---- Room tabs and the room ---- */
+.lf-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 26px;
+}
+
+.lf-tab {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--landing-pill);
+  color: var(--landing-pill-ink);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lf-tab.is-on {
+  background: var(--lf-ink);
+  color: #ffffff;
+}
+
+.lf-tab:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+.lf-scene {
+  --lf-glass: rgba(24, 16, 10, 0.46);
+  --lf-line: rgba(255, 255, 255, 0.24);
+  --lf-knob: #ffffff;
+  position: relative;
+  margin-top: 14px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #3b2a1d;
+  color: #ffffff;
+  box-shadow: 0 30px 60px -30px rgba(70, 45, 15, 0.45);
+}
+
+.lf-scene.is-light {
+  --lf-glass: rgba(255, 255, 255, 0.62);
+  --lf-line: rgba(255, 255, 255, 0.85);
+  --lf-knob: #1d1a16;
+  color: #1d1a16;
+}
+
+.lf-backdrop {
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.lf-backdrop.is-on {
+  opacity: 1;
+}
+
+.lf-ui {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 22px;
+  text-align: center;
+}
+
+.lf-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--lf-glass);
+  box-shadow: inset 0 0 0 1px var(--lf-line);
+  backdrop-filter: blur(10px);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.lf-bar i {
+  width: 1px;
+  height: 20px;
+  background: var(--lf-line);
+}
+
+.lf-task {
+  margin: 12px 0 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--lf-glass);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lf-ring {
+  width: 188px;
+  height: 188px;
+  margin-top: 12px;
+}
+
+.lf-steps,
+.lf-presets {
+  display: flex;
+  gap: 10px;
+}
+
+.lf-steps span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--lf-glass);
+  box-shadow: inset 0 0 0 1px var(--lf-line);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.lf-presets {
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.lf-presets span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--lf-glass);
+  box-shadow: inset 0 0 0 1px var(--lf-line);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lf-presets span.is-on {
+  background: #ffffff;
+  color: var(--lf-ink);
+}
+
+.lf-summary {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.lf-summary b {
+  font-weight: 900;
+}
+
+.lf-start {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(420px, 72%);
+  min-height: 46px;
+  margin-top: 14px;
+  border-radius: 14px;
+  background: var(--play-cta);
+  color: var(--lf-ink);
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 var(--play-cta-edge);
+}
+
+/* A phone: the room stands up, the controls shrink. */
+@media (max-width: 639px) {
+  .lf-tab {
+    flex: 1;
+    padding: 0;
+  }
+
+  .lf-scene {
+    margin-top: 12px;
+    aspect-ratio: 3 / 4;
+    border-radius: 18px;
+  }
+
+  .lf-ui {
+    padding-top: 14px;
+  }
+
+  .lf-bar {
+    gap: 8px;
+    padding: 0 12px;
+    font-size: 11px;
+  }
+
+  .lf-ring {
+    width: 150px;
+    height: 150px;
+  }
+
+  .lf-presets span {
+    padding: 0 11px;
+    font-size: 12px;
+  }
+}
+
+/* ---- The paper notes ---- */
+.lf-notes {
+  display: grid;
+  gap: 26px;
+  margin-top: 34px;
+  align-items: start;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .lf-notes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .lf-notes {
+    grid-template-columns: repeat(var(--lf-notes), minmax(0, 1fr));
+  }
+}
+
+.lf-note {
+  position: relative;
+  padding: 30px 22px 22px;
+  border-radius: 4px 4px 7px 7px;
+  background-color: var(--lf-paper);
+  color: var(--lf-ink);
+  rotate: var(--tilt);
+  box-shadow: 0 2px 4px rgba(3, 10, 24, 0.12), 0 28px 46px -24px rgba(3, 10, 24, 0.45);
+}
+
+.lf-note.is-lined {
+  background-image: repeating-linear-gradient(180deg, transparent 0 33px, rgba(85, 172, 238, 0.16) 33px 34px);
+  background-position: 0 26px;
+}
+
+.lf-note.is-grid {
+  background-image: linear-gradient(rgba(85, 172, 238, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(85, 172, 238, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.lf-tape {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  width: 128px;
+  height: 32px;
+  margin-left: -64px;
+  background: var(--tape);
+  opacity: 0.9;
+  rotate: -3deg;
+  clip-path: polygon(3% 0, 97% 0, 100% 18%, 97% 36%, 100% 54%, 97% 72%, 100% 90%, 97% 100%, 3% 100%, 0 82%, 3% 64%, 0 46%, 3% 28%, 0 10%);
+}
+
+.lf-plate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+
+.lf-plate b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 5px;
+  background: var(--lf-plate);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 2px var(--lf-plate), inset 0 0 0 3.5px rgba(255, 255, 255, 0.85), 0 2px 0 rgba(3, 10, 24, 0.25);
+}
+
+.lf-plate span {
+  font: 700 25px / 1 var(--lf-hand);
+  color: var(--lf-blue);
+}
+
+.lf-note h3 {
+  margin: 12px 0 8px;
+  font-size: 21px;
+  line-height: 1.2;
+  font-weight: 900;
+  text-wrap: balance;
+}
+
+.lf-body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--lf-ink-soft);
+}
+
+.lf-mini {
+  margin-top: 16px;
+}
+
+/* Note 1: the presets, a focus-then-break bar and today's line. */
+.lf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lf-chips > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(15, 34, 51, 0.12);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lf-chips.is-even > span {
+  flex: 1;
+}
+
+.lf-chips > span.is-on {
+  background: var(--lf-ink);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.lf-timeline {
+  display: flex;
+  gap: 4px;
+  min-height: 30px;
+  margin-top: 12px;
+}
+
+.lf-timeline span {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.lf-timeline .is-focus {
+  flex: 5;
+  background: #cfe3fb;
+  color: var(--lf-blue);
+}
+
+.lf-timeline .is-break {
+  flex: 1.6;
+  background: #d8f0df;
+  color: #2e6b44;
+}
+
+.lf-mini-line {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--lf-ink-quiet);
+}
+
+/* Note 2: the table of the room picked above, four seats, the invite code. */
+.lf-table {
+  position: relative;
+  display: block;
+  height: 200px;
+}
+
+.lf-table-art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58%;
+  height: auto;
+  translate: -50% -50%;
+  opacity: 0;
+}
+
+.lf-room[data-room="LIBRARY"] .lf-table-art[data-room="LIBRARY"],
+.lf-room[data-room="CAFE"] .lf-table-art[data-room="CAFE"],
+.lf-room[data-room="HOME"] .lf-table-art[data-room="HOME"] {
+  opacity: 1;
+}
+
+.lf-seat {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  translate: -50% -50%;
+}
+
+.lf-seat b {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #26377f;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 0 0 3px var(--lf-paper), 0 6px 12px -4px rgba(0, 0, 0, 0.4);
+}
+
+.lf-seat.is-empty b {
+  background: #efe5d8;
+  color: #8a6a4f;
+}
+
+.lf-seat small {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(15, 34, 51, 0.1);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.lf-seat.is-top { left: 50%; top: 16%; }
+.lf-seat.is-bottom { left: 50%; top: 86%; }
+.lf-seat.is-left { left: 14%; top: 52%; }
+.lf-seat.is-right { left: 86%; top: 52%; }
+
+.lf-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 10px 8px 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(15, 34, 51, 0.1);
+}
+
+.lf-code span {
+  font: 800 14px / 1 ui-monospace, Menlo, monospace;
+  letter-spacing: 0.06em;
+}
+
+.lf-code em {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #e4eefe;
+  color: var(--lf-blue);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* Note 3: the sound picker and the plain-view switch. */
+.lf-plain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(15, 34, 51, 0.1);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lf-plain i {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--play-cta);
+}
+
+.lf-plain i::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lf-backdrop {
+    transition: none;
+  }
+}

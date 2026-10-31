@@ -7,6 +7,7 @@ import { AskPuhuDemo } from "./ask-puhu-demo";
 import { CareerPicker, type CareerChoice } from "./career-picker";
 import type { CityBell } from "./city-stage";
 import { BELLS } from "./city-scene";
+import { landingAvailability } from "./landing-availability";
 import { LandingCounter } from "./landing-counter";
 
 type Translate = Awaited<ReturnType<typeof getTranslations>>;
@@ -58,7 +59,7 @@ function Note({ name, title, body, bodyOnPhone = true, scribble, scribbleAbove, 
   const style = { "--tilt": tilt, "--tape": tape } as CSSProperties;
   return (
     <>
-      <div className={`lc-sheet lc-note${paper ? ` is-${paper}` : ""}`} style={style}>
+      <div className={`lc-sheet lc-note${paper ? ` is-${paper}` : ""}`} style={style} data-flutter="">
         <i className="lc-tape" aria-hidden="true" />
         <p className="lc-plate">
           <b>{plateLabel}</b>
@@ -116,6 +117,35 @@ function Hero({ t }: { t: Translate }) {
       </p>
     </div>
   );
+}
+
+/**
+ * The community note's text and rows. The weekly league ranks XP, which exists only while the
+ * economy is on, so without it the note speaks of questions and answers alone and shows no rows.
+ */
+function CommunityBody({ t, league }: { t: Translate; league: boolean }) {
+  return (
+    <>
+      <p className="lc-body">{league ? t("community.body") : t("community.body_no_league")}</p>
+      <div className="lc-mini">
+        {CLIP}
+        <p className="lc-cheer">{t("community.cheer")}</p>
+        {league ? (
+          <>
+            <p className="lc-row"><span>1</span><span>{t("community.row1")}</span><span>{t("community.row1_xp")}</span></p>
+            <p className="lc-row is-me"><span>2</span><span>{t("community.row_me")}</span><span>{t("community.row_me_xp")}</span></p>
+            <p className="lc-row"><span>3</span><span>{t("community.row3")}</span><span>{t("community.row3_xp")}</span></p>
+          </>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
+/** Streams in after the availability read, so the scene never waits on it; until then, no league. */
+async function CommunityLeague({ t }: { t: Translate }) {
+  const availability = await landingAvailability();
+  return <CommunityBody t={t} league={availability?.economy === true} />;
 }
 
 /** Everything the scene shows, rendered on the server so the whole story is in the HTML. */
@@ -180,14 +210,10 @@ export async function cityStageContent(): Promise<{
         </div>
       </div>
     </Note>,
-    <Note key="community" plateLabel={plate(7)} name={t("community.name")} title={t("community.title")} body={t("community.body")} scribble={t("community.scribble")} tilt="-.7deg" tape="#cbb8f0">
-      <div className="lc-mini">
-        {CLIP}
-        <p className="lc-cheer">{t("community.cheer")}</p>
-        <p className="lc-row"><span>1</span><span>{t("community.row1")}</span><span>{t("community.row1_xp")}</span></p>
-        <p className="lc-row is-me"><span>2</span><span>{t("community.row_me")}</span><span>{t("community.row_me_xp")}</span></p>
-        <p className="lc-row"><span>3</span><span>{t("community.row3")}</span><span>{t("community.row3_xp")}</span></p>
-      </div>
+    <Note key="community" plateLabel={plate(7)} name={t("community.name")} title={t("community.title")} scribble={t("community.scribble")} tilt="-.7deg" tape="#cbb8f0">
+      <Suspense fallback={<CommunityBody t={t} league={false} />}>
+        <CommunityLeague t={t} />
+      </Suspense>
     </Note>,
     <Note key="analysis" plateLabel={plate(8)} name={t("analysis.name")} title={t("analysis.title")} body={t("analysis.body")} scribble={t("analysis.scribble")} paper="grid" tilt=".7deg" tape="#9cc7f0">
       <div className="lc-mini">

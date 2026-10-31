@@ -12,6 +12,7 @@ import {
 } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
 import { useAuth } from "@/lib/auth-context";
+import { useAppAvailability } from "@/lib/app-availability";
 import { fetchCoachSignupOpen } from "@/lib/coach-signup";
 import { isCoach } from "@/lib/coach-surface";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
@@ -143,6 +144,7 @@ export function AccountLinksCard({
   const tMentorship = useTranslations("mentorship");
   const locale = useLocale();
   const { logout } = useAuth();
+  const availability = useAppAvailability();
   const signInAgain = useAccountSecurity();
   const router = useRouter();
   const { actionSheet } = useMentorBottomSheet();
@@ -301,7 +303,7 @@ export function AccountLinksCard({
             coach yet -> the invite-code screen, linked -> the data-scope contract. A student
             handed a code looks under "Koçum", so the row carries no separate hint. Hidden for a
             coach: /my-coach is student-only (`isStudentOnlyPath`) and would bounce them home. */}
-        {!isCoach(user) && (
+        {availability?.humanCoaching && !isCoach(user) && (
           <ListRow href="/my-coach">
             {tMentorship("my_coach_title")}
           </ListRow>
@@ -310,7 +312,7 @@ export function AccountLinksCard({
             feature disappears with its flag; hidden for somebody who already coaches. A suspended
             coach can still open the screen by URL to read the admin's reason. The hint is for the
             student who is only curious: the switch closes their own screens. */}
-        {coachSignupOpen && !isCoach(user) && (
+        {availability?.coachRegistration && coachSignupOpen && !isCoach(user) && (
           <ListRow
             href="/coach-application"
             description={tMentorship("become_row_hint")}

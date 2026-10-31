@@ -67,6 +67,14 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-30 · Own progress under social closure.** The shared social policy denies other-user
+  profile/achievement reads and buddy views before composing data. Own profile, collection,
+  personal summary, earned badges and cleanup remain available. The web hides social metrics,
+  sharing, forum tabs and community navigation in the closed profile. Usage: social off, own
+  achievements on; reload the document after an operator change. Gotcha: forum and social are
+  independent switches. Related: community/achievement/buddy-view services, profile components
+  and `core-trial.spec.ts`.
+
 - **2026-10-09 — Browser regression coverage:** Journey celebration lifecycle checks now run with
   normal and reduced motion, using each presentation's accessible dialog name while retaining
   acknowledgement, keyboard focus, scroll lock, SSE recovery and replay assertions. Public-profile

@@ -215,6 +215,7 @@ export const ErrorCode = {
   /** Coaching-owned: a coach-assigned plan task may be completed or deleted, not rewritten. */
   COACHING_TASK_COACH_ASSIGNED: "COACHING_TASK_COACH_ASSIGNED",
   NOTIFICATIONS_PUSH_SUBSCRIPTION_LIMIT: "NOTIFICATIONS_PUSH_SUBSCRIPTION_LIMIT",
+  STORAGE_TEMPORARILY_UNAVAILABLE: "STORAGE_TEMPORARILY_UNAVAILABLE",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

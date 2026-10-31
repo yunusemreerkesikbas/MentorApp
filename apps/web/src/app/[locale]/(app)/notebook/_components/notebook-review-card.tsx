@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Image from "next/image";
+import { MediaImage as Image } from "@/components/media-image";
 import {
   Check,
   FlipHorizontal2,

@@ -18,7 +18,7 @@ describe("InviteEventsListener", () => {
 
   beforeEach(() => {
     notifications = { createFromTemplate: vi.fn().mockResolvedValue(true) };
-    listener = new InviteEventsListener(notifications as never);
+    listener = new InviteEventsListener(notifications as never, { isEnabled: async () => true } as never);
   });
 
   it("tells the inviter who joined, once per redemption, when no buddy request went out", async () => {

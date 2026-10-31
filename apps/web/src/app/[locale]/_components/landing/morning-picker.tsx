@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { usePaperFlutter } from "./paper-flutter";
 
 /**
  * Which of the three desk things is picked. A numbered pin on the scene and its paper note light
@@ -34,7 +35,9 @@ export function MorningPicker({ scene, items }: { scene: ReactNode; items: Morni
   const [active, setActive] = useState(0);
   const [sway, setSway] = useState<{ count: number; deg: number } | null>(null);
   const frame = useRef<HTMLDivElement>(null);
-  const on = (i: number) => (i === active ? " is-on" : "");
+  const notes = useRef<HTMLDivElement>(null);
+  usePaperFlutter(notes);
+  const on =(i: number) => (i === active ? " is-on" : "");
   const push = (deg: number) => setSway((last) => ({ count: (last?.count ?? 0) + 1, deg }));
 
   useEffect(() => {
@@ -98,12 +101,13 @@ export function MorningPicker({ scene, items }: { scene: ReactNode; items: Morni
         ))}
       </div>
 
-      <div className="lm-notes">
+      <div className="lm-notes" ref={notes}>
         {items.map((item, i) => (
           <article
             key={item.name}
             className={`lm-note${item.paper ? ` is-${item.paper}` : ""}${on(i)}`}
             style={{ "--tilt": item.tilt, "--tape": item.tape } as CSSProperties}
+            data-flutter=""
           >
             <i className="lm-tape" aria-hidden="true" />
             <p className="lm-plate">

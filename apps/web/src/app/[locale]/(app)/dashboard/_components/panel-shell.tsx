@@ -1,5 +1,7 @@
 "use client";
 
+import { AvailableFeature } from "@/lib/app-availability";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -225,8 +227,8 @@ function PanelContent() {
             {greeting}
             {hero}
             {recap}
-            <MyCoachCard />
-            <CommunityTopicsCard />
+            <AvailableFeature feature="humanCoaching"><MyCoachCard /></AvailableFeature>
+            <AvailableFeature feature="forum"><CommunityTopicsCard /></AvailableFeature>
           </div>
           <aside className="flex min-w-0 flex-col gap-5">
             {journey}
@@ -244,15 +246,15 @@ function PanelContent() {
           {membership}
           {countdown}
           {recap}
-          <MyCoachCard />
-          <CommunityTopicsCard />
+          <AvailableFeature feature="humanCoaching"><MyCoachCard /></AvailableFeature>
+          <AvailableFeature feature="forum"><CommunityTopicsCard /></AvailableFeature>
           <VisionBoardCard />
           {journey}
           <NotebooksLink />
         </div>
       )}
 
-      <PromotionDialog offers={panel.promotionOffers} />
+      <AvailableFeature feature="studentPurchases"><PromotionDialog offers={panel.promotionOffers} /></AvailableFeature>
       {celebration}
       {rescue.successDays != null ? (
         <StreakRescueSuccess days={rescue.successDays} onClose={rescue.closeSuccess} />

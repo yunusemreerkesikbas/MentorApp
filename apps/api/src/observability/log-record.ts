@@ -10,7 +10,8 @@ export function safeRequest(value: unknown): Record<string, unknown> {
   const raw = route ?? (typeof req.url === "string" ? req.url : req.path);
   const path = typeof raw === "string" && raw.startsWith("/")
     ? stripControlCharacters(raw.split(/[?#]/, 1)[0] ?? "")
-      .replace(/^(\/v1\/storage\/uploads)\/[^/]+/, "$1/:ticket").slice(0, 512)
+      .replace(/^(\/v1\/storage\/uploads)\/[^/]+/, "$1/:ticket")
+      .replace(/^(\/v1\/storage\/media).*$/i, "$1").slice(0, 512)
     : undefined;
   return { id: validRequestId(req.id), method: typeof req.method === "string" && METHODS.has(req.method) ? req.method : "UNKNOWN", path };
 }

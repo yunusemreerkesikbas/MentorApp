@@ -10,6 +10,7 @@ import { withServiceContext } from "../../../../database/rls";
 import { NotificationCopyKey } from "../../domain/notification-copy";
 import { NotificationDeliveryRepository } from "../../infrastructure/notification-delivery.repository";
 import { NotificationsService } from "../notifications.service";
+import { SocialAccessPolicy } from "../../../../common/config/social-access.policy";
 
 /**
  * Passive buddy accountability signal: when a user completes the day's first (qualifying)
@@ -26,10 +27,12 @@ export class BuddyActivityListener {
     private readonly usersRepo: UsersRepository,
     private readonly deliveries: NotificationDeliveryRepository,
     @Inject(DRIZZLE) private readonly db: Database,
+    private readonly social: SocialAccessPolicy,
   ) {}
 
   @OnEvent(CoachingEventTopic.FIRST_SESSION)
   async onBuddyFirstSession(event: FirstSessionOfDay): Promise<void> {
+    if (!(await this.social.isEnabled())) return;
     // Buddy-less users (the common case) bail after a single query.
     const pair = await this.buddy.getActivePair(event.userId).catch(() => undefined);
     if (!pair) return;

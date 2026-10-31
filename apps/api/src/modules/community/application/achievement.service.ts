@@ -9,6 +9,7 @@ import type {
   AchievementSource,
 } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { SocialAccessPolicy } from "../../../common/config/social-access.policy";
 import { NotFoundError } from "../../../common/errors/domain-error";
 import { StreakService } from "../../coaching/application/streak.service";
 import { UsersService } from "../../identity/application/users.service";
@@ -31,6 +32,7 @@ export class AchievementService {
     private readonly config: ConfigRegistryService,
     private readonly i18n: I18nService,
     private readonly events: EventEmitter2,
+    private readonly social: SocialAccessPolicy,
   ) {}
 
   async getCollection(
@@ -42,6 +44,7 @@ export class AchievementService {
     const owner = await this.users.findByUsername(username);
     if (!owner || !owner.username || owner.status !== "ACTIVE") throw new NotFoundError();
     const ownerView = owner.id === viewerId;
+    await this.social.assertSelfOrEnabled(viewerId, owner.id);
     const [rows, longestStreak] = await Promise.all([
       this.repository.listByUser(viewerId, owner.id),
       ownerView ? this.streak.getLongestStreak(owner.id) : Promise.resolve(0),
@@ -78,6 +81,7 @@ export class AchievementService {
     viewerId: string,
     locale: string,
   ): Promise<AchievementShowcaseView> {
+    await this.social.assertSelfOrEnabled(viewerId, userId);
     const rows = await this.repository.listByUser(viewerId, userId);
     return buildAchievementShowcase({
       earned: rows.map(toEarned),

@@ -121,7 +121,7 @@ export class CoachingController {
   /** The user's vision/goal board ("hayal/hedef panosu"); `null` when not set yet. */
   @Get("vision")
   getVision(@CurrentUser() user: RequestUser): Promise<VisionDto | null> {
-    return this.vision.getMine(user.id);
+    return this.vision.getMine(user.id, { userId: user.id, sessionId: user.sessionId });
   }
 
   /** Upsert the user's single vision/goal board (idempotent by user; mirrors mood's POST+200). */
@@ -131,7 +131,7 @@ export class CoachingController {
     @CurrentUser() user: RequestUser,
     @Body() dto: UpsertVisionDto,
   ): Promise<VisionDto> {
-    return this.vision.upsert(user.id, dto);
+    return this.vision.upsert(user.id, dto, { userId: user.id, sessionId: user.sessionId });
   }
 
   /**
@@ -145,7 +145,7 @@ export class CoachingController {
     @CurrentUser() user: RequestUser,
     @Body() dto: PutVisionBoardDto,
   ): Promise<VisionDto> {
-    return this.vision.putBoard(user.id, dto.board);
+    return this.vision.putBoard(user.id, dto.board, { userId: user.id, sessionId: user.sessionId });
   }
 
   /** One-use API upload capability for a board photo; the API validates bytes before storage. */

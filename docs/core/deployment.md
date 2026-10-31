@@ -11,7 +11,7 @@
 | Web | `https://puhukoc.com` | `mentor-web` |
 | Single API | `https://api.puhukoc.com/v1` | `mentor-api` |
 | Admin | `https://admin.puhukoc.com` | `mentor-admin` |
-| Public media | `https://media.puhukoc.com` | Public EU R2 bucket |
+| Trial media | `https://api.puhukoc.com/v1/storage/media/...` | Private EU buckets behind the API |
 
 Use first-level subdomains for Universal SSL coverage. Keep existing host-only Secure,
 HttpOnly, SameSite=Lax cookies; do not add a shared cookie Domain attribute. Web canonical
@@ -27,20 +27,68 @@ old privileged sessions and supplied Access assertions. Omit/unset Access issuer
 variables; empty values still fail schema validation. The default `cloudflare` mode keeps
 the existing production Access requirements and identity verification.
 
+Set **both** `AI_PROVIDER=disabled` and `VISION_PROVIDER=disabled`; omit OpenAI/Gemini keys.
+This explicit deployment mode rejects all text, streaming, embedding and image-classification
+operations and forces the effective `ai.enabled` value to false, even if its stored override
+is true. The config API cannot enable AI in this mode. Mixed disabled/real provider values
+fail startup. Reopening requires a reviewed deployment selecting real providers with keys,
+then the existing runtime flags, cost/privacy and provider acceptance gates.
+
 Keep `NODE_ENV=production` and all other production security/provider requirements.
+For this selected trial set `STORAGE_ACCESS_MODE=bounded`, an independent `MEDIA_READ_SECRET`,
+EU bucket scope and `R2_PUBLIC_BASE_URL=<actual HTTPS API origin>/v1/storage/media/public`.
+Both new buckets must have public/custom-domain access disabled. Do not attach
+`media.puhukoc.com`; the two selected Free service domains remain web/API. This application
+profile supersedes the optional legacy/direct Blueprint's media settings below.
+The durable total is 500 MiB stored plus unresolved writes, 10,000 Class A, 100,000 Class B
+and 1 GiB media payload transfer for the whole trial, without automatic refill. Deletion can
+release confirmed stored capacity but never operations/transfer. HTTP HEAD/URL minting does
+not download objects. Header/control/page/other-project traffic remains outside the payload
+counter, so monitor Render's shared bandwidth and Free hours. See the
+[bounded storage procedure](storage-r2.md#bounded-trial-profile-2026-10-31) and
+[attended acceptance package](../qa/2026-10-31-bounded-trial-storage-verification.md).
+
 `ADMIN_APP_URL` and its explicit CORS entry remain reserved values; they do not grant
 access to a denied route. Do not remove modules or supply invented credentials.
 
 Before the first start, use the attended operator procedure with the separate migration
 connection to prepare and verify the intended database, reviewed content and these
 persisted flags: `ai.enabled=false`, `ai.budget.monthly_cap_usd_cents=100`,
-`forum.enabled=false`, `mentorship.enabled=false`, `mentorship.applications.open=false`,
+`community.social.enabled=false`, `forum.enabled=false`, `coaching.study_rooms.enabled=false`,
+`community.leaderboard.enabled=false`, `economy.enabled=false`,
+`mentorship.enabled=false`, `mentorship.applications.open=false`,
 `mentorship.risk_digest.enabled=false`, `mentorship.seats.sponsorship_enabled=false`,
 and `ads.enabled=false`. Keep checkout/billing channels off, `PAYMENTS_PROVIDER=disabled`
-and `SMS_PROVIDER=disabled`. Public signup remains the selected direction; expected
+and `SMS_PROVIDER=disabled`. Explicitly set `payments.web.enabled=false`,
+`payments.mobile.enabled=false`, `payments.web.redirect_to_mobile=false`,
+`mentorship.seats.billing_enabled=false` and `mentorship.seats.mobile_billing_enabled=false`.
+Keep `community.achievements.enabled=true` for personal progress, `signup.enabled=true`
+and `signup.pilot.enabled=false`. Public signup remains the selected direction; expected
 trial users are not an account-count or invoice cap. Verify effective values, not only
 catalog defaults. The registry caches overrides per process: an attended offline change
 requires controlled restart and verification. No live flag was changed in source preparation.
+
+The social boundary added on 2026-10-30 is independent of the forum switch. When closed,
+follow/buddy operations, invitation creation/redemption and other-user profiles/achievement
+collections return the existing localized not-found response before side effects. Own profile,
+own achievements, personal summary and cleanup remain available. Stale relation/invitation
+events and room activity do not deliver social notifications or write delivery markers.
+New room sessions check the room switch before opening a transaction; solo work and completion
+of an existing session remain usable. Source-level and local acceptance evidence still require
+complete CI and hosted acceptance before admission.
+
+`GET /v1/app/availability` is a public, uncached allowlist of effective presentation booleans.
+The web loads it once per document, alongside locale messages. Failure shows a closed/unavailable
+state for optional areas while personal tools remain reachable. Document reload retries it;
+server policies remain authoritative when an already-open document becomes stale. Existing coach
+accounts land on settings while human coaching is closed, avoiding redirect loops.
+
+Browser fixtures must use explicit profiles, not production defaults: after migration, run
+`NODE_ENV=test APP_ENV=development node apps/api/scripts/browser-fixture-profile.mjs enabled`
+against a matching loopback `TEST_DATABASE_URL` ending in `_test`, then start the API. The separate
+closed suite selects `core-trial`, restarts the API with admin/payments/SMS disabled and runs
+`playwright.core-trial.config.ts`. This guarded helper is test-only, raises only the fixture signup
+IP limit for repeated test users and is not an operator command for a live database.
 
 The operator UI is unavailable in this mode. Prepare scoped support/incident procedures
 before admitting users; if intervention cannot be performed safely, pause admission/the
@@ -52,7 +100,8 @@ The provider boundary now rejects text, streaming, embedding and vision operatio
 AI is off. Already-started calls are not cancelled; queued embeddings fail through the
 existing retry/dead-letter policy. Enabling AI later still requires embedding cost-accounting
 and provider-spending acceptance; the positive app cap does not establish those controls.
-Free cold starts/quotas, R2 spending, real mail, restricted DB role, recovery and full CI
+The source-level disabled mode was added after the original candidate passed CI; require a
+new exact-commit CI result before deploying it. Free cold starts/quotas, R2 spending, real mail, restricted DB role, recovery and full CI
 remain release gates. This profile does not apply the optional paid Blueprint below.
 
 ## 1. Release prerequisites and budget
@@ -79,8 +128,9 @@ Resolve these items before authorizing production provisioning:
   Agree fixed/variable charges and enforceable controls before selecting a paid profile.
   Manual deploy settings do not prevent billing or an initial Blueprint deployment.
 - Obtain dedicated production runtime/migration DB URLs and JWT, rate-limit, edge, cron and
-  VAPID secrets. Supply production OpenAI, Gemini, R2, Turnstile, Resend and Sentry settings.
-  A Gemini credential is currently missing. Never promote `.env.staging` credentials to prod.
+  VAPID secrets. Supply production R2, Turnstile, Resend and Sentry settings. The selected
+  paired-disabled trial needs no OpenAI/Gemini keys; real AI activation requires dedicated
+  provider credentials and acceptance. Never promote `.env.staging` credentials to prod.
 - For an admin-enabled deployment, resolve Access activation: the observed Cloudflare Free checkout required permission
   to charge a card for quota overage. The owner declined it. Do not accept those terms or
   weaken existing Access guards. Admin publication remains blocked pending an acceptable setup.
@@ -267,8 +317,9 @@ Follow [storage-r2.md](./storage-r2.md) for storage permissions and release chec
 - Configure Google OAuth's three variables together if enabled; register the exact callback
   and check authorized domains/consent-screen status before public signup.
 - Payments remain disabled; SMS and sponsorship stay behind existing acceptance gates. Do not
-  select fake providers in production. AI uses real provider wiring with central feature flags
-  and the existing monthly cost cap; configuration does not grant unconditional Free AI.
+  select fake providers in production. The closed trial uses paired disabled AI providers;
+  real AI deployments retain central feature flags and the monthly cost cap. Configuration
+  does not grant unconditional Free AI.
 - Supply API Sentry DSN and verify scrubbed events, readiness alerts and retention. API Sentry
   tags incidents by `APP_ENV`. The web DSN slot alone does not initialize a browser SDK;
   browser reporting remains a separate launch item.

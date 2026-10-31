@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
+import { MediaImage as Image } from "@/components/media-image";
 import { CalendarOff, Check, FileText, LayoutGrid, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type {
@@ -484,7 +484,7 @@ function IndexRow({
           className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-card)]"
           style={{ backgroundColor: "var(--color-surface-container)" }}
         >
-          {entry.url ? (
+          {entry.storageKey || entry.url ? (
             <Image
               src={entry.url}
               alt=""

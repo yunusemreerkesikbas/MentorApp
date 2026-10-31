@@ -7,6 +7,7 @@ import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { GoogleAuthFeedback } from "@/components/google-auth-feedback";
 import { useAuth } from "@/lib/auth-context";
+import { useAppAvailability } from "@/lib/app-availability";
 import { trackProductEvent } from "@/lib/analytics";
 import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
 import { loginSecurityReason } from "@/lib/account-security";
@@ -21,6 +22,7 @@ export default function LoginPage() {
   const translate = useTranslations("auth.login");
   const ui = useTranslations("common");
   const { login } = useAuth();
+  const availability = useAppAvailability();
   const router = useRouter();
   const exitThen = useAuthSheetExit();
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export default function LoginPage() {
         ...(turnstileToken ? { turnstileToken } : {}),
       });
       trackProductEvent("login", { method: "email" });
-      const destination = postAuthDestination(user, readAuthNextParam());
+      const destination = postAuthDestination(user, readAuthNextParam(), availability);
       // Fetched while the sheet leaves, so the handover has nothing left to wait for.
       // @ts-expect-error -- a validated internal path, transported as a plain string.
       router.prefetch(destination);

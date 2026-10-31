@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { ArrowRightIcon as ArrowRight } from "@solar-icons/react/linear/arrow-right";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useAppAvailability } from "@/lib/app-availability";
 import { firstName, greetingKeyForHour } from "@/lib/greeting";
 import { MOOD_WHEEL_OPTIONS } from "./mood-assets";
 
@@ -31,6 +32,7 @@ export function GreetingRow({
   const moodT = useTranslations("mood");
   const locale = useLocale();
   const { user } = useAuth();
+  const availability = useAppAvailability();
   const name = user ? firstName(user.displayName) : "";
   const today = new Intl.DateTimeFormat(locale, {
     weekday: "long",
@@ -105,7 +107,7 @@ export function GreetingRow({
         </div>
       </div>
 
-      {canLighten && mood != null && mood <= 2 ? (
+      {availability?.aiCoach && canLighten && mood != null && mood <= 2 ? (
         <Link
           href={{ pathname: "/plan", query: { coach: "adapt", source: "mood" } }}
           className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-progress-track)] bg-[var(--color-surface)] px-4 py-3 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"

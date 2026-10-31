@@ -7,9 +7,8 @@ import { http } from "@mentor/api-client";
 import { resolveApiUrl } from "./api-base";
 
 /**
- * Two-step board photo upload: ask the API for a presigned URL, then PUT the bytes straight to
- * storage. Same shape as `forum-attachments.ts` and `mock-exams.ts` — the API never proxies image
- * bytes.
+ * Two-step board photo upload: request a session-bound, one-use API ticket, then PUT bytes
+ * through that API boundary. Storage validates and accounts for the write before publication.
  */
 
 export type VisionBoardImageMime = (typeof VISION_BOARD_IMAGE_MIMES)[number];

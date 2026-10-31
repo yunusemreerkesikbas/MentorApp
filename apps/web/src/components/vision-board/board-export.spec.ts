@@ -1,7 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { VisionBoardDoc } from "@mentor/types";
 import { EMPTY_BOARD } from "./board-document";
-import { renderBoardWithinBytes, type BoardRenderOptions } from "./board-export";
+import {
+  BoardExportMediaUnavailableError,
+  renderBoardToBlob,
+  renderBoardWithinBytes,
+  type BoardRenderOptions,
+} from "./board-export";
 
 /**
  * A stand-in for the canvas, which this environment does not have: it answers with a picture of a
@@ -9,7 +14,10 @@ import { renderBoardWithinBytes, type BoardRenderOptions } from "./board-export"
  */
 function rendererOf(bytesAtScale: Record<number, number>) {
   const calls: BoardRenderOptions[] = [];
-  const render = async (_doc: VisionBoardDoc, options: BoardRenderOptions = {}) => {
+  const render = async (
+    _doc: VisionBoardDoc,
+    options: BoardRenderOptions = {},
+  ) => {
     calls.push(options);
     const bytes = bytesAtScale[options.scale ?? 2] ?? 0;
     return new Blob([new Uint8Array(bytes)], { type: "image/jpeg" });
@@ -21,6 +29,68 @@ function rendererOf(bytesAtScale: Record<number, number>) {
  * A community post caps a picture's weight. A board heavy with photos must still go up, smaller,
  * rather than be refused by the upload.
  */
+afterEach(() => vi.unstubAllGlobals());
+describe("required board photos", () => {
+  it.each([
+    undefined,
+    "https://api.test/v1/storage/media/private?grant=expired",
+  ])(
+    "refuses an export with an unavailable required photo (%s)",
+    async (url) => {
+      const context = new Proxy(
+        {},
+        {
+          get: (_target, key) =>
+            key === "createLinearGradient" || key === "createRadialGradient"
+              ? () => ({ addColorStop: () => {} })
+              : () => {},
+        },
+      );
+      const canvas = {
+        getContext: () => context,
+        toBlob: (callback: (blob: Blob) => void) =>
+          callback(new Blob(["incomplete"])),
+      };
+      vi.stubGlobal("document", {
+        createElement: () => canvas,
+        fonts: { ready: Promise.resolve() },
+      });
+      vi.stubGlobal(
+        "Image",
+        class {
+          onerror: (() => void) | null = null;
+          set src(_value: string) {
+            queueMicrotask(() => this.onerror?.());
+          }
+        },
+      );
+      const doc: VisionBoardDoc = {
+        ...EMPTY_BOARD,
+        items: [
+          {
+            id: "image",
+            kind: "image",
+            storageKey: "vision-board/owner/photo.png",
+            url,
+            frame: "none",
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 100,
+            rotation: 0,
+            opacity: 1,
+            z: 1,
+          },
+        ],
+      };
+      const savedDocument = structuredClone(doc);
+      await expect(renderBoardToBlob(doc)).rejects.toBeInstanceOf(
+        BoardExportMediaUnavailableError,
+      );
+      expect(doc).toEqual(savedDocument);
+    },
+  );
+});
 describe("renderBoardWithinBytes", () => {
   it("keeps the full-size JPEG when it fits the limit exactly", async () => {
     const { render, calls } = rendererOf({ 2: 1000 });
@@ -37,6 +107,9 @@ describe("renderBoardWithinBytes", () => {
     const picture = await renderBoardWithinBytes(EMPTY_BOARD, 1000, render);
 
     expect(picture.size).toBe(300);
-    expect(calls).toEqual([{ type: "image/jpeg" }, { type: "image/jpeg", scale: 1 }]);
+    expect(calls).toEqual([
+      { type: "image/jpeg" },
+      { type: "image/jpeg", scale: 1 },
+    ]);
   });
 });

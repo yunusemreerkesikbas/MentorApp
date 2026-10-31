@@ -191,6 +191,7 @@ describe("InviteViewService", () => {
       { followEachOtherSilently: async () => undefined } as never, // follows
       { emit: () => true } as never, // events
       new InviteSignalRegistry(),
+      { isEnabled: async () => true, assertEnabled: async () => undefined } as never,
     );
     const views = new InviteViewService(
       invites,
@@ -200,6 +201,7 @@ describe("InviteViewService", () => {
       users as never,
       identities as never,
       subscriptions as never,
+      { assertEnabled: async () => undefined } as never,
     );
     return { invites, views };
   };

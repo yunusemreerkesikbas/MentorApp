@@ -52,22 +52,19 @@ import {
 } from "../domain/coaching.events";
 import {
   MistakeNotebookRepository,
-  type MistakeNotebookEntryRow,
   type NotebookEntryLabelRow,
   type NotebookSummaryRow,
 } from "../infrastructure/mistake-notebook.repository";
 
-interface ExamTaxonomy {
-  subjects: Array<{ slug: string; name: string }>;
-  topics: Array<{ subjectSlug: string; slug: string; name: string }>;
-}
+import type { StorageReadActor } from "../../../shared/storage/storage-budget.types";
+import { NotebookEntryViewService, notebookLabelNames as labelNames } from "./notebook-entry-view.service";
 
 interface NotebookLabelTaxonomy {
   subjects: ReadonlySet<string>;
   topics: ReadonlyArray<{ subjectSlug: string; slug: string }>;
 }
 
-/** Public prefix all notebook photos live under; the orphan sweep lists exactly this. */
+/** Private prefix all notebook photos live under; the orphan sweep lists exactly this. */
 export const NOTEBOOK_PREFIX = "notebook/";
 /** An object younger than this belongs to a card the user has not finished composing. */
 const NOTEBOOK_ORPHAN_GRACE_MS = 24 * 60 * 60 * 1000;
@@ -122,6 +119,7 @@ export class MistakeNotebookService {
     private readonly content: ContentService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly reviewHistory: NotebookReviewRepository,
+    private readonly entryViews: NotebookEntryViewService,
     @Optional() private readonly events?: EventEmitter2,
     @Optional() private readonly quota?: NotebookQuotaService,
   ) {}
@@ -309,17 +307,18 @@ export class MistakeNotebookService {
    * to a blank page is a normal thing to do in a notebook, and making the client special-case
    * "does this page exist" would put the book's structure in two places.
    */
-  async getPage(userId: string, pageIndex: number): Promise<NotebookPageDto> {
+  async getPage(userId: string, pageIndex: number, readActor?: StorageReadActor): Promise<NotebookPageDto> {
     const system = await withUserContext(this.db, { userId }, (tx) =>
       this.notebook.ensureMistakeNotebook(tx, userId, null),
     );
-    return this.getNotebookPage(userId, system.id, pageIndex);
+    return this.getNotebookPage(userId, system.id, pageIndex, readActor);
   }
 
   async getNotebookPage(
     userId: string,
     notebookId: string,
     pageIndex: number,
+    readActor?: StorageReadActor,
   ): Promise<NotebookPageDto> {
     assertPageIndex(pageIndex);
     const { doc, entries } = await withUserContext(
@@ -354,7 +353,7 @@ export class MistakeNotebookService {
         };
       },
     );
-    return { pageIndex, doc, entries: await this.toEntryDtos(userId, entries) };
+    return { pageIndex, doc, entries: await this.entryViews.toDtos(userId, entries, readActor) };
   }
 
   /** The system notebook's contents page. */
@@ -404,7 +403,7 @@ export class MistakeNotebookService {
     rows: NotebookEntryLabelRow[],
     now: Date,
   ): Promise<Map<string, ContentsEntryInput>> {
-    const taxonomies = await this.taxonomiesFor(rows.map((row) => row.examId));
+    const taxonomies = await this.entryViews.taxonomiesFor(rows.map((row) => row.examId));
     return new Map(
       rows.map((row) => {
         const names = labelNames(
@@ -439,11 +438,12 @@ export class MistakeNotebookService {
     pageIndex: number,
     doc: NotebookPageDocInput,
     rolesHint?: string[],
+    readActor?: StorageReadActor,
   ): Promise<NotebookPageDto> {
     const system = await withUserContext(this.db, { userId }, (tx) =>
       this.notebook.ensureMistakeNotebook(tx, userId, null),
     );
-    return this.putNotebookPage(userId, system.id, pageIndex, doc, rolesHint);
+    return this.putNotebookPage(userId, system.id, pageIndex, doc, rolesHint, readActor);
   }
 
   async putNotebookPage(
@@ -452,6 +452,7 @@ export class MistakeNotebookService {
     pageIndex: number,
     doc: NotebookPageDocInput,
     rolesHint?: string[],
+    readActor?: StorageReadActor,
   ): Promise<NotebookPageDto> {
     assertPageIndex(pageIndex);
     const policy = await this.quota?.resolvePolicy(userId, rolesHint);
@@ -485,7 +486,7 @@ export class MistakeNotebookService {
     return {
       pageIndex,
       doc: doc as NotebookPageDoc,
-      entries: await this.toEntryDtos(userId, entries),
+      entries: await this.entryViews.toDtos(userId, entries, readActor),
     };
   }
 
@@ -559,6 +560,7 @@ export class MistakeNotebookService {
     userId: string,
     input: CreateNotebookEntryInput,
     rolesHint?: string[],
+    readActor?: StorageReadActor,
   ): Promise<NotebookEntryDto> {
     this.assertOwnStorageKey(userId, input.storageKey);
     this.assertOwnStorageKey(userId, input.solutionStorageKey);
@@ -597,7 +599,7 @@ export class MistakeNotebookService {
         nextReviewAt: firstReviewAt(),
       });
     });
-    const [dto] = await this.toEntryDtos(userId, [row]);
+    const [dto] = await this.entryViews.toDtos(userId, [row], readActor);
     return dto!;
   }
 
@@ -611,12 +613,13 @@ export class MistakeNotebookService {
   async listEntries(
     userId: string,
     query: ListNotebookEntriesQuery,
+    readActor?: StorageReadActor,
   ): Promise<Paginated<NotebookEntryDto>> {
     const { items, total } = await withUserContext(this.db, { userId }, (tx) =>
       this.notebook.listEntries(tx, userId, query),
     );
     return {
-      items: await this.toEntryDtos(userId, items),
+      items: await this.entryViews.toDtos(userId, items, readActor),
       total,
       page: query.page,
       pageSize: query.pageSize,
@@ -628,6 +631,7 @@ export class MistakeNotebookService {
     entryId: string,
     patch: UpdateNotebookEntryInput,
     rolesHint?: string[],
+    readActor?: StorageReadActor,
   ): Promise<NotebookEntryDto> {
     const labelsChanged = patch.subjectRef !== undefined || patch.topicRef !== undefined;
     const taxonomy = labelsChanged ? await this.readEntryLabelTaxonomy(userId, entryId) : undefined;
@@ -705,7 +709,7 @@ export class MistakeNotebookService {
         throw new NotFoundError({ reason: "notebook_entry_missing" });
       return updated;
     });
-    const [dto] = await this.toEntryDtos(userId, [row]);
+    const [dto] = await this.entryViews.toDtos(userId, [row], readActor);
     return dto!;
   }
 
@@ -724,6 +728,7 @@ export class MistakeNotebookService {
     userId: string,
     entryId: string,
     threadId: string,
+    readActor?: StorageReadActor,
   ): Promise<NotebookEntryDto> {
     const row = await withUserContext(this.db, { userId }, async (tx) => {
       const linked = await this.notebook.linkThread(
@@ -736,7 +741,7 @@ export class MistakeNotebookService {
         throw new NotFoundError({ reason: "notebook_entry_missing" });
       return linked;
     });
-    const [dto] = await this.toEntryDtos(userId, [row]);
+    const [dto] = await this.entryViews.toDtos(userId, [row], readActor);
     return dto!;
   }
 
@@ -754,10 +759,10 @@ export class MistakeNotebookService {
   }
 
   /** Answer "could you do it this time?" and let the ladder pick the next moment. */
-  async getEntry(userId: string, entryId: string): Promise<NotebookEntryDto> {
+  async getEntry(userId: string, entryId: string, readActor?: StorageReadActor): Promise<NotebookEntryDto> {
     const row = await withUserContext(this.db, { userId }, tx => this.notebook.findEntry(tx, userId, entryId));
     if (!row) throw new NotFoundError({ reason: "notebook_entry_missing" });
-    const [dto] = await this.toEntryDtos(userId, [row]);
+    const [dto] = await this.entryViews.toDtos(userId, [row], readActor);
     return dto!;
   }
 
@@ -767,6 +772,7 @@ export class MistakeNotebookService {
     solved: boolean,
     reviewId: string = randomUUID(),
     orgId: string | null = null,
+    readActor?: StorageReadActor,
   ): Promise<NotebookEntryDto> {
     let replay = false;
     const row = await withUserContext(this.db, { userId, orgId }, async (tx) => {
@@ -803,7 +809,7 @@ export class MistakeNotebookService {
       await history.insert(tx, { id: reviewId, userId, orgId, entryId, reviewedAt: now, solved, early: !existing.nextReviewAt || now < existing.nextReviewAt, beforeStatus: existing.status, afterStatus: outcome.status, beforeCount: existing.reviewCount, afterCount: outcome.reviewCount, nextReviewAt: outcome.nextReviewAt });
       return updated;
     });
-    const [dto] = await this.toEntryDtos(userId, [row]);
+    const [dto] = await this.entryViews.toDtos(userId, [row], readActor);
     if (!replay) this.events?.emit(
       CoachingEventTopic.NOTEBOOK_ENTRY_REVIEWED,
       new NotebookEntryReviewed(userId, row.lastReviewedAt!),
@@ -811,11 +817,11 @@ export class MistakeNotebookService {
     return dto!;
   }
 
-  async listDue(userId: string): Promise<NotebookEntryDto[]> {
+  async listDue(userId: string, readActor?: StorageReadActor): Promise<NotebookEntryDto[]> {
     const rows = await withUserContext(this.db, { userId }, (tx) =>
       this.notebook.listDueEntries(tx, userId, new Date(), DUE_LIMIT),
     );
-    return this.toEntryDtos(userId, rows);
+    return this.entryViews.toDtos(userId, rows, readActor);
   }
 
   /**
@@ -949,91 +955,4 @@ export class MistakeNotebookService {
       throw new ValidationFailedError({ reason: "unknown_topic_ref" });
   }
 
-  /** Rows → DTOs, resolving slugs to display names (`taxonomiesFor`) and keys to URLs. */
-  private async toEntryDtos(
-    userId: string,
-    rows: MistakeNotebookEntryRow[],
-  ): Promise<NotebookEntryDto[]> {
-    if (rows.length === 0) return [];
-    const taxonomies = await this.taxonomiesFor(rows.map((row) => row.examId));
-
-    return Promise.all(rows.map(async (row) => {
-      const names = labelNames(
-        taxonomies.get(row.examId),
-        row.subjectRef,
-        row.topicRef,
-      );
-      return {
-        id: row.id,
-        mockExamId: row.mockExamId,
-        storageKey: row.storageKey,
-        url: row.storageKey ? await this.storage.getPrivateUrl(row.storageKey, userId) : null,
-        subjectRef: row.subjectRef,
-        subjectName: names.subjectName,
-        topicRef: row.topicRef,
-        topicName: names.topicName,
-        errorType: row.errorType as NotebookEntryDto["errorType"],
-        note: row.note,
-        solutionStorageKey: row.solutionStorageKey,
-        solutionUrl: row.solutionStorageKey
-          ? await this.storage.getPrivateUrl(row.solutionStorageKey, userId)
-          : null,
-        solutionNote: row.solutionNote,
-        status: row.status as NotebookEntryDto["status"],
-        reviewCount: row.reviewCount,
-        source: row.source as NotebookEntryDto["source"],
-        communityThreadId: row.communityThreadId,
-        communityAnsweredAt: row.communityAnsweredAt?.toISOString() ?? null,
-        lastReviewedAt: row.lastReviewedAt?.toISOString() ?? null,
-        nextReviewAt: row.nextReviewAt?.toISOString() ?? null,
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
-      };
-    }));
-  }
-
-  /**
-   * Subjects and topics of every exam in a batch, fetched once per exam rather than once per row:
-   * a page of twelve cards is almost always one exam, and per-row lookups would turn one render
-   * into twelve round-trips.
-   */
-  private async taxonomiesFor(
-    examIds: string[],
-  ): Promise<Map<string, ExamTaxonomy>> {
-    return new Map(
-      await Promise.all(
-        [...new Set(examIds)].map(
-          async (examId) =>
-            [
-              examId,
-              {
-                subjects: await this.content.listExamSubjectsByExamId(examId),
-                topics: await this.content.listExamTopicsByExamId(examId),
-              },
-            ] as const,
-        ),
-      ),
-    );
-  }
-}
-
-/** Display names for a card's labels. A slug the taxonomy no longer knows stands in for its name. */
-function labelNames(
-  taxonomy: ExamTaxonomy | undefined,
-  subjectRef: string | null,
-  topicRef: string | null,
-): { subjectName: string | null; topicName: string | null } {
-  const subject = subjectRef
-    ? taxonomy?.subjects.find((item) => item.slug === subjectRef)
-    : undefined;
-  const topic =
-    subjectRef && topicRef
-      ? taxonomy?.topics.find(
-          (item) => item.subjectSlug === subjectRef && item.slug === topicRef,
-        )
-      : undefined;
-  return {
-    subjectName: subject?.name ?? subjectRef,
-    topicName: topic?.name ?? topicRef,
-  };
 }

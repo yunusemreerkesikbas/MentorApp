@@ -11,7 +11,9 @@ import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { useRouter } from "@/i18n/navigation";
 import { useCloudTransition } from "@/lib/cloud-transition";
 import { consumePendingInvite } from "@/lib/pending-invite";
-import { onboardingDestination, type OnboardingAudience } from "../onboarding-flow";
+import { postAuthDestination } from "@/lib/post-auth-destination";
+import { useAppAvailability } from "@/lib/app-availability";
+import type { OnboardingAudience } from "../onboarding-flow";
 import { useRedeemPendingReferral } from "../use-redeem-pending-referral";
 import { ReadyWindow } from "./ready-window";
 
@@ -45,6 +47,7 @@ export function CompleteStep({
   const reduceMotion = useReducedMotion();
   const { startCloudTransition } = useCloudTransition();
   const redeemPendingReferral = useRedeemPendingReferral();
+  const availability = useAppAvailability();
   const leaving = useRef(false);
   const [titleDone, setTitleDone] = useState(false);
   const title = audience === "coach" ? t("title_coach") : t("title");
@@ -57,7 +60,7 @@ export function CompleteStep({
     onFinish();
     // A friend's invite code remembered by /davet: redeemed here, without holding the door.
     redeemPendingReferral(audience);
-    const destination = onboardingDestination(consumePendingInvite(), audience);
+    const destination = postAuthDestination(user, consumePendingInvite(), availability);
     startCloudTransition(() => {
       // @ts-expect-error validated internal destination may be transported as a string.
       router.replace(destination);

@@ -2,6 +2,7 @@ import { Book2Icon } from "@solar-icons/react/linear/book-2";
 import { CalendarMarkIcon } from "@solar-icons/react/linear/calendar-mark";
 import { ClipboardListIcon } from "@solar-icons/react/linear/clipboard-list";
 import type { InfoArticleSummaryDto } from "@mentor/types";
+import { MediaImage } from "@/components/media-image";
 
 const GLYPHS: Record<string, typeof Book2Icon> = {
   APPLICATION: ClipboardListIcon,
@@ -27,8 +28,9 @@ export function ArticleCover({
 }) {
   if (article.coverImage) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- editorial image with known dimensions
-      <img
+      <MediaImage
+        privateMedia={false}
+        retryable={false}
         src={article.coverImage.url}
         alt={article.coverImage.alt}
         width={article.coverImage.width}

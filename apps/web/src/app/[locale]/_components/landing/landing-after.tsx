@@ -6,6 +6,8 @@ import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { fetchCoachSignupOpen } from "@/lib/coach-signup";
 import { LandingBlog } from "./landing-blog";
+import { LandingFocus } from "./landing-focus";
+import { LandingJourney } from "./landing-journey";
 import { LandingMorning } from "./landing-morning";
 import { LEDGE_ON_PAPER, PAGE_FRAME, PAPER_PILL, PAPER_TITLE, PaperFaq } from "./landing-paper";
 
@@ -55,7 +57,10 @@ async function CoachBand() {
   );
 }
 
-/** After the dawn: the morning desk, the coach band, the blog, the questions people ask, and one more way in. */
+/**
+ * After the dawn: the morning desk, the focus room, the night journey (quests and lights), the coach
+ * band, the blog, the questions people ask, and one more way in.
+ */
 export async function LandingAfter() {
   const [t, nonce] = await Promise.all([
     getTranslations("landing"),
@@ -66,6 +71,13 @@ export async function LandingAfter() {
     // Slides over the last frame of the scene, like a page turning up from the bottom.
     <div className="landing-paper relative z-10 -mt-7 rounded-t-[var(--play-sheet-radius)] bg-[var(--landing-paper)] text-[var(--landing-ink)]">
       <LandingMorning />
+      {/* Both read the availability flags (study rooms, economy): streamed, so nothing waits on them. */}
+      <Suspense fallback={null}>
+        <LandingFocus />
+      </Suspense>
+      <Suspense fallback={null}>
+        <LandingJourney />
+      </Suspense>
       <Suspense fallback={null}>
         <CoachBand />
       </Suspense>

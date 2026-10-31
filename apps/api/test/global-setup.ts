@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import path from "node:path";
 import { Pool } from "pg";
+import { assertLocalTestDatabase } from "./database-target";
 
 /**
  * Vitest globalSetup: bring the TEST database to the latest migration state
@@ -16,6 +17,7 @@ import { Pool } from "pg";
 export default async function setup(): Promise<void> {
   const url =
     process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
+  assertLocalTestDatabase(url);
   const pool = new Pool({ connectionString: url });
   try {
     await migrate(drizzle(pool), {

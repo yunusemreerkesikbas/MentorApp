@@ -1,5 +1,7 @@
 "use client";
 
+import { useAppAvailability } from "@/lib/app-availability";
+
 import { useRef, useState } from "react";
 import { ChevronRight, Globe, Share2, Users } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -39,6 +41,7 @@ export function ProfileIdentityCard({
   onOpenFollowing: () => void;
 }) {
   const t = useTranslations("community");
+  const availability = useAppAvailability();
   const locale = useLocale();
   const toast = useMentorToast();
   const [imageFailed, setImageFailed] = useState(false);
@@ -109,14 +112,14 @@ export function ProfileIdentityCard({
           </div>
           <p className="text-caption font-semibold text-[var(--color-secondary)]">{meta}</p>
         </div>
-        <button
+        {availability?.social && <button
           type="button"
           aria-label={t("profile_share")}
           onClick={() => void shareProfile()}
           className="grid size-11 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-secondary)] hover:bg-[var(--color-surface-container)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         >
           <Share2 size={19} strokeWidth={1.75} aria-hidden />
-        </button>
+        </button>}
       </div>
 
       {profile.bio ? (
@@ -136,8 +139,8 @@ export function ProfileIdentityCard({
 
       {/* Spacing, not dots, between the counts: on a phone the streak wraps without a dangling "·". */}
       <div className="profile-metrics flex flex-wrap items-center gap-x-5 text-body-sm font-bold text-[var(--color-secondary)]">
-        <MetricButton value={profile.followerCount} label={t("followers_label")} onClick={onOpenFollowers} />
-        <MetricButton value={profile.followingCount} label={t("following_label")} onClick={onOpenFollowing} />
+        {availability?.social && <MetricButton value={profile.followerCount} label={t("followers_label")} onClick={onOpenFollowers} />}
+        {availability?.social && <MetricButton value={profile.followingCount} label={t("following_label")} onClick={onOpenFollowing} />}
         {profile.streak > 0 ? (
           <span className="inline-flex min-h-11 items-center font-extrabold text-[var(--color-main)]">
             {t("profile_streak", { count: profile.streak })}
@@ -150,7 +153,7 @@ export function ProfileIdentityCard({
           <Link href={{ pathname: "/settings", query: { section: "profile" } }} className={OUTLINE_LINK}>
             {t("edit_profile")}
           </Link>
-        ) : profile.isFollowing ? (
+        ) : !availability?.social ? null : profile.isFollowing ? (
           <Button variant="secondary" size="sm" onClick={onToggleFollow}>
             {t("following_state")}
           </Button>
@@ -159,7 +162,7 @@ export function ProfileIdentityCard({
             {t("follow")}
           </Button>
         )}
-        {!isOwn ? <BuddyAction status={profile.buddyStatus} onRequest={onBuddyRequest} /> : null}
+        {!isOwn && availability?.social ? <BuddyAction status={profile.buddyStatus} onRequest={onBuddyRequest} /> : null}
       </div>
 
       <AchievementShowcase

@@ -9,6 +9,9 @@ export default defineConfig({
     env: {
       AI_PROVIDER: "fake",
       VISION_PROVIDER: "fake",
+      STORAGE_ACCESS_MODE: "direct",
+      MEDIA_READ_SECRET: "test-media-read-secret-0000000000000000000",
+      ADS_LOCAL_TEST_ENABLED: "false",
       JWT_ACCESS_SECRET: "test-secret-test-secret-test-secret!!",
       AUTH_RATE_LIMIT_SECRET: "test-auth-rate-secret-0000000000000000",
       PAYMENTS_WEBHOOK_SECRET: "test-payments-webhook-secret",

@@ -102,7 +102,7 @@ export class NotebooksController {
     @Param("id", ParseUUIDPipe) id: string,
     @Param("index", ParseIntPipe) index: number,
   ): Promise<NotebookPageDto> {
-    return this.notebooks.getNotebookPage(user.id, id, index);
+    return this.notebooks.getNotebookPage(user.id, id, index, { userId: user.id, sessionId: user.sessionId });
   }
 
   @Put(":id/pages/:index")
@@ -112,6 +112,6 @@ export class NotebooksController {
     @Param("index", ParseIntPipe) index: number,
     @Body() dto: PutNotebookPageDto,
   ): Promise<NotebookPageDto> {
-    return this.notebooks.putNotebookPage(user.id, id, index, dto.doc, user.roles);
+    return this.notebooks.putNotebookPage(user.id, id, index, dto.doc, user.roles, { userId: user.id, sessionId: user.sessionId });
   }
 }

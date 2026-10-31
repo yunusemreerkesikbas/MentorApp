@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AltArrowLeftIcon } from "@solar-icons/react/linear/alt-arrow-left";
 import { AltArrowRightIcon } from "@solar-icons/react/linear/alt-arrow-right";
 import type { InfoArticleCoverImageDto } from "@mentor/types";
+import { MediaImage } from "@/components/media-image";
 
 export function ArticleGallerySlider({
   images,
@@ -19,8 +20,9 @@ export function ArticleGallerySlider({
 
   return (
     <div className="relative overflow-hidden rounded-[var(--radius-card)]">
-      {/* eslint-disable-next-line @next/next/no-img-element -- editorial slider with known dimensions */}
-      <img
+      <MediaImage
+        privateMedia={false}
+        retryable
         src={current.url}
         alt={current.alt}
         width={current.width}

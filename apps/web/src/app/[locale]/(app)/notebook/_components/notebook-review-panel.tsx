@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
+import { MediaImage as Image } from "@/components/media-image";
 import {
   BookOpenCheck,
   CalendarClock,

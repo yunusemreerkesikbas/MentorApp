@@ -17,6 +17,7 @@ import { Button, Modal } from "@mentor/ui";
 import { PANEL_QUIET_LINK } from "@/components/panel/panel-styles";
 import {
   BoardExportTaintedError,
+  BoardExportMediaUnavailableError,
   canShareImageFile,
   downloadBlob,
   renderBoardToBlob,
@@ -28,7 +29,7 @@ import { BoardShareCommunity } from "./board-share-community";
 type ShareFormat = "board" | "wallpaper";
 
 /** A format's picture once drawn, or why it could not be. */
-type Render = { blob: Blob; url: string } | "failed" | "blocked";
+type Render = { blob: Blob; url: string } | "failed" | "blocked" | "media-unavailable";
 
 const FORMATS: { id: ShareFormat; icon: typeof PanelTop; labelKey: "nav_board" | "share_format_wallpaper" }[] = [
   { id: "board", icon: PanelTop, labelKey: "nav_board" },
@@ -99,11 +100,12 @@ export function BoardShareSheet({
     const draw = format === "board" ? renderBoardToBlob : renderBoardWallpaperBlob;
     draw(snapshot)
       .then((blob): Render => {
+        if (cancelled) return "failed";
         const url = URL.createObjectURL(blob);
         previewUrls.current.push(url);
         return { blob, url };
       })
-      .catch((error): Render => (error instanceof BoardExportTaintedError ? "blocked" : "failed"))
+      .catch((error): Render => error instanceof BoardExportMediaUnavailableError ? "media-unavailable" : error instanceof BoardExportTaintedError ? "blocked" : "failed")
       .then((render) => {
         if (!cancelled) setRenders((drawn) => ({ ...drawn, [format]: render }));
       });
@@ -146,7 +148,9 @@ export function BoardShareSheet({
 
   const iconProps = { size: 20, strokeWidth: 2.25, "aria-hidden": true } as const;
   const problem =
-    current === "blocked"
+    current === "media-unavailable"
+      ? t("export_media_unavailable")
+      : current === "blocked"
       ? t("export_blocked")
       : current === "failed"
         ? t("export_failed")

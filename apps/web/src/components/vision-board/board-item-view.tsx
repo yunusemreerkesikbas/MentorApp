@@ -8,6 +8,7 @@ import {
 } from "@mentor/types";
 import { boardImageSrc, needsCrossOrigin } from "./board-export-layout";
 import { STICKER_ART } from "./board-stickers";
+import { MediaImage } from "@/components/media-image";
 
 /**
  * One item on the board.
@@ -84,7 +85,14 @@ function frameStyle(frame: VisionImageFrame): CSSProperties {
 
 function ImageItemView({ item }: { item: VisionBoardImageItem }) {
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%", ...frameStyle(item.frame) }}>
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        ...frameStyle(item.frame),
+      }}
+    >
       {item.frame === "tape" ? (
         <span
           aria-hidden
@@ -102,30 +110,18 @@ function ImageItemView({ item }: { item: VisionBoardImageItem }) {
           }}
         />
       ) : null}
-      {item.url ? (
-        /*
-         * Plain <img>, not next/image: the canvas exporter needs `crossOrigin="anonymous"` to read
-         * these pixels back out, and next/image does not forward that prop. Same call the forum
-         * attachment gallery makes.
-         */
-        // eslint-disable-next-line @next/next/no-img-element -- next/image drops `crossOrigin`
-        <img
-          src={boardImageSrc(item.url)}
-          alt=""
-          crossOrigin={needsCrossOrigin(item.url) ? "anonymous" : undefined}
-          loading="lazy"
-          draggable={false}
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-        />
-      ) : (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            backgroundColor: "var(--color-surface-container)",
-          }}
-        />
-      )}
+      <MediaImage
+        src={item.url ? boardImageSrc(item.url) : null}
+        alt=""
+        fill
+          retryable
+        crossOrigin={
+          item.url && needsCrossOrigin(item.url) ? "anonymous" : undefined
+        }
+        loading="lazy"
+        draggable={false}
+        className="object-cover"
+      />
     </div>
   );
 }
@@ -140,7 +136,11 @@ function TextItemView({ item }: { item: VisionBoardTextItem }) {
         display: "flex",
         alignItems: "center",
         justifyContent:
-          item.align === "left" ? "flex-start" : item.align === "right" ? "flex-end" : "center",
+          item.align === "left"
+            ? "flex-start"
+            : item.align === "right"
+              ? "flex-end"
+              : "center",
       }}
     >
       <span
@@ -184,10 +184,18 @@ export function BoardItemView({ item }: { item: VisionBoardItem }) {
       src={art.src}
       alt=""
       draggable={false}
-      style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "contain",
+        display: "block",
+      }}
     />
   ) : (
-    <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%", display: "block" }}>
+    <svg
+      viewBox="0 0 100 100"
+      style={{ width: "100%", height: "100%", display: "block" }}
+    >
       <path d={art.path} fill={art.fill} fillRule={art.fillRule} />
     </svg>
   );

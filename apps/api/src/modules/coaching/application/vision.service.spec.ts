@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import type { StorageReadActor } from "../../../shared/storage/storage-budget.types";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DomainError } from "../../../common/errors/domain-error";
 import type { VisionBoardDoc } from "@mentor/types";
 import { visionBoardDocSchema } from "@mentor/validation";
 import { VisionService } from "./vision.service";
@@ -107,7 +109,7 @@ function makeStorageFake() {
     deleteObject: async (key: string) => {
       deleted.push(key);
     },
-    getPrivateUrl: async (key: string, ownerId: string) => `/fake-private-object?owner=${ownerId}&key=${key}`,
+    getPrivateUrl: async (key: string, actor: StorageReadActor) => `/fake-private-object?owner=${actor.userId}&key=${key}`,
     listObjects: async () => listing,
   };
 }
@@ -371,6 +373,25 @@ describe("VisionService", () => {
   /* --------------------------------- collage board --------------------------------- */
 
   describe("putBoard", () => {
+    it("uses only the current HTTP session for board image grants",async () => {
+      await service.upsert(USER,{goalTitle:"Hukuk"}); await service.putBoard(USER,boardWith([imageItem(uid(1),IMAGE_A)]));
+      const read=vi.spyOn(storage,"getPrivateUrl"); const actor={userId:USER,sessionId:uid(99)};
+      await service.getMine(USER,actor); expect(read).toHaveBeenCalledWith(IMAGE_A,actor);
+    });
+    it("keeps data-only evidence free of private URLs",async () => {
+      await service.upsert(USER,{goalTitle:"Hukuk"}); await service.putBoard(USER,boardWith([imageItem(uid(1),IMAGE_A)]));
+      const read=vi.spyOn(storage,"getPrivateUrl");
+      const dto=await service.getMine(USER);
+      expect(dto?.board?.items[0]).toMatchObject({storageKey:IMAGE_A}); expect(dto?.board?.items[0]).not.toHaveProperty("url");
+      expect(read).not.toHaveBeenCalled();
+    });
+    it("preserves the board and goal when media is temporarily unavailable",async () => {
+      await service.upsert(USER,{goalTitle:"Hukuk"}); await service.putBoard(USER,boardWith([imageItem(uid(1),IMAGE_A)]));
+      vi.spyOn(storage,"getPrivateUrl").mockRejectedValue(new DomainError("STORAGE_TEMPORARILY_UNAVAILABLE",503));
+      const dto=await service.getMine(USER,{userId:USER,sessionId:uid(99)});
+      expect(dto?.goalTitle).toBe("Hukuk"); expect(dto?.board?.items[0]).toMatchObject({storageKey:IMAGE_A});
+      expect(dto?.board?.items[0]).not.toHaveProperty("url");
+    });
     /**
      * The reason the board has its own endpoint at all. If saving a layout ever went through the
      * goal upsert, every drag would clear the cached premium note and bill a fresh LLM call.
@@ -397,7 +418,7 @@ describe("VisionService", () => {
       await service.upsert(USER, { goalTitle: "Hukuk" });
       await service.putBoard(USER, boardWith([imageItem(uid(1), IMAGE_A)]));
 
-      const item = (await service.getMine(USER))?.board?.items[0];
+      const item = (await service.getMine(USER,{userId:USER,sessionId:uid(99)}))?.board?.items[0];
       expect(item?.kind === "image" && item.url).toBe(`/fake-private-object?owner=${USER}&key=${IMAGE_A}`);
     });
 
