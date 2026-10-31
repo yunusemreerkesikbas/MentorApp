@@ -125,6 +125,13 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-30 · Invitation social closure.** Invite creation, preview and redemption reject
+  closed social access before side effects; the invite discount resolver returns no offer.
+  Existing conversion/refund/cleanup paths retain their integrity behavior. Usage: the trial
+  closes economy and social independently. Gotcha: old saved referrals are consumed without
+  redemption in onboarding while invitations are closed. Related: invite services and social
+  closure specs, onboarding referral hook.
+
 ### 2026-10-27 — PR #170 conflict resolution
 
 - **What:** Merged current master into the referral branch, preserving ad-unit validation and Zod 4 typed config helpers.

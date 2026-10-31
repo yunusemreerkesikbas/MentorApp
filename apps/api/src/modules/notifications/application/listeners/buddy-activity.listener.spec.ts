@@ -36,6 +36,7 @@ describe("BuddyActivityListener.onBuddyFirstSession", () => {
       usersRepo as never,
       deliveries as never,
       fakeDb,
+      { isEnabled: async () => true } as never,
     );
   });
 

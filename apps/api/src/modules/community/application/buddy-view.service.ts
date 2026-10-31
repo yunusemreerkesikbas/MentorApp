@@ -5,6 +5,7 @@ import type {
   BuddyUserRef,
   BuddyViewDto,
 } from "@mentor/types";
+import { SocialAccessPolicy } from "../../../common/config/social-access.policy";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { SessionService } from "../../coaching/application/session.service";
 import { StreakService } from "../../coaching/application/streak.service";
@@ -33,6 +34,7 @@ export class BuddyViewService {
     private readonly streak: StreakService,
     private readonly users: UsersRepository,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly social: SocialAccessPolicy,
   ) {}
 
   /**
@@ -46,6 +48,7 @@ export class BuddyViewService {
    * study room instead — the table is the on-ramp to a buddy now.
    */
   async getSuggestions(userId: string, limit: number): Promise<BuddySuggestionRef[]> {
+    await this.social.assertEnabled();
     const coWorkers = await this.sessions.listRecentCoWorkers(
       userId,
       BUDDY_SUGGESTION_WINDOW_DAYS,
@@ -85,6 +88,7 @@ export class BuddyViewService {
   }
 
   async getView(userId: string): Promise<BuddyViewDto> {
+    await this.social.assertEnabled();
     const [active, outgoing, incoming] = await Promise.all([
       this.buddy.getActivePair(userId),
       this.buddy.getOutgoingPending(userId),

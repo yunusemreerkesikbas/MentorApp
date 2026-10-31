@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useAppAvailability } from "@/lib/app-availability";
 import "./community-parity.css";
 import { CommunityHeader } from "./_components/community-header";
 import { CommunityQuickReplyProvider } from "./_components/community-quick-reply";
@@ -13,6 +16,8 @@ import { CommunitySidebarSnapshotProvider } from "./_components/community-sideba
  * the top bar and the rooms live in the drawer. Pages own their right rail.
  */
 export default function CommunityLayout({ children }: { children: ReactNode }) {
+  const availability = useAppAvailability();
+  if (!availability?.forum) return children;
   return (
     <ZoneDrawerProvider>
       <CommunitySidebarSnapshotProvider>

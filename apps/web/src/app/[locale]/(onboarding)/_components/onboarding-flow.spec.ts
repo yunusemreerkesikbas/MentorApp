@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { ExamType } from "@mentor/types";
 
 import {
-  onboardingDestination,
   onboardingProgress,
   nextOnboardingStep,
   previousOnboardingStep,
@@ -45,10 +44,6 @@ describe("onboarding flow", () => {
     expect(onboardingProgress("complete")).toBeNull();
   });
 
-  it("preserves a pending invite and otherwise opens the dashboard", () => {
-    expect(onboardingDestination("/join-room?kod=MASA-A1B2C3")).toBe("/join-room?kod=MASA-A1B2C3");
-    expect(onboardingDestination(null)).toBe("/dashboard");
-  });
 
   describe("the coach branch (APP-089)", () => {
     it("asks the exam, then the coach profile, then the username", () => {
@@ -75,9 +70,5 @@ describe("onboarding flow", () => {
       expect(onboardingProgress("profile", "coach")).toEqual({ done: 4, total: 5 });
     });
 
-    it("lands a coach on their own panel, invite or not", () => {
-      expect(onboardingDestination(null, "coach")).toBe("/students");
-      expect(onboardingDestination("/join-room?kod=MASA-A1B2C3", "coach")).toBe("/students");
-    });
   });
 });

@@ -1,4 +1,14 @@
 {
+  "availability": {
+    "loading": "Yükleniyor…",
+    "closed_title": "Bu alan şu an açık değil",
+    "closed_body": "Kendi çalışma araçların ve hesabın burada. Planına, odak seansına ve defterlerine devam edebilirsin.",
+    "unavailable_title": "Bu alanın durumunu okuyamadık",
+    "unavailable_body": "Sayfayı yenileyip yeniden deneyebilirsin.",
+    "home": "Çalışma alanına dön",
+    "account": "Hesabına git",
+    "retry": "Yeniden dene"
+  },
   "common": {
     "loading": "Yükleniyor…",
     "error_unknown": "Beklenmeyen bir hata oluştu.",
@@ -1313,6 +1323,8 @@
     "coming_soon": "Çok yakında"
   },
   "paywall": {
+    "closed_title": "Üyelik alımı şu an kapalı",
+    "closed_body": "Mevcut hesabınla çalışmaya devam edebilirsin.",
     "banner_message": "{amount} indirim seni bekliyor: {label}",
     "banner_cta": "Şimdi yükselt",
     "price_before": "Eski fiyat",

@@ -1,3 +1,4 @@
+import { browserApiUrl } from "./api.fixture";
 import { expect, test } from "@playwright/test";
 import type { AuthUser } from "@mentor/types";
 
@@ -22,7 +23,7 @@ const onboardingUser: AuthUser = {
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => window.localStorage.removeItem("mentor_welcome_seen"));
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${browserApiUrl}/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const headers = {
@@ -105,7 +106,7 @@ test("welcome steps through the day with Devam et and the slide dots", async ({ 
 });
 
 test("Puhu speech resolves as streaming words", async ({ page }) => {
-  await page.route("http://localhost:3001/v1/auth/refresh", async (route) => {
+  await page.route(`${browserApiUrl}/auth/refresh`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -133,7 +134,7 @@ test("a student answers one question per screen and lands on their summary", asy
   let user: AuthUser = { ...onboardingUser };
   let vision: Record<string, unknown> | null = null;
 
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${browserApiUrl}/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const headers = {
@@ -205,7 +206,7 @@ test("the field picked on the landing opens the field step already selected", as
   let user: AuthUser = { ...onboardingUser };
   let vision: Record<string, unknown> | null = null;
   await page.addInitScript(() => window.localStorage.setItem("mentor_landing_career", "YAZILIM"));
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${browserApiUrl}/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const headers = {
@@ -252,7 +253,7 @@ test("a coach's invite link survives signup and onboarding", async ({ page }) =>
   const code = "MENTOR-KOC-ABCDEF123456";
   let session: AuthUser | null = null;
 
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${browserApiUrl}/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const headers = {

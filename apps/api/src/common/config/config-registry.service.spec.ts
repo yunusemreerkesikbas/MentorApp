@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCode } from "../errors/error-code";
 import { DomainError } from "../errors/domain-error";
 import { ConfigRegistryService } from "./config-registry.service";
@@ -16,7 +16,7 @@ function makeRepoFake(initial: Record<string, unknown> = {}) {
   };
 }
 
-/** Env reader fake: the registry only asks for NODE_ENV / APP_ENV. */
+/** Minimal typed-environment reader for registry deployment locks. */
 function makeEnvFake(env: Record<string, string | undefined>) {
   return { get: (key: string) => env[key] };
 }
@@ -91,6 +91,52 @@ describe("ConfigRegistryService", () => {
         payload: expect.objectContaining({ key: FeatureFlag.AI_ENABLED, after: false }),
       },
     ]);
+  });
+});
+
+describe("ConfigRegistryService disabled AI deployment", () => {
+  const make = (initial: Record<string, unknown> = {}, provider = "disabled") => {
+    const repo = makeRepoFake(initial);
+    const upsert = vi.spyOn(repo, "upsert");
+    const emit = vi.fn(() => true);
+    const service = new ConfigRegistryService(repo as never, { emit } as never,
+      makeEnvFake({ NODE_ENV: "production", AI_PROVIDER: provider, VISION_PROVIDER: provider }) as never);
+    return { service, repo, upsert, emit };
+  };
+
+  it.each([{}, { "ai.enabled": true }])("forces reads/list off without changing stored config: %j", async (initial) => {
+    const { service, repo, upsert, emit } = make(initial);
+    expect(await service.get("ai.enabled")).toBe(false);
+    expect((await service.list()).find(entry => entry.key === "ai.enabled")?.value).toBe(false);
+    expect(repo.map.get("ai.enabled")).toBe(initial["ai.enabled"]);
+    expect(upsert).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it("rejects enable before persistence or a change event", async () => {
+    const { service, upsert, emit } = make();
+    await expect(service.set("operator", "ai.enabled", true)).rejects.toMatchObject({
+      code: ErrorCode.ADMIN_CONFIG_INVALID_VALUE, httpStatus: 400,
+    });
+    expect(upsert).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it("still accepts false and unrelated configuration edits", async () => {
+    const { service } = make({ "ai.enabled": true });
+    await expect(service.set("operator", "ai.enabled", false)).resolves.toEqual({ before: true, after: false });
+    await service.set("operator", "signup.enabled", false);
+    expect(await service.get("signup.enabled")).toBe(false);
+    expect(await service.get("ai.enabled")).toBe(false);
+  });
+
+  it.each(["fake", "openai", "gemini"])("keeps %s runtime flags editable", async (provider) => {
+    const { service } = make({}, provider);
+    expect(await service.get("ai.enabled")).toBe(true);
+    await service.set("operator", "ai.enabled", false);
+    expect(await service.get("ai.enabled")).toBe(false);
+    await service.set("operator", "ai.enabled", true);
+    expect(await service.get("ai.enabled")).toBe(true);
   });
 });
 

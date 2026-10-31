@@ -239,6 +239,13 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-30 · Existing-account registration availability.** Public presentation now distinguishes
+  `coachRegistration` (applications open for an existing account) from `coachSignup` (new accounts
+  also admitted). Usage: closing `signup.enabled` does not hide `/coach-application` from existing
+  students when applications remain open. Gotcha: both are closed in the selected core trial;
+  backend admission/registration policies remain authoritative. Related: availability service/DTO,
+  feature route policy, account link and mixed-admission regression tests.
+
 ### 2026-10-15 · Independent coach phone requirement
 
 - Added audited `mentorship.phone_verification_required` (default false). Verified email remains mandatory for invitations and protected student access; optional phone checks also apply to followups, risk digests and task notifications. Active standing, relationship consent, roles and seats retain their own checks.

@@ -1,3 +1,4 @@
+import { browserApiUrl } from "./api.fixture";
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type { AuthUser } from "@mentor/types";
 
@@ -89,7 +90,7 @@ test("push anahtarı tarayıcıyı abone edip uç noktayı API'ye kaydeder", asy
   const subscriptions: unknown[] = [];
   const preferencePatches: unknown[] = [];
   // Registered after the shared mock, so it answers first and hands everything else back.
-  await page.route("http://localhost:3001/v1/notifications/**", async (route) => {
+  await page.route(`${browserApiUrl}/notifications/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const method = request.method();
@@ -159,7 +160,7 @@ test("economy refresh updates the open balance sheet and celebrates ledger rewar
     reason: "quest.weekly.effort-allowance", title: "Görev Coin’i", description: "Haftalık emek",
     createdAt: "2026-09-16T12:00:00Z" };
   const level = { tier: 3, xp: 603, nextAt: 1200, key: "compass", chapter: "awakening", currentAt: 600, nextKey: "cycle", progress: { current: 3, target: 600, remaining: 597, percent: 1 } };
-  await page.route("http://localhost:3001/v1/economy/**", async (route) => {
+  await page.route(`${browserApiUrl}/economy/**`, async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/balance")) return json(route, { xp, coinConfirmed: coin, coinPending: 0, level });
     if (path.endsWith("/quests")) return json(route, []);
@@ -207,13 +208,13 @@ test("koç ayarlarında Kazanımlar yok, sınav satırı koçluk yaptığı sın
   // Counted, then handed to the ECONOMY_DISABLED mock: a student's settings fetch quests on mount
   // even with the economy off, so zero calls means the section never mounted.
   let questCalls = 0;
-  await page.route("http://localhost:3001/v1/economy/quests", (route) => {
+  await page.route(`${browserApiUrl}/economy/quests`, (route) => {
     questCalls += 1;
     return route.fallback();
   });
   // A real balance, so the missing pills below are the coach rule and not an empty store.
   let balanceCalls = 0;
-  await page.route("http://localhost:3001/v1/economy/balance", (route) => {
+  await page.route(`${browserApiUrl}/economy/balance`, (route) => {
     balanceCalls += 1;
     return json(route, { xp: 40, coinConfirmed: 5, coinPending: 0, level: null });
   });
@@ -267,7 +268,7 @@ async function mockInviteEconomy(
 ) {
   const redeemBodies: unknown[] = [];
   const previewRequests: string[] = [];
-  await page.route("http://localhost:3001/v1/economy/**", async (route) => {
+  await page.route(`${browserApiUrl}/economy/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const method = request.method();
@@ -785,7 +786,7 @@ test.describe("tavsiye et", () => {
     await mockProfileApi(page);
     await mockInviteEconomy(page, { view: () => inviteView() });
     // Registered last, so it answers first: neither the card nor the tap ever gets a code.
-    await page.route("http://localhost:3001/v1/economy/invite", (route) =>
+    await page.route(`${browserApiUrl}/economy/invite`, (route) =>
       json(route, { code: "INTERNAL", message: "Hata" }, 500),
     );
     await stubNavigatorShare(page);
@@ -804,7 +805,7 @@ test.describe("tavsiye et", () => {
     // The page's own read fails once, so the tap is the first to hold a code. Registered last,
     // so it answers first and hands every later call to the working mock.
     let inviteCalls = 0;
-    await page.route("http://localhost:3001/v1/economy/invite", (route) => {
+    await page.route(`${browserApiUrl}/economy/invite`, (route) => {
       inviteCalls += 1;
       return inviteCalls === 1
         ? json(route, { code: "INTERNAL", message: "Hata" }, 500)
@@ -832,7 +833,7 @@ test.describe("tavsiye et", () => {
     await mockProfileApi(page);
     await mockInviteEconomy(page, { view: () => inviteView() });
     // Never answered: no code reaches the page, and the tap must not wait on it forever.
-    await page.route("http://localhost:3001/v1/economy/invite", () => {});
+    await page.route(`${browserApiUrl}/economy/invite`, () => {});
     await stubNavigatorShare(page);
     // Timed inside the page, from the tap to the share call: the click itself (scrolling, waiting
     // for the row to settle) is Playwright's time, not the lookup's.
@@ -864,7 +865,7 @@ test.describe("tavsiye et", () => {
     await mockProfileApi(page, { ...user, roles: ["COACH"] });
     // A coach is out of the program: the API would answer 403, and the row must not even ask.
     let inviteCalls = 0;
-    await page.route("http://localhost:3001/v1/economy/invite", (route) => {
+    await page.route(`${browserApiUrl}/economy/invite`, (route) => {
       inviteCalls += 1;
       return json(route, { code: "INVITE_COACH_NOT_ALLOWED", message: "Koç" }, 403);
     });
@@ -886,7 +887,7 @@ test.describe("tavsiye et", () => {
 async function mockProfileApi(page: Page, me: AuthUser = user) {
   let deleteAccountCalls = 0;
 
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${browserApiUrl}/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname + url.search;

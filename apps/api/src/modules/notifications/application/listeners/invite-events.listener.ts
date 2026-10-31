@@ -3,6 +3,7 @@ import { OnEvent } from "@nestjs/event-emitter";
 import { EconomyEventTopic, type InviteRedeemed } from "../../../economy/domain/economy.events";
 import { NotificationCopyKey } from "../../domain/notification-copy";
 import { NotificationsService } from "../notifications.service";
+import { SocialAccessPolicy } from "../../../../common/config/social-access.policy";
 
 /**
  * Invite redeem → tells the inviter who joined. The name rides on the event payload, so this listener
@@ -15,10 +16,14 @@ import { NotificationsService } from "../notifications.service";
 export class InviteEventsListener {
   private readonly logger = new Logger(InviteEventsListener.name);
 
-  constructor(private readonly notifications: NotificationsService) {}
+  constructor(
+    private readonly notifications: NotificationsService,
+    private readonly social: SocialAccessPolicy,
+  ) {}
 
   @OnEvent(EconomyEventTopic.INVITE_REDEEMED)
   async onInviteRedeemed(e: InviteRedeemed): Promise<void> {
+    if (!(await this.social.isEnabled())) return;
     if (e.buddyRequested) return;
     await this.notifications
       .createFromTemplate(e.inviterUserId, "FORUM", NotificationCopyKey.INVITE_JOINED, "/settings", {

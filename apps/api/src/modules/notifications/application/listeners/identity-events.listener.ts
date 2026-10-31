@@ -7,6 +7,7 @@ import {
 } from "../../../identity/domain/identity.events";
 import { NotificationCopyKey } from "../../domain/notification-copy";
 import { NotificationsService } from "../notifications.service";
+import { SocialAccessPolicy } from "../../../../common/config/social-access.policy";
 
 /**
  * Consumes identity domain events → in-app notifications. Best-effort: a failed notification never
@@ -18,10 +19,14 @@ import { NotificationsService } from "../notifications.service";
 export class IdentityEventsListener {
   private readonly logger = new Logger(IdentityEventsListener.name);
 
-  constructor(private readonly notifications: NotificationsService) {}
+  constructor(
+    private readonly notifications: NotificationsService,
+    private readonly social: SocialAccessPolicy,
+  ) {}
 
   @OnEvent(IdentityEventTopic.USER_FOLLOWED)
   async onUserFollowed(e: UserFollowed): Promise<void> {
+    if (!(await this.social.isEnabled())) return;
     if (e.recipientId === e.actorId) return; // can't follow yourself, but stay safe
     // A follower without a handle has no linkable profile page → notify without a link.
     const link = e.actorUsername ? `/community/member/${e.actorUsername}` : undefined;
@@ -55,6 +60,7 @@ export class IdentityEventsListener {
   }
 
   private async createBuddyNotification(e: BuddyEvent, templateKey: NotificationCopyKey): Promise<void> {
+    if (!(await this.social.isEnabled())) return;
     if (e.recipientId === e.actorId) return;
     await this.notifications
       .createFromTemplate(e.recipientId, "FORUM", templateKey, "/study-session", {

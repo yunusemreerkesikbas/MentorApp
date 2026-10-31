@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { AchievementService } from "./achievement.service";
+import { SocialAccessPolicy } from "../../../common/config/social-access.policy";
 
-function setup(enabled = true) {
+function setup(enabled = true, socialEnabled = true) {
   const repository = {
     listByUser: vi.fn().mockResolvedValue([
       {
@@ -43,11 +44,24 @@ function setup(enabled = true) {
     config as never,
     i18n as never,
     events as never,
+    new SocialAccessPolicy({ get: async () => socialEnabled } as never),
   );
   return { service, repository, i18n, events };
 }
 
 describe("AchievementService", () => {
+  it("keeps the owner's collection when social closes", async () => {
+    const f = setup(true, false);
+    await expect(f.service.getCollection("ayse", "target", "tr")).resolves.toMatchObject({ ownerView: true });
+  });
+
+  it("denies another user's collection and showcase before reading achievements", async () => {
+    const f = setup(true, false);
+    await expect(f.service.getCollection("ayse", "viewer", "tr")).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(f.service.getShowcase("target", "viewer", "tr")).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(f.repository.listByUser).not.toHaveBeenCalled();
+  });
+
   it("returns the complete catalogue with private progress to the owner", async () => {
     const { service } = setup();
 

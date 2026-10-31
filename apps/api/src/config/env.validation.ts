@@ -48,10 +48,10 @@ const envSchema = z.object({
   /** Exact invited addresses, private to the API; blank means no invitations. */
   PILOT_INVITED_EMAILS: pilotInvitedEmailsSchema,
 
-  // AI (§8): chat + vision providers are BOTH selectable (openai | gemini) — whichever provider +
-  // key is set in env runs. `fake` is the dev/test default. Gotcha: switching AI_PROVIDER changes
+  // AI (§8): real providers need their keys; paired `disabled` requires none and rejects all calls.
+  // `fake` is the dev/test default. Gotcha: switching AI_PROVIDER changes
   // the embedding model too → run POST /v1/admin/ai/reembed once (query/article vectors must match).
-  AI_PROVIDER: z.enum(["fake", "openai", "gemini"]).default("fake"),
+  AI_PROVIDER: z.enum(["disabled", "fake", "openai", "gemini"]).default("fake"),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
   OPENAI_EMBED_MODEL: z.string().default("text-embedding-3-small"),
@@ -59,7 +59,7 @@ const envSchema = z.object({
   GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
   /** Must support outputDimensionality=1536 (pgvector column size). */
   GEMINI_EMBED_MODEL: z.string().default("gemini-embedding-001"),
-  VISION_PROVIDER: z.enum(["fake", "gemini", "openai"]).default("fake"),
+  VISION_PROVIDER: z.enum(["disabled", "fake", "gemini", "openai"]).default("fake"),
   STORAGE_PROVIDER: z.enum(["fake", "r2"]).default("fake"),
   R2_PUBLIC_BASE_URL: z.string().url().optional(),
 
@@ -134,6 +134,10 @@ export function isDevToolingAllowed(env: Pick<Env, "NODE_ENV" | "APP_ENV">): boo
 /** Cross-field locks that single-field rules can't express. */
 const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
   validateProductionSecurity(env, ctx);
+  if ((env.AI_PROVIDER === "disabled") !== (env.VISION_PROVIDER === "disabled")) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["AI_PROVIDER"],
+      message: "AI_PROVIDER and VISION_PROVIDER must be disabled together." });
+  }
   if (env.ADS_LOCAL_TEST_ENABLED === "true" && !isLocalDisplayTestAllowed(env)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ADS_LOCAL_TEST_ENABLED"],
       message: "ADS_LOCAL_TEST_ENABLED requires development NODE_ENV/APP_ENV and an HTTP loopback APP_URL." });
@@ -175,8 +179,7 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       message: "PAYMENTS_WEBHOOK_SECRET is required when PAYMENTS_PROVIDER=fake.",
     });
   }
-  // Fake AI is deterministic test/dev infrastructure, never a production fallback. Production AI
-  // can still be disabled safely with the runtime `ai.enabled` kill-switch.
+  // Fake AI is test/dev infrastructure. Production may select paired disabled adapters instead.
   if (env.NODE_ENV === "production" && env.AI_PROVIDER === "fake") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -184,7 +187,7 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       message: "AI_PROVIDER=fake is forbidden in production — configure a real provider.",
     });
   }
-  // Real adapters require their provider key; the fake adapter (dev/test) does not.
+  // Real adapters require their key; disabled mode never selects or invokes them.
   if (env.AI_PROVIDER === "openai" && !env.OPENAI_API_KEY) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

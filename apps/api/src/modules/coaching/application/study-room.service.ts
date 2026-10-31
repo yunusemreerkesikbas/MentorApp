@@ -178,13 +178,14 @@ export class StudyRoomService {
 
   /**
    * Fan-out targets for "someone sat down at your table": the room's name plus every member
-   * except the actor. No flag check — a seated session can only exist while rooms are on.
+   * except the actor. Recheck availability because an event can outlive a room closure.
    * Returns null when the room vanished between the event and the listener.
    */
   async getNotificationTargets(
     roomId: string,
     actorId: string,
   ): Promise<{ roomName: string; memberIds: string[] } | null> {
+    await this.assertEnabled();
     const room = await this.rooms.findById(roomId);
     if (!room) return null;
     const members = await this.rooms.listMembers(roomId);

@@ -5,6 +5,7 @@ import { SubscriptionsService } from "../../payments/application/subscriptions.s
 import { UsersService } from "../../identity/application/users.service";
 import { UsersRepository } from "../../identity/infrastructure/users.repository";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { SocialAccessPolicy } from "../../../common/config/social-access.policy";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { InviteRepository } from "../infrastructure/invite.repository";
@@ -30,6 +31,7 @@ export class InviteViewService {
     private readonly users: UsersRepository,
     private readonly identities: UsersService,
     private readonly subscriptions: SubscriptionsService,
+    private readonly social: SocialAccessPolicy,
   ) {}
 
   /**
@@ -37,6 +39,7 @@ export class InviteViewService {
    * them, who and what discount that earns. Everything the card needs in one read.
    */
   async getView(userId: string): Promise<InviteCodeView> {
+    await this.social.assertEnabled();
     const user = await this.users.findByIdService(userId);
     if (!user) throw new NotFoundError();
     const [code, rewardCoin, joinedRows, joinedCount, convertedCount, redemption, block, friendDiscount, checkoutBlocked] =
@@ -158,6 +161,7 @@ export class InviteViewService {
    * avatar or id.
    */
   async getPreview(code: string): Promise<InvitePreviewView> {
+    await this.social.assertEnabled();
     const invalid = () => new DomainError(ErrorCode.INVITE_CODE_INVALID, HttpStatus.NOT_FOUND);
     if (!(await this.config.get("economy.enabled"))) throw invalid();
     const resolved = await this.invites.resolveValidInvite(code);

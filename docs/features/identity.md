@@ -97,6 +97,13 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-30 · Core-trial social boundary.** Follow/buddy actions and relation lists now use
+  `community.social.enabled` before reads, mutations and events, including invitation linking.
+  Internal relationship views return empty values while closed; cleanup remains possible.
+  Usage: select the explicit trial flags and restart the API. Gotcha: the forum switch alone
+  does not close identity relations. Related: `social-access.policy.ts`, identity follow/buddy
+  services and `social-closure.spec.ts`.
+
 - **2026-10-29 · Live Turnstile widget provisioned.** With explicit owner approval, created the
   free Managed `puhukoc.com (Spin)` widget for the apex plus localhost/127.0.0.1, with
   pre-clearance off. Saved the keypair only to the approved ignored local acceptance file;

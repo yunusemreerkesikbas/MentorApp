@@ -19,6 +19,7 @@ import { requestSessionReflection } from "@/lib/coach";
 import { recoverSuggestedTask, sanitizeCoachDisplayText } from "@/lib/coach-reply-markers";
 import { COMPLETION_STAR_TOTAL, sessionStarFill } from "@/lib/completion-stars";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
+import { useAppAvailability } from "@/lib/app-availability";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { useSubscription } from "@/lib/subscription-context";
 import { fetchQuests, isEconomyDisabled, notifyEconomyChanged } from "@/lib/economy";
@@ -106,6 +107,7 @@ export function SessionDoneState({
   const reduceMotion = useReducedMotion();
   const locale = useLocale();
   const t = useTranslations("session");
+  const availability = useAppAvailability();
   const toast = useMentorToast();
   const { tryCelebrate, celebration } = useStreakCelebration();
   const [mood, setMood] = useState<number | null>(null);
@@ -157,7 +159,6 @@ export function SessionDoneState({
       cancelled = true;
     };
     // Mount-only closure feedback; baselines are fixed when the done screen opens.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable enough for one-shot announce
   }, [countsAsFocusSession, questBaseline, streakBaseline, tryCelebrate]);
 
   const tooShort = !countsAsFocusSession && sessionStatus !== "ABANDONED";
@@ -210,7 +211,7 @@ export function SessionDoneState({
   );
 
   const maybeReflect = async () => {
-    if (!sessionId) return;
+    if (!sessionId || !availability?.aiCoach) return;
     setReflecting(true);
     try {
       // Shared read; only joins a request when the session ended before it settled.

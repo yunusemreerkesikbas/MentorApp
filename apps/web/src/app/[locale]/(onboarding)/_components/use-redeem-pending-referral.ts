@@ -6,6 +6,7 @@ import { ApiClientError } from "@mentor/api-client";
 import { notifyEconomyChanged, redeemInviteCode } from "@/lib/economy";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { consumePendingReferral } from "@/lib/pending-referral";
+import { useAppAvailability } from "@/lib/app-availability";
 import type { OnboardingAudience } from "./onboarding-flow";
 
 /**
@@ -20,11 +21,12 @@ import type { OnboardingAudience } from "./onboarding-flow";
 export function useRedeemPendingReferral(): (audience: OnboardingAudience) => void {
   const t = useTranslations("economy");
   const { success, error } = useMentorToast();
+  const availability = useAppAvailability();
 
   return useCallback(
     (audience) => {
       const code = consumePendingReferral();
-      if (!code || audience !== "student") return;
+      if (!code || audience !== "student" || !availability?.invites) return;
       redeemInviteCode(code)
         .then(() => {
           notifyEconomyChanged();
@@ -37,6 +39,6 @@ export function useRedeemPendingReferral(): (audience: OnboardingAudience) => vo
           });
         });
     },
-    [error, success, t],
+    [error, success, t, availability?.invites],
   );
 }

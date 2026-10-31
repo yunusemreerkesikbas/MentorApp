@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { BuddyStatus } from "@mentor/types";
+import { SocialAccessPolicy } from "../../../common/config/social-access.policy";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { IdentityEventTopic, type BuddyEvent } from "../domain/identity.events";
@@ -26,10 +27,12 @@ export class BuddyService {
     private readonly pairs: BuddyRepository,
     private readonly usersRepo: UsersRepository,
     private readonly events: EventEmitter2,
+    private readonly social: SocialAccessPolicy,
   ) {}
 
   /** Send a buddy request by username. Self → 400; unknown/banned → 404; state conflicts → 409. */
   async request(userId: string, username: string): Promise<void> {
+    await this.social.assertEnabled();
     const target = await this.requireVisibleUser(username);
     if (target.id === userId) {
       throw new DomainError(ErrorCode.SOCIAL_BUDDY_SELF, HttpStatus.BAD_REQUEST);
@@ -61,6 +64,7 @@ export class BuddyService {
    * to a mutual follow. Emits BUDDY_REQUESTED flagged `viaInvite` so the notification can say why.
    */
   async requestFromInvite(requesterId: string, addresseeId: string): Promise<boolean> {
+    await this.social.assertEnabled();
     if (requesterId === addresseeId) return false;
     const [requesterBusy, addresseeBusy] = await Promise.all([
       this.pairs.hasActiveOrPending(requesterId),
@@ -75,6 +79,7 @@ export class BuddyService {
 
   /** Accept an incoming request. 404 unknown/not addressee; 409 if either party got paired meanwhile. */
   async accept(userId: string, pairId: string): Promise<void> {
+    await this.social.assertEnabled();
     const pair = await this.pairs.findPendingById(pairId, userId);
     if (!pair || pair.addresseeId !== userId) throw new NotFoundError();
     const ok = await this.pairs.acceptInTx(pair.id, pair.requesterId, pair.addresseeId);
@@ -86,16 +91,19 @@ export class BuddyService {
 
   /** Decline (as addressee) or cancel (as requester) a pending request. Silent no-op if gone. */
   async deleteRequest(userId: string, pairId: string): Promise<void> {
+    await this.social.assertEnabled();
     await this.pairs.deleteRequest(pairId, userId);
   }
 
   /** End the active pairing. Silent (like unfollow). */
   async end(userId: string): Promise<void> {
+    await this.social.assertEnabled();
     await this.pairs.deleteActive(userId);
   }
 
   /** Nudge the active partner. 404 when no active pairing; 429 inside the cooldown. */
   async nudge(userId: string): Promise<void> {
+    await this.social.assertEnabled();
     const pair = await this.pokeBuddy(userId);
     await this.emitBuddyEvent(IdentityEventTopic.BUDDY_NUDGED, userId, pair.otherUserId);
   }
@@ -126,7 +134,7 @@ export class BuddyService {
     viewerId: string,
     candidateIds: string[],
   ): Promise<string[]> {
-    if (candidateIds.length === 0) return [];
+    if (candidateIds.length === 0 || !(await this.social.isEnabled())) return [];
     if (await this.pairs.findActiveByUser(viewerId)) return [];
     const excluded = new Set(
       await this.pairs.listRelatedOrActivelyPairedIds(viewerId, candidateIds),
@@ -136,20 +144,24 @@ export class BuddyService {
 
   // --- reads consumed by community (buddy view + public profile) ---
 
-  getActivePair(userId: string): Promise<BuddyPairWithUserRow | undefined> {
+  async getActivePair(userId: string): Promise<BuddyPairWithUserRow | undefined> {
+    if (!(await this.social.isEnabled())) return undefined;
     return this.pairs.findActiveByUser(userId);
   }
 
-  getOutgoingPending(userId: string): Promise<BuddyPairWithUserRow | undefined> {
+  async getOutgoingPending(userId: string): Promise<BuddyPairWithUserRow | undefined> {
+    if (!(await this.social.isEnabled())) return undefined;
     return this.pairs.findOutgoingPending(userId);
   }
 
-  listIncomingPending(userId: string): Promise<BuddyPairWithUserRow[]> {
+  async listIncomingPending(userId: string): Promise<BuddyPairWithUserRow[]> {
+    if (!(await this.social.isEnabled())) return [];
     return this.pairs.listIncomingPending(userId);
   }
 
   /** Viewer↔target relation for the profile button (viewer-elsewhere-active → "unavailable"). */
   async getStatusBetween(viewerId: string, targetId: string): Promise<BuddyStatus> {
+    if (!(await this.social.isEnabled())) return "none";
     const between = await this.pairs.findBetween(viewerId, targetId);
     if (between) {
       if (between.status === "ACTIVE") return "active";

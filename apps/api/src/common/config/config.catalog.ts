@@ -385,6 +385,7 @@ export const CONFIG_CATALOG = {
     "Gate for the light-economy module (user-facing balance/earning).",
   ),
   "economy.streak_rescue.enabled": flag(false, "Allow Coin purchases of streak freezes."),
+  "community.social.enabled": flag(true, "Expose user relations, other-user profiles and social activity signals; personal progress remains available."),
   "community.leaderboard.enabled": flag(false, "Expose XP rankings; personal XP remains available."),
   "forum.enabled": flag(
     false,

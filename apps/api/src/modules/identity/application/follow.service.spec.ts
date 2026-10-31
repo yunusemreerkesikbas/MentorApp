@@ -31,7 +31,8 @@ const make = () => {
   const follows = makeFollows();
   const users = makeUsers();
   const events = makeEvents();
-  const svc = new FollowService(follows as never, users as never, events as never, storage as never);
+  const social = { assertEnabled: vi.fn().mockResolvedValue(undefined), isEnabled: vi.fn().mockResolvedValue(true) };
+  const svc = new FollowService(follows as never, users as never, events as never, storage as never, social as never);
   return { svc, follows, users, events };
 };
 
