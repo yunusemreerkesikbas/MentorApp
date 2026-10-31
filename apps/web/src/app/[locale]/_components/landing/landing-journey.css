@@ -1,0 +1,313 @@
+/*
+ * "Gece Yolculuğu" (landing-journey.tsx): the profile's quests card on the left, the level lights
+ * on the right. The badges are cut round like `JourneyLevelMedallion`; lit ones in colour, the
+ * current one ringed in lamp yellow, the rest greyed (without the medallion's lock pill, which
+ * would crowd a 46px badge).
+ */
+.lj-root {
+  --lj-ink: #0f2233;
+  --lj-ink-quiet: #5f7086;
+  --lj-wood: #8a6a4f;
+  --lj-path: #fbf4e8;
+  --lj-lamp: #ffd15c;
+  --color-focus-ring: #1d6fbf;
+}
+
+.lj-grid {
+  display: grid;
+  gap: 28px;
+  margin-top: 30px;
+}
+
+@media (min-width: 1024px) {
+  .lj-grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: stretch;
+  }
+}
+
+/* ---- Quests ---- */
+.lj-quests {
+  padding: 22px;
+  border-radius: 24px;
+  background: #ffffff;
+  color: var(--lj-ink);
+  box-shadow: 0 0 0 1px rgba(15, 34, 51, 0.06), 0 24px 40px -28px rgba(3, 10, 24, 0.45);
+}
+
+.lj-q-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.lj-q-head b {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.lj-q-head span {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--lj-ink-quiet);
+}
+
+.lj-q-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #f4eee4;
+}
+
+.lj-q-tabs button {
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--lj-ink-quiet);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lj-q-tabs button.is-on {
+  background: #ffffff;
+  color: var(--lj-ink);
+  box-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+.lj-q-tabs button:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.lj-q-section {
+  margin: 16px 0 4px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lj-wood);
+}
+
+.lj-q-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lj-q-rows li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  border-bottom: 1px solid #f1eae0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.lj-q-rows li:last-child {
+  border-bottom: 0;
+}
+
+.lj-q-rows i {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px #d5ccbe;
+}
+
+.lj-q-rows li.is-done i {
+  background: #2e8b57 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12.5l4 4L18 8' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px no-repeat;
+  box-shadow: none;
+}
+
+.lj-q-rows span {
+  flex: 1;
+}
+
+.lj-q-rows li.is-done span {
+  color: var(--lj-ink-quiet);
+}
+
+.lj-q-rows em {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  color: var(--lj-ink-quiet);
+  white-space: nowrap;
+}
+
+.lj-q-rows b {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #e4eefe;
+  color: #1a5fa3;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.lj-q-rows b.is-coin {
+  background: #fff0c7;
+  color: #7a5200;
+}
+
+.lj-q-coin {
+  margin: 14px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--lj-wood);
+}
+
+/* ---- The lights ---- */
+.lj-path {
+  display: flex;
+  flex-direction: column;
+  padding: 22px 24px;
+  border-radius: 24px;
+  background: var(--lj-path);
+  color: var(--lj-ink);
+  box-shadow: inset 0 0 0 1px rgba(138, 106, 79, 0.14);
+}
+
+.lj-level {
+  margin: 0;
+}
+
+.lj-level small {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--lj-wood);
+}
+
+.lj-level b {
+  display: block;
+  margin: 2px 0 8px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.lj-bar {
+  display: block;
+  height: 8px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eadfcb;
+}
+
+.lj-bar i {
+  display: block;
+  width: 60%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f5b565, var(--lj-lamp));
+}
+
+.lj-lights {
+  position: relative;
+  flex: 1;
+  min-height: 210px;
+  margin-top: 10px;
+}
+
+.lj-lights svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lj-lights polyline {
+  fill: none;
+  stroke: #c9b48c;
+  stroke-width: 1.4;
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.lj-light {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  translate: -50% -50%;
+}
+
+.lj-light img {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px var(--lj-path), 0 0 0 3px rgba(138, 106, 79, 0.25);
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
+.lj-light small {
+  display: none;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #5a3a08;
+  white-space: nowrap;
+}
+
+.lj-light.is-lit img,
+.lj-light.is-now img {
+  filter: none;
+  opacity: 1;
+}
+
+.lj-light.is-lit small,
+.lj-light.is-now small {
+  display: block;
+}
+
+.lj-light.is-now img {
+  width: 64px;
+  height: 64px;
+  box-shadow: 0 0 0 3px var(--lj-path), 0 0 0 5px var(--lj-lamp), 0 0 18px 4px rgba(255, 209, 92, 0.55);
+}
+
+.lj-chapters {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--lj-wood);
+}
+
+@media (max-width: 639px) {
+  .lj-lights {
+    min-height: 170px;
+  }
+
+  .lj-light img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .lj-light.is-now img {
+    width: 42px;
+    height: 42px;
+  }
+
+  /* Only the current light keeps its name; two names side by side overlap here. */
+  .lj-light.is-lit small {
+    display: none;
+  }
+
+  .lj-chapters {
+    font-size: 9px;
+  }
+}

@@ -16,8 +16,10 @@ import { UsersService } from "../../identity/application/users.service";
 import { VisionBoardRepository } from "../infrastructure/vision-board.repository";
 import { CoachingEventTopic, VisionBoardSaved } from "../domain/coaching.events";
 import { toVisionDto } from "./coaching.mappers";
+import type { StorageReadActor } from "../../../shared/storage/storage-budget.types";
+import { DomainError, ForbiddenError } from "../../../common/errors/domain-error";
 
-/** Public prefix all board photos live under; the sweep lists exactly this. */
+/** Private prefix all board photos live under; the sweep lists exactly this. */
 const VISION_BOARD_PREFIX = "vision-board/";
 /** An object younger than this belongs to an editing session that has not saved yet. */
 const VISION_BOARD_ORPHAN_GRACE_MS = 24 * 60 * 60 * 1000;
@@ -51,12 +53,12 @@ export class VisionService {
     @Optional() private readonly events?: EventEmitter2,
   ) {}
 
-  async getMine(userId: string): Promise<VisionDto | null> {
+  async getMine(userId: string, readActor?: StorageReadActor): Promise<VisionDto | null> {
     const dto = await withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.visions.findByUser(tx, userId);
       return row ? toVisionDto(row) : null;
     });
-    return dto ? this.enrich(userId, dto) : null;
+    return dto ? this.enrich(userId, dto, readActor) : null;
   }
 
   /**
@@ -65,9 +67,10 @@ export class VisionService {
    *
    * The name lookups short-circuit on null ids, so a goal with no map selection costs no queries.
    */
-  private async enrich(userId: string, dto: VisionDto): Promise<VisionDto> {
+  private async enrich(userId: string, dto: VisionDto, readActor?: StorageReadActor): Promise<VisionDto> {
+    if (readActor && readActor.userId !== userId) throw new ForbiddenError();
     const [withImages, targetNames] = await Promise.all([
-      this.withImageUrls(userId, dto), this.resolveTargetNames(dto),
+      this.withImageUrls(dto, readActor), this.resolveTargetNames(dto),
     ]);
     return { ...withImages, targetNames };
   }
@@ -75,21 +78,25 @@ export class VisionService {
   /**
    * Resolve each board photo's storage key to a URL the browser can load.
    *
-   * Done here rather than on the client because there is no base the client could hold: R2 hands
-   * back an absolute CDN URL, the dev fake store an API-relative path. The field is derived on
-   * every read and dropped by the write schema, so it never becomes stored state that can go stale.
+   * HTTP projections carry the exact authenticated session; evidence reads retain only keys.
+   * URLs are derived on each read and never become stored board state.
    */
-  private async withImageUrls(userId: string, dto: VisionDto): Promise<VisionDto> {
+  private async withImageUrls(dto: VisionDto, readActor?: StorageReadActor): Promise<VisionDto> {
     if (!dto.board) return dto;
     return {
       ...dto,
       board: {
         ...dto.board,
-        items: await Promise.all(dto.board.items.map(async (item) =>
-          item.kind === "image"
-            ? { ...item, url: await this.storage.getPrivateUrl(item.storageKey, userId) }
-            : item,
-        )),
+        items: await Promise.all(dto.board.items.map(async (item) => {
+          if (item.kind !== "image") return item;
+          const {url:_previousUrl,...image}=item;
+          if (!readActor) return image;
+          try { return {...image,url:await this.storage.getPrivateUrl(item.storageKey,readActor)}; }
+          catch(error) {
+            if (error instanceof DomainError && error.code === "STORAGE_TEMPORARILY_UNAVAILABLE") return image;
+            throw error;
+          }
+        })),
       },
     };
   }
@@ -124,7 +131,7 @@ export class VisionService {
     };
   }
 
-  async upsert(userId: string, input: UpsertVisionInput): Promise<VisionDto> {
+  async upsert(userId: string, input: UpsertVisionInput, readActor?: StorageReadActor): Promise<VisionDto> {
     const targetCityCode = input.targetCityCode ?? null;
     const targetUniversityId = input.targetUniversityId ?? null;
     const targetTitleId = input.targetTitleId ?? null;
@@ -173,7 +180,7 @@ export class VisionService {
     });
     // ponytail: separate write after the board tx; a failure here leaves the mirror one save stale.
     await this.users.setCareerGroup(userId, normalized.careerGroup);
-    return this.enrich(userId, dto);
+    return this.enrich(userId, dto, readActor);
   }
 
   /**
@@ -185,7 +192,7 @@ export class VisionService {
    * Requires an existing goal. A board without one has nothing to be about, and creating a goal as
    * a side effect of saving a layout would invent a `goalTitle` the user never typed.
    */
-  async putBoard(userId: string, board: VisionBoardDocInput): Promise<VisionDto> {
+  async putBoard(userId: string, board: VisionBoardDocInput, readActor?: StorageReadActor): Promise<VisionDto> {
     // The schema proves the key is well-formed; only the request knows whose it should be. Without
     // this, a crafted document could point at another user's object and publish it as its own.
     const foreign = board.items.find(
@@ -235,7 +242,7 @@ export class VisionService {
         new VisionBoardSaved(userId),
       );
     }
-    return this.enrich(userId, dto);
+    return this.enrich(userId, dto, readActor);
   }
 
   /**

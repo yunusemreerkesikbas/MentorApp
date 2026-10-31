@@ -1,4 +1,5 @@
 import { resolveAvatarUrl } from "@/lib/avatar";
+import { MediaImage } from "./media-image";
 
 export interface UserAvatarProps {
   alt?: string;
@@ -13,7 +14,14 @@ export interface UserAvatarProps {
 }
 
 /** Shared user identity avatar. Content and attachment thumbnails must not use this component. */
-export function UserAvatar({ alt = "", className = "", frame = "default", size = 36, src, onError }: UserAvatarProps) {
+export function UserAvatar({
+  alt = "",
+  className = "",
+  frame = "default",
+  size = 36,
+  src,
+  onError,
+}: UserAvatarProps) {
   const resolvedSrc = resolveAvatarUrl(src ?? null);
   const frameClass =
     frame === "strong"
@@ -22,16 +30,8 @@ export function UserAvatar({ alt = "", className = "", frame = "default", size =
   const sharedClass = `flex shrink-0 rounded-full object-cover ${frameClass} ${className}`;
   const style = { width: size, height: size, minWidth: size };
 
-  if (resolvedSrc) {
-    return (
-      // Public/signed R2 URLs are not constrained to Next Image remote patterns.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={resolvedSrc} alt={alt} className={sharedClass} decoding="async" style={style} onError={onError} />
-    );
-  }
-
   // Default avatar: head + shoulders silhouette in theme tokens, so it follows dark mode.
-  return (
+  const silhouette = (
     <span
       aria-hidden="true"
       className={`${sharedClass} overflow-hidden`}
@@ -40,11 +40,31 @@ export function UserAvatar({ alt = "", className = "", frame = "default", size =
       <svg
         viewBox="0 0 100 100"
         className="size-full"
-        style={{ color: "color-mix(in srgb, var(--color-secondary) 38%, var(--color-surface-container))" }}
+        style={{
+          color:
+            "color-mix(in srgb, var(--color-secondary) 38%, var(--color-surface-container))",
+        }}
       >
         <circle cx="50" cy="39" r="21" fill="currentColor" />
         <circle cx="50" cy="98" r="32" fill="currentColor" />
       </svg>
     </span>
+  );
+  return resolvedSrc ? (
+    <MediaImage
+      privateMedia={false}
+      fallback={silhouette}
+      retryable={false}
+      src={resolvedSrc}
+      alt={alt}
+      width={size}
+      height={size}
+      className={sharedClass}
+      decoding="async"
+      style={style}
+      onError={onError}
+    />
+  ) : (
+    silhouette
   );
 }

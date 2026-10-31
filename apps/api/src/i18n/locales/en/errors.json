@@ -186,5 +186,6 @@
   "MENTORSHIP_ASSIGNMENT_STALE": "This task changed after you opened it. Open the current plan and try again.",
   "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "The event organizer cannot also appear in the attendee list.",
   "MENTORSHIP_EVENT_ATTENDEE_LIMIT": "An event can include at most {max} students.",
-  "MENTORSHIP_REGISTRATION_HAS_COACH": "You can't switch to a coach account while a coach is following you. End that link from My coach first."
+  "MENTORSHIP_REGISTRATION_HAS_COACH": "You can't switch to a coach account while a coach is following you. End that link from My coach first.",
+  "STORAGE_TEMPORARILY_UNAVAILABLE": "Photo actions are temporarily unavailable."
 }

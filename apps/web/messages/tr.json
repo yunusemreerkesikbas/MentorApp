@@ -238,6 +238,51 @@
         "codename": "Nebula Dalgıcı"
       }
     },
+    "focus": {
+      "pill": "Odak",
+      "title": "Odanı seç, süreni kur, başla.",
+      "lead": "Evde, kütüphanede ya da kafede: çalışacağın sahneyi sen seçersin. Odaktan sonra molan hazır.",
+      "lead_rooms": "Evde, kütüphanede ya da kafede: çalışacağın sahneyi sen seçersin. Arkadaşların da masana gelir; herkes kendi seansını açar.",
+      "subject": "Tarih",
+      "task": "Osmanlı öncesi Türk devletleri",
+      "unit": "DK",
+      "preset": "{focus} / {rest} dk",
+      "minutes": "{count} dk",
+      "pomodoro": {
+        "name": "Pomodoro",
+        "body": "25/5 ya da 50/10 hazır. İstersen kadranı çevirip kendi süreni kur ya da süresiz çalış. Dersini seç; biten seans serine ve günlük hedefine sayılır."
+      },
+      "table": {
+        "name": "Masa",
+        "title": "Arkadaşların aynı masada.",
+        "body": "Masa kur; adını, temasını ve koltuk sayısını seç. MASA- ile başlayan davet bağlantısını paylaş, koltuklardan kimin kaç dakikadır odakta olduğunu gör.",
+        "friend": "Elif",
+        "me": "Sen"
+      },
+      "sound": {
+        "title": "Odanın sesi de seninle.",
+        "body": "Kütüphanenin uğultusu, kafenin fincan sesleri ya da sessizlik: sahneye uygun ses kendiliğinden gelir. Sade görünüme geçip yalnız sayaca da bakabilirsin."
+      }
+    },
+    "journey": {
+      "title": "Her emek bir ışık yakar.",
+      "lead": "Plandan bir görev, bir odak seansı, haftada beş gün: hepsi görev olarak sayılır. XP topladıkça Gece Yolculuğu'nda yeni bir ışık yanar; düzenli haftalar Coin hakkı da getirir.",
+      "coin_note": "Coin nakit değildir. Emeğinle hak kazanırsın.",
+      "goal_progress": "60/120 dk",
+      "quest": {
+        "plan_task": "Bugünün planından 1 görev tamamla",
+        "focus_session": "1 odak seansı bitir",
+        "focus_goal": "Günlük odak hedefine ulaş",
+        "mood": "Bugünkü ruh halini işaretle",
+        "active_days": "Bu hafta {target} gün aktif ol",
+        "focus_sessions": "Bu hafta {target} odak seansı tamamla",
+        "plan_tasks": "Bu hafta {target} plan görevi tamamla",
+        "full_week": "Haftanın 7 gününde aktif ol",
+        "milestone_sessions": "{count} odak seansı tamamla",
+        "milestone_rhythm": "{days} günlük ritme ulaş",
+        "milestone_tasks": "{count} plan görevi tamamla"
+      }
+    },
     "faq": {
       "pill": "SSS",
       "title": "Sık sorulanlar",
@@ -320,6 +365,7 @@
       "name": "Topluluk",
       "title": "Soru sor, el uzat, birlikte ilerle.",
       "body": "Takıldığın soruyu paylaş, bildiğin bir soruya sen de cevap ver. Haftalık ligde emeğin görünür.",
+      "body_no_league": "Takıldığın soruyu paylaş, bildiğin bir soruya sen de cevap ver.",
       "scribble": "alkış emeğe",
       "cheer": "Bu hafta 5 gün çalıştın. Harika gidiyorsun!",
       "row1": "Zeynep",
@@ -3127,10 +3173,9 @@
     "gallery_slide": "Görsel {current} / {total}"
   },
   "consentBanner": {
-    "analytics_title": "Analitik",
     "title": "Analitik çerez tercihin",
     "body": "PuhuKoç'u geliştirmek için kimlik bilgisi içermeyen kullanım verilerini yalnız izninle ölçeriz.",
-    "details": "Ayrıntıları ve tercihini gör",
+    "details": "Ayrıntılar",
     "reject": "Reddet",
     "accept": "Kabul et"
   },
@@ -3597,7 +3642,8 @@
       "context_toolbar": "Seçim araçları",
       "rotate_90": "90° döndür",
       "duplicate": "Çoğalt",
-      "color_panel_title": "Renk"
+      "color_panel_title": "Renk",
+      "export_media_unavailable": "Bir fotoğraf şu an açılamıyor. Panon duruyor; biraz sonra yeniden deneyebilirsin."
     }
   },
   "preferenceSimulation": {
@@ -4446,5 +4492,9 @@
     "followup_page_of": "Sayfa {page} / {pages}",
     "invite_copied_short": "Kopyalandı",
     "planning_unsaved_edit": "Formdaki değişikliği önce kaydet ya da vazgeç."
+  },
+  "media": {
+    "unavailable": "Fotoğraf şu an görüntülenemiyor.",
+    "retry": "Yeniden dene"
   }
 }

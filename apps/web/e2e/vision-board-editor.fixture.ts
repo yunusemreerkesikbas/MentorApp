@@ -1,12 +1,13 @@
 import type { Locator, Page, Route } from "@playwright/test";
 import type { AuthUser, VisionBoardDoc, VisionBoardItem, VisionDto, ZoneView } from "@mentor/types";
+import { browserApiOrigin } from "./api.fixture";
 
 /**
  * What the collage editor's scenarios stand on: a signed-in student with a goal, the API the editor
  * talks to (answered in the test, never by a server), and a few measurements.
  */
 
-const API_ORIGIN = "http://localhost:3001";
+const API_ORIGIN = browserApiOrigin;
 
 export const boardUser: AuthUser = {
   id: "44444444-4444-4444-8444-444444444444",

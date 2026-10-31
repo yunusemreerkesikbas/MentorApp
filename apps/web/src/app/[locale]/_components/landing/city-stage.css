@@ -735,13 +735,93 @@
   border-radius: var(--play-sheet-radius);
 }
 
+/*
+ * Here the card is one more paper note from the scene: cream paper, a strip of washi tape, the
+ * scene's ink. It re-points the surface tokens, so its buttons follow the paper and it never
+ * follows html.dark.
+ */
+body:has(.lc-root) .cookie-consent-banner {
+  --color-surface: #fffdf6;
+  --color-main: #0f2233;
+  --color-secondary: #3d4e63;
+  --play-line: #e3dccb;
+  --play-selected-ink: #1a5fa3;
+  padding-top: 20px;
+  border-radius: 4px 4px 7px 7px;
+  box-shadow: 0 2px 4px rgba(3, 10, 24, 0.18), 0 28px 46px -20px rgba(3, 10, 24, 0.72);
+}
+
+/*
+ * Paper flutter: a taped note lifts from its bottom edge toward you in one damped breeze while the
+ * tape holds the top. `usePaperFlutter` sets `data-flutter="on"` and clears it when the breeze ends;
+ * the cookie card runs it once as it opens. Lift never goes negative: the paper only falls back.
+ */
+[data-flutter] {
+  --flutter-lift: 9deg;
+  --flutter-turn: 1.2deg;
+}
+
+[data-flutter="on"] {
+  transform-origin: 50% 0;
+  animation: paper-flutter 1.6s linear;
+}
+
+/* The city's big notes move less. Below lg they are the bottom sheet, which stays put. */
+.lc-note[data-flutter] {
+  --flutter-lift: 5deg;
+  --flutter-turn: 0.8deg;
+}
+
+@media (max-width: 1023px) {
+  .lc-note[data-flutter="on"] {
+    animation: none;
+  }
+}
+
+@keyframes paper-flutter {
+  0% { transform: perspective(1100px) rotateX(0deg) rotate(0deg); animation-timing-function: ease-out; }
+  14% { transform: perspective(1100px) rotateX(var(--flutter-lift)) rotate(var(--flutter-turn)); animation-timing-function: ease-in-out; }
+  34% { transform: perspective(1100px) rotateX(calc(var(--flutter-lift) * 0.15)) rotate(calc(var(--flutter-turn) * -0.55)); animation-timing-function: ease-in-out; }
+  52% { transform: perspective(1100px) rotateX(calc(var(--flutter-lift) * 0.5)) rotate(calc(var(--flutter-turn) * 0.3)); animation-timing-function: ease-in-out; }
+  70% { transform: perspective(1100px) rotateX(calc(var(--flutter-lift) * 0.05)) rotate(calc(var(--flutter-turn) * -0.15)); animation-timing-function: ease-in-out; }
+  85% { transform: perspective(1100px) rotateX(calc(var(--flutter-lift) * 0.16)) rotate(calc(var(--flutter-turn) * 0.05)); animation-timing-function: ease-in; }
+  100% { transform: perspective(1100px) rotateX(0deg) rotate(0deg); }
+}
+
+body:has(.lc-root) .cookie-consent-banner {
+  --flutter-lift: 10deg;
+  --flutter-turn: 1deg;
+  transform-origin: 50% 0;
+  animation: paper-flutter 1.6s linear 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-flutter="on"],
+  body:has(.lc-root) .cookie-consent-banner {
+    animation: none;
+  }
+}
+
+body:has(.lc-root) .cookie-consent-banner::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 96px;
+  height: 24px;
+  margin-left: -48px;
+  background: #9cc7f0;
+  opacity: 0.9;
+  rotate: -3deg;
+  clip-path: polygon(3% 0, 97% 0, 100% 18%, 97% 36%, 100% 54%, 97% 72%, 100% 90%, 97% 100%, 3% 100%, 0 82%, 3% 64%, 0 46%, 3% 28%, 0 10%);
+}
+
 @media (min-width: 1024px) {
   body:has(.lc-root) .cookie-consent-banner {
     left: auto;
     right: 24px;
-    bottom: 24px;
-    width: 420px;
-    margin: 0;
+    bottom: 28px;
+    rotate: -0.8deg;
   }
 }
 

@@ -4,6 +4,9 @@ import trMessages from "../../messages/tr.json";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "./scoped-messages";
 
 describe("pickMessages", () => {
+  it("includes media fallback copy in nested article providers",()=>{
+    expect(ROUTE_MESSAGE_SCOPES.article).toContain("media");
+  });
   const messages = {
     analyticsConsent: { title: "Çerez tercihi" },
     article: { login: "Giriş yap" },

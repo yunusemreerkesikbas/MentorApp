@@ -4,6 +4,12 @@ Date: 2026-10-30, Europe/Istanbul. This continues the approved closed-admin,
 AI-off, core-tools trial. Hosting is still a rehearsal; no public admission or production
 deployment is established by this record.
 
+Follow-up on 2026-10-31: the credential-free AI candidate `1513a5bb` passed its own complete
+CI run, replacing the earlier Gemini-key prerequisite for the closed trial. See the
+[exact-candidate verification](2026-10-31-disabled-ai-startup-verification.md). The owner
+also declined additional staging setup/cost/development; acceptance uses the selected single
+Free trial environment before admission. Historical settings below remain preparation evidence.
+
 ## Exact candidate and CI
 
 - Candidate: `035f92171b81d47fc7d93763eacdd0cfb773db27`, branch

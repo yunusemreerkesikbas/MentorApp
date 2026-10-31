@@ -13,7 +13,7 @@ describe("public app availability", () => {
     const f = fixture();
     const result = await f.service.get();
     expect(Object.keys(result).sort()).toEqual([
-      "aiCoach", "coachPurchases", "coachRegistration", "coachSignup", "forum", "humanCoaching", "invites", "social",
+      "aiCoach", "coachPurchases", "coachRegistration", "coachSignup", "economy", "forum", "humanCoaching", "invites", "social",
       "studentPurchases", "studentSignup", "studyRooms",
     ]);
     expect(Object.values(result).every(value => typeof value === "boolean")).toBe(true);
@@ -32,8 +32,15 @@ describe("public app availability", () => {
     }, "disabled");
     expect(await f.service.get()).toEqual({
       aiCoach: false, social: false, forum: false, studyRooms: false, humanCoaching: false,
-      studentPurchases: false, coachPurchases: false, studentSignup: true, coachRegistration: false, coachSignup: false, invites: false,
+      studentPurchases: false, coachPurchases: false, studentSignup: true, coachRegistration: false, coachSignup: false,
+      economy: false, invites: false,
     });
+  });
+
+  it("tells the landing whether quests, XP and Coin are on, apart from invitations", async () => {
+    expect(await fixture({ "economy.enabled": true, "community.social.enabled": false }).service.get())
+      .toMatchObject({ economy: true, invites: false });
+    expect(await fixture({ "economy.enabled": false }).service.get()).toMatchObject({ economy: false });
   });
 
   it("does not advertise web purchases when the provider is disabled", async () => {

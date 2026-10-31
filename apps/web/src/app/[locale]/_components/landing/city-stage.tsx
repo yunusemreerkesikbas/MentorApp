@@ -28,6 +28,7 @@ import {
   YOURS_WINDOW,
   type SceneArt,
 } from "./city-scene";
+import { usePaperFlutter } from "./paper-flutter";
 import { SceneImg, sceneBackground } from "./scene-img";
 
 const WIDE = "(min-width: 1024px)";
@@ -74,6 +75,7 @@ export function CityStage({
   intercomLabel: string;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  usePaperFlutter(rootRef);
   const [stop, setStop] = useState(0);
   // The rooms are only visible up close; their art waits until the camera moves in.
   const [roomsOn, setRoomsOn] = useState(false);

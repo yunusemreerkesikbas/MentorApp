@@ -4,6 +4,23 @@ Permanent staging is deferred. Production source preparation does not require a 
 running second environment. This inventory does not authorize provisioning, DNS changes,
 production secret reuse or Cloudflare overage terms.
 
+## Owner scope reaffirmed (2026-10-31)
+
+The owner declined extra staging cost or staging-specific development. The repository has
+one CI workflow and no active automatic staging deployment. The selected first release uses
+one Free core-trial environment; provider acceptance with synthetic data happens there before
+user admission. Do not create a parallel hosted application or staging pipeline for this work.
+The separate `puhu-core-trial` database prepared on 2026-10-30 belongs to that selected trial,
+not to an additional staging release. This does not authorize public admission or paid usage.
+
+The latest read-only Render dashboard check still showed zero services. Cloudflare's
+2026-10-31 R2 view showed both retained `puhu-s1-*` EU buckets empty (0 objects / 0 B).
+Management-only reads on 2026-10-31 report the old staging endpoint and the selected
+core-trial endpoint both `idle`, each fixed at min=max 0.25 CU. The old staging endpoint's
+last-active timestamp remains 2026-10-12. No SQL connection, wake-up, setting change or
+resource creation was performed. Historical inventory below retains its original dates.
+Preserve existing resources and secrets; no deletion or repurposing is requested.
+
 ## Recoverable work
 
 - Commit `376a70e87d8db683be2b653d10c4789dcdf1d837` preserves previous staging Blueprints,

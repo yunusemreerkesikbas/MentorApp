@@ -17,19 +17,95 @@ Bucket names are resource identifiers; they do not have to match `puhukoc.com`. 
 existing `mentor-public` / `mentor-private` dev/test buckets and their data. The separate
 retained staging pair is `puhu-s1-public` / `puhu-s1-private`.
 
-The planned production pair is **`puhu-prod-public` / `puhu-prod-private`**, jurisdiction
-**`eu`**, with **`https://media.puhukoc.com`** attached only to the public bucket. These are
-already the values in `deployment.md` and the optional paid `render.yaml`; this workflow
-has not provisioned them or migrated existing objects. Commands using `mentor-*` below
-describe dev/test unless explicitly marked production. Renaming existing resources is not
-a prerequisite for the domain change.
+The planned trial pair is **`puhu-prod-public` / `puhu-prod-private`**, jurisdiction **`eu`**.
+For the selected bounded trial, both buckets remain provider-private and media uses the existing
+API domain. Do not attach `media.puhukoc.com` or enable r2.dev access. The optional paid
+`render.yaml` retains its earlier direct/public-media configuration; it is not the selected trial
+profile. No new buckets or migration of old objects has been performed by this source work.
 
-Production acceptance requires matching bucket env values, scoped credentials, exact CORS
-origins and CSP origins. `infra/r2/cors-*.json` still contains localhost and `mentor.example`
-development placeholders; prepare a production policy allowing only the intended
-`https://puhukoc.com` / `https://admin.puhukoc.com` origins before applying it to production.
+Production acceptance requires matching bucket env values, scoped credentials and exact API
+origins. Browsers do not contact bounded-trial buckets, so the old `infra/r2/cors-*.json` browser
+policies must not be applied to them. Those policies belong to the retained direct/dev setup.
 Bucket labels do not replace access controls or billing stops. Follow the
 [free-first spending/release gates](../qa/2026-10-28-free-first-launch.md) before provisioning.
+
+## Bounded trial profile (2026-10-31)
+
+Set `STORAGE_ACCESS_MODE=bounded`, `STORAGE_PROVIDER=r2`, `R2_JURISDICTION=eu`, the exact
+account/bucket scope and `R2_PUBLIC_BASE_URL=<actual HTTPS API origin>/v1/storage/media/public`.
+Use a new independent `MEDIA_READ_SECRET` of at least 32 characters on the API only. It is local
+signing material, not a Gemini/OpenAI key. Keep both AI providers disabled for this trial.
+
+| Trial-wide allowance | Initial ceiling | Refill |
+| --- | ---: | --- |
+| Stored objects plus unresolved writes | 524288000 bytes (500 MiB) | Confirmed settled deletion only |
+| Class A attempts | 10000 | None automatically |
+| Class B attempts | 100000 | None automatically |
+| Media payload transfer | 1073741824 bytes (1 GiB) | Never by deletion/month/restart |
+
+Registry keys are `storage.budget.max_stored_bytes`, `max_class_a`, `max_class_b` and
+`max_transfer_bytes` under the same prefix. All have positive bounded schemas. A lower setting
+never rewrites usage; raising the compiled ceiling requires review. PUT charges its validated
+payload, reads charge the known full manifest size, and used/uncertain transfer stays charged.
+Server-side copy/list/delete and empty-bucket probes reserve no object payload bytes. HTTP
+HEAD uses authorized manifest metadata without R2 work. This counter does not measure HTTP
+headers, pages/assets, database traffic or other projects; monitor shared Render consumption.
+
+The guarded raw port reserves under the singleton transaction lock before network work. It
+pins one SDK wire attempt and disables region redirects. A failed/null/timeout/uncertain result
+does not refill an allowance. Pending PUT capacity is retained even if a cleanup DELETE wins a
+race before that PUT finishes. Tombstones prevent reusing keys. Copies require a known source.
+
+Public prefixes use `/v1/storage/media/public/*key`; private links use the same API origin at
+`/v1/storage/media/private?grant=...`. Grants expire within 300 seconds and bind key, owner and
+the actual HTTP session. Session revocation is rechecked before R2. Minting URLs does not spend
+allowance. Both responses are no-store/no-referrer/nosniff. Private images bypass Next image
+optimization. Failed photos preserve DTO keys/text and block incomplete board exports.
+
+### Attended initialization
+
+Only after exact-commit CI, approved provider setup and the separately reviewed remote migration:
+
+1. Verify both new EU buckets are empty and provider-private. Scope Object Read & Write credentials
+   to this pair only; do not grant bucket management. Do not reuse the dev/staging/Craftive tokens.
+2. Apply the reviewed forward migrations 0133–0135 through the separate migration connection.
+   Existing migrations are immutable. Runtime uses the restricted role, never the owner URL.
+3. Prepare a private runtime file with explicit production/bounded DB and R2 values. Exclude
+   `DATABASE_MIGRATION_URL`. Never put credentials in command arguments, source, logs or chat.
+4. Run `pnpm --filter @mentor/api storage:initialize-trial` with `--env-file`, `--expected-host`,
+   `--expected-database`, `--expected-user`, `--expected-account-id`, `--expected-public-bucket`
+   and `--expected-private-bucket` from the approved action package. The script rejects URL
+   connection overrides and requires TLS verify-full; it validates the actual runtime role.
+5. The script seals the account/bucket/jurisdiction fingerprint and reserves two Class A probes
+   before sending `ListObjectsV2(MaxKeys=1)`, once per bucket. It prints only attempt/status,
+   never connection strings, signing material or provider responses. READY requires two explicit
+   successful empty results. A nonempty/ambiguous/error result remains blocked with usage retained.
+
+An interrupted VERIFYING attempt requires an attended `--abandon <recorded-attempt-UUID>` with
+the same target assertions before a new explicit attempt. It does not refund probes or delete
+objects. Never manually change a counter to zero to make startup pass. Unknown historical
+transfer facts remain null and normal bounded access fails closed; only a provably untouched
+unbound state can initialize zero. Used older scopes require reviewed operator reconciliation.
+There is no public initialization, reconciliation or budget reset endpoint.
+
+### Stop, rollback and remaining acceptance
+
+If verification fails, stop the attended probe, keep buckets private and preserve DB facts and
+uncertain holds. Do not retry an uncertain write under its old reservation. A compatible rollback
+must keep bounded enforcement; direct mode or a bucket rename is rejected against a sealed DB.
+Retain object/operation history. If no compatible artifact exists, keep admission closed.
+
+A database restore can rewind READY status and lifetime usage while R2 still contains later
+objects or charges. Keep admission and media access closed during recovery. Preserve the
+current accounting/reservation evidence before restoring, then reconcile it against retained
+objects and provider evidence before reopening. An old READY row or a successful restore alone
+does not establish a safe allowance; unknown operations/transfer must remain blocked.
+
+The generic `storage:check`, migration/private-media tools and direct URL examples below belong
+to the older direct/dev configuration. Do not point them at bounded trial buckets: that would
+bypass reservations. No extra staging environment or hosted service is required. Complete the
+[attended hosted acceptance package](../qa/2026-10-31-bounded-trial-storage-verification.md)
+before admission; local tests alone do not establish hosted cold starts, mail, TLS or recovery.
 
 ## Ne saklıyoruz
 

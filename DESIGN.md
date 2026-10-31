@@ -536,7 +536,14 @@ dawn. Spec: `docs/superpowers/specs/2026-10-27-landing-isikli-sehir-design.md`; 
 - **Sabah masası (2026-10-29):** the morning section shows the product as the product draws it. It
   is the Defterlerim desk in its day theme (`notebook-desk.css` day tokens, the desk's own grain
   tiles), with the vision board's `BoardFrame` and the weekly story's coral, lavender and mint.
-  Its palette is `--lm-*` in `_components/landing/landing-morning.css`. The picked pin and note share
+  Its palette is `--lm-*` in `_components/landing/landing-morning.css`.
+- **Paper flutter (2026-10-31):** a taped note lifts from its bottom edge in one damped breeze while the tape holds the top. With a mouse it runs on hover. On touch screens it runs once, on arrival. It is off with reduced motion.
+- **Cookie card (2026-10-31):** compact white card.
+  - **Contents:** a title and one sentence, then a row: Kabul et and Reddet as the same-size `Button sm` (filled and outline ledge), plus an "Ayrıntılar" link.
+  - **On the landing:** it becomes a taped paper note in the scene's palette.
+- **Odak odası and Gece Yolculuğu (2026-10-31):**
+  - **Odak odası** uses the session page's own room art and controls: frosted dark glass in Kütüphane and Kafe, frosted white in Ev. Its notes are the same paper notes (`--lf-*`).
+  - **Gece Yolculuğu** puts the profile's quests card beside the level lights. The badges are cut round like `JourneyLevelMedallion`, without the lock pill at this size. The current light gets the lamp-yellow ring (`--lj-*`). The picked pin and note share
   the lamp yellow `#FFD15C`.
 
 ---

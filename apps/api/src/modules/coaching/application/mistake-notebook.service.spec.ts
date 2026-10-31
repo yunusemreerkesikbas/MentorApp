@@ -1,8 +1,11 @@
 import { NotebookReviewRepository } from "../infrastructure/notebook-review.repository";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NotebookEntryViewService } from "./notebook-entry-view.service";
+import type { StorageReadActor } from "../../../shared/storage/storage-budget.types";
 import { MistakeNotebookService } from "./mistake-notebook.service";
 import type { MistakeNotebookEntryRow } from "../infrastructure/mistake-notebook.repository";
 import { NOTEBOOK_REVIEW_LADDER_DAYS } from "../domain/notebook-review.policy";
+import { DomainError } from "../../../common/errors/domain-error";
 
 /** Real uuids, not "u1": notebook storage keys embed the user id and the schema checks its shape. */
 const USER = "55555555-5555-4555-8555-555555555555";
@@ -252,7 +255,7 @@ function makeStorageFake() {
     /** What the sweep sees in the bucket; set per test. */
     objects: [] as Array<{ key: string; lastModified: Date }>,
     listObjects: async () => fake.objects,
-    getPrivateUrl: async (key: string, ownerId: string) => `https://private.test/${ownerId}/${key}`,
+    getPrivateUrl: async (key: string, actor: StorageReadActor) => `https://private.test/${actor.userId}/${key}`,
     createUploadUrl: async ({ key }: { key: string }) => ({
       url: `https://upload.test/${key}`,
       key,
@@ -268,12 +271,14 @@ function makeStorageFake() {
 function makeService() {
   const repo = makeRepoFake();
   const storage = makeStorageFake();
+  const content = makeContentFake();
   const service = new MistakeNotebookService(
     fakeDb,
     repo as never,
-    makeContentFake() as never,
+    content as never,
     storage as never,
     new NotebookReviewRepository(),
+    new NotebookEntryViewService(content as never,storage as never),
   );
   return { service, repo, storage };
 }
@@ -320,7 +325,8 @@ describe("MistakeNotebookService", () => {
     });
     ctx.repo.entries.set(ENTRY, makeEntryRow());
     const service = new MistakeNotebookService(db as never, ctx.repo as never,
-      content as never, ctx.storage as never, new NotebookReviewRepository());
+      content as never, ctx.storage as never, new NotebookReviewRepository(),
+      new NotebookEntryViewService(content as never,ctx.storage as never));
     await service.updateEntry(USER, ENTRY, { subjectRef: "matematik", topicRef: "problemler" });
   });
 
@@ -333,6 +339,25 @@ describe("MistakeNotebookService", () => {
       .rejects.toMatchObject({ details: { reason: "unknown_subject_ref" } });
   });
 
+  it("uses the current HTTP session for every notebook photo", async () => {
+    const actor={userId:USER,sessionId:SESSION};
+    const photoKey=`notebook/${USER}/photo.jpg`; const solutionKey=`notebook/${USER}/solution.jpg`;
+    ctx.repo.entries.set(ENTRY,makeEntryRow({storageKey:photoKey,solutionStorageKey:solutionKey}));
+    const read=vi.spyOn(ctx.storage,"getPrivateUrl");
+    await ctx.service.getEntry(USER,ENTRY,actor);
+    expect(read).toHaveBeenCalledWith(photoKey,actor); expect(read).toHaveBeenCalledWith(solutionKey,actor);
+  });
+  it("returns data-only notebook evidence without minting private URLs",async () => {
+    const key=`notebook/${USER}/photo.jpg`;
+    ctx.repo.entries.set(ENTRY,makeEntryRow({storageKey:key,note:"Kept text"})); const read=vi.spyOn(ctx.storage,"getPrivateUrl");
+    const dto=await ctx.service.getEntry(USER,ENTRY);
+    expect(dto).toMatchObject({id:ENTRY,storageKey:key,note:"Kept text",url:null}); expect(read).not.toHaveBeenCalled();
+  });
+  it("keeps notebook data when media is temporarily unavailable",async () => {
+    ctx.repo.entries.set(ENTRY,makeEntryRow({storageKey:`notebook/${USER}/photo.jpg`,note:"Kept text"}));
+    vi.spyOn(ctx.storage,"getPrivateUrl").mockRejectedValue(new DomainError("STORAGE_TEMPORARILY_UNAVAILABLE",503));
+    await expect(ctx.service.getEntry(USER,ENTRY,{userId:USER,sessionId:SESSION})).resolves.toMatchObject({id:ENTRY,note:"Kept text",url:null});
+  });
   describe("createEntry", () => {
     it("schedules the first review, so nothing enters the book unscheduled", async () => {
       const before = Date.now();
@@ -662,7 +687,7 @@ describe("MistakeNotebookService", () => {
         source: "OWN",
         solutionStorageKey: key,
         solutionNote: "  Payda eşitlemem gerekiyordu.  ",
-      });
+      },undefined,{userId:USER,sessionId:SESSION});
 
       expect(dto.solutionStorageKey).toBe(key);
       expect(dto.solutionUrl).toBe(`https://private.test/${USER}/${key}`);

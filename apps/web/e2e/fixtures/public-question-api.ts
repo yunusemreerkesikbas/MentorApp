@@ -15,7 +15,7 @@ const server = createServer((req, res) => {
     res.setHeader("Cache-Control", "no-store");
     res.end(JSON.stringify({
       aiCoach: true, coachPurchases: true, coachRegistration: true, coachSignup: true, forum: true,
-      humanCoaching: true, invites: true, social: true, studentPurchases: true, studentSignup: true, studyRooms: true,
+      economy: true, humanCoaching: true, invites: true, social: true, studentPurchases: true, studentSignup: true, studyRooms: true,
     }));
     return;
   }

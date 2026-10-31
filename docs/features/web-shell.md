@@ -67,6 +67,75 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-31 · Landing paper notes flutter.**
+  - **What it does:** a taped note lifts from its bottom edge toward you while the tape holds the
+    top. It is one damped breeze of 1.6s (`paper-flutter` in `city-stage.css`), and it never
+    restarts mid-breeze.
+  - **Trigger:** `usePaperFlutter(root)` marks `[data-flutter]` notes `on` and clears them when the
+    animation ends.
+    - With a mouse, it runs when the pointer comes over a note.
+    - On touch screens (`(hover: none)`), it runs once, the first time the note is 35% in view.
+  - **Where:** the city notes (desktop only; on phones they are the bottom sheet), Sabah masası and
+    Odak odası. The landing cookie card runs it once as it opens.
+  - **Amplitude:** the big city notes move less (5° instead of 9°). Reduced motion turns it off.
+  - **Gotcha:** the e2e "mobile" project sets only the viewport and reports `(hover: none)` as
+    false. To see the arrival breeze in a test, open a context with `isMobile` and `hasTouch`.
+
+- **2026-10-31 · Cookie card follows the landing canvas.**
+  - **Everywhere:** a compact white card at the bottom left (`w-md`), full width on phones.
+    - The title and one sentence come first, then a row: Kabul et (play ledge), Reddet (outline
+      ledge, same `Button size="sm"`) and an "Ayrıntılar" link.
+    - The "Analitik" subheading and its `analytics_title` key are gone.
+  - **On the landing:** the same card becomes a taped paper note. `city-stage.css` re-points the
+    surface tokens on the card, so its buttons follow the paper and it ignores `html.dark`. From
+    `lg` it sits bottom right with a slight tilt.
+  - **Tests:** `analytics-consent.spec` runs only when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set in
+    the test runner's environment. `.env.local` alone skips it.
+
+- **2026-10-31 · Landing "Odak odası" and "Gece Yolculuğu"** (canvas v34, the owner's choices).
+  - **Odak odası (`#odak`)** comes after Sabah masası and shows the session page as it opens.
+    - **Rooms:** its own room art (`/img/seans-theme/room-*`, `next/image`, all three mounted). Tabs
+      Kütüphane / Kafe / Ev switch the room. Ev turns the controls to dark ink on frosted white.
+    - **Controls:** the bar, "Plandan: …", a 50-minute dial, Süresiz · 25/5 · 50/10,
+      `session.summary_line` and Başla.
+    - **Notes:**
+      - Pomodoro (its title is `session.subtitle`).
+      - Masa: the room's own table, four seats and a `MASA-` code.
+      - Ortam sesi: the `session_ambient` tracks and "Sade görünüm".
+    - **Copy:** the wording reuses `session*` keys. Only the sample contents live in `landing.focus`.
+  - **Gece Yolculuğu (`#yolculuk`)** puts the quests card beside the level lights.
+    - **Quests card:** Ritüel / Haftalık / Hedefler tabs. The titles are the API's own and the
+      amounts are its defaults (+5/+20/+25 XP, 5 active days +15 Coin).
+    - **Lights:** the 12 lights come from `JOURNEY_LEVEL_CATALOG` and `/img/levels/*`, cut round.
+      The current one is Pusula.
+    - **Coin copy:** only "Coin nakit değildir. Emeğinle hak kazanırsın." What Coin opens is AI, so
+      leaving it out keeps "the AI coach is Premium" true.
+  - **Flags:**
+    - **New key:** `AppAvailabilityDto` gains `economy` (API, types, fixtures,
+      `docs/standards/api.md`). The API must ship before the web: the web keeps a snapshot only
+      when every key it knows is present.
+    - **Read:** `landingAvailability` caches the read once per render.
+    - **Off or unknown hides:** the table note with its lead sentence, all of Gece Yolculuğu, and
+      the city Topluluk stop's XP league rows with their sentence.
+    - **Streaming:** the league rows stream in behind a no-league fallback, so the hero never waits.
+  - **Gotchas:**
+    - **Testing:** the flags are read on the server, where `page.route` cannot reach. The e2e test
+      checks room switching only and passes whatever state the API is in. A local API on :3001 with
+      every flag on shows the full sections.
+    - **Types:** rebuild `@mentor/types` after adding a key.
+    - **Budget:** landing JS 361.1 / 400 KiB.
+  - **Related:** `_components/landing/{landing-focus,focus-room,landing-journey,journey-quests,landing-availability}.ts(x)`,
+    `landing-{focus,journey}.css`, `city-panels.tsx`.
+
+- **2026-10-31 · Temporary media refusal.** Shared `MediaImage` keeps notebook, board,
+  public avatar and article surfaces usable when an image fails. Private images bypass image
+  optimization, send no referrer and unmount when authentication clears; retry state stays local.
+  Board exports now reject missing required photos and preserve the document. Closing the share
+  window prevents a late export from allocating an orphan preview URL. Usage: retry a photo or
+  reopen the saved view for a fresh short-lived grant; operation exhaustion still needs operator
+  review. Existing blob previews remain usable. Related: `media-image.tsx`, `board-export.ts`,
+  `board-share-sheet.tsx`, `e2e/bounded-media.spec.ts`. No staging or provider access added.
+
 - **2026-10-30 · Shared document availability.** The locale layout loads typed, public effective
   availability alongside messages and supplies it above auth/overlays. Closed optional routes
   show a calm status without mounting their clients; shared navigation, purchase asks and AI

@@ -60,7 +60,7 @@ function loadImage(src: string, crossOrigin: boolean): Promise<HTMLImageElement 
     // dev server has no reason to answer.
     if (crossOrigin) image.crossOrigin = "anonymous";
     image.onload = () => resolve(image);
-    // A photo that will not load is skipped, not fatal: one missing picture beats no download.
+    image.referrerPolicy = "no-referrer";
     image.onerror = () => resolve(null);
     image.src = src;
   });
@@ -71,6 +71,10 @@ export class BoardExportTaintedError extends Error {
     super("board_export_tainted");
     this.name = "BoardExportTaintedError";
   }
+}
+
+export class BoardExportMediaUnavailableError extends Error {
+  constructor() { super("board_export_media_unavailable"); this.name="BoardExportMediaUnavailableError"; }
 }
 
 function roundedPath(
@@ -283,6 +287,7 @@ async function drawItem(ctx: CanvasRenderingContext2D, item: VisionBoardItem): P
     const image = item.url
       ? await loadImage(boardImageSrc(item.url), needsCrossOrigin(item.url))
       : null;
+    if (!image) throw new BoardExportMediaUnavailableError();
     drawImageItem(ctx, item, image);
   } else if (item.kind === "text") {
     drawTextItem(ctx, item);

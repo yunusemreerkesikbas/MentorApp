@@ -3,6 +3,7 @@ import { googleAdUnitPathSchema } from "@mentor/validation";
 import { validateProductionSecurity } from "./env-production-locks";
 import { pilotInvitedEmailsSchema } from "./pilot-invited-emails";
 import { isLocalDisplayTestAllowed } from "./local-display-test";
+import { validateStorageAccess } from "./env-storage-locks";
 
 /**
  * Environment variable schema (§8/§10).
@@ -61,6 +62,8 @@ const envSchema = z.object({
   GEMINI_EMBED_MODEL: z.string().default("gemini-embedding-001"),
   VISION_PROVIDER: z.enum(["disabled", "fake", "gemini", "openai"]).default("fake"),
   STORAGE_PROVIDER: z.enum(["fake", "r2"]).default("fake"),
+  STORAGE_ACCESS_MODE: z.enum(["direct", "bounded"]).default("direct"),
+  MEDIA_READ_SECRET: z.string().optional(),
   R2_PUBLIC_BASE_URL: z.string().url().optional(),
 
   // Payments (§7) — disabled is the safe pre-iyzico production mode; fake stays dev/test-only.
@@ -134,6 +137,7 @@ export function isDevToolingAllowed(env: Pick<Env, "NODE_ENV" | "APP_ENV">): boo
 /** Cross-field locks that single-field rules can't express. */
 const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
   validateProductionSecurity(env, ctx);
+  validateStorageAccess(env, ctx);
   if ((env.AI_PROVIDER === "disabled") !== (env.VISION_PROVIDER === "disabled")) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["AI_PROVIDER"],
       message: "AI_PROVIDER and VISION_PROVIDER must be disabled together." });

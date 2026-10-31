@@ -10,7 +10,7 @@ export async function prepareTrialUser(page: Page, coachPresentation = false) {
   expect(availability.status()).toBe(200);
   expect(await availability.json()).toEqual({
     aiCoach: false, social: false, forum: false, studyRooms: false, humanCoaching: false,
-    studentPurchases: false, coachPurchases: false, coachRegistration: false, coachSignup: false, studentSignup: true, invites: false,
+    studentPurchases: false, coachPurchases: false, coachRegistration: false, coachSignup: false, studentSignup: true, economy: false, invites: false,
   });
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
   const signup = await page.request.post(`${trialApi}/auth/signup`, { headers: { Origin: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3100" }, data: {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { MediaImage as Image } from "@/components/media-image";
 import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
 import type {

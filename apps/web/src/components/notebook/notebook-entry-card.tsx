@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { MediaImage as Image } from "@/components/media-image";
 import { useTranslations } from "next-intl";
 import type { NotebookEntryDto } from "@mentor/types";
 
@@ -107,7 +107,7 @@ export function NotebookEntryCard({ entry, due, selected, onPreview }: NotebookE
     boxShadow: "var(--shadow-card)",
   };
 
-  if (entry.url) {
+  if (entry.storageKey || entry.url) {
     const caption = entry.topicName ?? entry.subjectName;
     return (
       <div
@@ -160,7 +160,7 @@ export function NotebookEntryCard({ entry, due, selected, onPreview }: NotebookE
             white is what the letterboxed edges fall onto, so they read as margin, not a gap.
           */}
           <span className="relative block min-h-0 w-full flex-1 overflow-hidden">
-            <Image src={entry.url} alt="" fill sizes="480px" className="object-contain" unoptimized />
+            <Image src={entry.url} alt="" fill sizes="480px" className="object-contain" retryable={false} />
 
             {/*
               Details only on hover/focus, as a small paper slip in the photo's corner: the photo

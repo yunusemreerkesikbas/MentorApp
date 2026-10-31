@@ -238,6 +238,51 @@
         "codename": "Nebula Diver"
       }
     },
+    "focus": {
+      "pill": "Focus",
+      "title": "Pick your room, set your time, start.",
+      "lead": "At home, in the library or at a café: you choose where you study. After your focus, your break is ready.",
+      "lead_rooms": "At home, in the library or at a café: you choose where you study. Your friends can join your table; everyone runs their own session.",
+      "subject": "History",
+      "task": "Turkic states before the Ottomans",
+      "unit": "MIN",
+      "preset": "{focus} / {rest} min",
+      "minutes": "{count} min",
+      "pomodoro": {
+        "name": "Pomodoro",
+        "body": "25/5 or 50/10 are ready. Turn the dial for your own length, or study without a timer. Pick your subject; a finished session counts toward your streak and your daily goal."
+      },
+      "table": {
+        "name": "Table",
+        "title": "Your friends at the same table.",
+        "body": "Set up a table: pick its name, theme and number of seats. Share the invite link that starts with MASA-, and see from the seats who has been focusing, and for how long.",
+        "friend": "Elif",
+        "me": "You"
+      },
+      "sound": {
+        "title": "The room's sound comes with you.",
+        "body": "The hum of the library, cups at the café, or silence: the sound that fits the room comes on by itself. Switch to the plain view to see just the timer."
+      }
+    },
+    "journey": {
+      "title": "Every bit of effort lights a light.",
+      "lead": "A task from your plan, a focus session, five days in a week: each one counts as a quest. As your XP grows, a new light comes on in the Night Journey; steady weeks earn you Coin too.",
+      "coin_note": "Coin is not money. You earn it with your effort.",
+      "goal_progress": "60/120 min",
+      "quest": {
+        "plan_task": "Complete 1 task from today's plan",
+        "focus_session": "Finish 1 focus session",
+        "focus_goal": "Reach today's focus goal",
+        "mood": "Mark how you feel today",
+        "active_days": "Be active {target} days this week",
+        "focus_sessions": "Complete {target} focus sessions this week",
+        "plan_tasks": "Complete {target} plan tasks this week",
+        "full_week": "Be active all 7 days this week",
+        "milestone_sessions": "Complete {count} focus sessions",
+        "milestone_rhythm": "Reach a {days}-day rhythm",
+        "milestone_tasks": "Complete {count} plan tasks"
+      }
+    },
     "faq": {
       "pill": "FAQ",
       "title": "Frequently asked",
@@ -320,6 +365,7 @@
       "name": "Community",
       "title": "Ask, lend a hand, move forward together.",
       "body": "Share the question you're stuck on, answer one you know. In the weekly league your effort shows.",
+      "body_no_league": "Share the question you're stuck on, answer one you know.",
       "scribble": "applause for effort",
       "cheer": "You studied 5 days this week. You're doing great!",
       "row1": "Zeynep",
@@ -3127,10 +3173,9 @@
     "gallery_slide": "Image {current} / {total}"
   },
   "consentBanner": {
-    "analytics_title": "Analytics",
     "title": "Your analytics cookie choice",
     "body": "We measure anonymous usage data only with your permission to improve PuhuKoç.",
-    "details": "View details and preferences",
+    "details": "Details",
     "reject": "Reject",
     "accept": "Accept"
   },
@@ -3597,7 +3642,8 @@
       "context_toolbar": "Selection tools",
       "rotate_90": "Rotate 90°",
       "duplicate": "Duplicate",
-      "color_panel_title": "Colour"
+      "color_panel_title": "Colour",
+      "export_media_unavailable": "A photo is unavailable right now. Your board is safe; you can try again later."
     }
   },
   "preferenceSimulation": {
@@ -4446,5 +4492,9 @@
     "followup_page_of": "Page {page} of {pages}",
     "invite_copied_short": "Copied",
     "planning_unsaved_edit": "Save the change in the form first, or cancel it."
+  },
+  "media": {
+    "unavailable": "This photo is temporarily unavailable.",
+    "retry": "Try again"
   }
 }

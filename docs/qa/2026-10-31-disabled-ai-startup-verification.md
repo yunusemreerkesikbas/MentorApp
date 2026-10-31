@@ -26,8 +26,9 @@ No remote credential, provider selection, DNS, billing or service was changed by
 
 ## Verification
 
-Ignored evidence: `.artifacts/deployment/disabled-ai-20261030/` and this plan's
-`.superpowers/sdd/2026-10-30-disabled-ai-startup/` ledger.
+Ignored evidence: `.artifacts/deployment/disabled-ai-20261030/`, including the hash-verified
+`sdd-evidence/` archive of this plan's execution ledger/review/task logs. Only this plan's
+temporary `.superpowers/sdd/` workspace is removed after completion; sibling workspaces remain.
 
 | Check | Result |
 | --- | --- |
@@ -64,9 +65,62 @@ existing environment test file within its original size.
 
 One fresh read-only review approved the 22-file candidate preview against `035f921`,
 with no Critical, Important or Minor findings. No fix pass or deferred minor is needed.
-Integration still requires full CI on the new exact candidate; the prior successful CI
-run does not certify this code. The original owner branch/index/working edits remain intact.
+The scoped candidate is **`1513a5bb12d30d557d415a6991d65224f5a7e9c2`**, pushed by fast-forward
+on `feat/core-trial-release-20261030`. All 2,747 executable/config/test source files in scope
+matched the accepted working source; the new-range secret scan found zero leaks.
+
+[Full Linux CI 41131102949](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/41131102949)
+**passed on that exact SHA**. Its job completed at 2026-10-30 22:15:33 UTC /
+2026-10-31 01:15:33 Europe/Istanbul.
+
+| Full CI check | Result |
+| --- | --- |
+| Dependency audit, deployment check and secret scan | Passed |
+| Workspace lint, typecheck, builds and web performance budgets | Passed |
+| API suites | **3,875 passed**, 405 files |
+| Web suites | **1,099 passed**, 166 files, plus Node script checks |
+| Ordinary browser suite | **1,276 passed**, 126 configured skips |
+| Account security/CAPTCHA browsers | **90 passed** |
+| Closed core-trial browsers | **20 passed** |
+
+The configured ordinary-suite skips include viewport/feature/opt-in cases, not failed
+tests hidden by this change. This CI uses fixture providers; live provider behavior remains
+separate. The original owner branch/index/working edits remain intact. The final local
+completion gate passed: candidate source, exact CI identity and all 210 affected units again.
 The optional paid Blueprint remains the existing real-provider alternative, not this trial.
 No schema, dependency or frontend change is required. No real AI call or email was sent.
 Hosted cold starts, provider/media/mail/monitoring acceptance, recovery and final
 publication approval remain in the [hosting record](2026-10-30-core-trial-ci-and-hosting.md).
+
+## Execution decisions and their limits
+
+1. Preserved the original checkout/index and used one scoped candidate commit after review.
+   Intermediate task states therefore rely on retained test/ledger evidence, not separate commits.
+2. Added the missing test-target guard before global cleanup. Remote, non-_test and URL-query
+   override fixture targets are intentionally refused; production runtime behavior is unchanged.
+3. Kept hosted startup/provider/recovery acceptance separate. Source/CI evidence cannot establish
+   live availability, delivery or recovery, so admission remains gated on that evidence.
+4. Required the new exact-commit full CI rather than the previous green run. This costs a full
+   verification wait and reproducible failures would have blocked this candidate.
+5. Relied on startup's validated paired provider invariant inside the registry/factories.
+   Manually constructed services outside that startup contract do not independently enforce pairing.
+6. Retained raw stored before-values in accepted config-write audit events. An audit may show
+   before=true while effective AI availability was already false; denied enable emits no event.
+
+No minor finding was deferred. These decisions are recorded in the execution evidence.
+
+## Subsequent hosting preflight and next design
+
+Read-only checks on 2026-10-31 confirmed Cloudflare's existing nine DNS records are mail-related;
+root/www/API/media still have no web address. One p=none DMARC record remains. R2 Overview
+shows 120.7 MB, 70 Class A, 4.08k Class B and USD 0 billable usage; its separate Billing rollup
+shows 0.08 GB-months, 69 Class A, 3.48k Class B and USD 0 observed/projected cost. The existing
+USD 10 alert was viewed, not changed, and is not a usage stop. No production bucket pair exists.
+Management-only Neon reads show both retained staging and selected core-trial endpoints idle;
+The last Render read showed zero services. No hosted SQL, credential upload, provisioning,
+DNS or billing write occurred during this follow-up.
+
+The owner declined extra staging cost/development, approved the
+[aggregate storage design](../plans/2026-10-31-bounded-trial-storage-design.md) section by section,
+and requested its [implementation plan](../superpowers/plans/2026-10-31-bounded-trial-storage.md).
+That future storage code is not implemented or certified by this CI; plan review is still required.

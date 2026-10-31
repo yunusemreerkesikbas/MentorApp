@@ -145,6 +145,14 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-31 · Session-bound photo projection.** Authenticated notebook list/card/page/review
+  responses and vision get/save paths carry the current HTTP session to storage grants. Backend
+  evidence reads omit private URLs while preserving stored keys, notes, labels and board items.
+  `NotebookEntryViewService` batches taxonomy reads and resolves independent photos in parallel.
+  Temporary media refusal preserves the core DTO; photo access is retried separately. Existing
+  Free photo limits remain. Related: `notebook-entry-view.service.ts`, `vision.service.ts`, the
+  notebook/coaching controllers and `SecureStorageService`. Hosted acceptance remains pending.
+
 - **2026-10-30 · Closed rooms preserve personal work.** New session starts with a room now check
   `coaching.study_rooms.enabled` before transaction writes, including existing members. Room
   notification targets also stop while closed. Solo starts, history and finishing an existing

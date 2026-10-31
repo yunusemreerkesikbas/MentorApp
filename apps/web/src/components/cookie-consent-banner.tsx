@@ -2,11 +2,17 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { Button } from "@mentor/ui";
 import { Link, usePathname } from "@/i18n/navigation";
 import { isPublicConsentBannerPath } from "@/lib/consent-banner-path";
 import type { ConsentContextValue } from "@/lib/analytics-consent";
 import { useAuth } from "@/lib/auth-context";
 
+/**
+ * Compact analytics card: title, one sentence, then Kabul et · Reddet · Ayrıntılar on one row.
+ * Both choices are the same size so refusing is as easy as accepting. The landing restyles the
+ * card as a taped paper note (`city-stage.css`).
+ */
 export function CookieConsentBanner({ analytics, analyticsHydrated, analyticsEnabled }: {
   analytics: ConsentContextValue;
   analyticsHydrated: boolean;
@@ -35,22 +41,24 @@ export function CookieConsentBanner({ analytics, analyticsHydrated, analyticsEna
   if (!showAnalytics) return null;
 
   return (
-    <section ref={ref} role="dialog" aria-label={t("title")} className="cookie-consent-banner fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-2xl rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-lg">
-      <h2 className="font-bold text-[var(--color-main)] font-[family-name:var(--font-heading)]">{t("title")}</h2>
-      <Choice title={t("analytics_title")} body={t("body")} accept={analytics.accept} reject={analytics.reject} />
-      <Link className="mt-3 inline-block text-sm text-[var(--color-main)] underline" href="/cookie-preferences">{t("details")}</Link>
+    <section
+      ref={ref}
+      role="dialog"
+      aria-label={t("title")}
+      className="cookie-consent-banner fixed inset-x-4 bottom-4 z-[100] rounded-[var(--play-radius)] bg-[var(--color-surface)] px-4 py-3.5 text-caption text-[var(--color-secondary)] shadow-[var(--shadow-overlay)] sm:inset-x-auto sm:bottom-6 sm:left-6 sm:w-md sm:px-5"
+    >
+      <h2 className="text-body-sm font-extrabold text-[var(--color-main)]">{t("title")}</h2>
+      <p className="mt-0.5 text-pretty">{t("body")}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button size="sm" onClick={analytics.accept}>{t("accept")}</Button>
+        <Button size="sm" variant="secondary" onClick={analytics.reject}>{t("reject")}</Button>
+        <Link
+          className="cookie-consent-link ml-1 inline-flex min-h-11 items-center text-sm font-bold text-[var(--play-selected-ink)] underline underline-offset-4"
+          href="/cookie-preferences"
+        >
+          {t("details")}
+        </Link>
+      </div>
     </section>
   );
-}
-
-function Choice({ title, body, accept, reject }: { title: string; body: string; accept: () => void; reject: () => void }) {
-  const t = useTranslations("consentBanner");
-  return <section aria-label={title} className="mt-3">
-    <h3 className="text-sm font-semibold text-[var(--color-main)]">{title}</h3>
-    <p className="mt-1 text-sm leading-relaxed text-[var(--color-secondary)]">{body}</p>
-    <div className="mt-2 flex flex-wrap justify-end gap-2">
-      <button type="button" onClick={reject} className="min-h-11 rounded-[var(--radius-card)] border px-4 text-sm font-semibold text-[var(--color-main)]">{t("reject")}</button>
-      <button type="button" onClick={accept} className="min-h-11 rounded-[var(--radius-card)] bg-[var(--color-btn)] px-4 text-sm font-bold text-[var(--color-btn-label)]">{t("accept")}</button>
-    </div>
-  </section>;
 }

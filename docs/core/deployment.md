@@ -11,7 +11,7 @@
 | Web | `https://puhukoc.com` | `mentor-web` |
 | Single API | `https://api.puhukoc.com/v1` | `mentor-api` |
 | Admin | `https://admin.puhukoc.com` | `mentor-admin` |
-| Public media | `https://media.puhukoc.com` | Public EU R2 bucket |
+| Trial media | `https://api.puhukoc.com/v1/storage/media/...` | Private EU buckets behind the API |
 
 Use first-level subdomains for Universal SSL coverage. Keep existing host-only Secure,
 HttpOnly, SameSite=Lax cookies; do not add a shared cookie Domain attribute. Web canonical
@@ -35,6 +35,19 @@ fail startup. Reopening requires a reviewed deployment selecting real providers 
 then the existing runtime flags, cost/privacy and provider acceptance gates.
 
 Keep `NODE_ENV=production` and all other production security/provider requirements.
+For this selected trial set `STORAGE_ACCESS_MODE=bounded`, an independent `MEDIA_READ_SECRET`,
+EU bucket scope and `R2_PUBLIC_BASE_URL=<actual HTTPS API origin>/v1/storage/media/public`.
+Both new buckets must have public/custom-domain access disabled. Do not attach
+`media.puhukoc.com`; the two selected Free service domains remain web/API. This application
+profile supersedes the optional legacy/direct Blueprint's media settings below.
+The durable total is 500 MiB stored plus unresolved writes, 10,000 Class A, 100,000 Class B
+and 1 GiB media payload transfer for the whole trial, without automatic refill. Deletion can
+release confirmed stored capacity but never operations/transfer. HTTP HEAD/URL minting does
+not download objects. Header/control/page/other-project traffic remains outside the payload
+counter, so monitor Render's shared bandwidth and Free hours. See the
+[bounded storage procedure](storage-r2.md#bounded-trial-profile-2026-10-31) and
+[attended acceptance package](../qa/2026-10-31-bounded-trial-storage-verification.md).
+
 `ADMIN_APP_URL` and its explicit CORS entry remain reserved values; they do not grant
 access to a denied route. Do not remove modules or supply invented credentials.
 

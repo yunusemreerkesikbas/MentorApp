@@ -10,6 +10,7 @@ import { MenuSelect } from "@/components/menu-select";
 import { LEDGE, LEDGE_FILLED, PANEL_QUIET_LINK } from "@/components/panel/panel-styles";
 import {
   BoardExportTaintedError,
+  BoardExportMediaUnavailableError,
   renderBoardWithinBytes,
 } from "@/components/vision-board/board-export";
 import { trackCommunityEvent } from "@/lib/analytics";
@@ -98,7 +99,9 @@ export function BoardShareCommunity({
     } catch (failure) {
       // The server's own words when it has them: a room's rule reads better than a guess at it.
       setError(
-        failure instanceof BoardExportTaintedError
+        failure instanceof BoardExportMediaUnavailableError
+          ? t("export_media_unavailable")
+          : failure instanceof BoardExportTaintedError
           ? t("export_blocked")
           : failure instanceof ApiClientError
             ? failure.body.message

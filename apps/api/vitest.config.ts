@@ -16,6 +16,8 @@ export default defineConfig({
       AI_PROVIDER: "fake",
       VISION_PROVIDER: "fake",
       STORAGE_PROVIDER: "fake",
+      STORAGE_ACCESS_MODE: "direct",
+      MEDIA_READ_SECRET: "test-media-read-secret-0000000000000000000",
       APP_ENV: "development",
       ADS_LOCAL_TEST_ENABLED: "false",
       JWT_ACCESS_SECRET: "test-secret-test-secret-test-secret!!",

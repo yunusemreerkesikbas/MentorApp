@@ -73,6 +73,19 @@ Bu bölüm aşağıdaki metnin önüne geçer.
     - Ayrıntılar ve gotcha'lar: `docs/features/web-shell.md` 2026-10-29.
     - Kullanıcının isteğiyle 1. notun mini arayüzü açık defter yerine tekrar destesi oldu (kart kart sorular, Takıldım / Çözdüm). Metin tekrar takvimine uyar: çözdüğün kart seyrekleşir, takıldığın 2 gün sonra döner. Tuval bu değişikliği göstermiyor.
   - **Kapsam dışı:** Geri sayım, seri, davet (kullanıcı "üçü yeter" dedi).
+- **Odak odası + Gece Yolculuğu** (2026-10-31, kullanıcının kararları; önce tuval, sonra kod). Seans sayfası ile görev / XP / coin landing'de hiç anlatılmıyordu.
+  - **Odak odası (`#odak`):** Sabah masasından sonra yeni bir kâğıt bölüm.
+    - Uygulamanın gerçek oda görselleri (`img/seans-theme/room-{home,library,cafe}-*`) sekmeyle değişir.
+    - Üstünde seans sayfasının sayacı (kadran, Süresiz · 25/5 · 50/10, "odak · mola · bitiş" satırı).
+    - Notlar: Pomodoro; masa kur + `MASA-` davet kodu + koltuklarda kim odakta; ortam sesi ve sade görünüm.
+    - Şehirdeki Masa durağı gece tanıtımı olarak kalır.
+  - **Gece Yolculuğu (`#yolculuk`):** ayrı küçük bölüm.
+    - Görevler (Bugünkü ritüel, Bu hafta, Kilometre taşları), API'nin kendi görev adları ve varsayılan miktarlarıyla: günlük +5 XP, haftalık +20 XP, 5 aktif gün +15 Coin.
+    - XP ile yanan seviye ışıkları (Kıvılcım'dan Takımyıldız'a, `img/levels/*`). Landing'in ışık hikâyesine bağlanır.
+  - **Coin dili:** "Coin nakit değildir; emeğinle hak kazanırsın." Neye harcandığı söylenmez, çünkü "Yapay zekâ koç Premium'da" cümleleriyle çelişmesin. "Ödül" yok, "hak" var (voice.md).
+  - **Bayraklar:** coin/XP (`economy.enabled`, varsayılan kapalı) ve masalar (`coaching.study_rooms.enabled`) kapalıysa ilgili parça hiç görünmez, koç bandı gibi. `AppAvailabilityDto`'ya `economy` eklenir.
+  - **Topluluk durağı:** şehirdeki Topluluk durağı "640 XP" lig satırları gösteriyordu. Ekonomi kapalıyken bunlar var olmayan bir özelliği anlatırdı. Kod turunda bu satırlar ve cümlesi aynı bayrağa bağlandı.
+  - **Kod (2026-10-31, kaydedilmedi):** Bileşenler `landing-focus.tsx` + `focus-room.tsx`, `landing-journey.tsx` + `journey-quests.tsx` ve `landing-availability.ts`. Bayrak okuması `<Suspense>` içinde akar, hero beklemez. API, web'den önce yayınlanmalı (yeni availability anahtarı).
 
 ## Kararlar
 **Kullanıcının kararları (2026-10-27):**

@@ -1,3 +1,4 @@
+import { NotebookEntryViewService } from "./notebook-entry-view.service";
 import { NotebookReviewRepository } from "../infrastructure/notebook-review.repository";
 import { describe, expect, it } from "vitest";
 import { MistakeNotebookService } from "./mistake-notebook.service";
@@ -162,6 +163,7 @@ function makeService() {
     content as never,
     storage as never,
     new NotebookReviewRepository(),
+    new NotebookEntryViewService(content as never,storage as never),
   );
   return { service, repository };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Image from "next/image";
+import { MediaImage as Image } from "@/components/media-image";
 import { X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -33,7 +33,7 @@ export function NotebookImageLightbox({
 
   return (
     <AnimatePresence>
-      {entry?.url ? (
+      {entry && (entry.storageKey || entry.url) ? (
         <motion.div
           key="notebook-lightbox"
           initial={reduceMotion ? false : { opacity: 0 }}
@@ -63,7 +63,7 @@ export function NotebookImageLightbox({
             className="relative h-[85vh] w-full max-w-3xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <Image src={entry.url} alt="" fill className="object-contain" unoptimized />
+            <Image src={entry.url} alt="" fill className="object-contain" retryable />
           </div>
         </motion.div>
       ) : null}

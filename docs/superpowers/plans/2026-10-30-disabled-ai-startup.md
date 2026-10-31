@@ -90,7 +90,7 @@ activation keeps its existing budget, provider, consent and acceptance prerequis
   preserve and explain existing unrelated warnings rather than suppress them.
 - [x] Request one fresh read-only review of this change against the spec and Review Focus.
   Address concrete important findings with reproduced RED/GREEN tests; record rulings.
-- [ ] Form a scoped commit on the existing release-candidate branch with a temporary index,
+- [x] Form a scoped commit on the existing release-candidate branch with a temporary index,
   preserving the owner's branch/index/working files. Verify the candidate source and secret scan.
   Push the candidate branch (no force/merge) and require full CI on the resulting exact SHA
   before hosted acceptance. Do not reuse the old successful CI as evidence for the new code.
@@ -101,3 +101,7 @@ Spec requirements map to Tasks 1–3. Public availability consumes the registry,
 frontend condition or API contract is added. The plan preserves real-provider validation and
 no-op-free denial behavior. New config/HTTP fixtures must not alter another test's global flags.
 Owner approved the plan and inline implementation in this chat on 2026-10-30.
+
+Completion evidence: candidate `1513a5bb12d30d557d415a6991d65224f5a7e9c2`,
+[full CI 41131102949](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/41131102949)
+passed. See [verification](../../qa/2026-10-31-disabled-ai-startup-verification.md).

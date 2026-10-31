@@ -459,7 +459,7 @@ test("VB-19 panodaki fotoğraf indirilen görselde de vardır", async ({ page })
   expect(await pixelAt(picture, 772, 872)).toEqual([255, 0, 255]);
 });
 
-test("VB-20 açılmayan fotoğraf dışa aktarımı durdurmaz, yeri boş kalmaz", async ({ page }) => {
+test("VB-20 açılmayan fotoğraf dışa aktarımı durdurur ve panoyu korur", async ({ page }) => {
   await mockBoardApi(page, {
     vision: visionWithBoard({ items: [boardPhoto] }),
     photo: "missing",
@@ -467,11 +467,9 @@ test("VB-20 açılmayan fotoğraf dışa aktarımı durdurmaz, yeri boş kalmaz"
   await page.goto("/vision-board/board");
 
   await page.getByRole("button", { name: "Paylaş", exact: true }).click();
-  const picture = page.getByRole("dialog").getByRole("img", { name: "Panonun görseli" });
-  await expect.poll(() => naturalSize(picture)).toEqual({ width: 3584, height: 2504 });
-
-  // One missing picture beats no download: its place is filled with the placeholder grey.
-  expect(await pixelAt(picture, 772, 872)).toEqual([240, 237, 236]);
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByText("Bir fotoğraf şu an açılamıyor. Panon duruyor; biraz sonra yeniden deneyebilirsin.")).toBeVisible();
+  await expect(sheet.getByRole("button", { name: "İndir", exact: true })).toBeDisabled();
 });
 
 test("VB-21 görsel paylaşılabilecek oda yoksa adım Topluluk'a yönlendirir", async ({ page }) => {

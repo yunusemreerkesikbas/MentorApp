@@ -32,6 +32,7 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { PromotionsModule } from "./modules/promotions/promotions.module";
 import { StorageModule } from "./shared/storage/storage.module";
+import { MediaGatewayModule } from "./shared/storage/media-gateway.module";
 import { buildLoggerConfig } from "./observability/logger.config";
 
 /**
@@ -69,6 +70,7 @@ import { buildLoggerConfig } from "./observability/logger.config";
     EconomyModule,
     ForumModule,
     IdentityModule,
+    MediaGatewayModule,
     MentorshipModule,
     NotificationsModule,
     PaymentsModule,

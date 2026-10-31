@@ -37,6 +37,8 @@ export class AppAvailabilityService {
       coachSignup: studentSignup && applications,
       studentPurchases: student.purchaseEnabled || student.redirectToMobile,
       coachPurchases: coach.purchaseEnabled || coach.redirectToMobile,
+      // Quests, XP and Coin. The public landing hides its "Gece Yolculuğu" section when it is off.
+      economy,
       invites: economy && social,
     };
   }

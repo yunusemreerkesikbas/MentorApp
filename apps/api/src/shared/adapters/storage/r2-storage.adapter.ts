@@ -18,6 +18,7 @@ import type {
   ObjectStoragePort,
 } from "../../ports/storage.port";
 import { isPrivateKey, isPublicKey } from "../../storage/storage-prefixes";
+import { r2ClientOptions } from "./r2-client-options";
 
 
 /**
@@ -62,12 +63,8 @@ export class R2StorageAdapter implements ObjectStoragePort {
     this.privateBucket = privateBucket;
     this.publicBaseUrl = publicBaseUrl;
     const jurisdiction = this.config.get("R2_JURISDICTION", { infer: true });
-    const endpointJurisdiction = jurisdiction === "eu" ? ".eu" : "";
-    this.client = new S3Client({
-      region: "auto",
-      endpoint: `https://${accountId}${endpointJurisdiction}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId, secretAccessKey },
-    });
+    this.client = new S3Client(r2ClientOptions({ accountId, accessKeyId, secretAccessKey, jurisdiction,
+      mode: this.config.get("STORAGE_ACCESS_MODE", { infer: true }) }));
   }
 
   private bucketForKey(key: string): string {
@@ -85,12 +82,18 @@ export class R2StorageAdapter implements ObjectStoragePort {
   }
 
   async createReadUrl(key: string, expiresInSeconds: number): Promise<string> {
+    if (this.config.get("STORAGE_ACCESS_MODE", { infer: true }) === "bounded") {
+      throw new DomainError(ErrorCode.STORAGE_TEMPORARILY_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE);
+    }
     this.ensureReady();
     if (!isPrivateKey(key)) throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     return getSignedUrl(this.client!, new GetObjectCommand({ Bucket: this.bucketForKey(key), Key: key, ResponseCacheControl: "private, no-store" }), { expiresIn: Math.max(1, Math.min(expiresInSeconds, 300)) });
   }
 
   getPublicUrl(key: string): string {
+    if (this.config.get("STORAGE_ACCESS_MODE", { infer: true }) === "bounded") {
+      throw new DomainError(ErrorCode.STORAGE_TEMPORARILY_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE);
+    }
     this.ensureReady();
     if (isPrivateKey(key)) {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
@@ -120,6 +123,7 @@ export class R2StorageAdapter implements ObjectStoragePort {
       return Buffer.from(bytes);
     } catch (err) {
       this.logger.warn(`R2 getObject failed for ${key}: ${String(err)}`);
+      if (this.config.get("STORAGE_ACCESS_MODE", { infer: true }) === "bounded") throw err;
       return null;
     }
   }
@@ -146,6 +150,7 @@ export class R2StorageAdapter implements ObjectStoragePort {
     } catch (err) {
       // A sweep must never take the caller down; an empty page just means "nothing to do now".
       this.logger.warn(`R2 listObjects failed for ${prefix}: ${String(err)}`);
+      if (this.config.get("STORAGE_ACCESS_MODE", { infer: true }) === "bounded") throw err;
       return [];
     }
   }

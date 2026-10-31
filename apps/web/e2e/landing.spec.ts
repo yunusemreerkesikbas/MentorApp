@@ -143,6 +143,37 @@ test("sabah masası: iğne kendi notunu öne çıkarır, telefonda notlar sekmey
   await expect(desk.getByRole("heading", { level: 3, name: "Hedefin gözünün önünde." })).toBeHidden();
 });
 
+test("odak odası: oda sekmesi sahneyi değiştirir", async ({ page }) => {
+  await asVisitor(page);
+  // The table note, Gece Yolculuğu and the league rows follow the API's availability flags, read
+  // on the server where `page.route` cannot reach; this test holds whichever state the API is in.
+  await page.goto("/#odak");
+  const focus = page.locator("#odak");
+  await expect(focus.getByRole("heading", { level: 2, name: "Odanı seç, süreni kur, başla." })).toBeVisible();
+  // The session page's own words.
+  await expect(focus.getByRole("heading", { level: 3, name: "Odaklan, molanı al, serini koru." })).toBeVisible();
+
+  const cafe = focus.getByRole("button", { name: "Kafe", exact: true });
+  await cafe.click();
+  await expect(cafe).toHaveAttribute("aria-pressed", "true");
+  await expect(focus.locator(".lf-room")).toHaveAttribute("data-room", "CAFE");
+  await expect(focus.locator(".lf-scene")).not.toHaveClass(/is-light/);
+  await focus.getByRole("button", { name: "Ev", exact: true }).click();
+  await expect(focus.locator(".lf-scene")).toHaveClass(/is-light/);
+});
+
+test("kâğıt not, fare üstüne gelince bir kez uçuşup durur", async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.name.startsWith("desktop"), "a mouse starts it; touch screens run it on arrival");
+  await asVisitor(page);
+  await page.goto("/#sabah");
+  const note = page.locator("#sabah .lm-note").nth(1);
+  await expect(note).toHaveAttribute("data-flutter", "");
+  await note.hover();
+  await expect(note).toHaveAttribute("data-flutter", "on");
+  // One damped breeze, then it settles and can lift again.
+  await expect(note).toHaveAttribute("data-flutter", "", { timeout: 3000 });
+});
+
 test("tanıtımı görmüş ziyaretçi Ücretsiz başla ile kayda gider", async ({ page }) => {
   await asVisitor(page);
   await page.addInitScript(() => window.localStorage.setItem("mentor_welcome_seen", "1"));

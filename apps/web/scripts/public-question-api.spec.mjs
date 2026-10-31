@@ -15,7 +15,7 @@ test("standalone SSR fixture supplies explicit enabled availability", { timeout:
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), {
       aiCoach: true, coachPurchases: true, coachRegistration: true, coachSignup: true, forum: true,
-      humanCoaching: true, invites: true, social: true, studentPurchases: true, studentSignup: true, studyRooms: true,
+      economy: true, humanCoaching: true, invites: true, social: true, studentPurchases: true, studentSignup: true, studyRooms: true,
     });
   } finally {
     child.kill();

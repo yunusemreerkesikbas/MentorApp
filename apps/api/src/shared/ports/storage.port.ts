@@ -2,6 +2,8 @@
  * Object storage port (§8) — Cloudflare R2 adapter behind it (S3-compatible, zero egress).
  * Usage: avatars, mock-exam photos, notebook/vision media, forum and content files.
  */
+import type { StorageReadActor } from "../storage/storage-budget.types";
+
 export const STORAGE_PORT = Symbol("STORAGE_PORT");
 export const RAW_STORAGE_PORT = Symbol("RAW_STORAGE_PORT");
 
@@ -23,7 +25,7 @@ export interface StoragePort {
   /** Single-use API capability; bytes are validated before any object is published. */
   createUploadUrl(input: StorageUploadInput): Promise<StorageUploadUrlResult>;
   /** Call only from an owner-authorized feature read. */
-  getPrivateUrl(key: string, ownerId: string): Promise<string>;
+  getPrivateUrl(key: string, actor: StorageReadActor): Promise<string>;
   getPublicUrl(key: string): string;
   readObject(key: string, maxBytes?: number): Promise<Buffer | null>;
   deleteObject(key: string): Promise<void>;

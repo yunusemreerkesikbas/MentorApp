@@ -72,6 +72,12 @@ weekly counts. Existing assignments remain unchanged; new drafts use the existin
 - **Uploads:** feature endpoints issue an opaque, one-use `/v1/storage/uploads/:ticket` capability.
   The API validates the bound session, owner, purpose, byte limit and actual file format before server-side
   storage write; clients never choose a storage key or receive a direct PUT signature.
+- **Bounded trial media:** private DTO URLs bind the existing owner authorization to the current
+  HTTP session; backend evidence retains keys without URLs. `/v1/storage/media/private?grant=...`
+  revalidates that session, while `/v1/storage/media/public/*key` accepts public prefixes only.
+  Both use the guarded raw port, return no-store responses and keep photo refusal separate from
+  notebook/board text. HEAD authorizes metadata without a provider request. No direct R2 URL is
+  returned in bounded mode. Storage accounting remains SERVICE-only; no initialization HTTP API.
 - **Push:** subscription endpoints accept only allowlisted browser push providers over HTTPS/443.
   DNS/private-network validation runs at registration and again immediately before outbound delivery.
 
@@ -82,7 +88,9 @@ weekly counts. Existing assignments remain unchanged; new drafts use the existin
 `GET /v1/app/availability` is anonymous and sends `Cache-Control: no-store`. It returns
 `AppAvailabilityDto` (`@mentor/types`): only effective booleans for AI coach, social, forum,
 study rooms, human coaching, student/coach purchases, student/coach new-account signup,
-existing-account coach registration and invitations. `coachRegistration` follows the applications
+existing-account coach registration, economy (quests, XP and Coin) and invitations. A new key must reach
+the API before the web: the web reads the snapshot only when every key it knows is a boolean, and treats
+anything else as unavailable. `coachRegistration` follows the applications
 switch independently of public new-account signup. Signup booleans describe global switches;
 email-specific pilot admission remains enforced by the identity policy on submission.
 Purchasing composes the existing provider/channel rules; invitations require economy and social.
