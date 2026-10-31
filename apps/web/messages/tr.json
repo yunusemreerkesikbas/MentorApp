@@ -3096,6 +3096,7 @@
     "use_code": "Kodu kullan",
     "quests_subtitle": "Ritüel bugün burada. Başlangıç adımları tamamlanınca hak düşer.",
     "quests_title": "Görevler",
+    "quests_load_error": "Görevlerin yüklenemedi. Biraz sonra yeniden deneyebilirsin.",
     "quests_progress": "{done}/{total} tamamlandı",
     "quests_percent": "%{percent}",
     "quests_gauge_state": "İyi gidiyor",

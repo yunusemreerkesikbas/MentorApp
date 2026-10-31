@@ -3096,6 +3096,7 @@
     "use_code": "Use code",
     "quests_subtitle": "Today's ritual lives here. Starter steps land a right when they're done.",
     "quests_title": "Quests",
+    "quests_load_error": "Your quests could not load. You can try again shortly.",
     "quests_progress": "{done}/{total} completed",
     "quests_percent": "{percent}%",
     "quests_gauge_state": "Going well",

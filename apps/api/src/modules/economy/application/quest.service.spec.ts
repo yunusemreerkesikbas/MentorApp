@@ -222,6 +222,27 @@ describe("QuestService — daily.focus-goal-met", () => {
 });
 
 describe("QuestService", () => {
+  it("keeps completion progress without rewards while economy is disabled", async () => {
+    const subject = service({ economyEnabled: false, signals: { hasDonePlanTask: true, hasMoodCheckin: true } });
+    const views = await subject.service.getUserProgress("user-1");
+    expect(views.find(q => q.id === "daily.plan-task-done")).toMatchObject({ completed: true });
+    expect(views.find(q => q.id === "daily.mood-checkin")).toMatchObject({ completed: true });
+    expect(views.every(q => q.rewardUnit === "NONE" && q.rewardAmount === 0 && q.rewardCoin === 0)).toBe(true);
+    expect(views.some(q => q.action === "invite" || q.action === "subscription")).toBe(false);
+    expect(subject.rows.length).toBeGreaterThan(0);
+    expect(subject.economy.grantInServiceTx).not.toHaveBeenCalled();
+    expect(subject.economy.publishXpChanged).not.toHaveBeenCalled();
+  });
+
+  it("never backpays completions recorded while rewards were closed", async () => {
+    const rows: ProgressRow[] = [];
+    const options = { rows, signals: { hasDonePlanTask: true }, user: { examType: null, emailVerified: false } };
+    await service({ ...options, economyEnabled: false }).service.getUserProgress("user-1");
+    const reopened = service({ ...options, economyEnabled: true });
+    expect((await reopened.service.getUserProgress("user-1")).find(q => q.id === "daily.plan-task-done")?.completed).toBe(true);
+    expect(reopened.economy.grantInServiceTx).not.toHaveBeenCalled();
+  });
+
   it("returns daily ritual and onboarding quests with their reward metadata", async () => {
     const quests = await service().service.getUserProgress("user-1");
 
@@ -539,7 +560,7 @@ describe("QuestService", () => {
     expect(subject.economy.publishXpChanged).not.toHaveBeenCalled();
   });
 
-  it("does not evaluate or grant quests while economy is disabled", async () => {
+  it("records completion but never grants rewards while economy is disabled", async () => {
     const subject = service({
       economyEnabled: false,
       signals: { hasDonePlanTask: true },
@@ -548,7 +569,7 @@ describe("QuestService", () => {
 
     await subject.service.evaluateAndGrant("user-1");
 
-    expect(subject.quests.listForUser).not.toHaveBeenCalled();
+    expect(subject.rows).toContainEqual(expect.objectContaining({ questId: "daily.plan-task-done" }));
     expect(subject.economy.grantInServiceTx).not.toHaveBeenCalled();
   });
 });

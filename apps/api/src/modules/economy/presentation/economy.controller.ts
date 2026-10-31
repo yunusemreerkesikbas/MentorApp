@@ -105,10 +105,9 @@ export class EconomyController {
     await this.receipts.markSeen(user.id, dto.ledgerIds);
   }
 
-  /** Onboarding quests + progress (lazy-evaluates and grants newly-completed ones). */
+  /** Ritual progress stays available while economy rewards are disabled. */
   @Get("quests")
   async questsList(@CurrentUser() user: RequestUser): Promise<QuestProgressView[]> {
-    await this.assertEnabled();
     return this.quests.getUserProgress(user.id);
   }
 

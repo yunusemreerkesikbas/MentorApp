@@ -16,7 +16,10 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import {
   ECONOMY_CHANGED_EVENT,
   fetchQuests,
+  isEconomyDisabled,
 } from "@/lib/economy";
+import { disableEconomySnapshot } from "@/lib/economy-store";
+import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 import { QuestProgressGauge } from "./economy-quests/quest-progress-gauge";
 import { QuestNextActionCard } from "./economy-quests/quest-next-action-card";
 import { QuestSection } from "./economy-quests/quest-section";
@@ -45,6 +48,7 @@ export function EconomyQuestsCard({
   rewardedAd,
 }: EconomyQuestsCardProps) {
   const translate = useTranslations("economy");
+  const rewardsEnabled = useEconomyEnabled();
   const profileTranslate = useTranslations("profile");
   const router = useRouter();
   const reduceMotion = useReducedMotion() ?? false;
@@ -60,22 +64,26 @@ export function EconomyQuestsCard({
 
   // Listen to economy changes to refresh dynamically
   useEffect(() => {
+    let current = 0;
     function onEconomyChanged() {
+      const request = ++current;
       fetchQuests()
         .then((fresh) => {
-          setCurrentQuests(fresh);
+          if (request === current) setCurrentQuests(fresh);
         })
-        .catch(() => {});
+        .catch((error: unknown) => { if (isEconomyDisabled(error)) disableEconomySnapshot(); });
     }
     window.addEventListener(ECONOMY_CHANGED_EVENT, onEconomyChanged);
-    return () => window.removeEventListener(ECONOMY_CHANGED_EVENT, onEconomyChanged);
+    return () => { current += 1; window.removeEventListener(ECONOMY_CHANGED_EVENT, onEconomyChanged); };
   }, []);
 
 
-  const dailyQuests = currentQuests.filter((quest) => quest.category === "daily_ritual");
-  const weeklyQuests = currentQuests.filter((quest) => quest.category === "weekly_ritual");
-  const milestoneQuests = currentQuests.filter((quest) => quest.category === "milestone");
-  const onboardingQuests = currentQuests.filter((quest) => quest.category === "onboarding");
+  const visibleQuests = rewardsEnabled ? currentQuests : currentQuests.filter(quest => quest.action !== "invite" && quest.action !== "subscription");
+  const visibleRewardedAd = rewardsEnabled ? rewardedAd : undefined;
+  const dailyQuests = visibleQuests.filter((quest) => quest.category === "daily_ritual");
+  const weeklyQuests = visibleQuests.filter((quest) => quest.category === "weekly_ritual");
+  const milestoneQuests = visibleQuests.filter((quest) => quest.category === "milestone");
+  const onboardingQuests = visibleQuests.filter((quest) => quest.category === "onboarding");
 
   const tabDefs = [
     {
@@ -101,7 +109,7 @@ export function EconomyQuestsCard({
   ];
 
   const questTabs = tabDefs.filter(
-    (tab) => tab.quests.length > 0 || (tab.key === "daily_ritual" && Boolean(rewardedAd)),
+    (tab) => tab.quests.length > 0 || (tab.key === "daily_ritual" && Boolean(visibleRewardedAd)),
   );
 
   const activeTab = questTabs.some((tab) => tab.key === selectedTab)
@@ -115,7 +123,7 @@ export function EconomyQuestsCard({
     dailyQuests.find((quest) => !quest.completed && quest.action) ??
     onboardingQuests.find((quest) => !quest.completed && quest.action) ??
     null;
-  const promoteRewardedAd = Boolean(rewardedAd && !nextQuest);
+  const promoteRewardedAd = Boolean(visibleRewardedAd && !nextQuest);
 
   function navigateAfterDismiss(
     path: "/plan" | "/study-session" | "/dashboard" | "/subscription" | "/settings",
@@ -216,9 +224,9 @@ export function EconomyQuestsCard({
             onAction={handleAction}
             reduceMotion={reduceMotion}
           />
-        ) : rewardedAd && promoteRewardedAd ? (
+        ) : visibleRewardedAd && promoteRewardedAd ? (
           <div className="mt-3">
-            <RewardedAdOffer {...rewardedAd} variant="promoted" />
+            <RewardedAdOffer {...visibleRewardedAd} variant="promoted" />
           </div>
         ) : null}
 
@@ -238,6 +246,7 @@ export function EconomyQuestsCard({
       </div>
 
       <QuestSection
+        rewardsEnabled={rewardsEnabled}
         activeTab={activeTab}
         tabbed={questTabs.length > 1}
         onAction={handleAction}
@@ -247,8 +256,8 @@ export function EconomyQuestsCard({
         completedCount={completed}
         totalCount={dailyQuests.length}
         rewardedAd={
-          activeTab === "daily_ritual" && rewardedAd && !promoteRewardedAd
-            ? rewardedAd
+          activeTab === "daily_ritual" && visibleRewardedAd && !promoteRewardedAd
+            ? visibleRewardedAd
             : undefined
         }
       />

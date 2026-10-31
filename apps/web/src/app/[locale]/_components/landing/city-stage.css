@@ -752,54 +752,26 @@ body:has(.lc-root) .cookie-consent-banner {
 }
 
 /*
- * Paper flutter: a taped note lifts from its bottom edge toward you in one damped breeze while the
- * tape holds the top. `usePaperFlutter` sets `data-flutter="on"` and clears it when the breeze ends;
- * the cookie card runs it once as it opens. Lift never goes negative: the paper only falls back.
+ * Paper flutter (`paper-flutter.ts`): a taped note bends like a sheet in a breeze. `--flutter-amp`
+ * is how far its bottom can lift, in px of displacement; 0 keeps it still. The city's big notes
+ * move less, and below lg they are the bottom sheet, which stays put.
  */
 [data-flutter] {
-  --flutter-lift: 9deg;
-  --flutter-turn: 1.2deg;
+  --flutter-amp: 58;
 }
 
-[data-flutter="on"] {
-  transform-origin: 50% 0;
-  animation: paper-flutter 1.6s linear;
-}
-
-/* The city's big notes move less. Below lg they are the bottom sheet, which stays put. */
 .lc-note[data-flutter] {
-  --flutter-lift: 5deg;
-  --flutter-turn: 0.8deg;
+  --flutter-amp: 44;
 }
 
 @media (max-width: 1023px) {
-  .lc-note[data-flutter="on"] {
-    animation: none;
+  .lc-note[data-flutter] {
+    --flutter-amp: 0;
   }
-}
-
-@keyframes paper-flutter {
-  0% { transform: perspective(1100px) rotateX(0deg) rotate(0deg); animation-timing-function: ease-out; }
-  14% { transform: perspective(1100px) rotateX(var(--flutter-lift)) rotate(var(--flutter-turn)); animation-timing-function: ease-in-out; }
-  34% { transform: perspective(1100px) rotateX(calc(var(--flutter-lift) * 0.15)) rotate(calc(var(--flutter-turn) * -0.55)); animation-timing-function: ease-in-out; }
-  52% { transform: perspective(1100px) rotateX(calc(var(--flutter-lift) * 0.5)) rotate(calc(var(--flutter-turn) * 0.3)); animation-timing-function: ease-in-out; }
-  70% { transform: perspective(1100px) rotateX(calc(var(--flutter-lift) * 0.05)) rotate(calc(var(--flutter-turn) * -0.15)); animation-timing-function: ease-in-out; }
-  85% { transform: perspective(1100px) rotateX(calc(var(--flutter-lift) * 0.16)) rotate(calc(var(--flutter-turn) * 0.05)); animation-timing-function: ease-in; }
-  100% { transform: perspective(1100px) rotateX(0deg) rotate(0deg); }
 }
 
 body:has(.lc-root) .cookie-consent-banner {
-  --flutter-lift: 10deg;
-  --flutter-turn: 1deg;
-  transform-origin: 50% 0;
-  animation: paper-flutter 1.6s linear 0.2s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-flutter="on"],
-  body:has(.lc-root) .cookie-consent-banner {
-    animation: none;
-  }
+  --flutter-amp: 40;
 }
 
 body:has(.lc-root) .cookie-consent-banner::before {

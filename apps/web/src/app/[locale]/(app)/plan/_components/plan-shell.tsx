@@ -314,9 +314,13 @@ export function PlanShell() {
     };
   }, [viewMode, monthAnchor]);
 
+  // Takvim reads every view (strip, hour grid, month board, rail list) from the month range.
   const refreshAdaptedPlan = useCallback(async () => {
-    await Promise.all([loadDayTasks(), loadWeekTasks()]);
-  }, [loadDayTasks, loadWeekTasks]);
+    await Promise.all([
+      loadWeekTasks(),
+      showMonth ? loadMonthTasks() : loadDayTasks(),
+    ]);
+  }, [showMonth, loadDayTasks, loadWeekTasks, loadMonthTasks]);
 
   useEffect(() => {
     if (viewMode === "calendar") return;

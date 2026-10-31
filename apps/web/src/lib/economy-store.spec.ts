@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "@mentor/api-client";
 import type { EconomyBalance } from "@mentor/types";
 import { fetchEconomyBalance } from "./economy";
-import { refreshEconomySnapshot, resetEconomySnapshot, getEconomySnapshot } from "./economy-store";
+import { refreshEconomySnapshot, resetEconomySnapshot, getEconomySnapshot, disableEconomySnapshot } from "./economy-store";
 
 vi.mock("./economy", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./economy")>();
@@ -21,6 +21,17 @@ afterEach(() => {
 });
 
 describe("refreshEconomySnapshot", () => {
+  it("does not reload a closed economy or restore a late balance response", async () => {
+    let resolve!: (value: EconomyBalance) => void;
+    fetchBalance.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    const loading = refreshEconomySnapshot();
+    disableEconomySnapshot();
+    resolve(balance(100, 7));
+    await loading;
+    await refreshEconomySnapshot();
+    expect(getEconomySnapshot()).toMatchObject({ balance: null, enabled: false, error: false });
+    expect(fetchBalance).toHaveBeenCalledTimes(1);
+  });
   it("keeps the last balance when a later refresh fails transiently", async () => {
     fetchBalance
       .mockResolvedValueOnce(balance(100, 7))

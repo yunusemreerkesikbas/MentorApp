@@ -22,6 +22,7 @@ import { Link } from "@/i18n/navigation";
 import { trackCoachEvent } from "@/lib/analytics";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
+import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 import { buildTodayPath, sessionHrefFor } from "./today-path-model";
 import { TodayPath } from "./today-path";
 import { WeekBand } from "./week-band";
@@ -43,10 +44,11 @@ export function TodayPathCard({
   onSetStatus: (task: PlanTaskDto, status: PlanTaskStatus) => void;
 }) {
   const t = useTranslations("panel");
+  const economyEnabled = useEconomyEnabled();
   const { openPaywall } = usePremiumPaywall();
   const { greeting, locked } = useDailyGreeting();
   const defaultMinutes = data.sessionPresets[0]?.focusMinutes ?? 25;
-  const path = buildTodayPath(data.tasks, quests, defaultMinutes);
+  const path = buildTodayPath(data.tasks, economyEnabled ? quests : null, defaultMinutes);
   const { cta } = path;
 
   useEffect(() => {

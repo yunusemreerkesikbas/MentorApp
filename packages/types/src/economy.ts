@@ -66,7 +66,7 @@ export type QuestAction =
   | "verify-email"
   | null;
 
-/** GET /v1/economy/quests — quest catalog + progress (backend titles, localized). */
+/** GET /v1/economy/quests — always available; closed economy returns NONE/zero rewards. */
 export interface QuestProgressView {
   id: string;
   category: QuestCategory;

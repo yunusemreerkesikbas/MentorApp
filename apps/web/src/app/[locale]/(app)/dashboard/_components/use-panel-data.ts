@@ -19,6 +19,7 @@ import {
 import { fetchRewardOffer } from "@/lib/ads";
 import { fetchQuests, fetchStreakRescue, notifyEconomyChanged } from "@/lib/economy";
 import { fetchAutoPromotionOffers } from "@/lib/promotions";
+import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 
 function unwrapToday(response: unknown): TodayPanelResponse {
   return ((response as { data?: TodayPanelResponse }).data ??
@@ -39,6 +40,7 @@ function messageOf(err: unknown, fallback: string): string {
  * own skeleton, and `/coaching/today` is requested exactly once per load.
  */
 export function usePanelData() {
+  const economyEnabled = useEconomyEnabled();
   const t = useTranslations("panel");
   const [data, setData] = useState<TodayPanelResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,20 +81,22 @@ export function usePanelData() {
   }, []);
 
   const refreshStreakRescue = useCallback(async () => {
+    if (!economyEnabled) { setStreakRescue(null); return; }
     try {
       setStreakRescue(await fetchStreakRescue());
     } catch {
       setStreakRescue(null);
     }
-  }, []);
+  }, [economyEnabled]);
 
   const refreshRewardOffer = useCallback(async () => {
+    if (!economyEnabled) { setRewardOffer(null); return; }
     try {
       setRewardOffer(await fetchRewardOffer(AdPlacementId.DASHBOARD_REWARDED_COIN));
     } catch {
       setRewardOffer(null);
     }
-  }, []);
+  }, [economyEnabled]);
 
   useEffect(() => {
     let active = true;
@@ -171,9 +175,9 @@ export function usePanelData() {
     loading,
     error,
     quests,
-    streakRescue,
+    streakRescue: economyEnabled ? streakRescue : null,
     setStreakRescue,
-    rewardOffer,
+    rewardOffer: economyEnabled ? rewardOffer : null,
     setRewardOffer,
     rewardUnavailable,
     setRewardUnavailable,

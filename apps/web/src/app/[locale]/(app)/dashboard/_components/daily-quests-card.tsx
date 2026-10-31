@@ -7,6 +7,7 @@ import { ChestIcon } from "./today-path";
 import { CHEST_QUEST_ID } from "./today-path-model";
 import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 import { ProgressLine } from "@/components/panel/progress-line";
+import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 
 /**
  * Today's ritual quests with their progress, and the weekly chest. The list only shows; acting on a
@@ -21,6 +22,7 @@ export function DailyQuestsCard({
   onOpenAll: () => void;
 }) {
   const t = useTranslations("panel");
+  const rewardsEnabled = useEconomyEnabled();
   if (!quests) return null;
   const daily = quests.filter((quest) => quest.category === "daily_ritual");
   const chest = quests.find((quest) => quest.id === CHEST_QUEST_ID);
@@ -47,7 +49,7 @@ export function DailyQuestsCard({
       {daily.length > 0 ? (
         <ul className="flex flex-col gap-3.5">
           {daily.map((quest) => (
-            <QuestLine key={quest.id} quest={quest} />
+            <QuestLine key={quest.id} quest={quest} rewardsEnabled={rewardsEnabled} />
           ))}
         </ul>
       ) : null}
@@ -63,9 +65,9 @@ export function DailyQuestsCard({
                   target: chest.progressTarget,
                 })}
           </span>
-          <span className="shrink-0 tabular-nums">
+          {rewardsEnabled && chest.rewardUnit === "COIN" ? <span className="shrink-0 tabular-nums">
             {t("quests_chest_reward", { reward: chest.rewardAmount })}
-          </span>
+          </span> : null}
         </p>
       ) : null}
 
@@ -81,14 +83,14 @@ export function DailyQuestsCard({
   );
 }
 
-function QuestLine({ quest }: { quest: QuestProgressView }) {
+function QuestLine({ quest, rewardsEnabled }: { quest: QuestProgressView; rewardsEnabled: boolean }) {
   const economyT = useTranslations("economy");
   const target = Math.max(quest.progressTarget ?? 1, 1);
   const current = quest.completed ? target : Math.min(quest.progressCurrent ?? 0, target);
   const reward =
-    quest.rewardUnit === "XP"
+    rewardsEnabled && quest.rewardUnit === "XP"
       ? economyT("quest_reward_xp", { count: quest.rewardAmount })
-      : quest.rewardUnit === "COIN"
+      : rewardsEnabled && quest.rewardUnit === "COIN"
         ? economyT("quest_reward_coin", { count: quest.rewardAmount })
         : null;
 

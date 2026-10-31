@@ -11,6 +11,7 @@ import { QuestRowItem } from "./quest-row-item";
 type QuestTabKey = QuestProgressView["category"];
 
 export interface QuestSectionProps {
+  rewardsEnabled: boolean;
   activeTab?: QuestTabKey;
   tabbed: boolean;
   onAction: (action: QuestProgressView["action"]) => Promise<void>;
@@ -26,6 +27,7 @@ export interface QuestSectionProps {
  * Renders the quest list panel or the celebratory all-done card state.
  */
 export function QuestSection({
+  rewardsEnabled,
   activeTab,
   tabbed,
   onAction,
@@ -97,6 +99,7 @@ export function QuestSection({
                   >
                     {quests.map((quest) => (
                       <QuestRowItem
+                        rewardsEnabled={rewardsEnabled}
                         key={`${quest.id}:${quest.periodKey}`}
                         busy={quest.action === "verify-email" && resendingVerification}
                         onAction={onAction}
@@ -113,6 +116,7 @@ export function QuestSection({
               {rewardedAd ? <RewardedAdOffer {...rewardedAd} variant="list" /> : null}
               {quests.map((quest) => (
                 <QuestRowItem
+                  rewardsEnabled={rewardsEnabled}
                   key={`${quest.id}:${quest.periodKey}`}
                   busy={quest.action === "verify-email" && resendingVerification}
                   onAction={onAction}

@@ -50,7 +50,8 @@ multi-device synchronization remain outside this change.
 - **Cross-module decoupling:** economy consumes events from payments (`payment.succeeded` for the first positive charge) and
   emits events consumed by itself (invite conversion). Forum XP is wired via `forum.answer.accepted`.
   **No runtime dependency on economy from forum** (type-only import).
-- **Gated by `economy.enabled`** (default off) — dormant until admin flips the flag.
+- **Rewards gated by `economy.enabled`** (default off). Personal quest completion remains available
+  with `rewardUnit=NONE` and zero amounts while off; balances, receipts, invites and purchases stay closed.
 
 ## Action-driven rewards and receipts
 
@@ -124,6 +125,17 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `GET /v1/admin/metrics/economy`           | Faucet/sink breakdown + float + faucet reach (calibration) |
 
 ## Geliştirmeler (timeline)
+
+- **2026-10-31 · Ritual progress without economy rewards.** `GET /v1/economy/quests` stays
+  authenticated and available when `economy.enabled=false`. Existing action triggers persist
+  completions without XP/Coin ledger entries or reward receipts. Those completions are not paid
+  retroactively on reopening. Usage: switch the existing economy flag; rituals/actions remain,
+  while the API returns `NONE`/zero rewards and hides invitation/subscription quests. Web keeps
+  the checklist and completion counts, gates balances/paid offers/celebrations, and clears stale
+  economy state on a closed response. Gotcha: reopening requires a fresh document; no live flag
+  subscription or historical ledger reset is introduced. Related: `quest.service.ts`,
+  `quest-progress.ts`, `economy.controller.ts`, `economy-store.ts`, `economy-sync.tsx`, quest and
+  navigation components, and focused quest HTTP/unit and panel browser regressions.
 
 - **2026-10-30 · Invitation social closure.** Invite creation, preview and redemption reject
   closed social access before side effects; the invite discount resolver returns no offer.

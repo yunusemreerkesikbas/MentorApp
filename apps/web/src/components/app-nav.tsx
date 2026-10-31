@@ -38,6 +38,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { isCoach } from "@/lib/coach-surface";
 import { useEconomySnapshot } from "@/lib/economy-store";
+import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 import { greetingKeyForHour } from "@/lib/greeting";
 import { isNavActive } from "@/lib/nav-active";
 import { useIsPremium } from "@/lib/subscription-context";
@@ -190,9 +191,10 @@ export function AppNav() {
   const { user } = useAuth();
   const availability = useAppAvailability();
   const snapshot = useEconomySnapshot();
+  const economyEnabled = useEconomyEnabled();
   // No coin/XP pills for a coach (2026-10-15): every coin sink is a student surface, and the XP a
   // coach earns in the forum already shows on their community profile and the leaderboard.
-  const balance = isCoach(user) ? null : snapshot.balance;
+  const balance = economyEnabled && !isCoach(user) ? snapshot.balance : null;
   // Shared read (see `subscription-context`): the nav used to fetch `/v1/subscription` on its own,
   // which was one of the three calls the same page made for the same answer.
   const premium = useIsPremium();

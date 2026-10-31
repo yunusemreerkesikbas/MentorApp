@@ -10,6 +10,7 @@ import { randomBytes } from "node:crypto";
 import { EmailTokenRepository } from "../src/modules/identity/infrastructure/email-token.repository";
 import { EmailTokenType } from "../src/modules/identity/domain/identity.constants";
 import { hashToken } from "../src/modules/identity/application/token.service";
+import { EconomyService } from "../src/modules/economy/application/economy.service";
 
 const RUN = Date.now();
 const PLAN_ID = `e2e-qplan-${RUN}`;
@@ -197,11 +198,38 @@ describe("economy onboarding quests (e2e)", () => {
       .toHaveLength(1);
   });
 
-  it("404 when the economy feature flag is off", async () => {
+  it("keeps ritual progress without reward metadata when economy is off", async () => {
     await setEconomyEnabled(false);
     const res = await request(app.getHttpServer()).get("/v1/economy/quests").set(asQuester());
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body.every((quest: { rewardUnit: string; rewardAmount: number; rewardCoin: number }) =>
+      quest.rewardUnit === "NONE" && quest.rewardAmount === 0 && quest.rewardCoin === 0)).toBe(true);
+    await request(app.getHttpServer()).get("/v1/economy/balance").set(asQuester()).expect(404);
     await setEconomyEnabled(true); // restore for any later runs
+  });
+
+  it("records real core actions without XP/Coin or backpay while rewards are closed", async () => {
+    await setEconomyEnabled(false).expect(200);
+    const closed = await signup("closed-progress");
+    const headers = { Authorization: `Bearer ${closed.accessToken}` };
+    await request(app.getHttpServer()).patch("/v1/users/me").set(headers).send({ examType: "KPSS" }).expect(200);
+    await request(app.getHttpServer()).post("/v1/coaching/mood-checkins").set(headers).send({ mood: 4 }).expect(200);
+    const task = await request(app.getHttpServer()).post("/v1/plan-tasks").set(headers)
+      .send({ title: "Ritual without rewards", taskDate: new Date().toISOString().slice(0, 10) }).expect(201);
+    await request(app.getHttpServer()).patch(`/v1/plan-tasks/${task.body.id}`).set(headers).send({ status: "DONE" }).expect(200);
+    const session = await request(app.getHttpServer()).post("/v1/study-sessions").set(headers).send({ preset: "25_5" }).expect(201);
+    await svc(async c => { await c.query("update study_sessions set started_at=now()-interval '30 minutes' where id=$1", [session.body.id]); });
+    await request(app.getHttpServer()).patch(`/v1/study-sessions/${session.body.id}`).set(headers)
+      .send({ status: "COMPLETED", actualFocusSeconds: 1500 }).expect(200);
+    const progress = await request(app.getHttpServer()).get("/v1/economy/quests").set(headers).expect(200);
+    for (const id of ["daily.plan-task-done", "daily.focus-session-completed", "daily.mood-checkin", "onboarding.profile-setup"]) {
+      expect(progress.body.find((q: { id: string }) => q.id === id)).toMatchObject({ completed: true, rewardUnit: "NONE", rewardAmount: 0, rewardCoin: 0 });
+    }
+    expect(await app.get(EconomyService).getAdminBalance(closed.user.id)).toEqual({ xp: 0, coinConfirmed: 0, coinPending: 0 });
+    await setEconomyEnabled(true).expect(200);
+    await request(app.getHttpServer()).get("/v1/economy/quests").set(headers).expect(200);
+    expect(await app.get(EconomyService).getAdminBalance(closed.user.id)).toEqual({ xp: 0, coinConfirmed: 0, coinPending: 0 });
   });
 
   it("verified email grants its own ten Coin exactly once", async () => {

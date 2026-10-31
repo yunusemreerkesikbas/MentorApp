@@ -7,7 +7,7 @@ import type {
   QuestProgressView,
 } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Card } from "@mentor/ui";
+import { Card, Skeleton } from "@mentor/ui";
 import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { FormError } from "@/components/form";
 import {
@@ -20,6 +20,7 @@ import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { EconomyBalanceCard } from "./economy-balance-card";
 import { EconomyInviteCard } from "./economy-invite-card";
 import { ListRow } from "./account-links-card";
+import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 
 type EconomyState =
   | { status: "probing" }
@@ -53,6 +54,12 @@ async function fetchEconomyHub(): Promise<{
  * Coin amounts stay off /coach chat (§4 #3).
  */
 export function EconomySection({ refreshKey = 0 }: EconomySectionProps) {
+  return useEconomyEnabled()
+    ? <EnabledEconomySection refreshKey={refreshKey} />
+    : <RitualSection refreshKey={refreshKey} />;
+}
+
+function EnabledEconomySection({ refreshKey = 0 }: EconomySectionProps) {
   const t = useTranslations("economy");
   const profile = useTranslations("profile.earned");
   const sheet = useMentorBottomSheet();
@@ -196,4 +203,26 @@ export function EconomySection({ refreshKey = 0 }: EconomySectionProps) {
       ) : null}
     </>
   );
+}
+
+/** Personal rituals remain reachable without loading balances or invitations. */
+function RitualSection({ refreshKey }: EconomySectionProps) {
+  const t = useTranslations("economy");
+  const sheet = useMentorBottomSheet();
+  const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void fetchQuests().then(value => { if (active) { setQuests(value); setFailed(false); } })
+      .catch(() => { if (active) setFailed(true); });
+    return () => { active = false; };
+  }, [refreshKey]);
+  if (failed) return <FormError message={t("quests_load_error")} />;
+  if (!quests) return <Card><Skeleton className="h-11 w-full" /></Card>;
+  return <Card solid className="p-2 sm:p-2.5">
+    <ListRow onClick={() => sheet.show({
+      title: t("quests_title"), layout: "filter", size: "wide", bodyScroll: false,
+      children: <EconomyQuestsCard quests={quests} onDismiss={sheet.dismissNow} />,
+    })}>{t("quests_title")}</ListRow>
+  </Card>;
 }

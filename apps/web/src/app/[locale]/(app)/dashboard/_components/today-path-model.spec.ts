@@ -114,6 +114,7 @@ describe("buildTodayPath", () => {
   it("draws the chest from the weekly allowance quest only", () => {
     expect(buildTodayPath([], null, 25).chest).toBeNull();
     expect(buildTodayPath([], [chestQuest({ id: "weekly.plan-tasks" })], 25).chest).toBeNull();
+    expect(buildTodayPath([], [chestQuest({ rewardUnit: "NONE", rewardAmount: 0, rewardCoin: 0 })], 25).chest).toBeNull();
     expect(buildTodayPath([], [chestQuest()], 25).chest).toEqual({
       current: 3,
       target: 5,

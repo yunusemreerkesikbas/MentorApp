@@ -5,12 +5,16 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { ECONOMY_CHANGED_EVENT, fetchUnseenRewards, forgetInviteCode, markRewardsSeen, notifyCoinCelebration } from "@/lib/economy";
-import { refreshEconomySnapshot, resetEconomySnapshot } from "@/lib/economy-store";
+import { ECONOMY_CHANGED_EVENT, ECONOMY_DISABLED_EVENT, fetchUnseenRewards, forgetInviteCode, isEconomyDisabled, markRewardsSeen, notifyCoinCelebration } from "@/lib/economy";
+import { disableEconomySnapshot, getEconomySnapshot, refreshEconomySnapshot, resetEconomySnapshot } from "@/lib/economy-store";
+import { useAppAvailability } from "@/lib/app-availability";
+import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 
 /** One reward consumer per authenticated app. Amounts always come from committed ledger rows. */
 export function EconomySync() {
   const { user } = useAuth();
+  const availability = useAppAvailability();
+  const economyEnabled = useEconomyEnabled();
   const pathname = usePathname();
   const toast = useMentorToast();
   const t = useTranslations("economy");
@@ -29,11 +33,17 @@ export function EconomySync() {
     };
     displayed.current.clear();
     forgetAccount();
+    if (!availability?.economy) disableEconomySnapshot();
     return forgetAccount;
-  }, [user?.id]);
+  }, [user?.id, availability?.economy]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    window.addEventListener(ECONOMY_DISABLED_EVENT, disableEconomySnapshot);
+    return () => window.removeEventListener(ECONOMY_DISABLED_EVENT, disableEconomySnapshot);
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id || !economyEnabled) return;
     let active = true;
     let running = false;
     let dirty = false;
@@ -45,11 +55,11 @@ export function EconomySync() {
         while (active && dirty) {
           dirty = false;
           await refreshEconomySnapshot();
-          if (!active || presentation.current.pathname.startsWith("/coach")) continue;
+          if (!active || getEconomySnapshot().enabled === false || presentation.current.pathname.startsWith("/coach")) continue;
           let more = true;
           while (active && more) {
             const rewards = await fetchUnseenRewards();
-            if (!active || rewards.items.length === 0) break;
+            if (!active || getEconomySnapshot().enabled === false || rewards.items.length === 0) break;
             for (const entry of rewards.items) {
               if (displayed.current.has(entry.id)) continue;
               displayed.current.add(entry.id);
@@ -60,7 +70,8 @@ export function EconomySync() {
             more = rewards.total > rewards.items.length;
           }
         }
-      } catch {
+      } catch (error) {
+        if (isEconomyDisabled(error)) disableEconomySnapshot();
         // Unacknowledged receipts remain on the server and retry on the next refresh.
       } finally { running = false; }
     }
@@ -74,7 +85,7 @@ export function EconomySync() {
       window.removeEventListener(ECONOMY_CHANGED_EVENT, refresh);
       document.removeEventListener("visibilitychange", visible);
     };
-  }, [user?.id]);
+  }, [user?.id, economyEnabled]);
 
   useEffect(() => { window.dispatchEvent(new Event(ECONOMY_CHANGED_EVENT)); }, [pathname]);
   return null;

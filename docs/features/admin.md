@@ -100,6 +100,22 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-31 · Local admin CORS configuration
+
+- Fixed the local API environment's `ADMIN_APP_URL` from the API origin (`http://localhost:3001`)
+  to the admin browser origin (`http://localhost:3002`). With `CORS_ORIGINS` blank/unset, the API
+  permits `APP_URL` and `ADMIN_APP_URL`; an explicit list replaces these defaults and must include
+  both browser origins.
+- Usage: set `ADMIN_APP_URL=http://localhost:3002` in `apps/api/.env`, restart
+  `pnpm --filter @mentor/api dev`, then reload the admin. Running the admin alone does not restart
+  the API or reload its environment. A refresh without an admin session may return `401`; this is
+  expected when the response includes the matching `Access-Control-Allow-Origin` header.
+- Gotcha: the local `.env` is git-ignored. Related: `.env.example`, `apps/api/src/main.ts`,
+  `apps/api/src/config/env.validation.ts`, `apps/admin/src/lib/apiClient.ts`.
+- Validation: 90 focused environment/admin-client tests passed. Live preflights allow web/admin
+  and omit the allow-origin header for an unlisted origin. A clean Chrome session reaches `/login`
+  after the expected `401` refresh response, with matching CORS headers and no CORS errors.
+
 - **2026-10-29: Free-tier notebook quota settings in `/config`.** Added Turkish operator hints (`config-hints.ts`) and catalog definitions (`config.catalog.ts`) for five `COACHING` keys governing Free-user notebook limits: `coaching.notebook.photo.free_enabled`, `coaching.notebook.photo.free_limit`, `coaching.notebook.custom.free_limit`, `coaching.notebook.pages.free_limit`, and `coaching.notebook.entries.free_limit`. Usage: edit under Admin `/config` (`SUPER_ADMIN`); setting photo or custom-notebook limit to `0` (or toggling `photo.free_enabled` off) turns that capability into a Premium-only feature. Gotchas: existing notebook pages above a lowered `pages.free_limit` remain editable (grandfathered). Related: `config.catalog.ts`, `config-hints.ts`, [`coaching.md`](./coaching.md).
 
 - **2026-10-26: Display inventory preparation in existing settings.** `/config` adds a read-only

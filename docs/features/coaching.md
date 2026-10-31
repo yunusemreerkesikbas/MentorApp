@@ -2254,6 +2254,8 @@ deftere fotoğraflı bir yanlış eklenip sayfaya yerleştirildiğinde tetikleni
 
 - **2026-10-25 · Odak tekrarı (`/yanlis-defteri?review=focus`) durum ekranları.** Tekrar destesi tam ekran bir pencerede açılıyor. Pencere kapandıktan sonra arkada kalan sayfa önceden tek cümlelik ham bir karttı; artık dar, ortalanmış bir sütun. Üstte ikonlu "Analize dön" linki var. Boş, tekrar yok, kaydedildi ve hata durumları `EmptyState` ile gösteriliyor (Puhu, başlık, açıklama). Bu durumlarda ana buton duruma göre değişiyor ("Aktif sorularla erken çalış", "Diğer sorulara geç" veya "Yeniden dene"), "Yanlış defterine git" ise ikincil buton. Yükleme metni yerine iskelet (skeleton) var. Yeni anahtarlar: `notebook.focusReview.{noDue_title, empty_title, saved_title, notebook}`. Gotcha: buton olarak ikinci bir "Analize dön" ekleme, çünkü `analysis-review.spec.ts` bu linki ada göre tek eleman olarak bulmayı bekliyor. Dosya: `notebook-focus-review.tsx`.
 
+- **2026-10-31 · Koçla planla sonrası takvim yenilenmiyordu.** Önizlemede "Uygula" deyince eklenen görevler Takvim görünümünde sayfa yenilenene kadar görünmüyordu. Sebep: `refreshAdaptedPlan` yalnız gün ve hafta listesini çekiyordu, Takvim ise şeridi, saat ızgarasını, ay panosunu ve soldaki gün listesini `monthTasks`'tan okuyor. Artık Takvim'deyken ay aralığı, diğer görünümlerde gün listesi hafta ile birlikte yeniden çekiliyor (sekmeye dönüş yenilemesiyle aynı kural). 409 (plan değişti) yolu da aynı fonksiyonu kullandığı için o da düzeldi. **Gotcha:** Takvim'e yeni bir veri kaynağı eklersen `refreshAdaptedPlan` ve `refreshIfVisible`'a da ekle. Dosya: `plan-shell.tsx`.
+
 ## Gotchas / Known issues
 
 - **Defter araç çubuğu mobilde sabit başlığın altına kaçıyor (e2e'de kırmızı, 2026-09-05)** — 375px

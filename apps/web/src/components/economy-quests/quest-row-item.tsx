@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { QuestProgressView } from "@mentor/types";
 
 interface QuestRowItemProps {
+  rewardsEnabled: boolean;
   busy: boolean;
   onAction: (action: QuestProgressView["action"]) => Promise<void>;
   quest: QuestProgressView;
@@ -17,6 +18,7 @@ interface QuestRowItemProps {
  * strikethrough completed title, and distinct XP/Coin/Done pill badges).
  */
 export function QuestRowItem({
+  rewardsEnabled,
   busy,
   onAction,
   quest,
@@ -82,12 +84,12 @@ export function QuestRowItem({
         <span className="inline-flex shrink-0 items-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_14%,transparent)] px-2.5 py-1 text-xs font-bold text-[var(--color-success)]">
           {translate("quest_completed")}
         </span>
-      ) : quest.rewardUnit === "XP" ? (
+      ) : rewardsEnabled && quest.rewardUnit === "XP" ? (
         <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-[var(--color-chip-text)] dark:text-violet-300 sm:text-sm">
           <Gem className="size-3.5 stroke-[2.2]" aria-hidden />
           <span>{translate("quest_reward_xp", { count: quest.rewardAmount })}</span>
         </span>
-      ) : quest.rewardUnit === "COIN" ? (
+      ) : rewardsEnabled && quest.rewardUnit === "COIN" ? (
         <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-amber-500 dark:text-amber-400 sm:text-sm">
           <Coins className="size-3.5 stroke-[2.2]" aria-hidden />
           <span>{translate("quest_reward_coin", { count: quest.rewardAmount })}</span>
