@@ -20,6 +20,15 @@ Noindex does not replace authentication or Cloudflare Access.
 
 ## 1. Release prerequisites and budget
 
+**Current owner direction, 2026-10-28:** evaluate suitable free plans first. There is no fixed
+total monthly spending target. Consider the cheapest suitable paid alternative only after
+measurements establish the need and its fixed/variable charges and enforceable stop controls
+are understood. Keep auto-upgrades, paid overages and auto-recharge off. An alert is not a cap.
+The current `render.yaml` remains an **optional paid always-on alternative**, not the selected
+launch profile. Do not apply it just to perform the free-plan evaluation. See
+[the current plan](../plans/2026-10-28-free-first-launch.md) and
+[provider limits and evidence](../qa/2026-10-28-free-first-launch.md).
+
 Permanent staging is not a prerequisite. Local/CI tests use isolated test databases and fake
 providers. Full CI must pass on the exact reviewed commit before publication. An optional
 temporary rehearsal can validate provider integration before the first release or critical
@@ -27,9 +36,10 @@ auth/payment/migration/storage changes; see [deferred-staging.md](./deferred-sta
 
 Resolve these items before authorizing production provisioning:
 
-- Approve the Render service/cron/domain/build/traffic budget, Neon compute/storage limits and
-  provider usage budgets. `render.yaml` uses two single-instance paid web services, a Free
-  admin service and three daily cron jobs (the low-cost launch profile below).
+- Evaluate Render Free and Neon Free in a rehearsal first, including cold-start auth mail,
+  aggregate quotas and maintenance jobs. Only then consider the optional paid `render.yaml`,
+  with two single-instance paid web services, a Free admin and three daily cron jobs.
+  Agree fixed/variable charges and enforceable controls before selecting a paid profile.
   Manual deploy settings do not prevent billing or an initial Blueprint deployment.
 - Obtain dedicated production runtime/migration DB URLs and JWT, rate-limit, edge, cron and
   VAPID secrets. Supply production OpenAI, Gemini, R2, Turnstile, Postmark and Sentry settings.
@@ -47,7 +57,8 @@ Resolve these items before authorizing production provisioning:
 1. Follow the existing [security release checklist](./security-release-checklist.md) and
    [integration guide](./integrations.md). Connect only this repository to Render. The actual
    release branch is `master`; changing the default/protected branch is a separate task.
-2. After budget and release approval, apply `render.yaml`. Every service has
+2. If free-plan acceptance fails and the paid alternative clears cost/release gates, apply
+   `render.yaml`. Every service has
    `autoDeployTrigger: off`. Initial provisioning or Blueprint sync can still deploy; do not
    treat this setting as a provisioning approval gate.
 3. Native Node services use Frankfurt/EU and Node 22.22.0. Frozen installs include dev build
@@ -69,10 +80,11 @@ Resolve these items before authorizing production provisioning:
    The paid API's existing `JobRunnerService` handles the queue automatically; its secret-
    protected `process-jobs` HTTP endpoint remains available for manual catch-up.
 
-### Low-cost launch profile and overage controls
+### Optional paid always-on alternative and overage controls
 
-Owner-selected on 2026-10-13: keep the reader-facing web and API always on; accept cold starts
-only for admin. This keeps Next.js server rendering, API jobs and all security gates intact.
+Earlier direction on 2026-10-13: keep the reader-facing web and API always on; accept cold
+starts only for admin. This is an alternative retained for comparison. The 2026-10-28 direction
+requires evaluating free plans first and does not approve the paid resources in this table.
 
 | Render item | Launch choice | Monthly base, USD |
 |---|---|---:|
@@ -97,10 +109,12 @@ The other schedules remain 06:00, 07:00 and 03:30 UTC. Their HTTP calls fail on 
 A timeout is a failed maintenance run: inspect the provider logs and queue, then retry through
 the protected endpoint after checking its result. It is not successful task completion.
 
-Admin Free can sleep after 15 minutes idle and take about a minute to wake. Its 750 monthly
-Free instance hours are shared across the workspace; adding more Free services can exhaust
-them. This operator-only trade-off was accepted; do not move web/API to Free or auto-upgrade
-admin. Keep Access enabled before publication and test admin sessions after wake/restart.
+Render Free can sleep after 15 minutes idle and take about a minute to wake. Its 750 monthly
+Free instance hours are shared across the workspace. Evaluate the combined web/API/admin
+runtime rather than assuming one full month per service. Free web/API acceptance is pending:
+the existing paid Blueprint must not be relabeled Free without validating migrations, queue
+delivery and scheduled maintenance. Do not auto-upgrade. Keep Access enabled before publication
+and test admin sessions after wake/restart.
 See [Free limitations](https://render.com/docs/free).
 
 **Observed account settings, 2026-10-13:** Puhukoc is on Hobby; no services, payment card,
@@ -119,7 +133,7 @@ monthly spend limit**. These observations are not settings guaranteed by the Blu
   [bandwidth billing](https://render.com/docs/outbound-bandwidth) and
   [pipeline limits](https://render.com/docs/build-pipeline#setting-a-spend-limit).
 - At launch, verify one paid instance per service, no autoscaling, the billed domain count
-  and the workspace notification address. During the pilot, check Billing and per-service
+  and the workspace notification address. During initial use, check Billing and per-service
   Metrics daily. At 400 pipeline minutes or 4 GB bandwidth (80% of included usage), investigate
   before more usage accumulates. Provider emails warn about approaching/exceeded usage;
   notification is not automatic cost containment.
@@ -130,7 +144,8 @@ monthly spend limit**. These observations are not settings guaranteed by the Blu
   `ai.budget.monthly_cap_usd_cents`; the catalog's `0` default means **no cap**, not zero spend.
   Provider safety and live acceptance gates remain required before opening paid resources.
 
-`pnpm check:deployment` rejects a paid admin, Free web/API, extra instances/autoscaling,
+`pnpm check:deployment` validates the optional paid Blueprint: it rejects a paid admin,
+Free web/API in that particular profile, extra instances/autoscaling,
 the redundant queue cron, changed daily schedules or unbounded/unauthenticated cron HTTP.
 It checks source configuration, not live billing settings or a hard account budget.
 

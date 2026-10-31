@@ -1,8 +1,14 @@
 # Invited pilot cost and queue profile
 
-Decision record, 2026-10-13. The owner selected 20–50 invited users, a USD 50 total monthly
-operating ceiling, Postmark Free (100 emails/month), and in-app/push daily reminders.
+Historical evidence, 2026-10-13. The earlier proposal used 20–50 invited users,
+Postmark Free (100 emails/month), and in-app/push daily reminders.
 This is source preparation and a proposed allocation, not provisioning or a billing guarantee.
+
+> Superseded on 2026-10-28: evaluate suitable free plans first; consider the cheapest paid
+> alternative only with measured need and verified spending controls. Public signup is intended,
+> invited mode remains off, initial expected usage is at most eight people, and email uses
+> Resend. The paid always-on allocation below is a historical alternative, not the selected
+> launch profile. See [current evidence](2026-10-28-free-first-launch.md).
 
 ## Account evidence
 
@@ -107,11 +113,11 @@ acceptance; agree entitlements and a finite positive application/provider alloca
 enabling AI. No AI flag/cap was applied by this task. The Neon estimate assumes a single
 production compute with min=max 0.25 CU; raising its ceiling requires a new cost/load profile.
 
-The lean profile's expected base is approximately USD 37–38 before tax/usage extras. Allocate
-USD 38 to hosting/DB/domains, leaving USD 12 for tax, transfer/build/storage overage, monitoring
-and domain renewal. A later AI allocation must reduce that reserve, not increase the USD 50
-ceiling. The full profile leaves only about USD 4–5 before tax/extra usage; adding Postmark
-Basic at USD 15 cannot fit. These are bounded assumptions, not an account invoice or a hard cap.
+The historical lean profile estimated approximately USD 37–38 before tax/usage extras.
+It is an optional always-on paid alternative, not a spending target or an approved allocation.
+Any future proposal must separately identify fixed fees, tax, variable charges, shared-account
+usage and enforceable consumption limits. Provider alerts and max-CU sizing alone do not cap
+the total invoice. Do not select this profile until free-plan acceptance demonstrates a need.
 
 The proposal removes only the redundant Render process-jobs service; the API's existing
 poller and secret-authenticated manual endpoint remain. Keep daily reminders (including auth

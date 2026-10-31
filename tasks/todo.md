@@ -1,10 +1,14 @@
 # Invited pilot task list
 
+> Historical checklist. Current decisions and execution:
+> [free-first launch preparation](../docs/plans/2026-10-28-free-first-launch.md).
+> Public signup, at most eight expected initial users, Resend Free and no automatic paid upgrades.
+
 The registration package is approved; see [plan.md](./plan.md) for acceptance criteria,
 verification and the separate decisions required by later slices.
 
 - [x] Confirm first release: invited pilot, 20-50 users.
-- [x] Confirm total monthly operating budget ceiling: USD 50; cost/performance priority.
+- [x] Replace the fixed operating-budget target with free-first evaluation and bounded paid usage.
 - [x] Verify production-preparation PR #156 passed CI and was integrated outside this task.
 - [x] Inspect password/OAuth registration and notification polling constraints.
 - [x] Confirm invitation method: invited email list.

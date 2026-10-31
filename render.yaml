@@ -1,4 +1,6 @@
-# Production Blueprint. Apply only after release/budget approval. Setup: docs/core/deployment.md.
+# Optional paid always-on Blueprint, not the selected free-first launch profile.
+# Apply only after measured free-plan evaluation and bounded-cost release approval.
+# Setup and remaining billing gates: docs/core/deployment.md.
 # Existing service names are retained to avoid replacing deployed resources.
 services:
   - type: web
