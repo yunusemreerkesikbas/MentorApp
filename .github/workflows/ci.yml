@@ -100,9 +100,17 @@ jobs:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
           JWT_ACCESS_SECRET: ci-browser-test-access-secret-00000000
           PAYMENTS_WEBHOOK_SECRET: ci-browser-test-webhook-secret
+          AI_PROVIDER: fake
+          VISION_PROVIDER: fake
+          STORAGE_PROVIDER: fake
+          PAYMENTS_PROVIDER: fake
+          SMS_PROVIDER: disabled
         run: |
           pnpm --filter @mentor/api db:migrate
-          pnpm --filter @mentor/api start:prod > "$RUNNER_TEMP/mentor-api.log" 2>&1 &
+          node --test apps/api/scripts/browser-fixture-profile.spec.mjs
+          node apps/api/scripts/browser-fixture-profile.mjs enabled
+          (cd apps/api && exec node dist/main.js) > "$RUNNER_TEMP/mentor-api.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/mentor-api.pid"
           for attempt in {1..120}; do
             if curl --fail --silent http://localhost:3001/v1/health/ready > /dev/null; then
               exit 0
@@ -125,6 +133,42 @@ jobs:
         run: |
           pnpm --filter @mentor/web build
           pnpm --filter @mentor/web test:e2e account-security.spec.ts account-security-regression.spec.ts browser-security.spec.ts --workers=1
+
+      - name: Core trial browser checks
+        env:
+          NODE_ENV: test
+          APP_ENV: development
+          APP_URL: http://localhost:3100
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+          JWT_ACCESS_SECRET: ci-browser-test-access-secret-00000000
+          PAYMENTS_WEBHOOK_SECRET: ci-browser-test-webhook-secret
+          AI_PROVIDER: fake
+          VISION_PROVIDER: fake
+          STORAGE_PROVIDER: fake
+          PAYMENTS_PROVIDER: disabled
+          SMS_PROVIDER: disabled
+          ADMIN_ACCESS_MODE: disabled
+        run: |
+          api_pid=$(cat "$RUNNER_TEMP/mentor-api.pid")
+          [[ "$api_pid" =~ ^[1-9][0-9]*$ ]] || exit 1
+          kill "$api_pid"
+          for attempt in {1..30}; do
+            if ! kill -0 "$api_pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if kill -0 "$api_pid" 2>/dev/null; then exit 1; fi
+          node apps/api/scripts/browser-fixture-profile.mjs core-trial
+          (cd apps/api && exec node dist/main.js) > "$RUNNER_TEMP/mentor-api-core-trial.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/mentor-api.pid"
+          for attempt in {1..120}; do
+            if curl --fail --silent http://localhost:3001/v1/health/ready > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://localhost:3001/v1/health/ready > /dev/null
+          pnpm --filter @mentor/web exec playwright test --config=playwright.core-trial.config.ts
+
+      - name: Bounded media browser checks
+        run: pnpm --filter @mentor/web exec playwright test --config=playwright.bounded-media.config.ts
 
       - name: Upload Playwright diagnostics
         if: failure()
