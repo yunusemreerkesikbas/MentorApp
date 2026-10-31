@@ -1,6 +1,9 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
+import { useAppAvailability } from "@/lib/app-availability";
+import { useAuth } from "@/lib/auth-context";
+import { isCoach } from "@/lib/coach-surface";
 
 import { PremiumBadge } from "./premium-badge";
 
@@ -15,6 +18,9 @@ export function PremiumLockNudge({
   label: string;
   onClick: () => void;
 }) {
+  const availability = useAppAvailability();
+  const { user } = useAuth();
+  if (!(isCoach(user) ? availability?.coachPurchases : availability?.studentPurchases)) return null;
   // The chevron rides with the last word, so a label that wraps never strands it on its own line.
   const cut = label.lastIndexOf(" ") + 1;
   return (

@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
-import type { AuthUser } from "@mentor/types";
+import { APP_AVAILABILITY_KEYS, type AppAvailabilityDto, type AuthUser } from "@mentor/types";
 import {
   hasCompletedOnboarding,
   internalPathFromUrl,
-  postAuthDestination,
+  postAuthDestination as resolvePostAuthDestination,
   readAuthNextParam,
   safeNextPath,
 } from "./post-auth-destination";
+
+const enabled = Object.fromEntries(APP_AVAILABILITY_KEYS.map(key => [key, true])) as AppAvailabilityDto;
+function postAuthDestination(user: AuthUser, next?: string | null, availability: AppAvailabilityDto | null = enabled) {
+  return resolvePostAuthDestination(user, next, availability);
+}
 
 function user(overrides: Partial<AuthUser> = {}): AuthUser {
   return {
@@ -44,6 +49,29 @@ describe("postAuthDestination", () => {
     expect(
       postAuthDestination(user({ username: "ada", examType: "KPSS" })),
     ).toBe("/dashboard");
+  });
+});
+
+describe("postAuthDestination with closed features", () => {
+  const closed = Object.fromEntries(APP_AVAILABILITY_KEYS.map(key => [key, false])) as AppAvailabilityDto;
+  const student = user({ username: "ada", examType: "KPSS" });
+  const coach = user({ username: "mert", examType: "KPSS", roles: ["COACH"] });
+
+  it("drops a stale room or social destination after login", () => {
+    expect(postAuthDestination(student, "/join-room?kod=OLD", closed)).toBe("/dashboard");
+    expect(postAuthDestination(student, "/community/member/other", closed)).toBe("/dashboard");
+    expect(postAuthDestination(student, "/plan?coach=adapt&date=2026-10-30", closed)).toBe("/plan?date=2026-10-30");
+  });
+
+  it("keeps a closed coach account on an accessible account surface", () => {
+    expect(postAuthDestination(coach, null, closed)).toBe("/settings");
+    expect(postAuthDestination(coach, "/students", null)).toBe("/settings");
+    expect(postAuthDestination(coach, "/settings?section=phone", closed)).toBe("/settings?section=phone");
+  });
+
+  it("still rejects an external redirect before applying availability", () => {
+    expect(postAuthDestination(student, "//evil.example", closed)).toBe("/dashboard");
+    expect(postAuthDestination(student, "/community/member/ada", null)).toBe("/community/member/ada");
   });
 });
 

@@ -11,6 +11,14 @@ const question = {
 const server = createServer((req, res) => {
   res.setHeader("Content-Type", "application/json");
   if (req.url === "/health") { res.end("{}"); return; }
+  if (req.url === "/v1/app/availability") {
+    res.setHeader("Cache-Control", "no-store");
+    res.end(JSON.stringify({
+      aiCoach: true, coachPurchases: true, coachRegistration: true, coachSignup: true, forum: true,
+      humanCoaching: true, invites: true, social: true, studentPurchases: true, studentSignup: true, studyRooms: true,
+    }));
+    return;
+  }
   if (req.url === `/v1/forum/public/questions/${questionId}`) { res.end(JSON.stringify(question)); return; }
   if (req.url === "/v1/forum/public/questions/44444444-4444-4444-8444-444444444444") {
     res.end(JSON.stringify({ ...question, id: "44444444-4444-4444-8444-444444444444", body: `${question.body}\n`.repeat(100) })); return;
@@ -18,6 +26,9 @@ const server = createServer((req, res) => {
   res.statusCode = 404;
   res.end(JSON.stringify({ code: "NOT_FOUND" }));
 });
-server.listen(3371, "localhost");
+server.listen(Number(process.env.QA_QUESTION_API_PORT ?? "3371"), "localhost", () => {
+  const address = server.address();
+  if (address && typeof address === "object") process.send?.({ port: address.port });
+});
 process.on("SIGTERM", () => server.close());
 process.on("SIGINT", () => server.close());

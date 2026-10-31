@@ -1,3 +1,4 @@
+import { browserApiUrl } from "./api.fixture";
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type {
   AuthUser,
@@ -152,7 +153,7 @@ test("görev süresi: düzenlerken yükler, değiştirir ve temizler", async ({ 
   const current = { ...task, taskDate: new Date().toISOString().slice(0, 10), durationMinutes: 80, sessionFocusMinutes: 80 };
   await mockPlanApi(page, { preview: readyPreview, tasks: [current] });
   const patches: unknown[] = [];
-  await page.route(`http://localhost:3001/v1/plan-tasks/${taskId}`, async (route) => {
+  await page.route(`${browserApiUrl}/plan-tasks/${taskId}`, async (route) => {
     const body = route.request().postDataJSON();
     patches.push(body);
     Object.assign(current, body, { sessionFocusMinutes: body.durationMinutes ?? 25 });
@@ -851,7 +852,7 @@ test.describe("bildirim linki", () => {
   test("plandayken bildirime dokunmak görevin gününe geçer", async ({ page }) => {
     await mockPlanApi(page, { preview: readyPreview, tasks: [] });
     await routeTasksByDate(page, [coachTask]);
-    await page.route("http://localhost:3001/v1/notifications**", async (route) => {
+    await page.route(`${browserApiUrl}/notifications**`, async (route) => {
       const request = route.request();
       const path = new URL(request.url()).pathname;
       if (request.method() === "PATCH") return json(route, null, 204);
@@ -955,7 +956,7 @@ function dayChip(isoDate: string): string {
 
 /** `mockPlanApi` returns every task for any day; this answers each day with its own tasks only. */
 async function routeTasksByDate(page: Page, tasks: PlanTaskDto[]) {
-  await page.route("http://localhost:3001/v1/plan-tasks**", async (route) => {
+  await page.route(`${browserApiUrl}/plan-tasks**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     if (request.method() !== "GET" || url.pathname !== "/v1/plan-tasks") return route.fallback();
@@ -999,7 +1000,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
       window.localStorage.setItem("mentor.plan.calendarScale", scale);
     }
   }, options.calendar?.scale ?? null);
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${browserApiUrl}/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;

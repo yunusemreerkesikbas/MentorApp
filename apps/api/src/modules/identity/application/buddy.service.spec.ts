@@ -52,7 +52,8 @@ const make = () => {
   const pairs = makePairs();
   const users = makeUsers();
   const events = makeEvents();
-  const svc = new BuddyService(pairs as never, users as never, events as never);
+  const social = { assertEnabled: vi.fn().mockResolvedValue(undefined), isEnabled: vi.fn().mockResolvedValue(true) };
+  const svc = new BuddyService(pairs as never, users as never, events as never, social as never);
   return { svc, pairs, users, events };
 };
 

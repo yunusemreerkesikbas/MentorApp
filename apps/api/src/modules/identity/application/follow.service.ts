@@ -1,6 +1,7 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { FollowList, FollowUserRef } from "@mentor/types";
+import { SocialAccessPolicy } from "../../../common/config/social-access.policy";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
@@ -21,10 +22,12 @@ export class FollowService {
     private readonly usersRepo: UsersRepository,
     private readonly events: EventEmitter2,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly social: SocialAccessPolicy,
   ) {}
 
   /** Follow a user by username. Self-follow → 400; unknown/banned target → 404. Idempotent. */
   async follow(followerId: string, username: string): Promise<void> {
+    await this.social.assertEnabled();
     const target = await this.requireVisibleUser(username);
     if (target.id === followerId) {
       throw new DomainError(ErrorCode.SOCIAL_CANNOT_FOLLOW_SELF, HttpStatus.BAD_REQUEST);
@@ -48,6 +51,7 @@ export class FollowService {
    * notification. Used when an invite redeem links two people who cannot become study buddies.
    */
   async followEachOtherSilently(a: string, b: string): Promise<void> {
+    await this.social.assertEnabled();
     if (a === b) return;
     await this.follows.follow(a, b);
     await this.follows.follow(b, a);
@@ -55,6 +59,7 @@ export class FollowService {
 
   /** Unfollow a user by username. No-op if the target is gone or wasn't followed. */
   async unfollow(followerId: string, username: string): Promise<void> {
+    await this.social.assertEnabled();
     const target = await this.usersRepo.findByUsernameService(username);
     if (!target) return;
     await this.follows.unfollow(followerId, target.id);
@@ -62,25 +67,30 @@ export class FollowService {
 
   // --- reads consumed by other modules (community profile header, forum feed) ---
 
-  isFollowing(followerId: string, followeeId: string): Promise<boolean> {
+  async isFollowing(followerId: string, followeeId: string): Promise<boolean> {
+    if (!(await this.social.isEnabled())) return false;
     return this.follows.isFollowing(followerId, followeeId);
   }
 
-  countFollowers(userId: string): Promise<number> {
+  async countFollowers(userId: string): Promise<number> {
+    if (!(await this.social.isEnabled())) return 0;
     return this.follows.countFollowers(userId);
   }
 
-  countFollowing(userId: string): Promise<number> {
+  async countFollowing(userId: string): Promise<number> {
+    if (!(await this.social.isEnabled())) return 0;
     return this.follows.countFollowing(userId);
   }
 
-  getFolloweeIds(followerId: string): Promise<string[]> {
+  async getFolloweeIds(followerId: string): Promise<string[]> {
+    if (!(await this.social.isEnabled())) return [];
     return this.follows.getFolloweeIds(followerId);
   }
 
   // --- follower / following lists (profile) ---
 
   async getFollowers(username: string, viewerId: string, before?: string): Promise<FollowList> {
+    await this.social.assertEnabled();
     const owner = await this.requireVisibleUser(username);
     const rows = await this.follows.listFollowers(owner.id, viewerId, {
       limit: FOLLOW_LIST_PAGE,
@@ -90,6 +100,7 @@ export class FollowService {
   }
 
   async getFollowing(username: string, viewerId: string, before?: string): Promise<FollowList> {
+    await this.social.assertEnabled();
     const owner = await this.requireVisibleUser(username);
     const rows = await this.follows.listFollowing(owner.id, viewerId, {
       limit: FOLLOW_LIST_PAGE,

@@ -1,4 +1,6 @@
 "use client";
+
+import { AvailableFeature } from "@/lib/app-availability";
 import { notifyEconomyChanged } from "@/lib/economy";
 import { ArrowLeft } from "lucide-react";
 
@@ -843,12 +845,12 @@ export function PlanShell() {
               <ArrowLeft size={20} strokeWidth={2} aria-hidden />
             </PlanWeekNavButton>
           ) : null}
-          <PlanCoachAdaptationAction
+          <AvailableFeature feature="aiCoach"><PlanCoachAdaptationAction
             ref={coachAdaptationRef}
             knownWeek={knownWeek}
             onApplied={refreshAdaptedPlan}
             onPlanChanged={refreshAdaptedPlan}
-          />
+          /></AvailableFeature>
         </motion.header>
 
         <motion.div

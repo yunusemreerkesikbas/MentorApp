@@ -76,13 +76,16 @@ const expectDomainError = async (run: Promise<unknown>, code: string) => {
 describe("StudyRoomService", () => {
   describe("feature flag", () => {
     it("refuses every entry point while the flag is off", async () => {
-      const { svc } = make({ enabled: false });
+      const { svc, rooms } = make({ enabled: false });
       await expectDomainError(svc.list(OWNER), ErrorCode.COACHING_ROOM_DISABLED);
       await expectDomainError(
         svc.create(OWNER, { name: "x", theme: "HOME", capacity: 4 }),
         ErrorCode.COACHING_ROOM_DISABLED,
       );
       await expectDomainError(svc.getDetail(OWNER, ROOM), ErrorCode.COACHING_ROOM_DISABLED);
+      await expectDomainError(svc.getNotificationTargets(ROOM, OWNER), ErrorCode.COACHING_ROOM_DISABLED);
+      expect(rooms.findById).not.toHaveBeenCalled();
+      expect(rooms.listMembers).not.toHaveBeenCalled();
     });
   });
 

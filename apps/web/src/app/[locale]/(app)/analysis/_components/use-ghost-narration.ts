@@ -5,6 +5,7 @@ import type { CoachingAnalysisDto } from "@mentor/types";
 import { fetchGhostNarration } from "@/lib/coach";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { useSubscription } from "@/lib/subscription-context";
+import { useAppAvailability } from "@/lib/app-availability";
 
 export interface GhostNarration {
   /** The AI line for the latest exam: cached on the server, or just written. */
@@ -27,7 +28,8 @@ export function useGhostNarration(
   examId: string | null,
 ): GhostNarration {
   const { view, loading } = useSubscription();
-  const allowed = isPremiumFeatureAvailable(view, "ghost.narration");
+  const availability = useAppAvailability();
+  const allowed = availability?.aiCoach === true && isPremiumFeatureAvailable(view, "ghost.narration");
   const ghost = analysis?.ghost ?? null;
   const latestId = ghost?.latest.id ?? null;
   const cached = ghost?.aiNarration ?? null;
@@ -46,8 +48,8 @@ export function useGhostNarration(
 
   const text = cached ?? (written?.id === latestId ? written.text : null);
   return {
-    text,
+    text: availability?.aiCoach ? text : null,
     pending: !loading && allowed && Boolean(latestId) && !text && failedId !== latestId,
-    locked: !loading && !allowed && Boolean(ghost),
+    locked: availability?.aiCoach === true && !loading && !allowed && Boolean(ghost),
   };
 }

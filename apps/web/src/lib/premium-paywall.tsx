@@ -9,7 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import type { PremiumFeatureId } from "@mentor/types";
+import { useAppAvailability } from "./app-availability";
+import { useAuth } from "./auth-context";
+import { isCoach } from "./coach-surface";
+import { useMentorToast } from "./mentor-toast";
 
 const PremiumPaywallModal = dynamic(
   () => import("@/components/premium/premium-paywall-modal").then((module) => module.PremiumPaywallModal),
@@ -40,6 +45,11 @@ const PremiumPaywallContext = createContext<PremiumPaywallContextValue | null>(
 );
 
 export function PremiumPaywallProvider({ children }: { children: ReactNode }) {
+  const availability = useAppAvailability();
+  const { user } = useAuth();
+  const purchaseAvailable = isCoach(user) ? availability?.coachPurchases : availability?.studentPurchases;
+  const t = useTranslations("paywall");
+  const { info } = useMentorToast();
   const [open, setOpen] = useState(false);
   const [sourceFeature, setSourceFeature] = useState<PremiumFeatureId | undefined>();
   const [headline, setHeadline] = useState<string | undefined>();
@@ -47,12 +57,16 @@ export function PremiumPaywallProvider({ children }: { children: ReactNode }) {
   const [code, setCode] = useState<string | undefined>();
 
   const openPaywall = useCallback((options?: PaywallOpenOptions) => {
+    if (!purchaseAvailable) {
+      info({ title: t("closed_title"), message: t("closed_body") });
+      return;
+    }
     setSourceFeature(options?.sourceFeature);
     setHeadline(options?.headline);
     setSubtitle(options?.subtitle);
     setCode(options?.code);
     setOpen(true);
-  }, []);
+  }, [purchaseAvailable, info, t]);
 
   const closePaywall = useCallback(() => {
     setOpen(false);
@@ -66,7 +80,7 @@ export function PremiumPaywallProvider({ children }: { children: ReactNode }) {
   return (
     <PremiumPaywallContext.Provider value={value}>
       {children}
-      {open ? (
+      {open && purchaseAvailable ? (
         <PremiumPaywallModal
           sourceFeature={sourceFeature}
           headline={headline}

@@ -67,6 +67,29 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-30 · Shared document availability.** The locale layout loads typed, public effective
+  availability alongside messages and supplies it above auth/overlays. Closed optional routes
+  show a calm status without mounting their clients; shared navigation, purchase asks and AI
+  enhancements follow the same snapshot. Personal tools, own progress and account controls remain.
+  Post-auth/onboarding remove stale closed destinations, and existing coaches retain settings
+  without loops. Usage: restart the API after offline flag edits, then reload the document.
+  Gotcha: an unavailable snapshot closes optional presentation; it never replaces server checks.
+  Related: `app-availability*`, `app-feature-routes*`, root boundary, nav, core-trial browser profile.
+
+  Visual acceptance also gates the shared Premium nudge and automatic daily/ghost notes. Usage:
+  an existing premium entitlement cannot start those requests while global AI is off; ordinary
+  rule-based encouragement remains. Browser RED reproduced both requests and the visible closed
+  purchase ask; expanded core acceptance is 20/20. Related: `premium-lock-nudge.tsx`,
+  `use-daily-greeting.ts`, `use-ghost-narration.ts` and the premium core-trial browser case.
+
+- **2026-10-30 · Auth context for shared overlays.** Moved `AuthProvider` above the toast,
+  dialog and bottom-sheet providers, so their imperative viewports can render authenticated
+  children such as plan previews and `PuhuImage`. Usage: existing overlay APIs are unchanged.
+  Gotcha: provider-owned viewports are siblings of the page content; putting auth only around
+  page children does not cover them. Mobile/desktop RED reproduced the missing-provider
+  exception; the corrected focused browser run passed. Related: `[locale]/layout.tsx`,
+  plan browser regressions and [web release verification](../qa/2026-10-30-web-release-verification.md).
+
 - **2026-10-29 · Landing "Sabah masası": the notebook, the goal board and the story of the week.**
   - **Where:** the first paper section after the dawn (`#sabah`), before the coach band. It shows
     three free features the night story never mentioned.

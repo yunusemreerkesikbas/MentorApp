@@ -9,6 +9,7 @@ import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
+import { useAppAvailability } from "@/lib/app-availability";
 import { PANEL_CARD, PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 import { getProfileAchievements, getPublicProfile } from "@/lib/community";
 import { sendBuddyRequest } from "@/lib/buddy";
@@ -56,11 +57,13 @@ export function ProfileShell({ username }: { username: string }) {
   const router = useRouter();
   const { error: showErrorToast } = useMentorToast();
   const { user } = useAuth();
+  const availability = useAppAvailability();
+  const forumOpen = availability?.forum === true;
   const isOwn = !!user?.username && user.username === username;
   const tabParam = searchParams.get("tab");
-  const requestedTab = tabParam === "achievements" ? "achievements" : "posts";
+  const requestedTab = !forumOpen || tabParam === "achievements" ? "achievements" : "posts";
   // Saved items have their own page since Topluluk Tur 2; old `?tab=bookmarks` links land there.
-  const savedLink = ["bookmarks", "saved"].includes(tabParam ?? "");
+  const savedLink = forumOpen && ["bookmarks", "saved"].includes(tabParam ?? "");
   useEffect(() => {
     if (savedLink) router.replace("/community/saved");
   }, [router, savedLink]);
@@ -75,7 +78,7 @@ export function ProfileShell({ username }: { username: string }) {
         ? "posts"
         : requestedTab;
       const [feed, achievements] = await Promise.all([
-        effectiveTab === "posts" ? getUserActivity(username) : Promise.resolve({ items: [], nextCursor: null }),
+        forumOpen && effectiveTab === "posts" ? getUserActivity(username) : Promise.resolve({ items: [], nextCursor: null }),
         effectiveTab === "achievements" ? getProfileAchievements(username) : Promise.resolve(null),
       ]);
         if (active) {
@@ -91,7 +94,7 @@ export function ProfileShell({ username }: { username: string }) {
     return () => {
       active = false;
     };
-  }, [requestedTab, savedLink, username, t]);
+  }, [requestedTab, savedLink, username, t, forumOpen]);
 
   const selectTab = (nextTab: "posts" | "achievements") => {
     router.push({
@@ -257,7 +260,7 @@ export function ProfileShell({ username }: { username: string }) {
   const profile = ready?.profile ?? null;
   const tab: ProfileTab =
     profile && requestedTab === "achievements" && profile.achievementsEnabled ? "achievements" : "posts";
-  const profileTabs: ProfileTab[] = profile?.achievementsEnabled ? ["posts", "achievements"] : ["posts"];
+  const profileTabs: ProfileTab[] = !forumOpen ? (profile?.achievementsEnabled ? ["achievements"] : []) : profile?.achievementsEnabled ? ["posts", "achievements"] : ["posts"];
 
   const readyBody =
     ready === null || profile === null ? (
@@ -278,11 +281,11 @@ export function ProfileShell({ username }: { username: string }) {
           <div className="profile-progress-mobile xl:hidden">
             <ProfileProgressPanel profile={profile} isOwner={isOwn} />
           </div>
-          {listView ? (
+          {listView && availability?.social ? (
             <div className={COMMUNITY_CARD_FLUSH}>
               <FollowListPanel key={listView} username={username} kind={listView} onBack={() => setListView(null)} />
             </div>
-          ) : (
+          ) : profileTabs.length > 0 ? (
             <ProfileActivity
               tab={tab}
               tabs={profileTabs}
@@ -298,7 +301,7 @@ export function ProfileShell({ username }: { username: string }) {
               onToggleCommentBookmark={onToggleCommentBookmark}
               onReplyCountChange={onReplyCountChange}
             />
-          )}
+          ) : null}
         </div>
         <aside className="hidden min-w-0 xl:block" aria-label={t("profile_progress_title")}>
           <div className="sticky top-6">

@@ -77,6 +77,19 @@ weekly counts. Existing assignments remain unchanged; new drafts use the existin
 
 ## 6. Service (module) catalog
 
+### Public application availability
+
+`GET /v1/app/availability` is anonymous and sends `Cache-Control: no-store`. It returns
+`AppAvailabilityDto` (`@mentor/types`): only effective booleans for AI coach, social, forum,
+study rooms, human coaching, student/coach purchases, student/coach new-account signup,
+existing-account coach registration and invitations. `coachRegistration` follows the applications
+switch independently of public new-account signup. Signup booleans describe global switches;
+email-specific pilot admission remains enforced by the identity policy on submission.
+Purchasing composes the existing provider/channel rules; invitations require economy and social.
+It exposes no registry values, secrets, roles or user data. It is presentation metadata, not an
+authorization decision. Each feature keeps its own server policy. The current web document uses
+an explicit nullable snapshot and refreshes it by document reload.
+
 Display launch diagnostics (2026-10-26): `GET /v1/admin/ads/readiness` requires SUPER_ADMIN, the
 same boundary as central settings. Returns current environment/site origin, global/display
 switches, allowed countries, local preview status, and eight DISPLAY rows with unit source/status,

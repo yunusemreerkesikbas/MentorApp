@@ -1,6 +1,7 @@
-import type { AuthUser } from "@mentor/types";
+import type { AppAvailabilityDto, AuthUser } from "@mentor/types";
 import { routing, type Locale } from "@/i18n/routing";
 import { COACH_HOME, isCoach } from "./coach-surface";
+import { availableAppDestination } from "./app-feature-routes";
 
 /**
  * Where a `?next=` value is allowed to send someone after auth. Only same-origin absolute
@@ -37,16 +38,17 @@ export function safeNextPath(next: string | null | undefined): string | null {
  */
 export function postAuthDestination(
   user: AuthUser,
-  next?: string | null,
+  next: string | null | undefined,
+  availability: AppAvailabilityDto | null,
 ): string {
   if (!hasCompletedOnboarding(user)) return "/onboarding";
+  const safeNext = availableAppDestination(safeNextPath(next), user, availability);
   if (isCoach(user)) {
-    const safeNext = safeNextPath(next);
     return safeNext && /^\/(?:[a-z]{2}\/)?(?:plan|settings|profile)(?:[/?#]|$)/.test(safeNext)
       ? safeNext
-      : COACH_HOME;
+      : availability?.humanCoaching ? COACH_HOME : "/settings";
   }
-  return safeNextPath(next) ?? "/dashboard";
+  return safeNext ?? "/dashboard";
 }
 
 /** Invite `?next=` is only needed at submit — reading it here avoids useSearchParams suspense. */

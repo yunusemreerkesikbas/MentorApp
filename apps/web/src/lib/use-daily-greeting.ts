@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { fetchDailyGreeting } from "@/lib/coach";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { useSubscription } from "@/lib/subscription-context";
+import { useAppAvailability } from "@/lib/app-availability";
 
 /**
  * The premium daily note behind the panel's Puhu bubble.
@@ -17,7 +18,8 @@ export function useDailyGreeting(): {
   locked: boolean;
 } {
   const { view, loading } = useSubscription();
-  const allowed = isPremiumFeatureAvailable(view, "daily.greeting");
+  const availability = useAppAvailability();
+  const allowed = availability?.aiCoach === true && isPremiumFeatureAvailable(view, "daily.greeting");
   const [greeting, setGreeting] = useState<string | null>(null);
   const requestedRef = useRef(false);
 
@@ -31,5 +33,5 @@ export function useDailyGreeting(): {
 
   // Locked is the free user's state: no note, and no right to one. An allowed user whose call
   // failed keeps the plain fallback copy rather than an upsell.
-  return { greeting, locked: !loading && !allowed && !greeting };
+  return { greeting: availability?.aiCoach ? greeting : null, locked: availability?.aiCoach === true && !loading && !allowed && !greeting };
 }

@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { NotFoundError } from "../../../common/errors/domain-error";
+import { SocialAccessPolicy } from "../../../common/config/social-access.policy";
 import { CommunityService } from "./community.service";
 
 function createService({
   premium = true,
   economyEnabled = true,
   achievementsEnabled = true,
+  socialEnabled = true,
 } = {}) {
   const users = {
     findByUsername: vi.fn().mockResolvedValue({
@@ -82,11 +84,24 @@ function createService({
     storage as never,
     entitlement as never,
     achievements as never,
+    new SocialAccessPolicy({ get: async () => socialEnabled } as never),
   );
-  return { service, users, economy, entitlement, achievements };
+  return { service, users, economy, entitlement, achievements, forum };
 }
 
 describe("CommunityService public profile", () => {
+  it("denies another user's profile before composing activity when social is closed", async () => {
+    const f = createService({ socialEnabled: false });
+    await expect(f.service.getPublicProfile("ayse", "viewer-1", "tr")).rejects.toBeInstanceOf(NotFoundError);
+    expect(f.forum.getAuthorActivity).not.toHaveBeenCalled();
+    expect(f.achievements.getShowcase).not.toHaveBeenCalled();
+  });
+
+  it("preserves the owner's profile and progress while social is closed", async () => {
+    const { service } = createService({ socialEnabled: false });
+    await expect(service.getPublicProfile("ayse", "user-1", "tr")).resolves.toMatchObject({ userId: "user-1", streak: 6 });
+  });
+
   it("publishes the combined thread and reply activity count", async () => {
     const { service } = createService();
 
