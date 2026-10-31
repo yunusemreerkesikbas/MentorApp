@@ -9,6 +9,7 @@ import {
 import { LoaderCircle } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import { AdPlacementId } from "@mentor/types";
 import type {
   ExamSubjectDto,
@@ -37,6 +38,8 @@ import { DeskPackage } from "./desk-package";
 import { DeskSkeletonBooks } from "./desk-skeleton";
 import { DeskNotice } from "./desk-notice";
 import { useDeskFrames, useDeskLight } from "./use-desk-light";
+
+const NotebookCapacityDialog = dynamic(() => import("./notebook-capacity-dialog").then(module => module.NotebookCapacityDialog));
 
 interface ExamChoice {
   id: string;
@@ -95,6 +98,7 @@ export function NotebooksShell() {
   const [failedDelete, setFailedDelete] = useState<NotebookSummaryDto | null>(null);
   const [deleteSyncError, setDeleteSyncError] = useState(false);
   const [form, setForm] = useState<NotebookSummaryDto | "new" | null>(null);
+  const [capacityOpen, setCapacityOpen] = useState(false);
   const [exam, setExam] = useState<ExamChoice | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [packageActive, setPackageActive] = useState(false);
@@ -309,7 +313,7 @@ export function NotebooksShell() {
       activeLimits.maxCustomNotebooks !== null &&
       activeLimits.customNotebookCount >= activeLimits.maxCustomNotebooks
     ) {
-      openCustomLimitPaywall();
+      setCapacityOpen(true);
       return;
     }
     setForm("new");
@@ -344,7 +348,7 @@ export function NotebooksShell() {
     >
       <DeskBackdrop />
       <div className="desk-content relative mx-auto w-full max-w-[1360px] px-4 pb-20 sm:px-6 lg:px-10">
-        <DeskHeader limits={activeLimits} onUpgrade={openCustomLimitPaywall} />
+        <DeskHeader limits={activeLimits} onUpgrade={() => setCapacityOpen(true)} />
 
         <DeskPuhu
           className="desk-puhu-spot"
@@ -453,12 +457,24 @@ export function NotebooksShell() {
       </div>
       <DeskLight />
 
+      {capacityOpen ? <NotebookCapacityDialog
+        onClose={() => setCapacityOpen(false)}
+        onPremium={openCustomLimitPaywall}
+        onPurchased={async () => {
+          const result = await fetchNotebooks(1);
+          setItems(result.items);
+          setTotal(result.total);
+          setPage(1);
+          setCapacityOpen(false);
+          setForm("new");
+        }}
+      /> : null}
       {form ? (
         <NotebookFormDialog
           current={form === "new" ? null : form}
           exam={exam}
           limits={activeLimits}
-          onUpgrade={openCustomLimitPaywall}
+          onUpgrade={() => setCapacityOpen(true)}
           onClose={() => setForm(null)}
           onSaved={(saved) =>
             void handleSaved(saved, form === "new", form === "new" && customCount === 0)

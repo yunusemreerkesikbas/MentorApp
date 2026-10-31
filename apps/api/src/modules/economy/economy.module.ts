@@ -23,6 +23,9 @@ import { InviteRepository } from "./infrastructure/invite.repository";
 import { QuestRepository } from "./infrastructure/quest.repository";
 import { EconomyController } from "./presentation/economy.controller";
 import { InvitePreviewController } from "./presentation/invite-preview.controller";
+import { NotebookSlotService } from "./application/notebook-slot.service";
+import { NotebookSlotRepository } from "./infrastructure/notebook-slot.repository";
+import { NotebookSlotsController } from "./presentation/notebook-slots.controller";
 
 /**
  * W6 — Light economy (§3). Slice 1: ledger + balances + reward engine + admin adjust. Slice 2a:
@@ -31,12 +34,14 @@ import { InvitePreviewController } from "./presentation/invite-preview.controlle
  */
 @Module({
   imports: [PaymentsModule, IdentityModule, CoachingModule],
-  controllers: [EconomyController, InvitePreviewController],
+  controllers: [EconomyController, InvitePreviewController, NotebookSlotsController],
   providers: [
     RewardReceiptService,
     QuestTriggerService,
     RewardReceiptRepository,
     EconomyService,
+    NotebookSlotService,
+    NotebookSlotRepository,
     EconomyStatsService,
     LedgerRepository,
     InviteService,

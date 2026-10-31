@@ -245,7 +245,7 @@ test("Koçla planla isteği düşerse sihirbaz cevaplarla yerinde kalır", async
   expect(api.previewBodies.at(-1)).toMatchObject({ note: "Cuma hafif olsun" });
 });
 
-test("Koçla planla sahnesi öğrencinin cevaplarından kurulur ve beklerken yer değiştirir", async ({ page }) => {
+test("Koçla planla sahnesi koçun baktıklarını not not düşürür, altyazısı öğrencinin cevaplarıdır", async ({ page }) => {
   let finish!: () => void;
   const gate = new Promise<void>((resolve) => { finish = resolve; });
   await mockPlanApi(page, {
@@ -265,22 +265,24 @@ test("Koçla planla sahnesi öğrencinin cevaplarından kurulur ve beklerken yer
   await page.getByRole("button", { name: "Devam" }).click();
   await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
   const stage = page.getByRole("dialog", { name: stageName });
-  // The board is the student's own answers: five lit days, and the caption says so.
+  // The caption is the student's own answers.
   await expect(stage).toContainText("5 gün · günde 60 dk · 4 ders");
-  // While it waits the blocks keep changing places.
-  const blocks = () =>
-    stage.evaluate((node) =>
-      [...node.querySelectorAll<HTMLElement>("[aria-hidden] span[style*='translate']")].map((block) => block.style.transform),
-    );
-  await expect.poll(async () => (await blocks()).every((place) => place.endsWith("scale(1)"))).toBe(true);
-  const before = await blocks();
-  expect(before).toHaveLength(10);
-  await expect.poll(blocks).not.toEqual(before);
+  // Puhu's loop plays, and what the coach read drops in one note at a time, in its order.
+  await expect(stage.locator("video")).toHaveCount(1);
+  const note = stage.locator("[data-stage-note]");
+  await expect(note).toContainText("Zorlandığın dersler");
+  await expect(note).toContainText(weakLine);
+  await expect(note).toContainText(rhythmLine, { timeout: 8_000 });
+  // Screen readers get every note once.
+  await expect(stage.getByRole("listitem")).toHaveText([
+    `Zorlandığın dersler: ${weakLine}`,
+    `Son 4 haftan: ${rhythmLine}`,
+  ]);
   finish();
   await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
 });
 
-test("Koçla planla sahnesi azaltılmış harekette yerinde durur, satırını yine söyler", async ({ page }) => {
+test("Koçla planla sahnesi azaltılmış harekette videosuz ve notlar düşmeden değişir", async ({ page }) => {
   let finish!: () => void;
   const gate = new Promise<void>((resolve) => { finish = resolve; });
   await mockPlanApi(page, {
@@ -294,16 +296,14 @@ test("Koçla planla sahnesi azaltılmış harekette yerinde durur, satırını y
   await generateFromWizard(page);
   const stage = page.getByRole("dialog", { name: stageName });
   await expect(stage).toContainText(coverageLine);
-  // Two beats later nothing on the board has moved.
-  const blocks = () =>
-    stage.evaluate((node) =>
-      [...node.querySelectorAll<HTMLElement>("[aria-hidden] span[style*='translate']")].map((block) => block.style.transform),
-    );
-  await expect.poll(async () => (await blocks()).every((place) => place.endsWith("scale(1)"))).toBe(true);
-  const before = await blocks();
-  expect(before.length).toBeGreaterThan(0);
-  await page.waitForTimeout(2000);
-  expect(await blocks()).toEqual(before);
+  // Puhu holds still on the loop's first frame.
+  await expect(stage.locator("video")).toHaveCount(0);
+  await expect(stage.locator("img[src*='puhu-magic']")).toBeVisible();
+  // The notes still change, without the drop.
+  const note = stage.locator("[data-stage-note]");
+  await expect(note).toContainText(weakLine);
+  expect(await note.evaluate((node) => getComputedStyle(node).animationName)).toBe("none");
+  await expect(note).toContainText(rhythmLine, { timeout: 8_000 });
   finish();
   await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
 });
@@ -480,9 +480,9 @@ test("Mood çağrısı sahneyi sihirbazsız ve çubuksuz açar, sonra önizlemey
   await expect(stage.getByRole("progressbar")).toHaveCount(0);
   await expect(stage.getByRole("button", { name: "Vazgeç" })).toBeVisible();
   await expect.poll(() => api.previewBodies).toEqual([{ source: "MOOD" }]);
-  // Without answers the board is the week's own: one block for its one waiting task.
+  // Without the wizard there is no brief: no notes, and the caption is the week's own.
   await expect(stage).toContainText("bu hafta 1 bekleyen görev");
-  await expect(stage.locator("[aria-hidden] span[style*='translate']")).toHaveCount(1);
+  await expect(stage.locator("[data-stage-note]")).toHaveCount(0);
   finish();
   await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
   await expect(stage).toHaveCount(0);
@@ -634,38 +634,43 @@ const timedTask: PlanTaskDto = {
 };
 
 test.describe("Takvim", () => {
-  test("Ay ızgarasında saatli etkinliği gösterir ve aylar arasında gezinir", async ({
-    page,
-  }) => {
-    await mockPlanApi(page, {
-      preview: readyPreview,
-      tasks: [timedTask],
-      calendar: { scale: "month" },
+  // Fixed browser dates. On the 31st, "Sonraki ay" clamps to 30 Kasım and "Önceki ay" must
+  // land on 31 Ekim again. setFixedTime only pins Date: timers keep running, so framer still animates.
+  for (const today of ["2026-10-31", "2026-10-15"]) {
+    test(`Ay ızgarasında saatli etkinliği gösterir ve aylar arasında gezinir (${today})`, async ({
+      page,
+    }) => {
+      await page.clock.setFixedTime(new Date(`${today}T12:00:00`));
+      await mockPlanApi(page, {
+        preview: readyPreview,
+        tasks: [{ ...timedTask, taskDate: today }],
+        calendar: { scale: "month" },
+      });
+      await page.goto("/plan");
+
+      const monthTitle = page.getByRole("heading", { level: 2 }).first();
+      const shownMonth = await monthTitle.textContent();
+
+      // Chips only render on the desktop board; the 375px grid falls back to dots.
+      // A month cell is one line: start time + title (the subject rides on the color).
+      const isDesktop = (page.viewportSize()?.width ?? 0) >= 1024;
+      if (isDesktop) {
+        // `.last()`, not `.first()`: the Takvim view's left rail also lists the selected day's
+        // tasks (`PlanDayTodoList`) — a checkbox and an options kebab, both named after the same
+        // task and both earlier in the DOM than the grid itself — so an unscoped `/Matematik
+        // tekrar/` match picks up the rail before it reaches the actual month-grid chip.
+        const chip = page.getByRole("button", { name: /Matematik tekrar/ }).last();
+        await expect(chip).toHaveText("13:00 Matematik tekrar");
+      }
+
+      // exact: the mini calendar's own nav is "Sonraki aya git".
+      await page.getByRole("button", { name: "Sonraki ay", exact: true }).click();
+      await expect(monthTitle).not.toHaveText(shownMonth ?? "");
+
+      await page.getByRole("button", { name: "Önceki ay", exact: true }).click();
+      await expect(monthTitle).toHaveText(shownMonth ?? "");
     });
-    await page.goto("/plan");
-
-    const monthTitle = page.getByRole("heading", { level: 2 }).first();
-    const shownMonth = await monthTitle.textContent();
-
-    // Chips only render on the desktop board; the 375px grid falls back to dots.
-    // A month cell is one line: start time + title (the subject rides on the color).
-    const isDesktop = (page.viewportSize()?.width ?? 0) >= 1024;
-    if (isDesktop) {
-      // `.last()`, not `.first()`: the Takvim view's left rail also lists the selected day's
-      // tasks (`PlanDayTodoList`) — a checkbox and an options kebab, both named after the same
-      // task and both earlier in the DOM than the grid itself — so an unscoped `/Matematik
-      // tekrar/` match picks up the rail before it reaches the actual month-grid chip.
-      const chip = page.getByRole("button", { name: /Matematik tekrar/ }).last();
-      await expect(chip).toHaveText("13:00 Matematik tekrar");
-    }
-
-    // exact: the mini calendar's own nav is "Sonraki aya git".
-    await page.getByRole("button", { name: "Sonraki ay", exact: true }).click();
-    await expect(monthTitle).not.toHaveText(shownMonth ?? "");
-
-    await page.getByRole("button", { name: "Önceki ay", exact: true }).click();
-    await expect(monthTitle).toHaveText(shownMonth ?? "");
-  });
+  }
 
   test("Hafta ölçeği masaüstünde saat ızgarası, mobilde ajanda gösterir", async ({
     page,

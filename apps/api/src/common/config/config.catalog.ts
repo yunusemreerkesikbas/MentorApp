@@ -647,6 +647,16 @@ export const CONFIG_CATALOG = {
     100000,
     "Coin debited to unlock one week's deep-analysis AI narration (premium users are included free).",
   ),
+  "economy.coin.notebook_slot_cost": economyTarget(
+    20,
+    100000,
+    "Coin cost of permanent +1 custom notebook capacity for Free users. Does not raise page, entry or photo quotas.",
+  ),
+  "economy.notebook_slots.max_per_user": economyCount(
+    2,
+    50,
+    "Maximum purchased extra notebook slots per user (0 disables new sales). Lowering this never revokes purchased capacity.",
+  ),
   "forum.xp.accepted_answer": economyCount(
     25,
     1000,
@@ -872,7 +882,7 @@ export const CONFIG_CATALOG = {
     1,
     0,
     50,
-    "Maximum custom notebooks a free user may create alongside the system Mistake Notebook (0 = Premium only).",
+    "Included custom notebooks for Free alongside the system Mistake Notebook (0 = none included). Permanent purchased slots are added separately.",
   ),
   "coaching.notebook.pages.free_limit": coachingCount(
     20,

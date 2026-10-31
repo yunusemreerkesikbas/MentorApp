@@ -718,8 +718,9 @@ export class ChatService {
       refType: EconomyLedger.AI_CHAT_REF_TYPE,
       refId: spendRefId,
     });
-
-    return { cost: chatCost, shouldRefundOnFailure: !alreadySpent };
+    // Ledger idempotency must also stop model execution, including concurrent replays.
+    if (alreadySpent) throw new DomainError(ErrorCode.CONFLICT, HttpStatus.CONFLICT);
+    return { cost: chatCost, shouldRefundOnFailure: true };
   }
 
   private async refundCoinSpend(

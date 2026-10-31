@@ -38,7 +38,8 @@ import {
   persistCalendarScale,
   readStoredCalendarScale,
   shiftDate,
-  shiftMonth,
+  stepMonth,
+  type MonthStep,
   weekDates,
   weekStart,
 } from "./plan-utils";
@@ -88,6 +89,7 @@ export function CoachPlanCalendarShell({
   const initialEventStateRef = useRef({ pendingEventId: initialEventId });
   const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
   const formTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const monthStepRef = useRef<MonthStep | null>(null);
   const weekStartDate = weekStart(selectedDate);
   const range = useMemo(
     () => coachPlanRange(selectedDate, "month"),
@@ -339,13 +341,16 @@ export function CoachPlanCalendarShell({
                   namespace="coachPlan"
                   onScaleChange={chooseScale}
                   onStep={(direction) => {
-                    const next =
+                    if (scale === "month") {
+                      monthStepRef.current = stepMonth(selectedDate, direction, monthStepRef.current);
+                      selectDate(monthStepRef.current.date);
+                      return;
+                    }
+                    selectDate(
                       scale === "day"
                         ? shiftDate(selectedDate, direction)
-                        : scale === "week"
-                          ? shiftDate(weekStartDate, direction * 7)
-                          : shiftMonth(selectedDate, direction);
-                    selectDate(next);
+                        : shiftDate(weekStartDate, direction * 7),
+                    );
                   }}
                   onToday={() => selectDate(todayInIstanbul())}
                 />

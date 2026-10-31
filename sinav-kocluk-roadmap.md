@@ -142,6 +142,16 @@ Coin nakit değeri taşımaz; **tavanlı/sınırlı** olarak premium özellikler
 - **Suistimal kalkanı:** eylem **doğrulanır** (davet→dönüşüm, yorum→yayınlı, cevap→kalite-kapılı) + cap + Turnstile + **ödül ≤ eylem değeri** (AI-maliyeti sızmasın). Görev **full premium kilidi açmaz** (sadece coin/kozmetik/AI-tadımlık).
 - **Faz:** davet + onboarding/alışkanlık/kilometre görevleri = **MVP**; forum-katkı + koç-içerik = **Faz 2**.
 
+### Karar (2026-10-31): Coin ile kalıcı ek defter kapasitesi
+- Ücretsiz planda **1 özel defter** bulunur; sistemin **Yanlış Defteri ayrıca** durur.
+- **20 Coin** ile kalıcı **+1 özel defter kapasitesi** alınabilir; başlangıç sınırı kullanıcı başına
+  **2 ek defterdir**. Bedel ve sınır admin panelinden değişir
+  (`economy.coin.notebook_slot_cost`, `economy.notebook_slots.max_per_user`).
+- Defteri silmek kapasiteyi yeniden kullanılabilir yapar. Ekonomi kapatılırsa yeni satın alma
+  durur; alınmış kapasite korunur. Satın alma sınırını azaltmak geçmiş hakları geri almaz.
+- Bu hak tam Premium vermez; sayfa, kayıt, fotoğraf ve AI sınırlarını artırmaz. Fiyat değişirse
+  açık teklifte yeniden onay gerekir; aynı satın alma tekrarı ikinci kez Coin düşmez.
+
 ### Karar: Kazanım kuralları
 - **XP cömert** (maliyeti yok): soru/cevap yazma, oy alma, günlük giriş/streak, kabul edilen cevap, profil tamamlama.
 - **Coin kıt** (yalnızca doğrulanabilir değere): kabul edilen cevap, topluluk-onaylı cevap (pending), **editör/koç onaylı cevap** (büyük), haftalık en faydalı katkı.

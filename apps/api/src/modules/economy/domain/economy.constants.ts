@@ -14,6 +14,8 @@ export const EconomyLedger = {
   INVITE_REVERSAL_REF_TYPE: "invite_reversal",
   DEEP_ANALYSIS_SPEND_REASON: "analysis.deep.purchase",
   DEEP_ANALYSIS_REF_TYPE: "deep_analysis",
+  NOTEBOOK_SLOT_SPEND_REASON: "notebook.slot.purchase",
+  NOTEBOOK_SLOT_REF_TYPE: "notebook_slot",
 } as const;
 
 /**

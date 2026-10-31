@@ -11,9 +11,11 @@ describe("DeepAnalysisService", () => {
   let spentRefs: Set<string>;
   let spend: ReturnType<typeof vi.fn>;
   let service: DeepAnalysisService;
+  let aiEnabled: boolean;
 
   beforeEach(() => {
     reviewStatus = "READY";
+    aiEnabled = true;
     premium = false;
     coin = 30;
     spentRefs = new Set();
@@ -45,12 +47,34 @@ describe("DeepAnalysisService", () => {
       { getEntitlement: async () => ({ isPremium: premium }) } as never,
       {
         get: async (key: string) => {
+          if (key === "ai.enabled") return aiEnabled;
           if (key === "economy.coin.deep_analysis_cost") return 25;
           if (key === "ai.features.deep.analysis.free_enabled") return false;
           return 0;
         },
       } as never,
     );
+  });
+
+  it("offers no unlock and never debits while AI is disabled", async () => {
+    aiEnabled = false;
+    await expect(service.getState("u1", [], EXAM)).rejects.toMatchObject({ code: "AI_DISABLED", httpStatus: 404 });
+    await expect(service.purchase("u1", [], EXAM)).rejects.toMatchObject({ code: "AI_DISABLED", httpStatus: 404 });
+    expect(spend).not.toHaveBeenCalled();
+    expect(coin).toBe(30);
+    expect(spentRefs.size).toBe(0);
+  });
+
+  it("rechecks AI availability after resolving the offer and before the debit", async () => {
+    const getState = service.getState.bind(service);
+    vi.spyOn(service, "getState").mockImplementation(async (...args) => {
+      const state = await getState(...args);
+      aiEnabled = false;
+      return state;
+    });
+    await expect(service.purchase("u1", [], EXAM)).rejects.toMatchObject({ code: "AI_DISABLED" });
+    expect(spend).not.toHaveBeenCalled();
+    expect(coin).toBe(30);
   });
 
   it("reports an eligible, affordable, locked state for a free user", async () => {

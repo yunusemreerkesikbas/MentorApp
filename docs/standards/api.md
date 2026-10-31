@@ -386,6 +386,14 @@ the generated `@mentor/api-client` operations use the `mentorship-weekly-reports
 
 ### Economy reward receipts (2026-09-17)
 
+Permanent notebook capacity (2026-10-31): authenticated `GET /v1/economy/notebook-slots` returns
+`NotebookSlotView` with the configured Coin price, purchased slot count, sale cap, balance and
+server-derived status. `POST` requires UUID `Idempotency-Key` and
+`{ expectedCost, expectedPurchasedSlots }`, returning the updated view (201). A stale quote is 409;
+insufficient confirmed Coin or the sale cap is 422; economy-off is 404. References are scoped to the
+authenticated user. Existing capacity remains available when sales close. Settings are managed
+through the existing audited `/v1/admin/config/:key` endpoint. See [economy](../features/economy.md).
+
 - GET /v1/economy/rewards/unseen?page=1&pageSize=20: authenticated self-scoped Paginated<EconomyLedgerEntryView>.
 - POST /v1/economy/rewards/seen: { ledgerIds: UUID[] }, 1–100 IDs, idempotent 204; IDs belonging to other users remain untouched.
 - Balance retains existing fields and adds optional usage (configured costs and alternative message/analysis counts). Ledger history remains immutable.

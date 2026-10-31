@@ -154,7 +154,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Runtime:** `html.dark` overrides the same `--color-*` CSS variables. New UI must use those tokens — never `bg-white`, `#fff`, or `dark:bg-black`. Tailwind `dark:` is an escape hatch only when a value cannot be a token.
 
-**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`), `.achievement-scene-theme` (the "Işık Yandı" achievement scene, §9.1: always night; its curtain, card-back and text tokens live there, the light colours come from each badge).
+**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`), `.achievement-scene-theme` (the "Işık Yandı" achievement scene, §9.1: always night; its curtain, card-back and text tokens live there, the light colours come from each badge), `.plan-coach-night` (the "Koçla planla" waiting scene, §9.1: always night over the landing's city art, with paper notes; its sky, on-night text and city sizes live in `plan-coach-stage.css`).
 
 **Study scene (`.room-stage`, `SessionStage`, 2026-09-30):** a room is a place, so its stage never follows the cookie either: per-theme `--room-*` tokens (LIBRARY and CAFE dark, HOME light) in `theme.css`, and the stage remaps `--color-main` / `--color-body` / `--color-secondary` to `--room-ink` / `--room-ink-soft` so one set of controls reads in every room. Four rules. (1) Glass on the stage (`.session-liquid-card` / `-pill`) always writes in `--color-main` / `--color-secondary`; the glass remap supplies `--color-surface-container`, `--play-selected(-ink)`, `--play-line`, `--play-track` and `--color-success`, so the panel's text links, outline ledge and progress line read on glass without their own variants. (2) Anything that opens from the stage (sheet, menu, confirm) is portalled to `body` and drawn on the kit's solid surfaces: a window rendered inside the stage inherits room ink and prints cream on white. (3) `--room-live` means "someone is working now", a dot beside room ink; `--room-accent` is for rings; the primary CTA stays the play ledge in every room. (4) `/seans` stands on one `SessionStage` ground through setup, focus, break and the done card: the veil changes per phase (a multiplier on the theme's own `--room-veil`: 58 · 86 · 44 · 74) and while a session runs the app chrome sits under the focus charcoal (§9.1).
 
@@ -763,37 +763,47 @@ moment, not a second desk: ease-out throughout, nothing overshoots, the deal is 
   `FAN_TIMING`), the hand in `(app)/notebook/_components/notebook-review-list.tsx`, one card in
   `notebook-review-fan-card.tsx`.
 
-**The plan's waiting scene (2026-10-14, "Hafta kuruluyor"): the loop decision.** "Koçla planla"
-asks a model for a preview and the answer takes seconds. That wait is the one place a full-screen
-scene loops: decided with the product owner and scoped to this scene, it keeps moving for as long
-as the request is out. §9's "no orchestrated full-page load shows" and the "never loop" rule above
-stand everywhere else. It is the wizard's last step, not a new screen: the wizard stays open
-underneath, and its bar, which always held one segment back, fills when the answer lands.
+**The plan's waiting scene (2026-10-31, "Şehrin üstünde"; replaced the 2026-10-14 block board):
+the loop decision.** "Koçla planla" asks a model for a preview and the answer takes seconds. That
+wait is the one place a full-screen scene loops: decided with the product owner and scoped to this
+scene, it keeps moving for as long as the request is out. §9's "no orchestrated full-page load
+shows" and the "never loop" rule above stand everywhere else. It is the wizard's last step, not a
+new screen: the wizard stays open underneath, and its bar, which always held one segment back,
+fills when the answer lands.
+
+The scene is always night (`.plan-coach-night`, §2): premium caped Puhu does magic with a star wand
+(a 5 s Kling loop, `public/mascot/puhu/motion/puhu-magic-loop.mp4`, in a soft round mask) over the
+landing's Işıklı şehir art (`city-far/mid/front`, §8.8). What the coach read drops onto the
+rooftops as taped paper notes in the landing's paper language: a lucide glyph and a Caveat label
+per evidence type, the backend's own sentence underneath.
 
 | Beat | What happens | Time |
 | --- | --- | --- |
-| Deal | The student's own answers come onto the week as blocks: the picked days are the lit tracks, the picked subjects the colours | 500 ms, 40 ms apart |
-| Wait | Half the blocks change days on every beat, Puhu's eyes follow the one that leads, and the bubble says what the coach read: each line once, the last one stays | 900 ms a beat, 3.6 s a line |
-| Long wait | The bubble says the coach is still at it and that "Vazgeç" is there | from 12 s |
-| Arrival | The blocks gather and drop out, the bar fills, the scene closes and the preview sheet rises | 450 ms |
+| Note | The next piece of evidence falls from under Puhu as a paper note, bounces once and settles a little crooked; the notes already read pile up beneath it (two sheets at most), and after the last one the round starts again | 3.6 s a note, 0.9 s drop |
+| Long wait | The line under the title turns lamp yellow (`#FFD15C`) and says the coach is still at it and that "Vazgeç" is there | from 12 s |
+| Arrival | The title becomes "Haftan hazır." / "Planın hazır.", the pile hops and slides off, the bar fills, the scene closes and the preview sheet rises | 1200 ms |
 
-- **True, not theatre:** nothing on it is a made-up figure. With the wizard the blocks are the
-  student's answers: two to a picked day, in the picked subjects' colours. Without it they are the
-  tasks already waiting in the week, one block each (twelve at most), so a week with one waiting
-  task shows one block trying the days. The lines are the brief's own evidence, and the bar never
-  claims more than it knows. The blocks carry no labels and never come to rest, so the board
-  cannot be read as the plan.
+- **True, not theatre:** every note is the brief's evidence `summary`, in the coach's order (six at
+  most, the API's `PLAN_EVIDENCE_MAX`); the line under the title is the brief's `groundingLine`.
+  Nothing is a made-up count, and the bar never claims more than it knows. The caption under the
+  scene is the student's own answers ("5 gün · günde 60 dk · 4 ders").
+- **The video never covers the skyline:** the city is sized so the mid layer's tallest tower stands
+  under Puhu's disc at every width (`--pcs-city-h` / `--pcs-city-lift` in `plan-coach-stage.css`).
+  Change the video size or the city offsets together, and check 375×667, 390×844 and 1280×800.
 - **Leaving:** "Vazgeç" and Escape are there from the first frame (the request can run 30 s). They
   return to the wizard's note step with every answer in place, and a late answer opens nothing. A
   failed request does the same; the wizard says the error above its own button, since a toast sits
   under a native dialog.
 - **Without the wizard** (the mood and session invitations, "Yeniden hazırla"): the same scene opens
-  by itself, with no bar.
-- **Reduced motion:** the blocks stand in their first arrangement, the lines still change, and the
-  preview opens the moment the answer lands. No sound.
-- **Source of truth:** timings and the arrangement in
-  `(app)/plan/_components/plan-coach-stage-scene.ts` (`STAGE_TIMING`, `stageBeat`), the scene in
-  `plan-coach-adaptation-stage.tsx`, the board in `plan-coach-stage-board.tsx`.
+  by itself, with no bar and no notes (there is no brief); the caption counts the week's waiting
+  tasks.
+- **Reduced motion:** the loop's first frame stands still instead of the video, the notes change
+  without the drop, and the preview opens the moment the answer lands. No sound. Screen readers get
+  every note once as a list, and the line under the title is a polite live region.
+- **Source of truth:** timings in `(app)/plan/_components/plan-coach-stage-scene.ts`
+  (`STAGE_TIMING`, `stageNotes`, `stageNoteIndex`, `stagePileDepth`), the scene in
+  `plan-coach-adaptation-stage.tsx`, the city and video in `plan-coach-stage-sky.tsx`, the notes in
+  `plan-coach-stage-notes.tsx`, the palette, city sizes and keyframes in `plan-coach-stage.css`.
 
 ---
 

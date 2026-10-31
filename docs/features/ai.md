@@ -103,6 +103,15 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-31 · Coin chat replay protection.** A reused Coin spend reference now returns
+  localized HTTP 409 `CONFLICT` before a second model call or history write, for both blocking
+  and streaming chat. It neither debits again nor refunds the original request; a failed fresh
+  request keeps its existing compensating refund. Usage: each new send uses a new
+  `clientMessageId` (the web already does); an existing ID cannot start another model execution,
+  even after a failure/refund. Gotcha: this is rejection, not cached-response replay, and it does
+  not add idempotency to Premium flat-rate calls. Related: `chat.service.ts`, chat unit and real
+  HTTP regressions, and Economy's insert-time reference-collision handling.
+
 - **2026-10-31 · Credential-free closed AI deployment.** Select `AI_PROVIDER=disabled` and
   `VISION_PROVIDER=disabled` together to start without OpenAI/Gemini keys. The rejecting
   adapter covers completion, lazy streams, embeddings and image classification; the registry

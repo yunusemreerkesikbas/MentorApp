@@ -8,8 +8,10 @@ import type {
   RedeemInviteResult,
   StreakRescueView,
   Paginated,
+  NotebookSlotView,
 } from "@mentor/types";
-import { ApiClientError, http, economyControllerUnseen, economyControllerSeen } from "@mentor/api-client";
+import type { NotebookSlotPurchase } from "@mentor/validation";
+import { ApiClientError, http, economyControllerUnseen, economyControllerSeen, notebookSlotsControllerState, notebookSlotsControllerPurchase } from "@mentor/api-client";
 
 /**
  * Typed wrappers over user economy endpoints. Regen api-client when OpenAPI updates;
@@ -17,6 +19,16 @@ import { ApiClientError, http, economyControllerUnseen, economyControllerSeen } 
  */
 export async function fetchEconomyBalance(): Promise<EconomyBalance> {
   return (await http<EconomyBalance>("/v1/economy/balance")) as EconomyBalance;
+}
+
+export function fetchNotebookSlots(): Promise<NotebookSlotView> {
+  return notebookSlotsControllerState();
+}
+
+export function purchaseNotebookSlot(key: string, quote: NotebookSlotPurchase): Promise<NotebookSlotView> {
+  return notebookSlotsControllerPurchase(quote, {
+    headers: { "Idempotency-Key": key },
+  });
 }
 
 export async function fetchUnseenRewards(): Promise<Paginated<EconomyLedgerEntryView>> {

@@ -7,6 +7,7 @@ import type {
   NotebookLimitsDto,
   NotebookPageDto,
   NotebookSummaryDto,
+  NotebookSlotView,
 } from "@mentor/types";
 
 const USER_ID = "22222222-2222-4222-8222-222222222222";
@@ -80,6 +81,11 @@ interface MockApiOptions {
   failPageTwoOnce?: boolean;
   failFirstPageAfterDeleteOnce?: boolean;
   limits?: NotebookLimitsDto;
+  slotOffer?: NotebookSlotView;
+  economyClosed?: boolean;
+  newSlotPrice?: number;
+  loseSlotResponseOnce?: boolean;
+  failListAfterSlotOnce?: boolean;
 }
 
 async function mockApi(page: Page, options: MockApiOptions = {}) {
@@ -87,7 +93,11 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
   let failPageTwo = options.failPageTwoOnce ?? false;
   let failFirstPageAfterDelete = options.failFirstPageAfterDeleteOnce ?? false;
   let deleted = false;
-  const state = { listCalls: 0, pagePuts: 0, deleteCalls: 0 };
+  let loseSlotResponse = options.loseSlotResponseOnce ?? false;
+  let failListAfterSlot = options.failListAfterSlotOnce ?? false;
+  let slotOffer = options.slotOffer;
+  const slotKeys = new Set<string>();
+  const state = { listCalls: 0, pagePuts: 0, deleteCalls: 0, slotPurchases: 0, slotDebits: 0, slotReads: 0 };
 
   await page.addInitScript(() =>
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
@@ -99,6 +109,35 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
     const method = request.method();
 
     if (method === "OPTIONS") return json(route, null, 204);
+    if (path === "/v1/economy/rewards/unseen") return json(route, { items: [], total: 0, page: 1, pageSize: 20 });
+    if (path === "/v1/economy/balance") {
+      if (options.economyClosed) return json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
+      return json(route, { xp: 411, coinConfirmed: slotOffer?.coinConfirmed ?? 0, coinPending: 0,
+        level: { tier: 3, xp: 411, nextAt: 600, key: "compass", chapter: "awakening", currentAt: 300,
+          nextKey: "cycle", progress: { current: 111, target: 300, remaining: 189, percent: 37 } } });
+    }
+    if (path === "/v1/economy/notebook-slots") {
+      state.slotReads++;
+      if (options.economyClosed) return json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
+      if (!slotOffer) return json(route, { code: "UNAVAILABLE", message: "Yok" }, 404);
+      if (method === "POST") {
+        state.slotPurchases++;
+        const key = request.headers()["idempotency-key"];
+        const quote = request.postDataJSON() as { expectedCost: number; expectedPurchasedSlots: number };
+        if (options.newSlotPrice && quote.expectedCost !== options.newSlotPrice) {
+          slotOffer = { ...slotOffer, cost: options.newSlotPrice };
+          return json(route, { code: "CONFLICT", message: "Değişti" }, 409);
+        }
+        if (!slotKeys.has(key)) {
+          slotKeys.add(key);
+          state.slotDebits++;
+          slotOffer = { ...slotOffer, purchasedSlots: slotOffer.purchasedSlots + 1, coinConfirmed: slotOffer.coinConfirmed - slotOffer.cost };
+          if (options.limits) options.limits = { ...options.limits, maxCustomNotebooks: (options.limits.maxCustomNotebooks ?? 0) + 1 };
+        }
+        if (loseSlotResponse) { loseSlotResponse = false; return route.abort("failed"); }
+      }
+      return json(route, slotOffer, method === "POST" ? 201 : 200);
+    }
     if (method === "POST" && path === "/v1/auth/refresh") {
       return json(route, { accessToken: "test-token", expiresIn: 3600, user });
     }
@@ -157,6 +196,10 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
     }
     if (method === "GET" && path === "/v1/coaching/notebooks") {
       state.listCalls += 1;
+      if (state.slotDebits > 0 && failListAfterSlot) {
+        failListAfterSlot = false;
+        return json(route, { code: "TEMPORARY_ERROR", message: "temporary" }, 503);
+      }
       const requestedPage = Number(url.searchParams.get("page") ?? 1);
       if (requestedPage === 1 && deleted && failFirstPageAfterDelete) {
         failFirstPageAfterDelete = false;
@@ -261,6 +304,97 @@ test("sayfalama sunucunun toplam defter kotasını düşürmez", async ({ page }
   expect((await quotaButton.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   await page.getByRole("button", { name: "Yeni defter", exact: true }).click();
   await expect(page.getByLabel("Defter adı")).toHaveCount(0);
+});
+
+const freeFullLimits: NotebookLimitsDto = {
+  isPremium: false, maxPages: 20, maxCustomNotebooks: 1, customNotebookCount: 1,
+  maxEntries: 50, entryCount: 0, photoUploadEnabled: true, maxPhotos: 5, photoCount: 0,
+};
+const availableSlot: NotebookSlotView = {
+  status: "AVAILABLE",
+  cost: 20, coinConfirmed: 100, purchasedSlots: 0, maxPurchasableSlots: 2,
+  premium: false, canAfford: true, canPurchase: true,
+};
+
+test("Coin ile kapasite açılır, kota yenilenir ve yeni defter formu açılır", async ({ page }) => {
+  const state = await mockApi(page, { limits: { ...freeFullLimits }, slotOffer: availableSlot });
+  await page.goto("/defterlerim");
+  await page.getByRole("button", { name: "Yeni defter", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Bir deftere daha yer aç" });
+  await expect(dialog.getByText("Kullanılabilir Coin: 100")).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath("notebook-slot-offer.png") });
+  await dialog.getByRole("button", { name: "20 Coin ile +1 defter kapasitesi aç" }).click();
+  await expect(page.getByLabel("Defter adı")).toBeVisible();
+  await expect(page.getByText("Özel defter: 1 / 2")).toBeVisible();
+  expect(state.slotDebits).toBe(1);
+});
+
+test("fiyat değişince yeni bedel gösterilir ve tekrar onay gerekir", async ({ page }) => {
+  const state = await mockApi(page, { limits: { ...freeFullLimits }, slotOffer: availableSlot, newSlotPrice: 30 });
+  await page.goto("/defterlerim");
+  await page.getByRole("button", { name: "Yeni defter", exact: true }).click();
+  await page.getByRole("button", { name: "20 Coin ile +1 defter kapasitesi aç" }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText("Fiyat veya kapasite değişti");
+  expect(state.slotDebits).toBe(0);
+  await page.getByRole("button", { name: "30 Coin ile +1 defter kapasitesi aç" }).click();
+  await expect(page.getByLabel("Defter adı")).toBeVisible();
+  expect(state.slotDebits).toBe(1);
+});
+
+test("yanıt kaybolunca aynı satın alma anahtarıyla tekrar denenir", async ({ page }) => {
+  const state = await mockApi(page, { limits: { ...freeFullLimits }, slotOffer: availableSlot, loseSlotResponseOnce: true });
+  await page.goto("/defterlerim");
+  await page.getByRole("button", { name: "Yeni defter", exact: true }).click();
+  await page.getByRole("button", { name: "20 Coin ile +1 defter kapasitesi aç" }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText("Kapasite doğrulanamadı");
+  await page.getByRole("button", { name: "20 Coin ile +1 defter kapasitesi aç" }).click();
+  await expect(page.getByLabel("Defter adı")).toBeVisible();
+  expect(state.slotPurchases).toBe(2);
+  expect(state.slotDebits).toBe(1);
+});
+
+test("yetersiz Coin satın alma düğmesini kapatır", async ({ page }) => {
+  const state = await mockApi(page, { limits: { ...freeFullLimits }, slotOffer: {
+    ...availableSlot, status: "INSUFFICIENT_COIN", coinConfirmed: 5, canAfford: false, canPurchase: false,
+  } });
+  await page.goto("/defterlerim");
+  await page.getByRole("button", { name: "Yeni defter", exact: true }).click();
+  await expect(page.getByRole("button", { name: "20 Coin ile +1 defter kapasitesi aç" })).toBeDisabled();
+  expect(state.slotPurchases).toBe(0);
+});
+
+test("ekonomi kapalıyken defterler yüklenir ve Coin ile alım gösterilmez", async ({ page }) => {
+  const state = await mockApi(page, { limits: { ...freeFullLimits }, economyClosed: true });
+  await page.goto("/defterlerim");
+  await expect(page.getByRole("heading", { name: "Defterlerim", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Yeni defter", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Bir deftere daha yer aç" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Coin ile/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Premium seçeneklerini gör" })).toBeVisible();
+  expect(state.slotPurchases).toBe(0);
+});
+
+test("satın alma sonrası liste yenileme tekrar ücret oluşturmaz", async ({ page }) => {
+  const state = await mockApi(page, { limits: { ...freeFullLimits }, slotOffer: availableSlot, failListAfterSlotOnce: true });
+  await page.goto("/defterlerim");
+  await page.getByRole("button", { name: "Yeni defter", exact: true }).click();
+  await page.getByRole("button", { name: "20 Coin ile +1 defter kapasitesi aç" }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText("Kapasite eklendi ancak defter listesi yenilenemedi");
+  await page.getByRole("button", { name: "Defter listesini yenile" }).click();
+  await expect(page.getByLabel("Defter adı")).toBeVisible();
+  expect(state.slotPurchases).toBe(1);
+  expect(state.slotDebits).toBe(1);
+});
+
+test("ek kapasite sınırında yeni satın alma gösterilmez", async ({ page }) => {
+  const state = await mockApi(page, { limits: { ...freeFullLimits }, slotOffer: {
+    ...availableSlot, status: "LIMIT_REACHED", purchasedSlots: 2, canPurchase: false,
+  } });
+  await page.goto("/defterlerim");
+  await page.getByRole("button", { name: "Yeni defter", exact: true }).click();
+  await expect(page.getByText("Coin ile alınabilecek ek kapasite sınırına ulaştın.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Coin ile \+1/ })).toHaveCount(0);
+  expect(state.slotPurchases).toBe(0);
 });
 
 test("koleksiyondan ders defteri oluşturulur, serbest editör açılır ve defter silinir", async ({

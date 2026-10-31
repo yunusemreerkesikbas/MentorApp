@@ -1,6 +1,20 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/v1/app/availability": {
+      "get": {
+        "operationId": "AppAvailabilityController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "app"
+        ]
+      }
+    },
     "/v1/health": {
       "get": {
         "operationId": "HealthController_liveness",
@@ -4697,6 +4711,27 @@
         ]
       }
     },
+    "/v1/coaching/public/pulse": {
+      "get": {
+        "operationId": "PublicPulseController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPulseViewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/economy/balance": {
       "get": {
         "operationId": "EconomyController_balance",
@@ -5005,6 +5040,76 @@
             "description": "INVITE_CODE_INVALID: unknown, malformed or unusable code (also while the economy is off)"
           }
         },
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/notebook-slots": {
+      "get": {
+        "operationId": "NotebookSlotsController_state",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookSlotViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      },
+      "post": {
+        "operationId": "NotebookSlotsController_purchase",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID; reuse for retries of this purchase.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotebookSlotPurchaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookSlotViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
           "economy"
         ]
@@ -11878,6 +11983,19 @@
         "type": "object",
         "properties": {}
       },
+      "PublicPulseViewDto": {
+        "type": "object",
+        "properties": {
+          "studiedLast24h": {
+            "type": "number",
+            "nullable": true,
+            "description": "People who studied in the last 24 hours; null below the threshold."
+          }
+        },
+        "required": [
+          "studiedLast24h"
+        ]
+      },
       "InviteJoinedFriendDto": {
         "type": "object",
         "properties": {
@@ -12125,6 +12243,70 @@
         "required": [
           "inviterDisplayName",
           "discount"
+        ]
+      },
+      "NotebookSlotViewDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "INSUFFICIENT_COIN",
+              "LIMIT_REACHED",
+              "PREMIUM_INCLUDED"
+            ]
+          },
+          "cost": {
+            "type": "number"
+          },
+          "coinConfirmed": {
+            "type": "number"
+          },
+          "purchasedSlots": {
+            "type": "number"
+          },
+          "maxPurchasableSlots": {
+            "type": "number"
+          },
+          "premium": {
+            "type": "boolean"
+          },
+          "canAfford": {
+            "type": "boolean"
+          },
+          "canPurchase": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "cost",
+          "coinConfirmed",
+          "purchasedSlots",
+          "maxPurchasableSlots",
+          "premium",
+          "canAfford",
+          "canPurchase"
+        ]
+      },
+      "NotebookSlotPurchaseDto": {
+        "type": "object",
+        "properties": {
+          "expectedCost": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "expectedPurchasedSlots": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "expectedCost",
+          "expectedPurchasedSlots"
         ]
       },
       "CreateZoneDto": {

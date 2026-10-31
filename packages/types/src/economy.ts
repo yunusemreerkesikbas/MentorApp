@@ -182,3 +182,15 @@ export interface InvitePreviewView {
 export interface RedeemInviteResult {
   status: string;
 }
+
+/** A permanent +1 custom notebook capacity purchase; other Free quotas are unchanged. */
+export interface NotebookSlotView {
+  status: "AVAILABLE" | "INSUFFICIENT_COIN" | "LIMIT_REACHED" | "PREMIUM_INCLUDED";
+  cost: number;
+  coinConfirmed: number;
+  purchasedSlots: number;
+  maxPurchasableSlots: number;
+  premium: boolean;
+  canAfford: boolean;
+  canPurchase: boolean;
+}

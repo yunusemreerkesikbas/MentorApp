@@ -12,6 +12,12 @@ export default defineConfig({
       client: "fetch",
       override: {
         operations: {
+          NotebookSlotsController_state: {
+            fetch: { includeHttpResponseReturnType: false },
+          },
+          NotebookSlotsController_purchase: {
+            fetch: { includeHttpResponseReturnType: false },
+          },
           MentorshipCoachController_listPlanningTasks: {
             fetch: { includeHttpResponseReturnType: false },
           },

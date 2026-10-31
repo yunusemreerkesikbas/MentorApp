@@ -463,6 +463,14 @@ export interface CreateNotebookDto { [key: string]: unknown }
 
 export interface UpdateNotebookDto { [key: string]: unknown }
 
+export interface PublicPulseViewDto {
+  /**
+   * People who studied in the last 24 hours; null below the threshold.
+   * @nullable
+   */
+  studiedLast24h: number | null;
+}
+
 export interface InviteJoinedFriendDto {
   displayName: string;
 }
@@ -593,6 +601,41 @@ export interface InvitePreviewViewDto {
   inviterDisplayName: string;
   /** @nullable */
   discount: InvitePreviewViewDtoDiscount;
+}
+
+export type NotebookSlotViewDtoStatus = typeof NotebookSlotViewDtoStatus[keyof typeof NotebookSlotViewDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const NotebookSlotViewDtoStatus = {
+  AVAILABLE: 'AVAILABLE',
+  INSUFFICIENT_COIN: 'INSUFFICIENT_COIN',
+  LIMIT_REACHED: 'LIMIT_REACHED',
+  PREMIUM_INCLUDED: 'PREMIUM_INCLUDED',
+} as const;
+
+export interface NotebookSlotViewDto {
+  status: NotebookSlotViewDtoStatus;
+  cost: number;
+  coinConfirmed: number;
+  purchasedSlots: number;
+  maxPurchasableSlots: number;
+  premium: boolean;
+  canAfford: boolean;
+  canPurchase: boolean;
+}
+
+export interface NotebookSlotPurchaseDto {
+  /**
+   * @minimum 1
+   * @maximum 100000
+   */
+  expectedCost: number;
+  /**
+   * @minimum 0
+   * @maximum 50
+   */
+  expectedPurchasedSlots: number;
 }
 
 export interface CreateZoneDto { [key: string]: unknown }
@@ -1863,6 +1906,39 @@ export const CommunityControllerGetLeaderboardWindow = {
 export type NotificationsControllerStreamParams = {
 token: string;
 };
+
+export type appAvailabilityControllerGetResponse200 = {
+  data: void
+  status: 200
+}
+
+export type appAvailabilityControllerGetResponseSuccess = (appAvailabilityControllerGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type appAvailabilityControllerGetResponse = (appAvailabilityControllerGetResponseSuccess)
+
+export const getAppAvailabilityControllerGetUrl = () => {
+
+
+
+
+  return `/v1/app/availability`
+}
+
+export const appAvailabilityControllerGet = async ( options?: RequestInit): Promise<appAvailabilityControllerGetResponse> => {
+
+  return http<appAvailabilityControllerGetResponse>(getAppAvailabilityControllerGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
 
 export type healthControllerLivenessResponse200 = {
   data: void
@@ -7163,6 +7239,39 @@ export const notebooksControllerPutPage = async (id: string,
 
 
 
+export type publicPulseControllerGetResponse200 = {
+  data: PublicPulseViewDto
+  status: 200
+}
+
+export type publicPulseControllerGetResponseSuccess = (publicPulseControllerGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type publicPulseControllerGetResponse = (publicPulseControllerGetResponseSuccess)
+
+export const getPublicPulseControllerGetUrl = () => {
+
+
+
+
+  return `/v1/coaching/public/pulse`
+}
+
+export const publicPulseControllerGet = async ( options?: RequestInit): Promise<publicPulseControllerGetResponse> => {
+
+  return http<publicPulseControllerGetResponse>(getPublicPulseControllerGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
 export type economyControllerBalanceResponse200 = {
   data: void
   status: 200
@@ -7571,6 +7680,49 @@ export const invitePreviewControllerPreview = async (code: string, options?: Req
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export const getNotebookSlotsControllerStateUrl = () => {
+
+
+
+
+  return `/v1/economy/notebook-slots`
+}
+
+export const notebookSlotsControllerState = async ( options?: RequestInit): Promise<NotebookSlotViewDto> => {
+
+  return http<NotebookSlotViewDto>(getNotebookSlotsControllerStateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getNotebookSlotsControllerPurchaseUrl = () => {
+
+
+
+
+  return `/v1/economy/notebook-slots`
+}
+
+export const notebookSlotsControllerPurchase = async (notebookSlotPurchaseDto: NotebookSlotPurchaseDto, options?: RequestInit): Promise<NotebookSlotViewDto> => {
+
+  return http<NotebookSlotViewDto>(getNotebookSlotsControllerPurchaseUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      notebookSlotPurchaseDto,)
   }
 );}
 

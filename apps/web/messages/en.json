@@ -1543,6 +1543,25 @@
     "coach_adaptation_stage_days": "{count, plural, one {# day} other {# days}}",
     "coach_adaptation_stage_minutes": "{count} min a day",
     "coach_adaptation_stage_subjects": "{count, plural, one {# subject} other {# subjects}}",
+    "coach_adaptation_stage_ready": "Your week is ready.",
+    "coach_adaptation_stage_ready_lighten": "Your plan is ready.",
+    "coach_adaptation_evidence": {
+      "MOCK_PERFORMANCE": "Your mock exams",
+      "WEAK_SUBJECTS": "Subjects to work on",
+      "NOTEBOOK_TOPICS": "Your mistake notebook",
+      "LONG_TERM_RHYTHM": "Your last 4 weeks",
+      "RECENT_RHYTHM": "Your last 7 days",
+      "SUBJECT_BALANCE": "Subject balance",
+      "PLAN_FOLLOW_THROUGH": "Last week",
+      "STREAK": "Your streak",
+      "MOOD": "Your energy",
+      "GOAL": "Your goal",
+      "EXAM_PHASE": "Exam season",
+      "TODAY_PLAN": "Today's plan",
+      "TODAY_FOCUS": "Today's focus",
+      "ACTION_OUTCOME": "Coach suggestions",
+      "OTHER": "Coach note"
+    },
     "coach_adaptation_success_title": "Your plan is updated",
     "coach_adaptation_success_message": "{moveCount} tasks moved, {addCount} tasks added.",
     "calendar_strip_expand": "Open the month view",
@@ -2344,6 +2363,25 @@
     "premium_nudge": "Let your coach read your progress"
   },
   "notebooks": {
+    "capacity": {
+      "title": "Make room for another notebook",
+      "close": "Close",
+      "description": "Use Coin for permanent capacity for one more custom notebook. Deleting a notebook keeps the capacity available.",
+      "quotas": "Page, entry and photo limits stay the same. This does not grant a Premium membership.",
+      "balance": "Available Coin: {coin}",
+      "buy": "Unlock +1 notebook capacity for {cost} Coin",
+      "buying": "Adding…",
+      "purchased": "Capacity added",
+      "sync": "Refresh notebook list",
+      "sync_error": "Capacity was added, but the notebook list could not refresh. Retry without another charge.",
+      "insufficient": "You don't have enough Coin for this yet. You can earn Coin from quests.",
+      "limit": "You have reached the limit for extra capacity purchased with Coin. Your purchased capacity stays available.",
+      "premium": "See Premium options",
+      "premium_description": "More custom notebooks are included with Premium.",
+      "load_error": "The extra notebook option could not load. Close and reopen to try again.",
+      "purchase_error": "Capacity could not be confirmed. Retry or refresh your notebook list.",
+      "changed": "The price or capacity changed. Review the current option before deciding again."
+    },
     "title": "My notebooks",
     "subtitle": "Track mistakes or create a calm study space for each subject.",
     "quota_custom_badge": "Custom notebooks: {used} / {max}",
@@ -3055,7 +3093,7 @@
     "retry": "Try again"
   },
   "economy": {
-    "balance_subtitle": "Coin has no cash value. Use it for coach chat and weekly deep analysis.",
+    "balance_subtitle": "Coin has no cash value. Use it for extra notebook capacity, coach chat access and weekly deep analysis.",
     "balance_title": "Your balance",
     "xp": "XP",
     "confirmed": "Coin",
@@ -3134,7 +3172,7 @@
     "email_verified_reward_label": "Email Verified",
     "subscription_reward_label": "First Subscription Bonus",
     "balance_error": "Your balance could not be refreshed. Try again shortly.",
-    "balance_usage": "One chat message costs {chatCost} Coin; a weekly deep analysis costs {analysisCost} Coin. Your balance covers {chatMessages} messages or {weeklyAnalyses} analyses. Daily limits and eligibility still apply.",
+    "balance_usage": "One chat message costs {chatCost} Coin; a weekly deep analysis costs {analysisCost} Coin. Your balance covers {chatMessages} messages or {weeklyAnalyses} analyses. You can also unlock permanent extra capacity in My notebooks. Daily limits and eligibility still apply.",
     "balance_loading": "Loading your balance…"
   },
   "legal": {

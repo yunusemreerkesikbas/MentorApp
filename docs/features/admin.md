@@ -100,6 +100,16 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-31 — Configurable Coin notebook capacity
+
+- **What/usage:** Ayarlar → Ekonomi now exposes `economy.coin.notebook_slot_cost` (default 20)
+  and `economy.notebook_slots.max_per_user` (default 2), using the existing sensitive-setting
+  confirmation, server-side bounds and audit trail. Turkish operator hints explain both settings.
+- **Gotchas:** A cap of 0 stops new sales. Lowering it never revokes purchased capacity. The
+  coaching Free custom-notebook setting controls included capacity; purchased slots are additive.
+- **Related:** `config.catalog.ts`, admin `config/config-hints.ts`, `notebook-slot.service.ts`,
+  `test/notebook-slots.e2e-spec.ts`; [economy](./economy.md).
+
 ### 2026-10-31 · Local admin CORS configuration
 
 - Fixed the local API environment's `ADMIN_APP_URL` from the API origin (`http://localhost:3001`)

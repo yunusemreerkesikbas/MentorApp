@@ -157,15 +157,26 @@ export function monthStart(iso: string): string {
   return `${iso.slice(0, 7)}-01`;
 }
 
-/** Shift by whole months, clamping the day (31 Mart → 28/29 Şubat). */
-export function shiftMonth(iso: string, months: number): string {
+/** Shift by whole months, clamping the day (31 Mart → 28/29 Şubat). `day` overrides iso's own day. */
+export function shiftMonth(iso: string, months: number, day = Number(iso.slice(8, 10))): string {
   const d = new Date(`${iso}T12:00:00`);
-  const day = d.getDate();
   d.setDate(1);
   d.setMonth(d.getMonth() + months);
   const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
   d.setDate(Math.min(day, lastDay));
   return d.toISOString().slice(0, 10);
+}
+
+export type MonthStep = { date: string; day: number };
+
+/**
+ * Takvim's month ‹ › step. Keeps the day it started from, clamping only the landing date:
+ * 31 Ekim → 30 Kasım → 31 Ekim. `last` is the previous step; it counts only while the user
+ * is still on the date it landed on, so picking another day starts over from that day.
+ */
+export function stepMonth(iso: string, months: number, last: MonthStep | null): MonthStep {
+  const day = last?.date === iso ? last.day : Number(iso.slice(8, 10));
+  return { date: shiftMonth(iso, months, day), day };
 }
 
 export function formatMonthTitle(iso: string, locale: string): string {

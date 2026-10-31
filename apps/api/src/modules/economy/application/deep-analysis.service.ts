@@ -28,6 +28,7 @@ export class DeepAnalysisService {
 
   /** Unlock state for the gate UI: eligibility (review READY) + cost + balance + unlock. */
   async getState(userId: string, roles: string[], examId: string): Promise<DeepAnalysisView> {
+    await this.assertAiEnabled();
     const [review, cost, balance, entitlement, freeEnabled] = await Promise.all([
       this.weeklyReview.getReview(userId, examId),
       this.config.get("economy.coin.deep_analysis_cost"),
@@ -62,12 +63,19 @@ export class DeepAnalysisService {
     if (!state.eligible || !state.weekStart) {
       throw new DomainError(ErrorCode.DEEP_ANALYSIS_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY);
     }
+    await this.assertAiEnabled();
     await this.economy.spend(userId, state.cost, {
       reason: EconomyLedger.DEEP_ANALYSIS_SPEND_REASON,
       refType: EconomyLedger.DEEP_ANALYSIS_REF_TYPE,
       refId: deepAnalysisRefId(userId, examId, state.weekStart),
     });
     return this.getState(userId, roles, examId);
+  }
+
+  private async assertAiEnabled(): Promise<void> {
+    if (!(await this.config.get("ai.enabled"))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
   }
 
   /** For the AI narration gate: was this (exam, week) purchased? (Premium bypasses this check.) */

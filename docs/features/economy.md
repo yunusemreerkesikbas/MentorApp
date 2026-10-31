@@ -1,6 +1,6 @@
 # Economy
 
-> Light append-only ledger substrate: XP personal progress + non-monetary Coin (→ earned AI right). Module:
+> Light append-only ledger substrate: XP personal progress + non-monetary Coin (earned access and notebook capacity). Module:
 > `modules/economy`. Workstream: W6. Roadmap: MVP substrate + weekly quests + refund reversal +
 > deep-analysis sink shipped (APP-025, launch-ready); Phase 2 = forum coin, Redis leaderboard,
 > mahalle, real economy expansion.
@@ -19,6 +19,7 @@ These rules supersede earlier launch assumptions in the historical timeline.
 | --- | --- |
 | XP | Personal journey/levels; never spent or converted to Coin |
 | Coin | The only spendable label; non-monetary and capped; absent from chat UI |
+| Extra notebook capacity | Permanent +1 custom notebook slot for 20 Coin; at most two purchased slots by default. Admin can change both. Other Free quotas are unchanged; owned capacity survives economy-off |
 | Profile / verified email | 10 Coin each, once |
 | First subscription / entering invite code | Disabled quest IDs retained; no Coin |
 | Weekly effort | 5 active UTC days in one ISO week gives 15 Coin |
@@ -47,6 +48,9 @@ multi-device synchronization remain outside this change.
 - **Idempotent grants:** unique `(ref_type, ref_id)` where `ref_id` not null.
 - **Spending:** `EconomyService.spend()` — atomic confirmed-coin debit, idempotent on ref.
   `INSUFFICIENT_COIN` (422). Free daily coin allowance for AI chat (separate from premium rate-limit).
+- **Notebook capacity:** a confirmed purchase debit permanently adds one custom notebook slot.
+  Default price 20 Coin, maximum two purchased slots; both admin configurable. The user's owned
+  capacity survives economy-off and a reduced sale cap. Other notebook and AI quotas are unchanged.
 - **Cross-module decoupling:** economy consumes events from payments (`payment.succeeded` for the first positive charge) and
   emits events consumed by itself (invite conversion). Forum XP is wired via `forum.answer.accepted`.
   **No runtime dependency on economy from forum** (type-only import).
@@ -121,10 +125,41 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `POST /v1/economy/streak-rescue`          | Buy the freeze for the break day (coin sink, idempotent) |
 | `GET /v1/economy/deep-analysis?examId=`   | Deep-analysis unlock state (eligible? cost? unlocked?)   |
 | `POST /v1/economy/deep-analysis`          | Unlock this week's deep analysis (coin sink, idempotent) |
+| `GET /v1/economy/notebook-slots`          | Live price, purchased capacity, balance and purchase eligibility |
+| `POST /v1/economy/notebook-slots`         | Permanent +1 custom notebook slot; required UUID `Idempotency-Key` |
 | `POST /v1/admin/users/:id/economy/adjust` | Admin manual adjust (audited)                            |
 | `GET /v1/admin/metrics/economy`           | Faucet/sink breakdown + float + faucet reach (calibration) |
 
 ## Geliştirmeler (timeline)
+
+### 2026-10-31 — Permanent notebook capacity purchased with Coin
+
+- **What:** Free users can buy permanent +1 custom notebook capacity for 20 Coin, up to two extra
+  slots by default. The confirmed negative `notebook.slot.purchase` ledger row is the capacity
+  grant. Cap, displayed quote and debit are checked in one locked service transaction. Retry
+  references include the user ID; stale parallel offers cannot accidentally buy a second slot.
+- **Usage:** At the custom notebook limit, choose the Coin option in Defterlerim. Admin → Ayarlar →
+  Ekonomi exposes `economy.coin.notebook_slot_cost` (1–100000) and
+  `economy.notebook_slots.max_per_user` (0–50). Changes are validated and audited; 0 slots closes sales.
+- **Gotchas:** Economy-off hides offers and rejects new purchases (404), while owned capacity
+  survives. Lower sale caps, notebook deletion and later Premium expiry do not revoke purchased
+  slots. Pages, entries, photos and AI remain separately limited. A changed price or stale capacity
+  quote returns 409 before debit and requires renewed confirmation. Runtime configuration follows
+  the registry's existing process-local cache behavior.
+- **Related:** `notebook-slot.service.ts`, `notebook-slot.repository.ts`, `notebook-slots.controller.ts`,
+  `coaching-entitlement.registry.ts`, `notebook-quota.service.ts`, `notebook-capacity-dialog.tsx`,
+  shared economy types/validation, generated OpenAPI client and `test/notebook-slots.e2e-spec.ts`.
+
+- **2026-10-31 · Coin spend availability and replay safety.** Deep-analysis offers reject
+  `AI_DISABLED` while AI is off, and purchases recheck the switch immediately before debit.
+  No offer-side data reads or Coin spend happen on an initially disabled request. Economy spend
+  now reports an insert-time unique-reference collision as `alreadySpent`, including when two
+  different users hold different locks. Chat consumes that result by rejecting the replay before
+  model execution; durable one-week analysis unlocks retain their existing idempotent behavior.
+  Usage: existing endpoints and config keys, no migration or balance rewrite. Gotchas: an analysis
+  unlock still allows retry after a later narration failure; this change is not a budget reservation
+  or a refund redesign. Related: `deep-analysis.service.ts`, `economy.service.ts`, `chat.service.ts`
+  and their unit/HTTP regressions.
 
 - **2026-10-31 · Ritual progress without economy rewards.** `GET /v1/economy/quests` stays
   authenticated and available when `economy.enabled=false`. Existing action triggers persist

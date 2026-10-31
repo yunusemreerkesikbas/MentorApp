@@ -28,7 +28,7 @@ export class NotebookQuotaService {
 
   /** Entitlement and cold config use the pool; never resolve them inside a user transaction. */
   async resolvePolicy(userId: string, rolesHint?: string[]): Promise<NotebookQuotaPolicy> {
-    const [isPremium, photoEnabled, photoLimit, customLimit, pagesLimit, entriesLimit] =
+    const [isPremium, photoEnabled, photoLimit, customLimit, pagesLimit, entriesLimit, slots] =
       await Promise.all([
         this.entitlement.isPremium(userId, rolesHint),
         this.config.get("coaching.notebook.photo.free_enabled"),
@@ -36,8 +36,9 @@ export class NotebookQuotaService {
         this.config.get("coaching.notebook.custom.free_limit"),
         this.config.get("coaching.notebook.pages.free_limit"),
         this.config.get("coaching.notebook.entries.free_limit"),
+        this.entitlement.notebookSlots(userId),
       ]);
-    return { isPremium, photoEnabled, photoLimit, customLimit, pagesLimit, entriesLimit };
+    return { isPremium, photoEnabled, photoLimit, customLimit: customLimit + slots, pagesLimit, entriesLimit };
   }
 
   async resolveLimits(
