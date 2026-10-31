@@ -167,6 +167,8 @@ jobs:
           curl --fail --silent http://localhost:3001/v1/health/ready > /dev/null
           pnpm --filter @mentor/web exec playwright test --config=playwright.core-trial.config.ts
 
+      - name: Bounded media browser checks
+        run: pnpm --filter @mentor/web exec playwright test --config=playwright.bounded-media.config.ts
       - name: Upload Playwright diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
