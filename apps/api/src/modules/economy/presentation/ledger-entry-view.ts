@@ -21,6 +21,9 @@ export function toLedgerEntryView(row: LedgerRow, t: LedgerCopyFn): EconomyLedge
 }
 
 function displayFor(row: LedgerRow, t: LedgerCopyFn): { title: string; description: string } {
+  if (row.reason === EconomyLedger.NOTEBOOK_SLOT_SPEND_REASON) {
+    return { title: t("ledger.notebookSlot.title"), description: t("ledger.notebookSlot.description") };
+  }
   if (row.reason.startsWith("quest.")) {
     const description = resolveQuestLedgerDescription(t, row.reason.slice("quest.".length));
     if (description) return { title: t(row.unit === Currency.XP ? "ledger.questXp.title" : "ledger.questReward.title"), description };

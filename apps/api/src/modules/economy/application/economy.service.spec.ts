@@ -292,6 +292,15 @@ describe("EconomyService", () => {
     ).rejects.toMatchObject({ code: ErrorCode.INSUFFICIENT_COIN });
   });
 
+  it("reports an insert-time reference collision as already spent", async () => {
+    const svc = service();
+    await svc.grant("u1", Currency.COIN, 10, { reason: "test", enforceLimits: false });
+    vi.spyOn(repo, "append").mockResolvedValueOnce(false);
+    const result = await svc.spend("u1", 5, { reason: "ai.chat.spend", refType: "ai_chat", refId: "racing-ref" });
+    expect(result.alreadySpent).toBe(true);
+    expect(result.balance.coinConfirmed).toBe(10);
+  });
+
   it("capped coin grant acquires the per-user lock before cap reads and append (F1)", async () => {
     await service().grant("u1", Currency.COIN, 10, { reason: "quest.x" });
     expect(repo.trace[0]).toBe("lock:u1");

@@ -23,13 +23,15 @@ import {
   type QuestDef,
 } from "../domain/quest.catalog";
 
+import { progressKey, questTarget, sourceCurrent, xpReward, coinReward, isEconomyAction, type QuestConfig } from "./quest-progress";
+
 export type { QuestProgressView };
 
 /**
  * Quests (§3 light economy). Conditions are evaluated by READING other modules' public services
  * (identity/payments/coaching) + economy's own invite repo — no cross-module table access
  * (workstreams §3). A newly-completed quest grants XP/Coin via the idempotent reward engine.
- * Gated by `economy.enabled`.
+ * Completion is always recorded; `economy.enabled` gates rewards only.
  */
 @Injectable()
 export class QuestService {
@@ -52,7 +54,7 @@ export class QuestService {
    * the reward in one SERVICE tx (idempotent via progress unique + ledger refId).
    */
   async evaluateAndGrant(userId: string, date?: string, strict = false): Promise<void> {
-    if (!(await this.config.get("economy.enabled"))) return;
+    const rewardsEnabled = await this.config.get("economy.enabled");
 
     const [signals, streak, cfg] = await Promise.all([
       date ? this.dailySignals.getForDate(userId, date) : this.dailySignals.getToday(userId),
@@ -66,7 +68,7 @@ export class QuestService {
       ),
     );
     const pending = QUEST_CATALOG.filter((q) => {
-      if (cfg.disabledIds.has(q.id)) return false; // admin kill-switch
+      if (cfg.disabledIds.has(q.id) || (!rewardsEnabled && isEconomyAction(q))) return false;
       const periodKey = this.periodKey(q, signals);
       return !completed.has(progressKey(q.id, periodKey));
     });
@@ -113,9 +115,9 @@ export class QuestService {
       if (!isMet(q)) continue;
       const periodKey = this.periodKey(q, signals);
       const reward =
-        q.rewardUnit === "XP"
+        rewardsEnabled && q.rewardUnit === "XP"
           ? { unit: Currency.XP, amount: xpReward(q, cfg) }
-          : q.rewardUnit === "COIN"
+          : rewardsEnabled && q.rewardUnit === "COIN"
             ? { unit: Currency.COIN, amount: coinReward(q, cfg) }
             : null;
       try {
@@ -166,10 +168,11 @@ export class QuestService {
   }
 
   private async toViews(userId: string): Promise<QuestProgressView[]> {
-    const [signals, streak, cfg] = await Promise.all([
+    const [signals, streak, cfg, rewardsEnabled] = await Promise.all([
       this.dailySignals.getToday(userId),
       this.streak.getSummary(userId),
       this.readQuestConfig(),
+      this.config.get("economy.enabled"),
     ]);
     const rows = await this.quests.listForUser(userId, this.activePeriodKeys(signals));
     const byKey = new Map(rows.map((r) => [progressKey(r.questId, r.periodKey), r]));
@@ -177,6 +180,7 @@ export class QuestService {
     const visible = QUEST_CATALOG.filter(
       (q) =>
         !cfg.disabledIds.has(q.id) &&
+        (rewardsEnabled || !isEconomyAction(q)) &&
         (q.id !== "daily.focus-goal-met" || signals.dailyFocusGoalMinutes != null),
     );
     const lang = resolveEconomyLang();
@@ -185,8 +189,9 @@ export class QuestService {
     return visible.map((q) => {
       const periodKey = this.periodKey(q, signals);
       const row = byKey.get(progressKey(q.id, periodKey));
+      const rewardUnit = rewardsEnabled ? q.rewardUnit : "NONE";
       const rewardAmount =
-        q.rewardUnit === "XP" ? xpReward(q, cfg) : q.rewardUnit === "COIN" ? coinReward(q, cfg) : 0;
+        rewardUnit === "XP" ? xpReward(q, cfg) : rewardUnit === "COIN" ? coinReward(q, cfg) : 0;
       const hasTarget = q.progressTarget != null || q.targetConfigKey != null;
       const target = hasTarget ? questTarget(q, cfg.targets) : undefined;
       const copy = resolveQuestCardCopy(t, q.id, target != null ? { target } : {});
@@ -199,9 +204,9 @@ export class QuestService {
         title: copy.title,
         badgeLabel: copy.badgeLabel,
         action: q.action,
-        rewardUnit: q.rewardUnit,
+        rewardUnit,
         rewardAmount,
-        rewardCoin: q.rewardUnit === "COIN" ? rewardAmount : 0,
+        rewardCoin: rewardUnit === "COIN" ? rewardAmount : 0,
         progressCurrent:
           target != null
             ? row
@@ -270,59 +275,4 @@ export class QuestService {
   private activePeriodKeys(signals: DailyQuestSignals): string[] {
     return [QUEST_PERIOD_ONCE, signals.date, signals.weekKey];
   }
-}
-
-interface QuestConfig {
-  onboardingRewardCoin: number;
-  dailyRewardXp: number;
-  streakMilestoneRewardXp: number;
-  effortMilestoneRewardXp: number;
-  weeklyRitualRewardXp: number;
-  /** The recurring coin faucet's payout (weekly effort allowance). */
-  weeklyAllowanceRewardCoin: number;
-  /** targetConfigKey → resolved value (admin-tunable weekly targets). */
-  targets: Map<string, number>;
-  disabledIds: Set<string>;
-}
-
-function progressKey(questId: string, periodKey: string): string {
-  return `${questId}:${periodKey}`;
-}
-
-/** The quest's completion target: config-resolved when `targetConfigKey` is set. */
-function questTarget(q: QuestDef, targets: Map<string, number>): number {
-  const fromConfig = q.targetConfigKey ? targets.get(q.targetConfigKey) : undefined;
-  return fromConfig ?? q.progressTarget ?? Number.POSITIVE_INFINITY;
-}
-
-function sourceCurrent(q: QuestDef, signals: DailyQuestSignals, currentStreak: number): number {
-  switch (q.progressSource) {
-    case "streak":
-      return currentStreak;
-    case "completed_focus_sessions":
-      return signals.completedFocusSessions;
-    case "completed_plan_tasks":
-      return signals.completedPlanTasks;
-    case "weekly_focus_sessions":
-      return signals.weeklyCompletedFocusSessions;
-    case "weekly_plan_tasks":
-      return signals.weeklyCompletedPlanTasks;
-    case "weekly_active_days":
-      return signals.weeklyActiveDays;
-    default:
-      return 0;
-  }
-}
-
-function xpReward(q: QuestDef, cfg: QuestConfig): number {
-  if (q.type === QuestType.WEEKLY_RITUAL) return cfg.weeklyRitualRewardXp;
-  if (q.type !== QuestType.MILESTONE) return cfg.dailyRewardXp;
-  return q.progressSource === "streak" ? cfg.streakMilestoneRewardXp : cfg.effortMilestoneRewardXp;
-}
-
-/** Symmetric to `xpReward` — without it every COIN quest would silently pay the onboarding amount. */
-function coinReward(q: QuestDef, cfg: QuestConfig): number {
-  return q.type === QuestType.WEEKLY_RITUAL
-    ? cfg.weeklyAllowanceRewardCoin
-    : cfg.onboardingRewardCoin;
 }

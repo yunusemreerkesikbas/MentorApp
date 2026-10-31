@@ -1543,6 +1543,25 @@
     "coach_adaptation_stage_days": "{count} gün",
     "coach_adaptation_stage_minutes": "günde {count} dk",
     "coach_adaptation_stage_subjects": "{count} ders",
+    "coach_adaptation_stage_ready": "Haftan hazır.",
+    "coach_adaptation_stage_ready_lighten": "Planın hazır.",
+    "coach_adaptation_evidence": {
+      "MOCK_PERFORMANCE": "Denemelerin",
+      "WEAK_SUBJECTS": "Zorlandığın dersler",
+      "NOTEBOOK_TOPICS": "Yanlış defterin",
+      "LONG_TERM_RHYTHM": "Son 4 haftan",
+      "RECENT_RHYTHM": "Son 7 günün",
+      "SUBJECT_BALANCE": "Ders dengen",
+      "PLAN_FOLLOW_THROUGH": "Geçen haftan",
+      "STREAK": "Serin",
+      "MOOD": "Enerjin",
+      "GOAL": "Hedefin",
+      "EXAM_PHASE": "Sınav dönemin",
+      "TODAY_PLAN": "Bugünkü planın",
+      "TODAY_FOCUS": "Bugünkü odağın",
+      "ACTION_OUTCOME": "Koç önerilerin",
+      "OTHER": "Koçun notu"
+    },
     "coach_adaptation_success_title": "Planın güncellendi",
     "coach_adaptation_success_message": "{moveCount} görev taşındı, {addCount} görev eklendi.",
     "calendar_strip_expand": "Ay görünümünü aç",
@@ -2344,6 +2363,25 @@
     "premium_nudge": "İlerlemeni koçun yorumlasın"
   },
   "notebooks": {
+    "capacity": {
+      "title": "Bir deftere daha yer aç",
+      "close": "Kapat",
+      "description": "Coin kullanarak kalıcı +1 özel defter kapasitesi ekleyebilirsin. Defteri silsen de kapasite sende kalır.",
+      "quotas": "Sayfa, kayıt ve fotoğraf sınırların aynı kalır. Bu hak Premium üyelik vermez.",
+      "balance": "Kullanılabilir Coin: {coin}",
+      "buy": "{cost} Coin ile +1 defter kapasitesi aç",
+      "buying": "Ekleniyor…",
+      "purchased": "Kapasite eklendi",
+      "sync": "Defter listesini yenile",
+      "sync_error": "Kapasite eklendi ancak defter listesi yenilenemedi. Tekrar ücret alınmadan yeniden deneyebilirsin.",
+      "insufficient": "Bu kapasite için henüz yeterli Coin'in yok. Görevlerden Coin biriktirebilirsin.",
+      "limit": "Coin ile alınabilecek ek kapasite sınırına ulaştın. Aldığın kapasite sende kalır.",
+      "premium": "Premium seçeneklerini gör",
+      "premium_description": "Daha fazla özel defter oluşturmak Premium'a dahildir.",
+      "load_error": "Ek defter seçeneği şu an yüklenemedi. Kapatıp yeniden deneyebilirsin.",
+      "purchase_error": "Kapasite doğrulanamadı. Yeniden deneyebilir veya defter listesini yenileyebilirsin.",
+      "changed": "Fiyat veya kapasite değişti. Güncel seçeneği kontrol edip yeniden karar verebilirsin."
+    },
     "title": "Defterlerim",
     "subtitle": "Yanlışlarını takip et veya kendine ders ders çalışma alanları aç.",
     "quota_custom_badge": "Özel defter: {used} / {max}",
@@ -3055,7 +3093,7 @@
     "retry": "Yeniden dene"
   },
   "economy": {
-    "balance_subtitle": "Coin nakit değildir. Koç sohbetinde ve haftalık derin analizde kullanılır.",
+    "balance_subtitle": "Coin nakit değildir. Ek defter kapasitesi, koç sohbet hakkı ve haftalık derin analiz için kullanılır.",
     "balance_title": "Bakiyen",
     "xp": "XP",
     "confirmed": "Coin",
@@ -3096,6 +3134,7 @@
     "use_code": "Kodu kullan",
     "quests_subtitle": "Ritüel bugün burada. Başlangıç adımları tamamlanınca hak düşer.",
     "quests_title": "Görevler",
+    "quests_load_error": "Görevlerin yüklenemedi. Biraz sonra yeniden deneyebilirsin.",
     "quests_progress": "{done}/{total} tamamlandı",
     "quests_percent": "%{percent}",
     "quests_gauge_state": "İyi gidiyor",
@@ -3133,7 +3172,7 @@
     "email_verified_reward_label": "E-posta Doğrulandı",
     "subscription_reward_label": "İlk Abonelik Bonusu",
     "balance_error": "Bakiye güncellenemedi. Biraz sonra yeniden deneyebilirsin.",
-    "balance_usage": "Bir sohbet mesajı {chatCost} Coin, haftalık derin analiz {analysisCost} Coin. Mevcut bakiyenle {chatMessages} mesaj veya {weeklyAnalyses} analiz açabilirsin. Günlük kullanım ve uygunluk sınırları geçerlidir.",
+    "balance_usage": "Bir sohbet mesajı {chatCost} Coin, haftalık derin analiz {analysisCost} Coin. Mevcut bakiyenle {chatMessages} mesaj veya {weeklyAnalyses} analiz açabilirsin. Defterlerim'den kalıcı ek defter kapasitesi de açabilirsin. Günlük kullanım ve uygunluk sınırları geçerlidir.",
     "balance_loading": "Bakiye yükleniyor…"
   },
   "legal": {

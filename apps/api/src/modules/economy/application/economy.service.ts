@@ -315,38 +315,41 @@ export class EconomyService {
    * Idempotent on (refType, refId): a duplicate spend is a no-op with `alreadySpent: true`.
    */
   async spend(userId: string, cost: number, opts: SpendOptions): Promise<SpendResult> {
+    const alreadySpent = await this.repo.withServiceTx((tx) => this.spendInServiceTx(userId, cost, opts, tx));
+    const balance = await this.repo.balanceService(userId);
+    return { balance, alreadySpent };
+  }
+
+  /** Caller-owned SERVICE transaction: entitlement constraints and debit commit together. */
+  async spendInServiceTx(userId: string, cost: number, opts: SpendOptions, tx: DatabaseTx): Promise<boolean> {
     if (cost <= 0) {
       throw new DomainError(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST);
     }
-    let alreadySpent = false;
-    await this.repo.withServiceTx(async (tx) => {
-      // F1: lock closes the double-debit window between two concurrent spends with different refIds.
-      await this.repo.acquireUserLock(userId, tx);
-      if (await this.repo.existsByRef(opts.refType, opts.refId, tx)) {
-        alreadySpent = true;
-        return;
-      }
-      const balance = await this.repo.balanceService(userId, tx);
-      if (balance.coinConfirmed < cost) {
-        throw new DomainError(ErrorCode.INSUFFICIENT_COIN, HttpStatus.UNPROCESSABLE_ENTITY);
-      }
-      await this.repo.append(
-        {
-          userId,
-          unit: Currency.COIN,
-          amount: -cost,
-          reason: opts.reason,
-          status: LedgerStatus.CONFIRMED,
-          refType: opts.refType,
-          refId: opts.refId,
-          note: opts.note ?? null,
-          createdBy: null,
-        },
-        tx,
-      );
-    });
-    const balance = await this.repo.balanceService(userId);
-    return { balance, alreadySpent };
+    // F1: lock closes the double-debit window between two concurrent spends with different refIds.
+    await this.repo.acquireUserLock(userId, tx);
+    if (await this.repo.existsByRef(opts.refType, opts.refId, tx)) {
+      return true;
+    }
+    const balance = await this.repo.balanceService(userId, tx);
+    if (balance.coinConfirmed < cost) {
+      throw new DomainError(ErrorCode.INSUFFICIENT_COIN, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+    const inserted = await this.repo.append(
+      {
+        userId,
+        unit: Currency.COIN,
+        amount: -cost,
+        reason: opts.reason,
+        status: LedgerStatus.CONFIRMED,
+        refType: opts.refType,
+        refId: opts.refId,
+        note: opts.note ?? null,
+        createdBy: null,
+      },
+      tx,
+    );
+    // Different users hold different locks; the global reference can still collide at insert.
+    return !inserted;
   }
 
   /**

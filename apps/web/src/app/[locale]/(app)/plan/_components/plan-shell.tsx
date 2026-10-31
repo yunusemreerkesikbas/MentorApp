@@ -69,10 +69,11 @@ import {
   readStoredCalendarScale,
   readStoredViewMode,
   shiftDate,
-  shiftMonth,
+  stepMonth,
   taskStats,
   todayIso,
   isPastDate,
+  type MonthStep,
   type PlanCalendarScale,
   type PlanViewMode,
   weekStart,
@@ -314,9 +315,13 @@ export function PlanShell() {
     };
   }, [viewMode, monthAnchor]);
 
+  // Takvim reads every view (strip, hour grid, month board, rail list) from the month range.
   const refreshAdaptedPlan = useCallback(async () => {
-    await Promise.all([loadDayTasks(), loadWeekTasks()]);
-  }, [loadDayTasks, loadWeekTasks]);
+    await Promise.all([
+      loadWeekTasks(),
+      showMonth ? loadMonthTasks() : loadDayTasks(),
+    ]);
+  }, [showMonth, loadDayTasks, loadWeekTasks, loadMonthTasks]);
 
   useEffect(() => {
     if (viewMode === "calendar") return;
@@ -390,6 +395,7 @@ export function PlanShell() {
   }
 
   const datePickerRef = useRef<PlanDatePickerSheetHandle>(null);
+  const monthStepRef = useRef<MonthStep | null>(null);
 
   const openCalendarSheet = useCallback(async () => {
     const seedPlannedDates = Object.entries(weekTasks)
@@ -790,11 +796,12 @@ export function PlanShell() {
       handleWeekChange(shiftDate(weekAnchor, direction * 7));
       return;
     }
-    handleWeekDateChange(
-      calendarScale === "day"
-        ? shiftDate(date, direction)
-        : shiftMonth(date, direction),
-    );
+    if (calendarScale === "day") {
+      handleWeekDateChange(shiftDate(date, direction));
+      return;
+    }
+    monthStepRef.current = stepMonth(date, direction, monthStepRef.current);
+    handleWeekDateChange(monthStepRef.current.date);
   }
 
   /**

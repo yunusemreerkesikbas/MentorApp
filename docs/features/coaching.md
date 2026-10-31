@@ -145,6 +145,19 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-31 — Coin-funded permanent custom notebook slots
+
+- **What:** Free custom notebook capacity now includes the user's confirmed purchased slots,
+  supplied through `CoachingEntitlementRegistry`. Economy owns the immutable purchase records;
+  coaching continues enforcing notebook creation under its existing quota lock.
+- **Usage:** Defterlerim → Yeni defter at the Free limit offers permanent +1 capacity. Default price
+  is 20 Coin and the purchase cap is two extra slots, both editable in admin configuration.
+- **Gotchas:** The system Mistake Notebook is separate. Deleting a custom notebook releases its
+  occupied capacity without deleting the purchased entitlement. Economy-off and lowered sale caps
+  preserve owned slots; page, entry and photo quotas retain their existing Free values.
+- **Related:** `notebook-quota.service.ts`, `coaching-entitlement.registry.ts`,
+  `notebook-capacity-dialog.tsx`, `notebooks-shell.tsx`; [economy](./economy.md).
+
 - **2026-10-31 · Session-bound photo projection.** Authenticated notebook list/card/page/review
   responses and vision get/save paths carry the current HTTP session to storage grants. Backend
   evidence reads omit private URLs while preserving stored keys, notes, labels and board items.
@@ -2253,6 +2266,10 @@ deftere fotoğraflı bir yanlış eklenip sayfaya yerleştirildiğinde tetikleni
 - **2026-10-25 · Plan uyarlama önizlemesi görsel düzeltme.** Görev kutucukları native `accent-color` yerine paywall'daki özel kutucuğu kullanıyor: `--play-cta` dolgu, `--play-cta-ink` tik (açık temada `--color-btn` siyah olduğu için kutu siyah görünüyordu). Seçili kartın kenarı `has-[:checked]` ile `--play-cta` oluyor, seçilmeyen `--play-line` kalıyor. "Koçun baktıkları" gri zeminsiz bir açılır satır oldu, kanıt listesi ikon hizasında girintili. Dosya: `plan-coach-adaptation-preview.tsx`.
 
 - **2026-10-25 · Odak tekrarı (`/yanlis-defteri?review=focus`) durum ekranları.** Tekrar destesi tam ekran bir pencerede açılıyor. Pencere kapandıktan sonra arkada kalan sayfa önceden tek cümlelik ham bir karttı; artık dar, ortalanmış bir sütun. Üstte ikonlu "Analize dön" linki var. Boş, tekrar yok, kaydedildi ve hata durumları `EmptyState` ile gösteriliyor (Puhu, başlık, açıklama). Bu durumlarda ana buton duruma göre değişiyor ("Aktif sorularla erken çalış", "Diğer sorulara geç" veya "Yeniden dene"), "Yanlış defterine git" ise ikincil buton. Yükleme metni yerine iskelet (skeleton) var. Yeni anahtarlar: `notebook.focusReview.{noDue_title, empty_title, saved_title, notebook}`. Gotcha: buton olarak ikinci bir "Analize dön" ekleme, çünkü `analysis-review.spec.ts` bu linki ada göre tek eleman olarak bulmayı bekliyor. Dosya: `notebook-focus-review.tsx`.
+
+- **2026-10-31 · Koçla planla sonrası takvim yenilenmiyordu.** Önizlemede "Uygula" deyince eklenen görevler Takvim görünümünde sayfa yenilenene kadar görünmüyordu. Sebep: `refreshAdaptedPlan` yalnız gün ve hafta listesini çekiyordu, Takvim ise şeridi, saat ızgarasını, ay panosunu ve soldaki gün listesini `monthTasks`'tan okuyor. Artık Takvim'deyken ay aralığı, diğer görünümlerde gün listesi hafta ile birlikte yeniden çekiliyor (sekmeye dönüş yenilemesiyle aynı kural). 409 (plan değişti) yolu da aynı fonksiyonu kullandığı için o da düzeldi. **Gotcha:** Takvim'e yeni bir veri kaynağı eklersen `refreshAdaptedPlan` ve `refreshIfVisible`'a da ekle. Dosya: `plan-shell.tsx`.
+
+- **2026-10-31 · Koçla planla bekleme sahnesi: "Şehrin üstünde".** Renkli blok panosu ("Hafta kuruluyor") kalktı. Sahne artık hep gece: pelerinli premium Puhu, landing'in Işıklı şehir katmanlarının (`/visuals/landing/city-{far,mid,front}.webp`) üstünde yıldızlı asasıyla sihir yapıyor; koçun baktığı her kanıt bant yapıştırılmış kâğıt bir not olarak çatılara düşüyor (lucide ikon + Caveat etiket + backend'in kendi cümlesi). Her not 3,6 sn, düşüş 0,9 sn, en fazla 6 not, altında en çok 2 boş yaprak birikiyor. 12 sn'den sonra başlığın altındaki satır lamba sarısıyla "Koç hâlâ haftana bakıyor…" diyor. Cevap gelince başlık "Haftan hazır." / "Planın hazır." oluyor, yığın zıplayıp aşağı kayıyor (1200 ms). Sihirbazsız girişlerde (mood, seans, Yeniden hazırla) brief olmadığı için not yok, alt yazı bekleyen görev sayısı. Azaltılmış harekette video yerine ilk kare duruyor, notlar düşmeden değişiyor. Ekran okuyucu tüm notları bir kez liste olarak alıyor. Yeni anahtarlar: `plan.coach_adaptation_stage_ready(_lighten)`, `plan.coach_adaptation_evidence.*` (tip başına etiket, bilinmeyen tip `OTHER` "Koçun notu" + Sparkles). **Varlıklar:** `public/mascot/puhu/motion/puhu-magic-loop.mp4` kullanıcının Kling çıktısından WinRT `MediaTranscoder` ile kırpıldı (x=30 y=0 880×880 → 720×720, H.264 3,5 Mbps; Kling filigranı alttaki şeritte kaldı, döngü dikişi ~2 kare adımı, kabul edildi). `puhu-magic.webp` aynı kırpımın 0. karesi (poster + azaltılmış hareket). Gökyüzünün ilk durağı videonun zemini `#08113A`, kenar görünmesin diye. **Gotcha:** video siluetin üstünde kalmalı. Şehir boyu `--pcs-city-h`, kulenin yeri `--pcs-city-lift` (`plan-coach-stage.css`) ile her genişlikte orta katmanın en uzun kulesi Puhu'nun altında duruyor; video boyunu ya da şehir ofsetlerini değiştirirsen 375×667, 390×844 ve 1280×800'de bak. Sahne `.plan-coach-night` ile `OnboardingStepLayout`'un `--color-bg`/`--blob-*` boyasını şeffaf yapıyor, `html.dark`'ı takip etmiyor. `OnboardingStepLayout`'un `center` ve `PuhuBubble`'ın `idleFrame` prop'ları (yalnız eski sahne içindi) kaldırıldı. Dosyalar: `plan-coach-adaptation-stage.tsx`, `plan-coach-stage-{scene,notes,sky}.tsx/ts`, `plan-coach-stage.css`, `e2e/plan.spec.ts`, `DESIGN.md` §2 + §9.1. Spec/plan: `docs/superpowers/{specs,plans}/2026-10-31-plan-coach-magic-stage*.md`.
 
 ## Gotchas / Known issues
 
@@ -5172,3 +5189,11 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   save sites (onboarding field step when it wrote, goal board submit) patch the auth user via
   `setUserFromServer` so every Puhu switches without a reload. Gotcha: the mirror write runs after
   the board tx, so a failure there leaves `users.career_group` one save stale until the next upsert.
+- **2026-10-31 — Takvim month ‹ › keeps the day it started from.** On the 31st, "Sonraki ay" then
+  "Önceki ay" used to land on the 30th (31 Ekim → 30 Kasım → 30 Ekim), so the left rail showed
+  yesterday's tasks. `stepMonth` (plan-utils) now remembers the starting day and clamps only the
+  landing date: 31 Ekim → 30 Kasım → 31 Ekim, 31 Ocak → 28 Şubat → 31 Mart. Both the student `/plan`
+  and the coach calendar keep the last step in a ref; it counts only while the user is still on the
+  date it landed on, so picking another day starts over from that day. Pinned by
+  `plan-utils.spec.ts`; the e2e month test now pins the browser date with `page.clock.setFixedTime`
+  to 2026-10-31 and 2026-10-15 (it used to fail on desktop on every 31st).

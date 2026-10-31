@@ -66,7 +66,7 @@ export type QuestAction =
   | "verify-email"
   | null;
 
-/** GET /v1/economy/quests — quest catalog + progress (backend titles, localized). */
+/** GET /v1/economy/quests — always available; closed economy returns NONE/zero rewards. */
 export interface QuestProgressView {
   id: string;
   category: QuestCategory;
@@ -181,4 +181,16 @@ export interface InvitePreviewView {
 /** POST /v1/economy/invite/redeem — redemption accepted (reward is async on conversion). */
 export interface RedeemInviteResult {
   status: string;
+}
+
+/** A permanent +1 custom notebook capacity purchase; other Free quotas are unchanged. */
+export interface NotebookSlotView {
+  status: "AVAILABLE" | "INSUFFICIENT_COIN" | "LIMIT_REACHED" | "PREMIUM_INCLUDED";
+  cost: number;
+  coinConfirmed: number;
+  purchasedSlots: number;
+  maxPurchasableSlots: number;
+  premium: boolean;
+  canAfford: boolean;
+  canPurchase: boolean;
 }

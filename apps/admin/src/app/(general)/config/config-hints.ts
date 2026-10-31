@@ -1,5 +1,7 @@
 /** Operator-facing hints for `/config`. Fallback is the catalog `description` if a key is new. */
 export const CONFIG_HINTS: Record<string, string> = {
+    "economy.coin.notebook_slot_cost": "Ücretsiz kullanıcı için kalıcı +1 özel defter kapasitesinin Coin bedeli. Başlangıç değeri 20. Sayfa, kayıt ve fotoğraf kotalarını artırmaz. Yeni satın almalara uygulanır.",
+    "economy.notebook_slots.max_per_user": "Kullanıcı başına Coin ile alınabilecek toplam ek defter kapasitesi. 0 yeni alımları kapatır. Düşürmek önceden alınan kapasiteyi geri almaz.",
     "ads.placement.community_announcement_end.enabled": "Yalnız incelenmiş herkese açık duyuru detayında yorumların ardından tek reklamı açar. Sohbet ve özel odalarda çalışmaz. Google envanter/tarama/gizlilik incelemesi tamamlanmadan açma.",
     "ads.placement.community_announcement_end.ad_unit_path": "Duyuru detayı için Google reklam birimi yolu. Boşsa reklam yoktur, ortam ayarına dönüş yapılmaz. Topluluk panelinde görünüm onayı da gerekir.",
     "ads.placement.community_overview.enabled": "Keşfet ana ekranında tek reklam alanını hazırlar. Varsayılan kapalıdır. Ayrı uygunluk onayı ve güvenli sayfa bağlamı da gerekir.",
@@ -126,7 +128,7 @@ export const CONFIG_HINTS: Record<string, string> = {
     "coaching.weekly_recap.title_balanced_channel_count": "Cosmic Maestro unvanı için gereken kanıt kanalı.",
     "coaching.notebook.photo.free_enabled": "Ücretsiz kullanıcının Yanlış Defteri'ne fotoğraf (soru ve çözüm) yükleyebilme şalteri.",
     "coaching.notebook.photo.free_limit": "Ücretsiz kullanıcının Yanlış Defteri'nde tutabileceği toplam fotoğraf (soru + çözüm) üst sınırı (0 = kapalı).",
-    "coaching.notebook.custom.free_limit": "Ücretsiz kullanıcının Yanlış Defteri dışında açabileceği özel defter üst sınırı (0 = yalnız Premium).",
+    "coaching.notebook.custom.free_limit": "Ücretsiz plana dahil özel defter kapasitesi. Yanlış Defteri ayrıca durur. Coin ile alınan kalıcı ek kapasite bu değere eklenir; 0 yalnız dahil kapasiteyi kaldırır.",
     "coaching.notebook.pages.free_limit": "Ücretsiz kullanıcının defter başına açabileceği maksimum sayfa sayısı (Premium için 200).",
     "coaching.notebook.entries.free_limit": "Ücretsiz kullanıcının Yanlış Defteri'nde tutabileceği toplam soru kartı üst sınırı.",
     "ai.features.coach.chat.free_enabled": "Ücretsiz kullanıcıya sınırlı koç sohbeti tadımı verir.",

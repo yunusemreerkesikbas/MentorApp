@@ -9,6 +9,7 @@ import { SnowflakeIcon as Snowflake } from "@solar-icons/react/bold/snowflake";
 import type { JourneyLevelKey } from "@mentor/types";
 import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-compact";
 import { useEconomySnapshot } from "@/lib/economy-store";
+import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 
 const JourneySpotlightScene = dynamic(() =>
@@ -31,10 +32,11 @@ export function JourneyCard({ freezeTokens }: { freezeTokens: number | null }) {
   const t = useTranslations("panel");
   const tJourney = useTranslations("journey_levels");
   const { balance } = useEconomySnapshot();
+  const economyEnabled = useEconomyEnabled();
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const openerRef = useRef<HTMLButtonElement>(null);
 
-  if (!balance) return null;
+  if (!economyEnabled || !balance) return null;
 
   const levelName = tJourney(`levels.${balance.level.key}.name` as LevelNameKey);
 

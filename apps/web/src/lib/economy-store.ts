@@ -5,11 +5,12 @@ import type { EconomyBalance } from "@mentor/types";
 import { fetchEconomyBalance, isEconomyDisabled } from "./economy";
 
 interface EconomySnapshot {
+  enabled: boolean | null;
   balance: EconomyBalance | null;
   revision: number;
   error: boolean;
 }
-const empty: EconomySnapshot = { balance: null, revision: 0, error: false };
+const empty: EconomySnapshot = { enabled: null, balance: null, revision: 0, error: false };
 let snapshot = empty;
 let generation = 0;
 let pending: Promise<void> | null = null;
@@ -34,7 +35,17 @@ export function resetEconomySnapshot(): void {
   publish(empty);
 }
 
+/** Ignore in-flight results after closure. A fresh document/account initializes availability again. */
+export function disableEconomySnapshot(): void {
+  if (snapshot.enabled === false) return;
+  generation += 1;
+  pending = null;
+  dirty = false;
+  publish({ enabled: false, balance: null, revision: snapshot.revision + 1, error: false });
+}
+
 export function refreshEconomySnapshot(): Promise<void> {
+  if (snapshot.enabled === false) return Promise.resolve();
   dirty = true;
   if (pending) return pending;
   const version = generation;
@@ -43,14 +54,16 @@ export function refreshEconomySnapshot(): Promise<void> {
       dirty = false;
       try {
         const balance = await fetchEconomyBalance();
-        if (version === generation) publish({ balance, revision: snapshot.revision + 1, error: false });
+        if (version === generation) publish({ enabled: true, balance, revision: snapshot.revision + 1, error: false });
       } catch (error) {
         if (version === generation) {
           const disabled = isEconomyDisabled(error);
+          if (disabled) { disableEconomySnapshot(); return; }
           publish({
-            balance: disabled ? null : snapshot.balance,
+            enabled: snapshot.enabled,
+            balance: snapshot.balance,
             revision: snapshot.revision + 1,
-            error: !disabled,
+            error: true,
           });
         }
       }

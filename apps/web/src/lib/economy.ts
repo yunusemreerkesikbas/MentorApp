@@ -8,8 +8,10 @@ import type {
   RedeemInviteResult,
   StreakRescueView,
   Paginated,
+  NotebookSlotView,
 } from "@mentor/types";
-import { ApiClientError, http, economyControllerUnseen, economyControllerSeen } from "@mentor/api-client";
+import type { NotebookSlotPurchase } from "@mentor/validation";
+import { ApiClientError, http, economyControllerUnseen, economyControllerSeen, notebookSlotsControllerState, notebookSlotsControllerPurchase } from "@mentor/api-client";
 
 /**
  * Typed wrappers over user economy endpoints. Regen api-client when OpenAPI updates;
@@ -17,6 +19,16 @@ import { ApiClientError, http, economyControllerUnseen, economyControllerSeen } 
  */
 export async function fetchEconomyBalance(): Promise<EconomyBalance> {
   return (await http<EconomyBalance>("/v1/economy/balance")) as EconomyBalance;
+}
+
+export function fetchNotebookSlots(): Promise<NotebookSlotView> {
+  return notebookSlotsControllerState();
+}
+
+export function purchaseNotebookSlot(key: string, quote: NotebookSlotPurchase): Promise<NotebookSlotView> {
+  return notebookSlotsControllerPurchase(quote, {
+    headers: { "Idempotency-Key": key },
+  });
 }
 
 export async function fetchUnseenRewards(): Promise<Paginated<EconomyLedgerEntryView>> {
@@ -44,7 +56,11 @@ export async function fetchEconomyLedger({
 }
 
 export async function fetchQuests(): Promise<QuestProgressView[]> {
-  return (await http<QuestProgressView[]>("/v1/economy/quests")) as QuestProgressView[];
+  const quests = (await http<QuestProgressView[]>("/v1/economy/quests")) as QuestProgressView[];
+  if (quests.length > 0 && quests.every(quest => quest.rewardUnit === "NONE") && typeof window !== "undefined") {
+    window.dispatchEvent(new Event(ECONOMY_DISABLED_EVENT));
+  }
+  return quests;
 }
 
 // The viewer's own invite code, remembered for the session so a share can start inside the tap
@@ -124,6 +140,7 @@ export function isEconomyDisabled(err: unknown): boolean {
 
 /** App chrome (nav) listens so XP/coin pills refresh after panel quests / rescue. */
 export const ECONOMY_CHANGED_EVENT = "mentor:economy-changed";
+export const ECONOMY_DISABLED_EVENT = "mentor:economy-disabled";
 
 export function notifyEconomyChanged(): void {
   if (typeof window === "undefined") return;

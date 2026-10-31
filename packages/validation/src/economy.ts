@@ -49,3 +49,10 @@ export type DeepAnalysis = z.infer<typeof deepAnalysisSchema>;
 export const economyRewardsSeenSchema = z.object({
   ledgerIds: z.array(z.string().uuid()).min(1).max(100),
 });
+
+/** Confirm exactly the displayed price and capacity increment, including concurrent tabs. */
+export const notebookSlotPurchaseSchema = z.object({
+  expectedCost: z.number().int().min(1).max(100000),
+  expectedPurchasedSlots: z.number().int().min(0).max(50),
+});
+export type NotebookSlotPurchase = z.infer<typeof notebookSlotPurchaseSchema>;

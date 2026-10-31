@@ -68,16 +68,28 @@ http://localhost:3000/panel               # daily ritual hub
 ## Geliştirmeler (timeline)
 
 - **2026-10-31 · Landing paper notes flutter.**
-  - **What it does:** a taped note lifts from its bottom edge toward you while the tape holds the
-    top. It is one damped breeze of 1.6s (`paper-flutter` in `city-stage.css`), and it never
-    restarts mid-breeze.
-  - **Trigger:** `usePaperFlutter(root)` marks `[data-flutter]` notes `on` and clears them when the
-    animation ends.
+  - **What it does:** a taped note bends like a sheet of paper in a breeze. The tape holds the top,
+    the lower part curls up and its bottom edge ripples from one side to the other, then the paper
+    falls back flat (1.7s, never restarted mid-breeze).
+  - **Revision:** a first version tilted the whole note like a card (rotateX keyframes). The owner
+    wanted paper, so it was replaced, after an inline comparison where they chose "A · Alttan dalga"
+    at that strength.
+  - **How:**
+    - `paper-flutter.ts` gives each note its own SVG filter and drives it with rAF.
+      `feDisplacementMap` pulls the lower paper up along a half-size canvas map (G = curl, B = shade)
+      that slides sideways.
+    - The filter is removed when the breeze ends, so a resting note stays crisp.
+    - `--flutter-amp` (unitless px) sets the lift: 58 for notes, 44 for city notes, 40 for the
+      cookie card. 0 keeps a note still.
+  - **Trigger:** `usePaperFlutter(root)` sets `data-flutter="on"` while the note bends, `""` at rest.
     - With a mouse, it runs when the pointer comes over a note.
     - On touch screens (`(hover: none)`), it runs once, the first time the note is 35% in view.
-  - **Where:** the city notes (desktop only; on phones they are the bottom sheet), Sabah masası and
-    Odak odası. The landing cookie card runs it once as it opens.
-  - **Amplitude:** the big city notes move less (5° instead of 9°). Reduced motion turns it off.
+    - `useCookieCardFlutter` waits for the cookie card and bends it once as it opens.
+  - **Where:** the city notes (desktop only; on phones they are the bottom sheet, `--flutter-amp: 0`),
+    Sabah masası and Odak odası. Reduced motion turns it off.
+  - **Browsers:** checked on a production build in Chromium and Firefox. WebKit is not installed for
+    Playwright here, so Safari is unchecked. WebKit has open bugs for SVG filters with
+    `backdrop-filter` and inside `foreignObject`, not for plain `filter: url()`.
   - **Gotcha:** the e2e "mobile" project sets only the viewport and reports `(hover: none)` as
     false. To see the arrival breeze in a test, open a context with `isMobile` and `hasTouch`.
 

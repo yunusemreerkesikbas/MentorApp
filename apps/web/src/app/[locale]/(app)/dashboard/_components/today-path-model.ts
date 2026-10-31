@@ -99,7 +99,7 @@ export function buildTodayPath(
 
   const chestQuest = quests?.find((quest) => quest.id === CHEST_QUEST_ID);
   const chest: PathChest | null =
-    chestQuest && chestQuest.progressTarget
+    chestQuest && chestQuest.rewardUnit === "COIN" && chestQuest.progressTarget
       ? {
           current: Math.min(chestQuest.progressCurrent ?? 0, chestQuest.progressTarget),
           target: chestQuest.progressTarget,

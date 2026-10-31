@@ -10,6 +10,7 @@ const FAKE_TX = {} as never;
 
 async function makeSetup(opts?: {
   isPremium?: boolean;
+  purchasedSlots?: number;
   usage?: {
     entryCount?: number;
     photoCount?: number;
@@ -26,6 +27,7 @@ async function makeSetup(opts?: {
 }) {
   const entitlement = new CoachingEntitlementRegistry();
   entitlement.register(async () => opts?.isPremium ?? false);
+  entitlement.registerNotebookSlots(async () => opts?.purchasedSlots ?? 0);
 
   const usage = {
     entryCount: opts?.usage?.entryCount ?? 0,
@@ -68,6 +70,13 @@ async function makeSetup(opts?: {
 }
 
 describe("NotebookQuotaService", () => {
+  it("adds purchased capacity without raising page, entry or photo quotas", async () => {
+    const { service, policy } = await makeSetup({ purchasedSlots: 2, usage: { customNotebookCount: 2 } });
+    expect(await service.resolveLimits(FAKE_TX, USER_ID, policy)).toMatchObject({
+      isPremium: false, maxCustomNotebooks: 3, maxPages: 20, maxEntries: 50, maxPhotos: 5,
+    });
+    await expect(service.assertCanCreateCustomNotebook(FAKE_TX, USER_ID, policy)).resolves.toBeUndefined();
+  });
   it("does not grow grandfathered page allowance from the current row count", async () => {
     const { service, policy } = await makeSetup({ existingPages: new Set([...Array.from({ length: 20 }, (_, index) => index), 25]) });
     await expect(

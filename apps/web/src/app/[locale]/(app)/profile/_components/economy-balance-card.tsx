@@ -10,6 +10,7 @@ import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-c
 import { useEconomySnapshot } from "@/lib/economy-store";
 import { fetchEconomyLedger } from "@/lib/economy";
 import { coachReturnHref } from "@/lib/community-coach-bridge";
+import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 
 type LedgerState =
   | { status: "loading" }
@@ -20,6 +21,7 @@ type LedgerState =
  * Earned XP + confirmed coin on the profile hub only (never in chat §4 #3).
  */
 export function EconomyBalanceCard() {
+  const economyEnabled = useEconomyEnabled();
   const snapshot = useEconomySnapshot();
   const balance = snapshot.balance;
   const router = useRouter();
@@ -29,6 +31,7 @@ export function EconomyBalanceCard() {
   const [ledger, setLedger] = useState<LedgerState>({ status: "loading" });
 
   useEffect(() => {
+    if (!economyEnabled) return;
     let active = true;
     fetchEconomyLedger()
       .then((entries) => {
@@ -40,13 +43,14 @@ export function EconomyBalanceCard() {
     return () => {
       active = false;
     };
-  }, [snapshot.revision]);
+  }, [snapshot.revision, economyEnabled]);
 
   const dateFormatter = useMemo(
     () => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }),
     [locale],
   );
 
+  if (!economyEnabled) return null;
   if (snapshot.error) return <Card><p role="alert">{translate("balance_error")}</p></Card>;
   if (!balance) return <Card><p role="status">{translate("balance_loading")}</p></Card>;
 

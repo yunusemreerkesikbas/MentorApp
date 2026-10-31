@@ -1,5 +1,9 @@
 {
   "ledger": {
+    "notebookSlot": {
+      "title": "Extra notebook capacity unlocked",
+      "description": "Coin unlocked permanent capacity for one more custom notebook."
+    },
     "questXp": { "title": "Quest XP" },
     "questReward": {
       "title": "Quest right"

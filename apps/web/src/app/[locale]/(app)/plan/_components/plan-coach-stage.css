@@ -1,0 +1,179 @@
+/*
+ * "Şehrin üstünde" (DESIGN.md §9.1): the "Koçla planla" waiting scene. Puhu over the landing's
+ * night city, the coach's evidence dropping in as paper notes. Always night, so it keeps one
+ * palette and never follows `html.dark`. Values come from the approved design canvas.
+ */
+.plan-coach-night {
+  /* The first stop is the video's own ground (#08113A), so the clip has no visible edge. */
+  background:
+    radial-gradient(1.4px 1.4px at 11% 15%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 88% 11%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1.2px 1.2px at 79% 32%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 20% 41%, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1px 1px at 50% 4%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1.3px 1.3px at 69% 20%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 33% 25%, rgba(255, 255, 255, 0.4), transparent),
+    linear-gradient(to bottom, #08113a 0%, #09133d 52%, #132552 74%, #1b3563 100%);
+  /* The scene's own palette (the landing's paper language, `city-stage.css` `.lc-root`). */
+  --pcs-on-night: #ffffff;
+  --pcs-on-night-soft: #c9d6ea;
+  --pcs-caption: #e4ecf8;
+  --pcs-lamp: #ffd15c;
+  --pcs-paper: #fffdf6;
+  --pcs-sheet-1: #f9f5ea;
+  --pcs-sheet-2: #f4efe2;
+  --pcs-ink: #0f2233;
+  --pcs-label: #1a5fa3;
+  --pcs-tape: rgba(255, 224, 138, 0.88);
+  color: var(--pcs-on-night);
+  /* OnboardingStepLayout paints with these; on the night sky they go see-through or light. */
+  --color-bg: transparent;
+  --blob-pink: transparent;
+  --blob-blue: transparent;
+  --color-main: var(--pcs-on-night);
+  --color-secondary: var(--pcs-on-night-soft);
+  --play-track: rgba(255, 255, 255, 0.14);
+  --color-focus-ring: var(--pcs-lamp);
+
+  /*
+   * The city art is 3:2. Tall enough for big buildings on a phone, and never narrower than the
+   * screen. The mid layer's tallest tower starts 31.2% down its art, so `--pcs-city-lift` pushes
+   * the layers down until that tower stands 38dvh above the bottom on wide screens: Puhu's video
+   * (34dvh / 38dvh, under the heading) always ends above it.
+   */
+  --pcs-city-h: max(min(400px, 42dvh), 66.667vw);
+  --pcs-city-lift: calc(38dvh - 0.688 * var(--pcs-city-h));
+  /* How far the art reaches past each side of the screen; the mid layer's offset stays inside it. */
+  --pcs-city-slack: calc((1.5 * var(--pcs-city-h) - 100vw) / 2);
+}
+
+.pcs-city {
+  position: absolute;
+  left: 50%;
+  height: var(--pcs-city-h);
+  width: auto;
+  max-width: none;
+  transform: translateX(-50%);
+}
+.pcs-city-far {
+  bottom: min(0px, calc(var(--pcs-city-lift) + 20px));
+}
+.pcs-city-mid {
+  bottom: min(-26px, var(--pcs-city-lift));
+  transform: translateX(calc(-50% + min(20px, var(--pcs-city-slack))));
+}
+.pcs-city-front {
+  bottom: min(-40px, calc(var(--pcs-city-lift) - 20px));
+}
+.pcs-shade {
+  position: absolute;
+  inset: auto 0 0;
+  height: 120px;
+  background: linear-gradient(to bottom, rgba(5, 12, 30, 0), rgba(5, 12, 30, 0.78));
+}
+
+.pcs-video {
+  display: block;
+  width: clamp(200px, 34dvh, 320px);
+  aspect-ratio: 1;
+  object-fit: cover;
+  -webkit-mask-image: radial-gradient(circle at 50% 48%, #000 50%, transparent 69%);
+  mask-image: radial-gradient(circle at 50% 48%, #000 50%, transparent 69%);
+}
+@media (width >= 48rem) {
+  .pcs-video {
+    width: min(350px, 38dvh);
+  }
+}
+
+/* Paper notes. */
+.pcs-paper {
+  background: var(--pcs-paper);
+  color: var(--pcs-ink);
+  border-radius: 4px 4px 7px 7px;
+  box-shadow:
+    0 2px 4px rgba(3, 10, 24, 0.18),
+    0 28px 46px -20px rgba(3, 10, 24, 0.72);
+}
+.pcs-sheet {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px 4px 7px 7px;
+  box-shadow:
+    0 2px 4px rgba(3, 10, 24, 0.18),
+    0 20px 36px -20px rgba(3, 10, 24, 0.7);
+}
+.pcs-sheet-1 {
+  top: 4px;
+  background: var(--pcs-sheet-1);
+  transform: rotate(-3deg);
+}
+.pcs-sheet-2 {
+  top: 10px;
+  background: var(--pcs-sheet-2);
+  transform: rotate(3.2deg);
+}
+.pcs-tape {
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  width: 78px;
+  height: 22px;
+  margin-left: -39px;
+  border-radius: 2px;
+  background: var(--pcs-tape);
+  transform: rotate(-3deg);
+}
+.pcs-hand {
+  font-family: "Caveat Variable", "Segoe Print", cursive;
+}
+
+/* A new note falls from under Puhu, lands with a small bounce, and settles a little crooked. */
+@keyframes pcs-note-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-150px) rotate(-10deg) scale(0.9);
+  }
+  52% {
+    opacity: 1;
+    transform: translateY(8px) rotate(0.5deg) scale(1);
+  }
+  75% {
+    transform: translateY(-2px) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(-1.5deg);
+  }
+}
+.pcs-note-top {
+  transform: rotate(-1.5deg);
+  transform-origin: 50% 0;
+  animation: pcs-note-drop 0.9s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+
+/* The answer landed: the pile hops once and slides off while the ready title shows. */
+@keyframes pcs-pile-leave {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  18% {
+    transform: translateY(-14px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(48px);
+    opacity: 0;
+  }
+}
+.pcs-leave {
+  animation: pcs-pile-leave 1.2s ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pcs-note-top,
+  .pcs-leave {
+    animation: none;
+  }
+}

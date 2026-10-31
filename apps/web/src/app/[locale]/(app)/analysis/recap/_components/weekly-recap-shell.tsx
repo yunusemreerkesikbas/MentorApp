@@ -24,6 +24,7 @@ import { narrateWeeklyReview } from "@/lib/coach";
 import { fetchDeepAnalysis, purchaseDeepAnalysis, notifyEconomyChanged } from "@/lib/economy";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
+import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 import { isPremiumRequiredError } from "@/lib/premium-required";
 import {
   buildWeeklyRecapShareCardModel,
@@ -57,6 +58,7 @@ export type NarrationState =
   | { status: "ready"; data: WeeklyReviewNarrationDto };
 
 export function WeeklyRecapShell() {
+  const economyEnabled = useEconomyEnabled();
   const t = useTranslations("analysis.recap");
   const locale = useLocale();
   const router = useRouter();
@@ -142,7 +144,7 @@ export function WeeklyRecapShell() {
           });
         }
 
-        if (review.recap.status !== "READY") return;
+        if (review.recap.status !== "READY" || !economyEnabled) return;
         setAccess({ status: "loading" });
         void fetchDeepAnalysis(examId)
           .then((view) => {
@@ -174,6 +176,7 @@ export function WeeklyRecapShell() {
       cancelled = true;
     };
   }, [
+    economyEnabled,
     loadAttempt,
     loadNarration,
     requestedExamId,
@@ -291,7 +294,7 @@ export function WeeklyRecapShell() {
   }, [review, shareBusy, t, toast]);
 
   const handleUnlock = useCallback(async () => {
-    if (state.status !== "ready" || access.status !== "ready") return;
+    if (!economyEnabled || state.status !== "ready" || access.status !== "ready") return;
     if (!unlockArmed) {
       setUnlockArmed(true);
       return;
@@ -319,7 +322,7 @@ export function WeeklyRecapShell() {
       setUnlockBusy(false);
       setUnlockArmed(false);
     }
-  }, [access, loadNarration, openPaywall, state, t, toast, unlockArmed]);
+  }, [access, economyEnabled, loadNarration, openPaywall, state, t, toast, unlockArmed]);
 
   if (state.status === "loading") {
     return (
@@ -435,7 +438,7 @@ export function WeeklyRecapShell() {
           <PuhuNoteSheet
             review={state.review}
             narration={narration}
-            access={access}
+          access={economyEnabled ? access : { status: "unavailable" }}
             unlockArmed={unlockArmed}
             unlockBusy={unlockBusy}
             onUnlock={() => void handleUnlock()}

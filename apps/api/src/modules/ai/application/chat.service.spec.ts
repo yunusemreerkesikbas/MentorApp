@@ -312,18 +312,46 @@ describe("ChatService coin refund", () => {
     );
   });
 
-  it("does not refund on idempotent retry when spend was already recorded", async () => {
+  it("rejects an already-used Coin request before the model without another refund", async () => {
     spend.mockResolvedValue({
       balance: { coinConfirmed: 5 },
       alreadySpent: true,
     });
     llmComplete.mockRejectedValue(new Error("LLM down"));
 
-    await expect(service.reply(USER, "Tekrar", MSG_ID)).rejects.toThrow(
-      "LLM down",
-    );
+    await expect(service.reply(USER, "Tekrar", MSG_ID)).rejects.toMatchObject({ code: "CONFLICT", httpStatus: 409 });
 
     expect(spend).toHaveBeenCalledOnce();
+    expect(grant).not.toHaveBeenCalled();
+    expect(llmComplete).not.toHaveBeenCalled();
+  });
+
+  it("allows only one model completion for repeated or concurrent requests using one Coin reference", async () => {
+    const refs = new Set<string>();
+    spend.mockImplementation(async (_user: string, _cost: number, options: { refId: string }) => {
+      const alreadySpent = refs.has(options.refId);
+      refs.add(options.refId);
+      return { alreadySpent, balance: { coinConfirmed: 5 } };
+    });
+    llmComplete.mockResolvedValue({ text: "Yanıt", promptTokens: 1, completionTokens: 1, model: "fake" });
+    const results = await Promise.allSettled([
+      service.reply(USER, "Paragraf için çalışma önerisi", MSG_ID),
+      service.reply(USER, "Matematik için çalışma önerisi", MSG_ID),
+    ]);
+    expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.find(result => result.status === "rejected")).toMatchObject({ reason: { code: "CONFLICT" } });
+    await expect(service.reply(USER, "Bir başka soru", MSG_ID)).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(llmComplete).toHaveBeenCalledTimes(1);
+    expect(persistExchange).toHaveBeenCalledTimes(1);
+    expect(grant).not.toHaveBeenCalled();
+  });
+
+  it("rejects replay through the streaming endpoint before producing model output", async () => {
+    spend.mockResolvedValue({ alreadySpent: true, balance: { coinConfirmed: 5 } });
+    const stream = service.replyStream(USER, "Tekrar", MSG_ID);
+    await expect(stream.next()).rejects.toMatchObject({ code: "CONFLICT", httpStatus: 409 });
+    expect(llmCompleteStream).not.toHaveBeenCalled();
+    expect(persistExchange).not.toHaveBeenCalled();
     expect(grant).not.toHaveBeenCalled();
   });
 

@@ -12,6 +12,7 @@ import {
 import { COIN_CELEBRATE_EVENT, type CoinCelebrateDetail } from "@/lib/economy";
 import { AnimatePresence } from "framer-motion";
 import { CoinCelebration } from "@/components/coin-celebration";
+import { useEconomyEnabled } from "./use-economy-enabled";
 
 interface CoinCelebrationContextValue {
   triggerCoinCelebration: (amount: number, label?: string) => void;
@@ -24,6 +25,7 @@ interface ActiveCelebration extends CoinCelebrateDetail {
 }
 
 export function CoinCelebrationProvider({ children }: { children: ReactNode }) {
+  const economyEnabled = useEconomyEnabled();
   const [activeItem, setActiveItem] = useState<ActiveCelebration | null>(null);
   const batchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAmountRef = useRef(0);
@@ -51,7 +53,7 @@ export function CoinCelebrationProvider({ children }: { children: ReactNode }) {
 
   const triggerCoinCelebration = useCallback(
     (amount: number, label?: string) => {
-      if (amount <= 0) return;
+      if (!economyEnabled || amount <= 0) return;
       pendingAmountRef.current += amount;
       if (label) pendingLabelRef.current = label;
 
@@ -62,7 +64,7 @@ export function CoinCelebrationProvider({ children }: { children: ReactNode }) {
         batchTimeoutRef.current = null;
       }, 60);
     },
-    [flushBatch],
+    [flushBatch, economyEnabled],
   );
 
   useEffect(() => {
@@ -78,6 +80,9 @@ export function CoinCelebrationProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener(COIN_CELEBRATE_EVENT, handleEvent);
       if (batchTimeoutRef.current) clearTimeout(batchTimeoutRef.current);
+      pendingAmountRef.current = 0;
+      pendingLabelRef.current = undefined;
+      setActiveItem(null);
     };
   }, [triggerCoinCelebration]);
 
@@ -89,7 +94,7 @@ export function CoinCelebrationProvider({ children }: { children: ReactNode }) {
     <CoinCelebrationContext.Provider value={{ triggerCoinCelebration }}>
       {children}
       <AnimatePresence>
-        {activeItem ? (
+        {economyEnabled && activeItem ? (
           <CoinCelebration
             key={activeItem.id}
             amount={activeItem.amount}

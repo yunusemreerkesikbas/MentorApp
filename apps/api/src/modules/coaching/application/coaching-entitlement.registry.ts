@@ -17,6 +17,16 @@ export type IsPremiumResolver = (
 @Injectable()
 export class CoachingEntitlementRegistry {
   private resolver: IsPremiumResolver | null = null;
+  private notebookSlotResolver: ((userId: string) => Promise<number>) | null = null;
+
+  /** Economy registers its durable ledger-backed capacity without a module cycle. */
+  registerNotebookSlots(resolver: (userId: string) => Promise<number>): void {
+    this.notebookSlotResolver = resolver;
+  }
+
+  async notebookSlots(userId: string): Promise<number> {
+    return this.notebookSlotResolver ? this.notebookSlotResolver(userId) : 0;
+  }
 
   register(resolver: IsPremiumResolver): void {
     this.resolver = resolver;

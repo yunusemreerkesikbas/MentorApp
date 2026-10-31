@@ -1,4 +1,5 @@
 import { disableAuthRateLimits } from "./app-harness";
+import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
@@ -8,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UserRole } from "@mentor/types";
 import { buildSystemPrompt } from "../src/modules/ai/domain/ai.constants";
 import { CoachMessageRepository } from "../src/modules/ai/infrastructure/coach-message.repository";
+import { EconomyService } from "../src/modules/economy/application/economy.service";
 
 const RUN = Date.now();
 const PREMIUM_PLAN_ID = "9f1c0a10-0000-4000-8000-00000000ai01";
@@ -591,14 +593,54 @@ describe("ai coach chat (e2e)", () => {
     }
   });
 
-  it("clientMessageId is idempotent (no double spend)", async () => {
+  it("rejects a reused Coin request before another model call or history write", async () => {
     await setConfig("economy.enabled", true);
     await grantCoin(brokeId, 20);
-    const msgId = "00000000-0000-4000-8000-000000000001";
+    const msgId = randomUUID();
     expect((await chat(brokeToken, "Merhaba", msgId)).status).toBe(201);
     const afterFirstBal = await coinBalance(brokeId);
-    expect((await chat(brokeToken, "Merhaba tekrar", msgId)).status).toBe(201);
+    const usageAfterFirst = await aiUsageCount(brokeId);
+    const replay = await chat(brokeToken, "Merhaba tekrar", msgId);
+    expect(replay.status).toBe(409);
+    expect(replay.body.code).toBe("CONFLICT");
+    const streamed = await request(app.getHttpServer()).post("/v1/coach/chat/stream")
+      .set({ Authorization: `Bearer ${brokeToken}` }).send({ message: "Bir başka soru", clientMessageId: msgId });
+    expect(streamed.status).toBe(409);
+    expect(streamed.body.code).toBe("CONFLICT");
     expect(await coinBalance(brokeId)).toBe(afterFirstBal);
+    expect(await aiUsageCount(brokeId)).toBe(usageAfterFirst);
+  });
+
+  it("disabled AI refuses deep-analysis offers and purchases without taking Coin", async () => {
+    await setConfig("economy.enabled", true);
+    await setConfig("ai.enabled", false);
+    const before = await coinBalance(brokeId);
+    const examId = "00000000-0000-4000-8000-000000000001";
+    try {
+      for (const result of [
+        await request(app.getHttpServer()).get(`/v1/economy/deep-analysis?examId=${examId}`).set({ Authorization: `Bearer ${brokeToken}` }),
+        await request(app.getHttpServer()).post("/v1/economy/deep-analysis").set({ Authorization: `Bearer ${brokeToken}` }).send({ examId }),
+      ]) {
+        expect(result.status).toBe(404);
+        expect(result.body.code).toBe("AI_DISABLED");
+      }
+      expect(await coinBalance(brokeId)).toBe(before);
+    } finally {
+      await setConfig("ai.enabled", true);
+    }
+  });
+
+  it("only one user wins a concurrent global spend-reference collision", async () => {
+    await grantCoin(freeId, 10);
+    await grantCoin(brokeId, 10);
+    const before = await coinBalance(freeId) + await coinBalance(brokeId);
+    const economy = app.get(EconomyService);
+    const ref = { reason: "test.concurrent.spend", refType: "test.concurrent.spend", refId: `collision-${RUN}` };
+    const results = await Promise.all([
+      economy.spend(freeId, 5, ref), economy.spend(brokeId, 5, ref),
+    ]);
+    expect(results.filter(result => result.alreadySpent)).toHaveLength(1);
+    expect(await coinBalance(freeId) + await coinBalance(brokeId)).toBe(before - 5);
   });
 
   it("ai.enabled=false → 404 (global kill-switch)", async () => {

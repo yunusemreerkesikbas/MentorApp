@@ -128,6 +128,58 @@ const QUESTS: QuestProgressView[] = [
   },
 ];
 
+test("closed economy keeps ritual progress and core actions without XP/Coin", async ({ page }, testInfo) => {
+  const api = await mockPanel(page, [task(FIRST_TASK, "Paragraf: 20 soru", "PENDING")]);
+  await page.route("**/v1/economy/quests", route => json(route,
+    QUESTS.map(quest => ({ ...quest, completed: api.taskPatches.length > 0, rewardUnit: "NONE", rewardAmount: 0, rewardCoin: 0 })),
+  ));
+  await page.goto("/panel");
+  await expect(page.getByTestId("panel-quests-card")).toBeVisible();
+  await expect(page.getByLabel("Coin ve XP", { exact: true })).toHaveCount(0);
+  await page.clock.install();
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("mentor:coin-celebrate", { detail: { amount: 10 } })));
+  await page.clock.runFor(500);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.clock.resume();
+  await page.screenshot({ path: testInfo.outputPath("rituals-without-rewards.png") });
+  await expect(page.getByTestId("panel-quests-card")).not.toContainText(/XP|Coin/);
+  await page.getByRole("button", { name: "Tüm görevler", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Planından 1 görev tamamla");
+  await expect(page.getByRole("dialog")).not.toContainText(/XP|Coin/);
+  await page.getByRole("dialog").getByRole("button", { name: "Kapat", exact: true }).click();
+  await page.getByTestId("today-path-node").first().click();
+  await page.getByRole("menuitem", { name: "Bitti olarak işaretle" }).click();
+  await expect.poll(() => api.taskPatches.length).toBe(1);
+  await expect(page.getByTestId("panel-quests-card")).toContainText("1/1");
+  await expect(page.getByLabel("Coin ve XP", { exact: true })).toHaveCount(0);
+});
+
+test("closing economy removes rewards from an open sheet and clears nav balance", async ({ page }) => {
+  let enabled = true;
+  await mockPanel(page, [task(FIRST_TASK, "Paragraf: 20 soru", "PENDING")]);
+  await page.route("**/v1/economy/quests", route => json(route,
+    enabled ? QUESTS : QUESTS.map(quest => ({ ...quest, rewardUnit: "NONE", rewardAmount: 0, rewardCoin: 0 })),
+  ));
+  await page.route("**/v1/economy/balance", route => json(route, enabled ? {
+    xp: 411, coinConfirmed: 20, coinPending: 0,
+    level: { tier: 3, xp: 411, nextAt: 600, key: "compass", chapter: "awakening", currentAt: 300, nextKey: "cycle", progress: { current: 111, target: 300, remaining: 189, percent: 37 } },
+  } : { code: "ECONOMY_DISABLED", message: "Kapalı" }, enabled ? 200 : 404));
+  await page.route("**/v1/economy/rewards/unseen**", route => json(route,
+    enabled ? { items: [], total: 0, page: 1, pageSize: 20 } : { code: "ECONOMY_DISABLED", message: "Kapalı" },
+    enabled ? 200 : 404,
+  ));
+  await page.goto("/panel");
+  await expect(page.locator('[aria-label="Coin ve XP"]:visible').first()).toBeVisible();
+  await page.getByRole("button", { name: "Tüm görevler", exact: true }).click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet).toContainText("+5 XP");
+  enabled = false;
+  await page.evaluate(() => window.dispatchEvent(new Event("mentor:economy-changed")));
+  await expect(sheet).toContainText("Planından 1 görev tamamla");
+  await expect(sheet).not.toContainText(/XP|Coin/);
+  await expect(page.getByLabel("Coin ve XP", { exact: true })).toHaveCount(0);
+});
+
 const corsHeaders = {
   "access-control-allow-origin": process.env.PLAYWRIGHT_BASE_URL?.trim() || "http://localhost:3100",
   "access-control-allow-credentials": "true",
@@ -144,6 +196,7 @@ function json(route: Route, body: unknown, status = 200) {
 
 async function mockPanel(page: Page, initialTasks: PlanTaskDto[]) {
   const tasks = initialTasks.map((item) => ({ ...item }));
+  let mood: MoodCheckinDto | null = null;
   const moodBodies: unknown[] = [];
   const taskPatches: { id: string; body: unknown }[] = [];
 
@@ -192,7 +245,7 @@ async function mockPanel(page: Page, initialTasks: PlanTaskDto[]) {
       });
     }
     if (method === "GET" && path === "/v1/coaching/today") {
-      return json(route, today(tasks));
+      return json(route, { ...today(tasks), mood });
     }
     if (method === "PATCH" && path.startsWith("/v1/plan-tasks/")) {
       const id = path.split("/").pop()!;
@@ -213,6 +266,7 @@ async function mockPanel(page: Page, initialTasks: PlanTaskDto[]) {
         struggleNote: null,
         aiReflection: null,
       };
+      mood = saved;
       return json(route, saved);
     }
     if (method === "GET" && path === "/v1/economy/quests") return json(route, QUESTS);

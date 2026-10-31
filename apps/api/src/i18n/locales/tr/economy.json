@@ -1,5 +1,9 @@
 {
   "ledger": {
+    "notebookSlot": {
+      "title": "Ek defter kapasitesi açıldı",
+      "description": "Coin ile kalıcı +1 özel defter kapasitesi eklendi."
+    },
     "questXp": { "title": "Görev XP’si" },
     "questReward": {
       "title": "Görev Coin’i"
