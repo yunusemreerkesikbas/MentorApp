@@ -67,6 +67,19 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-31 · Landing and /koclar copy: energetic Puhu.** The owner chose a Duolingo-like voice
+  for `/` and less of the night-city metaphor in the words (the art keeps it).
+  - **Copy only:** `landing.*` and `coaches.*` in `messages/{tr,en}.json`; no component changed.
+    Hero is now "Her gün biraz, hep birlikte." (the `<glow>` tag stays). The career stop reads "Bu oda
+    boş. Senin olsun mu?" → "Hoş geldin, komşu!". Quest titles, FAQ answers, the coach demo replies
+    and the cookie card were left as they were (companion register, or API copy).
+  - **Rule:** `docs/copy/voice.md` "Landing: enerjik Puhu" replaces the 2026-10-28 no-`!` rule.
+    `/koclar` stays plain with one `!`, on its closing title.
+  - **Tests:** `landing.spec.ts` expected headings updated (hero, doorbell label, career stop,
+    Masa note, Sabah masası notes, Odak title). Not run here: landing e2e needs a production build.
+  - **Gotcha:** the spec `docs/superpowers/specs/2026-10-27-landing-isikli-sehir-design.md` still
+    quotes the old copy; it is a record of the first round, not the source.
+
 - **2026-10-31 · Landing paper notes flutter.**
   - **What it does:** a taped note bends like a sheet of paper in a breeze. The tape holds the top,
     the lower part curls up and its bottom edge ripples from one side to the other, then the paper

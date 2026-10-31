@@ -10,9 +10,9 @@ import {
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
-import { ShimmerText, StreamingText } from "@mentor/ui";
+import { Button, ShimmerText, StreamingText } from "@mentor/ui";
 import { PuhuSpeakingMascot } from "./puhu-speaking-mascot";
-import { PuhuSpeechBubble } from "./puhu-thought-cloud";
+import { PUHU_FADE, PUHU_MASCOT, PuhuSpeechBubble } from "./puhu-thought-cloud";
 
 export interface PuhuSpeechModalProps {
   /** Controls overlay visibility */
@@ -94,80 +94,58 @@ export function PuhuSpeechModal({
 
   if (typeof document === "undefined") return null;
 
+  // The container only hands the labels down (puhu-thought-cloud.tsx owns the timeline). The fade
+  // sits on the backdrop itself: an ancestor with opacity < 1 cuts backdrop-filter off from the
+  // page, so the blur used to snap in when the fade ended.
   return createPortal(
     <AnimatePresence>
       {isOpen ? (
         <motion.div
+          key="puhu-speech"
           className="fixed inset-0 z-[120] flex items-center justify-center overflow-visible p-5 sm:p-10 select-none"
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.22, ease: "easeOut" }}
+          initial="hidden"
+          animate="shown"
+          exit="gone"
         >
-          {/* Glassmorphic darkened backdrop with blur */}
-          <div
+          <motion.div
             aria-hidden="true"
+            variants={PUHU_FADE}
             className="absolute inset-0 bg-black/65 backdrop-blur-md cursor-pointer"
             onClick={() => {
               if (dismissOnBackdrop) onClose();
             }}
           />
 
-          {/* Top-right prominent glassmorphic Close button */}
           <motion.button
             type="button"
+            variants={PUHU_FADE}
             onClick={(e) => {
               e.stopPropagation();
               onClose();
             }}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.18 }}
             aria-label={closeAriaLabel}
             className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 flex size-11 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/80 hover:text-white border border-white/20 backdrop-blur-md transition-all cursor-pointer shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
           >
             <X className="size-5" />
           </motion.button>
 
-          {/* Dialogue stage: bubble above Puhu on mobile; Puhu then bubble on desktop */}
+          {/* Dialogue stage: cloud above Puhu on phones; Puhu below the cloud's left on desktop */}
           <div
-            className="relative z-10 flex w-full max-w-sm flex-col items-center overflow-visible pointer-events-auto sm:max-w-xl sm:flex-row sm:items-center"
+            className="relative z-10 flex w-full max-w-sm flex-col items-center overflow-visible pointer-events-auto sm:max-w-xl sm:flex-row sm:items-end"
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
-              className="relative z-20 order-2 isolate mt-3 shrink-0 size-24 sm:order-1 sm:mt-0 sm:size-28 flex items-center justify-center"
-              initial={
-                reduceMotion
-                  ? { opacity: 0 }
-                  : { opacity: 0, scale: 0.85, y: 14 }
-              }
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.28, ease: "easeOut" }}
+              variants={reduceMotion ? PUHU_FADE : PUHU_MASCOT}
+              className="relative z-20 order-2 isolate mt-3 shrink-0 size-24 origin-bottom sm:order-1 sm:mt-0 sm:size-28"
             >
               <PuhuSpeakingMascot isSpeaking={isSpeaking} isLoading={isLoading} />
             </motion.div>
 
-            <motion.div
-              className="relative z-10 order-1 min-w-0 w-full sm:order-2 sm:flex-1 select-text overflow-visible"
-              initial={
-                reduceMotion
-                  ? { opacity: 0 }
-                  : { opacity: 0, scale: 0.96, y: 8 }
-              }
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={
-                reduceMotion
-                  ? { opacity: 0 }
-                  : { opacity: 0, scale: 0.96, transition: { duration: 0.15 } }
-              }
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              onAnimationComplete={() => { if (isOpen) setEntered(true); }}
-            >
-              <PuhuSpeechBubble>
+            <div className="relative z-10 order-1 min-w-0 w-full sm:order-2 sm:flex-1 select-text overflow-visible">
+              <PuhuSpeechBubble onShown={() => setEntered(true)}>
                 {badgeText ? (
                   <div id={titleId} className="flex items-center gap-2 mb-3">
                     {badgeIcon}
@@ -177,7 +155,10 @@ export function PuhuSpeechModal({
                   </div>
                 ) : null}
 
-                <div className="flex items-center">
+                {/* While Puhu thinks, hold the room a mood note takes (2–3 sentences, ai.constants:
+                    ~5 body lines of 1.625rem on a phone, ~4 on desktop) and the CTA's slot, so the
+                    note lands without resizing the cloud. */}
+                <div className={`flex items-center ${isLoading ? "min-h-[8.125rem] sm:min-h-[6.5rem]" : ""}`}>
                   {isLoading ? (
                     <p className="text-base font-medium text-[var(--color-secondary)] py-1">
                       <ShimmerText text={loadingText} />
@@ -197,34 +178,20 @@ export function PuhuSpeechModal({
                   )}
                 </div>
 
-                {actionLabel && (!isLoading || streamFinished) ? (
+                {actionLabel ? (
                   <motion.div
-                    className="mt-3 flex justify-stretch sm:justify-end"
-                    initial={
-                      reduceMotion
-                        ? { opacity: 0 }
-                        : { opacity: 0, scale: 0.9, y: 4 }
-                    }
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
+                    className={`mt-4 flex sm:justify-end ${isLoading && !streamFinished ? "invisible" : ""}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: isLoading && !streamFinished ? 0 : 1 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (onAction) {
-                          onAction();
-                        } else {
-                          onClose();
-                        }
-                      }}
-                      className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-[var(--radius-card)] sm:rounded-full px-6 py-2 text-sm font-bold bg-[var(--color-btn)] text-[var(--color-btn-label)] hover:opacity-90 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                    >
+                    <Button size="sm" fullWidth className="sm:w-fit" onClick={onAction ?? onClose}>
                       {actionLabel}
-                    </button>
+                    </Button>
                   </motion.div>
                 ) : null}
               </PuhuSpeechBubble>
-            </motion.div>
+            </div>
           </div>
         </motion.div>
       ) : null}

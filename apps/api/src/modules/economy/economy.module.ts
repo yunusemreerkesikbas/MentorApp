@@ -26,6 +26,10 @@ import { InvitePreviewController } from "./presentation/invite-preview.controlle
 import { NotebookSlotService } from "./application/notebook-slot.service";
 import { NotebookSlotRepository } from "./infrastructure/notebook-slot.repository";
 import { NotebookSlotsController } from "./presentation/notebook-slots.controller";
+import { EconomyUsesController } from "./presentation/economy-uses.controller";
+import { EconomyUsesRegistry } from "./application/economy-uses.registry";
+import { EconomyUsesService } from "./application/economy-uses.service";
+import { WeeklyAnalysisAccessRegistry } from "./application/weekly-analysis-access.registry";
 
 /**
  * W6 — Light economy (§3). Slice 1: ledger + balances + reward engine + admin adjust. Slice 2a:
@@ -34,13 +38,16 @@ import { NotebookSlotsController } from "./presentation/notebook-slots.controlle
  */
 @Module({
   imports: [PaymentsModule, IdentityModule, CoachingModule],
-  controllers: [EconomyController, InvitePreviewController, NotebookSlotsController],
+  controllers: [EconomyController, InvitePreviewController, NotebookSlotsController, EconomyUsesController],
   providers: [
     RewardReceiptService,
     QuestTriggerService,
     RewardReceiptRepository,
     EconomyService,
     NotebookSlotService,
+    EconomyUsesRegistry,
+    WeeklyAnalysisAccessRegistry,
+    EconomyUsesService,
     NotebookSlotRepository,
     EconomyStatsService,
     LedgerRepository,
@@ -59,6 +66,8 @@ import { NotebookSlotsController } from "./presentation/notebook-slots.controlle
     ThreadPostedListener,
   ],
   exports: [
+    WeeklyAnalysisAccessRegistry,
+    EconomyUsesRegistry,
     EconomyService,
     EconomyStatsService,
     InviteService,

@@ -1,5 +1,9 @@
 import type { DailyQuestSignals } from "../../coaching/application/daily-quest-signal.service";
-import { QuestType, type QuestDef } from "../domain/quest.catalog";
+import {
+  QUEST_PERIOD_ONCE,
+  QuestType,
+  type QuestDef,
+} from "../domain/quest.catalog";
 
 export interface QuestConfig {
   onboardingRewardCoin: number;
@@ -66,4 +70,17 @@ export function coinReward(q: QuestDef, cfg: QuestConfig): number {
 
 export function isEconomyAction(quest: QuestDef): boolean {
   return quest.action === "subscription" || quest.action === "invite";
+}
+
+export function questPeriodKey(
+  q: QuestDef,
+  signals: DailyQuestSignals,
+): string {
+  if (q.type === QuestType.DAILY_RITUAL) return signals.date;
+  if (q.type === QuestType.WEEKLY_RITUAL) return signals.weekKey;
+  return QUEST_PERIOD_ONCE;
+}
+
+export function activeQuestPeriodKeys(signals: DailyQuestSignals): string[] {
+  return [QUEST_PERIOD_ONCE, signals.date, signals.weekKey];
 }

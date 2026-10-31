@@ -1,0 +1,56 @@
+name: Trial maintenance
+
+# Render Free has no cron service, so the core trial calls its two daily dispatches from here.
+# Both are deduped per user per UTC day: a manual re-run on the same day sends no second nudge.
+# The daily reminder call also purges expired auth-rate, phone and phone-trial rows.
+# Payments, coaching, AI, ads and forum stay closed in the trial, so their triggers are not called.
+on:
+  schedule:
+    - cron: "0 6 * * *" # 09:00 TRT, the paid Blueprint's reminder hour
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: trial-maintenance
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # The API's Render origin (https://<service>.onrender.com): the edge-origin middleware lets
+      # only health GETs and cron-secret POSTs through it, so Cloudflare bot rules are not in the path.
+      API_ORIGIN: ${{ vars.TRIAL_API_ORIGIN }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Wake the API and dispatch daily reminders
+        run: |
+          if [ -z "$API_ORIGIN" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::notice::TRIAL_API_ORIGIN or CRON_SECRET is not set; nothing dispatched."
+            exit 0
+          fi
+          case "$API_ORIGIN" in https://*) ;; *) echo "::error::TRIAL_API_ORIGIN must be https"; exit 1;; esac
+
+          # A sleeping Free instance takes about a minute to wake; allow three before giving up.
+          ready=0
+          for attempt in $(seq 1 18); do
+            if curl --fail --silent --max-time 10 --output /dev/null "$API_ORIGIN/v1/health/ready"; then
+              ready=1; break
+            fi
+            sleep 10
+          done
+          [ "$ready" = 1 ] || { echo "::error::API did not become ready"; exit 1; }
+
+          # One attempt per dispatch, no retry: inspect state before repeating a failed run.
+          # Bodies stay out of this public log; only the status code is printed.
+          status=0
+          for path in dispatch-daily-reminders dispatch-notebook-reviews; do
+            code=$(curl --silent --connect-timeout 10 --max-time 60 --output /dev/null \
+              --write-out "%{http_code}" --request POST \
+              --header "x-cron-secret: $CRON_SECRET" "$API_ORIGIN/v1/internal/cron/$path") || code=000
+            echo "$path -> HTTP $code"
+            case "$code" in 2??) ;; *) status=1;; esac
+          done
+          exit "$status"

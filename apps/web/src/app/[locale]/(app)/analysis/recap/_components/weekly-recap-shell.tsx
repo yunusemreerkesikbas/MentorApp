@@ -1,5 +1,5 @@
 "use client";
-import { CalendarPlus, Check, Lock, Share2, Sparkles, X } from "lucide-react";
+import { CalendarPlus, Share2, Sparkles } from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -16,7 +16,7 @@ import {
   contentControllerCalendarByFamily,
   usersControllerMe,
 } from "@mentor/api-client";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, useReducedMotion } from "framer-motion";
 import { PuhuImage } from "@/components/puhu-image";
 import { Link, useRouter } from "@/i18n/navigation";
 import { trackWeeklyRecapEvent } from "@/lib/analytics";
@@ -37,6 +37,7 @@ import {
 } from "@/lib/weekly-recap";
 import { completeWeeklyReview, fetchWeeklyReview } from "@/lib/weekly-recap-api";
 import { renderWeeklyRecapShareCard } from "@/lib/weekly-recap-share-card";
+import { PuhuNoteSheet } from "./weekly-recap-puhu-note";
 import { WeeklyRecapContentSkeleton } from "./weekly-recap-content-skeleton";
 import {
   WeeklyRecapStory,
@@ -49,7 +50,7 @@ type LoadState =
   | { status: "error"; message: string }
   | { status: "ready"; examId: string; review: WeeklyReviewDto };
 
-type AccessState =
+export type AccessState =
   | { status: "idle" | "loading" | "unavailable" }
   | { status: "ready"; view: DeepAnalysisView };
 
@@ -294,7 +295,7 @@ export function WeeklyRecapShell() {
   }, [review, shareBusy, t, toast]);
 
   const handleUnlock = useCallback(async () => {
-    if (!economyEnabled || state.status !== "ready" || access.status !== "ready") return;
+    if (!economyEnabled || state.status !== "ready" || access.status !== "ready" || !access.view.generationAvailable) return;
     if (!unlockArmed) {
       setUnlockArmed(true);
       return;
@@ -313,10 +314,20 @@ export function WeeklyRecapShell() {
         void loadNarration(state.examId);
       }
     } catch (error) {
+      if (
+        error instanceof ApiClientError &&
+        error.body.code === "AI_BUDGET_EXCEEDED"
+      ) {
+        setAccess((current) =>
+          current.status === "ready"
+            ? { status: "ready", view: { ...current.view, generationAvailable: false } }
+            : current,
+        );
+      }
       if (isPremiumRequiredError(error)) {
         openPaywall({ sourceFeature: "deep.analysis" });
       } else {
-        toast.error({ title: t("unlock.error") });
+        toast.error({ title: error instanceof ApiClientError ? error.message : t("unlock.error") });
       }
     } finally {
       setUnlockBusy(false);
@@ -438,7 +449,7 @@ export function WeeklyRecapShell() {
           <PuhuNoteSheet
             review={state.review}
             narration={narration}
-          access={economyEnabled ? access : { status: "unavailable" }}
+            access={economyEnabled ? access : { status: "unavailable" }}
             unlockArmed={unlockArmed}
             unlockBusy={unlockBusy}
             onUnlock={() => void handleUnlock()}
@@ -521,138 +532,6 @@ function FinalStoryDock({
   );
 }
 
-function PuhuNoteSheet({
-  review,
-  narration,
-  access,
-  unlockArmed,
-  unlockBusy,
-  onUnlock,
-  onOpenPaywall,
-  onClose,
-  reducedMotion,
-  t,
-}: {
-  review: WeeklyReviewDto;
-  narration: NarrationState;
-  access: AccessState;
-  unlockArmed: boolean;
-  unlockBusy: boolean;
-  onUnlock: () => void;
-  onOpenPaywall: () => void;
-  onClose: () => void;
-  reducedMotion: boolean;
-  t: RecapTranslate;
-}) {
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      onClose();
-    };
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [onClose]);
-
-  const lockedView =
-    access.status === "ready" &&
-    access.view.eligible &&
-    !access.view.premium &&
-    !access.view.unlocked
-      ? access.view
-      : null;
-  const hasAi = narration.status === "ready";
-
-  return (
-    <motion.div
-      className="fixed inset-0 z-[90] flex items-end justify-center bg-black/55 px-3 backdrop-blur-sm md:items-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: reducedMotion ? 0 : 0.2 }}
-      onMouseDown={(event) => {
-        if (event.currentTarget === event.target) onClose();
-      }}
-    >
-      <motion.section
-        data-weekly-recap-dialog
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="weekly-recap-note-title"
-        initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 42 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 32 }}
-        transition={{ duration: reducedMotion ? 0 : 0.32 }}
-        className="relative mb-3 w-full max-w-lg rounded-[var(--radius-card)] bg-[var(--color-surface)] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-7 text-center shadow-2xl md:mb-0"
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t("controls.close_note")}
-          className="absolute right-3 top-3 inline-flex size-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        >
-          <X className="size-5" aria-hidden />
-        </button>
-        <PuhuImage
-          variant={hasAi ? "premium" : "encouraging"}
-          size={132}
-          priority
-          className="mx-auto drop-shadow-lg"
-        />
-        <h2
-          id="weekly-recap-note-title"
-          className="mt-4 text-3xl font-black tracking-[-0.04em] text-[var(--color-main)]"
-        >
-          {t(hasAi ? "puhu_sheet.ai_title" : "puhu_sheet.title")}
-        </h2>
-        <p className="mt-4 text-pretty text-base font-bold leading-7 text-[var(--color-secondary)]">
-          {hasAi ? narration.data.narration : review.recap.closingMessage}
-        </p>
-        {narration.status === "loading" ? (
-          <p className="mt-3 text-sm font-bold text-[var(--color-secondary)]">
-            {t("puhu_sheet.loading")}
-          </p>
-        ) : null}
-
-        {lockedView?.canAfford ? (
-          <button
-            type="button"
-            aria-busy={unlockBusy || undefined}
-            disabled={unlockBusy}
-            onClick={onUnlock}
-            className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-accent-soft)] px-5 py-3 text-sm font-bold text-[var(--color-main)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
-          >
-            {unlockArmed ? (
-              <Check className="size-4" aria-hidden />
-            ) : (
-              <Lock className="size-4" aria-hidden />
-            )}
-            {unlockArmed
-              ? t("unlock.confirm", { cost: lockedView.cost })
-              : t("unlock.cta", { cost: lockedView.cost })}
-          </button>
-        ) : lockedView ? (
-          <Link href="/settings" className={`${secondaryLinkClass} mt-6`}>
-            {t("unlock.insufficient", {
-              cost: lockedView.cost,
-              balance: lockedView.coinConfirmed,
-            })}
-          </Link>
-        ) : null}
-        {lockedView ? (
-          <button
-            type="button"
-            onClick={onOpenPaywall}
-            className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-[var(--color-main)] underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            {t("unlock.premium")}
-          </button>
-        ) : null}
-      </motion.section>
-    </motion.div>
-  );
-}
 
 function resolveSuggestedTask(
   review: WeeklyReviewDto,

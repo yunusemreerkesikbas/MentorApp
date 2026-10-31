@@ -103,6 +103,36 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-31 — Weekly analysis offer and narration access aligned
+
+- **What:** `WeeklyAnalysisAccessService` supplies the weekly narration's capped allowance to Economy
+  through a registered port; no reverse AI module import or cross-module table access. Both weekly
+  public feature IDs use the weekly narration config keys. Deprecated deep-analysis keys no longer
+  create a misleading free unlock. The Coin catalog consumes the offer's decision directly.
+- **Usage:** Admin uses `ai.features.weekly.narration.free_enabled` and `free_limit`. Budget probes use
+  committed spend plus active reservations and the configured per-request allowance without the status
+  cache. Purchase briefly holds capacity before spending; model requests retain their own reservation.
+- **Gotchas:** Purchase grants durable exam/week access, not a future model-capacity guarantee. Provider
+  failure preserves that right; subsequent attempts do not spend again. A matching cached narration is
+  returned before the generation budget check. AI-off still blocks cached and uncached narration.
+  Free taste exhaustion remains metered and can require Coin/Premium; no new ongoing Free AI is enabled.
+- **Related:** `weekly-analysis-access.service.ts`, `weekly-review-narration.service.ts`,
+  `ai-budget-reservation.repository.ts`, payments `feature-access.ts`, economy `deep-analysis.service.ts`,
+  TR/EN recap availability copy; [verification](../qa/2026-10-31-weekly-analysis-access.md).
+
+### 2026-10-31 — AI eligibility adapter for the Coin use catalog
+
+- **What/usage:** The profile balance sheet lists coach chat and weekly deep-analysis access using
+  AI-owned read services. Chat reuses `CoachAccessService` for the same rolling daily counter,
+  conditional taste, Premium and budget rules as the gate. Weekly data uses the user's current
+  exam plus `DeepAnalysisService` and the actual narration taste gate. No model call is made.
+- **Gotchas:** An owned weekly right is not sold again; opening its screen can retrieve an already
+  cached report even if new generation is budget-blocked. New generation remains subject to the
+  existing guards. Conflicting legacy weekly taste switches are displayed as unavailable rather
+  than making a false free/paid promise. No underlying AI entitlement or billing policy changed.
+- **Related:** `economy-ai-uses.service.ts`, economy `EconomyUsesRegistry`, `GET /v1/economy/uses`,
+  focused eligibility units and `test/economy-uses.e2e-spec.ts`.
+
 - **2026-10-31 · Coin chat replay protection.** A reused Coin spend reference now returns
   localized HTTP 409 `CONFLICT` before a second model call or history write, for both blocking
   and streaming chat. It neither debits again nor refunds the original request; a failed fresh

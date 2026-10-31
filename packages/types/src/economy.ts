@@ -2,6 +2,27 @@
 
 import type { CommunityLevelView } from "./community.js";
 
+export type EconomyUseId = "NOTEBOOK_SLOT" | "COACH_CHAT" | "DEEP_ANALYSIS";
+export type EconomyUseStatus = "AVAILABLE" | "INSUFFICIENT_COIN" | "PREMIUM_INCLUDED" |
+  "INCLUDED" | "ALREADY_UNLOCKED" | "LIMIT_REACHED" | "DAILY_LIMIT_REACHED" |
+  "UNAVAILABLE" | "NEEDS_EXAM" | "REVIEW_NOT_READY";
+
+/** Informational snapshot, never a reservation or a purchase. Owning features revalidate use. */
+export interface EconomyUseView {
+  id: EconomyUseId;
+  status: EconomyUseStatus;
+  cost: number | null;
+  premiumIncluded: boolean;
+  canOpen: boolean;
+  dailyRemaining?: number;
+  slotsOwned?: number;
+  slotLimit?: number;
+}
+export interface EconomyUsesView {
+  coinConfirmed: number;
+  items: EconomyUseView[];
+}
+
 /** GET /v1/economy/balance — sum of ledger rows (never a single stored number). */
 export interface EconomyBalance {
   xp: number;
@@ -51,6 +72,10 @@ export interface DeepAnalysisView {
   /** Unlocked for this exam+week (purchased, or included via premium). */
   unlocked: boolean;
   premium: boolean;
+  /** A durable Coin purchase for this exam/week, independent of current budget. */
+  purchased: boolean;
+  /** Current capacity for a new generation; a matching cached report needs no new capacity. */
+  generationAvailable: boolean;
 }
 
 export type QuestCategory = "daily_ritual" | "weekly_ritual" | "milestone" | "onboarding";
@@ -84,6 +109,8 @@ export interface QuestProgressView {
   progressTarget?: number;
   completed: boolean;
   completedAt: string | null;
+  /** The step is met but its Coin grant is waiting on earning limits; localized by the API. */
+  rewardPendingMessage?: string;
 }
 
 /** One rolling window's total ledger flow. Coin credited/debited are both POSITIVE magnitudes. */

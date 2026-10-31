@@ -1,6 +1,12 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Coins, Gem, LoaderCircle } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Coins,
+  Gem,
+  LoaderCircle,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { QuestProgressView } from "@mentor/types";
@@ -25,16 +31,18 @@ export function QuestRowItem({
   reduceMotion,
 }: QuestRowItemProps) {
   const translate = useTranslations("economy");
+  const pendingReward = rewardsEnabled && Boolean(quest.rewardPendingMessage);
   const action = quest.completed ? null : quest.action;
   const progressCurrent = quest.progressCurrent;
   const progressTarget = quest.progressTarget;
-  const hasProgress = progressCurrent !== undefined && progressTarget !== undefined;
+  const hasProgress =
+    progressCurrent !== undefined && progressTarget !== undefined;
 
   const content = (
     <>
       {/* Left indicator ring / checkmark (Image 3 style) */}
       <span className="grid size-6 shrink-0 place-items-center">
-        {quest.completed ? (
+        {quest.completed || pendingReward ? (
           <CheckCircle2
             className="size-5.5 text-[var(--color-success)] stroke-[2.3]"
             aria-hidden
@@ -66,7 +74,8 @@ export function QuestRowItem({
             <span className="tabular-nums">
               ·{" "}
               {translate(
-                quest.id.startsWith("milestone.streak.") || quest.id === "weekly.streak-full-week"
+                quest.id.startsWith("milestone.streak.") ||
+                  quest.id === "weekly.streak-full-week"
                   ? "quest_progress_days"
                   : "quest_progress_count",
                 {
@@ -77,6 +86,11 @@ export function QuestRowItem({
             </span>
           ) : null}
         </span>
+        {pendingReward ? (
+          <span className="mt-1 block text-xs font-semibold text-[var(--color-secondary)]">
+            {quest.rewardPendingMessage}
+          </span>
+        ) : null}
       </span>
 
       {/* Right: Clean typography rewards and completed badge */}
@@ -84,15 +98,19 @@ export function QuestRowItem({
         <span className="inline-flex shrink-0 items-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_14%,transparent)] px-2.5 py-1 text-xs font-bold text-[var(--color-success)]">
           {translate("quest_completed")}
         </span>
-      ) : rewardsEnabled && quest.rewardUnit === "XP" ? (
+      ) : pendingReward ? null : rewardsEnabled && quest.rewardUnit === "XP" ? (
         <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-[var(--color-chip-text)] dark:text-violet-300 sm:text-sm">
           <Gem className="size-3.5 stroke-[2.2]" aria-hidden />
-          <span>{translate("quest_reward_xp", { count: quest.rewardAmount })}</span>
+          <span>
+            {translate("quest_reward_xp", { count: quest.rewardAmount })}
+          </span>
         </span>
       ) : rewardsEnabled && quest.rewardUnit === "COIN" ? (
         <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-amber-500 dark:text-amber-400 sm:text-sm">
           <Coins className="size-3.5 stroke-[2.2]" aria-hidden />
-          <span>{translate("quest_reward_coin", { count: quest.rewardAmount })}</span>
+          <span>
+            {translate("quest_reward_coin", { count: quest.rewardAmount })}
+          </span>
         </span>
       ) : null}
 
@@ -116,7 +134,9 @@ export function QuestRowItem({
     <motion.li
       data-testid="daily-quest-row"
       className={`group relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition-all duration-200 shadow-sm hover:border-[color-mix(in_srgb,var(--color-main)_22%,transparent)] hover:shadow-md ${
-        quest.completed ? "opacity-60 bg-[color-mix(in_srgb,var(--color-surface)_65%,transparent)]" : ""
+        quest.completed
+          ? "opacity-60 bg-[color-mix(in_srgb,var(--color-surface)_65%,transparent)]"
+          : ""
       }`}
       whileHover={reduceMotion || !action ? undefined : { y: -1 }}
       whileTap={reduceMotion || !action ? undefined : { scale: 0.99 }}
@@ -132,7 +152,12 @@ export function QuestRowItem({
           {content}
         </button>
       ) : (
-        <div title={quest.title} className="flex min-h-10 min-w-0 items-center gap-3">{content}</div>
+        <div
+          title={quest.title}
+          className="flex min-h-10 min-w-0 items-center gap-3"
+        >
+          {content}
+        </div>
       )}
     </motion.li>
   );

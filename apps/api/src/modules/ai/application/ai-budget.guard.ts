@@ -49,7 +49,8 @@ export class AiBudgetGuard {
 
   private async spentThisMonth(): Promise<number> {
     const now = Date.now();
-    if (this.cache && now - this.cache.at < CACHE_TTL_MS) return this.cache.spentMicros;
+    if (this.cache && now - this.cache.at < CACHE_TTL_MS)
+      return this.cache.spentMicros;
     const window = await this.usage.windowSince(this.startOfMonth());
     this.cache = { spentMicros: window.costMicros, at: now };
     return window.costMicros;
@@ -65,15 +66,32 @@ export class AiBudgetGuard {
   /** Throw AI_BUDGET_EXCEEDED (503) when over budget — call before any billable LLM request. */
   async assertWithinBudget(): Promise<void> {
     if (!(await this.isWithinBudget())) {
-      throw new DomainError(ErrorCode.AI_BUDGET_EXCEEDED, HttpStatus.SERVICE_UNAVAILABLE);
+      throw new DomainError(
+        ErrorCode.AI_BUDGET_EXCEEDED,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
+  }
+
+  /** Uncached offer check, including active holds and the configured per-request allowance. */
+  async hasCapacity(): Promise<boolean> {
+    const capMicros = await this.capMicros();
+    if (capMicros <= 0) return true;
+    const cents = await this.config.get("ai.budget.reservation_usd_cents");
+    return this.reservations.hasCapacity({
+      capMicros,
+      amountMicros: cents * MICROS_PER_CENT,
+      windowStart: this.startOfMonth(),
+    });
   }
 
   /** Atomically holds a conservative allowance so concurrent calls cannot all pass the same cap. */
   async acquire(): Promise<string | null> {
     const capMicros = await this.capMicros();
     if (capMicros <= 0) return null;
-    const reservationCents = await this.config.get("ai.budget.reservation_usd_cents");
+    const reservationCents = await this.config.get(
+      "ai.budget.reservation_usd_cents",
+    );
     const id = await this.reservations.reserveIfAvailable({
       capMicros,
       amountMicros: reservationCents * MICROS_PER_CENT,
@@ -81,7 +99,10 @@ export class AiBudgetGuard {
       expiresAt: new Date(Date.now() + RESERVATION_TTL_MS),
     });
     if (!id) {
-      throw new DomainError(ErrorCode.AI_BUDGET_EXCEEDED, HttpStatus.SERVICE_UNAVAILABLE);
+      throw new DomainError(
+        ErrorCode.AI_BUDGET_EXCEEDED,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
     return id;
   }
@@ -94,6 +115,10 @@ export class AiBudgetGuard {
   async getStatus(): Promise<AiBudgetStatus> {
     const capMicros = await this.capMicros();
     const spentMicros = await this.spentThisMonth();
-    return { capMicros, spentMicros, exceeded: capMicros > 0 && spentMicros >= capMicros };
+    return {
+      capMicros,
+      spentMicros,
+      exceeded: capMicros > 0 && spentMicros >= capMicros,
+    };
   }
 }

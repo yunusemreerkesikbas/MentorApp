@@ -12,6 +12,18 @@ export default defineConfig({
       client: "fetch",
       override: {
         operations: {
+          EconomyController_questsList: {
+            fetch: { includeHttpResponseReturnType: false },
+          },
+          EconomyController_deepAnalysisState: {
+            fetch: { includeHttpResponseReturnType: false },
+          },
+          EconomyController_deepAnalysisPurchase: {
+            fetch: { includeHttpResponseReturnType: false },
+          },
+          EconomyUsesController_get: {
+            fetch: { includeHttpResponseReturnType: false },
+          },
           NotebookSlotsController_state: {
             fetch: { includeHttpResponseReturnType: false },
           },

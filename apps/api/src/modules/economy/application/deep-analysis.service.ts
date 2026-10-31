@@ -8,6 +8,7 @@ import { EntitlementService } from "../../payments/application/entitlement.servi
 import { EconomyLedger } from "../domain/economy.constants";
 import { LedgerRepository } from "../infrastructure/ledger.repository";
 import { EconomyService } from "./economy.service";
+import { WeeklyAnalysisAccessRegistry } from "./weekly-analysis-access.registry";
 
 /**
  * Deep-analysis coin sink (§3): a free user unlocks the premium weekly-review AI narration for one
@@ -24,24 +25,31 @@ export class DeepAnalysisService {
     private readonly weeklyReview: WeeklyReviewService,
     private readonly entitlement: EntitlementService,
     private readonly config: ConfigRegistryService,
+    private readonly access: WeeklyAnalysisAccessRegistry,
   ) {}
 
   /** Unlock state for the gate UI: eligibility (review READY) + cost + balance + unlock. */
-  async getState(userId: string, roles: string[], examId: string): Promise<DeepAnalysisView> {
+  async getState(
+    userId: string,
+    roles: string[],
+    examId: string,
+  ): Promise<DeepAnalysisView> {
     await this.assertAiEnabled();
-    const [review, cost, balance, entitlement, freeEnabled] = await Promise.all([
+    const access = this.access.get();
+    const [review, cost, balance, entitlement, included] = await Promise.all([
       this.weeklyReview.getReview(userId, examId),
       this.config.get("economy.coin.deep_analysis_cost"),
       this.economy.getSelfBalance(userId),
       this.entitlement.getEntitlement(userId, roles),
-      this.config.get("ai.features.deep.analysis.free_enabled"),
+      access.isIncluded(userId, roles),
     ]);
     const eligible = review.status === "READY";
     const weekStart = eligible ? review.period.startDate : null;
-    const unlocked =
-      entitlement.isPremium ||
-      Boolean(freeEnabled) ||
-      (weekStart != null && (await this.isUnlocked(userId, examId, weekStart)));
+    const [purchased, generationAvailable] = await Promise.all([
+      weekStart != null ? this.isUnlocked(userId, examId, weekStart) : false,
+      eligible ? access.canGenerate() : false,
+    ]);
+    const unlocked = entitlement.isPremium || included || purchased;
     return {
       eligible,
       weekStart,
@@ -50,6 +58,8 @@ export class DeepAnalysisService {
       canAfford: balance.coinConfirmed >= cost,
       unlocked,
       premium: entitlement.isPremium,
+      purchased,
+      generationAvailable,
     };
   }
 
@@ -57,18 +67,32 @@ export class DeepAnalysisService {
    * Spend coin to unlock this week's deep analysis. Idempotent: a repeat purchase of the same
    * (exam, week) dedupes on the ledger ref and never double-debits. Premium → no debit.
    */
-  async purchase(userId: string, roles: string[], examId: string): Promise<DeepAnalysisView> {
+  async purchase(
+    userId: string,
+    roles: string[],
+    examId: string,
+  ): Promise<DeepAnalysisView> {
     const state = await this.getState(userId, roles, examId);
     if (state.unlocked) return state; // premium or already purchased — nothing to debit
     if (!state.eligible || !state.weekStart) {
-      throw new DomainError(ErrorCode.DEEP_ANALYSIS_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY);
+      throw new DomainError(
+        ErrorCode.DEEP_ANALYSIS_NOT_ELIGIBLE,
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     }
     await this.assertAiEnabled();
-    await this.economy.spend(userId, state.cost, {
-      reason: EconomyLedger.DEEP_ANALYSIS_SPEND_REASON,
-      refType: EconomyLedger.DEEP_ANALYSIS_REF_TYPE,
-      refId: deepAnalysisRefId(userId, examId, state.weekStart),
-    });
+    const access = this.access.get();
+    const reservationId = await access.acquire();
+    try {
+      await this.assertAiEnabled();
+      await this.economy.spend(userId, state.cost, {
+        reason: EconomyLedger.DEEP_ANALYSIS_SPEND_REASON,
+        refType: EconomyLedger.DEEP_ANALYSIS_REF_TYPE,
+        refId: deepAnalysisRefId(userId, examId, state.weekStart),
+      });
+    } finally {
+      await access.release(reservationId);
+    }
     return this.getState(userId, roles, examId);
   }
 
@@ -79,7 +103,11 @@ export class DeepAnalysisService {
   }
 
   /** For the AI narration gate: was this (exam, week) purchased? (Premium bypasses this check.) */
-  isUnlocked(userId: string, examId: string, weekStart: string): Promise<boolean> {
+  isUnlocked(
+    userId: string,
+    examId: string,
+    weekStart: string,
+  ): Promise<boolean> {
     return this.ledger.existsByRef(
       EconomyLedger.DEEP_ANALYSIS_REF_TYPE,
       deepAnalysisRefId(userId, examId, weekStart),
@@ -87,6 +115,10 @@ export class DeepAnalysisService {
   }
 }
 
-function deepAnalysisRefId(userId: string, examId: string, weekStart: string): string {
+function deepAnalysisRefId(
+  userId: string,
+  examId: string,
+  weekStart: string,
+): string {
   return `${userId}:${examId}:${weekStart}`;
 }

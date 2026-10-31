@@ -78,6 +78,16 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-01: KPSS Lisans countdown moved to 2027.** The seed row `kpss-lisans-2026` now reads
+  "KPSS Lisans 2027" with EXAM_DATE 2027-09-12 (2027-KPSS A Grubu, Genel Yetenek-Genel Kültür; Alan
+  Bilgisi 18-19.09.2027), verified against the official ÖSYM 2027 calendar PDF published 28.10.2026.
+  The slug is kept on purpose: the 55 subjects/topics and every mock exam point at that exam row, and a
+  new row would leave coach evidence and analysis with an empty subject list. Gotchas: the seed only
+  fills gaps, so an existing database keeps its old row and needs an attended editorial update; the
+  trial database picks it up on its first API boot. Önlisans/Ortaöğretim have no 2027 session, so their
+  countdown stays empty until ÖSYM publishes 2028 dates. The calendar carries no start time; 06:00 UTC
+  is retained until the 2027 guide is out.
+
 - **2026-10-25: Keep the existing blog calendar.** Removed the unpublished standalone
   calendar/guide page and its navigation/sitemap entries. The blog exam card and existing calendar
   export remain. Kept the independent nullable-response fix: a successful empty calendar response

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { Logger } from "@nestjs/common";
 import { Currency } from "@mentor/types";
+import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
 import { QuestService } from "./quest.service";
 import trEconomy from "../../../i18n/locales/tr/economy.json";
 
@@ -164,6 +166,21 @@ function service(options: {
 }
 
 describe("QuestService — daily.focus-goal-met", () => {
+  it("reports a met step whose Coin reward is waiting on earning limits without completing its grant", async () => {
+    const subject = service({ user: { examType: "KPSS", emailVerified: true } });
+    subject.economy.grantInServiceTx.mockRejectedValue(new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, 422));
+    const quests = await subject.service.getUserProgress("user-1");
+    for (const id of ["onboarding.profile-setup", "onboarding.email-verified"]) {
+      expect(quests.find(q => q.id === id)).toMatchObject({
+        completed: false, action: null, rewardPendingMessage: "Adımın tamam. Coin hakkın şu an bekliyor.",
+      });
+    }
+    expect(subject.rows).toHaveLength(0);
+    subject.economy.grantInServiceTx.mockResolvedValue(true);
+    const retried = await subject.service.getUserProgress("user-1");
+    expect(retried.find(q => q.id === "onboarding.email-verified")).toMatchObject({ completed: true });
+    expect(retried.find(q => q.id === "onboarding.email-verified")).not.toHaveProperty("rewardPendingMessage");
+  });
   it("is hidden from views when the user has no goal set", async () => {
     const quests = await service().service.getUserProgress("user-1");
     expect(quests.find((q) => q.id === "daily.focus-goal-met")).toBeUndefined();

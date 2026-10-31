@@ -7,7 +7,7 @@ process.env.QA_NOTEBOOK_RUN_ID ??= Date.now().toString(36);
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: "economy-notebook-real-api.spec.ts",
+  testMatch: ["economy-notebook-real-api.spec.ts", "economy-rewards-real-api.spec.ts"],
   workers: 1,
   retries: 0,
   timeout: 90_000,

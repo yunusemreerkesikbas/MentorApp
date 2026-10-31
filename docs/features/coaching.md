@@ -145,6 +145,33 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Puhu thought cloud polish (open/close, layout, panel flash)
+
+- **What:** The mood check-in's coach note (`PuhuSpeechModal`) opens as one timeline: Puhu pops in,
+  the two trail dots rise from its head, the cloud opens out of the trail (bottom-left on desktop,
+  bottom-centre on phones), then the text streams. Close runs it backwards in 150 ms. Ease-out, no
+  overshoot, entrance ≤600 ms (DESIGN.md §9). On desktop Puhu now sits below the cloud's
+  bottom-left; the title clears the cloud's left lobe (inline inset is 15 % of the cloud width,
+  since the outline stretches with the box); the CTA is the `@mentor/ui` `Button` play ledge
+  instead of the black `--color-btn`.
+- **Fixed flash:** opening the note blanked the whole panel for a moment. `next/dynamic` without
+  `ssr: false` (or `loading`) has no Suspense boundary of its own, so the lazy chunk suspended the
+  page's boundary and React hid `main` until it landed. `PuhuSpeechModal` and
+  `StreakRescueSuccess` now load with `ssr: false`.
+- **Usage:** the timeline lives in `puhu-thought-cloud.tsx` (`PUHU_FADE`, `PUHU_MASCOT`, the cloud
+  and dot variants); a parent drives it with the labels `hidden → shown → gone`, and
+  `PuhuSpeechBubble onShown` fires when the cloud is fully open. Keep the modal mounted and toggle
+  `isOpen`: a conditional mount skips the exit.
+- **Gotchas:** the backdrop fades itself; an ancestor with opacity < 1 cuts `backdrop-filter` off
+  from the page and the blur snapped in at the end. Reduced motion swaps every part to
+  `PUHU_FADE`: `MotionConfig reducedMotion="user"` would snap the exit scale on before the fade.
+  While a premium note loads, the text block holds a mood note's room (2–3 sentences per
+  `ai.constants`: ~5 lines on a phone, ~4 on desktop) and the CTA keeps its slot invisible, so a
+  typical reflection lands without resizing the cloud (measured: same box before and after on
+  both). Only a note longer than that contract still grows it. Free notes get no reserve.
+- **Related:** `puhu-thought-cloud.tsx`, `puhu-thought-cloud.css`, `puhu-speech-modal.tsx`,
+  `panel-shell.tsx`.
+
 ### 2026-10-31 — Coin-funded permanent custom notebook slots
 
 - **What:** Free custom notebook capacity now includes the user's confirmed purchased slots,

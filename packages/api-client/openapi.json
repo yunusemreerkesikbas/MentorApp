@@ -4888,7 +4888,17 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QuestProgressViewDto"
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4940,10 +4950,27 @@
     "/v1/economy/deep-analysis": {
       "get": {
         "operationId": "EconomyController_deepAnalysisState",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "examId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeepAnalysisViewDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4963,14 +4990,30 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DeepAnalysisDto"
+                "type": "object",
+                "required": [
+                  "examId"
+                ],
+                "properties": {
+                  "examId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeepAnalysisViewDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5100,6 +5143,32 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NotebookSlotViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/uses": {
+      "get": {
+        "operationId": "EconomyUsesController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EconomyUsesDto"
                 }
               }
             }
@@ -12216,9 +12285,144 @@
           "pageSize"
         ]
       },
-      "DeepAnalysisDto": {
+      "QuestProgressViewDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "daily_ritual",
+              "weekly_ritual",
+              "milestone",
+              "onboarding"
+            ]
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "once"
+            ]
+          },
+          "periodKey": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "badgeLabel": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "plan",
+              "study-session",
+              "mood-checkin",
+              "panel",
+              "subscription",
+              "invite",
+              "verify-email"
+            ],
+            "nullable": true
+          },
+          "rewardUnit": {
+            "type": "string",
+            "enum": [
+              "XP",
+              "COIN",
+              "NONE"
+            ]
+          },
+          "rewardAmount": {
+            "type": "number"
+          },
+          "rewardCoin": {
+            "type": "number"
+          },
+          "progressCurrent": {
+            "type": "number"
+          },
+          "progressTarget": {
+            "type": "number"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "completedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "rewardPendingMessage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "period",
+          "periodKey",
+          "type",
+          "title",
+          "badgeLabel",
+          "action",
+          "rewardUnit",
+          "rewardAmount",
+          "rewardCoin",
+          "completed",
+          "completedAt"
+        ]
+      },
+      "DeepAnalysisViewDto": {
+        "type": "object",
+        "properties": {
+          "eligible": {
+            "type": "boolean"
+          },
+          "weekStart": {
+            "type": "string",
+            "nullable": true
+          },
+          "cost": {
+            "type": "number"
+          },
+          "coinConfirmed": {
+            "type": "number"
+          },
+          "canAfford": {
+            "type": "boolean"
+          },
+          "unlocked": {
+            "type": "boolean"
+          },
+          "premium": {
+            "type": "boolean"
+          },
+          "purchased": {
+            "type": "boolean"
+          },
+          "generationAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "eligible",
+          "weekStart",
+          "cost",
+          "coinConfirmed",
+          "canAfford",
+          "unlocked",
+          "premium",
+          "purchased",
+          "generationAvailable"
+        ]
       },
       "RedeemInviteDto": {
         "type": "object",
@@ -12307,6 +12511,78 @@
         "required": [
           "expectedCost",
           "expectedPurchasedSlots"
+        ]
+      },
+      "EconomyUseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "NOTEBOOK_SLOT",
+              "COACH_CHAT",
+              "DEEP_ANALYSIS"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "INSUFFICIENT_COIN",
+              "PREMIUM_INCLUDED",
+              "INCLUDED",
+              "ALREADY_UNLOCKED",
+              "LIMIT_REACHED",
+              "DAILY_LIMIT_REACHED",
+              "UNAVAILABLE",
+              "NEEDS_EXAM",
+              "REVIEW_NOT_READY"
+            ]
+          },
+          "cost": {
+            "type": "number",
+            "nullable": true
+          },
+          "premiumIncluded": {
+            "type": "boolean"
+          },
+          "canOpen": {
+            "type": "boolean"
+          },
+          "dailyRemaining": {
+            "type": "number"
+          },
+          "slotsOwned": {
+            "type": "number"
+          },
+          "slotLimit": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "cost",
+          "premiumIncluded",
+          "canOpen"
+        ]
+      },
+      "EconomyUsesDto": {
+        "type": "object",
+        "properties": {
+          "coinConfirmed": {
+            "type": "number"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EconomyUseDto"
+            }
+          }
+        },
+        "required": [
+          "coinConfirmed",
+          "items"
         ]
       },
       "CreateZoneDto": {

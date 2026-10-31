@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { authControllerVerifyEmail } from "@mentor/api-client";
 import { SectionHeading } from "@mentor/ui";
 import { FormError, FormSuccess } from "@/components/form";
@@ -13,12 +13,20 @@ function VerifyEmail() {
   const token = useSearchParams().get("token") ?? "";
   const [state, setState] = useState<"pending" | "ok" | "error">("pending");
   const [error, setError] = useState<string | null>(null);
+  const verification = useRef<{
+    token: string;
+    request: ReturnType<typeof authControllerVerifyEmail>;
+  } | null>(null);
   const missingToken = token === "";
 
   useEffect(() => {
     if (!token) return;
     let active = true;
-    authControllerVerifyEmail({ token })
+    // Strict Mode repeats effect setup. Share the in-flight one-time operation for this token.
+    if (verification.current?.token !== token) {
+      verification.current = { token, request: authControllerVerifyEmail({ token }) };
+    }
+    verification.current.request
       .then(() => {
         if (active) {
           setState("ok");

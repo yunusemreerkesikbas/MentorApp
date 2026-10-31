@@ -81,14 +81,14 @@
   },
   "coaches": {
     "meta_title": "Koçlar için | PuhuKoç",
-    "meta_description": "Öğrencilerinin planı, seansları ve haftalık hikâyesi tek yerde. Sabah turuna çık, kime bakman gerektiğini bil. İlk 3 öğrencin ücretsiz.",
+    "meta_description": "Öğrencilerinin planı, seansları ve haftalık hikâyesi tek yerde. Her sabah kime bakman gerektiği hazır gelir. İlk 3 öğrencin ücretsiz.",
     "nav_students": "Öğrenciler için",
     "nav_coaches": "Koçlar için",
     "nav_round": "Nasıl çalışır",
     "cta": "Koç olarak başla",
     "pill": "Koçlar için",
     "title": "Dün gece kim çalıştı, <em>bir bakışta gör.</em>",
-    "lead": "Öğrencilerinin planı, seansları ve haftalık hikâyesi tek yerde. Sabah turuna çık, kime bakman gerektiğini bil.",
+    "lead": "Öğrencilerinin planı, seansları ve haftalık hikâyesi tek yerde. Her sabah kime bakman gerektiği hazır gelir.",
     "free": "İlk 3 öğrencin ücretsiz.",
     "summary_label": "Bu sabahın özeti",
     "summary1": "5 kişi dün çalıştı",
@@ -103,7 +103,7 @@
     "round": {
       "time": "07:30",
       "title": "Bugün kime bakmalısın?",
-      "body": "Turun hazır: önce son günlerde sessizleşen ya da planı kayan öğrencilerin gelir. Birine baktıkça tur ilerler, hepsi bitince tur tamam.",
+      "body": "Turun hazır: önce sessizleşen ya da planı kayan öğrencilerin gelir. Birine baktıkça tur ilerler, herkese bakınca tur tamam.",
       "sheet": "Sabah turu",
       "waiting": "4 kişi bekliyor",
       "label": "Örnek tur: Ayşe tamam, sıradaki Mert",
@@ -114,7 +114,7 @@
     "week": {
       "time": "07:45",
       "title": "Bir haftayı tek bakışta oku.",
-      "body": "Çalışma dakikaları, seri, plan oranı ve son denemeler aynı sayfada. Neyin yolunda gittiğini ve nereye dokunman gerektiğini hemen görürsün.",
+      "body": "Çalışma dakikaları, seri, plan oranı ve son denemeler aynı sayfada. Neyin yolunda gittiğini, nereye dokunman gerektiğini hemen görürsün.",
       "span": "son 14 gün",
       "strip_label": "Son 14 günün çalışma dakikaları; son 3 gün boş",
       "streak": "gün en uzun seri",
@@ -142,7 +142,7 @@
     "trust": {
       "time": "08:15",
       "title": "Öğrencin içini rahatça döker.",
-      "body": "Öğrencinin yapay zekâyla konuşmalarını sen görmezsin; sana yalnızca nerede desteğe ihtiyacı olduğu düşer. Bu sınır, öğrencinin sana güvenmesini kolaylaştırır.",
+      "body": "Öğrencinin yapay zekâyla konuşmalarını sen görmezsin; sana yalnızca nerede desteğe ihtiyacı olduğu düşer. Bu sınır, sana güvenmesini kolaylaştırır.",
       "theirs": "Öğrencinin konuşması",
       "lock": "Bu konuşmayı sen görmezsin",
       "yours": "Senin gördüğün",
@@ -178,8 +178,8 @@
     },
     "final": {
       "done": "tur tamam",
-      "title": "Sabah turun hazır.",
-      "body": "Kodunu bugün paylaş, ilk 3 öğrencin ücretsiz."
+      "title": "İlk öğrencini bugün davet et!",
+      "body": "Kodunu paylaş, ilk 3 öğrencin ücretsiz."
     }
   },
   "landing": {
@@ -189,8 +189,8 @@
     "start": "Ücretsiz başla",
     "has_account": "Zaten hesabım var",
     "tagline": "Sınav yoldaşın",
-    "hero_title": "Bu gece ışığı yanan <glow>tek pencere</glow> seninki değil.",
-    "hero_lead": "Sınava hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı: günlük planın, odak seansların ve aynı saatlerde çalışan arkadaşların tek yerde.",
+    "hero_title": "Her gün biraz, <glow>hep birlikte</glow>.",
+    "hero_lead": "Sınava hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı. Bugünün planı hazır, sayacın kurulu, masada arkadaşların var.",
     "how_it_works": "Nasıl çalışır",
     "faq_nav": "SSS",
     "counter": "Son 24 saatte {count, number} kişi burada çalıştı.",
@@ -199,7 +199,7 @@
       "title": "Öğrencilerin tek ekranda.",
       "body": "Öğrencilerinin planını, seanslarını ve haftalık raporunu tek yerden takip et. Takıldıkları yerde yanlarında ol.",
       "cta": "Koç olarak başla",
-      "more": "Koç sabahını gör"
+      "more": "Koçlar için sayfaya bak"
     },
     "blog_section": {
       "pill": "Blog",
@@ -208,13 +208,13 @@
     },
     "morning": {
       "pill": "Sabah",
-      "title": "Sabah olunca masanda neler var?",
-      "lead": "Gece yanındaydık. Gün doğunca masanda kendi araçların seni bekliyor.",
+      "title": "Masanda neler var?",
+      "lead": "Yanlış defterin, hedef panon ve haftanın hikâyesi aynı masada. Hangisinden başlıyoruz?",
       "notebook": {
         "name": "Defterlerim",
         "tab": "Defter",
-        "title": "Yanlışların kaybolmaz.",
-        "body": "Yanlış soruyu fotoğrafla ya da yazarak ekle, dersine ve konusuna koy. Tekrar günü gelince sorular kart kart önüne gelir.",
+        "title": "Yanlış soruların artık kaybolmaz!",
+        "body": "Soruyu fotoğrafla ya da yaz, dersine ve konusuna koy. Tekrar günü gelince sorular kart kart önüne gelir.",
         "question": "3x − 5 = 2x + 4 ise x kaçtır?",
         "subject_turkish": "Türkçe",
         "subject_history": "Tarih",
@@ -224,25 +224,25 @@
       "board": {
         "name": "Hedef panosu",
         "tab": "Pano",
-        "title": "Hedefin gözünün önünde.",
-        "body": "Hedef şehrini haritada seç, alanını ve kendi fotoğraflarını panona as. İstersen duvar kâğıdı yap, toplulukla paylaş.",
+        "title": "Hedefini duvara as!",
+        "body": "Hedef şehrini haritada seç, alanını ve fotoğraflarını panona ekle. İstersen duvar kâğıdı yap, istersen toplulukla paylaş.",
         "goal": "Bilgisayar Mühendisi",
         "city": "Konya"
       },
       "story": {
         "name": "Haftanın hikâyesi",
         "tab": "Hikâye",
-        "title": "Her hafta bir hikâye.",
-        "body": "Kaç gün çalıştın, kaç dakika odaklandın, hangi ders parladı: hafta bitince hepsi kısa bir hikâye olur. Hafta dolu geçtiyse bir de kod adın olur.",
+        "title": "Hafta bitti mi? Hikâyen hazır!",
+        "body": "Kaç gün çalıştın, kaç dakika odaklandın, hangi ders parladı: hepsi kısa bir hikâyede. Dolu geçen haftanın sonunda bir de kod adın olur.",
         "dates": "20 – 26 Ekim",
         "codename": "Nebula Dalgıcı"
       }
     },
     "focus": {
       "pill": "Odak",
-      "title": "Odanı seç, süreni kur, başla.",
-      "lead": "Evde, kütüphanede ya da kafede: çalışacağın sahneyi sen seçersin. Odaktan sonra molan hazır.",
-      "lead_rooms": "Evde, kütüphanede ya da kafede: çalışacağın sahneyi sen seçersin. Arkadaşların da masana gelir; herkes kendi seansını açar.",
+      "title": "Odanı seç, süreni kur, başla!",
+      "lead": "Ev, kütüphane ya da kafe: nerede çalışacağını sen seç. Seans bitince molan da hazır.",
+      "lead_rooms": "Ev, kütüphane ya da kafe: nerede çalışacağını sen seç. İstersen arkadaşların da masana gelir.",
       "subject": "Tarih",
       "task": "Osmanlı öncesi Türk devletleri",
       "unit": "DK",
@@ -250,23 +250,23 @@
       "minutes": "{count} dk",
       "pomodoro": {
         "name": "Pomodoro",
-        "body": "25/5 ya da 50/10 hazır. İstersen kadranı çevirip kendi süreni kur ya da süresiz çalış. Dersini seç; biten seans serine ve günlük hedefine sayılır."
+        "body": "25/5 ya da 50/10 hazır. Kadranı çevirip kendi süreni kur ya da süresiz çalış. Biten her seans serine ve günlük hedefine sayılır."
       },
       "table": {
         "name": "Masa",
-        "title": "Arkadaşların aynı masada.",
-        "body": "Masa kur; adını, temasını ve koltuk sayısını seç. MASA- ile başlayan davet bağlantısını paylaş, koltuklardan kimin kaç dakikadır odakta olduğunu gör.",
+        "title": "Masanı kur, arkadaşlarını çağır!",
+        "body": "Masaya bir ad ver, temasını ve koltuk sayısını seç. MASA- ile başlayan bağlantıyı paylaş, kimin kaç dakikadır odakta olduğunu koltuklardan gör.",
         "friend": "Elif",
         "me": "Sen"
       },
       "sound": {
-        "title": "Odanın sesi de seninle.",
-        "body": "Kütüphanenin uğultusu, kafenin fincan sesleri ya da sessizlik: sahneye uygun ses kendiliğinden gelir. Sade görünüme geçip yalnız sayaca da bakabilirsin."
+        "title": "Her odanın kendi sesi var.",
+        "body": "Kütüphanenin uğultusu, kafenin fincan sesleri ya da sessizlik: odaya uygun ses kendiliğinden açılır. Yalnız sayacı görmek istersen sade görünüme geç."
       }
     },
     "journey": {
-      "title": "Her emek bir ışık yakar.",
-      "lead": "Plandan bir görev, bir odak seansı, haftada beş gün: hepsi görev olarak sayılır. XP topladıkça Gece Yolculuğu'nda yeni bir ışık yanar; düzenli haftalar Coin hakkı da getirir.",
+      "title": "Görevleri bitir, XP topla, seviye atla!",
+      "lead": "Plandan bir görev, bir odak seansı, haftada beş aktif gün: hepsi XP getirir. XP biriktikçe Gece Yolculuğu'nda yeni bir seviyeye geçersin, düzenli haftalara Coin de düşer.",
       "coin_note": "Coin nakit değildir. Emeğinle hak kazanırsın.",
       "goal_progress": "60/120 dk",
       "quest": {
@@ -291,7 +291,7 @@
       "q2": "Yapay zekâ koç ne yapar, ne yapmaz?",
       "a2": "Planını ve çalışma geçmişini bilerek konuşur, seni yolda tutar. Resmi tarih ya da süreç uydurmaz; bunları doğrulanmış kaynaktan gösterir. Sınav sorusu çözmez.",
       "q3": "Hangi sınavlara hazırlananlar için?",
-      "a3": "Sınav yolundaki herkes için tasarlandı. Sınava özel içerikler ve resmi bilgi kartları sınav sınav ekleniyor.",
+      "a3": "Sınava hazırlanan herkes için. Sınava özel içerikler ve resmi bilgi kartları sınav sınav ekleniyor.",
       "q4": "Verilerim güvende mi?",
       "a4": "Verilerin KVKK kapsamında korunur. Bir koçun varsa yapay zekâ koçla konuşmalarını görmez, yalnızca neye ihtiyacın olduğunu görür.",
       "q5": "Bir koçum var, ne değişir?",
@@ -300,26 +300,26 @@
       "a6": "Evet. PuhuKoç tarayıcıda çalışır; telefonda da bilgisayarda da kaldığın yerden devam edersin."
     },
     "final": {
-      "title": "Penceren seni bekliyor.",
-      "body": "Bu akşam ilk adımı birlikte atalım."
+      "title": "Bugün 25 dakikayla başla!",
+      "body": "Hesabını aç, ilk odak seansın bu akşam olsun."
     },
-    "skip_story": "Hikayeyi atla",
-    "scroll_hint": "Kaydır, pencerelere bakalım",
+    "skip_story": "Turu atla",
+    "scroll_hint": "Aşağı kaydır, içeriyi gezelim",
     "plate": "No {no}",
     "intercom_title": "PUHU APT.",
     "intercom_label": "Apartman zilleri",
-    "bell_label": "Daire {no}, {name}: pencereye git",
+    "bell_label": "Daire {no}, {name}: oraya git",
     "puhu": {
       "name": "Puhu",
-      "title": "Yalnız çalışmak yorar.",
-      "body": "Aylarca tek başına çalışmak insanı yorar. Burada her akşam yanında biri olur: koçun, masadaki arkadaşların ve biz.",
-      "scribble": "her akşam buradayız"
+      "title": "Burada kimse tek başına çalışmıyor!",
+      "body": "Aylarca yalnız çalışmak en sabırlıyı bile yorar. Burada koçun bir mesaj uzağında, arkadaşların da hemen yanında.",
+      "scribble": "selam, ben Puhu!"
     },
     "coach": {
       "name": "Koç",
-      "title": "Zorlandığında koçun yanında.",
-      "body": "Moralin düştüğünde ya da nereden başlayacağını bilemediğinde yaz. Koçun planını ve çalışma geçmişini bilerek cevap verir.",
-      "scribble": "dokun, cevap gelsin",
+      "title": "Zor bir gün mü? Koçuna yaz.",
+      "body": "Koçun planını ve geçmiş seanslarını bilerek cevap verir. Bugün atabileceğin küçük bir adımı beraber seçersiniz.",
+      "scribble": "bir his seç, dene!",
       "feelings_label": "Bir his seç",
       "feeling1": "Bugün hiç çalışasım yok",
       "reply1": "Olur böyle günler. Bugün büyük bir hedef koymayalım. 25 dakikalık tek bir seans yeter; bitince nasıl geçtiğine birlikte bakarız.",
@@ -330,14 +330,14 @@
       "feeling3": "Nereden başlayacağımı bilmiyorum",
       "reply3": "Her şey aynı anda acil görünüyor, biliyorum. Bugün tek bir konu seçelim. Planında en uzun süredir bekleyen görevle küçük bir adım atalım.",
       "step3": "Küçük adım: plandaki ilk görev",
-      "empty": "Bir his seç, koçun nasıl cevap verdiğine bakalım.",
+      "empty": "Bir his seç, koçun ne diyor görelim.",
       "demo_note": "Bu bir örnek cevap. Yapay zekâ koç Premium'da."
     },
     "plan": {
       "name": "Plan",
-      "title": "Bugün ne çalışacağın hazır.",
-      "body": "Hedefine ve vaktine göre haftanı birlikte kuralım. Her gün küçük bir yol, hafta sonunda bir sandık.",
-      "scribble": "küçük adım, uzun yol",
+      "title": "Bugünün planı hazır. Sen sadece başla!",
+      "body": "Hedefini ve günde ne kadar vaktin olduğunu söyle, haftanı birlikte kuralım. Günlük görevleri bitir, haftanın sandığını aç.",
+      "scribble": "bugün 80 dakika",
       "step1": "Türkçe",
       "step1_time": "25 dk",
       "step2": "Matematik",
@@ -349,8 +349,8 @@
     },
     "desk": {
       "name": "Masa",
-      "title": "Aynı masada, herkes kendi saatinde.",
-      "body": "Arkadaşlarınla bir masaya otur. Herkes kendi seansını açar; sessizce, yan yana çalışırsınız.",
+      "title": "Arkadaşlarınla aynı masada çalış.",
+      "body": "Bir masa kur, arkadaşlarını çağır. Herkes kendi seansını açar, yan yana sessizce çalışırsınız.",
       "scribble": "boş koltuk senin",
       "seat1": "Elif",
       "seat1_state": "Odakta · 18 dk",
@@ -363,9 +363,9 @@
     },
     "community": {
       "name": "Topluluk",
-      "title": "Soru sor, el uzat, birlikte ilerle.",
-      "body": "Takıldığın soruyu paylaş, bildiğin bir soruya sen de cevap ver. Haftalık ligde emeğin görünür.",
-      "body_no_league": "Takıldığın soruyu paylaş, bildiğin bir soruya sen de cevap ver.",
+      "title": "Takıldın mı? Topluluğa sor!",
+      "body": "Bildiğin bir soruya da sen cevap ver. Haftalık ligde emeğin XP olarak görünür.",
+      "body_no_league": "Bildiğin bir soruya da sen cevap ver. Bir cevap, birinin gününü kurtarır.",
       "scribble": "alkış emeğe",
       "cheer": "Bu hafta 5 gün çalıştın. Harika gidiyorsun!",
       "row1": "Zeynep",
@@ -377,25 +377,25 @@
     },
     "analysis": {
       "name": "Analiz",
-      "title": "Denemelerin sana hikâyesini anlatsın.",
-      "body": "Deneme sonuçlarını gir, hangi konunun seni beklediğini birlikte görelim.",
-      "scribble": "her hafta biraz daha",
+      "title": "Denemeni gir, sıradaki konunu gör.",
+      "body": "Deneme sonuçlarını gir; hangi konu tekrar istiyor, hangisi yerinde, tek bakışta gör.",
+      "scribble": "sıradaki: geometri",
       "story": "Sıradaki odak: Geometri. Paragrafta istikrar yerinde."
     },
     "yours": {
       "name": "Sen",
-      "title": "Bu pencere boş. Senin olsun mu?",
-      "body": "Hangi alana yürüyorsun? Seç, pencerende kim yanıyor görelim.",
+      "title": "Bu oda boş. Senin olsun mu?",
+      "body": "Hangi alanı hedefliyorsun? Seç, bu odaya kim taşınıyor görelim.",
       "scribble": "komşu oluyoruz",
       "choose_label": "Alanını seç",
-      "lit_title": "Penceren yandı.",
-      "line": "{field} yolunda ilk adımı bu akşam birlikte atalım.",
-      "none_line": "Alanını sonra da seçebilirsin. İlk adımı bu akşam birlikte atalım.",
+      "lit_title": "Hoş geldin, komşu!",
+      "line": "Hedefin {field}. İlk adımı bu akşam atalım!",
+      "none_line": "Alanını sonra da seçebilirsin. İlk adımı bu akşam atalım!",
       "cta": "Bu alanla başla"
     },
     "dawn": {
-      "title": "Her gece biraz daha yakın.",
-      "body": "Sınav sabahına giden yolu küçük adımlarla, birlikte yürüyelim."
+      "title": "Günaydın! Sınava bir gün daha yaklaştın.",
+      "body": "Bugün küçük bir adım, yarın bir tane daha. Sınav sabahına böyle varılır."
     }
   },
   "auth": {
@@ -2077,6 +2077,7 @@
         "cta": "{cost} coin ile AI Puhu notunu aç",
         "confirm": "Emin misin? {cost} coin harcanacak",
         "insufficient": "AI notu için {cost} coin gerekiyor ({balance}/{cost}). Görevlere bak",
+        "unavailable": "AI Puhu notu şu an hazırlanamadı. Biraz sonra yeniden deneyebilirsin. Alınmış haftalık hakkın korunur.",
         "error": "AI Puhu notu açılamadı",
         "premium": "Premium ile aç"
       },
@@ -3093,12 +3094,38 @@
     "retry": "Yeniden dene"
   },
   "economy": {
+    "uses": {
+      "title": "Coin ile neler açabilirim?",
+      "refresh": "Seçenekleri yenile",
+      "loading": "Kullanım seçenekleri yükleniyor",
+      "error": "Kullanım seçenekleri şu an yüklenemedi. Yenileyerek tekrar deneyebilirsin.",
+      "xp_note": "XP kişisel ilerlemeni gösterir. Harcanmaz ve Coin'e dönüşmez.",
+      "balance": "Kullanılabilir Coin: {coin}",
+      "cost": "{cost} Coin",
+      "premium": "Premium'a dahil",
+      "daily": "Son 24 saatlik sınırda kalan mesaj: {count}",
+      "slots": "Coin ile alınan ek kapasite: {used} / {max}",
+      "recheck": "Seçeneği açmak Coin harcamaz. Kullanım koşullarını ilgili ekranda görebilirsin.",
+      "items": {
+        "NOTEBOOK_SLOT": { "title": "Ek defter kapasitesi", "description": "Kalıcı +1 özel defter kapasitesi. Sayfa ve fotoğraf sınırların aynı kalır.", "action": "Defterlerime git" },
+        "COACH_CHAT": { "title": "Koç mesajı hakkı", "description": "Bir koç mesajı için kullanım hakkı. Günlük sınırlar geçerlidir.", "action": "Koç ekranını aç" },
+        "DEEP_ANALYSIS": { "title": "Haftalık derin analiz", "description": "Hazır haftalık raporun ayrıntılı koç yorumunu açar. Hak, ilgili hafta ve sınav içindir.", "action": "Analiz ekranını aç" }
+      },
+      "status": {
+        "AVAILABLE": "Kullanılabilir.", "INSUFFICIENT_COIN": "Bu seçenek için henüz yeterli Coin'in yok.",
+        "PREMIUM_INCLUDED": "Bu kullanım Premium'a dahil, Coin harcanmaz.", "INCLUDED": "Mevcut kullanım hakkına dahil, Coin harcanmaz.",
+        "ALREADY_UNLOCKED": "Bu haftanın hakkı zaten açık, yeniden Coin harcanmaz.",
+        "LIMIT_REACHED": "Yeni ek kapasite alım sınırına ulaştın. Mevcut kapasiten sende kalır.",
+        "DAILY_LIMIT_REACHED": "Günlük mesaj sınırına ulaştın. Yeni hak açıldığında kullanabilirsin.",
+        "UNAVAILABLE": "Bu seçenek şu an kullanılamıyor.", "NEEDS_EXAM": "Profilinden sınavını seçince bu seçeneği kontrol edebiliriz.",
+        "REVIEW_NOT_READY": "Bu haftanın raporu henüz hazır değil. Coin harcanmaz."
+      }
+    },
     "balance_subtitle": "Coin nakit değildir. Ek defter kapasitesi, koç sohbet hakkı ve haftalık derin analiz için kullanılır.",
     "balance_title": "Bakiyen",
     "xp": "XP",
     "confirmed": "Coin",
     "pending": "+{count} beklemede",
-    "go_coach": "Koça git",
     "ledger_title": "Son hareketler",
     "ledger_loading": "Hareketler yükleniyor…",
     "ledger_empty": "Henüz bir hareket düşmedi.",
@@ -3172,7 +3199,6 @@
     "email_verified_reward_label": "E-posta Doğrulandı",
     "subscription_reward_label": "İlk Abonelik Bonusu",
     "balance_error": "Bakiye güncellenemedi. Biraz sonra yeniden deneyebilirsin.",
-    "balance_usage": "Bir sohbet mesajı {chatCost} Coin, haftalık derin analiz {analysisCost} Coin. Mevcut bakiyenle {chatMessages} mesaj veya {weeklyAnalyses} analiz açabilirsin. Defterlerim'den kalıcı ek defter kapasitesi de açabilirsin. Günlük kullanım ve uygunluk sınırları geçerlidir.",
     "balance_loading": "Bakiye yükleniyor…"
   },
   "legal": {

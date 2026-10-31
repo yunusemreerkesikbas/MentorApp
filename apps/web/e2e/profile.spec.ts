@@ -163,6 +163,7 @@ test("economy refresh updates the open balance sheet and celebrates ledger rewar
   await page.route(`${browserApiUrl}/economy/**`, async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/balance")) return json(route, { xp, coinConfirmed: coin, coinPending: 0, level });
+    if (path.endsWith("/uses")) return json(route, { coinConfirmed: coin, items: [] });
     if (path.endsWith("/quests")) return json(route, []);
     if (path.endsWith("/invite")) return json(route, inviteView());
     if (path.endsWith("/ledger")) return json(route, rewardAvailable ? [reward] : []);

@@ -12,36 +12,65 @@ describe("DeepAnalysisService", () => {
   let spend: ReturnType<typeof vi.fn>;
   let service: DeepAnalysisService;
   let aiEnabled: boolean;
+  let included: boolean;
+  let available: boolean;
+  let acquire: ReturnType<typeof vi.fn>;
+  let release: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     reviewStatus = "READY";
     aiEnabled = true;
+    included = false;
+    available = true;
+    acquire = vi.fn(async () => {
+      if (!available)
+        throw Object.assign(new Error("budget"), {
+          code: "AI_BUDGET_EXCEEDED",
+        });
+      return "hold";
+    });
+    release = vi.fn(async () => undefined);
     premium = false;
     coin = 30;
     spentRefs = new Set();
-    spend = vi.fn(async (_userId: string, cost: number, opts: { refId: string }) => {
-      const alreadySpent = spentRefs.has(opts.refId);
-      if (!alreadySpent) {
-        if (coin < cost) {
-          const err = new Error("insufficient") as Error & { code: string };
-          err.code = ErrorCode.INSUFFICIENT_COIN;
-          throw err;
+    spend = vi.fn(
+      async (_userId: string, cost: number, opts: { refId: string }) => {
+        const alreadySpent = spentRefs.has(opts.refId);
+        if (!alreadySpent) {
+          if (coin < cost) {
+            const err = new Error("insufficient") as Error & { code: string };
+            err.code = ErrorCode.INSUFFICIENT_COIN;
+            throw err;
+          }
+          coin -= cost;
+          spentRefs.add(opts.refId);
         }
-        coin -= cost;
-        spentRefs.add(opts.refId);
-      }
-      return { balance: { xp: 0, coinConfirmed: coin, coinPending: 0 }, alreadySpent };
-    });
+        return {
+          balance: { xp: 0, coinConfirmed: coin, coinPending: 0 },
+          alreadySpent,
+        };
+      },
+    );
     service = new DeepAnalysisService(
       {
         spend,
-        getSelfBalance: async () => ({ xp: 0, coinConfirmed: coin, coinPending: 0 }),
+        getSelfBalance: async () => ({
+          xp: 0,
+          coinConfirmed: coin,
+          coinPending: 0,
+        }),
       } as never,
-      { existsByRef: async (_t: string, refId: string) => spentRefs.has(refId) } as never,
+      {
+        existsByRef: async (_t: string, refId: string) => spentRefs.has(refId),
+      } as never,
       {
         getReview: async () => ({
           status: reviewStatus,
-          period: { startDate: "2026-07-13", endDate: "2026-07-19", timeZone: "Europe/Istanbul" },
+          period: {
+            startDate: "2026-07-13",
+            endDate: "2026-07-19",
+            timeZone: "Europe/Istanbul",
+          },
         }),
       } as never,
       { getEntitlement: async () => ({ isPremium: premium }) } as never,
@@ -53,13 +82,27 @@ describe("DeepAnalysisService", () => {
           return 0;
         },
       } as never,
+      {
+        get: () => ({
+          isIncluded: async () => included,
+          canGenerate: async () => available,
+          acquire,
+          release,
+        }),
+      } as never,
     );
   });
 
   it("offers no unlock and never debits while AI is disabled", async () => {
     aiEnabled = false;
-    await expect(service.getState("u1", [], EXAM)).rejects.toMatchObject({ code: "AI_DISABLED", httpStatus: 404 });
-    await expect(service.purchase("u1", [], EXAM)).rejects.toMatchObject({ code: "AI_DISABLED", httpStatus: 404 });
+    await expect(service.getState("u1", [], EXAM)).rejects.toMatchObject({
+      code: "AI_DISABLED",
+      httpStatus: 404,
+    });
+    await expect(service.purchase("u1", [], EXAM)).rejects.toMatchObject({
+      code: "AI_DISABLED",
+      httpStatus: 404,
+    });
     expect(spend).not.toHaveBeenCalled();
     expect(coin).toBe(30);
     expect(spentRefs.size).toBe(0);
@@ -72,7 +115,9 @@ describe("DeepAnalysisService", () => {
       aiEnabled = false;
       return state;
     });
-    await expect(service.purchase("u1", [], EXAM)).rejects.toMatchObject({ code: "AI_DISABLED" });
+    await expect(service.purchase("u1", [], EXAM)).rejects.toMatchObject({
+      code: "AI_DISABLED",
+    });
     expect(spend).not.toHaveBeenCalled();
     expect(coin).toBe(30);
   });
@@ -87,6 +132,60 @@ describe("DeepAnalysisService", () => {
       unlocked: false,
       premium: false,
     });
+  });
+
+  it("uses the same capped Free allowance as the narration without a Coin debit", async () => {
+    included = true;
+    expect(await service.purchase("u1", [], EXAM)).toMatchObject({
+      unlocked: true,
+    });
+    expect(spend).not.toHaveBeenCalled();
+    expect(acquire).not.toHaveBeenCalled();
+  });
+
+  it("reports unavailable generation and refuses a new debit when budget is full", async () => {
+    available = false;
+    expect(await service.getState("u1", [], EXAM)).toMatchObject({
+      generationAvailable: false,
+    });
+    await expect(service.purchase("u1", [], EXAM)).rejects.toMatchObject({
+      code: "AI_BUDGET_EXCEEDED",
+    });
+    expect(spend).not.toHaveBeenCalled();
+    expect(coin).toBe(30);
+  });
+
+  it("rechecks actual budget capacity after an offer and releases the hold after spending", async () => {
+    await service.purchase("u1", [], EXAM);
+    expect(acquire).toHaveBeenCalledOnce();
+    expect(release).toHaveBeenCalledWith("hold");
+    available = false;
+    expect(await service.purchase("u1", [], EXAM)).toMatchObject({
+      purchased: true,
+      unlocked: true,
+    });
+    expect(spend).toHaveBeenCalledOnce();
+    expect(acquire).toHaveBeenCalledOnce();
+  });
+
+  it("releases the budget hold if the Coin debit fails", async () => {
+    coin = 0;
+    await expect(service.purchase("u1", [], EXAM)).rejects.toMatchObject({
+      code: "INSUFFICIENT_COIN",
+    });
+    expect(release).toHaveBeenCalledWith("hold");
+  });
+
+  it("releases the budget hold without debiting if AI closes during reservation", async () => {
+    acquire.mockImplementation(async () => {
+      aiEnabled = false;
+      return "hold";
+    });
+    await expect(service.purchase("u1", [], EXAM)).rejects.toMatchObject({
+      code: "AI_DISABLED",
+    });
+    expect(spend).not.toHaveBeenCalled();
+    expect(release).toHaveBeenCalledWith("hold");
   });
 
   it("purchase debits once and unlocks; a repeat purchase never double-debits", async () => {

@@ -4,26 +4,32 @@ import { Currency, type QuestProgressView } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
-import {
-  DailyQuestSignalService,
-  type DailyQuestSignals,
-} from "../../coaching/application/daily-quest-signal.service";
+import { DailyQuestSignalService } from "../../coaching/application/daily-quest-signal.service";
 import { StreakService } from "../../coaching/application/streak.service";
 import { UsersService } from "../../identity/application/users.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 import { EconomyService } from "./economy.service";
 import { resolveEconomyLang } from "./economy-lang";
+import { readQuestConfig } from "./quest-config";
 import { InviteRepository } from "../infrastructure/invite.repository";
 import { QuestRepository } from "../infrastructure/quest.repository";
-import { resolveQuestCardCopy } from "../domain/quest-copy";
+import { toQuestViews } from "./quest-view";
 import {
   QUEST_CATALOG,
-  QUEST_PERIOD_ONCE,
   QuestType,
   type QuestDef,
 } from "../domain/quest.catalog";
 
-import { progressKey, questTarget, sourceCurrent, xpReward, coinReward, isEconomyAction, type QuestConfig } from "./quest-progress";
+import {
+  progressKey,
+  questPeriodKey,
+  activeQuestPeriodKeys,
+  questTarget,
+  sourceCurrent,
+  xpReward,
+  coinReward,
+  isEconomyAction,
+} from "./quest-progress";
 
 export type { QuestProgressView };
 
@@ -52,38 +58,57 @@ export class QuestService {
   /**
    * Evaluate every onboarding quest for the user; for each newly-completed one record it and grant
    * the reward in one SERVICE tx (idempotent via progress unique + ledger refId).
+   * Returns period-scoped keys for met steps whose Coin grant is waiting on earning conditions.
    */
-  async evaluateAndGrant(userId: string, date?: string, strict = false): Promise<void> {
+  async evaluateAndGrant(
+    userId: string,
+    date?: string,
+    strict = false,
+  ): Promise<string[]> {
+    const pendingRewards: string[] = [];
     const rewardsEnabled = await this.config.get("economy.enabled");
 
     const [signals, streak, cfg] = await Promise.all([
-      date ? this.dailySignals.getForDate(userId, date) : this.dailySignals.getToday(userId),
-      date ? this.streak.getStreakAt(userId, date) : this.streak.getSummary(userId),
-      this.readQuestConfig(),
+      date
+        ? this.dailySignals.getForDate(userId, date)
+        : this.dailySignals.getToday(userId),
+      date
+        ? this.streak.getStreakAt(userId, date)
+        : this.streak.getSummary(userId),
+      readQuestConfig(this.config),
     ]);
-    const activePeriodKeys = this.activePeriodKeys(signals);
+    const activePeriodKeys = activeQuestPeriodKeys(signals);
     const completed = new Set(
       (await this.quests.listForUser(userId, activePeriodKeys)).map((r) =>
         progressKey(r.questId, r.periodKey),
       ),
     );
     const pending = QUEST_CATALOG.filter((q) => {
-      if (cfg.disabledIds.has(q.id) || (!rewardsEnabled && isEconomyAction(q))) return false;
-      const periodKey = this.periodKey(q, signals);
+      if (cfg.disabledIds.has(q.id) || (!rewardsEnabled && isEconomyAction(q)))
+        return false;
+      const periodKey = questPeriodKey(q, signals);
       return !completed.has(progressKey(q.id, periodKey));
     });
-    if (pending.length === 0) return;
+    if (pending.length === 0) return pendingRewards;
 
     // Read the user's state once (self-context reads work for any trigger path — the user's own
     // request, the subscription-activated listener, or the invite-redeem hook).
-    const me = strict ? await this.users.getMe(userId) : await this.users.getMe(userId).catch(() => null);
-    if (!me) return;
+    const me = strict
+      ? await this.users.getMe(userId)
+      : await this.users.getMe(userId).catch(() => null);
+    if (!me) return pendingRewards;
     const sub = await this.subscriptions.getView(userId);
     const redeemed = await this.invites.findRedemptionByInvited(userId);
 
     const isMet = (q: QuestDef): boolean => {
-      if (q.type === QuestType.MILESTONE || q.type === QuestType.WEEKLY_RITUAL) {
-        return sourceCurrent(q, signals, streak.currentStreak) >= questTarget(q, cfg.targets);
+      if (
+        q.type === QuestType.MILESTONE ||
+        q.type === QuestType.WEEKLY_RITUAL
+      ) {
+        return (
+          sourceCurrent(q, signals, streak.currentStreak) >=
+          questTarget(q, cfg.targets)
+        );
       }
       switch (q.id) {
         case "daily.plan-task-done":
@@ -113,7 +138,7 @@ export class QuestService {
     let xpChanged = false;
     for (const q of pending) {
       if (!isMet(q)) continue;
-      const periodKey = this.periodKey(q, signals);
+      const periodKey = questPeriodKey(q, signals);
       const reward =
         rewardsEnabled && q.rewardUnit === "XP"
           ? { unit: Currency.XP, amount: xpReward(q, cfg) }
@@ -122,7 +147,12 @@ export class QuestService {
             : null;
       try {
         const committedXpGrant = await this.quests.withServiceTx(async (tx) => {
-          const row = await this.quests.markCompleted(userId, q.id, periodKey, tx);
+          const row = await this.quests.markCompleted(
+            userId,
+            q.id,
+            periodKey,
+            tx,
+          );
           if (!row) return false; // concurrent completion already recorded — idempotent
           if (!reward || reward.amount <= 0) return false;
           const inserted = await this.economy.grantInServiceTx(
@@ -141,25 +171,39 @@ export class QuestService {
         });
         if (committedXpGrant) xpChanged = true;
       } catch (err) {
-        if (err instanceof DomainError && err.code === ErrorCode.ECONOMY_LIMIT_EXCEEDED) {
-          this.logger.log({ userId, questId: q.id }, "quest reward skipped — user over coin cap");
+        if (
+          err instanceof DomainError &&
+          err.code === ErrorCode.ECONOMY_LIMIT_EXCEEDED
+        ) {
+          pendingRewards.push(progressKey(q.id, periodKey));
+          this.logger.log(
+            { userId, questId: q.id },
+            "quest reward skipped — user over coin cap",
+          );
         } else {
-          this.logger.error({ err, userId, questId: q.id }, "quest reward failed");
+          this.logger.error(
+            { err, userId, questId: q.id },
+            "quest reward failed",
+          );
           if (strict) throw err;
         }
       }
     }
     if (xpChanged) {
       await this.economy.publishXpChanged(userId).catch((err: unknown) => {
-        this.logger.warn({ err, userId }, "journey-level realtime cue could not be published");
+        this.logger.warn(
+          { err, userId },
+          "journey-level realtime cue could not be published",
+        );
       });
     }
+    return pendingRewards;
   }
 
   /** User-facing: lazy-evaluate (grant newly-completed) then return the full catalog with progress. */
   async getUserProgress(userId: string): Promise<QuestProgressView[]> {
-    await this.evaluateAndGrant(userId);
-    return this.toViews(userId);
+    const pendingRewards = await this.evaluateAndGrant(userId);
+    return this.toViews(userId, pendingRewards);
   }
 
   /** Admin: read-only progress (no evaluation/grant). */
@@ -167,112 +211,31 @@ export class QuestService {
     return this.toViews(userId);
   }
 
-  private async toViews(userId: string): Promise<QuestProgressView[]> {
+  private async toViews(
+    userId: string,
+    pendingRewards: readonly string[] = [],
+  ): Promise<QuestProgressView[]> {
     const [signals, streak, cfg, rewardsEnabled] = await Promise.all([
       this.dailySignals.getToday(userId),
       this.streak.getSummary(userId),
-      this.readQuestConfig(),
+      readQuestConfig(this.config),
       this.config.get("economy.enabled"),
     ]);
-    const rows = await this.quests.listForUser(userId, this.activePeriodKeys(signals));
-    const byKey = new Map(rows.map((r) => [progressKey(r.questId, r.periodKey), r]));
-    // The goal quest only exists for users who chose a goal — no default target.
-    const visible = QUEST_CATALOG.filter(
-      (q) =>
-        !cfg.disabledIds.has(q.id) &&
-        (rewardsEnabled || !isEconomyAction(q)) &&
-        (q.id !== "daily.focus-goal-met" || signals.dailyFocusGoalMinutes != null),
+    const rows = await this.quests.listForUser(
+      userId,
+      activeQuestPeriodKeys(signals),
     );
     const lang = resolveEconomyLang();
     const t = (key: string, args: Record<string, unknown> = {}) =>
       String(this.i18n.translate(`economy.${key}`, { lang, args }));
-    return visible.map((q) => {
-      const periodKey = this.periodKey(q, signals);
-      const row = byKey.get(progressKey(q.id, periodKey));
-      const rewardUnit = rewardsEnabled ? q.rewardUnit : "NONE";
-      const rewardAmount =
-        rewardUnit === "XP" ? xpReward(q, cfg) : rewardUnit === "COIN" ? coinReward(q, cfg) : 0;
-      const hasTarget = q.progressTarget != null || q.targetConfigKey != null;
-      const target = hasTarget ? questTarget(q, cfg.targets) : undefined;
-      const copy = resolveQuestCardCopy(t, q.id, target != null ? { target } : {});
-      return {
-        id: q.id,
-        category: q.category,
-        period: q.period,
-        periodKey,
-        type: q.type,
-        title: copy.title,
-        badgeLabel: copy.badgeLabel,
-        action: q.action,
-        rewardUnit,
-        rewardAmount,
-        rewardCoin: rewardUnit === "COIN" ? rewardAmount : 0,
-        progressCurrent:
-          target != null
-            ? row
-              ? target
-              : Math.min(sourceCurrent(q, signals, streak.currentStreak), target)
-            : undefined,
-        progressTarget: target,
-        completed: row !== undefined,
-        completedAt: row?.completedAt.toISOString() ?? null,
-      };
+    return toQuestViews({
+      signals,
+      currentStreak: streak.currentStreak,
+      cfg,
+      rewardsEnabled,
+      rows,
+      pendingRewards,
+      t,
     });
-  }
-
-  /** All quest-related config in one batch (rewards, weekly targets, kill-switch list). */
-  private async readQuestConfig(): Promise<QuestConfig> {
-    const [
-      onboardingRewardCoin,
-      dailyRewardXp,
-      streakMilestoneRewardXp,
-      effortMilestoneRewardXp,
-      weeklyRitualRewardXp,
-      weeklyAllowanceRewardCoin,
-      weeklyFocusTarget,
-      weeklyPlanTarget,
-      weeklyAllowanceTarget,
-      disabledCsv,
-    ] = await Promise.all([
-      this.config.get("economy.quest.onboarding_reward_coin"),
-      this.config.get("economy.quest.daily_ritual_reward_xp"),
-      this.config.get("economy.quest.streak_milestone_reward_xp"),
-      this.config.get("economy.quest.effort_milestone_reward_xp"),
-      this.config.get("economy.quest.weekly_ritual_reward_xp"),
-      this.config.get("economy.quest.weekly_allowance_reward_coin"),
-      this.config.get("economy.quest.weekly_focus_sessions_target"),
-      this.config.get("economy.quest.weekly_plan_tasks_target"),
-      this.config.get("economy.quest.weekly_allowance_active_days_target"),
-      this.config.get("economy.quest.disabled_ids"),
-    ]);
-    return {
-      onboardingRewardCoin,
-      dailyRewardXp,
-      streakMilestoneRewardXp,
-      effortMilestoneRewardXp,
-      weeklyRitualRewardXp,
-      weeklyAllowanceRewardCoin,
-      targets: new Map([
-        ["economy.quest.weekly_focus_sessions_target", weeklyFocusTarget],
-        ["economy.quest.weekly_plan_tasks_target", weeklyPlanTarget],
-        ["economy.quest.weekly_allowance_active_days_target", weeklyAllowanceTarget],
-      ]),
-      disabledIds: new Set(
-        disabledCsv
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      ),
-    };
-  }
-
-  private periodKey(q: QuestDef, signals: DailyQuestSignals): string {
-    if (q.type === QuestType.DAILY_RITUAL) return signals.date;
-    if (q.type === QuestType.WEEKLY_RITUAL) return signals.weekKey;
-    return QUEST_PERIOD_ONCE;
-  }
-
-  private activePeriodKeys(signals: DailyQuestSignals): string[] {
-    return [QUEST_PERIOD_ONCE, signals.date, signals.weekKey];
   }
 }

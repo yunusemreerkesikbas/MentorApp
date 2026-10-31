@@ -43,16 +43,24 @@ Same rules as above: short, warm, one `!` per sentence, at most one emoji per li
 - **Never name who paid.** Joined friends may be named (they typed the code); Premium conversions are a count
   only (“1 kişi Premium'a geçti”). No FOMO (“kaçırma”), no guilt toward a friend who has not joined.
 
-## Landing: Puhu tells the story (2026-10-28)
+## Landing: enerjik Puhu (2026-10-31)
 
-The public `/` (`landing.*`) is told by **Puhu**: the hero, the window notes, the margin scribbles,
-the dawn. It talks to someone who has not signed up yet, so it stays warm and plain rather than
-energetic: no `!` in the story, and the only one on the page is the league demo's cheer line.
+The public `/` (`landing.*`) is told by **Puhu** in the same **Duolingo-like** voice as Topluluk
+(user's call, 2026-10-31; it replaces the calm, no-`!` landing rule of 2026-10-28): the hero, the
+notes, the margin scribbles, the sections and the dawn. `/koclar` (`coaches.*`) speaks to
+professionals, so it stays plain and gets a single `!`, on the closing title.
 
-- **"Pencere" is the story's word, not a label's.** It belongs in the headline and the notes ("Bu
-  gece ışığı yanan tek pencere seninki değil.", "Penceren yandı."). Facts, buttons and plates use
-  plain words: "Son 24 saatte {n} kişi burada çalıştı.", "Bu alanla başla", door plates with bare
-  names ("Masa", not "Masa penceresi").
+- **Short and concrete.** A title says one benefit in plain words, often a verb chain or a short
+  question and its answer: "Odanı seç, süreni kur, başla!", "Takıldın mı? Topluluğa sor!",
+  "Görevleri bitir, XP topla, seviye atla!". One `!` per sentence, not on every title. No emoji.
+- **The night city is the picture, not the copy.** The art keeps the windows; the words stop leaning
+  on "pencere / ışık / gece". Hero: "Her gün biraz, hep birlikte." The career stop says
+  "Bu oda boş. Senin olsun mu?" → "Hoş geldin, komşu!". Facts and buttons stay plain: "Son 24
+  saatte {n} kişi burada çalıştı.", "Bu alanla başla", door plates with bare names ("Masa").
+- **Scribbles are Puhu's own asides**, lowercase and concrete: "selam, ben Puhu!", "bugün 80
+  dakika", "sıradaki: geometri".
+- **Still banned:** promises we cannot back ("gerisi kolay", "garanti"), poetic filler ("Her emek bir
+  ışık yakar"), FOMO and guilt.
 - **Generic "sınav".** The landing never names an exam (KPSS, YKS…), except in the "Blog'dan" cards,
   which show the posts' own titles.
 - **Say what it is, first.** The hero lead names the product before anything else: "Sınava

@@ -145,8 +145,8 @@ export const CONFIG_HINTS: Record<string, string> = {
     "ai.features.vision.note.free_limit": "Tadım açıkken ücretsiz kullanıcının günlük vizyon notu.",
     "ai.features.session.reflection.free_enabled": "Ücretsiz kullanıcıya sınırlı seans AI yansıması tadımı verir.",
     "ai.features.session.reflection.free_limit": "Tadım açıkken ücretsiz kullanıcının günlük seans yansıması.",
-    "ai.features.weekly.narration.free_enabled": "Ücretsiz kullanıcıya sınırlı haftalık AI anlatımı tadımı verir.",
-    "ai.features.weekly.narration.free_limit": "Tadım açıkken ücretsiz kullanıcının 7 günde haftalık anlatım hakkı.",
+    "ai.features.weekly.narration.free_enabled": "Haftalık analiz için sınırlı ücretsiz tadımı açar. Teklif, Coin satın alma ve AI anlatımı bu ortak ayarı kullanır.",
+    "ai.features.weekly.narration.free_limit": "Tadım açıkken ücretsiz kullanıcının 7 günlük kayan aralıkta haftalık analiz hakkı. Hak bittiğinde Coin veya Premium gerekir.",
     "ai.features.mentorship.brief.free_enabled": "Pro'suz koça sınırlı öğrenci brifi tadımı verir. Maliyet koça yazılır.",
     "ai.features.mentorship.brief.free_limit": "Tadım açıkken koçun günlük öğrenci brifi. Öğrenciye değil koça fatura edilir.",
     "ai.features.mentorship.cohort_brief.free_enabled": "Pro'suz koça sınırlı kadro brifi tadımı verir. Koç Pro'nun somut karşılığıdır, varsayılan kapalı.",
@@ -155,8 +155,8 @@ export const CONFIG_HINTS: Record<string, string> = {
     "ai.features.mentorship.suggestions.free_limit": "Tadım açıkken koçun günlük öneri seti. Önbellek yok, yeniden çekim bu sayıya bağlı.",
     "ai.features.daily.greeting.free_enabled": "Ücretsiz kullanıcıya sınırlı günlük AI selamı tadımı verir.",
     "ai.features.daily.greeting.free_limit": "Tadım açıkken ücretsiz kullanıcının günlük selam hakkı.",
-    "ai.features.deep.analysis.free_enabled": "Ücretsiz kullanıcıya Coin'siz sınırlı derin analiz tadımı verir.",
-    "ai.features.deep.analysis.free_limit": "Tadım açıkken ücretsiz kullanıcının 7 günde derin analiz hakkı.",
+    "ai.features.deep.analysis.free_enabled": "Eski ayar, artık etkisi yok. Haftalık analiz için ai.features.weekly.narration.free_enabled kullan.",
+    "ai.features.deep.analysis.free_limit": "Eski ayar, artık etkisi yok. Haftalık analiz sınırı için ai.features.weekly.narration.free_limit kullan.",
 };
 
 export function configHint(key: string, fallback: string): string {

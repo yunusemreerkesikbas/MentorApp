@@ -146,6 +146,8 @@ test("AI Puhu notunu arka planda hazırlar ve öneriyi yalnız plan formuna taş
       canAfford: false,
       unlocked: true,
       premium: true,
+      purchased: false,
+      generationAvailable: true,
     },
     weeklyNarration: {
       narration: "Bu hafta ritmini korudun.",
@@ -316,6 +318,8 @@ test("AI gecikmesi veya hatası hikâyeyi engellemez ve deterministik nota düş
       canAfford: false,
       unlocked: true,
       premium: true,
+      purchased: false,
+      generationAvailable: true,
     },
     weeklyNarration: "error",
   });
@@ -356,6 +360,8 @@ test("AI Puhu coin açma yalnız finalde ve iki dokunuşla çalışır", async (
     canAfford: true,
     unlocked: false,
     premium: false,
+    purchased: false,
+    generationAvailable: true,
   } as const;
   const api = await mockAnalysisApi(page, {
     weekly: [readyWeekly],
@@ -438,6 +444,9 @@ test("TR/EN route sözleşmesi ve Escape kaynak dönüşü korunur", async ({
     "data-slide-kind",
     "welcome",
   );
+  // Confirm playback is interactive before exercising the window keyboard listener.
+  await page.getByRole("button", { name: "Hikâyeyi duraklat" }).click();
+  await expect(page.getByRole("button", { name: "Hikâyeyi oynat", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/\/analiz\?tab=progress$/);
 });

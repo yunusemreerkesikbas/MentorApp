@@ -212,7 +212,9 @@ export class InviteService implements OnModuleInit {
    */
   async onInvitedConverted(event: PaymentSucceeded): Promise<void> {
     if (event.amountMinor <= 0) return;
-    const reward = await this.config.get("economy.invite.reward_coin");
+    const reward = (await this.config.get("economy.enabled"))
+      ? await this.config.get("economy.invite.reward_coin")
+      : 0;
     await this.repo.withServiceTx(async (tx) => {
       const redemption = await this.repo.lockPending(event.userId, tx);
       if (!redemption || redemption.redeemedAt > event.paidAt) return;

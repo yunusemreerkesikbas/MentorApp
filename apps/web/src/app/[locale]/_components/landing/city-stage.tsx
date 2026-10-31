@@ -205,7 +205,7 @@ export function CityStage({
       window.scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
     };
 
-    // "Nasıl çalışır", "Hikayeyi atla" and the doorbells: a smooth move to the stop instead of the jump.
+    // "Nasıl çalışır", "Turu atla" and the doorbells: a smooth move to the stop instead of the jump.
     const onClick = (event: MouseEvent) => {
       const link = event.target instanceof Element ? event.target.closest(STOP_LINK) : null;
       const index = Number(link?.getAttribute("href")?.slice("#durak-".length));

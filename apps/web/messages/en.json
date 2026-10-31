@@ -81,14 +81,14 @@
   },
   "coaches": {
     "meta_title": "For coaches | PuhuKoç",
-    "meta_description": "Your students' plans, sessions and weekly story in one place. Take your morning round and know who needs you. Your first 3 students are free.",
+    "meta_description": "Your students' plans, sessions and weekly story in one place. Every morning you know who to check on. Your first 3 students are free.",
     "nav_students": "For students",
     "nav_coaches": "For coaches",
     "nav_round": "How it works",
     "cta": "Start as a coach",
     "pill": "For coaches",
     "title": "Who studied last night, <em>at a glance.</em>",
-    "lead": "Your students' plans, sessions and weekly story in one place. Take your morning round and know who needs you.",
+    "lead": "Your students' plans, sessions and weekly story in one place. Every morning you know who to check on.",
     "free": "Your first 3 students are free.",
     "summary_label": "This morning at a glance",
     "summary1": "5 studied yesterday",
@@ -178,8 +178,8 @@
     },
     "final": {
       "done": "round done",
-      "title": "Your morning round is ready.",
-      "body": "Share your code today; your first 3 students are free."
+      "title": "Invite your first student today!",
+      "body": "Share your code; your first 3 students are free."
     }
   },
   "landing": {
@@ -189,8 +189,8 @@
     "start": "Start for free",
     "has_account": "I already have an account",
     "tagline": "Your exam companion",
-    "hero_title": "Yours isn't the <glow>only window</glow> lit tonight.",
-    "hero_lead": "An AI-powered study companion for exam prep: your daily plan, focus sessions and friends who study at the same hours, all in one place.",
+    "hero_title": "A little every day, <glow>all together</glow>.",
+    "hero_lead": "An AI-powered study companion for exam prep. Today's plan is ready, your timer is set, and your friends are at the table.",
     "how_it_works": "How it works",
     "faq_nav": "FAQ",
     "counter": "{count, number} people studied here in the last 24 hours.",
@@ -199,7 +199,7 @@
       "title": "All your students on one screen.",
       "body": "Follow your students' plans, sessions and weekly reports in one place. Be there where they get stuck.",
       "cta": "Start as a coach",
-      "more": "See a coach's morning"
+      "more": "See the page for coaches"
     },
     "blog_section": {
       "pill": "Blog",
@@ -208,13 +208,13 @@
     },
     "morning": {
       "pill": "Morning",
-      "title": "What's on your desk in the morning?",
-      "lead": "We kept you company all night. When the sun comes up, your own tools are waiting on your desk.",
+      "title": "What's on your desk?",
+      "lead": "Your mistake notebook, your goal board and the story of your week, all on one desk. Where do we start?",
       "notebook": {
         "name": "Notebooks",
         "tab": "Notebook",
-        "title": "Your mistakes don't get lost.",
-        "body": "Add a question you got wrong with a photo or by typing it, and file it under its subject and topic. When it's time to review, your questions come back one card at a time.",
+        "title": "Questions you got wrong stay found!",
+        "body": "Snap the question or type it, then file it under its subject and topic. On review day, your questions come back one card at a time.",
         "question": "If 3x − 5 = 2x + 4, what is x?",
         "subject_turkish": "Turkish",
         "subject_history": "History",
@@ -224,25 +224,25 @@
       "board": {
         "name": "Goal board",
         "tab": "Board",
-        "title": "Your goal, always in sight.",
-        "body": "Pick your target city on the map, then pin your field and your own photos to your board. Make it a wallpaper or share it with the community if you like.",
+        "title": "Hang your goal on the wall!",
+        "body": "Pick your target city on the map, then add your field and your photos to your board. Make it a wallpaper, or share it with the community.",
         "goal": "Computer Engineer",
         "city": "Konya"
       },
       "story": {
         "name": "Story of the week",
         "tab": "Story",
-        "title": "A story every week.",
-        "body": "How many days you studied, how many minutes you focused, which subject shone: when the week ends, it all becomes a short story. If the week was full, you get a codename too.",
+        "title": "Week's over? Your story is ready!",
+        "body": "How many days you studied, how many minutes you focused, which subject shone: it's all in one short story. Finish a full week and you get a codename too.",
         "dates": "Oct 20 – 26",
         "codename": "Nebula Diver"
       }
     },
     "focus": {
       "pill": "Focus",
-      "title": "Pick your room, set your time, start.",
-      "lead": "At home, in the library or at a café: you choose where you study. After your focus, your break is ready.",
-      "lead_rooms": "At home, in the library or at a café: you choose where you study. Your friends can join your table; everyone runs their own session.",
+      "title": "Pick your room, set your time, go!",
+      "lead": "Home, library or café: you pick where you study. When the session ends, your break is ready.",
+      "lead_rooms": "Home, library or café: you pick where you study. Your friends can join your table too.",
       "subject": "History",
       "task": "Turkic states before the Ottomans",
       "unit": "MIN",
@@ -250,23 +250,23 @@
       "minutes": "{count} min",
       "pomodoro": {
         "name": "Pomodoro",
-        "body": "25/5 or 50/10 are ready. Turn the dial for your own length, or study without a timer. Pick your subject; a finished session counts toward your streak and your daily goal."
+        "body": "25/5 or 50/10 are ready. Turn the dial to set your own length, or study without a timer. Every finished session counts toward your streak and your daily goal."
       },
       "table": {
         "name": "Table",
-        "title": "Your friends at the same table.",
-        "body": "Set up a table: pick its name, theme and number of seats. Share the invite link that starts with MASA-, and see from the seats who has been focusing, and for how long.",
+        "title": "Set up a table, call your friends!",
+        "body": "Give the table a name, pick its theme and number of seats. Share the link that starts with MASA-, and see from the seats who has been focusing, and for how long.",
         "friend": "Elif",
         "me": "You"
       },
       "sound": {
-        "title": "The room's sound comes with you.",
-        "body": "The hum of the library, cups at the café, or silence: the sound that fits the room comes on by itself. Switch to the plain view to see just the timer."
+        "title": "Every room has its own sound.",
+        "body": "The hum of the library, cups at the café, or silence: the sound that fits the room comes on by itself. Want just the timer? Switch to the plain view."
       }
     },
     "journey": {
-      "title": "Every bit of effort lights a light.",
-      "lead": "A task from your plan, a focus session, five days in a week: each one counts as a quest. As your XP grows, a new light comes on in the Night Journey; steady weeks earn you Coin too.",
+      "title": "Finish quests, collect XP, level up!",
+      "lead": "A task from your plan, a focus session, five active days in a week: each one brings XP. As your XP adds up you reach new levels in the Night Journey, and steady weeks bring Coin too.",
       "coin_note": "Coin is not money. You earn it with your effort.",
       "goal_progress": "60/120 min",
       "quest": {
@@ -291,7 +291,7 @@
       "q2": "What does the AI coach do, and not do?",
       "a2": "It talks knowing your plan and your study history, and keeps you on track. It never makes up official dates or procedures; it shows those from verified sources. It does not solve exam questions.",
       "q3": "Which exams is it for?",
-      "a3": "It's designed for everyone on the road to an exam. Exam-specific content and official info cards are added exam by exam.",
+      "a3": "Everyone preparing for an exam. Exam-specific content and official info cards are added exam by exam.",
       "q4": "Is my data safe?",
       "a4": "Your data is protected under KVKK. If you have a coach, they don't see your conversations with the AI coach, only what you need.",
       "q5": "I have a coach. What changes?",
@@ -300,26 +300,26 @@
       "a6": "Yes. PuhuKoç runs in the browser; pick up where you left off on your phone or your computer."
     },
     "final": {
-      "title": "Your window is waiting.",
-      "body": "Let's take the first step together tonight."
+      "title": "Start today with 25 minutes!",
+      "body": "Open your account and make tonight your first focus session."
     },
-    "skip_story": "Skip the story",
-    "scroll_hint": "Scroll, let's look through the windows",
+    "skip_story": "Skip the tour",
+    "scroll_hint": "Scroll down, let's look inside",
     "plate": "No {no}",
     "intercom_title": "PUHU APT.",
     "intercom_label": "Building doorbells",
-    "bell_label": "Flat {no}, {name}: go to the window",
+    "bell_label": "Flat {no}, {name}: go there",
     "puhu": {
       "name": "Puhu",
-      "title": "Studying alone wears you out.",
-      "body": "Months of studying on your own wear anyone down. Here someone is by your side every evening: your coach, your friends at the desk, and us.",
-      "scribble": "here every evening"
+      "title": "Nobody here studies alone!",
+      "body": "Months of studying alone wear down even the most patient. Here your coach is one message away, and your friends are right beside you.",
+      "scribble": "hi, I'm Puhu!"
     },
     "coach": {
       "name": "Coach",
-      "title": "Your coach is there when it gets hard.",
-      "body": "Write when your mood drops or you don't know where to start. Your coach answers knowing your plan and your study history.",
-      "scribble": "tap, get an answer",
+      "title": "Rough day? Write to your coach.",
+      "body": "Your coach answers knowing your plan and your past sessions. Together you pick one small step you can take today.",
+      "scribble": "pick a feeling, try it!",
       "feelings_label": "Pick a feeling",
       "feeling1": "I don't feel like studying today",
       "reply1": "Days like this happen. Let's not set a big goal today. One 25-minute session is enough; when it's done, we'll look at how it went together.",
@@ -330,14 +330,14 @@
       "feeling3": "I don't know where to start",
       "reply3": "Everything looks urgent at once, I know. Let's pick one topic today. A small step on the task that has waited longest in your plan.",
       "step3": "Small step: the first task in your plan",
-      "empty": "Pick a feeling and see how your coach answers.",
+      "empty": "Pick a feeling and see what your coach says.",
       "demo_note": "This is a sample answer. The AI coach is part of Premium."
     },
     "plan": {
       "name": "Plan",
-      "title": "Today's study is ready.",
-      "body": "Let's build your week around your goal and your time. A short path every day, a chest at the end of the week.",
-      "scribble": "small steps, long road",
+      "title": "Today's plan is ready. You just start!",
+      "body": "Tell us your goal and how much time you have each day, and we'll build your week together. Finish the daily tasks, open the weekly chest.",
+      "scribble": "80 minutes today",
       "step1": "Turkish",
       "step1_time": "25 min",
       "step2": "Maths",
@@ -349,8 +349,8 @@
     },
     "desk": {
       "name": "Desk",
-      "title": "One desk, everyone on their own clock.",
-      "body": "Sit at a desk with your friends. Everyone starts their own session; you study quietly, side by side.",
+      "title": "Study at the same table as your friends.",
+      "body": "Set up a table and call your friends. Everyone starts their own session, and you study quietly, side by side.",
       "scribble": "the empty seat is yours",
       "seat1": "Elif",
       "seat1_state": "Focused · 18 min",
@@ -363,9 +363,9 @@
     },
     "community": {
       "name": "Community",
-      "title": "Ask, lend a hand, move forward together.",
-      "body": "Share the question you're stuck on, answer one you know. In the weekly league your effort shows.",
-      "body_no_league": "Share the question you're stuck on, answer one you know.",
+      "title": "Stuck? Ask the community!",
+      "body": "Answer one you know, too. In the weekly league your effort shows up as XP.",
+      "body_no_league": "Answer one you know, too. One answer can save someone's day.",
       "scribble": "applause for effort",
       "cheer": "You studied 5 days this week. You're doing great!",
       "row1": "Zeynep",
@@ -377,25 +377,25 @@
     },
     "analysis": {
       "name": "Analysis",
-      "title": "Let your practice tests tell you their story.",
-      "body": "Enter your practice test results and we'll see which topic is waiting for you.",
-      "scribble": "a little more each week",
+      "title": "Log your test, see your next topic.",
+      "body": "Enter your practice test results and see at a glance which topic needs another pass and which one is steady.",
+      "scribble": "next up: geometry",
       "story": "Next focus: Geometry. Reading is steady."
     },
     "yours": {
       "name": "You",
-      "title": "This window is empty. Want it to be yours?",
-      "body": "Which field are you heading for? Pick one and let's see who lights up your window.",
+      "title": "This room is empty. Want it to be yours?",
+      "body": "Which field are you aiming for? Pick one and let's see who moves in.",
       "scribble": "we're neighbours now",
       "choose_label": "Pick your field",
-      "lit_title": "Your window is lit.",
-      "line": "Let's take the first step towards {field} together tonight.",
-      "none_line": "You can pick your field later. Let's take the first step together tonight.",
+      "lit_title": "Welcome, neighbour!",
+      "line": "Your goal is {field}. Let's take the first step tonight!",
+      "none_line": "You can pick your field later. Let's take the first step tonight!",
       "cta": "Start with this field"
     },
     "dawn": {
-      "title": "A little closer every night.",
-      "body": "Let's walk the road to exam morning together, in small steps."
+      "title": "Good morning! One day closer to your exam.",
+      "body": "A small step today, another tomorrow. That is how you get to exam morning."
     }
   },
   "auth": {
@@ -2077,6 +2077,7 @@
         "cta": "Unlock the AI Puhu note for {cost} coins",
         "confirm": "Are you sure? {cost} coins will be spent",
         "insufficient": "The AI note costs {cost} coins ({balance}/{cost}). View quests",
+        "unavailable": "The AI Puhu note is temporarily unavailable. You can try again later. Any weekly access already purchased is kept.",
         "error": "The AI Puhu note could not be unlocked",
         "premium": "Open with Premium"
       },
@@ -3093,12 +3094,36 @@
     "retry": "Try again"
   },
   "economy": {
+    "uses": {
+      "title": "What can I unlock with Coin?",
+      "refresh": "Refresh options",
+      "loading": "Loading usage options",
+      "error": "Usage options could not load. Refresh to try again.",
+      "xp_note": "XP shows your personal progress. It cannot be spent or converted to Coin.",
+      "balance": "Available Coin: {coin}", "cost": "{cost} Coin", "premium": "Included with Premium",
+      "daily": "Messages remaining in the rolling 24-hour limit: {count}",
+      "slots": "Extra capacity purchased with Coin: {used} / {max}",
+      "recheck": "Opening a feature does not spend Coin. Review its usage conditions on the feature screen.",
+      "items": {
+        "NOTEBOOK_SLOT": { "title": "Extra notebook capacity", "description": "Permanent capacity for one more custom notebook. Page and photo limits stay the same.", "action": "Go to my notebooks" },
+        "COACH_CHAT": { "title": "Coach message access", "description": "Access for one coach message. Daily limits apply.", "action": "Open coach screen" },
+        "DEEP_ANALYSIS": { "title": "Weekly deep analysis", "description": "Unlocks detailed coach commentary for a ready weekly report. Access applies to that week and exam.", "action": "Open analysis screen" }
+      },
+      "status": {
+        "AVAILABLE": "Available.", "INSUFFICIENT_COIN": "You do not have enough Coin for this option yet.",
+        "PREMIUM_INCLUDED": "Included with Premium; no Coin is spent.", "INCLUDED": "Included in your current access; no Coin is spent.",
+        "ALREADY_UNLOCKED": "This week's access is already unlocked; no further Coin is spent.",
+        "LIMIT_REACHED": "You have reached the extra capacity purchase limit. Your existing capacity stays available.",
+        "DAILY_LIMIT_REACHED": "You have reached the daily message limit. Use it when access becomes available again.",
+        "UNAVAILABLE": "This option is currently unavailable.", "NEEDS_EXAM": "Choose your exam in your profile to check this option.",
+        "REVIEW_NOT_READY": "This week's report is not ready yet. No Coin is spent."
+      }
+    },
     "balance_subtitle": "Coin has no cash value. Use it for extra notebook capacity, coach chat access and weekly deep analysis.",
     "balance_title": "Your balance",
     "xp": "XP",
     "confirmed": "Coin",
     "pending": "+{count} pending",
-    "go_coach": "Go to coach",
     "ledger_title": "Recent activity",
     "ledger_loading": "Loading activity…",
     "ledger_empty": "Nothing has landed on the ledger yet.",
@@ -3172,7 +3197,6 @@
     "email_verified_reward_label": "Email Verified",
     "subscription_reward_label": "First Subscription Bonus",
     "balance_error": "Your balance could not be refreshed. Try again shortly.",
-    "balance_usage": "One chat message costs {chatCost} Coin; a weekly deep analysis costs {analysisCost} Coin. Your balance covers {chatMessages} messages or {weeklyAnalyses} analyses. You can also unlock permanent extra capacity in My notebooks. Daily limits and eligibility still apply.",
     "balance_loading": "Loading your balance…"
   },
   "legal": {

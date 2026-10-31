@@ -114,6 +114,7 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | Endpoint                                  | Purpose                                                  |
 | ----------------------------------------- | -------------------------------------------------------- |
 | `GET /v1/economy/balance`                 | Self balance + XP `level` (tier/nextAt)                  |
+| `GET /v1/economy/uses`                    | Current Coin uses, prices, included rights and eligibility |
 | `GET /v1/economy/ledger`                  | Self ledger history                                      |
 | `GET /v1/economy/rewards/unseen`          | Paginated unread positive reward receipts |
 | `POST /v1/economy/rewards/seen`           | Acknowledge own ledger IDs without changing ledger |
@@ -131,6 +132,89 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `GET /v1/admin/metrics/economy`           | Faucet/sink breakdown + float + faucet reach (calibration) |
 
 ## Geliştirmeler (timeline)
+
+### 2026-11-01 — Earning limits and durable disabled invite outcomes
+
+- **What:** First positive invite-payment delivery always reaches `InviteService`. When economy is
+  disabled the redemption settles as `CONVERTED / DISABLED`, with its source payment and no Coin.
+  Reopening and replaying that event cannot backpay it. The gate now belongs to the conversion
+  service instead of discarding the event in the listener. Refunds still compensate actual earlier
+  grants while economy is closed.
+- **Usage:** Existing audited admin keys govern rewards, rolling daily/weekly earning caps,
+  minimum XP and weekly activity targets. Spending does not restore earning headroom. Admin
+  corrections do not consume organic cap headroom. Quest completion during closure remains recorded
+  without XP/Coin; reopening does not reward those completed quests.
+- **Gotchas:** A cap-denied quest differs from a closed completed quest: cap denial rolls back the
+  completion, so it may be claimed after capacity becomes available, at the then-current configured
+  reward. Previously granted amounts never change. No historical balance/progress reset or
+  automatic repair of older discarded events is introduced.
+- **Pending rights:** Self quest reads return a localized optional `rewardPendingMessage` and
+  `action: null` for met steps waiting on Coin earning conditions. The row explains the wait instead
+  of offering email verification again or promising another immediate payout. Completion stays
+  uncommitted until the actual grant. The hint is scoped to the quest period and disappears on
+  successful grant or while economy is closed. Admin progress remains read-only.
+- **Related:** `invite-events.listener.ts`, `invite.service.ts`, `invite.service.spec.ts`,
+  `test/economy-earning-audit.e2e-spec.ts`, `test/fixtures/economy-audit.ts`, real-browser reward tests
+  in `economy-rewards-real-api.spec.ts` and the existing opt-in notebook browser fixture,
+  `quest-view.ts`, `quest-config.ts`, `quest-progress-view.dto.ts`, `quest-row-item.tsx`, and
+  [the verification report](../qa/2026-11-01-economy-verification.md).
+
+### 2026-10-31 — One weekly-analysis policy and budget-aware purchases
+
+- **What:** Weekly Coin offers, purchases, narration and the balance catalog now share the capped
+  `ai.features.weekly.narration.free_enabled/free_limit` policy. The compatibility feature ID
+  `deep.analysis` exposes the same policy. Legacy `ai.features.deep.analysis.*` registry keys remain
+  readable/editable for compatibility but are explicitly deprecated and have no runtime effect.
+- **Usage:** Configure the weekly narration taste in admin; its rolling seven-day usage limit applies
+  before a Free user needs the existing Coin purchase. Price remains `economy.coin.deep_analysis_cost`
+  (default 25). Offers return `purchased` and `generationAvailable` separately. New purchases acquire
+  an atomic AI budget allowance before the debit and release it afterwards; offer reads create no holds.
+- **Gotchas:** AI-off still rejects with `AI_DISABLED`; economy-off rejects Coin endpoints. A budget
+  closure rejects new purchases with `AI_BUDGET_EXCEEDED` without a debit. Already purchased exam/week
+  rights are never revoked or charged twice. A matching cached report can be read over budget. A later
+  provider failure/budget change can delay generation; the paid right persists and retries cost no Coin.
+  Existing overrides are not migrated or enabled automatically.
+- **Related:** `weekly-analysis-access.registry.ts`, AI `weekly-analysis-access.service.ts`,
+  `deep-analysis.service.ts`, `economy-ai-uses.service.ts`, `ai-budget.guard.ts`, shared economy types,
+  generated client, recap `weekly-recap-puhu-note.tsx`; [verification](../qa/2026-10-31-weekly-analysis-access.md).
+  Admin `config-hints.ts` identifies the canonical controls and marks legacy controls as inactive.
+
+### 2026-10-31 — Live Coin use catalog in the balance sheet
+
+- **What:** Profile/settings → Bakiyen now shows the three existing uses: permanent notebook
+  capacity, coach message access and weekly deep analysis. `GET /v1/economy/uses` supplies current
+  costs, Premium inclusion, owned slots, daily message allowance and per-feature status. XP is
+  explicitly non-spendable and cannot convert to Coin. Cards navigate to owning screens and never
+  buy a right. The former balance-only estimates and generic coach button were replaced.
+- **Usage:** Open Bakiyen and choose a feature. Seçenekleri yenile refreshes both wallet and offer
+  data; action-driven wallet refresh also reloads the catalog. Prices remain in existing admin
+  configuration. Premium/taste/owned rights show no Coin price. Notebook navigation remains useful
+  for managing existing capacity even when another purchase is blocked.
+- **Gotchas:** This is an informational snapshot, not a reservation. Owning features revalidate
+  usage. Economy-off invalidates the shared snapshot and hides offers, including late responses.
+  Read failures show retry rather than stale prices. AI-off and daily/budget limits block AI offers
+  without blocking notebooks. Existing weekly free-taste offer and narration switches are distinct;
+  if they disagree the catalog advertises neither a free nor a paid use. Their policies are unchanged.
+- **Architecture:** Economy owns the catalog contract/controller and composes notebook state with
+  an AI-owned resolver. AI registers through `EconomyUsesRegistry`, avoiding a reverse module import.
+  Reads do not debit Coin, grant rewards or invoke the LLM. Legacy balance `usage` remains available
+  for backward-compatible clients.
+- **Related:** `economy-uses.service.ts`, `economy-uses.registry.ts`, `economy-uses.controller.ts`,
+  `economy-ai-uses.service.ts`, profile `economy-uses-card.tsx`, `economy-balance-card.tsx`, shared
+  economy types, generated OpenAPI/client and catalog API/browser tests.
+
+### 2026-10-31 — Opt-in browser verification against a real isolated API
+
+- **What/usage:** `playwright.notebook-live.config.ts` starts a dedicated web/API pair on
+  localhost 3510/3501. Run with `QA_NOTEBOOK_LIVE=1` and the dedicated local test database specified
+  in the API fixture. Mobile and desktop scenarios use real auth, profile/email quest events,
+  Coin ledger debits, notebook persistence and audited admin configuration, with no route mocks.
+- **Gotchas:** No Coin, quest progress or notebook is seeded. Only disposable identities and
+  one-time email tokens are fixture data; AI/storage are fake and email delivery is suppressed.
+  The new-account level introduction and Coin reward are dismissed through their normal controls.
+  Development Strict Mode exposed a duplicate email-verification request; see the identity timeline.
+- **Related:** web `e2e/economy-notebook-real-api.spec.ts`, `playwright.notebook-live.config.ts`,
+  API `test/fixtures/notebook-live-server.ts`; [identity](./identity.md).
 
 ### 2026-10-31 — Permanent notebook capacity purchased with Coin
 

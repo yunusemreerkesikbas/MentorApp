@@ -97,6 +97,19 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-31 — One-time email verification survives Strict Mode effect replay
+
+- **What:** Real-API notebook purchase QA reproduced two verification POSTs from one verification
+  page in development Strict Mode. The API correctly consumed the token once and granted only one
+  10-Coin reward, but the second 400 response replaced the successful screen with an invalid-link error.
+  The verification page now shares its request for the same token across repeated effect setup.
+- **Usage/gotchas:** Normal verification links and backend single-use checks are unchanged. Strict
+  Mode stays enabled. A different token starts a new operation; this is not a global token cache or
+  a backend replay bypass. Browser regression checks require exactly one verification POST and the
+  successful screen before checking the actual earned Coin balance.
+- **Related:** web `verify-email/page.tsx`, `e2e/economy-notebook-real-api.spec.ts`,
+  `playwright.notebook-live.config.ts`, API `test/fixtures/notebook-live-server.ts`.
+
 - **2026-10-30 · Core-trial social boundary.** Follow/buddy actions and relation lists now use
   `community.social.enabled` before reads, mutations and events, including invitation linking.
   Internal relationship views return empty values while closed; cleanup remains possible.

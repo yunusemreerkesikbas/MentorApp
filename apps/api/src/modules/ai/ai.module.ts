@@ -17,6 +17,7 @@ import { LLM_PORT, RAW_LLM_PORT } from "./domain/llm.port";
 import { RAW_VISION_PORT, VISION_PORT } from "./domain/vision.port";
 import { ChatService } from "./application/chat.service";
 import { CoachAccessService } from "./application/coach-access.service";
+import { EconomyAiUsesService } from "./application/economy-ai-uses.service";
 import { MoodReflectionService } from "./application/mood-reflection.service";
 import { DailyGreetingService } from "./application/daily-greeting.service";
 import { PlanDraftService } from "./application/plan-draft.service";
@@ -25,6 +26,7 @@ import { SessionReflectionService } from "./application/session-reflection.servi
 import { GhostNarrationService } from "./application/ghost-narration.service";
 import { VisionNoteService } from "./application/vision-note.service";
 import { WeeklyReviewNarrationService } from "./application/weekly-review-narration.service";
+import { WeeklyAnalysisAccessService } from "./application/weekly-analysis-access.service";
 import { PhotoAccessService } from "./application/photo-access.service";
 import { PhotoCategorizeService } from "./application/photo-categorize.service";
 import { PhotoUploadService } from "./application/photo-upload.service";
@@ -105,6 +107,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     ChatService,
     CommunityCoachPlanTaskService,
     CoachAccessService,
+    EconomyAiUsesService,
     MoodReflectionService,
     DailyGreetingService,
     PlanAdaptationService,
@@ -113,6 +116,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     GhostNarrationService,
     VisionNoteService,
     WeeklyReviewNarrationService,
+    WeeklyAnalysisAccessService,
     PhotoAccessService,
     PremiumFeatureGateService,
     AssignmentSuggestionService,
