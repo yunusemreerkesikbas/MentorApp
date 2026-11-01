@@ -203,46 +203,42 @@ export default function SignupPage() {
         minLength={8}
         revealLabels={{ show: ui("show_password"), hide: ui("hide_password") }}
       />
-      <div
-        className="flex min-h-11 items-start gap-3 text-sm"
-        style={{ color: "var(--color-body)" }}
-      >
-        <CheckBox
-          checked={kvkkChecked}
-          onChange={setKvkkChecked}
-          name="kvkk"
-          value="on"
-          required
-          aria-labelledby={kvkkLabelId}
-          className="mt-1"
-        />
-        {/* The checkbox asserts the notice was READ — so it has to be reachable from right here. */}
-        <span id={kvkkLabelId}>
-          {translate.rich("kvkk", {
-            link: (chunks) => <LegalLink slug="kvkk-aydinlatma">{chunks}</LegalLink>,
-          })}
-        </span>
+      <div className="flex flex-col gap-2 text-sm" style={{ color: "var(--color-body)" }}>
+        <div className="flex items-start gap-3">
+          <CheckBox
+            checked={kvkkChecked}
+            onChange={setKvkkChecked}
+            name="kvkk"
+            value="on"
+            required
+            aria-labelledby={kvkkLabelId}
+            className="t-check-accent mt-1"
+          />
+          {/* The checkbox asserts the notice was READ, so it has to be reachable from right here. */}
+          <span id={kvkkLabelId}>
+            {translate.rich("kvkk", {
+              link: (chunks) => <LegalLink slug="kvkk-aydinlatma">{chunks}</LegalLink>,
+            })}
+          </span>
+        </div>
+        <div className="flex items-start gap-3">
+          <CheckBox
+            checked={termsChecked}
+            onChange={setTermsChecked}
+            name="terms"
+            value="on"
+            required
+            aria-labelledby={termsLabelId}
+            className="t-check-accent mt-1"
+          />
+          <span id={termsLabelId}>
+            {translate.rich("terms", {
+              link: (chunks) => <LegalLink slug="kullanim-kosullari">{chunks}</LegalLink>,
+            })}
+          </span>
+        </div>
+        <AuthCookieConsent />
       </div>
-      <div
-        className="flex min-h-11 items-start gap-3 text-sm"
-        style={{ color: "var(--color-body)" }}
-      >
-        <CheckBox
-          checked={termsChecked}
-          onChange={setTermsChecked}
-          name="terms"
-          value="on"
-          required
-          aria-labelledby={termsLabelId}
-          className="mt-1"
-        />
-        <span id={termsLabelId}>
-          {translate.rich("terms", {
-            link: (chunks) => <LegalLink slug="kullanim-kosullari">{chunks}</LegalLink>,
-          })}
-        </span>
-      </div>
-      <AuthCookieConsent />
       <SignupTurnstile onToken={setTurnstileToken} resetKey={turnstileResetKey} />
       <FormError message={error} />
       <SubmitButton busy={busy} disabled={Boolean(turnstileSiteKey && !turnstileToken)}>{translate("submit")}</SubmitButton>

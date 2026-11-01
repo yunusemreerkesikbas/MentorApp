@@ -82,7 +82,7 @@ function Note({ name, title, body, bodyOnPhone = true, scribble, scribbleAbove, 
 function Hero({ t }: { t: Translate }) {
   return (
     <div className="lc-sheet lc-hero">
-      <p className="lc-eyebrow">{t("tagline")}</p>
+      <p className="lc-eyebrow">{t("exams")}</p>
       <h1 id="landing-title">
         {t.rich("hero_title", { glow: (chunks) => <span className="lc-glow">{chunks}</span> })}
       </h1>

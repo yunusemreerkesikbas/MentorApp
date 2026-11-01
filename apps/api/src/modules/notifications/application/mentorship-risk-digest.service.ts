@@ -99,7 +99,12 @@ export class MentorshipRiskDigestService {
         await this.queue.enqueue(JobName.SEND_EMAIL, {
           to: candidate.email,
           template: EmailTemplate.MENTORSHIP_RISK_DIGEST,
-          variables: { displayName: candidate.displayName, ...args },
+          variables: {
+            displayName: candidate.displayName,
+            ...args,
+            // The email lists the names as rows; `names` stays the joined string the copy uses.
+            studentNames: candidate.students.map((student) => student.displayName).filter(Boolean),
+          },
         });
       }
       sent += 1;

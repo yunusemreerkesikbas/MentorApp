@@ -12,28 +12,24 @@ import { useTranslations } from "next-intl";
 import type {
   ApplyPlanAdaptationResultDto,
   CoachPlanAdaptationBriefDto,
-  CoachPlanAdaptationDto,
 } from "@mentor/types";
 import type { CoachPlanAdaptationInput } from "@mentor/validation";
 import { Button } from "@mentor/ui";
 import { useAuth } from "@/lib/auth-context";
-import { trackCoachEvent } from "@/lib/analytics";
-import {
-  fetchPlanAdaptationBrief,
-  requestCoachPlanAdaptation,
-} from "@/lib/coach";
+import { fetchPlanAdaptationBrief } from "@/lib/coach";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
-import { isPremiumRequiredError } from "@/lib/premium-required";
 import { useSubscription } from "@/lib/subscription-context";
 import { PlanCoachAdaptationBrief } from "./plan-coach-adaptation-brief";
 import type { PlanAdaptationKnownWeek } from "./plan-coach-adaptation-brief-note";
-import {
-  PlanCoachAdaptationStage,
-  type PlanCoachStageProgress,
-} from "./plan-coach-adaptation-stage";
+import { PlanCoachAdaptationStage } from "./plan-coach-adaptation-stage";
+import { usePlanCoachGeneration } from "./use-plan-coach-generation";
 import { usePlanCoachPreview, readCoachError } from "./use-plan-coach-preview";
+import { fetchCoinPlanBrief, fetchSavedPlanPreview } from "@/lib/plan-previews";
+import { refreshEconomySnapshot } from "@/lib/economy-store";
+import { PlanCoinDialog } from "./plan-coin-dialog";
+import { usePlanCoinFlow } from "./use-plan-coin-flow";
 
 interface PlanCoachAdaptationActionProps {
   knownWeek: PlanAdaptationKnownWeek;
@@ -43,13 +39,6 @@ interface PlanCoachAdaptationActionProps {
 
 export interface PlanCoachAdaptationActionHandle {
   open: (input: CoachPlanAdaptationInput) => void;
-}
-
-/** The waiting scene: what was asked, the wizard's bar if it came from there, and whether the answer is in. */
-interface StageState {
-  input: CoachPlanAdaptationInput;
-  progress: PlanCoachStageProgress | null;
-  arrived: boolean;
 }
 
 export const PlanCoachAdaptationAction = forwardRef<
@@ -69,86 +58,77 @@ export const PlanCoachAdaptationAction = forwardRef<
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardError, setWizardError] = useState<string | null>(null);
   const [brief, setBrief] = useState<CoachPlanAdaptationBriefDto | null>(null);
-  const [stage, setStage] = useState<StageState | null>(null);
-  // Bumped by every request and by "Vazgeç", so an answer nobody waits for opens nothing.
-  const runRef = useRef(0);
-  const landed = useRef<CoachPlanAdaptationDto | null>(null);
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const { view: subscriptionView, refresh: refreshSubscription } =
     useSubscription();
-  const openPreview = usePlanCoachPreview({
-    returnFocusRef: triggerRef,
-    onApplied,
-    onPlanChanged,
-    onRegenerate: (input) => void generatePreview(input),
-  });
-
+  const coin = usePlanCoinFlow();
   const closeWizard = useCallback(() => {
     wizardLock.current = false;
     setWizardOpen(false);
   }, []);
-
-  async function generatePreview(
-    input: CoachPlanAdaptationInput,
-    progress: PlanCoachStageProgress | null = null,
-  ) {
-    const run = ++runRef.current;
-    busyRef.current = true;
-    setBusy(true);
-    setWizardError(null);
-    setStage({ input, progress, arrived: false });
-    try {
-      trackCoachEvent("coach_plan_adaptation_request", {
-        source: input.source,
-      });
-      const preview = await requestCoachPlanAdaptation(input);
-      if (run !== runRef.current) return;
-      // The scene closes itself first; `finishStage` opens the preview behind it.
-      landed.current = preview;
-      setStage({ input, progress, arrived: true });
-    } catch (error) {
-      if (run !== runRef.current) return;
-      setStage(null);
-      if (isPremiumRequiredError(error)) {
-        closeWizard();
-        openPaywall({ sourceFeature: "plan.ai" });
-        return;
-      }
+  const {
+    stage,
+    generate: generatePreview,
+    finish: finishStage,
+    cancel: cancelStage,
+  } = usePlanCoachGeneration({
+    busyRef,
+    onBusy: setBusy,
+    onStart: () => setWizardError(null),
+    onPremium: () => {
+      closeWizard();
+      openPaywall({ sourceFeature: "plan.ai" });
+    },
+    onReady: (preview, input) => {
+      closeWizard();
+      void openPreview(preview, input);
+    },
+    onError: (error) => {
       const message = readCoachError(error, tCommon("error_unknown"));
-      // The wizard is still open with the answers in it; it says the error above its own button.
-      if (wizardLock.current) {
-        setWizardError(message);
-        return;
-      }
-      toast.error({
-        title: tCommon("error_title"),
-        message,
-        duration: 3000,
+      if (wizardLock.current) setWizardError(message);
+      else toast.error({ title: tCommon("error_title"), message });
+    },
+    onSaved: () => {
+      void refreshEconomySnapshot();
+      void coin
+        .refresh()
+        .catch((error) =>
+          console.error("Plan preview offer refresh failed", error),
+        );
+    },
+  });
+  const openPreview = usePlanCoachPreview({
+    returnFocusRef: triggerRef,
+    onApplied,
+    onPlanChanged,
+    onRegenerate: (input) =>
+      void (
+        input.source === "PLAN" && coin.offer?.mode === "COIN"
+          ? coin.request(input, null)
+          : generatePreview(input)
+      ).catch((error) =>
+        toast.error({
+          title: tCommon("error_title"),
+          message: readCoachError(error, tCommon("error_unknown")),
+        }),
+      ),
+  });
+
+  async function readSaved(requestId: string) {
+    const saved = await fetchSavedPlanPreview(requestId);
+    if (saved.preview) {
+      closeWizard();
+      void openPreview(saved.preview, { source: "PLAN" });
+    } else if (saved.state === "GENERATED") {
+      coin.setQuote({
+        requestId,
+        cost: saved.cost,
+        input: { source: "PLAN" },
+        progress: null,
+        resume: true,
       });
-    } finally {
-      if (run === runRef.current) {
-        setBusy(false);
-        busyRef.current = false;
-      }
     }
-  }
-
-  function finishStage() {
-    const preview = landed.current;
-    const input = stage?.input;
-    landed.current = null;
-    setStage(null);
-    closeWizard();
-    if (preview && input) void openPreview(preview, input);
-  }
-
-  function cancelStage() {
-    runRef.current += 1;
-    landed.current = null;
-    setStage(null);
-    busyRef.current = false;
-    setBusy(false);
   }
 
   async function open(input: CoachPlanAdaptationInput) {
@@ -158,16 +138,22 @@ export const PlanCoachAdaptationAction = forwardRef<
     try {
       // Shared read; only joins a request when the user hit this before it settled.
       // A failed read leaves `view` null (not loading) — retry instead of treating it as free.
-      const view = subscriptionView ?? (await refreshSubscription());
-      if (!isPremiumFeatureAvailable(view, "plan.ai")) {
-        busyRef.current = false;
-        setBusy(false);
-        openPaywall({ sourceFeature: "plan.ai" });
+      if (input.source !== "PLAN") {
+        const view = subscriptionView ?? (await refreshSubscription());
+        if (!isPremiumFeatureAvailable(view, "plan.ai")) {
+          openPaywall({ sourceFeature: "plan.ai" });
+          return;
+        }
+        await generatePreview(input);
         return;
       }
 
-      if (input.source !== "PLAN") {
-        await generatePreview(input);
+      const offer = await coin.refresh();
+      if (!offer.canGenerate) {
+        if (offer.latestRequestId) await readSaved(offer.latestRequestId);
+        else if (offer.reason === "PAYMENT_PREMIUM_REQUIRED")
+          openPaywall({ sourceFeature: "plan.ai" });
+        else coin.setBlocked(offer);
         return;
       }
 
@@ -176,7 +162,11 @@ export const PlanCoachAdaptationAction = forwardRef<
       // leaves today's defaults.
       setBrief(null);
       setWizardError(null);
-      void fetchPlanAdaptationBrief().then(setBrief, () => undefined);
+      void (
+        offer.mode === "COIN"
+          ? fetchCoinPlanBrief()
+          : fetchPlanAdaptationBrief()
+      ).then(setBrief, () => undefined);
       setWizardOpen(true);
     } catch (error) {
       toast.error({
@@ -208,6 +198,22 @@ export const PlanCoachAdaptationAction = forwardRef<
           {t("coach_adaptation_cta")}
         </Button>
       </span>
+      {coin.offer?.latestRequestId ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            void readSaved(coin.offer!.latestRequestId!).catch((error) =>
+              toast.error({
+                title: tCommon("error_title"),
+                message: readCoachError(error, tCommon("error_unknown")),
+              }),
+            )
+          }
+        >
+          {t("coin_preview.saved")}
+        </Button>
+      ) : null}
       {wizardOpen ? (
         <PlanCoachAdaptationBrief
           knownWeek={knownWeek}
@@ -222,7 +228,43 @@ export const PlanCoachAdaptationAction = forwardRef<
           onComplete={(input, progress) => {
             if (busyRef.current) return;
             // The wizard stays open underneath, so a failed request finds the answers still there.
-            void generatePreview(input, progress);
+            if (coin.offer?.mode === "COIN")
+              void coin
+                .request(input, progress)
+                .catch((error) =>
+                  setWizardError(
+                    readCoachError(error, tCommon("error_unknown")),
+                  ),
+                );
+            else void generatePreview(input, progress);
+          }}
+        />
+      ) : null}
+      {coin.quote || coin.blocked ? (
+        <PlanCoinDialog
+          cost={coin.quote?.cost ?? coin.blocked?.cost ?? null}
+          message={coin.blocked?.message}
+          canConfirm={coin.quote !== null}
+          onClose={() => {
+            coin.setQuote(null);
+            coin.setBlocked(null);
+          }}
+          onPremium={
+            coin.blocked?.mode === "COIN" &&
+            (coin.blocked.reason === "INSUFFICIENT_COIN" ||
+              coin.blocked.reason === "AI_PLAN_COIN_LIMIT_REACHED")
+              ? () => {
+                  coin.setBlocked(null);
+                  closeWizard();
+                  openPaywall({ sourceFeature: "plan.ai" });
+                }
+              : undefined
+          }
+          onConfirm={() => {
+            const quote = coin.quote;
+            if (!quote) return;
+            coin.setQuote(null);
+            void generatePreview(quote.input, quote.progress, quote);
           }}
         />
       ) : null}

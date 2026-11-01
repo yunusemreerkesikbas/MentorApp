@@ -52,6 +52,7 @@ function setup() {
     users as never,
     content as never,
     deep as never,
+    { get: vi.fn(async () => ({ mode: "NONE", canGenerate: false, cost: null, dailyRemaining: 0, latestRequestId: null })) } as never,
   );
   service.onModuleInit();
   const views = (coin = 50) => registry.resolve("user", [], coin);
@@ -64,6 +65,7 @@ describe("EconomyAiUsesService", () => {
     expect(await s.views()).toMatchObject([
       { id: "COACH_CHAT", cost: 7, status: "AVAILABLE", dailyRemaining: 3 },
       { id: "DEEP_ANALYSIS", cost: 29, status: "AVAILABLE" },
+      { id: "PLAN_PREVIEW", status: "UNAVAILABLE" },
     ]);
   });
   it("does not advertise generation while AI is disabled", async () => {
@@ -98,6 +100,7 @@ describe("EconomyAiUsesService", () => {
         canOpen: false,
       },
       { cost: null, premiumIncluded: true, status: "PREMIUM_INCLUDED" },
+      { id: "PLAN_PREVIEW", status: "UNAVAILABLE" },
     ]);
   });
   it("distinguishes insufficient Coin from an unready weekly report", async () => {

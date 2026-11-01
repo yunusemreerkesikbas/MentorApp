@@ -3,11 +3,11 @@ import { ResendEmailAdapter } from "./resend-email.adapter";
 
 function setup() {
   const values: Record<string, string> = {
-    RESEND_API_KEY: "re_test_key", RESEND_FROM: "noreply@puhukoc.com",
+    RESEND_API_KEY: "re_test_key", RESEND_FROM: "noreply@puhukoc.com", APP_URL: "https://puhukoc.com",
   };
   const config = { get: (key: string) => values[key] };
-  const i18n = { translate: (key: string, options: { lang: string; args: { name: string } }) =>
-    key.endsWith("greeting") ? `Hello ${options.args.name}` : `${options.lang}: ${key}` };
+  const i18n = { translate: (key: string, options: { lang: string; args?: { name?: string; hello?: string } }) =>
+    key.endsWith("helloName") ? `Hello ${options.args?.name}` : `${options.lang}: ${key} ${options.args?.hello ?? ""}`.trim() };
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(new Response('{"id":"email-1"}'));
   vi.stubGlobal("fetch", fetch);
   const adapter = new ResendEmailAdapter(config as never, i18n as never);
@@ -29,11 +29,12 @@ describe("Resend transactional delivery", () => {
     expect(url).toBe("https://api.resend.com/emails");
     expect(options?.headers).toEqual(expect.objectContaining({ Authorization: "Bearer re_test_key" }));
     const body = JSON.parse(String(options?.body));
-    expect(body).toMatchObject({ from: "noreply@puhukoc.com", to: input.to });
+    expect(body).toMatchObject({ from: "PuhuKoç <noreply@puhukoc.com>", to: input.to });
     expect(body.subject).toMatch(/^tr:/);
     expect(body.html).toContain("&lt;img");
-    expect(body.html).not.toContain("<img");
+    expect(body.html).not.toContain("<img src=x");
     expect(body.html).toContain("token=synthetic&amp;lang=tr");
+    expect(body.html).toContain("https://puhukoc.com/img/email/logo.png");
     expect(body.text).toContain(input.variables.link);
     expect(options?.signal).toBeInstanceOf(AbortSignal);
   });
@@ -44,7 +45,8 @@ describe("Resend transactional delivery", () => {
       variables: { lang: "en-US", link: "javascript:alert(1)" } });
     const body = JSON.parse(String(fetch.mock.calls[0][1]?.body));
     expect(body.subject).toMatch(/^en:/);
-    expect(body.html).not.toContain("href=");
+    expect(body.html).not.toContain("javascript:");
+    expect(body.html).not.toContain("data-email-button");
     expect(body.text).not.toContain("javascript:");
   });
 

@@ -12,6 +12,11 @@ export default defineConfig({
       client: "fetch",
       override: {
         operations: {
+          PlanPreviewController_offer: { fetch: { includeHttpResponseReturnType: false } },
+          PlanPreviewController_brief: { fetch: { includeHttpResponseReturnType: false } },
+          PlanPreviewController_create: { fetch: { includeHttpResponseReturnType: false } },
+          PlanPreviewController_read: { fetch: { includeHttpResponseReturnType: false } },
+          PlanPreviewController_confirm: { fetch: { includeHttpResponseReturnType: false } },
           EconomyController_questsList: {
             fetch: { includeHttpResponseReturnType: false },
           },

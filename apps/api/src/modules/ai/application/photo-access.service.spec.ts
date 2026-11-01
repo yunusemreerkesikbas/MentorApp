@@ -4,6 +4,7 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { PhotoAccessService } from "./photo-access.service";
+import { AiUsageFeature } from "../domain/ai.constants";
 
 describe("PhotoAccessService", () => {
   let service: PhotoAccessService;
@@ -23,7 +24,7 @@ describe("PhotoAccessService", () => {
     service = new PhotoAccessService(
       { getEntitlement } as never,
       { get: configGet } as never,
-      { countPhotoCategorizationsSince: countSince } as never,
+      { countFeatureSince: countSince } as never,
       { isWithinBudget: vi.fn(async () => true) } as never,
     );
   });
@@ -48,5 +49,20 @@ describe("PhotoAccessService", () => {
 
   it("assertCanCategorize passes for premium under cap", async () => {
     await expect(service.assertCanCategorize("user-1")).resolves.toBeUndefined();
+    expect(countSince).toHaveBeenCalledWith("user-1", AiUsageFeature.VISION, expect.any(Date));
+  });
+
+  it("counts notebook prelabels and mock-exam requests through the shared vision meter", async () => {
+    configGet.mockImplementation(async (key: string) => ({
+      [FeatureFlag.AI_ENABLED]: true,
+      "ai.features.photo.categorize.free_enabled": true,
+      "ai.features.photo.categorize.free_limit": 1,
+    })[key]);
+    getEntitlement.mockResolvedValue({ isPremium: false });
+    countSince.mockResolvedValue(1);
+    await expect(service.getAccess("user-1")).resolves.toMatchObject({
+      canCategorize: false, reason: ErrorCode.PAYMENT_PREMIUM_REQUIRED,
+    });
+    expect(countSince).toHaveBeenCalledWith("user-1", AiUsageFeature.VISION, expect.any(Date));
   });
 });

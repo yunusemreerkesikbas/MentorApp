@@ -207,6 +207,17 @@ refresh cookie. The existing `/v1/auth/{login,refresh,logout}` routes remain the
 > tables, and the coaching endpoint never invokes the model. `POST /v1/coach/plan-draft` and
 > `POST /v1/plan-tasks/bulk` remain available for backward compatibility; the current web flow uses
 > the adaptation pair.
+> Addition (2026-11-01): `GET /v1/coach/plan-previews/access` is the canonical read-only offer.
+> `GET .../brief` seeds the Coin wizard without spending. `POST /v1/coach/plan-previews` accepts
+> `{ input: { source: "PLAN", ... }, expectedCost, clientRequestId }` and saves a quoted, idempotent
+> Coin-funded preview. `GET .../:id` returns only the authenticated owner's request (unpaid results
+> stay hidden); `POST .../:id/confirm` settles an already-generated result with `{ expectedCost }`
+> without another model call. A ready request replays without a second debit; other input/locale
+> under the same ID is 409. Pending requests count toward the rolling limit. Provider/invalid
+> output does not debit. Ledger debit and READY publication share one service transaction through
+> Economy's public interface. Default rollout off; approved price 20, Coin limit one/rolling 24h,
+> both admin configurable. Paid rereads work with economy off; plan apply keeps the existing guard.
+> Both Coin POSTs require `Idempotency-Key` matching the body `clientRequestId` or saved path ID.
 > Addition (2026-09-23): `GET /v1/coach/plan-adaptation/brief` seeds the wizard behind the same
 > Premium gate with a coverage line, the verified evidence the coach will read and suggested
 > days/minutes/subjects. It makes no model call and spends no quota. The preview additively returns

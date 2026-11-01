@@ -189,7 +189,8 @@
     "start": "Ücretsiz başla",
     "has_account": "Zaten hesabım var",
     "tagline": "Sınav yoldaşın",
-    "hero_title": "Her gün biraz, <glow>hep birlikte</glow>.",
+    "exams": "KPSS · YKS · LGS",
+    "hero_title": "Işığın yanıyorsa, <glow>yalnız değilsin</glow>.",
     "hero_lead": "Sınava hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı. Bugünün planı hazır, sayacın kurulu, masada arkadaşların var.",
     "how_it_works": "Nasıl çalışır",
     "faq_nav": "SSS",
@@ -291,7 +292,7 @@
       "q2": "Yapay zekâ koç ne yapar, ne yapmaz?",
       "a2": "Planını ve çalışma geçmişini bilerek konuşur, seni yolda tutar. Resmi tarih ya da süreç uydurmaz; bunları doğrulanmış kaynaktan gösterir. Sınav sorusu çözmez.",
       "q3": "Hangi sınavlara hazırlananlar için?",
-      "a3": "Sınava hazırlanan herkes için. Sınava özel içerikler ve resmi bilgi kartları sınav sınav ekleniyor.",
+      "a3": "KPSS, YKS ve LGS’ye hazırlananlar için. Planın, sayacın ve resmi bilgi kartların seçtiğin sınava göre gelir.",
       "q4": "Verilerim güvende mi?",
       "a4": "Verilerin KVKK kapsamında korunur. Bir koçun varsa yapay zekâ koçla konuşmalarını görmez, yalnızca neye ihtiyacın olduğunu görür.",
       "q5": "Bir koçum var, ne değişir?",
@@ -422,7 +423,7 @@
       "emailchanged": "E-posta adresin değişti ve tüm oturumların kapandı. Yeni adresinle giriş yapabilirsin."
     },
     "cookie": {
-      "label": "<link>Analitik çerez</link> kullanımını kabul ediyorum. (opsiyonel)"
+      "label": "<link>Analitik çerezlere</link> izin veriyorum (isteğe bağlı)."
     },
     "google": {
       "or": "veya",
@@ -434,9 +435,9 @@
       "email": "E-posta",
       "password": "Şifre (en az 8 karakter, harf + rakam)",
       "kvkk": "<link>KVKK aydınlatma metnini</link> okudum.",
-      "kvkk_error": "Devam etmek için KVKK aydınlatma metnini okuduğunu belirtmelisin.",
-      "terms": "<link>Kullanım Koşulları'nı</link> kabul ediyor ve en az 13 yaşında olduğumu beyan ediyorum.",
-      "terms_error": "Devam etmek için Kullanım Koşulları'nı ve 13 yaş uygunluk beyanını onaylamalısın.",
+      "kvkk_error": "Devam etmek için KVKK aydınlatma metnini okuduğunu işaretle.",
+      "terms": "<link>Kullanım koşullarını</link> kabul ediyorum. En az 13 yaşındayım.",
+      "terms_error": "Devam etmek için kullanım koşullarını kabul ettiğini ve en az 13 yaşında olduğunu işaretle.",
       "submit": "Kayıt ol",
       "login_prompt": "Zaten hesabın var mı?",
       "login_link": "Giriş yap",
@@ -1501,6 +1502,16 @@
     "date_sheet_label": "Gün",
     "past_readonly_notice": "Geçmiş günler salt okunur. Sadece bugün ve gelecek günleri düzenleyebilirsin.",
     "coach_adaptation_cta": "Koçla planla",
+    "coin_preview": {
+      "title": "Planını Coin hakkınla hazırla",
+      "price": "Yeni taslak: {cost} Coin",
+      "explanation": "Coin, taslağın başarıyla hazırlanıp kaydedilince kullanılır. Taslağını yeniden açmak ve planına uygulamak ek Coin kullanmaz.",
+      "continues": "Hazırlama başladıktan sonra pencereyi kapatsan da işlem devam eder. Taslağın hazır olduğunda buradan yeniden açabilirsin.",
+      "confirm": "{cost} Coin ile taslak hazırla",
+      "premium": "Premium'u incele",
+      "close": "Şimdilik kapat",
+      "saved": "Kayıtlı taslağımı aç"
+    },
     "coach_adaptation_note_title": "Planını koçla uyarlayalım",
     "coach_adaptation_note_label": "Bu hafta için notun (isteğe bağlı)",
     "coach_adaptation_note_placeholder": "Örn. Cuma gününü biraz daha hafif tut.",
@@ -3103,20 +3114,21 @@
       "balance": "Kullanılabilir Coin: {coin}",
       "cost": "{cost} Coin",
       "premium": "Premium'a dahil",
-      "daily": "Son 24 saatlik sınırda kalan mesaj: {count}",
+      "daily": "Son 24 saatlik sınırda kalan kullanım hakkı: {count}",
       "slots": "Coin ile alınan ek kapasite: {used} / {max}",
       "recheck": "Seçeneği açmak Coin harcamaz. Kullanım koşullarını ilgili ekranda görebilirsin.",
       "items": {
         "NOTEBOOK_SLOT": { "title": "Ek defter kapasitesi", "description": "Kalıcı +1 özel defter kapasitesi. Sayfa ve fotoğraf sınırların aynı kalır.", "action": "Defterlerime git" },
+        "PLAN_PREVIEW": { "title": "Koçla plan taslağı", "description": "Açık onayınla bir yeni plan taslağı hazırlar. Kaydedilmiş taslağı yeniden açmak ve uygulamak ek Coin kullanmaz.", "action": "Plan ekranını aç" },
         "COACH_CHAT": { "title": "Koç mesajı hakkı", "description": "Bir koç mesajı için kullanım hakkı. Günlük sınırlar geçerlidir.", "action": "Koç ekranını aç" },
         "DEEP_ANALYSIS": { "title": "Haftalık derin analiz", "description": "Hazır haftalık raporun ayrıntılı koç yorumunu açar. Hak, ilgili hafta ve sınav içindir.", "action": "Analiz ekranını aç" }
       },
       "status": {
         "AVAILABLE": "Kullanılabilir.", "INSUFFICIENT_COIN": "Bu seçenek için henüz yeterli Coin'in yok.",
         "PREMIUM_INCLUDED": "Bu kullanım Premium'a dahil, Coin harcanmaz.", "INCLUDED": "Mevcut kullanım hakkına dahil, Coin harcanmaz.",
-        "ALREADY_UNLOCKED": "Bu haftanın hakkı zaten açık, yeniden Coin harcanmaz.",
+        "ALREADY_UNLOCKED": "Bu kullanım hakkı zaten açık, yeniden Coin harcanmaz.",
         "LIMIT_REACHED": "Yeni ek kapasite alım sınırına ulaştın. Mevcut kapasiten sende kalır.",
-        "DAILY_LIMIT_REACHED": "Günlük mesaj sınırına ulaştın. Yeni hak açıldığında kullanabilirsin.",
+        "DAILY_LIMIT_REACHED": "Son 24 saatlik kullanım hakkın doldu. Yeni hak açıldığında kullanabilirsin.",
         "UNAVAILABLE": "Bu seçenek şu an kullanılamıyor.", "NEEDS_EXAM": "Profilinden sınavını seçince bu seçeneği kontrol edebiliriz.",
         "REVIEW_NOT_READY": "Bu haftanın raporu henüz hazır değil. Coin harcanmaz."
       }

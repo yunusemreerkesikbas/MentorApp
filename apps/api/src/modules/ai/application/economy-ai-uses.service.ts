@@ -9,6 +9,7 @@ import { EntitlementService } from "../../payments/application/entitlement.servi
 import { DeepAnalysisService } from "../../economy/application/deep-analysis.service";
 import { EconomyUsesRegistry } from "../../economy/application/economy-uses.registry";
 import { CoachAccessService } from "./coach-access.service";
+import { PlanPreviewAccessService } from "./plan-preview-access.service";
 
 /** Read-only catalog adapter. Authorization stays with the owning feature; no LLM or Coin writes. */
 @Injectable()
@@ -21,6 +22,7 @@ export class EconomyAiUsesService implements OnModuleInit {
     private readonly users: UsersService,
     private readonly content: ContentService,
     private readonly deep: DeepAnalysisService,
+    private readonly plan: PlanPreviewAccessService,
   ) {}
   onModuleInit(): void {
     this.registry.register((userId, roles, coin) =>
@@ -36,7 +38,20 @@ export class EconomyAiUsesService implements OnModuleInit {
     return Promise.all([
       this.chatView(userId, roles, ent.isPremium),
       this.weeklyView(userId, roles, coin, ent.isPremium),
+      this.planView(userId, roles, ent.isPremium),
     ]);
+  }
+  private async planView(userId: string, roles: string[], premium: boolean): Promise<EconomyUseView> {
+    const offer = await this.plan.get({ id: userId, roles });
+    return {
+      id: "PLAN_PREVIEW", cost: offer.cost, premiumIncluded: premium,
+      canOpen: offer.canGenerate || offer.latestRequestId !== null,
+      ...(offer.mode === "COIN" ? { dailyRemaining: offer.dailyRemaining } : {}),
+      status: !offer.canGenerate && offer.latestRequestId ? "ALREADY_UNLOCKED"
+        : !offer.canGenerate ? offer.reason === ErrorCode.INSUFFICIENT_COIN ? "INSUFFICIENT_COIN"
+          : offer.reason === ErrorCode.AI_PLAN_COIN_LIMIT_REACHED || offer.reason === ErrorCode.AI_RATE_LIMITED ? "DAILY_LIMIT_REACHED" : "UNAVAILABLE"
+        : offer.mode === "INCLUDED" ? premium ? "PREMIUM_INCLUDED" : "INCLUDED" : "AVAILABLE",
+    };
   }
   private async chatView(
     userId: string,

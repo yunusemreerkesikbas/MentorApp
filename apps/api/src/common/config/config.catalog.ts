@@ -637,6 +637,9 @@ export const CONFIG_CATALOG = {
     100000,
     "Coin debited per AI coach chat message (free earned-right path).",
   ),
+  "economy.coin.plan_preview_cost": economyTarget(20, 100000, "Coin cost of one successfully saved plan-page AI preview."),
+  "ai.plan.coin_daily_limit": aiCount(1, 100000, "Max Coin-funded plan previews per user per rolling 24 hours, including pending requests."),
+  "ai.plan.coin_enabled": flag(false, "Allow explicit Coin-funded plan-page previews. Does not unlock mood/session adaptation."),
   "economy.coin.streak_freeze_cost": economyCount(
     20,
     100000,

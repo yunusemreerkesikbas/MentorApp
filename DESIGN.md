@@ -947,8 +947,8 @@ per evidence type, the backend's own sentence underneath.
       `@mentor/ui`, because the bubble needs `PuhuImage` / `next/image` (2026-09-22).
 - [ ] Move the web-independent parts (classes, `ProgressLine`) into `@mentor/ui` when a screen outside
       `apps/web` needs them.
-- [ ] Faz 3 identity: sidebar PREMIUM badge, avatar ring, caped Puhu (`puhu-premium` transparent
-      export pending).
+- [ ] Faz 3 identity: sidebar PREMIUM badge, avatar ring. (Caped Puhu `puhu-premium.png` is now a
+      transparent RGBA export, 2026-11-01.)
 - [ ] Weekly chest art (soft-3D, closed/open) to replace the line glyph.
 - [ ] Map remaining Nuton library screens ↔ Mentor screens (Figma pass).
 - [ ] Puhu P0: `thinking` (AI loading), `gentle-error` (soft error toast).

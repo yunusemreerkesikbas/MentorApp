@@ -159,6 +159,7 @@ describe("PlanAdaptationService", () => {
       { translate: vi.fn((key: string) => key) } as never,
       { getProfile, getPromptMemories } as never,
       { getCurrentExamByFamily, listExamTopicsByExamId } as never,
+      {} as never,
     );
   });
 

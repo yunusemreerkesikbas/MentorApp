@@ -189,7 +189,8 @@
     "start": "Start for free",
     "has_account": "I already have an account",
     "tagline": "Your exam companion",
-    "hero_title": "A little every day, <glow>all together</glow>.",
+    "exams": "KPSS · YKS · LGS",
+    "hero_title": "If your light is on, <glow>you're not alone</glow>.",
     "hero_lead": "An AI-powered study companion for exam prep. Today's plan is ready, your timer is set, and your friends are at the table.",
     "how_it_works": "How it works",
     "faq_nav": "FAQ",
@@ -291,7 +292,7 @@
       "q2": "What does the AI coach do, and not do?",
       "a2": "It talks knowing your plan and your study history, and keeps you on track. It never makes up official dates or procedures; it shows those from verified sources. It does not solve exam questions.",
       "q3": "Which exams is it for?",
-      "a3": "Everyone preparing for an exam. Exam-specific content and official info cards are added exam by exam.",
+      "a3": "People preparing for KPSS, YKS and LGS. Your plan, countdown and official info cards follow the exam you pick.",
       "q4": "Is my data safe?",
       "a4": "Your data is protected under KVKK. If you have a coach, they don't see your conversations with the AI coach, only what you need.",
       "q5": "I have a coach. What changes?",
@@ -422,7 +423,7 @@
       "emailchanged": "Your email changed and all sessions ended. Sign in with your new address."
     },
     "cookie": {
-      "label": "I accept <link>analytics cookies</link>. (optional)"
+      "label": "I allow <link>analytics cookies</link> (optional)."
     },
     "google": {
       "or": "or",
@@ -435,7 +436,7 @@
       "password": "Password (at least 8 characters, letters + numbers)",
       "kvkk": "I have read the <link>personal data protection notice</link>.",
       "kvkk_error": "Confirm that you have read the personal data protection notice to continue.",
-      "terms": "I accept the <link>Terms of Use</link> and confirm that I am at least 13 years old.",
+      "terms": "I accept the <link>Terms of Use</link>. I am at least 13.",
       "terms_error": "Accept the Terms of Use and confirm that you are at least 13 to continue.",
       "submit": "Sign up",
       "login_prompt": "Already have an account?",
@@ -1501,6 +1502,16 @@
     "date_sheet_label": "Day",
     "past_readonly_notice": "Past days are read-only. You can edit today and future days only.",
     "coach_adaptation_cta": "Plan with your coach",
+    "coin_preview": {
+      "title": "Prepare a plan with your Coin allowance",
+      "price": "New preview: {cost} Coin",
+      "explanation": "Coin is used once your preview is successfully prepared and saved. Reopening it and applying it to your plan use no extra Coin.",
+      "continues": "Preparation continues if you close the window after it starts. You can reopen your saved preview here when it is ready.",
+      "confirm": "Prepare a preview for {cost} Coin",
+      "premium": "Explore Premium",
+      "close": "Close for now",
+      "saved": "Open my saved preview"
+    },
     "coach_adaptation_note_title": "Adapt your plan with your coach",
     "coach_adaptation_note_label": "Your note for this week (optional)",
     "coach_adaptation_note_placeholder": "e.g. Keep Friday a little lighter.",
@@ -3101,20 +3112,21 @@
       "error": "Usage options could not load. Refresh to try again.",
       "xp_note": "XP shows your personal progress. It cannot be spent or converted to Coin.",
       "balance": "Available Coin: {coin}", "cost": "{cost} Coin", "premium": "Included with Premium",
-      "daily": "Messages remaining in the rolling 24-hour limit: {count}",
+      "daily": "Uses remaining in the rolling 24-hour limit: {count}",
       "slots": "Extra capacity purchased with Coin: {used} / {max}",
       "recheck": "Opening a feature does not spend Coin. Review its usage conditions on the feature screen.",
       "items": {
         "NOTEBOOK_SLOT": { "title": "Extra notebook capacity", "description": "Permanent capacity for one more custom notebook. Page and photo limits stay the same.", "action": "Go to my notebooks" },
+        "PLAN_PREVIEW": { "title": "Coach plan preview", "description": "Prepares one new plan preview after your explicit confirmation. Reopening and applying a saved preview use no extra Coin.", "action": "Open plan screen" },
         "COACH_CHAT": { "title": "Coach message access", "description": "Access for one coach message. Daily limits apply.", "action": "Open coach screen" },
         "DEEP_ANALYSIS": { "title": "Weekly deep analysis", "description": "Unlocks detailed coach commentary for a ready weekly report. Access applies to that week and exam.", "action": "Open analysis screen" }
       },
       "status": {
         "AVAILABLE": "Available.", "INSUFFICIENT_COIN": "You do not have enough Coin for this option yet.",
         "PREMIUM_INCLUDED": "Included with Premium; no Coin is spent.", "INCLUDED": "Included in your current access; no Coin is spent.",
-        "ALREADY_UNLOCKED": "This week's access is already unlocked; no further Coin is spent.",
+        "ALREADY_UNLOCKED": "This access is already unlocked; no further Coin is spent.",
         "LIMIT_REACHED": "You have reached the extra capacity purchase limit. Your existing capacity stays available.",
-        "DAILY_LIMIT_REACHED": "You have reached the daily message limit. Use it when access becomes available again.",
+        "DAILY_LIMIT_REACHED": "Your allowance for the last 24 hours is used. You can use it when access becomes available again.",
         "UNAVAILABLE": "This option is currently unavailable.", "NEEDS_EXAM": "Choose your exam in your profile to check this option.",
         "REVIEW_NOT_READY": "This week's report is not ready yet. No Coin is spent."
       }

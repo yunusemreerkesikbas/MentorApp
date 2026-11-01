@@ -2,7 +2,7 @@
 
 import type { CommunityLevelView } from "./community.js";
 
-export type EconomyUseId = "NOTEBOOK_SLOT" | "COACH_CHAT" | "DEEP_ANALYSIS";
+export type EconomyUseId = "NOTEBOOK_SLOT" | "COACH_CHAT" | "DEEP_ANALYSIS" | "PLAN_PREVIEW";
 export type EconomyUseStatus = "AVAILABLE" | "INSUFFICIENT_COIN" | "PREMIUM_INCLUDED" |
   "INCLUDED" | "ALREADY_UNLOCKED" | "LIMIT_REACHED" | "DAILY_LIMIT_REACHED" |
   "UNAVAILABLE" | "NEEDS_EXAM" | "REVIEW_NOT_READY";

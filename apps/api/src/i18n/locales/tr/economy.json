@@ -1,6 +1,7 @@
 {
   "questRewardPending": "Adımın tamam. Coin hakkın şu an bekliyor.",
   "ledger": {
+    "planPreview": { "title": "Koçla plan taslağı hazırlandı", "description": "Coin ile yeni plan taslağın kaydedildi. Yeniden açmak ve uygulamak ek Coin kullanmaz." },
     "notebookSlot": {
       "title": "Ek defter kapasitesi açıldı",
       "description": "Coin ile kalıcı +1 özel defter kapasitesi eklendi."

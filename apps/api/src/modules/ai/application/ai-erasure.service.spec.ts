@@ -10,6 +10,7 @@ describe("AiErasureService", () => {
   let deleteProfile: ReturnType<typeof vi.fn>;
   let deleteWeekly: ReturnType<typeof vi.fn>;
   let deleteGreetings: ReturnType<typeof vi.fn>;
+  let deletePreviews: ReturnType<typeof vi.fn>;
   let service: AiErasureService;
 
   beforeEach(() => {
@@ -19,6 +20,7 @@ describe("AiErasureService", () => {
     deleteProfile = vi.fn(async () => undefined);
     deleteWeekly = vi.fn(async () => undefined);
     deleteGreetings = vi.fn(async () => undefined);
+    deletePreviews = vi.fn(async () => undefined);
     service = new AiErasureService(
       { deleteAllForUser: deleteConversations } as never,
       { deleteAllForUser: deleteMemory } as never,
@@ -26,6 +28,7 @@ describe("AiErasureService", () => {
       { deleteAllForUser: deleteProfile } as never,
       { deleteAllForUser: deleteWeekly } as never,
       { deleteAllForUser: deleteGreetings } as never,
+      { deleteAllForUser: deletePreviews } as never,
     );
   });
 
@@ -38,6 +41,7 @@ describe("AiErasureService", () => {
     expect(deleteProfile).toHaveBeenCalledWith(USER);
     expect(deleteWeekly).toHaveBeenCalledWith(USER);
     expect(deleteGreetings).toHaveBeenCalledWith(USER);
+    expect(deletePreviews).toHaveBeenCalledWith(USER);
   });
 
   it("is idempotent — a second run is another clean no-op pass", async () => {

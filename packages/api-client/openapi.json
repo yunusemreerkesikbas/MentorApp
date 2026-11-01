@@ -1468,6 +1468,204 @@
         ]
       }
     },
+    "/v1/coach/plan-previews/access": {
+      "get": {
+        "operationId": "PlanPreviewController_offer",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanPreviewAccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/plan-previews/brief": {
+      "get": {
+        "operationId": "PlanPreviewController_brief",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/plan-previews": {
+      "post": {
+        "operationId": "PlanPreviewController_create",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Must match clientRequestId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoinPlanPreviewBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedPlanPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/plan-previews/{id}": {
+      "get": {
+        "operationId": "PlanPreviewController_read",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedPlanPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/plan-previews/{id}/confirm": {
+      "post": {
+        "operationId": "PlanPreviewController_confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Must match the saved request id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPlanPreviewBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedPlanPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/mood-reflection": {
       "post": {
         "operationId": "AiMoodController_reflect",
@@ -11593,6 +11791,166 @@
           "decision"
         ]
       },
+      "PlanPreviewAccessResponseDto": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "INCLUDED",
+              "COIN",
+              "NONE"
+            ]
+          },
+          "canGenerate": {
+            "type": "boolean"
+          },
+          "cost": {
+            "type": "number",
+            "nullable": true
+          },
+          "dailyLimit": {
+            "type": "number"
+          },
+          "dailyRemaining": {
+            "type": "number"
+          },
+          "coinConfirmed": {
+            "type": "number"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "latestRequestId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "mode",
+          "canGenerate",
+          "cost",
+          "dailyLimit",
+          "dailyRemaining",
+          "coinConfirmed",
+          "latestRequestId"
+        ]
+      },
+      "CoinPlanInputDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "days": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "studyWeekdays": {
+            "minItems": 1,
+            "maxItems": 7,
+            "description": "ISO weekdays, 1 = Monday",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "minutesPerDay": {
+            "type": "number",
+            "minimum": 10,
+            "maximum": 600
+          },
+          "focusSubjects": {
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "PLAN"
+            ]
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "CoinPlanPreviewBodyDto": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "$ref": "#/components/schemas/CoinPlanInputDto"
+          },
+          "expectedCost": {
+            "type": "number",
+            "minimum": 1
+          },
+          "clientRequestId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "input",
+          "expectedCost",
+          "clientRequestId"
+        ]
+      },
+      "SavedPlanPreviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "RUNNING",
+              "GENERATED",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "preview": {
+            "type": "object",
+            "nullable": true
+          },
+          "cost": {
+            "type": "number"
+          },
+          "coinSpent": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "requestId",
+          "state",
+          "preview",
+          "cost",
+          "coinSpent"
+        ]
+      },
+      "ConfirmPlanPreviewBodyDto": {
+        "type": "object",
+        "properties": {
+          "expectedCost": {
+            "type": "number",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "expectedCost"
+        ]
+      },
       "SessionReflectionBodyDto": {
         "type": "object",
         "properties": {}
@@ -12521,7 +12879,8 @@
             "enum": [
               "NOTEBOOK_SLOT",
               "COACH_CHAT",
-              "DEEP_ANALYSIS"
+              "DEEP_ANALYSIS",
+              "PLAN_PREVIEW"
             ]
           },
           "status": {

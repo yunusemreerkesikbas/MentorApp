@@ -87,6 +87,24 @@ describe("DailyGreetingService", () => {
     expect(find).toHaveBeenCalledWith(USER_ID, expect.any(String), "tr");
   });
 
+  it("lets a Free user reread today's owned greeting after the generation allowance is exhausted", async () => {
+    getEntitlement.mockResolvedValue({ isPremium: false });
+    find.mockResolvedValue({ greeting: "Bugünkü notun.", model: "fake" });
+    await expect(service.greet(USER)).resolves.toEqual({
+      greeting: "Bugünkü notun.", model: "cache",
+    });
+    expect(complete).not.toHaveBeenCalled();
+    expect(append).not.toHaveBeenCalled();
+    expect(build).not.toHaveBeenCalled();
+  });
+
+  it("keeps the global AI switch effective even for an owned cached greeting", async () => {
+    configGet.mockResolvedValue(false);
+    find.mockResolvedValue({ greeting: "Bugünkü notun.", model: "fake" });
+    await expect(service.greet(USER)).rejects.toMatchObject({ code: ErrorCode.AI_DISABLED });
+    expect(find).not.toHaveBeenCalled();
+  });
+
   it("generates, meters and caches a greeting on a fresh day", async () => {
     const res = await service.greet(USER);
     expect(res.greeting).toBe("Günaydın! Bugün tek küçük adım yeter.");

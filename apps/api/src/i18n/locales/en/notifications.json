@@ -247,48 +247,81 @@
     }
   },
   "email": {
+    "common": {
+      "hello": "Hi,",
+      "helloName": "Hi {name},",
+      "fallbackLink": "If the button doesn't open, paste this link into your browser:",
+      "coachChip": "Coach",
+      "footerTransaction": "We sent this email about an action on your PuhuKoç account.",
+      "footerSubscription": "You can manage your subscription in {link}.",
+      "subscriptionLink": "settings",
+      "footerNotification": "You can turn off daily reminders in {link}.",
+      "footerCoach": "You can turn off coach summaries in {link}.",
+      "preferences": "notification settings",
+      "help": "Need a hand? {link}"
+    },
     "identityVerifyEmail": {
-      "subject": "PuhuKoç: Confirm your email",
-      "greeting": "Hi {name},",
-      "body": "One tap is enough. Your account is waiting.",
-      "cta": "Confirm my email"
+      "subject": "Confirm your email",
+      "preheader": "One tap left and your account is ready.",
+      "heading": "Let's confirm your email",
+      "body": "{hello} one tap left to finish your account.",
+      "cta": "Confirm my email",
+      "note": "If you didn't create this account, you can ignore this email. Nothing changes on your side."
     },
     "identityResetPassword": {
-      "subject": "PuhuKoç: Reset your password",
-      "greeting": "Hi {name},",
-      "body": "Use the link below whenever you're ready to set a new password.",
-      "cta": "Reset my password"
+      "subject": "Reset your password",
+      "preheader": "Set a new password in a few seconds.",
+      "heading": "Set a new password",
+      "body": "{hello} we got your request to reset your password. Use the button below to set a new one in a few seconds.",
+      "cta": "Reset my password",
+      "validity": "Link valid for 1 hour",
+      "note": "If you didn't ask for this, your password stays the same. You can delete this email."
     },
     "paymentsDunning": {
-      "subject": "PuhuKoç: Payment didn't go through",
-      "greeting": "Hi {name},",
-      "body": "The payment didn't complete. A look at your subscription settings is enough to keep Premium going."
+      "subject": "Your payment didn't go through",
+      "preheader": "Update your payment method and Premium keeps going.",
+      "heading": "Your payment didn't go through",
+      "body": "{hello} your Premium is still on for now. Update your payment method and it keeps going without a break.",
+      "dateLabel": "Premium stays on until",
+      "cta": "Update payment method"
     },
     "paymentsWelcome": {
-      "subject": "PuhuKoç: Welcome to Premium",
-      "greeting": "Hi {name},",
-      "body": "Your coach is with you now. Take a small step today. We'll carry the rest together."
+      "subject": "Welcome to Premium!",
+      "preheader": "Your coach is with you every day now.",
+      "badge": "PREMIUM",
+      "heading": "Welcome to Premium!",
+      "body": "{hello} your coach is with you now. Take a small step today, and we'll carry the rest together.",
+      "benefitsTitle": "Now yours",
+      "benefit1": "24/7 personal AI coach & instant feedback",
+      "benefit2": "Deep weekly analytics, report card & progress comparison",
+      "benefit3": "Unlimited notebooks, pages & question photos",
+      "cta": "Start today"
     },
     "dailyReminder": {
-      "subject": "PuhuKoç: Take a step today",
-      "greeting": "Hi {name},",
-      "body": "Want to set aside a small step for yourself today? We're right here with you."
-    },
-    "fallback": {
-      "subject": "PuhuKoç",
-      "body": "We have a note for you."
+      "subject": "Shall we take a small step today?",
+      "preheader": "Even five minutes counts.",
+      "bubble": "Shall we take a small step together today? 💙",
+      "body": "{hello} how about a short study session just for you? Even five minutes makes today yours.",
+      "cta": "Open today"
     },
     "mentorshipRiskDigest": {
-      "subject": "PuhuKoç: {count} students worth a look today",
-      "greeting": "Hi {displayName},",
-      "body": "{names} may be struggling lately. You can check their reports in the panel.",
+      "subject": "Students worth a look today: {count}",
+      "preheader": "{names} may be having a hard time lately.",
+      "heading": "Students worth a look today: {count}",
+      "body": "{hello} these students may be having a hard time lately. Their reports are in your panel.",
       "cta": "Open my students"
     },
     "mentorshipFollowupDue": {
-      "subject": "PuhuKoç: You have {count} follow-ups to look at today",
-      "greeting": "Hi {displayName},",
-      "body": "Open follow-ups are waiting on your student list.",
-      "cta": "Open my students"
+      "subject": "Follow-ups for today: {count}",
+      "preheader": "They're all on your student list, in one place.",
+      "heading": "Follow-ups for today: {count}",
+      "body": "{hello} your open follow-ups are waiting on your student list.",
+      "cta": "Open my follow-ups"
+    },
+    "fallback": {
+      "subject": "PuhuKoç",
+      "heading": "We have a note for you",
+      "body": "{hello} there's a note waiting for you on PuhuKoç."
     }
   }
 }

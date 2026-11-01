@@ -67,10 +67,17 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-01 · Landing names the exams; new hero.** Hero is "Işığın yanıyorsa, <glow>yalnız
+  değilsin</glow>." (owner's pick). The hero label (`landing.exams`, "KPSS · YKS · LGS") replaces
+  the tagline there and now shows on phones too (`.lc-eyebrow` base style; the footer keeps
+  `tagline`). FAQ a3 names the three exams. The layout default title/description now read
+  "PuhuKoç: KPSS, YKS ve LGS Sınav Yoldaşın", so every page without its own title inherits it.
+  voice.md rule changed to "name the exams once". Checked at 375 and 1440 on dev; e2e not run.
+
 - **2026-10-31 · Landing and /koclar copy: energetic Puhu.** The owner chose a Duolingo-like voice
   for `/` and less of the night-city metaphor in the words (the art keeps it).
   - **Copy only:** `landing.*` and `coaches.*` in `messages/{tr,en}.json`; no component changed.
-    Hero is now "Her gün biraz, hep birlikte." (the `<glow>` tag stays). The career stop reads "Bu oda
+    Hero is now "Işığın yanıyorsa, yalnız değilsin." (2026-11-01, picked over "Her gün biraz, hep birlikte.") (the `<glow>` tag stays). The career stop reads "Bu oda
     boş. Senin olsun mu?" → "Hoş geldin, komşu!". Quest titles, FAQ answers, the coach demo replies
     and the cookie card were left as they were (companion register, or API copy).
   - **Rule:** `docs/copy/voice.md` "Landing: enerjik Puhu" replaces the 2026-10-28 no-`!` rule.
@@ -1749,3 +1756,10 @@ eklendi.
   geliyor"; `profile.spec.ts` coach test now serves a real balance and asserts no "Coin ve XP".
   Left open (product call): coach XP has no role filter in `xpLeaderboardSince`, so an active
   coach ranks in the same weekly league as students.
+
+- **2026-11-01 — `puhu-premium.png` is transparent.** The caped Puhu shipped as RGB with the
+  "transparency" checkerboard painted into the pixels, so it showed a grey grid wherever it sat
+  (weekly recap Puhu note, `PuhuImage variant="premium"`). Replaced in place with an RGBA export of
+  the same art and size (1254×1254): background removed by a flood fill from the edges that only
+  takes the two exact checker tones (254/246, neutral grey), so the white fur is kept. Found while
+  designing the transactional email templates. If design supplies a new export, it replaces this one.

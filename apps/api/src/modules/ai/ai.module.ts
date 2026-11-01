@@ -64,6 +64,10 @@ import { GeminiVisionAdapter } from "./infrastructure/adapters/gemini-vision.ada
 import { PrivacyPreservingLlmAdapter } from "./infrastructure/adapters/privacy-preserving-llm.adapter";
 import { BudgetedVisionAdapter } from "./infrastructure/adapters/budgeted-vision.adapter";
 import { AiChatController } from "./presentation/ai-chat.controller";
+import { PlanPreviewController } from "./presentation/plan-preview.controller";
+import { PlanPreviewRepository } from "./infrastructure/plan-preview.repository";
+import { PlanPreviewAccessService } from "./application/plan-preview-access.service";
+import { CoinPlanPreviewService } from "./application/coin-plan-preview.service";
 import { AiMoodController } from "./presentation/ai-mood.controller";
 import { AiSessionController } from "./presentation/ai-session.controller";
 import { AiGhostController } from "./presentation/ai-ghost.controller";
@@ -92,6 +96,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
   ],
   controllers: [
     AiChatController,
+    PlanPreviewController,
     AiMoodController,
     AiSessionController,
     AiGhostController,
@@ -105,6 +110,9 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
   ],
   providers: [
     ChatService,
+    PlanPreviewRepository,
+    PlanPreviewAccessService,
+    CoinPlanPreviewService,
     CommunityCoachPlanTaskService,
     CoachAccessService,
     EconomyAiUsesService,

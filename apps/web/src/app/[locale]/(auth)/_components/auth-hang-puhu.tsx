@@ -164,8 +164,11 @@ function HangLayer({
   };
 
   return (
+    // Own GPU layer: the bob writes a fractional translateY every frame. Painted inside the sheet's
+    // layer, that moved the layer's bounds and re-rastered the form text at a new subpixel offset,
+    // so the links under it shimmered in time with Puhu.
     <motion.div
-      className={`pointer-events-none absolute left-1/2 ${layer === "back" ? "z-0" : "z-[2]"}`}
+      className={`pointer-events-none absolute left-1/2 will-change-transform ${layer === "back" ? "z-0" : "z-[2]"}`}
       data-testid={layer === "back" ? "auth-hang-puhu" : "auth-hang-puhu-front"}
       data-pose={pose}
       data-focus={focus}

@@ -51,6 +51,7 @@ export function EconomyUsesCard() {
   function open(item: EconomyUseView) {
     sheet.dismissNow();
     if (item.id === "NOTEBOOK_SLOT") router.push("/notebooks");
+    else if (item.id === "PLAN_PREVIEW") router.push("/plan");
     else if (item.id === "DEEP_ANALYSIS") router.push("/analysis/recap");
     else router.push(coachReturnHref(params.get("returnTo")));
   }
