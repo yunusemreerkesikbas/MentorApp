@@ -5,6 +5,8 @@ import { EconomyRewardsSeenDto } from "./economy.dto";
 import { ApiBearerAuth, ApiTags, ApiOkResponse, ApiCreatedResponse, ApiQuery, ApiBody } from "@nestjs/swagger";
 import { DeepAnalysisViewDto } from "./deep-analysis-view.dto";
 import { QuestProgressViewDto } from "./quest-progress-view.dto";
+import { WeeklyChestOpenDto, WeeklyChestViewDto } from "./weekly-chest-view.dto";
+import { WeeklyChestService } from "../application/weekly-chest.service";
 import { I18nService } from "nestjs-i18n";
 import { UserRole } from "@mentor/types";
 import type {
@@ -13,6 +15,7 @@ import type {
   EconomyLedgerEntryView,
   InviteCodeView,
   StreakRescueView,
+  WeeklyChestView,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -46,6 +49,7 @@ export class EconomyController {
     private readonly config: ConfigRegistryService,
     private readonly i18n: I18nService,
     private readonly receipts: RewardReceiptService,
+    private readonly weeklyChest: WeeklyChestService,
   ) {}
 
   private async assertEnabled(): Promise<void> {
@@ -112,6 +116,22 @@ export class EconomyController {
   @ApiOkResponse({ type: [QuestProgressViewDto] })
   async questsList(@CurrentUser() user: RequestUser): Promise<QuestProgressView[]> {
     return this.quests.getUserProgress(user.id);
+  }
+
+  /** The weekly chest: last week's unopened one first, else this week's. Open while the economy is off (no Coin). */
+  @Get("weekly-chest")
+  @ApiOkResponse({ type: WeeklyChestViewDto })
+  async weeklyChestView(@CurrentUser() user: RequestUser): Promise<WeeklyChestView> {
+    return this.weeklyChest.getView(user.id);
+  }
+
+  /** Open the chest (idempotent; 404 for a week that is not this or last, or not completed). */
+  @Post("weekly-chest/open")
+  @HttpCode(200)
+  @ApiBody({ schema: { type: "object", required: ["periodKey"], properties: { periodKey: { type: "string", pattern: "^\\d{4}-W\\d{2}$" } } } })
+  @ApiOkResponse({ type: WeeklyChestViewDto })
+  async weeklyChestOpen(@CurrentUser() user: RequestUser, @Body() dto: WeeklyChestOpenDto): Promise<WeeklyChestView> {
+    return this.weeklyChest.open(user.id, dto.periodKey);
   }
 
   /** Streak-rescue offer (coin sink): can yesterday be frozen, at what cost. */

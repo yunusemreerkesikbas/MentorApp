@@ -13,6 +13,7 @@ export class FeaturePolicyService {
   constructor(private readonly config: ConfigRegistryService) {}
 
   async listPolicies(): Promise<Record<PremiumFeatureId, FeaturePolicyDto>> {
+    const ownedRecaps = await this.config.get("coaching.weekly_recap.access_enabled");
     const entries = await Promise.all(
       PREMIUM_FEATURE_IDS.map(async (id) => {
         const meta = PREMIUM_FEATURE_CATALOG[id];
@@ -26,6 +27,11 @@ export class FeaturePolicyService {
           limit: Number(limit),
           window: meta.window,
         };
+        // Earned report ownership is quoted by the recap offer, never advertised as a recurring AI taste.
+        if (ownedRecaps && (id === "weekly.narration" || id === "deep.analysis")) {
+          policy.freeEnabled = false;
+          policy.limit = 0;
+        }
         return [id, policy] as const;
       }),
     );

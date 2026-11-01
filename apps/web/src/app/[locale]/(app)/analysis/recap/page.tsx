@@ -1,5 +1,5 @@
 import { setRequestLocale } from "@/i18n/locale";
-import { WeeklyRecapShell } from "./_components/weekly-recap-shell";
+import { WeeklyRecapEntry } from "./_components/weekly-recap-entry";
 
 export default async function WeeklyRecapPage({
   params,
@@ -8,5 +8,5 @@ export default async function WeeklyRecapPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <WeeklyRecapShell />;
+  return <WeeklyRecapEntry />;
 }

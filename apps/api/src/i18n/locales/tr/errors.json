@@ -1,4 +1,8 @@
 {
+  "WEEKLY_RECAP_LIMIT_REACHED": "Bu dönemdeki Coin ile rapor açma haklarını kullandın. Açtığın raporlar arşivinde seni bekliyor.",
+  "WEEKLY_RECAP_EMAIL_REQUIRED": "İlk haftalık hikâyeni ücretsiz açmak için e-posta adresini doğrula.",
+  "WEEKLY_RECAP_PRICE_CHANGED": "Raporun erişim koşulları değişti. Güncel teklifi kontrol ederek yeniden açabilirsin.",
+  "WEEKLY_RECAP_PROCESSING": "Haftanın hikâyesi hazırlanıyor. Biraz sonra yeniden açabilirsin.",
   "INTERNAL_ERROR": "Bir şey ters gitti. Biraz sonra bir daha deneyelim.",
   "VALIDATION_ERROR": "Gönderilen bilgiler geçersiz.",
   "BAD_REQUEST": "Bu istek geçersiz.",
@@ -96,6 +100,7 @@
   "ADMIN_ROLE_NOT_ASSIGNABLE": "Bu rol atanamaz.",
   "ECONOMY_DISABLED": "Ekonomi özelliği şu anda kapalı.",
   "ECONOMY_LIMIT_EXCEEDED": "Hak sınırı doldu.",
+  "WEEKLY_CHEST_NOT_FOUND": "Bu sandık bulunamadı.",
   "INSUFFICIENT_COIN": "Bu kullanım için yeterli hakkın yok. Görevlerden hak kazanabilir veya Premium seçeneklerini inceleyebilirsin.",
   "ADS_NOT_ELIGIBLE": "Bu reklam görevi şu anda kullanılamıyor.",
   "ADS_SESSION_NOT_FOUND": "Reklam oturumu bulunamadı.",

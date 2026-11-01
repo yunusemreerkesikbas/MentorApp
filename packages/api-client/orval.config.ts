@@ -20,6 +20,12 @@ export default defineConfig({
           EconomyController_questsList: {
             fetch: { includeHttpResponseReturnType: false },
           },
+          EconomyController_weeklyChestView: {
+            fetch: { includeHttpResponseReturnType: false },
+          },
+          EconomyController_weeklyChestOpen: {
+            fetch: { includeHttpResponseReturnType: false },
+          },
           EconomyController_deepAnalysisState: {
             fetch: { includeHttpResponseReturnType: false },
           },
@@ -43,6 +49,7 @@ export default defineConfig({
         // Our mutator returns the parsed body. Scope this to the new contract so
         // existing generated callers keep their current public types.
         tags: {
+          "weekly-recaps": { fetch: { includeHttpResponseReturnType: false } },
           phone: { fetch: { includeHttpResponseReturnType: false } },
           "mentorship-followups": {
             fetch: { includeHttpResponseReturnType: false },

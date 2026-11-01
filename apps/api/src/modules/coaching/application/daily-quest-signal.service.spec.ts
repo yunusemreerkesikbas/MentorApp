@@ -17,6 +17,7 @@ function build(options: { goal?: number | null; getMeFails?: boolean } = {}) {
     countCompleted: vi.fn(async () => 10),
     countCompletedSince: vi.fn(async () => 3),
     sumCompletedFocusSecondsOnDate: vi.fn(async () => 2730), // 45.5 dk → 46
+    sumCompletedFocusSecondsBetween: vi.fn(async () => 12_030), // 200.5 dk → 201
   };
   const moods = { findByDate: vi.fn(async () => ({ id: "mood-1" })) };
   const dailyActivity = {
@@ -45,9 +46,16 @@ function build(options: { goal?: number | null; getMeFails?: boolean } = {}) {
 describe("DailyQuestSignalService", () => {
   it("bounds a delayed Sunday event to its original week and excludes later activity", async () => {
     const { service, sessions, planTasks, dailyActivity } = build();
-    dailyActivity.listActiveDatesSince.mockResolvedValue(["2026-09-13", "2026-09-14"]);
+    dailyActivity.listActiveDatesSince.mockResolvedValue(["2026-09-13", "2026-09-14", "2026-09-08"]);
     const signals = await service.getForDate("user-1", "2026-09-13");
-    expect(signals).toMatchObject({ date: "2026-09-13", weekKey: "2026-W37", weeklyActiveDays: 1 });
+    expect(signals).toMatchObject({
+      date: "2026-09-13",
+      weekKey: "2026-W37",
+      weeklyActiveDays: 2,
+      weeklyActiveDates: ["2026-09-08", "2026-09-13"],
+      weeklyFocusMinutes: 201,
+    });
+    expect(sessions.sumCompletedFocusSecondsBetween).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-09-07", "2026-09-13");
     expect(sessions.countCompletedSince).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-09-07", 300, "2026-09-13");
     expect(planTasks.countDoneBetween).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-09-07", "2026-09-13");
   });

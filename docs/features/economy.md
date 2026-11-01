@@ -133,6 +133,51 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Haftalık sandık: durum ve açılış uçları (arka uç dilimi)
+
+Sandık (`weekly.effort-allowance`) artık tek bir nesne: `GET /v1/economy/weekly-chest` durumunu
+(`PROGRESS` / `READY` / `OPENED`), haftanın 7 gününü, Coin'i ve READY/OPENED'da haftanın özetini
+(aktif gün, seans, görev, odak dakikası) döner. `POST /v1/economy/weekly-chest/open { periodKey }`
+idempotent: `user_quest_progress.revealed_at` alanını bir kez yazar, eşleşen ödül makbuzunu "görüldü"
+yapar, aynı görünümü döner. Coin verme yolu değişmedi (`QuestService.evaluateAndGrant`, otomatik, cap'li).
+
+- **Devir:** açılmamış sandık bir hafta bekler. GET önce geçen haftanın tamamlanmış ve açılmamış
+  satırını gösterir (`carriedOver: true`, sayılar geçen Pazar'a göre); açılınca bu haftaya döner.
+  Daha eskisi gösterilmez, açılamaz (404).
+- **Ekonomi kapalı:** iki uç da açık (quests ucu gibi); `reward: null`, özet yine gelir.
+- **Coin tutarı:** satır varsa ledger'daki gerçek tutar (`findByRef("quest", row.id)`), yoksa config
+  tutarı. Cap'e takılan sandığın satırı yoktur (grant tx'i geri alınır): `READY` + `rewardPendingMessage`;
+  `open` notu döner ama damga basmaz, Coin yatınca satır doğar ve sandık yeniden `READY` olur.
+- **Migration 0138:** `revealed_at` + geri doldurma (`revealed_at = completed_at` mevcut sandık
+  satırlarına): eski genel Coin kutlamasını görenler lansmanda "geçen haftanın sandığı" ile karşılaşmaz.
+  Tablo FORCE RLS, geri doldurma 0129 gibi geçici SERVICE rolüyle.
+- **Sinyaller:** `DailyQuestSignals` + `weeklyActiveDates` (sıralı, `<= date`) ve `weeklyFocusMinutes`
+  (`sumCompletedFocusSecondsBetween`, min-focus filtresi yok, `focusMinutesToday` gibi).
+- **Gotchas:** gün sınırı UTC (`todayIso`), TR 00:00–03:00 önceki güne sayılır (bilinen, kapsam dışı).
+  Web dilimi (sahne, bilgi penceresi, `EconomySync` istisnası) görseller gelince; spec
+  `docs/superpowers/specs/2026-11-01-weekly-chest-opening-design.md`, plan
+  `docs/superpowers/plans/2026-11-01-weekly-chest-backend.md`.
+- **Testler:** `weekly-chest.service.spec.ts` (13), `daily-quest-signal.service.spec.ts`,
+  `test/economy-weekly-chest.e2e-spec.ts` (gerçek DB: sahiplik 404, gerçek sayılar, tek damga).
+
+### 2026-11-01 — Configurable rolling Coin access to full Wrapped reports
+
+- **What:** Coin now opens the full Wrapped story plus its AI narration under the new rollout.
+  Default price remains 25 Coin; the default allowance is two successful acquisitions per rolling
+  30 days across all exams, with no lifetime cap. One earned first report and Premium are separate.
+- **Usage:** Admin controls `coaching.weekly_recap.{coin_enabled,coin_limit,coin_window_days}` and
+  the existing `economy.coin.deep_analysis_cost`. Recent existing `deep_analysis` ledger purchases
+  count toward the window. Pending claims reserve capacity; the offer provides remaining slots and
+  the earliest release time. Limits are enforced again during atomic debit/ownership settlement.
+- **Gotchas:** Provider failure spends nothing; rereads spend nothing. A valid result is retained
+  when another purchase consumes the balance, so the user can finish at the original accepted
+  quote without another AI call. Fresh stale quotes are rejected before generation. Owned rights
+  survive switches/expiry, and legacy Coin POSTs cannot bypass the new cap. The ledger stays
+  append-only; metadata for earlier paid rights remains available after private report erasure.
+- **Related:** `weekly-recap-purchases.service.ts`, `weekly-recap-purchases.repository.ts`,
+  `deep-analysis.service.ts`, AI recap policy/settlement/archive services;
+  [design](../plans/2026-11-01-weekly-recap-access-design.md).
+
 ### 2026-11-01 — Explicit Coin-funded plan previews
 
 - **What/usage:** Added `PLAN_PREVIEW` to the Coin-use catalog, linked to the plan screen. AI owns

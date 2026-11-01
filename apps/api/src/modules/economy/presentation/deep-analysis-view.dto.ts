@@ -1,4 +1,4 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import type { DeepAnalysisView } from "@mentor/types";
 
 export class DeepAnalysisViewDto implements DeepAnalysisView {
@@ -11,4 +11,6 @@ export class DeepAnalysisViewDto implements DeepAnalysisView {
   @ApiProperty() premium!: boolean;
   @ApiProperty() purchased!: boolean;
   @ApiProperty() generationAvailable!: boolean;
+  @ApiPropertyOptional() purchaseAvailable?: boolean;
+  @ApiPropertyOptional() limitReached?: boolean;
 }

@@ -2709,6 +2709,8 @@ export const userQuestProgress = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /** When the user opened this completion (weekly chest only); never affects the grant. */
+    revealedAt: timestamp("revealed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

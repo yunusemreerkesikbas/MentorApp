@@ -29,6 +29,7 @@ describe("AiErasureService", () => {
       { deleteAllForUser: deleteWeekly } as never,
       { deleteAllForUser: deleteGreetings } as never,
       { deleteAllForUser: deletePreviews } as never,
+      { erase: deleteWeekly } as never,
     );
   });
 

@@ -1,4 +1,11 @@
 import { Module } from "@nestjs/common";
+import { WeeklyRecapRepository } from "./infrastructure/weekly-recap.repository";
+import { WeeklyRecapPolicyService } from "./application/weekly-recap-policy.service";
+import { WeeklyRecapNarratorService } from "./application/weekly-recap-narrator.service";
+import { WeeklyRecapSettlementService } from "./application/weekly-recap-settlement.service";
+import { WeeklyRecapService } from "./application/weekly-recap.service";
+import { WeeklyRecapController } from "./presentation/weekly-recap.controller";
+import { WeeklyRecapArchiveService } from "./application/weekly-recap-archive.service";
 import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
 import { CoachingModule } from "../coaching/coaching.module";
@@ -95,6 +102,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     ForumModule,
   ],
   controllers: [
+    WeeklyRecapController,
     AiChatController,
     PlanPreviewController,
     AiMoodController,
@@ -109,6 +117,12 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     AiInternalController,
   ],
   providers: [
+    WeeklyRecapRepository,
+    WeeklyRecapPolicyService,
+    WeeklyRecapNarratorService,
+    WeeklyRecapSettlementService,
+    WeeklyRecapService,
+    WeeklyRecapArchiveService,
     ChatService,
     PlanPreviewRepository,
     PlanPreviewAccessService,

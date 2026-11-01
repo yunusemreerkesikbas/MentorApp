@@ -383,6 +383,7 @@ export interface MockApiLog {
   ghostNarrationCalls: number;
   /** Mock exams saved through the form — what the notebook handoff hangs off. */
   createdMockExams: Record<string, unknown>[];
+  setWeeklyResponse: (response: WeeklyReviewDto | "error") => void;
 }
 
 export async function mockAnalysisApi(
@@ -399,6 +400,7 @@ export async function mockAnalysisApi(
     photoAccessCalls: 0,
     ghostNarrationCalls: 0,
     createdMockExams: [],
+    setWeeklyResponse: (response) => { weekly.splice(0, weekly.length, response); },
   };
   const reviewHistory = options.reviewHistory ?? [];
 
@@ -498,6 +500,14 @@ export async function mockAnalysisApi(
     }
     if (method === "GET" && path.startsWith("/v1/mock-exams?")) {
       return json(route, { items: [], total: 0, page: 1, pageSize: 5 });
+    }
+    if (method === "GET" && path.startsWith("/v1/coach/weekly-recaps/access?")) {
+      return json(route, { enabled: false, examId: exam.id, weekStart: readyWeekly.period.startDate,
+        endDate: readyWeekly.period.endDate, ready: true, premium: false, mode: "NONE", canOpen: false,
+        reportId: null, cost: 25, coinConfirmed: 0, coinLimit: 2, coinRemaining: 2, windowDays: 30, nextAvailableAt: null });
+    }
+    if (method === "GET" && (path === "/v1/coach/weekly-recaps" || path.startsWith("/v1/coach/weekly-recaps?"))) {
+      return json(route, { items: [], total: 0, page: 1, pageSize: 10 });
     }
     if (method === "GET" && path.startsWith("/v1/coaching/weekly-review?")) {
       log.weeklyCalls += 1;

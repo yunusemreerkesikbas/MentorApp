@@ -114,7 +114,7 @@ test("READY hikâyesi mobilde swipe ve klavyeyle, otomatik ilerlemeden gezilir",
 test("haftanın hikâyesi yüklenemeyince tekrar dene ile döner", async ({
   page,
 }) => {
-  const api = await mockAnalysisApi(page, { weekly: ["error", readyWeekly] });
+  const api = await mockAnalysisApi(page, { weekly: ["error"] });
 
   await page.goto(
     `/analiz/haftanin-hikayesi?examId=${exam.id}&source=analysis`,
@@ -123,13 +123,15 @@ test("haftanın hikâyesi yüklenemeyince tekrar dene ile döner", async ({
   await expect(
     page.getByRole("heading", { name: "Hikâyeyi şimdilik açamadım" }),
   ).toBeVisible();
+  const failedCalls = api.weeklyCalls;
+  api.setWeeklyResponse(readyWeekly);
   await page.getByRole("button", { name: "Tekrar dene" }).click();
 
   await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
     "data-slide-kind",
     "welcome",
   );
-  expect(api.weeklyCalls).toBe(2);
+  expect(api.weeklyCalls).toBe(failedCalls + 1);
   expect(api.unexpected).toEqual([]);
 });
 

@@ -1,4 +1,5 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional } from "@nestjs/common";
+import { WeeklyRecapRegistry } from "./weekly-recap.registry";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { WeeklyReviewCompletionDto } from "@mentor/types";
 import type { CompleteWeeklyReviewInput } from "@mentor/validation";
@@ -13,13 +14,14 @@ export class WeeklyReviewCompletionService {
     private readonly reviews: WeeklyReviewService,
     private readonly completions: WeeklyReviewCompletionRepository,
     private readonly events: EventEmitter2,
+    @Optional() private readonly recaps?: WeeklyRecapRegistry,
   ) {}
 
   async complete(
     userId: string,
     input: CompleteWeeklyReviewInput,
   ): Promise<WeeklyReviewCompletionDto> {
-    const review = await this.reviews.getReview(userId, input.examId);
+    const review = (await this.recaps?.read(userId, input.examId, input.weekStart)) ?? await this.reviews.getReview(userId, input.examId);
     if (review.status !== "READY" || review.period.startDate !== input.weekStart) {
       throw new ValidationFailedError({ reason: "weekly_review_not_ready" });
     }

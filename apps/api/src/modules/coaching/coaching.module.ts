@@ -2,6 +2,7 @@ import { NotebookReviewRepository } from "./infrastructure/notebook-review.repos
 import { NotebookReviewService } from "./application/notebook-review.service";
 import { NotebookReviewController } from "./presentation/notebook-review.controller";
 import { Module } from "@nestjs/common";
+import { WeeklyRecapRegistry } from "./application/weekly-recap.registry";
 import { ContentModule } from "../content/content.module";
 import { IdentityModule } from "../identity/identity.module";
 import { MoodService } from "./application/mood.service";
@@ -89,6 +90,7 @@ import { PublicPulseRepository } from "./infrastructure/public-pulse.repository"
     PublicPulseController,
   ],
   providers: [
+    WeeklyRecapRegistry,
     PublicPulseRepository,
     PublicPulseService,
     NotebookReviewRepository,
@@ -146,6 +148,7 @@ import { PublicPulseRepository } from "./infrastructure/public-pulse.repository"
     { provide: COACHING_QUERY_PORT, useExisting: CoachingQueryAdapter },
   ],
   exports: [
+    WeeklyRecapRegistry,
     COACHING_QUERY_PORT,
     CoachingErasureService,
     CoachEvidenceService,

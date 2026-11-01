@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { Pool } from "pg";
+import { weeklyReviewWindows } from "../../src/modules/coaching/domain/weekly-review";
 import { Test } from "@nestjs/testing";
 import { UserRole } from "@mentor/types";
 import { ConfigRegistryService } from "../../src/common/config/config-registry.service";
@@ -17,7 +19,8 @@ async function main() {
   if (process.env.QA_NOTEBOOK_LIVE !== "1" || !target)
     throw new Error("Explicit notebook QA target required");
   assertLocalTestDatabase(target);
-  if (new URL(target).pathname !== "/mentor_notebook_live_20261031_test") {
+  const expectedDatabase = process.env.QA_WRAPPED_LIVE === "1" ? "/mentor_wrapped_20261101_test" : "/mentor_notebook_live_20261031_test";
+  if (new URL(target).pathname !== expectedDatabase) {
     throw new Error("Notebook QA requires its dedicated disposable database");
   }
   Object.assign(process.env, {
@@ -93,9 +96,22 @@ async function main() {
       "planpreview",
       "planquote",
       "dailyread",
+      "wrappedfree",
+      "wrappedcoin",
     ]) {
       const email = `qa-notebook-${project}-${scenario}-${run}@example.test`;
       const result = await signup(email, `QA notebook ${project}`);
+      if (scenario.startsWith("wrapped")) {
+        const pool = new Pool({ connectionString: target });
+        const client = await pool.connect();
+        try {
+          await client.query("begin");
+          await client.query("select set_config('app.role','SERVICE',true)");
+          await client.query("insert into plan_tasks(user_id,task_date,title,status) select $1,$2,'Wrapped study '||n,'DONE' from generate_series(1,3) n",
+            [result.user.id, weeklyReviewWindows().startDate]);
+          await client.query("commit");
+        } finally { client.release(); await pool.end(); }
+      }
       const raw = createHash("sha256").update(email).digest("hex");
       // A known one-time token belongs only to this disposable identity. Verification still runs
       // through the real endpoint/events; no XP, Coin, quest progress or notebook is seeded.

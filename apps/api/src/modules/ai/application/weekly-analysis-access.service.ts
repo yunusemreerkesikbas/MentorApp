@@ -1,4 +1,5 @@
-import { Injectable, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Optional, type OnModuleInit } from "@nestjs/common";
+import { WeeklyRecapService } from "./weekly-recap.service";
 import { PremiumFeatureId } from "@mentor/types";
 import { WeeklyAnalysisAccessRegistry } from "../../economy/application/weekly-analysis-access.registry";
 import { AiBudgetGuard } from "./ai-budget.guard";
@@ -11,10 +12,23 @@ export class WeeklyAnalysisAccessService implements OnModuleInit {
     private readonly registry: WeeklyAnalysisAccessRegistry,
     private readonly featureGate: PremiumFeatureGateService,
     private readonly budget: AiBudgetGuard,
+    @Optional() private readonly recaps?: WeeklyRecapService,
   ) {}
 
   onModuleInit(): void {
     this.registry.register({
+      recapState: async (userId, roles, examId) => {
+        const offer = await this.recaps!.offer({ id: userId, roles, orgId: null, sessionId: "" }, examId);
+        return {
+          eligible: offer.ready, weekStart: offer.ready ? offer.weekStart : null,
+          cost: offer.cost, coinConfirmed: offer.coinConfirmed, canAfford: offer.coinConfirmed >= offer.cost,
+          unlocked: offer.mode !== "COIN" && offer.mode !== "NONE", premium: offer.premium,
+          purchased: offer.mode === "OWNED",
+          generationAvailable: offer.canOpen || offer.reason === "INSUFFICIENT_COIN" || offer.reason === "WEEKLY_RECAP_EMAIL_REQUIRED",
+          purchaseAvailable: offer.mode === "COIN" && (offer.canOpen || offer.reason === "INSUFFICIENT_COIN" || offer.reason === "WEEKLY_RECAP_EMAIL_REQUIRED"),
+          limitReached: offer.reason === "WEEKLY_RECAP_LIMIT_REACHED",
+        };
+      },
       isIncluded: (userId, roles) => this.isIncluded(userId, roles),
       canGenerate: () => this.budget.hasCapacity(),
       acquire: () => this.budget.acquire(),

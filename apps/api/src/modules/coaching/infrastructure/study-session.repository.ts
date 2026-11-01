@@ -321,13 +321,19 @@ export class StudySessionRepository {
    * Sum of COMPLETED focus seconds on the given UTC calendar date. No min-focus
    * filter: the daily goal measures accumulation, not per-session reward gating.
    */
-  async sumCompletedFocusSecondsOnDate(
+  sumCompletedFocusSecondsOnDate(tx: DatabaseTx, userId: string, date: string): Promise<number> {
+    return this.sumCompletedFocusSecondsBetween(tx, userId, date, date);
+  }
+
+  /** COMPLETED focus seconds for sessions started from `fromDate` through `untilDate` (UTC days, inclusive). */
+  async sumCompletedFocusSecondsBetween(
     tx: DatabaseTx,
     userId: string,
-    date: string,
+    fromDate: string,
+    untilDate: string,
   ): Promise<number> {
-    const dayStart = `${date}T00:00:00Z`;
-    const nextDayStart = `${addDays(date, 1)}T00:00:00Z`;
+    const dayStart = `${fromDate}T00:00:00Z`;
+    const nextDayStart = `${addDays(untilDate, 1)}T00:00:00Z`;
     const rows = await tx
       .select({
         total: sql<number>`coalesce(sum(${studySessions.actualFocusSeconds}), 0)::int`,
