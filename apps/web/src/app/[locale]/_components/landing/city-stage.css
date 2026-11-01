@@ -320,7 +320,11 @@
 }
 
 .lc-eyebrow {
-  display: none;
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--lc-blue);
 }
 
 .lc-hero h1 {

@@ -47,6 +47,7 @@ describe("EconomyUsesService", () => {
         },
         { status: "UNAVAILABLE" },
         { status: "UNAVAILABLE" },
+        { status: "UNAVAILABLE" },
       ],
     });
   });

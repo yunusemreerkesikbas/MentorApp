@@ -187,5 +187,8 @@
   "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "Etkinliği oluşturan kişi katılımcı listesine eklenemez.",
   "MENTORSHIP_EVENT_ATTENDEE_LIMIT": "Bir etkinliğe en fazla {max} öğrenci eklenebilir.",
   "MENTORSHIP_REGISTRATION_HAS_COACH": "Bir koç seni takip ederken koç hesabına geçemezsin. Önce Koçum'dan bağlantını sonlandır.",
-  "STORAGE_TEMPORARILY_UNAVAILABLE": "Fotoğraf işlemleri şu an kullanılamıyor."
+  "STORAGE_TEMPORARILY_UNAVAILABLE": "Fotoğraf işlemleri şu an kullanılamıyor.",
+  "AI_PLAN_COIN_LIMIT_REACHED": "Son 24 saatteki Coin ile plan hazırlama hakkın doldu. Kaydettiğin taslağı yeniden açabilirsin.",
+  "AI_PLAN_PRICE_CHANGED": "Plan taslağının Coin bedeli değişti. Güncel bedelle yeniden onay verebilirsin.",
+  "AI_PLAN_REQUEST_PROCESSING": "Taslağın hazırlanıyor. Biraz sonra kaydettiğin taslağı yeniden açabilirsin."
 }

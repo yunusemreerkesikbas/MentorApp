@@ -8,7 +8,6 @@ import { Button } from "@mentor/ui";
 import { CoachEvidenceList } from "@/components/coach-evidence-list";
 import { FormError } from "@/components/form";
 import { CompanionBubble } from "@/components/panel/companion-bubble";
-import { PremiumBadge } from "@/components/premium/premium-badge";
 import {
   flattenPlanAdaptationChanges,
   selectedPlanAdaptationChanges,
@@ -101,9 +100,8 @@ export const PlanCoachAdaptationPreview = forwardRef<
             <span className="font-semibold text-[var(--color-body-text)]">
               {t("coach_adaptation_evidence_title")}
             </span>
-            <PremiumBadge className="ml-auto" />
             <ChevronDown
-              className="size-4 shrink-0 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
+              className="ml-auto size-4 shrink-0 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
               aria-hidden
             />
           </summary>

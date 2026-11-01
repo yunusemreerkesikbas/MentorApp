@@ -953,6 +953,13 @@
       "when": 1793441743740,
       "tag": "0135_storage_transfer_allowance",
       "breakpoints": true
+    },
+    {
+      "idx": 136,
+      "version": "7",
+      "when": 1793488937670,
+      "tag": "0136_coin_plan_previews",
+      "breakpoints": true
     }
   ]
 }

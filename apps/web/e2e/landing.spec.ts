@@ -20,7 +20,7 @@ test("landing hero'yu gösterir, Ücretsiz başla tanıtıma götürür", async 
   await page.addInitScript(() => window.localStorage.removeItem("mentor_welcome_seen"));
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Her gün biraz, hep birlikte." }),
+    page.getByRole("heading", { level: 1, name: "Işığın yanıyorsa, yalnız değilsin." }),
   ).toBeVisible();
 
   await page.getByRole("main").getByRole("link", { name: "Ücretsiz başla" }).first().click();

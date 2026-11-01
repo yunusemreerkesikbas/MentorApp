@@ -97,6 +97,28 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Hanging Puhu no longer shimmers the form text
+
+- **What:** On signup/login the links under the sheet (e.g. "Giriş yap") seemed to move with Puhu.
+  The bob in `auth-hang-puhu.tsx` is a framer-motion JS transform (fractional `translateY` every
+  frame), and Puhu had no layer of its own, so it painted inside the sheet's layer: each frame the
+  layer bounds moved by a subpixel and the text re-rastered at a new offset. Layout never changed
+  (`getBoundingClientRect` is constant), which is why it only shows in GPU Chrome.
+- **Fix:** `will-change-transform` on both Puhu layers (back and front wings). Checked the form
+  still renders the same at 375; the shimmer was not reproducible headless, the owner confirmed
+  it gone in their browser.
+
+### 2026-11-01 — Auth checkboxes use the blue accent
+
+- **What:** The signup KVKK, terms and analytics-cookie
+  boxes (`signup/page.tsx`, `auth-cookie-consent.tsx`) were the default `CheckBox`, which fills with
+  `--color-main` (near black). They now pass `t-check-accent` like the plan form: `--play-cta` fill,
+  `--play-cta-ink` tick. Checked at 375 on dev.
+- **Then:** the three consent rows sit in one `gap-2` group (each row was `min-h-11` plus the
+  form's `gap-4`, about 60 px apart). Labels shortened, same legal meaning: "Kullanım
+  koşullarını kabul ediyorum. En az 13 yaşındayım.", "Analitik çerezlere izin veriyorum
+  (isteğe bağlı)." (non-breaking space), errors end on "işaretle" instead of "-malısın".
+
 ### 2026-10-31 — One-time email verification survives Strict Mode effect replay
 
 - **What:** Real-API notebook purchase QA reproduced two verification POSTs from one verification

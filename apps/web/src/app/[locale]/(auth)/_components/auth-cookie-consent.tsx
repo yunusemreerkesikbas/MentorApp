@@ -16,14 +16,14 @@ export function AuthCookieConsent() {
   const labelId = useId();
 
   return (
-    <div className="flex items-start gap-3 text-sm" style={{ color: "var(--color-body)" }}>
+    <div className="flex items-start gap-3">
       <CheckBox
         checked={checked}
         onChange={setUserChoice}
         name={AUTH_ANALYTICS_FIELD}
         value="on"
         aria-labelledby={labelId}
-        className="mt-1"
+        className="t-check-accent mt-1"
       />
       <span id={labelId}>
         {t.rich("label", {

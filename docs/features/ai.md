@@ -103,6 +103,49 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Earned plan previews, greeting rereads and shared photo usage
+
+- **What:** The plan-page wizard has an explicit Coin path for Free accounts. The approved default
+  is 20 Coin and one new preview per rolling 24 hours, configurable through admin. Premium/capped
+  tastes retain their existing path; mood/session adaptation and legacy plan-draft are unchanged.
+  The canonical offer also supplies the Coin-use catalog. Generation and waiting-view lifecycle
+  are separated from the page shell; evidence/response helpers keep plan orchestration bounded.
+- **Usage:** Apply migration `0136_coin_plan_previews` before deploying the new API/web. Enable
+  `ai.plan.coin_enabled` (defaults false), with `economy.enabled` and `ai.enabled` on. Tune
+  `economy.coin.plan_preview_cost` and `ai.plan.coin_daily_limit`. Opening a wizard/brief costs
+  nothing. The final quote needs explicit confirmation; changing its price requires a fresh one.
+- **Accounting:** Save a valid result, then atomically debit and publish the owned preview. User,
+  input and locale bind retries. Pending requests reserve the rolling allowance; abandoned claims
+  expire without debit. Provider/malformed-output failures and `NO_CHANGE` never spend Coin.
+  A no-change result keeps the Coin-funded allowance; the existing overall AI generation cap
+  still counts its model call. When purchases close, only completed owned previews are offered,
+  and an unpaid result cannot reopen a Coin confirmation.
+  A balance spent elsewhere during generation leaves a recoverable, unpaid result, without a
+  second model call. Saved paid previews remain readable with economy/rollout off. Applying still
+  uses coaching's stale-plan guard. Closing the wait view does not cancel generation. Preview
+  data joins KVKK erasure; the Coin ledger remains append-only.
+- **Corrections:** Today's owned daily note is read before the generation gate, so a used Free
+  taste can reread it. A different day/locale still needs generation access; global AI-off blocks
+  the daily-note surface. Photo quota now reads the existing `VISION` usage meter shared by notebook
+  and mock-exam calls, including successfully processed images without a matching label.
+- **Related:** [design and safeguards](../plans/2026-11-01-earned-plan-preview-design.md),
+  [verification evidence](../qa/2026-11-01-earned-plan-preview-verification.md),
+  `plan-preview.controller.ts`, `coin-plan-preview.service.ts`, `plan-preview-access.service.ts`,
+  `plan-preview.repository.ts`, `use-plan-coach-generation.ts`, new HTTP/browser suites.
+
+### 2026-11-01 — Paid student surface / Coin access inventory
+
+- **What/usage (snapshot before the implementation above):** Audited plan-page AI, panel daily greeting, chat and the other gated student AI
+  surfaces. Coin currently unlocks chat and weekly analysis; plan/greeting and other AI surfaces
+  use Premium or configured capped tastes. A new real-DB inventory suite checks that Coin balance
+  alone does not unlock them, that tastes do not spend Coin and that Premium AI is independent
+  of the economy flag. A real-browser example follows an earned-Coin Free account across the pages.
+- **Gotchas:** No new Coin sink or price was added. The Free daily-greeting gate currently runs
+  before cache lookup, so a used taste can block rereading. Notebook prelabel/photo quota uses
+  different accounting sources and needs a focused follow-up before expanding earned access.
+- **Related:** `ai-paid-access-audit.e2e-spec.ts`, `economy-paid-flows-real-api.spec.ts`, existing
+  live browser fixture; [access map, evidence and proposed next steps](../qa/2026-11-01-paid-ai-access-inventory.md).
+
 ### 2026-10-31 — Weekly analysis offer and narration access aligned
 
 - **What:** `WeeklyAnalysisAccessService` supplies the weekly narration's capped allowance to Economy

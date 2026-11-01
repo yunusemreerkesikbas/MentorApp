@@ -133,6 +133,21 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Explicit Coin-funded plan previews
+
+- **What/usage:** Added `PLAN_PREVIEW` to the Coin-use catalog, linked to the plan screen. AI owns
+  the offer and generated preview; Economy owns the append-only debit and localized ledger label.
+  Approved defaults: `economy.coin.plan_preview_cost = 20`, `ai.plan.coin_daily_limit = 1`.
+  The rollout switch `ai.plan.coin_enabled` defaults false; admin hints explain all three knobs.
+  Migration `0136_coin_plan_previews` is required before deploying the new code.
+- **Gotchas:** Confirmation buys a new successful preview, never navigation or plan application.
+  No model failure/invalid-output debit or automatic replay. A completed owned request survives
+  economy-off. Existing Premium/Free-taste generation bypasses the Coin purchase route. Read the
+  [AI implementation notes](./ai.md) and [approved design](../plans/2026-11-01-earned-plan-preview-design.md)
+  for request recovery, pending allowances, stale prices and private-data erasure.
+- **Related:** `economy-ai-uses.service.ts`, `economy-uses.registry.ts`, `economy.constants.ts`,
+  `ledger-entry-view.ts`, `plan-preview-access.service.ts`, `coin-plan-preview.service.ts`.
+
 ### 2026-11-01 — Earning limits and durable disabled invite outcomes
 
 - **What:** First positive invite-payment delivery always reaches `InviteService`. When economy is

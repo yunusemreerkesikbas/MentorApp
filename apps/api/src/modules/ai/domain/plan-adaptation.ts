@@ -176,6 +176,8 @@ const PLAN_WINDOW_DAYS = 7;
 const PLAN_MAX_MOVES = 3;
 
 export interface PlanAdaptationRhythm {
+  /** Paid generation must not silently substitute rule blocks for malformed model output. */
+  strictOutput?: boolean;
   days?: number;
   /** Window dates the student picked; the only days an ADD or MOVE may land on. */
   studyDates?: readonly string[];
@@ -206,7 +208,7 @@ export function parsePlanAdaptation(
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   if (start === -1 || end <= start) {
-    if (personalized) text = '{"changes":[]}';
+    if (personalized && !rhythm?.strictOutput) text = '{"changes":[]}';
     else return { kind: "MALFORMED" };
   }
 
@@ -214,11 +216,11 @@ export function parsePlanAdaptation(
   try {
     parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
   } catch {
-    if (personalized) parsed = { changes: [] };
+    if (personalized && !rhythm?.strictOutput) parsed = { changes: [] };
     else return { kind: "MALFORMED" };
   }
   const received = parsed && typeof parsed === "object" ? (parsed as { changes?: unknown }).changes : undefined;
-  const rawChanges = Array.isArray(received) ? received : personalized ? [] : null;
+  const rawChanges = Array.isArray(received) ? received : personalized && !rhythm?.strictOutput ? [] : null;
   if (!rawChanges) return { kind: "MALFORMED" };
 
   const windowEnd = addDays(todayIso, 6);

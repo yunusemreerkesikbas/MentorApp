@@ -5,6 +5,7 @@ import { CoachMemoryFactRepository } from "../infrastructure/coach-memory-fact.r
 import { CoachProfileRepository } from "../infrastructure/coach-profile.repository";
 import { DailyGreetingRepository } from "../infrastructure/daily-greeting.repository";
 import { WeeklyReviewCacheRepository } from "../infrastructure/weekly-review-cache.repository";
+import { PlanPreviewRepository } from "../infrastructure/plan-preview.repository";
 
 /**
  * KVKK erasure for the AI module (W3). Admin calls this via the user anonymize flow — the AI module
@@ -27,6 +28,7 @@ export class AiErasureService {
     private readonly profiles: CoachProfileRepository,
     private readonly weeklyReviews: WeeklyReviewCacheRepository,
     private readonly dailyGreetings: DailyGreetingRepository,
+    private readonly planPreviews: PlanPreviewRepository,
   ) {}
 
   async eraseUserData(userId: string): Promise<void> {
@@ -36,6 +38,7 @@ export class AiErasureService {
     await this.memory.deleteAllForUser(userId);
     await this.weeklyReviews.deleteAllForUser(userId);
     await this.dailyGreetings.deleteAllForUser(userId);
+    await this.planPreviews.deleteAllForUser(userId);
     this.logger.log(`AI data erased for user ${userId}`);
   }
 }

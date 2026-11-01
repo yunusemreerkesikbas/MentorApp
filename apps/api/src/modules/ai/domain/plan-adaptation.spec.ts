@@ -191,6 +191,12 @@ describe("parsePlanAdaptation", () => {
     );
   });
 
+  it("does not turn malformed provider output into a paid personalized preview", () => {
+    expect(parsePlanAdaptation("invalid output", TODAY, "PLAN", [], [], {
+      minutesPerDay: 120, days: 3, strictOutput: true,
+    })).toEqual({ kind: "MALFORMED" });
+  });
+
   it("maps opaque refs to server-owned MOVE fields and accepts safe ADD changes", () => {
     const result = parsePlanAdaptation(
       JSON.stringify({

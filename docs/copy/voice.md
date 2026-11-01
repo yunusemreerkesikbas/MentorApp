@@ -54,15 +54,18 @@ professionals, so it stays plain and gets a single `!`, on the closing title.
   question and its answer: "Odanı seç, süreni kur, başla!", "Takıldın mı? Topluluğa sor!",
   "Görevleri bitir, XP topla, seviye atla!". One `!` per sentence, not on every title. No emoji.
 - **The night city is the picture, not the copy.** The art keeps the windows; the words stop leaning
-  on "pencere / ışık / gece". Hero: "Her gün biraz, hep birlikte." The career stop says
+  on "pencere / ışık / gece". One wink is allowed, the hero: "Işığın yanıyorsa, yalnız değilsin."
+  (every lit window is someone studying). The career stop says
   "Bu oda boş. Senin olsun mu?" → "Hoş geldin, komşu!". Facts and buttons stay plain: "Son 24
   saatte {n} kişi burada çalıştı.", "Bu alanla başla", door plates with bare names ("Masa").
 - **Scribbles are Puhu's own asides**, lowercase and concrete: "selam, ben Puhu!", "bugün 80
   dakika", "sıradaki: geometri".
 - **Still banned:** promises we cannot back ("gerisi kolay", "garanti"), poetic filler ("Her emek bir
   ışık yakar"), FOMO and guilt.
-- **Generic "sınav".** The landing never names an exam (KPSS, YKS…), except in the "Blog'dan" cards,
-  which show the posts' own titles.
+- **Name the exams once, then say "sınav".** (2026-11-01, owner's call: a visitor must see at a
+  glance that their exam is covered.) The supported exams appear in three places only: the hero
+  label "KPSS · YKS · LGS", the FAQ "Hangi sınavlara…" answer, and the page title + description.
+  Everywhere else the copy says "sınav". Add an exam here only when onboarding offers it.
 - **Say what it is, first.** The hero lead names the product before anything else: "Sınava
   hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı: …" (2026-10-28, user's call; it also
   carries the search phrase). "Yapay zekâ destekli" describes the product, not a free AI coach.

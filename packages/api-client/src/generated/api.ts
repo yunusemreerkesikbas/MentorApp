@@ -186,6 +186,99 @@ export interface CoachActionDecisionDto {
   decision: CoachActionDecisionDtoDecision;
 }
 
+export type PlanPreviewAccessResponseDtoMode = typeof PlanPreviewAccessResponseDtoMode[keyof typeof PlanPreviewAccessResponseDtoMode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PlanPreviewAccessResponseDtoMode = {
+  INCLUDED: 'INCLUDED',
+  COIN: 'COIN',
+  NONE: 'NONE',
+} as const;
+
+export interface PlanPreviewAccessResponseDto {
+  mode: PlanPreviewAccessResponseDtoMode;
+  canGenerate: boolean;
+  /** @nullable */
+  cost: number | null;
+  dailyLimit: number;
+  dailyRemaining: number;
+  coinConfirmed: number;
+  reason?: string;
+  message?: string;
+  /** @nullable */
+  latestRequestId: string | null;
+}
+
+export type CoinPlanInputDtoSource = typeof CoinPlanInputDtoSource[keyof typeof CoinPlanInputDtoSource];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CoinPlanInputDtoSource = {
+  PLAN: 'PLAN',
+} as const;
+
+export interface CoinPlanInputDto {
+  /** @maxLength 500 */
+  note?: string;
+  /**
+   * @minimum 1
+   * @maximum 7
+   */
+  days?: number;
+  /**
+   * ISO weekdays, 1 = Monday
+   * @minItems 1
+   * @maxItems 7
+   */
+  studyWeekdays?: number[];
+  /**
+   * @minimum 10
+   * @maximum 600
+   */
+  minutesPerDay?: number;
+  /** @maxItems 30 */
+  focusSubjects?: string[];
+  source: CoinPlanInputDtoSource;
+}
+
+export interface CoinPlanPreviewBodyDto {
+  input: CoinPlanInputDto;
+  /** @minimum 1 */
+  expectedCost: number;
+  clientRequestId: string;
+}
+
+export type SavedPlanPreviewResponseDtoState = typeof SavedPlanPreviewResponseDtoState[keyof typeof SavedPlanPreviewResponseDtoState];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SavedPlanPreviewResponseDtoState = {
+  RUNNING: 'RUNNING',
+  GENERATED: 'GENERATED',
+  READY: 'READY',
+  FAILED: 'FAILED',
+} as const;
+
+/**
+ * @nullable
+ */
+export type SavedPlanPreviewResponseDtoPreview = { [key: string]: unknown } | null;
+
+export interface SavedPlanPreviewResponseDto {
+  requestId: string;
+  state: SavedPlanPreviewResponseDtoState;
+  /** @nullable */
+  preview: SavedPlanPreviewResponseDtoPreview;
+  cost: number;
+  coinSpent: number;
+}
+
+export interface ConfirmPlanPreviewBodyDto {
+  /** @minimum 1 */
+  expectedCost: number;
+}
+
 export interface SessionReflectionBodyDto { [key: string]: unknown }
 
 export interface WeeklyReviewNarrationBodyDto { [key: string]: unknown }
@@ -726,6 +819,7 @@ export const EconomyUseDtoId = {
   NOTEBOOK_SLOT: 'NOTEBOOK_SLOT',
   COACH_CHAT: 'COACH_CHAT',
   DEEP_ANALYSIS: 'DEEP_ANALYSIS',
+  PLAN_PREVIEW: 'PLAN_PREVIEW',
 } as const;
 
 export type EconomyUseDtoStatus = typeof EconomyUseDtoStatus[keyof typeof EconomyUseDtoStatus];
@@ -3746,6 +3840,114 @@ export const aiChatControllerClearMemory = async ( options?: RequestInit): Promi
     method: 'DELETE'
     
     
+  }
+);}
+
+
+
+export const getPlanPreviewControllerOfferUrl = () => {
+
+
+
+
+  return `/v1/coach/plan-previews/access`
+}
+
+export const planPreviewControllerOffer = async ( options?: RequestInit): Promise<PlanPreviewAccessResponseDto> => {
+
+  return http<PlanPreviewAccessResponseDto>(getPlanPreviewControllerOfferUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPlanPreviewControllerBriefUrl = () => {
+
+
+
+
+  return `/v1/coach/plan-previews/brief`
+}
+
+export const planPreviewControllerBrief = async ( options?: RequestInit): Promise<void> => {
+
+  return http<void>(getPlanPreviewControllerBriefUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPlanPreviewControllerCreateUrl = () => {
+
+
+
+
+  return `/v1/coach/plan-previews`
+}
+
+export const planPreviewControllerCreate = async (coinPlanPreviewBodyDto: CoinPlanPreviewBodyDto, options?: RequestInit): Promise<SavedPlanPreviewResponseDto> => {
+
+  return http<SavedPlanPreviewResponseDto>(getPlanPreviewControllerCreateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      coinPlanPreviewBodyDto,)
+  }
+);}
+
+
+
+export const getPlanPreviewControllerReadUrl = (id: string,) => {
+
+
+
+
+  return `/v1/coach/plan-previews/${id}`
+}
+
+export const planPreviewControllerRead = async (id: string, options?: RequestInit): Promise<SavedPlanPreviewResponseDto> => {
+
+  return http<SavedPlanPreviewResponseDto>(getPlanPreviewControllerReadUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPlanPreviewControllerConfirmUrl = (id: string,) => {
+
+
+
+
+  return `/v1/coach/plan-previews/${id}/confirm`
+}
+
+export const planPreviewControllerConfirm = async (id: string,
+    confirmPlanPreviewBodyDto: ConfirmPlanPreviewBodyDto, options?: RequestInit): Promise<SavedPlanPreviewResponseDto> => {
+
+  return http<SavedPlanPreviewResponseDto>(getPlanPreviewControllerConfirmUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      confirmPlanPreviewBodyDto,)
   }
 );}
 

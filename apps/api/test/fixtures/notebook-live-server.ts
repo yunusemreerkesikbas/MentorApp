@@ -80,8 +80,20 @@ async function main() {
   await config.set(operator.user.id, "economy.notebook_slots.max_per_user", 2);
   // No background AI or paid storage is needed for any of these browser scenarios.
   await config.set(operator.user.id, "ai.enabled", false);
+  await config.set(operator.user.id, "ai.plan.coin_enabled", false);
+  await config.set(operator.user.id, "ai.features.daily.greeting.free_enabled", false);
   for (const project of ["mobile", "desktop"]) {
-    for (const scenario of ["purchase", "switches", "closed", "limits", "weekly"]) {
+    for (const scenario of [
+      "purchase",
+      "switches",
+      "closed",
+      "limits",
+      "weekly",
+      "paidflows",
+      "planpreview",
+      "planquote",
+      "dailyread",
+    ]) {
       const email = `qa-notebook-${project}-${scenario}-${run}@example.test`;
       const result = await signup(email, `QA notebook ${project}`);
       const raw = createHash("sha256").update(email).digest("hex");

@@ -120,6 +120,28 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-01 · Transactional email redesign.** The 7 Resend emails were bare `<p>` tags; they
+  now follow the approved canvas (https://claude.ai/artifact/B7XpHiWoh4x3avNk67zV5H). One pure
+  renderer, `shared/adapters/email/email-render.ts` (`renderEmail` → subject/html/text), builds a
+  600px table card on the `#F3F8FD` wash with one button: plain (verify, reset, dunning), Puhu
+  (welcome header art, daily-reminder bubble) and coach (ink blue `#26377F`, "Koç" chip). Two
+  footers: transactional, and notification/coach/subscription with a link to
+  `/profil#notification-settings` or `/abonelik`. Links are built from `APP_URL` per language
+  (`/panel`, `/abonelik`, `/kocluk`; `/en/...`). Art is hosted PNG in
+  `apps/web/public/img/email/` (logo, `puhu-welcome.png` with the blobs baked in,
+  `puhu-encouraging.png`); no SVG or CSS gradients because Gmail/Outlook drop them. A `<style>`
+  media query narrows padding on phones; clients that strip it keep the desktop layout.
+  Copy moved to `notifications.email.<key>.{subject,preheader,heading,body,cta,...}` plus
+  `email.common.*`; subjects no longer carry "PuhuKoç:", so the adapter sends as
+  `PuhuKoç <RESEND_FROM>` when `RESEND_FROM` is a bare address. **Bug fixed:** the adapter used to
+  pass only `{name}` to i18n, so coach subjects went out as "Bugün bakmaya değer {count} öğrenci";
+  all args now reach the copy, and the risk digest also sends `studentNames` for the list.
+  Dunning, welcome and coach emails now have their button (only verify/reset had a link).
+  **Not code:** the inbox avatar (Puhu on the canvas) comes from the sender's Google profile or a
+  BIMI record, not from the HTML. Tests: `email-render.spec.ts`, `resend-email.adapter.spec.ts`.
+  `NotificationsCopyService.resolveEmail` still reads the old `greeting` key and has no caller
+  outside its spec.
+
 - **2026-10-30 · Suppress closed social signals.** Identity, buddy-activity and invitation
   listeners check the central social policy before delivery or delivery-marker writes; room
   listeners use the newly gated room-target service. Usage: social/room closure also suppresses

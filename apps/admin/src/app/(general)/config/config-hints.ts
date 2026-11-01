@@ -1,5 +1,8 @@
 /** Operator-facing hints for `/config`. Fallback is the catalog `description` if a key is new. */
 export const CONFIG_HINTS: Record<string, string> = {
+    "economy.coin.plan_preview_cost": "Coin ile bir yeni Koçla planla taslağı hazırlamanın bedeli. Varsayılan 20. Başarılı taslak kaydedildikten sonra kullanılır; tekrar okuma ve uygulama ek Coin kullanmaz.",
+    "ai.plan.coin_daily_limit": "Kullanıcı başına son 24 saatte Coin ile hazırlanabilecek plan taslağı sayısı. Varsayılan 1. Devam eden istekler de sayılır; 0 yeni üretimleri kapatır.",
+    "ai.plan.coin_enabled": "Koçla planla için açık onayla Coin kullanımını açar. Varsayılan kapalı. Günlük not, ruh hali ve seans uyarlamalarını açmaz; kapatmak kaydedilmiş taslakları silmez.",
     "economy.coin.notebook_slot_cost": "Ücretsiz kullanıcı için kalıcı +1 özel defter kapasitesinin Coin bedeli. Başlangıç değeri 20. Sayfa, kayıt ve fotoğraf kotalarını artırmaz. Yeni satın almalara uygulanır.",
     "economy.notebook_slots.max_per_user": "Kullanıcı başına Coin ile alınabilecek toplam ek defter kapasitesi. 0 yeni alımları kapatır. Düşürmek önceden alınan kapasiteyi geri almaz.",
     "ads.placement.community_announcement_end.enabled": "Yalnız incelenmiş herkese açık duyuru detayında yorumların ardından tek reklamı açar. Sohbet ve özel odalarda çalışmaz. Google envanter/tarama/gizlilik incelemesi tamamlanmadan açma.",

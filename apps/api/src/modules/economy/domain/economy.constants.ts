@@ -4,6 +4,8 @@ export const EconomyLedger = {
   AI_CHAT_REFUND_REASON: "ai.chat.refund",
   AI_CHAT_REF_TYPE: "ai_chat",
   AI_CHAT_REFUND_REF_TYPE: "ai_chat_refund",
+  PLAN_PREVIEW_SPEND_REASON: "plan.preview.purchase",
+  PLAN_PREVIEW_REF_TYPE: "plan_preview",
   STREAK_FREEZE_SPEND_REASON: "streak.freeze.purchase",
   STREAK_FREEZE_REFUND_REASON: "streak.freeze.refund",
   STREAK_FREEZE_REF_TYPE: "streak_freeze",

@@ -14,7 +14,7 @@ import {
 import { EconomyUsesService } from "../application/economy-uses.service";
 
 class EconomyUseDto implements EconomyUseView {
-  @ApiProperty({ enum: ["NOTEBOOK_SLOT", "COACH_CHAT", "DEEP_ANALYSIS"] })
+  @ApiProperty({ enum: ["NOTEBOOK_SLOT", "COACH_CHAT", "DEEP_ANALYSIS", "PLAN_PREVIEW"] })
   id!: EconomyUseView["id"];
   @ApiProperty({
     enum: [

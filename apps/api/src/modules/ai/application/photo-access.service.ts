@@ -6,7 +6,8 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { evaluateFeatureAccess } from "../../payments/domain/feature-access";
-import { MockExamService } from "../../coaching/application/mock-exam.service";
+import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { AiUsageFeature } from "../domain/ai.constants";
 import { PHOTO_MONTHLY_WINDOW_MS } from "../domain/photo-classify.constants";
 import { AiBudgetGuard } from "./ai-budget.guard";
 
@@ -33,7 +34,7 @@ export class PhotoAccessService {
   constructor(
     private readonly entitlement: EntitlementService,
     private readonly config: ConfigRegistryService,
-    private readonly mockExams: MockExamService,
+    private readonly usage: AiUsageRepository,
     private readonly budget: AiBudgetGuard,
   ) {}
 
@@ -47,7 +48,9 @@ export class PhotoAccessService {
 
     const ent = await this.entitlement.getEntitlement(userId, rolesHint);
     const since = new Date(Date.now() - PHOTO_MONTHLY_WINDOW_MS);
-    const used = await this.mockExams.countPhotoCategorizationsSince(userId, since);
+    // Both notebook prelabels and mock-exam classification append one VISION usage per call,
+    // including unclassified images. Classification result rows are not a usage meter.
+    const used = await this.usage.countFeatureSince(userId, AiUsageFeature.VISION, since);
 
     if (ent.isPremium) {
       const monthlyLimit = await this.config.get("ai.photo.monthly_limit");

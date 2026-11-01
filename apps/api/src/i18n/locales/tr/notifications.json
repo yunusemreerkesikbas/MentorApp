@@ -247,48 +247,81 @@
     }
   },
   "email": {
+    "common": {
+      "hello": "Merhaba,",
+      "helloName": "Merhaba {name},",
+      "fallbackLink": "Buton açılmazsa bu bağlantıyı tarayıcına yapıştırabilirsin:",
+      "coachChip": "Koç",
+      "footerTransaction": "Bu e-postayı PuhuKoç hesabınla ilgili bir işlem için gönderdik.",
+      "footerSubscription": "Aboneliğini {link} yönetebilirsin.",
+      "subscriptionLink": "ayarlardan",
+      "footerNotification": "Günlük hatırlatmaları {link} kapatabilirsin.",
+      "footerCoach": "Koç özetlerini {link} kapatabilirsin.",
+      "preferences": "bildirim tercihlerinden",
+      "help": "Sorun mu var? {link}"
+    },
     "identityVerifyEmail": {
-      "subject": "PuhuKoç: E-postanı doğrula",
-      "greeting": "Merhaba {name},",
-      "body": "Bir dokunuş yeter. Hesabın seni bekliyor.",
-      "cta": "E-postamı doğrula"
+      "subject": "E-postanı doğrula",
+      "preheader": "Tek dokunuş kaldı, hesabın hazır olsun.",
+      "heading": "E-postanı doğrulayalım",
+      "body": "{hello} hesabını tamamlamak için tek bir dokunuş kaldı.",
+      "cta": "E-postamı doğrula",
+      "note": "Bu hesabı sen açmadıysan bu e-postayı görmezden gelebilirsin. Senin adına hiçbir şey değişmez."
     },
     "identityResetPassword": {
-      "subject": "PuhuKoç: Şifreni yenile",
-      "greeting": "Merhaba {name},",
-      "body": "Şifreni yenilemek için aşağıdaki bağlantı yeterli.",
-      "cta": "Şifremi yenile"
+      "subject": "Şifreni yenile",
+      "preheader": "Yeni şifreni birkaç saniyede belirleyebilirsin.",
+      "heading": "Yeni şifreni belirle",
+      "body": "{hello} şifreni yenileme isteğini aldık. Aşağıdaki butonla yeni şifreni birkaç saniyede belirleyebilirsin.",
+      "cta": "Şifremi yenile",
+      "validity": "Bağlantı 1 saat geçerli",
+      "note": "Bu isteği sen yapmadıysan şifren aynen kalır. Bu e-postayı silebilirsin."
     },
     "paymentsDunning": {
-      "subject": "PuhuKoç: Ödeme tamamlanamadı",
-      "greeting": "Merhaba {name},",
-      "body": "Ödeme tamamlanamadı. Premium'un durmasın diye ayarlardan bir bakman yeterli."
+      "subject": "Ödemen tamamlanamadı",
+      "preheader": "Ödeme yöntemini güncellersen Premium'un kesintisiz devam eder.",
+      "heading": "Ödemen tamamlanamadı",
+      "body": "{hello} Premium'un şimdilik açık. Ödeme yöntemini güncellersen kesintisiz devam eder.",
+      "dateLabel": "Premium'un açık kalacağı son gün",
+      "cta": "Ödeme yöntemini güncelle"
     },
     "paymentsWelcome": {
-      "subject": "PuhuKoç: Premium'a hoş geldin",
-      "greeting": "Merhaba {name},",
-      "body": "Koçun artık yanında. Bugün küçük bir adım at. Gerisini birlikte taşırız."
+      "subject": "Premium'a hoş geldin!",
+      "preheader": "Koçun artık her gün yanında.",
+      "badge": "PREMIUM",
+      "heading": "Premium'a hoş geldin!",
+      "body": "{hello} koçun artık yanında. Bugün küçük bir adımla başla, gerisini birlikte taşırız.",
+      "benefitsTitle": "Artık senin olanlar",
+      "benefit1": "7/24 kişisel AI koç ve anında geri bildirim",
+      "benefit2": "Derin haftalık analiz, karne ve gelişim kıyaslaması",
+      "benefit3": "Sınırsız ders defteri, sayfa ve soru fotoğrafı",
+      "cta": "Bugüne başla"
     },
     "dailyReminder": {
-      "subject": "PuhuKoç: Bugün bir adım at",
-      "greeting": "Merhaba {name},",
-      "body": "Bugün kendine küçük bir adım ayırmak ister misin? Seninle buradayız."
-    },
-    "fallback": {
-      "subject": "PuhuKoç",
-      "body": "Sana bir notumuz var."
+      "subject": "Bugün küçük bir adım atalım mı?",
+      "preheader": "Beş dakikalık bir başlangıç bile sayılır.",
+      "bubble": "Bugün birlikte küçük bir adım atalım mı? 💙",
+      "body": "{hello} kendine kısa bir çalışma ayırmaya ne dersin? Beş dakika bile bugünü senin yapar.",
+      "cta": "Bugünü aç"
     },
     "mentorshipRiskDigest": {
-      "subject": "PuhuKoç: Bugün bakmaya değer {count} öğrenci",
-      "greeting": "Merhaba {displayName},",
-      "body": "{names} son günlerde zorlanıyor olabilir. Panelde raporlarına göz atabilirsin.",
+      "subject": "Bugün bakmaya değer {count} öğrenci",
+      "preheader": "{names} son günlerde zorlanıyor olabilir.",
+      "heading": "Bugün bakmaya değer {count} öğrenci",
+      "body": "{hello} bu öğrenciler son günlerde zorlanıyor olabilir. Raporlarına panelden göz atabilirsin.",
       "cta": "Öğrencilerime bak"
     },
     "mentorshipFollowupDue": {
-      "subject": "PuhuKoç: Bugün bakman gereken {count} takip var",
-      "greeting": "Merhaba {displayName},",
-      "body": "Açık takipler öğrenci listende seni bekliyor.",
-      "cta": "Öğrencilerime bak"
+      "subject": "Bugün {count} takibin var",
+      "preheader": "Hepsi öğrenci listende, tek ekranda.",
+      "heading": "Bugün {count} takibin var",
+      "body": "{hello} açık takiplerin öğrenci listende seni bekliyor.",
+      "cta": "Takiplerime bak"
+    },
+    "fallback": {
+      "subject": "PuhuKoç",
+      "heading": "Sana bir notumuz var",
+      "body": "{hello} PuhuKoç'ta seni bekleyen bir not var."
     }
   }
 }

@@ -22,7 +22,7 @@ export class EconomyUsesRegistry {
     if (this.resolver) return this.resolver(userId, roles, coin);
     // An absent AI module must never advertise usable paid generation (isolated module tests).
     return Promise.resolve(
-      (["COACH_CHAT", "DEEP_ANALYSIS"] as const).map((id) => ({
+      (["COACH_CHAT", "DEEP_ANALYSIS", "PLAN_PREVIEW"] as const).map((id) => ({
         id,
         status: "UNAVAILABLE",
         cost: null,

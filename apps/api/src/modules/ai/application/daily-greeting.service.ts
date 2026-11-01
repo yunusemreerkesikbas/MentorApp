@@ -39,18 +39,19 @@ export class DailyGreetingService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
 
-    await this.featureGate.assertAllowed(
-      user.id,
-      user.roles,
-      PremiumFeatureId.DAILY_GREETING,
-    );
-
     const today = new Date().toISOString().slice(0, 10); // UTC day — same day math as streak
     const locale = promptLocale(I18nContext.current()?.lang);
     const cached = await this.greetings.find(user.id, today, locale);
     if (cached) {
       return { greeting: cached.greeting, model: "cache" };
     }
+
+    // The allowance funds generation. Rereading today's own note consumes no new AI usage.
+    await this.featureGate.assertAllowed(
+      user.id,
+      user.roles,
+      PremiumFeatureId.DAILY_GREETING,
+    );
 
     const ctx = await this.context.build(user.id);
     const { system, user: userMsg } = buildDailyGreetingPrompt(
