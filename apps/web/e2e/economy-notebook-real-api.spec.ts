@@ -66,10 +66,15 @@ async function earnedAccount(page: Page, project: string, scenario: string) {
   };
   expect((await balance()).coinConfirmed).toBe(10);
   const token = createHash("sha256").update(email).digest("hex");
+  let verificationRequests = 0;
+  page.on("request", request => {
+    if (request.method() === "POST" && request.url() === `${api}/auth/verify-email`) verificationRequests++;
+  });
   await page.goto(`/eposta-dogrula?token=${token}`);
   await expect(
     page.getByText("E-postan doğrulandı. Hoş geldin!", { exact: true }),
   ).toBeVisible();
+  expect(verificationRequests).toBe(1);
   expect((await balance()).coinConfirmed).toBe(20);
   const ledger = await page
     .context()
@@ -89,14 +94,21 @@ async function earnedAccount(page: Page, project: string, scenario: string) {
     page.getByRole("heading", { name: "Defterlerim", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Harika!", exact: true }).click();
+  const journey = page.getByRole("dialog", { name: "Seviye 1 · Kıvılcım", exact: true });
+  await journey.getByRole("button", { name: "Devam et", exact: true }).click();
+  await expect(journey).toHaveCount(0);
   return { headers, balance, email };
 }
 
-async function createNotebook(page: Page, title: string) {
+async function createNotebook(page: Page, title: string, first = false) {
   await page.getByLabel("Defter adı").fill(title);
+  const created = page.waitForResponse(res => res.url() === `${api}/coaching/notebooks` && res.request().method() === "POST");
   await page.getByRole("button", { name: "Kaydet", exact: true }).click();
-  await expect(page).toHaveURL(/\/defterlerim\/[a-f0-9-]+$/);
-  await page.goto("/defterlerim");
+  expect((await created).status()).toBe(201);
+  if (first) {
+    await expect(page).toHaveURL(/\/defterlerim\/[a-f0-9-]+$/);
+    await page.goto("/defterlerim");
+  }
   await expect(
     page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
@@ -132,8 +144,18 @@ test("earned Coin buys capacity that survives reload, login and deletion", async
   page,
 }, info) => {
   const account = await earnedAccount(page, info.project.name, "purchase");
+  await page.goto("/ayarlar");
+  await page.getByRole("button", { name: "Bakiyen", exact: true }).click();
+  const uses = page.getByRole("region", { name: "Coin ile neler açabilirim?" });
+  await expect(uses.getByText("20 Coin", { exact: true })).toBeVisible();
+  await expect(uses.getByText("Coin ile alınan ek kapasite: 0 / 2")).toBeVisible();
+  await expect(uses.getByRole("button", { name: "Koç ekranını aç" })).toHaveCount(0); // fixture AI is off
+  expect((await account.balance()).coinConfirmed).toBe(20);
+  await uses.getByRole("button", { name: "Defterlerime git" }).click();
+  await expect(page).toHaveURL(/\/defterlerim$/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await openNew(page);
-  await createNotebook(page, "Ücretsiz defter");
+  await createNotebook(page, "Ücretsiz defter", true);
   await openNew(page);
   const dialog = page.getByRole("dialog", { name: "Bir deftere daha yer aç" });
   await expect(dialog.getByText("Kullanılabilir Coin: 20")).toBeVisible();
@@ -193,7 +215,7 @@ test("admin changes price and cap; economy-off preserves reusable capacity", asy
   const admin = await operator(request);
   const account = await earnedAccount(page, info.project.name, "switches");
   await openNew(page);
-  await createNotebook(page, "İlk defter");
+  await createNotebook(page, "İlk defter", true);
   await openNew(page);
   await expect(
     page.getByRole("button", { name: "20 Coin ile +1 defter kapasitesi aç" }),

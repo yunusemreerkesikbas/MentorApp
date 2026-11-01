@@ -91,9 +91,10 @@ export const PREMIUM_FEATURE_CATALOG: Record<PremiumFeatureId, PremiumFeatureMet
       limitKey: "ai.features.daily.greeting.free_limit",
     },
     [PremiumFeatureId.DEEP_ANALYSIS]: {
+      // Compatibility ID for the same weekly narration; the legacy deep-analysis knobs are inert.
       window: FeaturePolicyWindow.WEEK,
-      enabledKey: "ai.features.deep.analysis.free_enabled",
-      limitKey: "ai.features.deep.analysis.free_limit",
+      enabledKey: "ai.features.weekly.narration.free_enabled",
+      limitKey: "ai.features.weekly.narration.free_limit",
     },
   };
 

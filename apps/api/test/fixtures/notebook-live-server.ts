@@ -81,7 +81,7 @@ async function main() {
   // No background AI or paid storage is needed for any of these browser scenarios.
   await config.set(operator.user.id, "ai.enabled", false);
   for (const project of ["mobile", "desktop"]) {
-    for (const scenario of ["purchase", "switches"]) {
+    for (const scenario of ["purchase", "switches", "closed", "limits", "weekly"]) {
       const email = `qa-notebook-${project}-${scenario}-${run}@example.test`;
       const result = await signup(email, `QA notebook ${project}`);
       const raw = createHash("sha256").update(email).digest("hex");

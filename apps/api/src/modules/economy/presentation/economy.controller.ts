@@ -2,7 +2,9 @@ import { UnseenRewardsDto } from "./reward-receipts.dto";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from "@nestjs/common";
 import { RewardReceiptService } from "../application/reward-receipt.service";
 import { EconomyRewardsSeenDto } from "./economy.dto";
-import { ApiBearerAuth, ApiTags, ApiOkResponse, ApiQuery, ApiBody } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags, ApiOkResponse, ApiCreatedResponse, ApiQuery, ApiBody } from "@nestjs/swagger";
+import { DeepAnalysisViewDto } from "./deep-analysis-view.dto";
+import { QuestProgressViewDto } from "./quest-progress-view.dto";
 import { I18nService } from "nestjs-i18n";
 import { UserRole } from "@mentor/types";
 import type {
@@ -107,6 +109,7 @@ export class EconomyController {
 
   /** Ritual progress stays available while economy rewards are disabled. */
   @Get("quests")
+  @ApiOkResponse({ type: [QuestProgressViewDto] })
   async questsList(@CurrentUser() user: RequestUser): Promise<QuestProgressView[]> {
     return this.quests.getUserProgress(user.id);
   }
@@ -127,6 +130,8 @@ export class EconomyController {
 
   /** Deep-analysis unlock state (coin sink): review eligibility + cost + unlock. */
   @Get("deep-analysis")
+  @ApiQuery({ name: "examId", type: String, format: "uuid", required: true })
+  @ApiOkResponse({ type: DeepAnalysisViewDto })
   async deepAnalysisState(
     @CurrentUser() user: RequestUser,
     @Query() query: DeepAnalysisDto,
@@ -137,6 +142,8 @@ export class EconomyController {
 
   /** Unlock this week's deep analysis (idempotent; 422 when not eligible / insufficient coin). */
   @Post("deep-analysis")
+  @ApiBody({ schema: { type: "object", required: ["examId"], properties: { examId: { type: "string", format: "uuid" } } } })
+  @ApiCreatedResponse({ type: DeepAnalysisViewDto })
   async deepAnalysisPurchase(
     @CurrentUser() user: RequestUser,
     @Body() dto: DeepAnalysisDto,

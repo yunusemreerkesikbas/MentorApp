@@ -1,8 +1,16 @@
 .puhu-speech-bubble {
   position: relative;
   isolation: isolate;
-  padding: 64px 48px;
   margin-bottom: 32px;
+}
+
+.puhu-speech-bubble__body {
+  position: relative;
+  /* The outline stretches with the box (preserveAspectRatio="none"), so a % inline inset tracks
+     its left lobe at every width; a fixed 48px let the title touch the curve. */
+  padding: 64px 15%;
+  /* The cloud opens out of the trail: bottom centre on phones, bottom left beside Puhu. */
+  transform-origin: 50% 100%;
 }
 
 .puhu-speech-bubble__cloud {
@@ -26,9 +34,7 @@
   overflow-wrap: anywhere;
 }
 
-.puhu-speech-bubble__trail::before,
-.puhu-speech-bubble__trail::after {
-  content: "";
+.puhu-speech-bubble__dot {
   position: absolute;
   background: var(--color-surface);
   border: 1.5px solid var(--color-secondary);
@@ -36,14 +42,14 @@
   pointer-events: none;
 }
 
-.puhu-speech-bubble__trail::before {
+.puhu-speech-bubble__dot--big {
   width: 20px;
   height: 16px;
   bottom: -12px;
   left: calc(50% - 28px);
 }
 
-.puhu-speech-bubble__trail::after {
+.puhu-speech-bubble__dot--small {
   width: 10px;
   height: 8px;
   bottom: -28px;
@@ -51,23 +57,26 @@
 }
 
 @media (min-width: 640px) {
+  /* Puhu sits below the cloud's bottom-left; the trail rises from its head to the cloud. */
   .puhu-speech-bubble {
-    padding: 64px 48px;
-    margin-bottom: 0;
-    margin-left: 32px;
+    margin: 0 0 96px 8px;
+  }
+
+  .puhu-speech-bubble__body {
+    transform-origin: 0% 100%;
   }
 
   .puhu-speech-bubble__panel {
-    max-height: min(50dvh, max(64px, calc(100dvh - 208px)));
+    max-height: min(50dvh, max(64px, calc(100dvh - 304px)));
   }
 
-  .puhu-speech-bubble__trail::before {
-    left: -16px;
-    bottom: 40%;
+  .puhu-speech-bubble__dot--big {
+    left: 12px;
+    bottom: 16px;
   }
 
-  .puhu-speech-bubble__trail::after {
-    left: -32px;
-    bottom: 36%;
+  .puhu-speech-bubble__dot--small {
+    left: -12px;
+    bottom: 4px;
   }
 }

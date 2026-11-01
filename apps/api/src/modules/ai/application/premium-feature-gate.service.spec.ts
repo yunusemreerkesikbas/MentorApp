@@ -33,6 +33,25 @@ describe("PremiumFeatureGateService", () => {
     expect(countFeaturesSince).not.toHaveBeenCalled();
   });
 
+  it("uses the weekly capped keys for both public weekly-analysis feature IDs", async () => {
+    for (const id of [
+      PremiumFeatureId.WEEKLY_NARRATION,
+      PremiumFeatureId.DEEP_ANALYSIS,
+    ]) {
+      expect(await gate.isAllowed("u1", [], id)).toBe(true);
+    }
+    expect(configGet.mock.calls.map(([key]) => key)).toEqual([
+      "ai.features.weekly.narration.free_enabled",
+      "ai.features.weekly.narration.free_limit",
+      "ai.features.weekly.narration.free_enabled",
+      "ai.features.weekly.narration.free_limit",
+    ]);
+    countFeaturesSince.mockResolvedValue(1);
+    expect(await gate.isAllowed("u1", [], PremiumFeatureId.DEEP_ANALYSIS)).toBe(
+      false,
+    );
+  });
+
   it("allows a free user under the free cap", async () => {
     await expect(
       gate.isAllowed("u1", [], PremiumFeatureId.MOOD_REFLECTION),

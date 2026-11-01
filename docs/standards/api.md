@@ -386,6 +386,30 @@ the generated `@mentor/api-client` operations use the `mentorship-weekly-reports
 
 ### Economy reward receipts (2026-09-17)
 
+Pending quest rewards (2026-11-01): `GET /v1/economy/quests` returns `QuestProgressView[]` with an
+optional backend-localized `rewardPendingMessage`. A met step blocked by Coin earning conditions
+has `completed: false` and `action: null`, with no committed grant; the user can claim it after
+conditions allow, using the current configured reward. The field disappears after grant and while
+economy is disabled. Closed quests still complete with `NONE`/zero rewards and no later backpay.
+OpenAPI and the generated client expose the full typed quest response. Admin progress reads do not
+evaluate or grant rewards.
+
+Weekly analysis access (2026-10-31): authenticated `GET /v1/economy/deep-analysis?examId=<uuid>`
+returns `DeepAnalysisView`; `POST` accepts `{ examId }` and returns the view (201). Additive fields
+`purchased` and `generationAvailable` separate durable exam/week ownership from current generation
+capacity. New purchases reserve AI budget before the Coin debit, returning 503 `AI_BUDGET_EXCEEDED`
+without spending when capacity is unavailable. Repeated purchases never debit again. AI-off returns
+404 `AI_DISABLED`; economy-off returns 404 `ECONOMY_DISABLED`. Both offer and narration use the capped
+weekly narration policy; legacy `deep.analysis` feature ID mirrors it. A paid right survives generation
+failure and permits matching cached narration over budget. See [economy](../features/economy.md).
+
+Coin use catalog (2026-10-31): authenticated `GET /v1/economy/uses` returns `EconomyUsesView`
+(`coinConfirmed`, three `items`). Each item has a stable feature ID/status, nullable Coin cost,
+Premium inclusion, `canOpen` and optional daily allowance/owned-capacity data. States distinguish
+insufficient Coin, exhausted limits, unavailable AI, missing exam, unready review and already-owned
+rights. Economy-off returns 404 `ECONOMY_DISABLED`; reads never spend, reserve, grant or generate.
+This supplements the legacy balance usage estimates without changing their contract.
+
 Permanent notebook capacity (2026-10-31): authenticated `GET /v1/economy/notebook-slots` returns
 `NotebookSlotView` with the configured Coin price, purchased slot count, sale cap, balance and
 server-derived status. `POST` requires UUID `Idempotency-Key` and

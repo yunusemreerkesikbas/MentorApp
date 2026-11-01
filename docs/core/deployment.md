@@ -104,6 +104,28 @@ The source-level disabled mode was added after the original candidate passed CI;
 new exact-commit CI result before deploying it. Free cold starts/quotas, R2 spending, real mail, restricted DB role, recovery and full CI
 remain release gates. This profile does not apply the optional paid Blueprint below.
 
+### Owner decisions, 2026-10-31
+
+- **Release candidate:** `master` after PR #178 (APP-125). The coin-use catalog joins only if it
+  is finished first; `economy.enabled=false` keeps it hidden in the trial. PR #179 is superseded
+  (its docs already reached `master`) and should be closed, not merged.
+- **Daily maintenance:** `.github/workflows/trial-maintenance.yml` wakes the API and calls
+  `dispatch-daily-reminders` and `dispatch-notebook-reviews` once a day at 06:00 UTC through the
+  API's Render origin. It stays a no-op until the repository variable `TRIAL_API_ORIGIN` (the
+  actual `https://<service>.onrender.com`) and secret `CRON_SECRET` (the API's value) are set.
+  One attempt per call, no automatic retry, status codes only in the public log. Subscription
+  expiry, coach digest, AI, ads and forum triggers are not called while those features are closed.
+  GitHub can delay scheduled runs and disables them after 60 days without repository activity.
+- **Accepted:** Free web/API/Neon sleep; the first visit after idle waits about a minute. No
+  keep-alive pinger. Browser Sentry stays out of the trial (API Sentry only). Google OAuth stays
+  off: omit all three `GOOGLE_OAUTH_*` variables.
+- **Legal:** Render is now listed as the hosting provider in the KVKK notice and privacy policy.
+  The international-transfer mechanism (KVKK m.9) still needs the owner's legal decision.
+- **Content:** the seed's three KPSS dates (July 2026) are past. Official ÖSYM dates with source
+  and verification metadata are required before admission; they are never inferred.
+- **Recovery:** Neon Free keeps a short restore window. Create a Neon branch before every
+  migration and deploy. Never upload database dumps as Actions artifacts: the repository is public.
+
 ## 1. Release prerequisites and budget
 
 **Current owner direction, 2026-10-28:** evaluate suitable free plans first. There is no fixed

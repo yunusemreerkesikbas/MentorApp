@@ -2,7 +2,7 @@
   "exams": [
     {
       "slug": "kpss-lisans-2026",
-      "name": "KPSS Lisans 2026",
+      "name": "KPSS Lisans 2027",
       "family": "KPSS",
       "variant": "LISANS",
       "isCurrent": true,
@@ -10,10 +10,10 @@
       "events": [
         {
           "type": "EXAM_DATE",
-          "eventAt": "2026-07-12T06:00:00.000Z",
-          "source": "ÖSYM",
-          "sourceUrl": "https://www.osym.gov.tr",
-          "verifiedAt": "2026-06-01T10:00:00.000Z",
+          "eventAt": "2027-09-12T06:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-10-31T21:00:00.000Z",
           "verifiedBy": "editorial-seed"
         }
       ]

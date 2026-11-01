@@ -1,5 +1,9 @@
 # Coin notebook capacity verification — 2026-10-31
 
+Follow-up: [real-API browser verification](./2026-10-31-coin-notebook-live-browser.md) now covers
+four complete earned-Coin journeys without API mocks, including a fixed Strict Mode email
+verification race. The scoped checks below remain the evidence for the original implementation.
+
 Product configuration: 20 Coin for permanent +1 custom notebook capacity, up to two extra slots
 per user by default. Both settings are bounded, sensitive and editable in Admin → Ayarlar → Ekonomi.
 

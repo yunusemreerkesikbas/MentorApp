@@ -6,6 +6,7 @@ describe("AiBudgetGuard", () => {
   let windowSince: ReturnType<typeof vi.fn>;
   let reserveIfAvailable: ReturnType<typeof vi.fn>;
   let release: ReturnType<typeof vi.fn>;
+  let hasCapacity: ReturnType<typeof vi.fn>;
   let guard: AiBudgetGuard;
 
   // cents → guard multiplies by 10_000 to reach micro-USD.
@@ -13,13 +14,19 @@ describe("AiBudgetGuard", () => {
     configGet = vi.fn(async (key: string) =>
       key === "ai.budget.monthly_cap_usd_cents" ? capCents : 5,
     );
-    windowSince = vi.fn(async () => ({ costMicros: spentMicros, calls: 0, promptTokens: 0, completionTokens: 0 }));
+    windowSince = vi.fn(async () => ({
+      costMicros: spentMicros,
+      calls: 0,
+      promptTokens: 0,
+      completionTokens: 0,
+    }));
     reserveIfAvailable = vi.fn(async () => "reservation-id");
     release = vi.fn(async () => undefined);
+    hasCapacity = vi.fn(async () => true);
     guard = new AiBudgetGuard(
       { get: configGet } as never,
       { windowSince } as never,
-      { reserveIfAvailable, release } as never,
+      { reserveIfAvailable, release, hasCapacity } as never,
     );
   };
 
@@ -39,10 +46,32 @@ describe("AiBudgetGuard", () => {
     await expect(guard.assertWithinBudget()).resolves.toBeUndefined();
   });
 
+  it("checks offer capacity without cached spend or creating a reservation", async () => {
+    setup(5000, 0);
+    expect(await guard.isWithinBudget()).toBe(true);
+    hasCapacity.mockResolvedValue(false);
+    expect(await guard.hasCapacity()).toBe(false);
+    hasCapacity.mockResolvedValue(true);
+    expect(await guard.hasCapacity()).toBe(true);
+    expect(hasCapacity).toHaveBeenCalledWith({
+      capMicros: 50_000_000,
+      amountMicros: 50_000,
+      windowStart: expect.any(Date),
+    });
+    expect(reserveIfAvailable).not.toHaveBeenCalled();
+  });
+
+  it("does not query reservation capacity when the cap is disabled", async () => {
+    expect(await guard.hasCapacity()).toBe(true);
+    expect(hasCapacity).not.toHaveBeenCalled();
+  });
+
   it("blocks (throws) when spend has reached the cap", async () => {
     setup(5000, 50_000_000);
     expect(await guard.isWithinBudget()).toBe(false);
-    await expect(guard.assertWithinBudget()).rejects.toMatchObject({ code: "AI_BUDGET_EXCEEDED" });
+    await expect(guard.assertWithinBudget()).rejects.toMatchObject({
+      code: "AI_BUDGET_EXCEEDED",
+    });
   });
 
   it("caches month-to-date spend across calls (one aggregation)", async () => {
@@ -56,7 +85,11 @@ describe("AiBudgetGuard", () => {
   it("getStatus reports cap, spend, and exceeded flag", async () => {
     setup(5000, 50_000_000);
     const status = await guard.getStatus();
-    expect(status).toEqual({ capMicros: 50_000_000, spentMicros: 50_000_000, exceeded: true });
+    expect(status).toEqual({
+      capMicros: 50_000_000,
+      spentMicros: 50_000_000,
+      exceeded: true,
+    });
   });
 
   it("atomically reserves a conservative per-call allowance", async () => {
@@ -76,7 +109,9 @@ describe("AiBudgetGuard", () => {
     setup(5000, 40_000_000);
     reserveIfAvailable.mockResolvedValue(null);
 
-    await expect(guard.acquire()).rejects.toMatchObject({ code: "AI_BUDGET_EXCEEDED" });
+    await expect(guard.acquire()).rejects.toMatchObject({
+      code: "AI_BUDGET_EXCEEDED",
+    });
   });
 
   it("does not create a reservation when the cap is disabled", async () => {

@@ -20,7 +20,7 @@ test("landing hero'yu gösterir, Ücretsiz başla tanıtıma götürür", async 
   await page.addInitScript(() => window.localStorage.removeItem("mentor_welcome_seen"));
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Bu gece ışığı yanan tek pencere seninki değil." }),
+    page.getByRole("heading", { level: 1, name: "Her gün biraz, hep birlikte." }),
   ).toBeVisible();
 
   await page.getByRole("main").getByRole("link", { name: "Ücretsiz başla" }).first().click();
@@ -35,7 +35,7 @@ test("zil, kamerayı o dairenin penceresine götürür", async ({ page }, testIn
   const scene = page.locator(".lc-root[data-ready]");
   await expect(scene).toHaveAttribute("data-stop", "0");
 
-  const bell = page.getByRole("link", { name: "Daire 6, Masa: pencereye git" });
+  const bell = page.getByRole("link", { name: "Daire 6, Masa: oraya git" });
   await bell.click();
   await expect(scene).toHaveAttribute("data-stop", "4", { timeout: 10_000 });
   await expect(bell).toHaveAttribute("aria-current", "location");
@@ -63,11 +63,11 @@ test("alan seçimi pencereyi yakar ve onboarding'e taşınır", async ({ page })
   await page.goto("/#durak-7");
   const scene = page.locator(".lc-root[data-ready]");
   await expect(scene).toHaveAttribute("data-stop", "7");
-  await expect(page.getByRole("heading", { name: "Bu pencere boş. Senin olsun mu?" })).toBeAttached();
+  await expect(page.getByRole("heading", { name: "Bu oda boş. Senin olsun mu?" })).toBeAttached();
 
   await page.getByRole("radio", { name: "Yazılım & Bilişim" }).check();
   await expect(scene).toHaveAttribute("data-career", "YAZILIM");
-  await expect(page.getByRole("heading", { name: "Penceren yandı." })).toBeAttached();
+  await expect(page.getByRole("heading", { name: "Hoş geldin, komşu!" })).toBeAttached();
   expect(await page.evaluate(() => window.localStorage.getItem("mentor_landing_career"))).toBe("YAZILIM");
 
   await page.getByRole("link", { name: "Bu alanla başla" }).click();
@@ -110,7 +110,7 @@ test("azaltılmış harekette notlar kamera olmadan alt alta görünür", async 
   await expect(page.locator(".lc-root[data-ready]")).toBeAttached();
   // At the top of the page, with no scrolling: every note is already laid out at full opacity.
   await expect(page.locator('.lc-panel[data-stop="4"]')).toHaveCSS("opacity", "1");
-  await expect(page.getByRole("heading", { name: "Aynı masada, herkes kendi saatinde." })).toBeAttached();
+  await expect(page.getByRole("heading", { name: "Arkadaşlarınla aynı masada çalış." })).toBeAttached();
   // The morning desk's phone holds one story screen instead of cycling.
   await expect(page.locator(".lm-slide.s2")).toHaveCSS("opacity", "1");
   await expect(page.locator(".lm-slide.s1")).toHaveCSS("opacity", "0");
@@ -120,7 +120,7 @@ test("sabah masası: iğne kendi notunu öne çıkarır, telefonda notlar sekmey
   await asVisitor(page);
   await page.goto("/#sabah");
   const desk = page.locator("#sabah");
-  await expect(desk.getByRole("heading", { level: 2, name: "Sabah olunca masanda neler var?" })).toBeVisible();
+  await expect(desk.getByRole("heading", { level: 2, name: "Masanda neler var?" })).toBeVisible();
   // The demo speaks the app's own words (notebooks.desk.bubble_due).
   await expect(desk.getByText("Yanlış Defterini en öne koydum. Bugün 2 tekrar seni bekliyor.")).toBeAttached();
 
@@ -129,9 +129,9 @@ test("sabah masası: iğne kendi notunu öne çıkarır, telefonda notlar sekmey
   await expect(pin).toHaveAttribute("aria-pressed", "true");
   // Picking the board pushes it: the swing restarts (it alternates between two names).
   await expect(desk.locator(".lm-stage")).toHaveAttribute("data-sway", /^[01]$/);
-  await expect(desk.getByRole("heading", { level: 3, name: "Hedefin gözünün önünde." })).toBeVisible();
+  await expect(desk.getByRole("heading", { level: 3, name: "Hedefini duvara as!" })).toBeVisible();
 
-  const notebook = desk.getByRole("heading", { level: 3, name: "Yanlışların kaybolmaz." });
+  const notebook = desk.getByRole("heading", { level: 3, name: "Yanlış soruların artık kaybolmaz!" });
   if (testInfo.project.name.startsWith("desktop")) {
     await expect(notebook).toBeVisible();
     return;
@@ -139,8 +139,8 @@ test("sabah masası: iğne kendi notunu öne çıkarır, telefonda notlar sekmey
   // Below lg: one note at a time.
   await expect(notebook).toBeHidden();
   await desk.getByRole("button", { name: "Hikâye", exact: true }).click();
-  await expect(desk.getByRole("heading", { level: 3, name: "Her hafta bir hikâye." })).toBeVisible();
-  await expect(desk.getByRole("heading", { level: 3, name: "Hedefin gözünün önünde." })).toBeHidden();
+  await expect(desk.getByRole("heading", { level: 3, name: "Hafta bitti mi? Hikâyen hazır!" })).toBeVisible();
+  await expect(desk.getByRole("heading", { level: 3, name: "Hedefini duvara as!" })).toBeHidden();
 });
 
 test("odak odası: oda sekmesi sahneyi değiştirir", async ({ page }) => {
@@ -149,7 +149,7 @@ test("odak odası: oda sekmesi sahneyi değiştirir", async ({ page }) => {
   // on the server where `page.route` cannot reach; this test holds whichever state the API is in.
   await page.goto("/#odak");
   const focus = page.locator("#odak");
-  await expect(focus.getByRole("heading", { level: 2, name: "Odanı seç, süreni kur, başla." })).toBeVisible();
+  await expect(focus.getByRole("heading", { level: 2, name: "Odanı seç, süreni kur, başla!" })).toBeVisible();
   // The session page's own words.
   await expect(focus.getByRole("heading", { level: 3, name: "Odaklan, molanı al, serini koru." })).toBeVisible();
 

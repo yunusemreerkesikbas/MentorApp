@@ -9,7 +9,6 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { WeeklyReviewService as CoachingWeeklyReviewService } from "../../coaching/application/weekly-review.service";
 import { DeepAnalysisService } from "../../economy/application/deep-analysis.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
-import { PremiumFeatureId } from "@mentor/types";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import {
   buildWeeklyReviewPrompt,
@@ -19,7 +18,7 @@ import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { WeeklyReviewCacheRepository } from "../infrastructure/weekly-review-cache.repository";
 import { AiUsageFeature, estimateCostMicros } from "../domain/ai.constants";
-import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { WeeklyAnalysisAccessService } from "./weekly-analysis-access.service";
 
 @Injectable()
 export class WeeklyReviewNarrationService {
@@ -32,7 +31,7 @@ export class WeeklyReviewNarrationService {
     private readonly cache: WeeklyReviewCacheRepository,
     private readonly usage: AiUsageRepository,
     private readonly budget: AiBudgetGuard,
-    private readonly featureGate: PremiumFeatureGateService,
+    private readonly access: WeeklyAnalysisAccessService,
   ) {}
 
   async narrate(user: RequestUser, examId: string) {
@@ -49,10 +48,9 @@ export class WeeklyReviewNarrationService {
     }
     // Premium includes the narration; free users pass with a taste flag, else coin unlock.
     if (!entitlement.isPremium) {
-      const taste = await this.featureGate.isAllowed(
+      const taste = await this.access.isIncluded(
         user.id,
         user.roles,
-        PremiumFeatureId.WEEKLY_NARRATION,
       );
       const unlocked =
         taste ||

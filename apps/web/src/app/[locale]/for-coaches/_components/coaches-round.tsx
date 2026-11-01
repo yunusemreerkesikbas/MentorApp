@@ -137,7 +137,7 @@ export async function CoachesRound() {
   );
 }
 
-/** "Sabah turun hazır.": the round ticked off, and the way in. */
+/** "İlk öğrencini bugün davet et!": the round ticked off, and the way in. */
 export async function CoachesFinal({ signupOpen }: { signupOpen: boolean }) {
   const [t, landing] = await Promise.all([getTranslations("coaches"), getTranslations("landing")]);
   return (

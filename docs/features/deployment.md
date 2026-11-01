@@ -13,6 +13,18 @@ optional; source checks do not prove that production services or domains are liv
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-31 · Free-trial scheduler and launch decisions.** Render Free has no cron, so
+  `.github/workflows/trial-maintenance.yml` runs the daily reminder and notebook review dispatches
+  at 06:00 UTC (also `workflow_dispatch`). Usage: set repo variable `TRIAL_API_ORIGIN` to the
+  API's actual onrender.com origin and secret `CRON_SECRET` to the API's value; until then it
+  exits 0 with a notice. It polls `/v1/health/ready` up to three minutes for a cold wake, then
+  POSTs each dispatch once. Gotchas: the edge-origin middleware admits only health GETs and
+  cron-secret POSTs on the Render host, so Cloudflare bot rules stay out of the path; response
+  bodies are not logged because the repository is public; a failed run is not retried. Render
+  was added to the KVKK/privacy provider lists (`apps/web/src/lib/legal.ts`). Owner decisions
+  (release candidate, accepted cold starts, no browser Sentry/Google OAuth, exam dates, recovery):
+  [deployment.md](../core/deployment.md#owner-decisions-2026-10-31).
+
 - **2026-10-31 · Independent readiness checkpoint.** Refreshed public DNS without changes:
   Cloudflare delegation/mail records exist, while root/API routing is still absent. Pinned the
   private local profile to `STORAGE_PROVIDER=r2` with bounded mode; credentials and verified

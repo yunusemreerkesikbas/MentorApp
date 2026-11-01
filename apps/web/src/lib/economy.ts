@@ -9,9 +9,10 @@ import type {
   StreakRescueView,
   Paginated,
   NotebookSlotView,
+  EconomyUsesView,
 } from "@mentor/types";
 import type { NotebookSlotPurchase } from "@mentor/validation";
-import { ApiClientError, http, economyControllerUnseen, economyControllerSeen, notebookSlotsControllerState, notebookSlotsControllerPurchase } from "@mentor/api-client";
+import { ApiClientError, http, economyControllerUnseen, economyControllerSeen, notebookSlotsControllerState, notebookSlotsControllerPurchase, economyUsesControllerGet, economyControllerDeepAnalysisState, economyControllerDeepAnalysisPurchase, economyControllerQuestsList } from "@mentor/api-client";
 
 /**
  * Typed wrappers over user economy endpoints. Regen api-client when OpenAPI updates;
@@ -19,6 +20,10 @@ import { ApiClientError, http, economyControllerUnseen, economyControllerSeen, n
  */
 export async function fetchEconomyBalance(): Promise<EconomyBalance> {
   return (await http<EconomyBalance>("/v1/economy/balance")) as EconomyBalance;
+}
+
+export function fetchEconomyUses(): Promise<EconomyUsesView> {
+  return economyUsesControllerGet();
 }
 
 export function fetchNotebookSlots(): Promise<NotebookSlotView> {
@@ -56,7 +61,7 @@ export async function fetchEconomyLedger({
 }
 
 export async function fetchQuests(): Promise<QuestProgressView[]> {
-  const quests = (await http<QuestProgressView[]>("/v1/economy/quests")) as QuestProgressView[];
+  const quests = await economyControllerQuestsList();
   if (quests.length > 0 && quests.every(quest => quest.rewardUnit === "NONE") && typeof window !== "undefined") {
     window.dispatchEvent(new Event(ECONOMY_DISABLED_EVENT));
   }
@@ -120,17 +125,11 @@ export async function purchaseStreakRescue(): Promise<StreakRescueView> {
 }
 
 export async function fetchDeepAnalysis(examId: string): Promise<DeepAnalysisView> {
-  const query = new URLSearchParams({ examId });
-  return (await http<DeepAnalysisView>(
-    `/v1/economy/deep-analysis?${query.toString()}`,
-  )) as DeepAnalysisView;
+  return economyControllerDeepAnalysisState({ examId });
 }
 
 export async function purchaseDeepAnalysis(examId: string): Promise<DeepAnalysisView> {
-  return (await http<DeepAnalysisView>("/v1/economy/deep-analysis", {
-    method: "POST",
-    body: JSON.stringify({ examId }),
-  })) as DeepAnalysisView;
+  return economyControllerDeepAnalysisPurchase({ examId });
 }
 
 /** True when the economy feature flag is off — profile hub should not render. */

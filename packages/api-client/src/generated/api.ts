@@ -588,7 +588,87 @@ export interface UnseenRewardsDto {
   pageSize: number;
 }
 
-export interface DeepAnalysisDto { [key: string]: unknown }
+export type QuestProgressViewDtoCategory = typeof QuestProgressViewDtoCategory[keyof typeof QuestProgressViewDtoCategory];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QuestProgressViewDtoCategory = {
+  daily_ritual: 'daily_ritual',
+  weekly_ritual: 'weekly_ritual',
+  milestone: 'milestone',
+  onboarding: 'onboarding',
+} as const;
+
+export type QuestProgressViewDtoPeriod = typeof QuestProgressViewDtoPeriod[keyof typeof QuestProgressViewDtoPeriod];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QuestProgressViewDtoPeriod = {
+  daily: 'daily',
+  weekly: 'weekly',
+  once: 'once',
+} as const;
+
+/**
+ * @nullable
+ */
+export type QuestProgressViewDtoAction = typeof QuestProgressViewDtoAction[keyof typeof QuestProgressViewDtoAction] | null;
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QuestProgressViewDtoAction = {
+  plan: 'plan',
+  'study-session': 'study-session',
+  'mood-checkin': 'mood-checkin',
+  panel: 'panel',
+  subscription: 'subscription',
+  invite: 'invite',
+  'verify-email': 'verify-email',
+} as const;
+
+export type QuestProgressViewDtoRewardUnit = typeof QuestProgressViewDtoRewardUnit[keyof typeof QuestProgressViewDtoRewardUnit];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const QuestProgressViewDtoRewardUnit = {
+  XP: 'XP',
+  COIN: 'COIN',
+  NONE: 'NONE',
+} as const;
+
+export interface QuestProgressViewDto {
+  id: string;
+  category: QuestProgressViewDtoCategory;
+  period: QuestProgressViewDtoPeriod;
+  periodKey: string;
+  type: string;
+  title: string;
+  badgeLabel: string;
+  /** @nullable */
+  action: QuestProgressViewDtoAction;
+  rewardUnit: QuestProgressViewDtoRewardUnit;
+  rewardAmount: number;
+  rewardCoin: number;
+  progressCurrent?: number;
+  progressTarget?: number;
+  completed: boolean;
+  /** @nullable */
+  completedAt: string | null;
+  rewardPendingMessage?: string;
+}
+
+export interface DeepAnalysisViewDto {
+  eligible: boolean;
+  /** @nullable */
+  weekStart: string | null;
+  cost: number;
+  coinConfirmed: number;
+  canAfford: boolean;
+  unlocked: boolean;
+  premium: boolean;
+  purchased: boolean;
+  generationAvailable: boolean;
+}
 
 export interface RedeemInviteDto { [key: string]: unknown }
 
@@ -636,6 +716,50 @@ export interface NotebookSlotPurchaseDto {
    * @maximum 50
    */
   expectedPurchasedSlots: number;
+}
+
+export type EconomyUseDtoId = typeof EconomyUseDtoId[keyof typeof EconomyUseDtoId];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const EconomyUseDtoId = {
+  NOTEBOOK_SLOT: 'NOTEBOOK_SLOT',
+  COACH_CHAT: 'COACH_CHAT',
+  DEEP_ANALYSIS: 'DEEP_ANALYSIS',
+} as const;
+
+export type EconomyUseDtoStatus = typeof EconomyUseDtoStatus[keyof typeof EconomyUseDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const EconomyUseDtoStatus = {
+  AVAILABLE: 'AVAILABLE',
+  INSUFFICIENT_COIN: 'INSUFFICIENT_COIN',
+  PREMIUM_INCLUDED: 'PREMIUM_INCLUDED',
+  INCLUDED: 'INCLUDED',
+  ALREADY_UNLOCKED: 'ALREADY_UNLOCKED',
+  LIMIT_REACHED: 'LIMIT_REACHED',
+  DAILY_LIMIT_REACHED: 'DAILY_LIMIT_REACHED',
+  UNAVAILABLE: 'UNAVAILABLE',
+  NEEDS_EXAM: 'NEEDS_EXAM',
+  REVIEW_NOT_READY: 'REVIEW_NOT_READY',
+} as const;
+
+export interface EconomyUseDto {
+  id: EconomyUseDtoId;
+  status: EconomyUseDtoStatus;
+  /** @nullable */
+  cost: number | null;
+  premiumIncluded: boolean;
+  canOpen: boolean;
+  dailyRemaining?: number;
+  slotsOwned?: number;
+  slotLimit?: number;
+}
+
+export interface EconomyUsesDto {
+  coinConfirmed: number;
+  items: EconomyUseDto[];
 }
 
 export interface CreateZoneDto { [key: string]: unknown }
@@ -1802,6 +1926,14 @@ export type EconomyControllerSeenBody = {
    * @maxItems 100
    */
   ledgerIds: string[];
+};
+
+export type EconomyControllerDeepAnalysisStateParams = {
+examId: string;
+};
+
+export type EconomyControllerDeepAnalysisPurchaseBody = {
+  examId: string;
 };
 
 export type ForumPublicControllerQuestionsParams = {
@@ -7445,18 +7577,6 @@ export const economyControllerSeen = async (economyControllerSeenBody: EconomyCo
 
 
 
-export type economyControllerQuestsListResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerQuestsListResponseSuccess = (economyControllerQuestsListResponse200) & {
-  headers: Headers;
-};
-;
-
-export type economyControllerQuestsListResponse = (economyControllerQuestsListResponseSuccess)
-
 export const getEconomyControllerQuestsListUrl = () => {
 
 
@@ -7465,9 +7585,9 @@ export const getEconomyControllerQuestsListUrl = () => {
   return `/v1/economy/quests`
 }
 
-export const economyControllerQuestsList = async ( options?: RequestInit): Promise<economyControllerQuestsListResponse> => {
+export const economyControllerQuestsList = async ( options?: RequestInit): Promise<QuestProgressViewDto[]> => {
   
-  return http<economyControllerQuestsListResponse>(getEconomyControllerQuestsListUrl(),
+  return http<QuestProgressViewDto[]>(getEconomyControllerQuestsListUrl(),
   {      
     ...options,
     method: 'GET'
@@ -7544,29 +7664,24 @@ export const economyControllerStreakRescuePurchase = async ( options?: RequestIn
 
 
 
-export type economyControllerDeepAnalysisStateResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerDeepAnalysisStateResponseSuccess = (economyControllerDeepAnalysisStateResponse200) & {
-  headers: Headers;
-};
-;
+export const getEconomyControllerDeepAnalysisStateUrl = (params: EconomyControllerDeepAnalysisStateParams,) => {
+  const normalizedParams = new URLSearchParams();
 
-export type economyControllerDeepAnalysisStateResponse = (economyControllerDeepAnalysisStateResponseSuccess)
+  Object.entries(params || {}).forEach(([key, value]) => {
 
-export const getEconomyControllerDeepAnalysisStateUrl = () => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  
-
-  return `/v1/economy/deep-analysis`
+  return stringifiedParams.length > 0 ? `/v1/economy/deep-analysis?${stringifiedParams}` : `/v1/economy/deep-analysis`
 }
 
-export const economyControllerDeepAnalysisState = async ( options?: RequestInit): Promise<economyControllerDeepAnalysisStateResponse> => {
-  
-  return http<economyControllerDeepAnalysisStateResponse>(getEconomyControllerDeepAnalysisStateUrl(),
+export const economyControllerDeepAnalysisState = async (params: EconomyControllerDeepAnalysisStateParams, options?: RequestInit): Promise<DeepAnalysisViewDto> => {
+
+  return http<DeepAnalysisViewDto>(getEconomyControllerDeepAnalysisStateUrl(params),
   {      
     ...options,
     method: 'GET'
@@ -7577,18 +7692,6 @@ export const economyControllerDeepAnalysisState = async ( options?: RequestInit)
 
 
 
-export type economyControllerDeepAnalysisPurchaseResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type economyControllerDeepAnalysisPurchaseResponseSuccess = (economyControllerDeepAnalysisPurchaseResponse201) & {
-  headers: Headers;
-};
-;
-
-export type economyControllerDeepAnalysisPurchaseResponse = (economyControllerDeepAnalysisPurchaseResponseSuccess)
-
 export const getEconomyControllerDeepAnalysisPurchaseUrl = () => {
 
 
@@ -7597,15 +7700,15 @@ export const getEconomyControllerDeepAnalysisPurchaseUrl = () => {
   return `/v1/economy/deep-analysis`
 }
 
-export const economyControllerDeepAnalysisPurchase = async (deepAnalysisDto: DeepAnalysisDto, options?: RequestInit): Promise<economyControllerDeepAnalysisPurchaseResponse> => {
+export const economyControllerDeepAnalysisPurchase = async (economyControllerDeepAnalysisPurchaseBody: EconomyControllerDeepAnalysisPurchaseBody, options?: RequestInit): Promise<DeepAnalysisViewDto> => {
   
-  return http<economyControllerDeepAnalysisPurchaseResponse>(getEconomyControllerDeepAnalysisPurchaseUrl(),
+  return http<DeepAnalysisViewDto>(getEconomyControllerDeepAnalysisPurchaseUrl(),
   {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      deepAnalysisDto,)
+      economyControllerDeepAnalysisPurchaseBody,)
   }
 );}
 
@@ -7723,6 +7826,27 @@ export const notebookSlotsControllerPurchase = async (notebookSlotPurchaseDto: N
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       notebookSlotPurchaseDto,)
+  }
+);}
+
+
+
+export const getEconomyUsesControllerGetUrl = () => {
+
+
+
+
+  return `/v1/economy/uses`
+}
+
+export const economyUsesControllerGet = async ( options?: RequestInit): Promise<EconomyUsesDto> => {
+
+  return http<EconomyUsesDto>(getEconomyUsesControllerGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

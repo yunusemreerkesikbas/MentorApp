@@ -617,6 +617,21 @@ describe("InviteService", () => {
     expect(reversals).toHaveLength(0);
   });
 
+  it("settles a conversion while economy is closed and never pays it after reopening", async () => {
+    const svc = service();
+    await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+    economyEnabled = false;
+    const event = new PaymentSucceeded("burak", "sub", "closed-payment", 100, new Date());
+    await svc.onInvitedConverted(event);
+    expect(grants).toHaveLength(0);
+    expect(repo.redemptions[0]).toMatchObject({ status: "CONVERTED", rewardOutcome: "DISABLED" });
+    economyEnabled = true;
+    await svc.onInvitedConverted(event);
+    expect(grants).toHaveLength(0);
+    await svc.onInvitedRefunded("burak", "closed-payment");
+    expect(reversals).toHaveLength(0);
+  });
+
   it("does not reverse the first payment reward when a renewal is refunded", async () => {
     const svc = service();
     await svc.redeem("burak", await svc.getOrCreateCode("ayse"));

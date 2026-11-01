@@ -65,7 +65,7 @@ Veriler; hesabın kurulması ve güvenli işletilmesi, sözleşmenin ifası, ça
 
 ## Aktarım ve Yurt Dışı Hizmet Sağlayıcıları
 
-Hizmetin çalışması için veriler, amaçla sınırlı ve gerekli olduğu ölçüde Neon (veritabanı), Cloudflare (güvenlik, Turnstile ve R2 depolama), Resend (işlemsel e-posta), iyzico (ödeme), Sentry (hata izleme), Google (OAuth, sınırlı reklamlar ve yalnız izin verilirse Analytics), OpenAI (metin ve içerik tabanlı AI işlemleri) ve Gemini (görselden konu sınıflandırma) gibi hizmet sağlayıcılarla paylaşılabilir. AI sağlayıcılarına mümkün olduğunca kişisel veriden arındırılmış özet gönderilir; ödeme, kimlik ve iletişim bilgileri AI istemlerine kasıtlı olarak dahil edilmez. Sağlayıcıların yurt dışında bulunması veya yurt dışındaki altyapıdan hizmet vermesi halinde KVKK'nın yurt dışı aktarım hükümleri uygulanır.
+Hizmetin çalışması için veriler, amaçla sınırlı ve gerekli olduğu ölçüde Render (uygulama barındırma), Neon (veritabanı), Cloudflare (güvenlik, Turnstile ve R2 depolama), Resend (işlemsel e-posta), iyzico (ödeme), Sentry (hata izleme), Google (OAuth, sınırlı reklamlar ve yalnız izin verilirse Analytics), OpenAI (metin ve içerik tabanlı AI işlemleri) ve Gemini (görselden konu sınıflandırma) gibi hizmet sağlayıcılarla paylaşılabilir. AI sağlayıcılarına mümkün olduğunca kişisel veriden arındırılmış özet gönderilir; ödeme, kimlik ve iletişim bilgileri AI istemlerine kasıtlı olarak dahil edilmez. Sağlayıcıların yurt dışında bulunması veya yurt dışındaki altyapıdan hizmet vermesi halinde KVKK'nın yurt dışı aktarım hükümleri uygulanır.
 
 ## Saklama ve Güvenlik
 
@@ -90,7 +90,7 @@ Data is used to create and secure accounts, perform the service contract, provid
 
 ## Providers and International Transfers
 
-Necessary data may be shared, in a purpose-limited way, with Neon, Cloudflare, Resend, iyzico, Sentry, Google, OpenAI, and Gemini. AI requests use data-minimised summaries where possible and intentionally exclude payment and direct identity details. International-transfer requirements under applicable Turkish law are followed when a provider operates abroad.
+Necessary data may be shared, in a purpose-limited way, with Render (application hosting), Neon, Cloudflare, Resend, iyzico, Sentry, Google, OpenAI, and Gemini. AI requests use data-minimised summaries where possible and intentionally exclude payment and direct identity details. International-transfer requirements under applicable Turkish law are followed when a provider operates abroad.
 
 ## Retention, Security and Your Rights
 
@@ -113,7 +113,7 @@ Bilgiler hesabı çalıştırmak, kişisel çalışma deneyimi sunmak, ilerlemey
 
 ## Sağlayıcılar, Analitik ve AI
 
-Altyapıda Neon, Cloudflare, Resend, iyzico ve Sentry; giriş, sınırlı reklamlar ve izinli analitikte Google; AI metin işlemlerinde OpenAI; görsel konu sınıflandırmada Gemini kullanılabilir. Google Analytics yalnız açık tercih sonrasında yüklenir. AI sağlayıcılarına gönderilen içerik veri minimizasyonu ve maskeleme kurallarına tabidir; yine de kullanıcıların e-posta, telefon, kimlik veya ödeme bilgilerini sohbetlere yazmaması gerekir.
+Altyapıda Render, Neon, Cloudflare, Resend, iyzico ve Sentry; giriş, sınırlı reklamlar ve izinli analitikte Google; AI metin işlemlerinde OpenAI; görsel konu sınıflandırmada Gemini kullanılabilir. Google Analytics yalnız açık tercih sonrasında yüklenir. AI sağlayıcılarına gönderilen içerik veri minimizasyonu ve maskeleme kurallarına tabidir; yine de kullanıcıların e-posta, telefon, kimlik veya ödeme bilgilerini sohbetlere yazmaması gerekir.
 
 ## Tercihleriniz ve Güvenlik
 
@@ -134,7 +134,7 @@ Information is used to operate accounts, personalise study tools, show progress,
 
 ## Providers, Analytics and AI
 
-PuhuKoç may use Neon, Cloudflare, Resend, iyzico, Sentry, Google, OpenAI, and Gemini. Google Analytics loads only after an affirmative choice. AI payloads are minimised and masked, but users should not type identity, contact, or payment details into chats.
+PuhuKoç may use Render, Neon, Cloudflare, Resend, iyzico, Sentry, Google, OpenAI, and Gemini. Google Analytics loads only after an affirmative choice. AI payloads are minimised and masked, but users should not type identity, contact, or payment details into chats.
 
 ## Controls
 
@@ -306,7 +306,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "kvkk-aydinlatma": {
     slug: "kvkk-aydinlatma",
     status: "FINAL",
-    updatedAt: "2026-10-28",
+    updatedAt: "2026-10-31",
     tr: {
       title: "KVKK Aydınlatma Metni",
       body: LEGAL_COPY.kvkk.tr,
@@ -320,7 +320,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "gizlilik-politikasi": {
     slug: "gizlilik-politikasi",
     status: "FINAL",
-    updatedAt: "2026-10-28",
+    updatedAt: "2026-10-31",
     tr: {
       title: "Gizlilik Politikası",
       body: LEGAL_COPY.privacy.tr,

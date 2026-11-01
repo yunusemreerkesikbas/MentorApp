@@ -137,7 +137,7 @@ function EnabledEconomySection({ refreshKey = 0 }: EconomySectionProps) {
     sheet.show({
       title: t("balance_title"),
       layout: "filter",
-      children: <EconomyBalanceCard />,
+      children: <EconomyBalanceCard onUnavailable={sheet.dismissNow} />,
     });
   }
 

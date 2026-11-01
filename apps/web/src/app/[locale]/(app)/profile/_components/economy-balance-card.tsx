@@ -3,14 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { EconomyLedgerEntryView } from "@mentor/types";
-import { Button, Card, DigitPopIn, SectionHeading } from "@mentor/ui";
-import { useRouter } from "@/i18n/navigation";
-import { useSearchParams } from "next/navigation";
+import { Card, DigitPopIn } from "@mentor/ui";
 import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-compact";
 import { useEconomySnapshot } from "@/lib/economy-store";
 import { fetchEconomyLedger } from "@/lib/economy";
-import { coachReturnHref } from "@/lib/community-coach-bridge";
 import { useEconomyEnabled } from "@/lib/use-economy-enabled";
+import { EconomyUsesCard } from "./economy-uses-card";
 
 type LedgerState =
   | { status: "loading" }
@@ -20,15 +18,17 @@ type LedgerState =
 /**
  * Earned XP + confirmed coin on the profile hub only (never in chat §4 #3).
  */
-export function EconomyBalanceCard() {
+export function EconomyBalanceCard({ onUnavailable }: { onUnavailable?: () => void }) {
   const economyEnabled = useEconomyEnabled();
   const snapshot = useEconomySnapshot();
   const balance = snapshot.balance;
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const locale = useLocale();
   const translate = useTranslations("economy");
   const [ledger, setLedger] = useState<LedgerState>({ status: "loading" });
+
+  useEffect(() => {
+    if (!economyEnabled) onUnavailable?.();
+  }, [economyEnabled, onUnavailable]);
 
   useEffect(() => {
     if (!economyEnabled) return;
@@ -56,9 +56,7 @@ export function EconomyBalanceCard() {
 
   return (
     <Card>
-      <SectionHeading subtitle={translate("balance_subtitle")}>
-        {translate("balance_title")}
-      </SectionHeading>
+      <p className="text-sm text-[var(--color-secondary)]">{translate("balance_subtitle")}</p>
       <dl className="mt-4 grid grid-cols-2 gap-4">
         <div>
           <dt className="text-sm" style={{ color: "var(--color-secondary)" }}>
@@ -88,21 +86,9 @@ export function EconomyBalanceCard() {
           ) : null}
         </div>
       </dl>
-      {balance.usage ? <p className="mt-4 text-sm text-[var(--color-secondary)]">
-        {translate("balance_usage", balance.usage)}
-      </p> : null}
-      <div className="mt-4">
+      <EconomyUsesCard />
+      <div className="mt-6">
         <JourneyLevelCompact level={balance.level} />
-      </div>
-      <div className="mt-4">
-        <Button
-          type="button"
-          onClick={() =>
-            router.push(coachReturnHref(searchParams.get("returnTo")))
-          }
-        >
-          {translate("go_coach")}
-        </Button>
       </div>
       <div className="mt-6 border-t border-[var(--color-border)] pt-4">
         <h3 className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>

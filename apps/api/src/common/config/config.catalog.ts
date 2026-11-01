@@ -1006,12 +1006,12 @@ export const CONFIG_CATALOG = {
   ),
   "ai.features.deep.analysis.free_enabled": flag(
     false,
-    "Allow free users a capped deep-analysis unlock without coin.",
+    "Deprecated, has no effect. Use ai.features.weekly.narration.free_enabled for weekly analysis access.",
   ),
   "ai.features.deep.analysis.free_limit": aiCount(
     1,
     100000,
-    "Free-user deep-analysis unlocks per 7-day window when the taste flag is on.",
+    "Deprecated, has no effect. Use ai.features.weekly.narration.free_limit for the capped weekly allowance.",
   ),
   "identity.auth.reauthentication_seconds": authCount(600, 600, "Fresh login window for email changes and self deletion."),
   "identity.auth_rate.ip_window_seconds": authCount(60, 3600, "Authentication IP fixed window in seconds."),

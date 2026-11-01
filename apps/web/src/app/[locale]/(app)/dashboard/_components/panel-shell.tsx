@@ -40,11 +40,15 @@ import { WeeklyRecapSlot } from "./weekly-recap-slot";
 const EconomyQuestsCard = dynamic(() =>
   import("@/components/economy-quests-card").then((module) => module.EconomyQuestsCard),
 );
-const PuhuSpeechModal = dynamic(() =>
-  import("@/components/puhu-speech-modal").then((module) => module.PuhuSpeechModal),
+// `ssr: false` gives each overlay its own Suspense boundary. Without it the lazy chunk suspends
+// the page's boundary on first open and the whole panel blinks out until the chunk lands.
+const PuhuSpeechModal = dynamic(
+  () => import("@/components/puhu-speech-modal").then((module) => module.PuhuSpeechModal),
+  { ssr: false },
 );
-const StreakRescueSuccess = dynamic(() =>
-  import("@/components/streak-rescue-success").then((module) => module.StreakRescueSuccess),
+const StreakRescueSuccess = dynamic(
+  () => import("@/components/streak-rescue-success").then((module) => module.StreakRescueSuccess),
+  { ssr: false },
 );
 
 const REWARDED_QUEST_VISIBLE_REASONS = new Set([
@@ -259,17 +263,16 @@ function PanelContent() {
       {rescue.successDays != null ? (
         <StreakRescueSuccess days={rescue.successDays} onClose={rescue.closeSuccess} />
       ) : null}
-      {moodCheckin.speechModalOpen ? (
-        <PuhuSpeechModal
-          isOpen
-          onClose={moodCheckin.closeSpeechModal}
-          isLoading={moodCheckin.speechLoading}
-          loadingText={moodT("coach_thinking")}
-          text={moodCheckin.speechText}
-          actionLabel={moodT("coach_speech_cta")}
-          closeAriaLabel={moodT("coach_close_aria")}
-        />
-      ) : null}
+      {/* Always mounted so the cloud can play its exit; it renders nothing while closed. */}
+      <PuhuSpeechModal
+        isOpen={moodCheckin.speechModalOpen}
+        onClose={moodCheckin.closeSpeechModal}
+        isLoading={moodCheckin.speechLoading}
+        loadingText={moodT("coach_thinking")}
+        text={moodCheckin.speechText}
+        actionLabel={moodT("coach_speech_cta")}
+        closeAriaLabel={moodT("coach_close_aria")}
+      />
     </main>
   );
 }
