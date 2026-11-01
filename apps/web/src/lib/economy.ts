@@ -154,6 +154,14 @@ export interface CoinCelebrateDetail {
   label?: string;
 }
 
+/** Everyday Coin (daily active day, a rewarded ad) is a quiet toast; the overlay stays special. */
+const QUIET_COIN_REASONS = new Set(["quest.daily.active-day", "ad.reward.completed"]);
+
+export function rewardPresentation(entry: { unit: string; reason: string }): "CELEBRATION" | "COIN_TOAST" | "XP_TOAST" {
+  if (entry.unit !== "COIN") return "XP_TOAST";
+  return QUIET_COIN_REASONS.has(entry.reason) ? "COIN_TOAST" : "CELEBRATION";
+}
+
 export function notifyCoinCelebration(amount: number, label?: string): void {
   if (typeof window === "undefined" || amount <= 0) return;
   window.dispatchEvent(

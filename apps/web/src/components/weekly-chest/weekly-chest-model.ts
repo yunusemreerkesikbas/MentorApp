@@ -10,6 +10,12 @@ export function daysLeft(view: Pick<WeeklyChestView, "current" | "target">): num
   return Math.max(0, view.target - view.current);
 }
 
+/** Whether the week's remaining days (today too, unless it already counted) can still fill the chest. */
+export function weekCanStillFill(view: Pick<WeeklyChestView, "current" | "target" | "days" | "today">): boolean {
+  const open = view.days.filter((day) => day.date >= view.today && !day.active).length;
+  return view.current + open >= view.target;
+}
+
 export type NoteLine =
   | { key: "note_days" | "note_sessions" | "note_tasks"; values: { count: number } }
   | { key: "note_focus_hm" | "note_focus_h" | "note_focus_m"; values: { hours: number; minutes: number } };

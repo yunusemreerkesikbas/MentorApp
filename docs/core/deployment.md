@@ -75,7 +75,10 @@ and, for every amount/cost/cap key in the "New defaults" table of
 [the rebalance design](../plans/2026-11-01-coin-economy-rebalance-design.md), delete its override
 (the new default applies) or set the ×10 value. Do all keys in one session: a partial change breaks
 the ratios (an old 5 Coin message price with new rewards makes Coin 10× cheaper). Leave every flag
-as it is, restart, and verify effective values.
+as it is, restart, and verify effective values. Two keys to watch: an old `economy.coin.daily_cap`
+override (e.g. 50) holds every 100 Coin onboarding and chest grant as pending until the cap is
+raised, and `economy.coin.min_xp_for_coin` is an XP threshold (default 0), so any override of it
+must be ×10 too or it becomes ten times easier to pass.
 
 The social boundary added on 2026-10-30 is independent of the forum switch. When closed,
 follow/buddy operations, invitation creation/redemption and other-user profiles/achievement

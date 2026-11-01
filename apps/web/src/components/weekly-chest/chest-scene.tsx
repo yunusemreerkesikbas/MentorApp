@@ -112,9 +112,10 @@ export function ChestScene({ chest, onClose }: { chest: WeeklyChestView; onClose
       <h2 id={titleId} className="sr-only">
         {t("title")}
       </h2>
-      <div className="mx-auto flex min-h-full w-full max-w-[480px] flex-col items-center pb-8">
-        <div className="relative aspect-square w-full max-w-[min(480px,58dvh)] select-none overflow-hidden">
-          <div className={`absolute inset-0 ${inside ? "wc-dim" : ""}`}>
+      <SceneBackdrop open={inside} />
+      <div className="relative mx-auto flex min-h-full w-full max-w-[720px] flex-col items-center justify-center py-8">
+        <div className="relative aspect-square w-full max-w-[min(720px,64dvh)] select-none overflow-hidden">
+          <div className={`wc-feather absolute inset-0 ${inside ? "wc-dim" : ""}`}>
             {reduceMotion || revisit ? (
               <>
                 {/* Two fixed local stills that crossfade, the clip's own first and last frames. */}
@@ -146,17 +147,9 @@ export function ChestScene({ chest, onClose }: { chest: WeeklyChestView; onClose
           {phase === "ready" ? (
             <button type="button" tabIndex={-1} aria-hidden onClick={open} className="absolute inset-0 cursor-pointer" />
           ) : null}
+          {/* Tap anywhere on the clip to skip it; no visible button over the art. */}
           {phase === "clip" ? (
-            <>
-              <button type="button" tabIndex={-1} aria-hidden onClick={skip} className="absolute inset-0 cursor-pointer" />
-              <button
-                type="button"
-                onClick={skip}
-                className="wc-ghost-button absolute bottom-3 right-3 min-h-11 rounded-full px-4 text-sm font-extrabold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              >
-                {t("scene_skip")}
-              </button>
-            </>
+            <button type="button" tabIndex={-1} aria-hidden onClick={skip} className="absolute inset-0 cursor-pointer" />
           ) : null}
           {inside ? (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -198,6 +191,21 @@ export function ChestScene({ chest, onClose }: { chest: WeeklyChestView; onClose
       </div>
     </div>,
     document.body,
+  );
+}
+
+/**
+ * The desk carried out to the screen's edges: the same still, blurred and darkened, behind the
+ * square clip, whose feathered edges melt into it. No extra art; the room just goes on.
+ */
+function SceneBackdrop({ open }: { open: boolean }) {
+  return (
+    <div className="wc-backdrop" aria-hidden>
+      {/* eslint-disable-next-line @next/next/no-img-element -- the scene's own local stills, blurred */}
+      <img src={MEDIA.closed} alt="" className={`wc-fade ${open ? "opacity-0" : ""}`} />
+      {/* eslint-disable-next-line @next/next/no-img-element -- see above */}
+      <img src={MEDIA.open} alt="" className={`wc-fade ${open ? "" : "opacity-0"}`} />
+    </div>
   );
 }
 

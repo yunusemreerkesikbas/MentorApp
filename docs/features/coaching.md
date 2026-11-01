@@ -145,6 +145,21 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-02 — Bounded session start time
+
+- **What/usage:** `POST /v1/study-sessions` still accepts an optional `startedAt`, but only within
+  the 24-hour resume window (`SESSION_ACTUAL_SECONDS_MAX`) and at most one minute ahead; otherwise
+  400 `VALIDATION_ERROR`. No client sends it; omitted means server now.
+- **Gotchas:** A backdated start used to mark an old day active (streak, quests, that day's Coin).
+  Tests that need an older session seed it through `StudySessionRepository.create`.
+
+### 2026-11-01 — Remove obsolete panel chest translations
+
+- **What/usage:** Removed the three unused `panel.quests_chest*` messages from both locales
+  and their dedicated test after the chest moved to `ChestRow`.
+- **Gotchas/related:** The active chest uses `weeklyChest` messages; its behavior is unchanged.
+  Related: `messages/{tr,en}.json`, `components/weekly-chest/chest-row.tsx`.
+
 ### 2026-11-01 — Restore panel chest translations
 
 - **What/usage:** Restored `panel.quests_chest`, `quests_chest_open` and `quests_chest_reward`

@@ -61,6 +61,7 @@ function build(options: {
     })),
   };
   const receipts = { markSeen: vi.fn(async () => undefined) };
+  const entitlement = { getEntitlement: vi.fn(async () => ({ isPremium: options.premium ?? false })) };
   const config = {
     get: vi.fn(async (key: string) => {
       if (key === "economy.enabled") return options.economyEnabled ?? true;
@@ -82,9 +83,9 @@ function build(options: {
     receipts as never,
     config as never,
     i18n as never,
-    { getEntitlement: vi.fn(async () => ({ isPremium: options.premium ?? false })) } as never,
+    entitlement as never,
   );
-  return { service, quests, signals, progress, ledger, receipts };
+  return { service, quests, signals, progress, ledger, receipts, entitlement };
 }
 
 const notFound = (err: unknown) => err instanceof DomainError && err.code === ErrorCode.WEEKLY_CHEST_NOT_FOUND;
@@ -113,8 +114,14 @@ describe("WeeklyChestService", () => {
     expect(view.days[0]).toEqual({ date: "2026-11-02", active: true });
     expect(view.days[1]).toEqual({ date: "2026-11-03", active: false });
     expect(view.days[6]).toEqual({ date: "2026-11-08", active: false });
-    expect(quests.evaluateAndGrant).toHaveBeenCalledWith("user-1");
+    expect(quests.evaluateAndGrant).toHaveBeenCalledWith("user-1", undefined, false, false);
     expect(progress.listForUser).toHaveBeenCalledWith("user-1", ["2026-W45", "2026-W44"]);
+  });
+
+  it("reads the entitlement once per chest view, even when last week is evaluated too", async () => {
+    const { service, entitlement } = build();
+    await service.getView("user-1");
+    expect(entitlement.getEntitlement).toHaveBeenCalledTimes(1);
   });
 
   it("is READY with the granted Coin and the week's note once completed and not opened", async () => {
@@ -209,7 +216,7 @@ describe("WeeklyChestService", () => {
       state: "READY", periodKey: "2026-W44", carriedOver: true, reward: null,
       rewardPendingMessage: trEconomy.questRewardPending,
     });
-    expect(quests.evaluateAndGrant).toHaveBeenCalledWith("user-1", "2026-11-01");
+    expect(quests.evaluateAndGrant).toHaveBeenCalledWith("user-1", "2026-11-01", false, false);
   });
 
   it("opens last week's cap-held chest without stamping it", async () => {
@@ -217,7 +224,7 @@ describe("WeeklyChestService", () => {
     expect(await service.open("user-1", "2026-W44")).toMatchObject({
       state: "READY", carriedOver: true, reward: null,
     });
-    expect(quests.evaluateAndGrant).toHaveBeenCalledWith("user-1", "2026-11-01");
+    expect(quests.evaluateAndGrant).toHaveBeenCalledWith("user-1", "2026-11-01", false, false);
     expect(progress.markRevealed).not.toHaveBeenCalled();
   });
 

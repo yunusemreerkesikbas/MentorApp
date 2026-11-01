@@ -412,8 +412,12 @@ from them (2026-09-22).
 - **Premium identity (revised 2026-09-21):** the **PREMIUM badge** (§6.1) is the mark — the cape's
   clasp, gold on night blue. It replaces the crown on every "unlock" affordance (lock nudges) and
   heads the member's perks card; Faz 3 adds it beside "Mentor" in the sidebar with the
-  cape-blue → clasp-gold avatar ring (`--premium-ring-*`). Until then Lucide `Crown` in
-  `--color-star` stays next to the display name. Do not overlay the avatar with icons, do not use a
+  cape-blue → clasp-gold avatar ring (`--premium-ring-*`). Next to the display name sits
+  **premium Puhu's hero mask** (`PremiumIdentityMark`, 2026-11-02, replaced the Lucide crown): a
+  domino mask in `--premium-mark` (`#1E2A5A`, dark `#7E9BFF`) with gold eye rings
+  (`--premium-ring-to`). Sizes: 16 px one colour (the rings would blur under a pixel) beside small
+  names, 20 px with rings in the sidebar and community profile, 24 px on `/profil`. No star on the
+  mask: the star belongs to the cape clasp. Do not overlay the avatar with icons, do not use a
   blue verification tick (that is email verified), no prize ribbons or saturated-gradient medals.
   Feed and comment avatars stay unmarked — membership is identity chrome, not a ranking stamp.
 - **Glyphs stand bare (2026-09-28):** in rows, overlays and the coaching screens an icon is a 22 px
@@ -812,7 +816,7 @@ desk at night (`.weekly-chest-night`, §2), always the same art, never the cooki
 | --- | --- | --- |
 | Ready | The desk still with the closed chest; its lock strip carries the week's lit lamps. "Sandığı aç" and "Sonra" under it | rests |
 | Flow | The lamps slide into the lock and fade | 400 ms |
-| Lid | A Kling clip (`chest-open.mp4`): the lid flies open, light spills out. Tap or "Atla" skips it | ~5 s |
+| Lid | A Kling clip (`chest-open.mp4`): the lid flies open, light spills out. A tap on it skips it (no button over the art) | ~5 s |
 | Inside | The art dims and blurs; the week's paper note (Caveat hand, tape, Puhu's signature) drops on it; the Coin pops under it with the shared chime | 600 ms |
 
 - **True, not theatre:** every line of the note is the server's `summary` (active days, sessions,
@@ -822,6 +826,7 @@ desk at night (`.weekly-chest-night`, §2), always the same art, never the cooki
   ready. An unopened chest waits one more week ("Geçen haftanın sandığı").
 - **Away from the panel:** a ready chest is told once by a toast with "Aç" (→ `/panel?chest=open`);
   its Coin receipt is held back from the usual Coin toast until the scene shows it.
+- **Size and room:** the square grows to 720 px or 64 % of the screen height, whichever is smaller (the clip's own size, never upscaled past it). Behind it the same still, blurred and darkened (`.wc-backdrop`), fills the screen, and the square's edges feather into it (`.wc-feather`), so the desk reads as a room, not a box on brown.
 - **Reduced motion:** no clip and no hop; the closed and open stills crossfade and the note appears
   without the drop. An opened chest reopened from the panel starts at the note, without the clip.
 - **Source of truth:** `components/weekly-chest/` (`chest-scene.tsx`, `chest-scene-note.tsx`,
@@ -969,8 +974,8 @@ desk at night (`.weekly-chest-night`, §2), always the same art, never the cooki
       `@mentor/ui`, because the bubble needs `PuhuImage` / `next/image` (2026-09-22).
 - [ ] Move the web-independent parts (classes, `ProgressLine`) into `@mentor/ui` when a screen outside
       `apps/web` needs them.
-- [ ] Faz 3 identity: sidebar PREMIUM badge, avatar ring. (Caped Puhu `puhu-premium.png` is now a
-      transparent RGBA export, 2026-11-01.)
+- [ ] Faz 3 identity: sidebar PREMIUM badge, avatar ring. (Premium Puhu is now
+      `puhu-premium-hero.png`: hero mask, hero stance, transparent, 2026-11-02.)
 - [x] Weekly chest art (soft-3D, closed/open) to replace the line glyph (2026-11-01, `public/visuals/chest/`).
 - [ ] Map remaining Nuton library screens ↔ Mentor screens (Figma pass).
 - [ ] Puhu P0: `thinking` (AI loading), `gentle-error` (soft error toast).

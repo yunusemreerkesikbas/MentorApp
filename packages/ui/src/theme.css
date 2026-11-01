@@ -178,6 +178,8 @@ html {
    */
   --premium-ring-from: #2f55d4;
   --premium-ring-to: #f2b544;
+  /* The hero mask beside a premium name: the mascot's night-blue mask, ~13:1 on white. */
+  --premium-mark: #1e2a5a;
   --premium-badge-bg: #c4b8e0;
   --premium-badge-gradient: linear-gradient(135deg, #7eb6e8 0%, #c4b8e0 52%, #f3a6c8 100%);
   --premium-badge-ink: #12141a;
@@ -270,9 +272,10 @@ html.dark {
   --play-well-violet: #332c47;
   --play-well-coral: #3a2a28;
   --play-well-pink: #3a2a3f;
-  /* The badge keeps its night/gold pairing in dark; only the ring's blue end lifts to stay visible
-     against the charcoal surface. */
+  /* The badge keeps its night/gold pairing in dark; only the ring's blue end and the hero mask
+     lift to stay visible against the charcoal surface (~6:1). */
   --premium-ring-from: #7e9bff;
+  --premium-mark: #7e9bff;
   /* Ink blue goes unreadable on charcoal, so the accent lifts and the well drops. */
   --coach-accent: #8fa2ee;
   --coach-accent-soft: #252b40;

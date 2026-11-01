@@ -6,7 +6,7 @@ import { CheckIcon as Check } from "@solar-icons/react/linear/check";
 import { NotebookIcon as Notebook } from "@solar-icons/react/bold/notebook";
 import type { WeeklyChestView } from "@mentor/types";
 import { ChestArt } from "./chest-art";
-import { chestLamps, daysLeft } from "./weekly-chest-model";
+import { chestLamps, daysLeft, weekCanStillFill } from "./weekly-chest-model";
 
 const INSIDE_ROW =
   "flex items-center gap-3 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-streak-core)_16%,var(--color-surface))] px-3 py-2.5";
@@ -21,13 +21,17 @@ export function ChestInfoSheet({ chest }: { chest: WeeklyChestView }) {
     <div className="flex flex-col items-center gap-5 pb-2 text-center" data-testid="weekly-chest-sheet">
       <ChestArt open={false} lamps={chestLamps(chest)} className="w-36" />
       <p className="text-xl font-extrabold leading-snug text-[var(--color-main)]">
-        {t("sheet_headline", { left: daysLeft(chest) })}
+        {weekCanStillFill(chest) ? t("sheet_headline", { left: daysLeft(chest) }) : t("sheet_headline_missed")}
       </p>
 
       <ol className="flex justify-center gap-2" aria-label={t("sheet_days_label")}>
         {chest.days.map((day) => {
           const label = format.dateTime(new Date(`${day.date}T00:00:00Z`), { weekday: "short", timeZone: "UTC" });
           const today = day.date === chest.today;
+          // Like the panel's week band: a past day that did not count is flat track, a day to come is dashed.
+          const idle = day.date < chest.today
+            ? "bg-[var(--play-track)]"
+            : "border-2 border-dashed border-[color-mix(in_srgb,var(--color-secondary)_35%,transparent)]";
           return (
             <li key={day.date} className="flex flex-col items-center gap-1.5">
               <span
@@ -35,7 +39,7 @@ export function ChestInfoSheet({ chest }: { chest: WeeklyChestView }) {
                   "grid size-9 place-items-center rounded-full",
                   day.active
                     ? "bg-[var(--color-streak-core)] text-[color-mix(in_srgb,var(--color-star)_25%,var(--color-main))]"
-                    : "border-2 border-dashed border-[color-mix(in_srgb,var(--color-secondary)_35%,transparent)]",
+                    : idle,
                   today ? "ring-2 ring-[var(--play-cta)] ring-offset-2 ring-offset-[var(--color-surface)]" : "",
                 ].join(" ")}
                 aria-hidden

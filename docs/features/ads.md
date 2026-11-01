@@ -173,6 +173,14 @@ Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs 
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-01: Rewarded Coin ad defaults follow the ×10 economy.** `ads.rewarded.web.reward_coin`
+  default 10 (bounds 1–500), `ads.rewarded.web.daily_limit` default 1. Every ad flag stays off and
+  the production guard in `ads.service.ts` (no server-side verification for web rewarded ads) is
+  unchanged. Usage: nothing to call; revisit with the mobile app (AdMob SSV) or free web DAU above
+  ~1000. A completed ad's Coin shows as a quiet toast, not the full-screen celebration
+  (`rewardPresentation()` in web `lib/economy.ts`). Related: `config.catalog.ts`,
+  [rebalance design](../plans/2026-11-01-coin-economy-rebalance-design.md).
+
 - **2026-10-27: Reconcile PR #172 migration history with master.** Preserve master migrations through `0130`; apply community review and content-type additions as `0131` and `0132`. Usage: run the normal migration command in journal order. Snapshots retain optional trial-phone support and both ad review additions. Related: `apps/api/drizzle/{0131_community_question_ad_review,0132_ad_review_content_type}.sql`, `drizzle/meta`, and `docs/core/integrations.md`.
 
 

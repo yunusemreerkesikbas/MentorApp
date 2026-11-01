@@ -35,8 +35,11 @@ describe("2026-11-01 economy rebalance defaults", () => {
     expect(CONFIG_CATALOG["ads.rewarded.web.reward_coin"].schema.safeParse(500).success).toBe(true);
   });
 
-  it("fits the signup day (profile 100 + email 100 + active day 10) under the daily Coin cap", () => {
-    expect(100 + 100 + 10).toBeLessThanOrEqual(CONFIG_CATALOG["economy.coin.daily_cap"].default as number);
+  it("fits the signup day (profile + email + active day) under the daily Coin cap", () => {
+    const value = (key: keyof typeof CONFIG_CATALOG) => CONFIG_CATALOG[key].default as number;
+    const signupDay =
+      2 * value("economy.quest.onboarding_reward_coin") + value("economy.quest.daily_active_reward_coin");
+    expect(signupDay).toBeLessThanOrEqual(value("economy.coin.daily_cap"));
   });
 
   it("keeps every ad switch off at launch", () => {

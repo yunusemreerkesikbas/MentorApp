@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Logger } from "@nestjs/common";
 import { Currency } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -83,9 +83,8 @@ function service(options: {
       return 0;
     }),
   };
-  const dailySignals = {
-    getToday: vi.fn(async () => ({
-      date,
+  const signalsFor = (day: string) => ({
+      date: day,
       hasDonePlanTask: options.signals?.hasDonePlanTask ?? false,
       hasCompletedFocusSession: options.signals?.hasCompletedFocusSession ?? false,
       hasMoodCheckin: options.signals?.hasMoodCheckin ?? false,
@@ -98,7 +97,10 @@ function service(options: {
       weeklyCompletedPlanTasks: options.signals?.weeklyCompletedPlanTasks ?? 0,
       weeklyActiveDays: options.signals?.weeklyActiveDays ?? 0,
       weeklyActiveDates: options.signals?.weeklyActiveDates ?? [],
-    })),
+  });
+  const dailySignals = {
+    getToday: vi.fn(async () => signalsFor(date)),
+    getForDate: vi.fn(async (_userId: string, day: string) => signalsFor(day)),
   };
   const streak = {
     getSummary: vi.fn(async () => ({
@@ -106,6 +108,7 @@ function service(options: {
       longestStreak: options.currentStreak ?? 0,
       freezeTokens: 0,
     })),
+    getStreakAt: vi.fn(async () => ({ currentStreak: options.currentStreak ?? 0 })),
   };
   const quests = {
     withServiceTx: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
@@ -192,6 +195,33 @@ describe("QuestService — daily.active-day", () => {
     );
   });
 
+  describe("dated evaluation (a task checked off ahead of its day)", () => {
+    afterEach(() => vi.useRealTimers());
+
+    it("pays nothing for a day after tomorrow, so future-dated tasks cannot pull Coin forward", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-07-06T12:00:00.000Z"));
+      const subject = service({ signals: { weeklyActiveDates: ["2026-07-08"], hasDonePlanTask: true } });
+      expect(await subject.service.evaluateAndGrant("user-1", "2026-07-08", true)).toEqual([]);
+      expect(subject.economy.grantInServiceTx).not.toHaveBeenCalled();
+      expect(subject.rows).toHaveLength(0);
+    });
+
+    it("still pays tomorrow: a local task date can run ahead of the UTC day", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-07-06T22:30:00.000Z")); // 01:30 on the 7th in Istanbul
+      const subject = service({ signals: { weeklyActiveDates: ["2026-07-07"] } });
+      await subject.service.evaluateAndGrant("user-1", "2026-07-07", true);
+      expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+        "user-1",
+        Currency.COIN,
+        10,
+        expect.objectContaining({ reason: "quest.daily.active-day" }),
+        expect.anything(),
+      );
+    });
+  });
+
   it("is not met before any focus session or plan task today", async () => {
     const subject = service({ signals: { weeklyActiveDates: ["2026-07-05"] } });
     const quests = await subject.service.getUserProgress("user-1");
@@ -226,6 +256,23 @@ describe("QuestService — Premium earns XP, not Coin", () => {
     const quests = await subject.service.getUserProgress("user-1");
     expect(quests.find((q) => q.id === "daily.active-day")).toBeUndefined();
     expect(grantReasons(subject).map((g) => g.reason)).not.toContain("quest.daily.active-day");
+  });
+
+  it("reads the entitlement once per quest list", async () => {
+    const subject = service({ premium: true });
+    await subject.service.getUserProgress("user-1");
+    expect(subject.entitlement.getEntitlement).toHaveBeenCalledTimes(1);
+  });
+
+  it("a day completed while Premium is not paid in Coin after Premium ends", async () => {
+    const rows: ProgressRow[] = [];
+    const signals = { weeklyActiveDates: ["2026-07-06"] };
+    await service({ premium: true, rows, signals }).service.evaluateAndGrant("user-1");
+    expect(rows.map((row) => row.questId)).toContain("daily.active-day");
+
+    const lapsed = service({ premium: false, rows, signals });
+    await lapsed.service.evaluateAndGrant("user-1");
+    expect(grantReasons(lapsed).map((g) => g.reason)).not.toContain("quest.daily.active-day");
   });
 
   it("turns the weekly chest into weekly ritual XP", async () => {

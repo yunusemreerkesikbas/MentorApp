@@ -411,6 +411,18 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 - **Visual & copy polish:** Replaced the wireframe `PREMİUM` tag with an aurora gradient pill, hid the native scrollbar track on `premium-paywall-body`, unified benefit icons to monochrome inside translucent glass tiles (`PremiumPaywallBenefits`), added dynamic top-row highlighting for notebook quota triggers (`highlightNotebook`), and enhanced the 7-day trial callout badge + per-plan trial tag (`plan_trial_tag`).
 - **Related files:** `apps/web/src/components/premium/{premium-paywall-modal,premium-paywall-benefits,premium-paywall-plan-picker,premium-paywall-footer}.tsx`, `apps/web/messages/{tr,en}.json`.
 
+### 2026-11-02 — Premium kimlik işareti: taç yerine Puhu'nun kahraman maskesi
+
+- İsim yanındaki `PremiumIdentityMark` artık Lucide `Crown` değil, premium Puhu'nun yıldızsız
+  domino maskesi (inline SVG, 24 ızgara). Renk `--premium-mark` (`#1E2A5A`, dark `#7E9BFF`),
+  göz halkaları `--premium-ring-to` altın.
+- Kullanım: `size` 16 (varsayılan, tek renk), 20 veya 24 (altın halkalı). Mobil üst bar 16,
+  sidebar ve topluluk profili 20, `/profil` 24. Gotcha: halka 16px'te pikselin altına düşüp
+  lekeye dönüyor, o yüzden 20'den başlıyor; dolguyu `style` ile ver, SVG `fill` niteliği
+  `var()` okumaz. Koç hâlâ işaret almaz (KOÇ PRO rozeti yeterli).
+- İlgili: `premium-identity-mark.tsx`, `app-nav.tsx`, `profile-identity-card.tsx`,
+  `profile-header.tsx`, `packages/ui/src/theme.css`, DESIGN.md §7.
+
 ## Gotchas / Known issues
 
 - **Coach seats read payments twice, and never write it (W8 phase B, 2026-09-27).** The seat on a

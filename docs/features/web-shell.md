@@ -67,6 +67,21 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-02 · Premium Puhu wears the hero mask.** `PuhuImage variant="premium"` now loads
+  `puhu-premium-hero.png` (1386×990 RGBA): hero stance, night-blue domino mask with gold rims, no
+  star on the mask, same cape and clasp. It matches the name-side `PremiumIdentityMark`
+  (payments.md, 2026-11-02). Usage: weekly recap AI Puhu note and access card, 132 px.
+  Gotchas: the file got a new name on purpose; with the old path next/image's optimiser cache
+  (and a CDN) kept serving the previous art. Keyed from a magenta export with a tighter despill
+  than `key-alpha.mjs` (only clearly magenta pixels, stricter on soft edges), because the script's
+  despill grays the pink blush. Optically centred: the body sits a little right so the cape
+  balances it; fully centring it shrank Puhu by about a quarter at 132 px. The 2026-11-01 glasses
+  proposal (`puhu-premium-v2.png`, `visuals/premium-glasses.*`) stays unwired.
+  Rule: masked Puhu = premium AI speaking. So the session-end AI reflection bubble
+  (`session-done-checkin.tsx`) uses `variant="premium"` at 96 px (72 px left the wide art ~51 px
+  tall); the coach access gate keeps `encouraging` (its reader has no AI yet). The panel mood
+  cloud (`PuhuSpeakingMascot`) waits for masked speaking frames.
+
 - **2026-11-01 · Puhu premium glasses visual proposal.** Added transparent blue-and-gold,
   feather-tipped glasses artwork, a simplified SVG for 24–48 px chrome, and a matching mascot
   candidate. Usage: review `/visuals/premium-glasses.{svg,png}` and

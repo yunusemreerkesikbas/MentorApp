@@ -186,20 +186,20 @@ describe("economy invite (e2e)", () => {
     await app.get(JobRunnerService).processBatch(100);
 
     const bal1 = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
-    expect(bal1.body.coinConfirmed).toBe(20);
+    expect(bal1.body.coinConfirmed).toBe(200);
 
     // A second activation must NOT double-reward (redemption already CONVERTED + grant idempotent).
     await fire("b");
     await app.get(JobRunnerService).processBatch(100);
     const bal2 = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
-    expect(bal2.body.coinConfirmed).toBe(20);
+    expect(bal2.body.coinConfirmed).toBe(200);
   }, 30_000);
 
   it("a renewal refund keeps the initial payment reward", async () => {
     await app.get(SubscriptionsService).refundLastCharge(burakId, 100, "e2e renewal refund", adminId);
     await app.get(JobRunnerService).processBatch(100);
     const balance = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
-    expect(balance.body.coinConfirmed).toBe(20);
+    expect(balance.body.coinConfirmed).toBe(200);
   });
 
   it("refund of the source payment reverses its reward even while economy is disabled", async () => {
@@ -218,7 +218,7 @@ describe("economy invite (e2e)", () => {
     await request(app.getHttpServer()).post("/v1/webhooks/payments").set(headers).send(JSON.parse(body)).expect(200);
     await app.get(JobRunnerService).processBatch(100);
     const before = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(inviter.accessToken));
-    expect(before.body.coinConfirmed).toBe(20);
+    expect(before.body.coinConfirmed).toBe(200);
     await request(app.getHttpServer()).patch("/v1/admin/config/economy.enabled")
       .set(auth(adminToken)).send({ value: false }).expect(200);
     try {
@@ -287,7 +287,7 @@ describe("economy invite (e2e)", () => {
       expect(await coinOf(inviter.accessToken)).toBe(0); // the trial itself pays nothing
 
       await pay(providerRef, "trial-redeem");
-      expect(await coinOf(inviter.accessToken)).toBe(20);
+      expect(await coinOf(inviter.accessToken)).toBe(200);
     }, 30_000);
 
     it("a user who already paid gets INVITE_ALREADY_PAID", async () => {
@@ -517,7 +517,7 @@ describe("economy invite (e2e)", () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual({
         code: expect.stringMatching(/^PUHU-/),
-        rewardCoin: 20,
+        rewardCoin: 200,
         joined: [],
         joinedCount: 0,
         convertedCount: 0,

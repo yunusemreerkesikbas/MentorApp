@@ -34,8 +34,8 @@ These rules supersede earlier launch assumptions in the historical timeline. Amo
 | XP | Daily ritual 50, weekly ritual 200, milestones 250; level thresholds ×10 (`TIER_THRESHOLDS` in `@mentor/core`) |
 | XP leaderboard / paid streak rescue / rewarded ads | Disabled, enforced by backend |
 
-Existing XP amounts, thresholds, Coin caps, daily AI limits, budget limits and free streak freezes
-remain unchanged. No historical balance reset or bulk backpay. Forum Coin approval and live
+Daily AI limits, budget limits and free streak freezes remain unchanged; XP/Coin amounts, level
+thresholds and Coin caps follow the 2026-11-01 ×10 rebalance. No historical balance reset or bulk backpay. Forum Coin approval and live
 multi-device synchronization remain outside this change.
 
 ## Architecture (key decisions)
@@ -45,14 +45,15 @@ multi-device synchronization remain outside this change.
   **Balance = sum of rows, never a single number.** No UPDATE/DELETE RLS policy ⇒ immutable.
 - **Capped earning:** rolling 24h/7d coin caps + minimum XP threshold for coin earning (anti-Sybil).
   Config from the central registry: `economy.coin.{daily_cap, weekly_cap, min_xp_for_coin}`.
-- **Coin faucet = onboarding (one-shot) + invite conversion + `weekly.effort-allowance`** (the only
-  RECURRING one: 5/7 active days → 15 coin ≈ 3 AI messages/week). Without the weekly one the free
-  tier's "earned AI right" is a lifetime ~30-coin trial that ends in a silent wall.
+- **Coin faucet = onboarding (one-shot, 100 each) + invite conversion (200) + two recurring
+  free-user quests:** `daily.active-day` (10 per active day) and `weekly.effort-allowance` (100 at
+  5 active days). A 5-day week ≈ 150 Coin ≈ 3 AI messages. Without them the free tier's "earned AI
+  right" is a one-shot trial that ends in a silent wall. Premium earns XP instead (`premiumReward`).
 - **Idempotent grants:** unique `(ref_type, ref_id)` where `ref_id` not null.
 - **Spending:** `EconomyService.spend()` — atomic confirmed-coin debit, idempotent on ref.
   `INSUFFICIENT_COIN` (422). Free daily coin allowance for AI chat (separate from premium rate-limit).
 - **Notebook capacity:** a confirmed purchase debit permanently adds one custom notebook slot.
-  Default price 20 Coin, maximum two purchased slots; both admin configurable. The user's owned
+  Default price 200 Coin, maximum two purchased slots; both admin configurable. The user's owned
   capacity survives economy-off and a reduced sale cap. Other notebook and AI quotas are unchanged.
 - **Cross-module decoupling:** economy consumes events from payments (`payment.succeeded` for the first positive charge) and
   emits events consumed by itself (invite conversion). Forum XP is wired via `forum.answer.accepted`.
@@ -136,6 +137,16 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-02 — Rebalance browser QA and backdated-session fix
+
+- **What:** Free and Premium flows of the ×10 rebalance verified in the browser with the economy on
+  (13 scenarios, [QA record](../qa/2026-11-02-coin-economy-browser-qa.md)). A backdated study session
+  could pay past days' Coin; the API now refuses a `startedAt` outside the 24-hour resume window.
+- **Usage:** Demo students: `pnpm --filter @mentor/api exec ts-node -T scripts/seed-economy-demo.ts`.
+- **Gotchas:** An old `config_overrides` set wins over catalog defaults (the local chest showed 15
+  Coin for that reason); audit production before launch. A chest already paid keeps its amount.
+  The nav Coin pill can lag the first-login celebration until the next navigation (pre-existing).
+
 ### 2026-11-01 — Weekly chest carry-over and first-open review fixes
 
 - **What:** A missing previous-week chest is reevaluated using its Sunday. Pending reward keys
@@ -170,6 +181,7 @@ Sandık panelde kendi nesnesiyle görünür (`GET /v1/economy/weekly-chest`, `us
 - **Testler:** `weekly-chest-model.spec.ts`, `today-path-model.spec.ts`,
   `e2e/weekly-chest.spec.ts` (`playwright.weekly-chest.config.ts`, 5 senaryo × 375/1280).
   Plan `docs/superpowers/plans/2026-11-01-weekly-chest-web.md`.
+- **Tur 2 (aynı gün, kullanıcı testi):** sahne büyüdü (720 px / %64 ekran yüksekliği) ve aynı kare bulanık arka plan olarak ekrana yayıldı. Bilgi penceresinde geçmiş boş gün düz gri (panel bandı gibi), gelecek gün kesikli. Hafta artık dolamıyorsa (`weekCanStillFill`) başlık ve satır "Pazartesi yenisi geliyor" der. Elle deneme: `pnpm --filter @mentor/api seed:weekly-chest-demo` (iki demo öğrenci, şifre betikte).
 
 ### 2026-11-01 — ×10 denomination, daily Coin, Premium earns XP
 
@@ -188,9 +200,11 @@ Sandık panelde kendi nesnesiyle görünür (`GET /v1/economy/weekly-chest`, `us
   type (daily → `daily_active_reward_coin`); before, any non-weekly Coin quest paid the onboarding
   amount. A Premium-hidden quest is not recorded, so a same-day lapse can still earn it; a chest
   completed while Premium stays XP for that week. No backfill: older ledger rows keep their
-  amounts, dev balances look small next to new prices. Web: the quiet toast for daily Coin and the
-  Premium chest copy were deferred while the weekly-chest web session owned `economy-sync.tsx`
-  and the panel messages.
+  amounts, dev balances look small next to new prices. Web: `rewardPresentation()` in
+  `lib/economy.ts` keeps the daily Coin and a rewarded ad as a quiet toast; other Coin keeps the
+  full-screen celebration. `evaluateAndGrant(user, date)` pays nothing for a date after tomorrow
+  (UTC), so a plan task dated ahead cannot pull that day's Coin or chest forward; tomorrow stays
+  open because a local task date can run ahead of the UTC day.
 - **Related:** `quest.catalog.ts`, `quest-progress.ts` (`rewardUnitFor`), `quest.service.ts`,
   `quest-view.ts`, `weekly-chest.service.ts`, `config.catalog.ts` (+ `config.catalog.spec.ts`),
   `packages/core` tiers, [plan](../plans/2026-11-01-coin-economy-rebalance-plan.md).
@@ -816,6 +830,7 @@ Sandık panelde kendi nesnesiyle görünür (`GET /v1/economy/weekly-chest`, `us
 - **Testler:** `weekly-chest-model.spec.ts`, `today-path-model.spec.ts`,
   `e2e/weekly-chest.spec.ts` (`playwright.weekly-chest.config.ts`, 5 senaryo × 375/1280).
   Plan `docs/superpowers/plans/2026-11-01-weekly-chest-web.md`.
+- **Tur 2 (aynı gün, kullanıcı testi):** sahne büyüdü (720 px / %64 ekran yüksekliği) ve aynı kare bulanık arka plan olarak ekrana yayıldı. Bilgi penceresinde geçmiş boş gün düz gri (panel bandı gibi), gelecek gün kesikli. Hafta artık dolamıyorsa (`weekCanStillFill`) başlık ve satır "Pazartesi yenisi geliyor" der. Elle deneme: `pnpm --filter @mentor/api seed:weekly-chest-demo` (iki demo öğrenci, şifre betikte).
 
 ### 2026-10-26 — Davet akışı son düzeltme turu (bütün dal incelemesi)
 

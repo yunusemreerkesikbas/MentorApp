@@ -108,7 +108,7 @@ export function ProfileIdentityCard({
             <h1 id="profile-name" className="min-w-0 break-words text-xl font-extrabold leading-tight text-[var(--color-main)] sm:text-title">
               {profile.displayName}
             </h1>
-            {profile.isPremium ? <PremiumIdentityMark /> : null}
+            {profile.isPremium ? <PremiumIdentityMark size={20} /> : null}
           </div>
           <p className="text-caption font-semibold text-[var(--color-secondary)]">{meta}</p>
         </div>

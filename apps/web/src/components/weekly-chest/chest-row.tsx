@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { WeeklyChestView } from "@mentor/types";
 import { ChestArt } from "./chest-art";
-import { chestLamps, daysLeft } from "./weekly-chest-model";
+import { chestLamps, daysLeft, weekCanStillFill } from "./weekly-chest-model";
 
 const ROW =
   "flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-[var(--radius-card)] px-3 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
@@ -78,7 +78,7 @@ export function ChestRow({ chest, onTap }: { chest: WeeklyChestView; onTap: () =
             />
           ))}
           <span className="ml-1 text-xs font-bold tabular-nums text-[var(--color-secondary)]">
-            {t("days_left", { left: daysLeft(chest) })}
+            {weekCanStillFill(chest) ? t("days_left", { left: daysLeft(chest) }) : t("days_left_missed")}
           </span>
         </span>
         {reward ? null : (

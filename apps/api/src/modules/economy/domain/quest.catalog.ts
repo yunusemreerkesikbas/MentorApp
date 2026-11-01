@@ -41,7 +41,8 @@ export interface QuestDef {
   progressSource?: QuestProgressSource;
   /**
    * What a Premium user gets instead of this quest's Coin (2026-11-01 rebalance: Premium earns XP,
-   * not Coin). "XP" pays the quest's XP amount; "HIDDEN" removes the quest for Premium. Unset = same
+   * not Coin). "XP" pays the quest's XP amount; "HIDDEN" hides the quest for Premium and records it unpaid,
+   * so a later lapse never pays that period. Unset = same
    * reward for everyone (onboarding Coin is a one-time welcome for all plans).
    */
   premiumReward?: "XP" | "HIDDEN";
@@ -139,13 +140,13 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
   },
   {
     /**
-     * The ONLY recurring coin faucet — without it the economy is a one-shot trial (onboarding
-     * coin is lifetime-capped at ~30 for a free user) and the "earned AI right" ends in a silent
-     * wall. Roadmap §3 says "no coin for mere activity"; its stated reason (§2/§3) is that coin in
-     * SOCIAL zones inflates the economy and corrupts the environment. An active day (≥1 completed
-     * focus session OR ≥1 done plan task) is private, verified effort — not social, not farmable
-     * without actually studying 5 separate days. Reward + target are config-tunable and the quest
-     * is killable via `economy.quest.disabled_ids`.
+     * Weekly bonus on top of `daily.active-day`: together they are the free user's recurring Coin
+     * (a 5-day week ≈ 150 Coin ≈ 3 AI messages); without them onboarding Coin is a one-shot trial
+     * and the "earned AI right" ends in a silent wall. Roadmap §3's "no coin for mere activity" is
+     * about SOCIAL zones inflating the economy; an active day (≥1 completed focus session OR ≥1
+     * done plan task) is private, verified effort, paid once per day and capped. Premium gets
+     * weekly ritual XP instead. Reward + target are config-tunable and the quest is killable via
+     * `economy.quest.disabled_ids`.
      */
     id: "weekly.effort-allowance",
     category: "weekly_ritual",

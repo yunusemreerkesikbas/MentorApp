@@ -164,6 +164,30 @@ describe("SessionService.start", () => {
     );
     expect(result.planTaskId).toBeNull();
   });
+
+  // A backdated start marks an old day active: streak, quests and that day's Coin (2026-11-02 review).
+  it.each([
+    ["older than the 24-hour resume window", -25 * 60 * 60_000],
+    ["in the future", 10 * 60_000],
+  ])("rejects a client start time %s", async (_label, offsetMs) => {
+    const create = vi.fn();
+    await expect(
+      makeService({ create }).start(USER, {
+        preset: "stopwatch",
+        startedAt: new Date(Date.now() + offsetMs).toISOString(),
+      }),
+    ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("keeps a client start time inside the resume window", async () => {
+    const startedAt = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
+    const create = vi.fn(async (_tx, data) => ({ id: "s1", preset: data.preset, status: "IN_PROGRESS", subject: null,
+      planTaskId: null, startedAt: data.startedAt, endedAt: null, actualFocusSeconds: 0, plannedFocusMinutes: null,
+      sessionMood: null, struggleNote: null, aiReflection: null }));
+    await makeService({ create }).start(USER, { preset: "stopwatch", startedAt });
+    expect(create).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ startedAt: new Date(startedAt) }));
+  });
 });
 
 describe("SessionService.startFromAiCoach", () => {
