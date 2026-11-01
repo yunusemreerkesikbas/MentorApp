@@ -64,6 +64,10 @@
       "mood-checkin": {
         "title": "Bugünkü ruh halini işaretle",
         "badge": "Duygu"
+      },
+      "active-day": {
+        "title": "Bugün 1 odak seansı ya da 1 plan görevi bitir",
+        "badge": "Ritim"
       }
     },
     "weekly": {

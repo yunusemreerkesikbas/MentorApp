@@ -121,6 +121,14 @@ Hoş geldin ekranındaki "haftanın sandığını aç" artık doğru, değişmez
 | `chest-open.mp4` | Kling #5 | Açılış klibi |
 | `chest-idle.mp4` (isteğe bağlı) | Kling #6 | "Hazır" ekranında sessiz döngü |
 
+**Gelen medya (2026-11-01):** 1–4 ChatGPT (1254², 1 ve 2 şeffaf) + Kling 4.0 klibi (940², 24 fps, 5.04 sn).
+Kling ilk kareyi 3. görselden, son kareyi 4. görselden biraz farklı çiziyor (Puhu daha büyük, poz farklı).
+Bu yüzden sahnenin "Hazır" ve "Açıldı" kareleri ChatGPT görsellerinden değil, **klibin kendi ilk ve son
+karesinden** çıkarılır; geçişte sıçrama olmaz. 3 ve 4 yedek kalır. Filigran "KlingAI 4.0" sağ altta
+(x 748–912, y 889–919): üstten 885 satır + yatayda ortalanmış 885² kırp, 720²'ye indir. Açık sandığın
+gövdesi kapalıya göre ~%2.6 aşağıda; panel geçişinde kodla hizalanır. Bekleme döngüsü yapılacaksa
+başlangıç/bitiş karesi klibin filigransız ilk karesidir.
+
 İşleme: Kling filigranı WinRT ile kırpılır (bkz. hafıza notu), 720² H.264 ~2 MB, PNG'ler webp/avif,
 düğüm için 128/256 px türevler. Konum: `apps/web/public/visuals/chest/`. Lamba katmanının koordinatları
 (`#3`teki pirinç şeridin yüzde konumu) görseller gelince ölçülür ve tek sabitte tutulur.

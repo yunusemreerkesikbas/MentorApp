@@ -29,6 +29,8 @@ test.beforeEach(async ({ page, request }) => {
     ["economy.notebook_slots.max_per_user", 2],
     ["economy.quest.onboarding_reward_coin", 10],
     ["economy.quest.weekly_allowance_reward_coin", 15],
+    // Daily active-day Coin (2026-11-01) off here: these scenarios count onboarding + weekly only.
+    ["economy.quest.daily_active_reward_coin", 0],
     ["economy.quest.weekly_allowance_active_days_target", 5],
   ] as const)
     await setting(request, admin, key, value);

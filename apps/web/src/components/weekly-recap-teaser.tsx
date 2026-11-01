@@ -8,7 +8,6 @@ import { Link } from "@/i18n/navigation";
 import { trackWeeklyRecapEvent } from "@/lib/analytics";
 import {
   buildWeeklyRecapTeaserHref,
-  markWeeklyRecapOpened,
   WEEKLY_RECAP_FIGMA_ASSETS,
   type WeeklyRecapSource,
 } from "@/lib/weekly-recap";
@@ -21,7 +20,6 @@ interface WeeklyRecapTeaserProps {
   examType?: string;
   compact?: boolean;
   viewState?: "new" | "replay";
-  onOpen?: () => void;
 }
 
 export function WeeklyRecapTeaser({
@@ -32,7 +30,6 @@ export function WeeklyRecapTeaser({
   examType,
   compact = false,
   viewState = "new",
-  onOpen,
 }: WeeklyRecapTeaserProps) {
   const t = useTranslations("analysis.recap");
   const locale = useLocale();
@@ -44,12 +41,6 @@ export function WeeklyRecapTeaser({
     });
   }, [source, status]);
 
-  const handleOpen = () => {
-    if (source === "dashboard") {
-      markWeeklyRecapOpened(window.localStorage, period.startDate);
-    }
-    onOpen?.();
-  };
   const periodLabel = t("teaser.period", {
     startDate: formatDate(period.startDate, locale),
     endDate: formatDate(period.endDate, locale),
@@ -70,7 +61,6 @@ export function WeeklyRecapTeaser({
           examId,
           examType,
         })}
-        onClick={handleOpen}
         className={`weekly-recap-theme relative block overflow-hidden bg-[var(--recap-coral)] text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] ${
           compact ? "min-h-44" : "min-h-48 sm:min-h-52"
         }`}

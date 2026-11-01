@@ -7,8 +7,8 @@ import { AddIcon as Plus } from "@solar-icons/react/linear/add";
 import type {
   PlanTaskDto,
   PlanTaskStatus,
-  QuestProgressView,
   TodayPanelResponse,
+  WeeklyChestView,
 } from "@mentor/types";
 import { CompanionBubble } from "@/components/panel/companion-bubble";
 import {
@@ -22,7 +22,6 @@ import { Link } from "@/i18n/navigation";
 import { trackCoachEvent } from "@/lib/analytics";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
-import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 import { buildTodayPath, sessionHrefFor } from "./today-path-model";
 import { TodayPath } from "./today-path";
 import { WeekBand } from "./week-band";
@@ -34,21 +33,22 @@ import { WeekBand } from "./week-band";
  */
 export function TodayPathCard({
   data,
-  quests,
+  chest,
   busyTaskId,
   onSetStatus,
+  onChestTap,
 }: {
   data: TodayPanelResponse;
-  quests: QuestProgressView[] | null;
+  chest: WeeklyChestView | null;
   busyTaskId: string | null;
   onSetStatus: (task: PlanTaskDto, status: PlanTaskStatus) => void;
+  onChestTap: (chest: WeeklyChestView) => void;
 }) {
   const t = useTranslations("panel");
-  const economyEnabled = useEconomyEnabled();
   const { openPaywall } = usePremiumPaywall();
   const { greeting, locked } = useDailyGreeting();
   const defaultMinutes = data.sessionPresets[0]?.focusMinutes ?? 25;
-  const path = buildTodayPath(data.tasks, economyEnabled ? quests : null, defaultMinutes);
+  const path = buildTodayPath(data.tasks, defaultMinutes);
   const { cta } = path;
 
   useEffect(() => {
@@ -112,9 +112,11 @@ export function TodayPathCard({
 
         <TodayPath
           path={path}
+          chest={chest}
           busyTaskId={busyTaskId}
           sessionHref={(task) => sessionHrefFor(task)}
           onSetStatus={onSetStatus}
+          onChestTap={onChestTap}
         />
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">

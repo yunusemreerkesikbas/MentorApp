@@ -68,6 +68,15 @@ trial users are not an account-count or invoice cap. Verify effective values, no
 catalog defaults. The registry caches overrides per process: an attended offline change
 requires controlled restart and verification. No live flag was changed in source preparation.
 
+Economy amounts (2026-11-01 ×10 rebalance): before `economy.enabled` is turned on, in the same
+attended operator session list the overrides with
+`select key, value from config_overrides where key like 'economy.%' or key like 'forum.xp.%' or key like 'ads.rewarded.%' order by key;`
+and, for every amount/cost/cap key in the "New defaults" table of
+[the rebalance design](../plans/2026-11-01-coin-economy-rebalance-design.md), delete its override
+(the new default applies) or set the ×10 value. Do all keys in one session: a partial change breaks
+the ratios (an old 5 Coin message price with new rewards makes Coin 10× cheaper). Leave every flag
+as it is, restart, and verify effective values.
+
 The social boundary added on 2026-10-30 is independent of the forum switch. When closed,
 follow/buddy operations, invitation creation/redemption and other-user profiles/achievement
 collections return the existing localized not-found response before side effects. Own profile,

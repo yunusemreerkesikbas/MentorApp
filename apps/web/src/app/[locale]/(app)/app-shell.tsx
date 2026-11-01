@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { EconomySync } from "@/components/economy-sync";
 import { NotebookOpeningOverlay } from "@/components/notebook-desk/notebook-opening-overlay";
+import { WeeklyChestNotice } from "@/components/weekly-chest/weekly-chest-notice";
 import { AppNav } from "@/components/app-nav";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { hidesMobileAppChrome } from "@/lib/app-sidebar";
@@ -95,6 +96,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             style={{ backgroundColor: "var(--color-bg)" }}
           >
             <AppNav />
+            {/* Before EconomySync: its route-change event must find the notice's path already current. */}
+            {isCoach(user) ? null : <WeeklyChestNotice />}
             <EconomySync />
             <div
               className={

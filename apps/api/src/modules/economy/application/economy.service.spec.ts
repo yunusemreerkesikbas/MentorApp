@@ -149,12 +149,12 @@ describe("EconomyService", () => {
   it("emits the ready-to-render level only after a new XP grant is persisted", async () => {
     const svc = service();
 
-    await svc.grant("u1", Currency.XP, 100, {
+    await svc.grant("u1", Currency.XP, 1000, {
       reason: "quest.daily",
       refType: "quest",
       refId: "q1",
     });
-    await svc.grant("u1", Currency.XP, 100, {
+    await svc.grant("u1", Currency.XP, 1000, {
       reason: "quest.daily",
       refType: "quest",
       refId: "q1",
@@ -191,7 +191,7 @@ describe("EconomyService", () => {
 
   it("returns a ready-to-render journey level with self balance", async () => {
     const svc = service();
-    await svc.grant("u1", Currency.XP, 411, { reason: "test" });
+    await svc.grant("u1", Currency.XP, 4110, { reason: "test" });
 
     const balance = await svc.getSelfBalance("u1");
 
@@ -199,10 +199,10 @@ describe("EconomyService", () => {
       tier: 3,
       key: "compass",
       chapter: "awakening",
-      currentAt: 300,
-      nextAt: 600,
+      currentAt: 3000,
+      nextAt: 6000,
       nextKey: "cycle",
-      progress: { current: 111, target: 300, remaining: 189, percent: 37 },
+      progress: { current: 1110, target: 3000, remaining: 1890, percent: 37 },
     });
   });
 

@@ -65,7 +65,11 @@
     ".next/question-ads-build/types/**/*.ts",
     ".next/question-ads-build/dev/types/**/*.ts",
     ".next/notebook-live-qa/types/**/*.ts",
-    ".next/notebook-live-qa/dev/types/**/*.ts"
+    ".next/notebook-live-qa/dev/types/**/*.ts",
+    ".next/recap-banner-qa/types/**/*.ts",
+    ".next/recap-banner-qa/dev/types/**/*.ts",
+    ".next/weekly-chest-qa/types/**/*.ts",
+    ".next/weekly-chest-qa/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

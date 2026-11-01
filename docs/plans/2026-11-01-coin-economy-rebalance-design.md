@@ -26,12 +26,12 @@ The product is pre-launch: no real user holds a balance, so amounts can change f
 | Premium monthly (seeded placeholder) | 249 TL, ~200 TL net after KDV and iyzico |
 | AI chat message, `gpt-4o-mini` (current default) | ~0.03 TL (est. 3k in / 400 out tokens) |
 | AI chat message, `gpt-5` (roadmap target) | ~0.75 TL (with reasoning tokens) |
-| Diligent free user, Coin earned per month | ~650 Coin from study + up to ~300 from one ad a day |
-| Its AI cost per month (all ~950 spent on chat) | ~0.6 TL on gpt-4o-mini, ~14 TL on gpt-5 (~7% of Premium net) |
+| Diligent free user, Coin earned per month | ~650 Coin (rewarded ads off) |
+| Its AI cost per month (all spent on chat) | ~0.4 TL on gpt-4o-mini, ~10 TL on gpt-5 (~5% of Premium net) |
 
 Direct LLM cost is not the main risk. The main risks are perceived cheapness and Premium
-cannibalization. The design keeps total earning per week unchanged in real terms and changes how it
-looks and when it arrives.
+cannibalization. The design keeps study earning per week unchanged in real terms and changes how it
+looks and when it arrives. Rewarded ads stay off at launch.
 
 ## Decisions (made by the owner in conversation)
 
@@ -103,31 +103,22 @@ Rate limits (counts, not Coin) stay as they are: `ai.chat.free_coin_daily_limit`
   7×10 + 100 = 170 (not exactly 150), a 4-day week pays 40 (today: 0). Both are intended: every
   study day is rewarded, and the gap to the bonus stays the motivator.
 
-### Rewarded ads (ON at launch, owner's decision 2026-11-01)
+### Rewarded ads (stay OFF at launch, owner's decision 2026-11-01)
 
-- **Owner accepted the forgeable-completion risk.** Google Ad Manager gives no server-side
-  verification for Rewarded Web, so the completion signal comes from the browser and can be faked.
-  The code closes rewarded ads in production on purpose: `ads.service.ts` eligibility
-  (`serverVerificationUnavailable`, ~line 105) and `completeRewardSession` (~line 345). Both
-  production guards are removed. Worst case per account is bounded by the daily limit below.
-- *Our call:* `ads.rewarded.web.reward_coin = 10` and `ads.rewarded.web.daily_limit` 2 → **1**.
-  Studying must stay the main path: one ad pays at most what one study day pays (10). Two ads a day
-  would make ads (20/day) out-earn studying (10/day) and nearly double free Coin per month
-  (~650 → ~1,250). A reward of 5 with two ads would bring back the "+5 feels cheap" problem.
-  Admin can raise the limit later if ad revenue justifies it.
-- Mitigation for faked completions (*our call*, builder checks what exists): the server rejects a
-  completion that arrives sooner than a minimum ad duration after the session started. Keep
-  `ads.rewarded.web.session_ttl_seconds` as is.
-- Launch config: `ads.enabled`, `ads.rewarded.enabled`,
-  `ads.placement.dashboard_rewarded_coin.enabled` on; `ads.rewarded.web.rollout_percent` 100.
-  Premium and STAFF stay ad-free (existing rule).
-- Owner actions outside code: Google Ad Manager / AdSense approval for the site and a production
-  rewarded unit in `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT`. Without them the offer stays
-  `PROVIDER_NOT_CONFIGURED` and simply does not show.
-- Ad Coin uses the small daily notice, not the full-screen overlay.
-- Docs that say rewarded ads are closed are updated: `docs/features/ads.md` ("production stays
-  fail-closed"), `docs/features/economy.md` launch-rules table, roadmap header note
-  ("reklamla Coin lansmanda kapalı").
+- **Why off:** (1) "Coin is earned by studying" is the message of this whole change; a "watch an ad,
+  get Coin" button on the panel teaches the opposite. (2) Launch-volume revenue is tiny (rough
+  estimate ~0.1–0.25 TL per rewarded web view in Turkey). (3) Rewarded Web has no server-side
+  verification, so completions can be faked; the production guards in `ads.service.ts`
+  (`serverVerificationUnavailable` and `completeRewardSession`) stay as they are. (4) Google
+  approval and a production rewarded unit are not in place yet.
+- **When to revisit:** the mobile app (AdMob offers server-side verification, so no guard needs to
+  be removed), or free web DAU above ~1,000.
+- **Ready for that day (only defaults change now, no flag turns on):**
+  `ads.rewarded.web.reward_coin = 10` and `ads.rewarded.web.daily_limit` 2 → **1**. One ad pays at
+  most one study day (10); two ads would out-earn studying and nearly double free Coin per month.
+  A reward of 5 would bring back the "+5 feels cheap" problem. Ad Coin uses the small daily notice,
+  not the full-screen overlay. All ad enable flags stay off; launch docs saying rewarded ads are
+  closed stay true.
 
 ### Premium earns no Coin
 

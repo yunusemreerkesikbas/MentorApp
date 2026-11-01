@@ -5,11 +5,11 @@ import {
   useEffectEvent,
   useRef,
   useState,
-  type KeyboardEvent,
   type PointerEvent,
   type ReactNode,
 } from "react";
 import { motion, useDragControls, useReducedMotion } from "framer-motion";
+import { trapFocus } from "@/lib/trap-focus";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const DESKTOP_QUERY = "(min-width: 1024px)";
@@ -218,21 +218,4 @@ function panelHidden(reduce: boolean, drawer: boolean, desktop: boolean) {
   if (drawer && desktop) return { opacity: 1, x: "100%", y: 0, scale: 1 };
   if (!desktop) return { opacity: 1, x: 0, y: "100%", scale: 1 };
   return { opacity: 0, x: 0, y: 0, scale: 0.96 };
-}
-
-function trapFocus(event: KeyboardEvent, panel: HTMLElement | null): void {
-  if (!panel) return;
-  const focusable = [...panel.querySelectorAll<HTMLElement>(
-    "input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [href]",
-  )];
-  const first = focusable[0];
-  const last = focusable.at(-1);
-  if (!first || !last) return;
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
-  }
 }

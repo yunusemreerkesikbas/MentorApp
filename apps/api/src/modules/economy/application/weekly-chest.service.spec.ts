@@ -21,7 +21,14 @@ const chestRow = (periodKey: string, revealed = false): Row => ({
   revealedAt: revealed ? new Date("2026-11-03T08:00:00Z") : null,
 });
 
-function build(options: { economyEnabled?: boolean; disabledIds?: string; rows?: Row[]; pending?: string[] } = {}) {
+function build(options: {
+  economyEnabled?: boolean;
+  disabledIds?: string;
+  rows?: Row[];
+  pending?: string[];
+  premium?: boolean;
+  ledgerUnit?: "COIN" | "XP";
+} = {}) {
   const rows = options.rows ?? [];
   const quests = { evaluateAndGrant: vi.fn(async (_userId: string, _date?: string) => options.pending ?? []) };
   const weeks: Record<string, { weekKey: string; dates: string[] }> = {
@@ -46,13 +53,20 @@ function build(options: { economyEnabled?: boolean; disabledIds?: string; rows?:
     listForUser: vi.fn(async (_userId: string, keys: string[]) => rows.filter((r) => keys.includes(r.periodKey))),
     markRevealed: vi.fn(async () => undefined),
   };
-  const ledger = { findByRef: vi.fn(async (_type: string, refId: string) => ({ id: `ledger-${refId}`, amount: 15 })) };
+  const ledger = {
+    findByRef: vi.fn(async (_type: string, refId: string) => ({
+      id: `ledger-${refId}`,
+      unit: options.ledgerUnit ?? "COIN",
+      amount: options.ledgerUnit === "XP" ? 20 : 15,
+    })),
+  };
   const receipts = { markSeen: vi.fn(async () => undefined) };
   const config = {
     get: vi.fn(async (key: string) => {
       if (key === "economy.enabled") return options.economyEnabled ?? true;
       if (key === "economy.quest.weekly_allowance_active_days_target") return 5;
       if (key === "economy.quest.weekly_allowance_reward_coin") return 15;
+      if (key === "economy.quest.weekly_ritual_reward_xp") return 20;
       if (key === "economy.quest.disabled_ids") return options.disabledIds ?? "";
       return 0;
     }),
@@ -68,6 +82,7 @@ function build(options: { economyEnabled?: boolean; disabledIds?: string; rows?:
     receipts as never,
     config as never,
     i18n as never,
+    { getEntitlement: vi.fn(async () => ({ isPremium: options.premium ?? false })) } as never,
   );
   return { service, quests, signals, progress, ledger, receipts };
 }
@@ -112,6 +127,16 @@ describe("WeeklyChestService", () => {
       summary: { activeDays: 2, focusSessions: 4, planTasks: 6, focusMinutes: 200 },
     });
     expect(ledger.findByRef).toHaveBeenCalledWith("quest", "row-2026-W45");
+  });
+
+  it("shows an XP reward to a Premium user", async () => {
+    const { service } = build({ premium: true });
+    expect(await service.getView("user-1")).toMatchObject({ state: "PROGRESS", reward: { unit: "XP", amount: 20 } });
+  });
+
+  it("reports the unit actually granted for a completed chest", async () => {
+    const { service } = build({ premium: true, rows: [chestRow("2026-W45")], ledgerUnit: "XP" });
+    expect((await service.getView("user-1")).reward).toEqual({ unit: "XP", amount: 20 });
   });
 
   it("is OPENED once revealed", async () => {

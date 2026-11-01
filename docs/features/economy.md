@@ -11,24 +11,27 @@ The economy is an append-only ledger system for XP (personal journey progress) a
 right → AI chat access). It powers onboarding quests, invite rewards, and AI chat spending. **Coin is
 non-monetary, capped. Never in chat UI (§4 #3). The ledger never stores a single number / never deletes.**
 
-## Launch rules (2026-09-17)
+## Launch rules (2026-09-17, amounts rebalanced 2026-11-01)
 
-These rules supersede earlier launch assumptions in the historical timeline.
+These rules supersede earlier launch assumptions in the historical timeline. Amounts follow the
+2026-11-01 ×10 rebalance ([design](../plans/2026-11-01-coin-economy-rebalance-design.md)).
 
 | Surface | Launch rule |
 | --- | --- |
 | XP | Personal journey/levels; never spent or converted to Coin |
 | Coin | The only spendable label; non-monetary and capped; absent from chat UI |
-| Extra notebook capacity | Permanent +1 custom notebook slot for 20 Coin; at most two purchased slots by default. Admin can change both. Other Free quotas are unchanged; owned capacity survives economy-off |
-| Profile / verified email | 10 Coin each, once |
+| Premium (incl. trial, STAFF, sponsored seat) | Earns XP, not Coin. The daily active-day Coin quest is hidden; the weekly chest pays 200 XP. Onboarding and invite Coin are still paid. Coin held from before stays spendable |
+| Extra notebook capacity | Permanent +1 custom notebook slot for 200 Coin; at most two purchased slots by default. Admin can change both. Other Free quotas are unchanged; owned capacity survives economy-off |
+| Profile / verified email | 100 Coin each, once |
 | First subscription / entering invite code | Disabled quest IDs retained; no Coin |
-| Weekly effort | 5 active UTC days in one ISO week gives 15 Coin |
-| Successful invite | Inviter receives 20 Coin on the invitee's first positive successful payment (a trial, a sponsor, a 0 TL charge and renewals never count; a refund of that payment takes the Coin back). No Coin moves when either side is a coach by then (`reward_outcome = COACH_SKIPPED`) or the inviter's account is erased or erasing (`INVITER_GONE`; a suspension still earns) |
+| Daily / weekly effort (free users) | Each active UTC day (≥1 completed focus session or done plan task) gives 10 Coin; 5 active days in one ISO week add a 100 Coin chest bonus |
+| Successful invite | Inviter receives 200 Coin on the invitee's first positive successful payment (a trial, a sponsor, a 0 TL charge and renewals never count; a refund of that payment takes the Coin back). No Coin moves when either side is a coach by then (`reward_outcome = COACH_SKIPPED`) or the inviter's account is erased or erasing (`INVITER_GONE`; a suspension still earns) |
 | Invite code | `PUHU-` + 8 characters (no 0/O/1/I). Old `MENTOR-` codes were rewritten to `PUHU-`. Input is case-insensitive. Redeemable only in the first 7 days after signup (`economy.invite.redeem_window_days`, 1 to 90) by someone who has never paid (a trial does not block it). Own code, a second code and coaches (403) are refused |
 | Invite link | `puhukoc.com/davet/PUHU-XXXXXXXX` (`/en/invite/...`), public, noindex. A new signup carries the code through signup and onboarding and it is redeemed once when onboarding ends. A signed-in student confirms with one "Daveti kabul et" button, nothing is redeemed on arrival. Redeeming links the two (study-buddy request, or a mutual follow when a slot is taken) and notifies the inviter |
 | Invitee discount | Not Coin. An automatic `INVITED` promotion (rule `{ withinDays }`, default 30) that FINANCE creates in admin (e.g. 30% on the first period). Web checkout only, needs a verified phone and applies once per phone. Shown on the landing, the card and the paywall only while web sales are on and the campaign is live; otherwise the copy drops the discount sentence. A hand-typed coupon replaces it |
 | Inviter card | Shows own link (Paylaş), joined count, paying-friend count ("1 kişi Premium'a geçti", never names who paid) and, for the invited friend, "{ad} davetiyle geldin!" with the discount or the phone hint |
-| AI chat / weekly deep analysis | 5 / 25 Coin, configured centrally |
+| AI chat / weekly deep analysis (also Wrapped) / plan preview | 50 / 250 / 200 Coin, configured centrally |
+| XP | Daily ritual 50, weekly ritual 200, milestones 250; level thresholds ×10 (`TIER_THRESHOLDS` in `@mentor/core`) |
 | XP leaderboard / paid streak rescue / rewarded ads | Disabled, enforced by backend |
 
 Existing XP amounts, thresholds, Coin caps, daily AI limits, budget limits and free streak freezes
@@ -143,6 +146,54 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 - **Gotchas:** Pending chests are not stamped revealed and no receipt is acknowledged before
   a progress row exists. Existing grants and repeated opens remain idempotent.
 - **Files:** `apps/api/src/modules/economy/application/weekly-chest.service.ts` and its unit tests.
+
+### 2026-11-01 — Haftalık sandık: web dilimi ("Masa lambası")
+
+Sandık panelde kendi nesnesiyle görünür (`GET /v1/economy/weekly-chest`, `use-panel-data.ts`); eski
+`TodayPath.chest` (quests listesinden türetilen) kalktı.
+
+- **Panel:** yolun sonundaki sandık düğümü ve "Günlük görevler"deki sandık satırı aynı görünümü okur.
+  `PROGRESS` dokununca bilgi penceresi (7 gün, kural, içindekiler), `READY` / `OPENED` açılış sahnesi.
+- **Sahne:** "Sandığı aç" tek damgadır (`POST .../open`); "Sonra", Escape ve dokunup geçmek sandığı
+  `READY` bırakır. Not satırları sunucunun `summary`'sinden, sıfır satır yazılmaz. Ödül birimi
+  `COIN` / `XP` (Premium 200 XP): kopya `{unit, select, XP {XP} other {Coin}}`. Ekonomi kapalıyken
+  ödül yerine Puhu "Pazartesi yeni sandık geliyor!" der.
+- **`EconomySync` istisnası:** 14 günden yeni sandık makbuzu genel Coin toast'ına düşmez
+  (`isHeldChestReceipt`); sahnedeki açılış onu sunucuda "görüldü" yapar.
+- **Panel dışı:** `WeeklyChestNotice` (app shell, koç değil) hazır sandığı bir kez toast ile söyler,
+  "Aç" → `/panel?chest=open`. Hafıza `localStorage` `mentor:weekly-chest:{userId}`
+  (`noticed`, bugün değişemeyecekse `quietDay`), en çok 2 dakikada bir GET.
+- **Gotchas:** alt pencere `children` için `layout: "filter"` ister (varsayılan liste yalnız
+  "Vazgeç" çizer). Playwright Chromium'da H.264 yok: `play()` reddedilince sahne doğrudan nota geçer.
+  Ekonomi açıklığı sunucuda okunduğu için mock'lu e2e makbuz tutmayı göremez; birim testi var.
+  `panel.quests_chest*` anahtarlarını kod artık kullanmıyor (rebalance oturumu geri ekledi, temizlik açık).
+- **Testler:** `weekly-chest-model.spec.ts`, `today-path-model.spec.ts`,
+  `e2e/weekly-chest.spec.ts` (`playwright.weekly-chest.config.ts`, 5 senaryo × 375/1280).
+  Plan `docs/superpowers/plans/2026-11-01-weekly-chest-web.md`.
+
+### 2026-11-01 — ×10 denomination, daily Coin, Premium earns XP
+
+- **What:** "+5" felt cheap, so every XP/Coin amount, price and cap default is ×10 (daily ritual
+  50 XP, AI message 50 Coin, deep analysis 250, notebook slot 200, caps 500/2000) and the level
+  curve with it. New quest `daily.active-day` pays free users 10 Coin per active day; the weekly
+  chest (`weekly.effort-allowance`) becomes a 100 Coin bonus. Premium earns XP, not Coin:
+  `QuestDef.premiumReward` hides the daily Coin quest and turns the chest into 200 XP, read from
+  `EntitlementService`. `WeeklyChestView.reward.unit` can now be `XP`. Rewarded-ad defaults are
+  readied (10 Coin, 1 a day) but every ad flag stays off.
+- **Usage:** nothing to call. Local DBs: run `apps/api/scripts/apply-local-economy-launch.ts --apply`
+  (its key list now covers every rebalanced key), then restart the API. Production: follow the
+  override audit in `docs/core/deployment.md` before enabling the economy.
+- **Gotchas:** DB overrides beat code defaults, and a partial override breaks the ratios (old
+  `ai_chat_cost` 5 with new rewards makes Coin 10× cheaper). `coinReward()` now picks by quest
+  type (daily → `daily_active_reward_coin`); before, any non-weekly Coin quest paid the onboarding
+  amount. A Premium-hidden quest is not recorded, so a same-day lapse can still earn it; a chest
+  completed while Premium stays XP for that week. No backfill: older ledger rows keep their
+  amounts, dev balances look small next to new prices. Web: the quiet toast for daily Coin and the
+  Premium chest copy were deferred while the weekly-chest web session owned `economy-sync.tsx`
+  and the panel messages.
+- **Related:** `quest.catalog.ts`, `quest-progress.ts` (`rewardUnitFor`), `quest.service.ts`,
+  `quest-view.ts`, `weekly-chest.service.ts`, `config.catalog.ts` (+ `config.catalog.spec.ts`),
+  `packages/core` tiers, [plan](../plans/2026-11-01-coin-economy-rebalance-plan.md).
 
 ### 2026-11-01 — Haftalık sandık: durum ve açılış uçları (arka uç dilimi)
 
@@ -741,6 +792,30 @@ yapar, aynı görünümü döner. Coin verme yolu değişmedi (`QuestService.eva
   (review READY) is checked BEFORE spending, so an ungeneratable report can't be bought.
 
 ## Geliştirmeler (timeline)
+
+### 2026-11-01 — Haftalık sandık: web dilimi ("Masa lambası")
+
+Sandık panelde kendi nesnesiyle görünür (`GET /v1/economy/weekly-chest`, `use-panel-data.ts`); eski
+`TodayPath.chest` (quests listesinden türetilen) kalktı.
+
+- **Panel:** yolun sonundaki sandık düğümü ve "Günlük görevler"deki sandık satırı aynı görünümü okur.
+  `PROGRESS` dokununca bilgi penceresi (7 gün, kural, içindekiler), `READY` / `OPENED` açılış sahnesi.
+- **Sahne:** "Sandığı aç" tek damgadır (`POST .../open`); "Sonra", Escape ve dokunup geçmek sandığı
+  `READY` bırakır. Not satırları sunucunun `summary`'sinden, sıfır satır yazılmaz. Ödül birimi
+  `COIN` / `XP` (Premium 200 XP): kopya `{unit, select, XP {XP} other {Coin}}`. Ekonomi kapalıyken
+  ödül yerine Puhu "Pazartesi yeni sandık geliyor!" der.
+- **`EconomySync` istisnası:** 14 günden yeni sandık makbuzu genel Coin toast'ına düşmez
+  (`isHeldChestReceipt`); sahnedeki açılış onu sunucuda "görüldü" yapar.
+- **Panel dışı:** `WeeklyChestNotice` (app shell, koç değil) hazır sandığı bir kez toast ile söyler,
+  "Aç" → `/panel?chest=open`. Hafıza `localStorage` `mentor:weekly-chest:{userId}`
+  (`noticed`, bugün değişemeyecekse `quietDay`), en çok 2 dakikada bir GET.
+- **Gotchas:** alt pencere `children` için `layout: "filter"` ister (varsayılan liste yalnız
+  "Vazgeç" çizer). Playwright Chromium'da H.264 yok: `play()` reddedilince sahne doğrudan nota geçer.
+  Ekonomi açıklığı sunucuda okunduğu için mock'lu e2e makbuz tutmayı göremez; birim testi var.
+  `panel.quests_chest*` anahtarlarını kod artık kullanmıyor (rebalance oturumu geri ekledi, temizlik açık).
+- **Testler:** `weekly-chest-model.spec.ts`, `today-path-model.spec.ts`,
+  `e2e/weekly-chest.spec.ts` (`playwright.weekly-chest.config.ts`, 5 senaryo × 375/1280).
+  Plan `docs/superpowers/plans/2026-11-01-weekly-chest-web.md`.
 
 ### 2026-10-26 — Davet akışı son düzeltme turu (bütün dal incelemesi)
 

@@ -67,6 +67,14 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-01 · Puhu premium glasses visual proposal.** Added transparent blue-and-gold,
+  feather-tipped glasses artwork, a simplified SVG for 24–48 px chrome, and a matching mascot
+  candidate. Usage: review `/visuals/premium-glasses.{svg,png}` and
+  `/mascot/puhu/puhu-premium-v2.png` before wiring them into
+  membership UI. Gotchas: this is an assets-only proposal; the active mascot and badge
+  components are unchanged, and the raster master needs delivery optimization after acceptance.
+  Related: `docs/plans/2026-11-01-puhu-premium-glasses-design.md` (direction and full generation prompts).
+
 - **2026-11-01 · Landing names the exams; new hero.** Hero is "Işığın yanıyorsa, <glow>yalnız
   değilsin</glow>." (owner's pick). The hero label (`landing.exams`, "KPSS · YKS · LGS") replaces
   the tagline there and now shows on phones too (`.lc-eyebrow` base style; the footer keeps
@@ -137,7 +145,7 @@ http://localhost:3000/panel               # daily ritual hub
     - **Copy:** the wording reuses `session*` keys. Only the sample contents live in `landing.focus`.
   - **Gece Yolculuğu (`#yolculuk`)** puts the quests card beside the level lights.
     - **Quests card:** Ritüel / Haftalık / Hedefler tabs. The titles are the API's own and the
-      amounts are its defaults (+5/+20/+25 XP, 5 active days +15 Coin).
+      amounts are its defaults (+50/+200/+250 XP, 5 active days +100 Coin; 2026-11-01 ×10 rebalance).
     - **Lights:** the 12 lights come from `JOURNEY_LEVEL_CATALOG` and `/img/levels/*`, cut round.
       The current one is Pusula.
     - **Coin copy:** only "Coin nakit değildir. Emeğinle hak kazanırsın." What Coin opens is AI, so
@@ -1763,3 +1771,10 @@ eklendi.
   the same art and size (1254×1254): background removed by a flood fill from the edges that only
   takes the two exact checker tones (254/246, neutral grey), so the white fur is kept. Found while
   designing the transactional email templates. If design supplies a new export, it replaces this one.
+
+- **2026-11-01 — Weekly chest notice in the app shell.** `WeeklyChestNotice` mounts before
+  `EconomySync` (students only) so a fresh chest receipt is held for the chest scene instead of the
+  generic Coin toast. Off the panel and `/coach`, a ready chest gets one toast with "Aç"
+  (→ `/panel?chest=open`, which opens the scene and cleans the URL). `trapFocus` moved out of
+  `coach-overlay.tsx` into `lib/trap-focus.ts`; the chest scene uses it too. Details in
+  `docs/features/economy.md` (2026-11-01 web slice).

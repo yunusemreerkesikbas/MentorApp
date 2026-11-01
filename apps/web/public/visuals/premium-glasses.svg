@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32" fill="none">
+  <path
+    fill="#2F55D4"
+    stroke="#F2B544"
+    stroke-width="1.75"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill-rule="evenodd"
+    d="M3 3C5 2 9 4 11 7C13 5 16 4 19 4C25 4 30 8 31 13C31.7 12.7 32.3 12.7 33 13C34 8 39 4 45 4C48 4 51 5 53 7C55 4 59 2 61 3C63 5 60 8 57 10C59 9 61 9 61 11C61 13 59 14 57 14V17C57 24 52 29 45 29C38 29 33 24 33 18C32.3 17.4 31.7 17.4 31 18C31 24 26 29 19 29C12 29 7 24 7 17V14C5 14 3 13 3 11C3 9 5 9 7 10C4 8 1 5 3 3ZM27 17A8 8 0 1 0 11 17A8 8 0 1 0 27 17ZM53 17A8 8 0 1 0 37 17A8 8 0 1 0 53 17Z"
+  />
+</svg>

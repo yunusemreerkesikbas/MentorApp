@@ -9,6 +9,7 @@ import type {
   QuestProgressView,
   StreakRescueView,
   TodayPanelResponse,
+  WeeklyChestView,
 } from "@mentor/types";
 import { AdPlacementId } from "@mentor/types";
 import {
@@ -20,6 +21,7 @@ import { fetchRewardOffer } from "@/lib/ads";
 import { fetchQuests, fetchStreakRescue, notifyEconomyChanged } from "@/lib/economy";
 import { fetchAutoPromotionOffers } from "@/lib/promotions";
 import { useEconomyEnabled } from "@/lib/use-economy-enabled";
+import { fetchWeeklyChest } from "@/lib/weekly-chest";
 
 function unwrapToday(response: unknown): TodayPanelResponse {
   return ((response as { data?: TodayPanelResponse }).data ??
@@ -46,6 +48,7 @@ export function usePanelData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
+  const [weeklyChest, setWeeklyChest] = useState<WeeklyChestView | null>(null);
   const [streakRescue, setStreakRescue] = useState<StreakRescueView | null>(null);
   const [rewardOffer, setRewardOffer] = useState<AdRewardOfferView | null>(null);
   const [rewardUnavailable, setRewardUnavailable] = useState(false);
@@ -80,6 +83,15 @@ export function usePanelData() {
     }
   }, []);
 
+  // The chest opens with the week's effort even when the economy is off, so it has its own feed.
+  const refreshWeeklyChest = useCallback(async () => {
+    try {
+      setWeeklyChest(await fetchWeeklyChest());
+    } catch {
+      setWeeklyChest(null);
+    }
+  }, []);
+
   const refreshStreakRescue = useCallback(async () => {
     if (!economyEnabled) { setStreakRescue(null); return; }
     try {
@@ -102,7 +114,7 @@ export function usePanelData() {
     let active = true;
     // Loader state updates happen only after each awaited request (same shape as `plan-shell`).
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void Promise.all([refreshToday(), refreshQuests(), refreshStreakRescue(), refreshRewardOffer()]);
+    void Promise.all([refreshToday(), refreshQuests(), refreshWeeklyChest(), refreshStreakRescue(), refreshRewardOffer()]);
     // The offers call is deduped module-side; the entitlement rides the shared subscription read.
     void fetchAutoPromotionOffers().then((offers) => {
       // An empty answer (204) is "nothing to advertise", not "still resolving": `undefined` would
@@ -112,13 +124,14 @@ export function usePanelData() {
     return () => {
       active = false;
     };
-  }, [refreshQuests, refreshRewardOffer, refreshStreakRescue, refreshToday]);
+  }, [refreshQuests, refreshRewardOffer, refreshStreakRescue, refreshToday, refreshWeeklyChest]);
 
   useEffect(() => {
     function refreshIfVisible() {
       if (document.visibilityState !== "visible") return;
       void refreshToday({ silent: true });
       void refreshQuests();
+      void refreshWeeklyChest();
       void refreshStreakRescue();
     }
     function onPageShow(event: PageTransitionEvent) {
@@ -130,7 +143,7 @@ export function usePanelData() {
       document.removeEventListener("visibilitychange", refreshIfVisible);
       window.removeEventListener("pageshow", onPageShow);
     };
-  }, [refreshQuests, refreshStreakRescue, refreshToday]);
+  }, [refreshQuests, refreshStreakRescue, refreshToday, refreshWeeklyChest]);
 
   useEffect(() => {
     if (rewardOffer?.reason !== "COOLDOWN_ACTIVE" || !rewardOffer.cooldownEndsAt) return;
@@ -144,11 +157,12 @@ export function usePanelData() {
     const [next] = await Promise.all([
       refreshToday({ silent: true }),
       refreshQuests(),
+      refreshWeeklyChest(),
       refreshStreakRescue(),
     ]);
     notifyEconomyChanged();
     return next;
-  }, [refreshQuests, refreshStreakRescue, refreshToday]);
+  }, [refreshQuests, refreshStreakRescue, refreshToday, refreshWeeklyChest]);
 
   /** Optimistic: the path moves on the tap and rolls back if the write fails (the caller toasts). */
   const setTaskStatus = useCallback(async (taskId: string, status: PlanTaskStatus) => {
@@ -175,6 +189,8 @@ export function usePanelData() {
     loading,
     error,
     quests,
+    weeklyChest,
+    refreshWeeklyChest,
     streakRescue: economyEnabled ? streakRescue : null,
     setStreakRescue,
     rewardOffer: economyEnabled ? rewardOffer : null,

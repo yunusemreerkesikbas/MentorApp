@@ -12,8 +12,8 @@ import "./landing-journey.css";
  * availability reads as off, so the landing never shows rights that do not land.
  *
  * The quest titles are the API's own (`apps/api/src/i18n/locales/*\/economy.json`, mirrored in
- * `landing.journey.quest`), with its default amounts: +5 XP a daily ritual, +20 XP a weekly one,
- * +25 XP a milestone, +15 Coin for five active days. The lights are the app's level badges, cut
+ * `landing.journey.quest`), with its default amounts: +50 XP a daily ritual, +200 XP a weekly one,
+ * +250 XP a milestone, +100 Coin for five active days (plus +10 Coin per active day, not drawn here). The lights are the app's level badges, cut
  * round like `JourneyLevelMedallion`. Coin is never said to buy anything: what it opens is AI, and
  * the landing keeps "the AI coach is Premium" true (docs/copy/voice.md, Landing).
  */
@@ -37,10 +37,10 @@ export async function LandingJourney() {
       section: t("economy.quests_daily_section"),
       progress: t("economy.quests_progress", { done: 2, total: 4 }),
       rows: [
-        { title: j("quest.plan_task"), reward: xp(5), done: true },
-        { title: j("quest.focus_session"), reward: xp(5), done: true },
-        { title: j("quest.focus_goal"), progress: j("goal_progress"), reward: xp(5) },
-        { title: j("quest.mood"), reward: xp(5) },
+        { title: j("quest.plan_task"), reward: xp(50), done: true },
+        { title: j("quest.focus_session"), reward: xp(50), done: true },
+        { title: j("quest.focus_goal"), progress: j("goal_progress"), reward: xp(50) },
+        { title: j("quest.mood"), reward: xp(50) },
       ],
     },
     {
@@ -48,10 +48,10 @@ export async function LandingJourney() {
       section: t("economy.quests_weekly_section"),
       progress: t("economy.quests_progress", { done: 0, total: 4 }),
       rows: [
-        { title: j("quest.active_days", { target: 5 }), progress: days(3, 5), reward: coin(15), coin: true },
-        { title: j("quest.focus_sessions", { target: 5 }), progress: count(2, 5), reward: xp(20) },
-        { title: j("quest.plan_tasks", { target: 10 }), progress: count(6, 10), reward: xp(20) },
-        { title: j("quest.full_week"), progress: days(3, 7), reward: xp(20) },
+        { title: j("quest.active_days", { target: 5 }), progress: days(3, 5), reward: coin(100), coin: true },
+        { title: j("quest.focus_sessions", { target: 5 }), progress: count(2, 5), reward: xp(200) },
+        { title: j("quest.plan_tasks", { target: 10 }), progress: count(6, 10), reward: xp(200) },
+        { title: j("quest.full_week"), progress: days(3, 7), reward: xp(200) },
       ],
     },
     {
@@ -59,9 +59,9 @@ export async function LandingJourney() {
       section: t("economy.quests_milestone_section"),
       progress: t("economy.quests_progress", { done: 1, total: 3 }),
       rows: [
-        { title: j("quest.milestone_sessions", { count: 10 }), progress: count(10, 10), reward: xp(25), done: true },
-        { title: j("quest.milestone_rhythm", { days: 7 }), progress: days(3, 7), reward: xp(25) },
-        { title: j("quest.milestone_tasks", { count: 25 }), progress: count(12, 25), reward: xp(25) },
+        { title: j("quest.milestone_sessions", { count: 10 }), progress: count(10, 10), reward: xp(250), done: true },
+        { title: j("quest.milestone_rhythm", { days: 7 }), progress: days(3, 7), reward: xp(250) },
+        { title: j("quest.milestone_tasks", { count: 25 }), progress: count(12, 25), reward: xp(250) },
       ],
     },
   ];
