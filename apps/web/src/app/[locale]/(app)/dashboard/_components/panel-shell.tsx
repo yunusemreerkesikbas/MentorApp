@@ -14,6 +14,7 @@ import { CountdownCard } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { PromotionDialog } from "@/components/premium/promotion-dialog";
 import { useStreakCelebration } from "@/components/streak-celebration";
+import { useWeeklyChestUi } from "@/components/weekly-chest/use-weekly-chest-ui";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useCloudTransitionReady } from "@/lib/cloud-transition";
@@ -119,6 +120,7 @@ function PanelContent() {
     [economyT, rewardedT, setRewardOffer, setRewardUnavailable, sheet, showRewardSuccess, showRewardedQuest],
   );
   const rescue = useStreakRescue(panel, openQuests);
+  const chestUi = useWeeklyChestUi(panel.weeklyChest, () => void panel.refreshAfterProgress());
 
   const moodCheckin = useMoodCheckin({
     initial: data?.mood ?? null,
@@ -175,9 +177,10 @@ function PanelContent() {
   const hero = data && !subscriptionLoading ? (
     <TodayPathCard
       data={data}
-      quests={quests}
+      chest={panel.weeklyChest}
       busyTaskId={busyTaskId}
       onSetStatus={(task, status) => void setTaskStatus(task, status)}
+      onChestTap={chestUi.openChest}
     />
   ) : panel.error ? (
     <div className="flex flex-col items-start gap-3">
@@ -194,7 +197,12 @@ function PanelContent() {
     <TodayPathSkeleton />
   );
   const questsCard = (
-    <DailyQuestsCard quests={quests} onOpenAll={() => openQuests(quests ?? [])} />
+    <DailyQuestsCard
+      quests={quests}
+      chest={panel.weeklyChest}
+      onOpenAll={() => openQuests(quests ?? [])}
+      onChestTap={chestUi.openChest}
+    />
   );
   const membership = (
     <MembershipCard
@@ -260,6 +268,7 @@ function PanelContent() {
 
       <AvailableFeature feature="studentPurchases"><PromotionDialog offers={panel.promotionOffers} /></AvailableFeature>
       {celebration}
+      {chestUi.overlay}
       {rescue.successDays != null ? (
         <StreakRescueSuccess days={rescue.successDays} onClose={rescue.closeSuccess} />
       ) : null}

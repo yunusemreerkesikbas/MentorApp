@@ -39,7 +39,7 @@ describe("plan duration reaches the session", () => {
   );
 
   it("shows the same backend duration on the dashboard node and CTA", () => {
-    const path = buildTodayPath([task], null, 25);
+    const path = buildTodayPath([task], 25);
     expect(path.cta).toMatchObject({ minutes: 80 });
     expect(path.nodes[0]).toHaveProperty("minutes", 80);
   });
@@ -100,7 +100,7 @@ it.each([undefined, "dashboard", "coach"] as const)(
     expect(
       buildStudySessionHrefFromPlanTask(untimed, source).query,
     ).not.toHaveProperty("minutes");
-    expect(buildTodayPath([untimed], null, 25).cta).toMatchObject({
+    expect(buildTodayPath([untimed], 25).cta).toMatchObject({
       minutes: null,
     });
     expect(parseInitialPreset("stopwatch", null)).toBe("stopwatch");

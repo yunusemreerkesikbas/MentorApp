@@ -8,6 +8,7 @@ import { DailyQuestSignalService } from "../../coaching/application/daily-quest-
 import { StreakService } from "../../coaching/application/streak.service";
 import { UsersService } from "../../identity/application/users.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
+import { EntitlementService } from "../../payments/application/entitlement.service";
 import { EconomyService } from "./economy.service";
 import { resolveEconomyLang } from "./economy-lang";
 import { readQuestConfig } from "./quest-config";
@@ -29,6 +30,7 @@ import {
   xpReward,
   coinReward,
   isEconomyAction,
+  rewardUnitFor,
 } from "./quest-progress";
 
 export type { QuestProgressView };
@@ -53,7 +55,12 @@ export class QuestService {
     private readonly quests: QuestRepository,
     private readonly config: ConfigRegistryService,
     private readonly i18n: I18nService,
+    private readonly entitlement: EntitlementService,
   ) {}
+
+  private async isPremium(userId: string): Promise<boolean> {
+    return (await this.entitlement.getEntitlement(userId)).isPremium;
+  }
 
   /**
    * Evaluate every onboarding quest for the user; for each newly-completed one record it and grant
@@ -68,7 +75,7 @@ export class QuestService {
     const pendingRewards: string[] = [];
     const rewardsEnabled = await this.config.get("economy.enabled");
 
-    const [signals, streak, cfg] = await Promise.all([
+    const [signals, streak, cfg, isPremium] = await Promise.all([
       date
         ? this.dailySignals.getForDate(userId, date)
         : this.dailySignals.getToday(userId),
@@ -76,6 +83,7 @@ export class QuestService {
         ? this.streak.getStreakAt(userId, date)
         : this.streak.getSummary(userId),
       readQuestConfig(this.config),
+      this.isPremium(userId),
     ]);
     const activePeriodKeys = activeQuestPeriodKeys(signals);
     const completed = new Set(
@@ -86,6 +94,8 @@ export class QuestService {
     const pending = QUEST_CATALOG.filter((q) => {
       if (cfg.disabledIds.has(q.id) || (!rewardsEnabled && isEconomyAction(q)))
         return false;
+      // Hidden for Premium: not recorded either, so a lapse later the same day can still earn it.
+      if (rewardUnitFor(q, isPremium) === null) return false;
       const periodKey = questPeriodKey(q, signals);
       return !completed.has(progressKey(q.id, periodKey));
     });
@@ -122,6 +132,8 @@ export class QuestService {
           );
         case "daily.mood-checkin":
           return signals.hasMoodCheckin;
+        case "daily.active-day":
+          return signals.weeklyActiveDates.includes(signals.date);
         case "onboarding.profile-setup":
           return me.examType != null;
         case "onboarding.email-verified":
@@ -139,10 +151,11 @@ export class QuestService {
     for (const q of pending) {
       if (!isMet(q)) continue;
       const periodKey = questPeriodKey(q, signals);
+      const unit = rewardUnitFor(q, isPremium);
       const reward =
-        rewardsEnabled && q.rewardUnit === "XP"
+        rewardsEnabled && unit === "XP"
           ? { unit: Currency.XP, amount: xpReward(q, cfg) }
-          : rewardsEnabled && q.rewardUnit === "COIN"
+          : rewardsEnabled && unit === "COIN"
             ? { unit: Currency.COIN, amount: coinReward(q, cfg) }
             : null;
       try {
@@ -215,11 +228,12 @@ export class QuestService {
     userId: string,
     pendingRewards: readonly string[] = [],
   ): Promise<QuestProgressView[]> {
-    const [signals, streak, cfg, rewardsEnabled] = await Promise.all([
+    const [signals, streak, cfg, rewardsEnabled, isPremium] = await Promise.all([
       this.dailySignals.getToday(userId),
       this.streak.getSummary(userId),
       readQuestConfig(this.config),
       this.config.get("economy.enabled"),
+      this.isPremium(userId),
     ]);
     const rows = await this.quests.listForUser(
       userId,
@@ -233,6 +247,7 @@ export class QuestService {
       currentStreak: streak.currentStreak,
       cfg,
       rewardsEnabled,
+      isPremium,
       rows,
       pendingRewards,
       t,

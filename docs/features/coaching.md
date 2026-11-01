@@ -145,6 +145,28 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Restore panel chest translations
+
+- **What/usage:** Restored `panel.quests_chest`, `quests_chest_open` and `quests_chest_reward`
+  in both locales for the daily-quests card. Progress and Coin amounts use the supplied parameters,
+  preserving configured rewards. This fixes the runtime `IntlError: MISSING_MESSAGE`.
+- **Verification/gotchas:** Real next-intl translator regressions cover TR/EN progress, ready copy
+  and a non-default reward value; no economy policy or chest state changed.
+- **Related:** `messages/{tr,en}.json`, `daily-quests-card.tsx`, `i18n/panel-chest-messages.spec.ts`.
+
+### 2026-11-01 — Recap banner reflects actual story opening
+
+- **What:** Removed the click-time localStorage write and optimistic replay label from the panel
+  banner. Only a committed non-empty story view marks the week opened; the access gate, a failed
+  load or waiting navigation leaves it new. Headlines now read “Haftalık özetin hazır” and
+  “Haftalık özetini tekrar izle”, with energetic Puhu supporting copy and matching English keys.
+- **Usage:** Open the panel banner, then open the actual story. Returning to the panel shows replay
+  only after that story rendered. An opened week remains replayable without extra Coin or AI.
+- **Gotchas:** This is per-browser opened state, not report ownership or completion. Existing
+  opened markers are retained. No access, pricing or quota policy changed.
+- **Related:** `weekly-recap-teaser.tsx`, `weekly-recap-slot.tsx`, `weekly-recap-shell.tsx`,
+  `messages/{tr,en}.json`, `panel.spec.ts`, `playwright.recap-banner.config.ts`.
+
 ### 2026-11-01 — Owned weekly Wrapped stories
 
 - **What:** Basic analysis remains free. The full Wrapped story is gated server-side through an

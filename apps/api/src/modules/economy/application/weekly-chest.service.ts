@@ -5,13 +5,14 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DailyQuestSignalService } from "../../coaching/application/daily-quest-signal.service";
+import { EntitlementService } from "../../payments/application/entitlement.service";
 import { addDays, isoWeekKey, isoWeekStart, todayIso } from "../../coaching/domain/date.util";
 import { QUEST_CATALOG, type QuestDef } from "../domain/quest.catalog";
 import { LedgerRepository } from "../infrastructure/ledger.repository";
 import { QuestRepository, type QuestProgressRow } from "../infrastructure/quest.repository";
 import { resolveEconomyLang } from "./economy-lang";
 import { readQuestConfig } from "./quest-config";
-import { coinReward, progressKey, questTarget, type QuestConfig } from "./quest-progress";
+import { coinReward, progressKey, questTarget, rewardUnitFor, xpReward, type QuestConfig } from "./quest-progress";
 import { QuestService } from "./quest.service";
 import { RewardReceiptService } from "./reward-receipt.service";
 
@@ -26,6 +27,7 @@ interface ChestWeeks {
   lastSunday: string;
   cfg: QuestConfig;
   rewardsEnabled: boolean;
+  isPremium: boolean;
   rows: Map<string, QuestProgressRow>;
 }
 
@@ -45,6 +47,7 @@ export class WeeklyChestService {
     private readonly receipts: RewardReceiptService,
     private readonly config: ConfigRegistryService,
     private readonly i18n: I18nService,
+    private readonly entitlement: EntitlementService,
   ) {}
 
   /** Lazy-evaluates like the quest list, then shows last week's unopened chest first, else this week's. */
@@ -92,14 +95,24 @@ export class WeeklyChestService {
     const lastSunday = addDays(isoWeekStart(today), -1);
     const thisWeek = isoWeekKey(today);
     const lastWeek = isoWeekKey(lastSunday);
-    const [cfg, rewardsEnabled, rows] = await Promise.all([
+    const [cfg, rewardsEnabled, rows, entitlement] = await Promise.all([
       readQuestConfig(this.config),
       this.config.get("economy.enabled"),
       this.progress.listForUser(userId, [thisWeek, lastWeek]),
+      this.entitlement.getEntitlement(userId),
     ]);
     if (cfg.disabledIds.has(CHEST_ID)) throw notFound();
     const chestRows = rows.filter((r) => r.questId === CHEST_ID).map((r) => [r.periodKey, r] as const);
-    return { today, thisWeek, lastWeek, lastSunday, cfg, rewardsEnabled, rows: new Map(chestRows) };
+    return {
+      today,
+      thisWeek,
+      lastWeek,
+      lastSunday,
+      cfg,
+      rewardsEnabled,
+      isPremium: entitlement.isPremium,
+      rows: new Map(chestRows),
+    };
   }
 
   private async view(
@@ -150,11 +163,12 @@ export class WeeklyChestService {
   ): Promise<WeeklyChestView["reward"]> {
     if (!weeks.rewardsEnabled || waiting) return null;
     if (!row) {
-      const amount = coinReward(CHEST, weeks.cfg);
-      return amount > 0 ? { unit: "COIN", amount } : null;
+      const unit = rewardUnitFor(CHEST, weeks.isPremium) === "XP" ? "XP" : "COIN";
+      const amount = unit === "XP" ? xpReward(CHEST, weeks.cfg) : coinReward(CHEST, weeks.cfg);
+      return amount > 0 ? { unit, amount } : null;
     }
     const entry = await this.ledger.findByRef("quest", row.id);
-    return entry ? { unit: "COIN", amount: entry.amount } : null;
+    return entry ? { unit: entry.unit === "XP" ? "XP" : "COIN", amount: entry.amount } : null;
   }
 
   private pendingMessage(): string {

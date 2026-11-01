@@ -1,4 +1,4 @@
-import type { PlanTaskDto, QuestProgressView } from "@mentor/types";
+import type { PlanTaskDto } from "@mentor/types";
 import {
   buildStudySessionHrefFromPlanTask,
   type StudySessionHref,
@@ -6,7 +6,7 @@ import {
 
 /** How many task nodes the path draws before it folds the rest into "+N". */
 export const PATH_WINDOW = 5;
-/** The weekly coin allowance (5 active days) is the chest at the end of the path. */
+/** The weekly chest quest; the panel's daily list leaves it out (it has its own row). */
 export const CHEST_QUEST_ID = "weekly.effort-allowance";
 
 export type PathNodeState = "done" | "current" | "upcoming";
@@ -18,13 +18,6 @@ export interface PathNode {
   fromCoach: boolean;
   /** Backend-resolved session length, shared by the node, CTA and link. */
   minutes: number | null;
-}
-
-export interface PathChest {
-  current: number;
-  target: number;
-  reward: number;
-  open: boolean;
 }
 
 export type PathCta =
@@ -44,7 +37,6 @@ export interface TodayPath {
   hiddenAfter: number;
   done: number;
   total: number;
-  chest: PathChest | null;
   cta: PathCta;
 }
 
@@ -54,13 +46,12 @@ export function sessionHrefFor(task: PlanTaskDto): StudySessionHref {
 }
 
 /**
- * Tasks + quests → the path. "Current" is the first pending task in list order, which is exactly
+ * Tasks → the path. "Current" is the first pending task in list order, which is exactly
  * the rule `today.service.ts#nextAction` applies on the server; deriving it here keeps the path
  * honest during an optimistic toggle, before the refreshed `nextAction` arrives.
  */
 export function buildTodayPath(
   tasks: readonly PlanTaskDto[],
-  quests: readonly QuestProgressView[] | null,
   defaultMinutes: number,
 ): TodayPath {
   const total = tasks.length;
@@ -97,24 +88,12 @@ export function buildTodayPath(
       ? { kind: "ADD_TASK" }
       : { kind: "DAY_COMPLETE" };
 
-  const chestQuest = quests?.find((quest) => quest.id === CHEST_QUEST_ID);
-  const chest: PathChest | null =
-    chestQuest && chestQuest.rewardUnit === "COIN" && chestQuest.progressTarget
-      ? {
-          current: Math.min(chestQuest.progressCurrent ?? 0, chestQuest.progressTarget),
-          target: chestQuest.progressTarget,
-          reward: chestQuest.rewardAmount,
-          open: chestQuest.completed,
-        }
-      : null;
-
   return {
     nodes,
     hiddenBefore: start,
     hiddenAfter: total - start - windowTasks.length,
     done: tasks.filter((task) => task.status === "DONE").length,
     total,
-    chest,
     cta,
   };
 }

@@ -12,6 +12,7 @@ export async function readQuestConfig(
     effortMilestoneRewardXp,
     weeklyRitualRewardXp,
     weeklyAllowanceRewardCoin,
+    dailyActiveRewardCoin,
     weeklyFocusTarget,
     weeklyPlanTarget,
     weeklyAllowanceTarget,
@@ -23,6 +24,7 @@ export async function readQuestConfig(
     config.get("economy.quest.effort_milestone_reward_xp"),
     config.get("economy.quest.weekly_ritual_reward_xp"),
     config.get("economy.quest.weekly_allowance_reward_coin"),
+    config.get("economy.quest.daily_active_reward_coin"),
     config.get("economy.quest.weekly_focus_sessions_target"),
     config.get("economy.quest.weekly_plan_tasks_target"),
     config.get("economy.quest.weekly_allowance_active_days_target"),
@@ -35,6 +37,7 @@ export async function readQuestConfig(
     effortMilestoneRewardXp,
     weeklyRitualRewardXp,
     weeklyAllowanceRewardCoin,
+    dailyActiveRewardCoin,
     targets: new Map([
       ["economy.quest.weekly_focus_sessions_target", weeklyFocusTarget],
       ["economy.quest.weekly_plan_tasks_target", weeklyPlanTarget],

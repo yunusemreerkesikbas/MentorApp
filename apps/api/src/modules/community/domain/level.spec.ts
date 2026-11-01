@@ -8,78 +8,78 @@ describe("deriveLevel", () => {
     expect(deriveLevel(0)).toEqual({
       tier: 1,
       xp: 0,
-      nextAt: 100,
+      nextAt: 1000,
       key: "spark",
       chapter: "awakening",
       currentAt: 0,
       nextKey: "trail",
-      progress: { current: 0, target: 100, remaining: 100, percent: 0 },
+      progress: { current: 0, target: 1000, remaining: 1000, percent: 0 },
     });
-    expect(deriveLevel(99).progress).toEqual({ current: 99, target: 100, remaining: 1, percent: 99 });
+    expect(deriveLevel(999).progress).toEqual({ current: 999, target: 1000, remaining: 1, percent: 100 });
   });
 
   it("advances a tier exactly at the threshold", () => {
-    expect(deriveLevel(100)).toMatchObject({
+    expect(deriveLevel(1000)).toMatchObject({
       tier: 2,
       key: "trail",
       chapter: "awakening",
-      currentAt: 100,
-      nextAt: 300,
+      currentAt: 1000,
+      nextAt: 3000,
       nextKey: "compass",
-      progress: { current: 0, target: 200, remaining: 200, percent: 0 },
+      progress: { current: 0, target: 2000, remaining: 2000, percent: 0 },
     });
-    expect(deriveLevel(1000)).toMatchObject({
+    expect(deriveLevel(10000)).toMatchObject({
       tier: 5,
       key: "rhythm",
       chapter: "harmony",
-      currentAt: 1000,
-      nextAt: 1500,
+      currentAt: 10000,
+      nextAt: 15000,
       nextKey: "flow",
     });
   });
 
   it("calculates progress inside the current tier instead of against total XP", () => {
-    expect(deriveLevel(411)).toMatchObject({
+    expect(deriveLevel(4110)).toMatchObject({
       tier: 3,
       key: "compass",
       chapter: "awakening",
-      currentAt: 300,
-      nextAt: 600,
+      currentAt: 3000,
+      nextAt: 6000,
       nextKey: "cycle",
-      progress: { current: 111, target: 300, remaining: 189, percent: 37 },
+      progress: { current: 1110, target: 3000, remaining: 1890, percent: 37 },
     });
-    expect(deriveLevel(5600)).toMatchObject({
+    expect(deriveLevel(56000)).toMatchObject({
       tier: 10,
       key: "lantern",
       chapter: "shared_light",
-      progress: { current: 0, target: 1900, remaining: 1900, percent: 0 },
+      progress: { current: 0, target: 19000, remaining: 19000, percent: 0 },
     });
   });
 
   it("caps nextAt at null on the top tier", () => {
-    expect(deriveLevel(10000)).toEqual({
+    expect(deriveLevel(100000)).toEqual({
       tier: 12,
-      xp: 10000,
+      xp: 100000,
       nextAt: null,
       key: "constellation",
       chapter: "shared_light",
-      currentAt: 10000,
+      currentAt: 100000,
       nextKey: null,
       progress: null,
     });
-    expect(deriveLevel(99999)).toMatchObject({ tier: 12, xp: 99999, progress: null });
+    expect(deriveLevel(999990)).toMatchObject({ tier: 12, xp: 999990, progress: null });
   });
 
   it("keeps raw negative XP but clamps the derived journey state to its starting point", () => {
     expect(deriveLevel(-25)).toEqual({
       tier: 1,
       xp: -25,
-      nextAt: 100,
+      nextAt: 1000,
       key: "spark",
       chapter: "awakening",
       currentAt: 0,
       nextKey: "trail",
-      progress: { current: 0, target: 100, remaining: 100, percent: 0 },
+      progress: { current: 0, target: 1000, remaining: 1000, percent: 0 },
     });
   });
 });

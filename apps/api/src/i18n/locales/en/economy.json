@@ -64,6 +64,10 @@
       "mood-checkin": {
         "title": "Mark how you feel today",
         "badge": "Mood"
+      },
+      "active-day": {
+        "title": "Finish 1 focus session or 1 plan task today",
+        "badge": "Rhythm"
       }
     },
     "weekly": {

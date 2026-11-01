@@ -1,0 +1,214 @@
+/*
+ * Weekly chest (DESIGN.md §9 scene exception). The lamps are part of the chest art, so they keep the
+ * art's brass and lamp colours in both themes. The opening scene is always a warm night at Puhu's
+ * desk and never follows `html.dark`. Values come from the approved canvas (board "A · Masa lambası").
+ */
+.wc-lamp {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 50% 40%, #6b4a22, #3a2512 70%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55);
+  transition:
+    left 0.38s cubic-bezier(0.5, 0, 0.75, 0),
+    top 0.38s cubic-bezier(0.5, 0, 0.75, 0),
+    transform 0.38s ease-in,
+    opacity 0.38s ease-in;
+}
+.wc-lamp[data-lit="true"] {
+  background: radial-gradient(circle at 45% 38%, #fffbe6 0%, #ffd15c 45%, #f29b1f 100%);
+  box-shadow:
+    0 0 6px 2px rgba(255, 209, 92, 0.85),
+    0 0 14px 4px rgba(255, 170, 40, 0.45);
+}
+.wc-lamp[data-flow="true"] {
+  transform: translate(-50%, -50%) scale(0.35);
+  opacity: 0;
+}
+
+/* Ready on the panel: a snappy squash-and-hop every couple of seconds. */
+@keyframes wc-hop {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  66% {
+    transform: translateY(2px) scale(1.08, 0.9);
+  }
+  76% {
+    transform: translateY(-10px) scale(0.95, 1.07);
+  }
+  86% {
+    transform: translateY(0) scale(1.05, 0.95);
+  }
+  93% {
+    transform: translateY(-2px) scale(1, 1);
+  }
+}
+.wc-hop {
+  transform-origin: 50% 100%;
+  animation: wc-hop 2.4s cubic-bezier(0.3, 0.7, 0.4, 1) infinite;
+}
+
+/* Ready lamps twinkle out of step on the scene's first frame. */
+@keyframes wc-twinkle {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.35);
+  }
+}
+.wc-twinkle .wc-lamp[data-lit="true"] {
+  animation: wc-twinkle 1.1s ease-in-out infinite;
+}
+.wc-twinkle .wc-lamp[data-lit="true"]:nth-child(even) {
+  animation-delay: 0.55s;
+}
+
+.weekly-chest-night {
+  --wc-ground: #1c130d;
+  --wc-title: #fff4dc;
+  --wc-body: #e9d6b8;
+  --wc-gold: #ffd15c;
+  --wc-gold-ink: #3a2306;
+  --wc-gold-edge: #c98f22;
+  --wc-paper: #fffdf6;
+  --wc-rule: rgba(29, 111, 191, 0.14);
+  --wc-ink: #2a1c10;
+  --wc-eyebrow: #1d6fbf;
+  --wc-tape: rgba(255, 209, 92, 0.82);
+  background: radial-gradient(120% 70% at 50% 20%, #2b1d12 0%, var(--wc-ground) 60%);
+  color: var(--wc-title);
+  --color-focus-ring: var(--wc-gold);
+}
+
+.wc-gold-button {
+  background: var(--wc-gold);
+  color: var(--wc-gold-ink);
+  box-shadow: 0 5px 0 var(--wc-gold-edge);
+}
+.wc-gold-button:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--wc-gold-edge);
+}
+.wc-ghost-button {
+  color: var(--wc-body);
+  border: 2px solid rgba(233, 214, 184, 0.35);
+}
+
+/* The open frame steps back so the note reads on top of it. */
+.wc-dim {
+  opacity: 0.25;
+  filter: blur(3px);
+  transition:
+    opacity 0.45s ease,
+    filter 0.45s ease;
+}
+
+.wc-note {
+  background: var(--wc-paper);
+  color: var(--wc-ink);
+  border-radius: 4px 4px 8px 8px;
+  box-shadow:
+    0 2px 4px rgba(10, 5, 0, 0.25),
+    0 30px 50px -22px rgba(10, 5, 0, 0.85);
+  transform: rotate(-2deg);
+}
+.wc-note-eyebrow {
+  color: var(--wc-eyebrow);
+}
+.wc-tape {
+  position: absolute;
+  left: 50%;
+  top: -11px;
+  width: 84px;
+  height: 22px;
+  margin-left: -42px;
+  border-radius: 2px;
+  background: var(--wc-tape);
+  transform: rotate(-4deg);
+}
+.wc-hand {
+  font-family: "Caveat Variable", "Segoe Print", cursive;
+}
+/* Handwritten lines sit on the note's ruled lines (one rule per 34px line). */
+.wc-note-lines {
+  font-size: 29px;
+  line-height: 34px;
+  background: repeating-linear-gradient(to bottom, transparent 0 33px, var(--wc-rule) 33px 34px);
+}
+.wc-bubble {
+  position: relative;
+  background: var(--wc-paper);
+  color: var(--wc-ink);
+}
+.wc-bubble::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  background: var(--wc-paper);
+  transform: rotate(45deg);
+}
+
+/* The note pops up from behind the chest, overshoots and settles a little crooked. */
+@keyframes wc-note-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(90px) rotate(6deg) scale(0.8);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-12px) rotate(-4deg) scale(1.04);
+  }
+  78% {
+    transform: translateY(4px) rotate(-1deg) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(-2deg) scale(1);
+  }
+}
+.wc-note-in {
+  animation: wc-note-rise 0.7s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+@keyframes wc-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.wc-pop-in {
+  animation: wc-pop 0.42s cubic-bezier(0.3, 0.7, 0.3, 1) 0.45s both;
+}
+.wc-fade {
+  transition: opacity 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wc-hop,
+  .wc-twinkle .wc-lamp[data-lit="true"],
+  .wc-note-in,
+  .wc-pop-in {
+    animation: none;
+  }
+  .wc-lamp,
+  .wc-dim {
+    transition: none;
+  }
+}

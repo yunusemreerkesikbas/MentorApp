@@ -9,6 +9,7 @@ import { ECONOMY_CHANGED_EVENT, ECONOMY_DISABLED_EVENT, fetchUnseenRewards, forg
 import { disableEconomySnapshot, getEconomySnapshot, refreshEconomySnapshot, resetEconomySnapshot } from "@/lib/economy-store";
 import { useAppAvailability } from "@/lib/app-availability";
 import { useEconomyEnabled } from "@/lib/use-economy-enabled";
+import { isHeldChestReceipt } from "@/components/weekly-chest/weekly-chest-model";
 
 /** One reward consumer per authenticated app. Amounts always come from committed ledger rows. */
 export function EconomySync() {
@@ -60,13 +61,17 @@ export function EconomySync() {
           while (active && more) {
             const rewards = await fetchUnseenRewards();
             if (!active || getEconomySnapshot().enabled === false || rewards.items.length === 0) break;
-            for (const entry of rewards.items) {
+            // The weekly chest's Coin is shown (and acknowledged) by its opening scene, not here.
+            const now = Date.now();
+            const shown = rewards.items.filter((entry) => !isHeldChestReceipt(entry, now));
+            if (shown.length === 0) break;
+            for (const entry of shown) {
               if (displayed.current.has(entry.id)) continue;
               displayed.current.add(entry.id);
               if (entry.unit === "COIN") notifyCoinCelebration(entry.amount, entry.title);
               else presentation.current.toast.success({ title: entry.title, message: presentation.current.t("quest_reward_xp", { count: entry.amount }), duration: 3000 });
             }
-            await markRewardsSeen(rewards.items.map((entry) => entry.id));
+            await markRewardsSeen(shown.map((entry) => entry.id));
             more = rewards.total > rewards.items.length;
           }
         }

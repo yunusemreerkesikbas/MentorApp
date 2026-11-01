@@ -27,3 +27,9 @@ Puhu companions stay under `/mascot/puhu/` — do not mix character variants int
 Study-room artwork stays under `/img/seans-theme/` — nine files that only mean anything as a
 set (backdrop + table + chair per theme), so they get a folder instead of this flat drop.
 Paths are resolved in `src/lib/study-room-theme.ts`.
+
+The weekly chest is the other set: `/visuals/chest/` holds the panel chest (`chest-closed.webp`,
+`chest-open.webp`, transparent), the desk scene's first and last frames
+(`desk-chest-closed.webp`, `desk-chest-open.webp`) and the lid clip (`chest-open.mp4`, no
+watermark). The lamp positions in `components/weekly-chest/chest-art.tsx` are measured on these
+exact files: replace one and re-measure.

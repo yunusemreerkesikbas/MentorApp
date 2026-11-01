@@ -52,6 +52,7 @@ function service(options: {
     weeklyCompletedFocusSessions?: number;
     weeklyCompletedPlanTasks?: number;
     weeklyActiveDays?: number;
+    weeklyActiveDates?: string[];
   };
   user?: { examType: string | null; emailVerified: boolean };
   subscription?: unknown;
@@ -59,6 +60,7 @@ function service(options: {
   currentStreak?: number;
   rows?: ProgressRow[];
   grantShouldFail?: boolean;
+  premium?: boolean;
 } = {}) {
   const rows = options.rows ?? [];
   const date = options.date ?? "2026-07-06";
@@ -73,6 +75,7 @@ function service(options: {
       if (key === "economy.quest.weekly_ritual_reward_xp") return 20;
       if (key === "economy.quest.weekly_allowance_reward_coin")
         return options.weeklyAllowanceRewardCoin ?? 15;
+      if (key === "economy.quest.daily_active_reward_coin") return 10;
       if (key === "economy.quest.weekly_focus_sessions_target") return 5;
       if (key === "economy.quest.weekly_plan_tasks_target") return 10;
       if (key === "economy.quest.weekly_allowance_active_days_target") return 5;
@@ -94,6 +97,7 @@ function service(options: {
       weeklyCompletedFocusSessions: options.signals?.weeklyCompletedFocusSessions ?? 0,
       weeklyCompletedPlanTasks: options.signals?.weeklyCompletedPlanTasks ?? 0,
       weeklyActiveDays: options.signals?.weeklyActiveDays ?? 0,
+      weeklyActiveDates: options.signals?.weeklyActiveDates ?? [],
     })),
   };
   const streak = {
@@ -139,6 +143,9 @@ function service(options: {
     }),
     publishXpChanged: vi.fn(async () => undefined),
   };
+  const entitlement = {
+    getEntitlement: vi.fn(async () => ({ isPremium: options.premium ?? false })),
+  };
   const i18n = {
     translate: vi.fn((key: string, opts?: { args?: Record<string, unknown> }) => {
       const path = key.startsWith("economy.") ? key.slice("economy.".length) : key;
@@ -160,10 +167,102 @@ function service(options: {
       quests as never,
       config as never,
       i18n as never,
+      entitlement as never,
     ),
     streak,
+    entitlement,
   };
 }
+
+describe("QuestService — daily.active-day", () => {
+  it("grants 10 Coin on a day that counts as active", async () => {
+    const subject = service({ signals: { weeklyActiveDates: ["2026-07-06"] } });
+    const quests = await subject.service.getUserProgress("user-1");
+    expect(quests.find((q) => q.id === "daily.active-day")).toMatchObject({
+      rewardUnit: "COIN",
+      rewardAmount: 10,
+      completed: true,
+    });
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.COIN,
+      10,
+      expect.objectContaining({ reason: "quest.daily.active-day" }),
+      expect.anything(),
+    );
+  });
+
+  it("is not met before any focus session or plan task today", async () => {
+    const subject = service({ signals: { weeklyActiveDates: ["2026-07-05"] } });
+    const quests = await subject.service.getUserProgress("user-1");
+    expect(quests.find((q) => q.id === "daily.active-day")).toMatchObject({ completed: false });
+    expect(subject.economy.grantInServiceTx).not.toHaveBeenCalledWith(
+      "user-1",
+      Currency.COIN,
+      expect.anything(),
+      expect.objectContaining({ reason: "quest.daily.active-day" }),
+      expect.anything(),
+    );
+  });
+
+  it("weekly chest pays its own bonus, not the daily amount", async () => {
+    const quests = await service({
+      weeklyAllowanceRewardCoin: 100,
+      signals: { weeklyActiveDays: 5 },
+    }).service.getUserProgress("user-1");
+    expect(quests.find((q) => q.id === "weekly.effort-allowance")).toMatchObject({ rewardAmount: 100 });
+  });
+});
+
+describe("QuestService — Premium earns XP, not Coin", () => {
+  const grantReasons = (subject: ReturnType<typeof service>) =>
+    subject.economy.grantInServiceTx.mock.calls.map((call) => {
+      const [, unit, amount, opts] = call as unknown as [string, string, number, { reason: string }];
+      return { unit, amount, reason: opts.reason };
+    });
+
+  it("hides daily.active-day and never grants it", async () => {
+    const subject = service({ premium: true, signals: { weeklyActiveDates: ["2026-07-06"] } });
+    const quests = await subject.service.getUserProgress("user-1");
+    expect(quests.find((q) => q.id === "daily.active-day")).toBeUndefined();
+    expect(grantReasons(subject).map((g) => g.reason)).not.toContain("quest.daily.active-day");
+  });
+
+  it("turns the weekly chest into weekly ritual XP", async () => {
+    const subject = service({ premium: true, signals: { weeklyActiveDays: 5 } });
+    const quests = await subject.service.getUserProgress("user-1");
+    expect(quests.find((q) => q.id === "weekly.effort-allowance")).toMatchObject({
+      rewardUnit: "XP",
+      rewardAmount: 20,
+      rewardCoin: 0,
+      completed: true,
+    });
+    expect(grantReasons(subject)).toContainEqual({
+      unit: Currency.XP,
+      amount: 20,
+      reason: "quest.weekly.effort-allowance",
+    });
+  });
+
+  it("still pays onboarding Coin to Premium", async () => {
+    const subject = service({ premium: true, user: { examType: "KPSS", emailVerified: true } });
+    await subject.service.getUserProgress("user-1");
+    expect(grantReasons(subject)).toContainEqual({
+      unit: Currency.COIN,
+      amount: 10,
+      reason: "quest.onboarding.profile-setup",
+    });
+  });
+
+  it("does not pay the chest again in Coin after Premium ends the same week", async () => {
+    const subject = service({ premium: true, signals: { weeklyActiveDays: 5 } });
+    await subject.service.getUserProgress("user-1");
+    subject.entitlement.getEntitlement.mockResolvedValue({ isPremium: false });
+    await subject.service.getUserProgress("user-1");
+    const chestGrants = grantReasons(subject).filter((g) => g.reason === "quest.weekly.effort-allowance");
+    expect(chestGrants).toEqual([{ unit: Currency.XP, amount: 20, reason: "quest.weekly.effort-allowance" }]);
+  });
+});
 
 describe("QuestService — daily.focus-goal-met", () => {
   it("reports a met step whose Coin reward is waiting on earning limits without completing its grant", async () => {
@@ -263,7 +362,7 @@ describe("QuestService", () => {
   it("returns daily ritual and onboarding quests with their reward metadata", async () => {
     const quests = await service().service.getUserProgress("user-1");
 
-    expect(quests).toHaveLength(24);
+    expect(quests).toHaveLength(25);
     expect(quests[0]).toMatchObject({
       id: "daily.plan-task-done",
       category: "daily_ritual",

@@ -30,7 +30,8 @@ export type StreakMilestoneValue = (typeof STREAK_MILESTONES)[number];
  * profiles/leaderboard, economy returns it with the self balance — one curve, one place.
  * // ponytail: static thresholds; move to config only if product wants to tune the curve live.
  */
-const TIER_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000, 4200, 5600, 7500, 10000] as const;
+// 2026-11-01 rebalance: ×10 with every XP reward, so levels advance at the same pace.
+const TIER_THRESHOLDS = [0, 1000, 3000, 6000, 10000, 15000, 22000, 30000, 42000, 56000, 75000, 100000] as const;
 
 const JOURNEY_LEVELS = [
   { key: JourneyLevelKey.SPARK, chapter: JourneyLevelChapterId.AWAKENING },

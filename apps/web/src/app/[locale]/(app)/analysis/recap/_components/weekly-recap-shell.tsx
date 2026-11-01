@@ -110,7 +110,6 @@ export function WeeklyRecapShell({ savedReport }: { savedReport?: WeeklyRecapRep
         if (savedReport) {
           setState({ status: "ready", examId: savedReport.examId, review: savedReport.review });
           setNarration({ status: "ready", data: savedReport.narration });
-          if (source === "dashboard") markWeeklyRecapOpened(window.localStorage, savedReport.weekStart);
           if (!openedTracked.current) {
             openedTracked.current = true;
             trackWeeklyRecapEvent("weekly_recap_open", { surface: source, recap_status: savedReport.review.recap.status });
@@ -145,9 +144,6 @@ export function WeeklyRecapShell({ savedReport }: { savedReport?: WeeklyRecapRep
         if (cancelled) return;
         setState({ status: "ready", examId, review });
 
-        if (source === "dashboard") {
-          markWeeklyRecapOpened(window.localStorage, review.period.startDate);
-        }
         if (!openedTracked.current) {
           openedTracked.current = true;
           trackWeeklyRecapEvent("weekly_recap_open", {
@@ -182,6 +178,12 @@ export function WeeklyRecapShell({ savedReport }: { savedReport?: WeeklyRecapRep
     source,
     t,
   ]);
+
+  useEffect(() => {
+    if (source === "dashboard" && state.status === "ready" && state.review.recap.status !== "EMPTY") {
+      markWeeklyRecapOpened(window.localStorage, state.review.period.startDate);
+    }
+  }, [source, state]);
 
   useEffect(() => {
     if (savedReport || !economyEnabled || state.status !== "ready" || state.review.recap.status !== "READY") return;

@@ -9,6 +9,7 @@ import type {
 } from "@mentor/types";
 import { IDLE_STREAK } from "./streak.fixture";
 import { visionWithBoard } from "./vision-board-editor.fixture";
+import { exam, readyWeekly } from "./analysis.fixture";
 
 /**
  * The "Bugün" panel (APP-103 Faz 2): one tap on the greeting row checks in, a path node opens a
@@ -180,6 +181,40 @@ test("closing economy removes rewards from an open sheet and clears nav balance"
   await expect(page.getByLabel("Coin ve XP", { exact: true })).toHaveCount(0);
 });
 
+test("recap banner stays new until the story actually opens", async ({ page }) => {
+  const period = readyWeekly.period;
+  const key = `mentor.weekly-recap.opened.v2:${period.startDate}`;
+  await mockPanel(page, [], { examId: exam.id, startDate: period.startDate, endDate: period.endDate, status: "READY" });
+  let storyEnabled = false;
+  await page.route("**/v1/coach/weekly-recaps/access?**", (route) => json(route, {
+    enabled: !storyEnabled, examId: exam.id, weekStart: period.startDate, endDate: period.endDate,
+    ready: true, premium: false, mode: "COIN", canOpen: false, premiumAvailable: true,
+    reportId: null, cost: 25, coinConfirmed: 0, coinLimit: 2, coinRemaining: 2, windowDays: 30, nextAvailableAt: null,
+  }));
+  await page.route("**/v1/coach/weekly-recaps?**", (route) => json(route, { items: [], total: 0, page: 1, pageSize: 10 }));
+  await page.route("**/v1/coaching/weekly-review?**", (route) => json(route, readyWeekly));
+  let release!: () => void;
+  const navigation = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/analiz/haftanin-hikayesi?**", async (route) => { await navigation; await route.continue(); });
+  await page.goto("/panel");
+  const banner = page.getByTestId("weekly-recap-teaser-dashboard");
+  await expect(banner.getByRole("heading")).toHaveText("Haftalık özetin hazır");
+  await banner.getByRole("link").click({ noWaitAfter: true });
+  await expect(banner.getByRole("heading")).toHaveText("Haftalık özetin hazır");
+  expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBeNull();
+  release();
+  await expect(page.getByTestId("weekly-recap-access")).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBeNull();
+  await page.goto("/panel");
+  await expect(banner.getByRole("heading")).toHaveText("Haftalık özetin hazır");
+  storyEnabled = true;
+  await banner.getByRole("link").click();
+  await expect(page.getByTestId("weekly-recap-story")).toBeVisible();
+  await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), key)).toBe("1");
+  await page.goto("/panel");
+  await expect(banner.getByRole("heading")).toHaveText("Haftalık özetini tekrar izle");
+});
+
 const corsHeaders = {
   "access-control-allow-origin": process.env.PLAYWRIGHT_BASE_URL?.trim() || "http://localhost:3100",
   "access-control-allow-credentials": "true",
@@ -194,7 +229,7 @@ function json(route: Route, body: unknown, status = 200) {
   });
 }
 
-async function mockPanel(page: Page, initialTasks: PlanTaskDto[]) {
+async function mockPanel(page: Page, initialTasks: PlanTaskDto[], recap: TodayPanelResponse["weeklyRecapPeriod"] = null) {
   const tasks = initialTasks.map((item) => ({ ...item }));
   let mood: MoodCheckinDto | null = null;
   const moodBodies: unknown[] = [];
@@ -245,7 +280,7 @@ async function mockPanel(page: Page, initialTasks: PlanTaskDto[]) {
       });
     }
     if (method === "GET" && path === "/v1/coaching/today") {
-      return json(route, { ...today(tasks), mood });
+      return json(route, { ...today(tasks), mood, weeklyRecapPeriod: recap });
     }
     if (method === "PATCH" && path.startsWith("/v1/plan-tasks/")) {
       const id = path.split("/").pop()!;

@@ -39,6 +39,12 @@ export interface QuestDef {
   /** Config key resolving the target at runtime (admin-tunable); overrides `progressTarget`. */
   targetConfigKey?: string;
   progressSource?: QuestProgressSource;
+  /**
+   * What a Premium user gets instead of this quest's Coin (2026-11-01 rebalance: Premium earns XP,
+   * not Coin). "XP" pays the quest's XP amount; "HIDDEN" removes the quest for Premium. Unset = same
+   * reward for everyone (onboarding Coin is a one-time welcome for all plans).
+   */
+  premiumReward?: "XP" | "HIDDEN";
 }
 
 export const QUEST_PERIOD_ONCE = "once";
@@ -119,6 +125,20 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
   },
   {
     /**
+     * Free tier's daily Coin faucet (2026-11-01 rebalance): the same "active day" the weekly chest
+     * counts (≥1 completed focus session or done plan task), so a login alone earns nothing.
+     */
+    id: "daily.active-day",
+    category: "daily_ritual",
+    period: "daily",
+    type: QuestType.DAILY_RITUAL,
+    action: "study-session",
+    rewardUnit: "COIN",
+    priority: 32,
+    premiumReward: "HIDDEN",
+  },
+  {
+    /**
      * The ONLY recurring coin faucet — without it the economy is a one-shot trial (onboarding
      * coin is lifetime-capped at ~30 for a free user) and the "earned AI right" ends in a silent
      * wall. Roadmap §3 says "no coin for mere activity"; its stated reason (§2/§3) is that coin in
@@ -134,6 +154,7 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     action: "panel",
     rewardUnit: "COIN",
     priority: 35,
+    premiumReward: "XP",
     targetConfigKey: "economy.quest.weekly_allowance_active_days_target",
     progressSource: "weekly_active_days",
   },

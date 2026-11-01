@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { PlanTaskDto, QuestProgressView } from "@mentor/types";
-import {
-  buildTodayPath,
-  CHEST_QUEST_ID,
-  sessionHrefFor,
-} from "./today-path-model";
+import type { PlanTaskDto } from "@mentor/types";
+import { buildTodayPath, sessionHrefFor } from "./today-path-model";
 
 function task(index: number, overrides: Partial<PlanTaskDto> = {}): PlanTaskDto {
   return {
@@ -27,32 +23,11 @@ function task(index: number, overrides: Partial<PlanTaskDto> = {}): PlanTaskDto 
   } as PlanTaskDto;
 }
 
-function chestQuest(overrides: Partial<QuestProgressView> = {}): QuestProgressView {
-  return {
-    id: CHEST_QUEST_ID,
-    category: "weekly_ritual",
-    period: "weekly",
-    periodKey: "2026-W39",
-    type: "WEEKLY_RITUAL",
-    title: "Haftada 5 aktif gün",
-    badgeLabel: "Haftalık",
-    action: "panel",
-    rewardUnit: "COIN",
-    rewardAmount: 15,
-    rewardCoin: 15,
-    progressCurrent: 3,
-    progressTarget: 5,
-    completed: false,
-    completedAt: null,
-    ...overrides,
-  };
-}
-
 const done = (index: number) => task(index, { status: "DONE" });
 
 describe("buildTodayPath", () => {
   it("marks done, current (first pending) and upcoming nodes", () => {
-    const path = buildTodayPath([done(0), task(1), task(2)], null, 25);
+    const path = buildTodayPath([done(0), task(1), task(2)], 25);
 
     expect(path.nodes.map((node) => node.state)).toEqual(["done", "current", "upcoming"]);
     expect(path.done).toBe(1);
@@ -62,7 +37,7 @@ describe("buildTodayPath", () => {
 
   it("keeps the current task inside the window when it is the 7th of 9", () => {
     const tasks = [0, 1, 2, 3, 4, 5].map(done).concat([task(6), task(7), task(8)]);
-    const path = buildTodayPath(tasks, null, 25);
+    const path = buildTodayPath(tasks, 25);
 
     expect(path.nodes.map((node) => node.task.id)).toEqual([
       "task-4",
@@ -78,7 +53,7 @@ describe("buildTodayPath", () => {
 
   it("folds the tail into +N when the current task is early", () => {
     const tasks = [0, 1, 2, 3, 4, 5, 6].map((index) => task(index));
-    const path = buildTodayPath(tasks, null, 25);
+    const path = buildTodayPath(tasks, 25);
 
     expect(path.nodes).toHaveLength(5);
     expect(path.hiddenBefore).toBe(0);
@@ -87,7 +62,7 @@ describe("buildTodayPath", () => {
 
   it("shows the last window once every task is done", () => {
     const tasks = [0, 1, 2, 3, 4, 5].map(done);
-    const path = buildTodayPath(tasks, null, 25);
+    const path = buildTodayPath(tasks, 25);
 
     expect(path.cta.kind).toBe("DAY_COMPLETE");
     expect(path.nodes.map((node) => node.task.id)[4]).toBe("task-5");
@@ -95,7 +70,7 @@ describe("buildTodayPath", () => {
   });
 
   it("asks for a first task on an empty day", () => {
-    const path = buildTodayPath([], null, 25);
+    const path = buildTodayPath([], 25);
 
     expect(path.cta.kind).toBe("ADD_TASK");
     expect(path.nodes).toEqual([]);
@@ -106,44 +81,29 @@ describe("buildTodayPath", () => {
   it("flags tasks assigned by a human coach", () => {
     const coachTask = task(0, { origin: { type: "MENTORSHIP", linkId: "link-1" } });
     const aiTask = task(1, { origin: { type: "AI_COACH", coachMessageId: "m-1" } });
-    const path = buildTodayPath([coachTask, aiTask], null, 25);
+    const path = buildTodayPath([coachTask, aiTask], 25);
 
     expect(path.nodes.map((node) => node.fromCoach)).toEqual([true, false]);
   });
 
-  it("draws the chest from the weekly allowance quest only", () => {
-    expect(buildTodayPath([], null, 25).chest).toBeNull();
-    expect(buildTodayPath([], [chestQuest({ id: "weekly.plan-tasks" })], 25).chest).toBeNull();
-    expect(buildTodayPath([], [chestQuest({ rewardUnit: "NONE", rewardAmount: 0, rewardCoin: 0 })], 25).chest).toBeNull();
-    expect(buildTodayPath([], [chestQuest()], 25).chest).toEqual({
-      current: 3,
-      target: 5,
-      reward: 15,
-      open: false,
-    });
-    expect(
-      buildTodayPath([], [chestQuest({ progressCurrent: 7, completed: true })], 25).chest,
-    ).toEqual({ current: 5, target: 5, reward: 15, open: true });
-  });
-
   describe("CTA minutes", () => {
     it("uses the task's own 40 minute range and passes it to the session", () => {
-      const path = buildTodayPath([task(0, { startTime: "14:00", endTime: "14:40", sessionFocusMinutes: 40 })], null, 25);
+      const path = buildTodayPath([task(0, { startTime: "14:00", endTime: "14:40", sessionFocusMinutes: 40 })], 25);
       expect(path.cta).toMatchObject({ minutes: 40 });
     });
 
     it("falls back to the preset when the range is longer than the session allows", () => {
-      const path = buildTodayPath([task(0, { startTime: "14:00", endTime: "18:00", sessionFocusMinutes: 25 })], null, 25);
+      const path = buildTodayPath([task(0, { startTime: "14:00", endTime: "18:00", sessionFocusMinutes: 25 })], 25);
       expect(path.cta).toMatchObject({ minutes: 25 });
     });
 
     it("falls back to the preset when the task has no time range", () => {
-      const path = buildTodayPath([task(0, { sessionFocusMinutes: 50 })], null, 50);
+      const path = buildTodayPath([task(0, { sessionFocusMinutes: 50 })], 50);
       expect(path.cta).toMatchObject({ minutes: 50 });
     });
 
     it("uses the backend preset duration without recomputing the time range", () => {
-      const path = buildTodayPath([task(0, { startTime: "09:00", endTime: "09:25" })], null, 25);
+      const path = buildTodayPath([task(0, { startTime: "09:00", endTime: "09:25" })], 25);
       expect(path.cta).toMatchObject({ minutes: 25 });
     });
   });

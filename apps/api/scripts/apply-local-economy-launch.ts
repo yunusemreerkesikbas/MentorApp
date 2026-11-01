@@ -9,6 +9,13 @@ const keys: ConfigKey[] = [
   "economy.quest.disabled_ids", "economy.quest.onboarding_reward_coin",
   "economy.quest.weekly_allowance_reward_coin", "economy.quest.weekly_allowance_active_days_target",
   "economy.invite.reward_coin", "economy.coin.ai_chat_cost", "economy.coin.deep_analysis_cost",
+  // 2026-11-01 rebalance (×10): every amount/cost/cap key, so a local DB never mixes old and new ratios.
+  "economy.coin.daily_cap", "economy.coin.weekly_cap", "economy.quest.daily_active_reward_coin",
+  "economy.quest.daily_ritual_reward_xp", "economy.quest.streak_milestone_reward_xp",
+  "economy.quest.effort_milestone_reward_xp", "economy.quest.weekly_ritual_reward_xp",
+  "economy.coin.plan_preview_cost", "economy.coin.streak_freeze_cost", "economy.coin.notebook_slot_cost",
+  "forum.xp.accepted_answer", "forum.xp.thread_posted",
+  "ads.rewarded.web.reward_coin", "ads.rewarded.web.daily_limit",
 ];
 
 async function main(): Promise<void> {

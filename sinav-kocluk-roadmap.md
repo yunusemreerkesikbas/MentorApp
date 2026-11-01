@@ -3,6 +3,9 @@
 > **2026-09-17 lansman kararı: XP ve Coin.** Önceki ekonomi seçeneklerinin lansman kapsamını bu karar belirler.
 > Harcanabilir birimin adı **Coin**; “onaylı hak” ayrı bir birim değildir. XP kişisel seviye/yolculuk
 > ilerlemesidir; harcanmaz ve Coin'e dönüşmez. XP sıralaması lansmanda kapalıdır.
+> **2026-11-01 güncellemesi:** tüm XP/Coin tutarları ve bedeller ×10 oldu; ücretsiz kullanıcı her aktif günde
+> 10 Coin, haftada 5 aktif günde 100 Coin bonus alır; Premium Coin değil XP kazanır (sandık 200 XP). Aşağıdaki
+> eski tutarların yerine [tasarım](docs/plans/2026-11-01-coin-economy-rebalance-design.md) geçerlidir.
 > Profil tamamlama ve e-posta doğrulama ayrı ayrı bir kez 10 Coin; ilk abonelik ve davet kodu girme
 > ödülleri kapalıdır. Aynı UTC/ISO haftasında 5 aktif gün 15 Coin getirir. Başarılı davet, davetlinin
 > ilk pozitif başarılı tahsilatında davet edene bir kez 20 Coin verir; deneme, ücretsiz/sponsor

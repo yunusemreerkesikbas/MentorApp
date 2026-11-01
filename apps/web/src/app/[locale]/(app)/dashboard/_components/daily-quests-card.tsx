@@ -2,30 +2,31 @@
 
 import { useTranslations } from "next-intl";
 import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
-import type { QuestProgressView } from "@mentor/types";
-import { ChestIcon } from "./today-path";
-import { CHEST_QUEST_ID } from "./today-path-model";
+import type { QuestProgressView, WeeklyChestView } from "@mentor/types";
 import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 import { ProgressLine } from "@/components/panel/progress-line";
+import { ChestRow } from "@/components/weekly-chest/chest-row";
 import { useEconomyEnabled } from "@/lib/use-economy-enabled";
 
 /**
  * Today's ritual quests with their progress, and the weekly chest. The list only shows; acting on a
- * quest lives in the full quest sheet ("Tümü"), which also carries the rewarded-ad offer. Economy
- * off (404) → no quests → no card.
+ * quest lives in the full quest sheet ("Tümü"), which also carries the rewarded-ad offer. The chest
+ * row comes from its own endpoint and opens its sheet or scene.
  */
 export function DailyQuestsCard({
   quests,
+  chest,
   onOpenAll,
+  onChestTap,
 }: {
   quests: QuestProgressView[] | null;
+  chest: WeeklyChestView | null;
   onOpenAll: () => void;
+  onChestTap: (chest: WeeklyChestView) => void;
 }) {
   const t = useTranslations("panel");
   const rewardsEnabled = useEconomyEnabled();
-  if (!quests) return null;
-  const daily = quests.filter((quest) => quest.category === "daily_ritual");
-  const chest = quests.find((quest) => quest.id === CHEST_QUEST_ID);
+  const daily = (quests ?? []).filter((quest) => quest.category === "daily_ritual");
   if (daily.length === 0 && !chest) return null;
   const done = daily.filter((quest) => quest.completed).length;
 
@@ -54,31 +55,18 @@ export function DailyQuestsCard({
         </ul>
       ) : null}
 
-      {chest?.progressTarget ? (
-        <p className="flex items-center gap-2.5 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-streak-core)_24%,var(--color-surface))] px-3 py-2.5 text-caption font-extrabold text-[var(--color-main)]">
-          <ChestIcon className="size-5 shrink-0 text-[color-mix(in_srgb,var(--color-star)_40%,var(--color-main))]" />
-          <span className="min-w-0 flex-1">
-            {chest.completed
-              ? t("quests_chest_open")
-              : t("quests_chest", {
-                  current: Math.min(chest.progressCurrent ?? 0, chest.progressTarget),
-                  target: chest.progressTarget,
-                })}
-          </span>
-          {rewardsEnabled && chest.rewardUnit === "COIN" ? <span className="shrink-0 tabular-nums">
-            {t("quests_chest_reward", { reward: chest.rewardAmount })}
-          </span> : null}
-        </p>
-      ) : null}
+      {chest ? <ChestRow chest={chest} onTap={() => onChestTap(chest)} /> : null}
 
-      <button
-        type="button"
-        onClick={onOpenAll}
-        className={`${PANEL_TEXT_LINK} -mb-2 self-start`}
-      >
-        {t("quests_open_all")}
-        <ChevronRight size={16} className="size-4" aria-hidden />
-      </button>
+      {quests ? (
+        <button
+          type="button"
+          onClick={onOpenAll}
+          className={`${PANEL_TEXT_LINK} -mb-2 self-start`}
+        >
+          {t("quests_open_all")}
+          <ChevronRight size={16} className="size-4" aria-hidden />
+        </button>
+      ) : null}
     </section>
   );
 }

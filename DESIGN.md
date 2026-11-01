@@ -154,7 +154,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Runtime:** `html.dark` overrides the same `--color-*` CSS variables. New UI must use those tokens — never `bg-white`, `#fff`, or `dark:bg-black`. Tailwind `dark:` is an escape hatch only when a value cannot be a token.
 
-**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`), `.achievement-scene-theme` (the "Işık Yandı" achievement scene, §9.1: always night; its curtain, card-back and text tokens live there, the light colours come from each badge), `.plan-coach-night` (the "Koçla planla" waiting scene, §9.1: always night over the landing's city art, with paper notes; its sky, on-night text and city sizes live in `plan-coach-stage.css`).
+**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`), `.achievement-scene-theme` (the "Işık Yandı" achievement scene, §9.1: always night; its curtain, card-back and text tokens live there, the light colours come from each badge), `.plan-coach-night` (the "Koçla planla" waiting scene, §9.1: always night over the landing's city art, with paper notes; its sky, on-night text and city sizes live in `plan-coach-stage.css`), `.weekly-chest-night` (the weekly chest opening, §9.1: always a lamp-lit desk at night; its ground, gold, paper and ink tokens live in `weekly-chest.css`).
 
 **Study scene (`.room-stage`, `SessionStage`, 2026-09-30):** a room is a place, so its stage never follows the cookie either: per-theme `--room-*` tokens (LIBRARY and CAFE dark, HOME light) in `theme.css`, and the stage remaps `--color-main` / `--color-body` / `--color-secondary` to `--room-ink` / `--room-ink-soft` so one set of controls reads in every room. Four rules. (1) Glass on the stage (`.session-liquid-card` / `-pill`) always writes in `--color-main` / `--color-secondary`; the glass remap supplies `--color-surface-container`, `--play-selected(-ink)`, `--play-line`, `--play-track` and `--color-success`, so the panel's text links, outline ledge and progress line read on glass without their own variants. (2) Anything that opens from the stage (sheet, menu, confirm) is portalled to `body` and drawn on the kit's solid surfaces: a window rendered inside the stage inherits room ink and prints cream on white. (3) `--room-live` means "someone is working now", a dot beside room ink; `--room-accent` is for rings; the primary CTA stays the play ledge in every room. (4) `/seans` stands on one `SessionStage` ground through setup, focus, break and the done card: the veil changes per phase (a multiplier on the theme's own `--room-veil`: 58 · 86 · 44 · 74) and while a session runs the app chrome sits under the focus charcoal (§9.1).
 
@@ -314,7 +314,7 @@ from them (2026-09-22).
 | **Text link**           | 14–15/800, `--play-selected-ink`, underline on hover only, trailing 16 px chevron. The only secondary action style next to a ledge.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `PANEL_TEXT_LINK`                                         |
 | **Panel rail icon**    | Transparent 40 px alignment slot, 20 px Lucide icon at stroke 1.75. Membership perks, daily quests and the vision heading have no icon well. Existing ink colours stay: plan/focus → `--play-selected-ink`, mood → `--color-streak`, other/vision → `--color-chip-text`, done → `--color-success`, perks → `--premium-ring-from`. Chest rows, provenance chips and action surfaces keep their fills.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `daily-quests-card.tsx`                                   |
 | **Progress bar**        | Default 8 px, full round, track `--play-track`, fill `--play-cta`, complete `--color-success`. Daily quest rows use `appearance="play"`: 12 px with the onboarding upper `--play-cta-shine` stripe and a 300 ms ease-out transition (disabled for reduced motion). Always `role="progressbar"` with a label. Count ("20/25") sits on the title line, not on the bar.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `components/panel/progress-line.tsx`                      |
-| **Path (Bugünün yolu)** | The day as nodes on a 4 px connector (`--play-cta` up to the current node, `--play-track` after). Done 48/56 px (phone/desktop) filled ledge + check; **current** 64/72 px with an 8 px `--play-selected` halo, a filled play icon and a "Sıradaki" tip above; upcoming 48/56 on `--play-track`. Labels under nodes: title 13/800 (two lines max), meta 12/600 (duration, subject, "koçundan"). Up to 5 task nodes; earlier done tasks fold into one "✓ N" node, the rest into "+N" (→ plan). Ends with the weekly **chest** (streak-core tints; glows when opened). Empty day: one dashed "İlk adım" node. **A node opens a menu** (start a session / mark done / undo); it never acts on the tap. Phones scroll the row sideways. | `today-path.tsx`, `today-path-model.ts`                   |
+| **Path (Bugünün yolu)** | The day as nodes on a 4 px connector (`--play-cta` up to the current node, `--play-track` after). Done 48/56 px (phone/desktop) filled ledge + check; **current** 64/72 px with an 8 px `--play-selected` halo, a filled play icon and a "Sıradaki" tip above; upcoming 48/56 on `--play-track`. Labels under nodes: title 13/800 (two lines max), meta 12/600 (duration, subject, "koçundan"). Up to 5 task nodes; earlier done tasks fold into one "✓ N" node, the rest into "+N" (→ plan). Ends with the weekly **chest**: soft-3D art (`ChestArt`) whose lock strip holds five lamps, one per counted day; a running week sits on a streak-core tint, a ready one grows to 64 px gold with a hop and a "Hazır!" tip, an opened one shows the open lid. The chest is the one node that acts on the tap: a running week opens the info sheet, a ready or opened one the opening scene (§9.1). Empty day: one dashed "İlk adım" node. **A node opens a menu** (start a session / mark done / undo); it never acts on the tap. Phones scroll the row sideways. | `today-path.tsx`, `today-path-model.ts`                   |
 | **Coach mark**          | 24 px `--coach-accent` disc with a graduation cap, top-right of a node or avatar, 2 px surface ring. Means "your human coach assigned this".                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `today-path.tsx`                                          |
 | **Week band**           | Monday → Sunday from `streak.week` (server-derived, never computed on the client). Dot 24/30 px: active = flame on `--color-streak-soft`, frozen = snowflake on `--color-progress` 18 %, missed = `--play-track`, not-yet = dashed `--play-line`; today = 2 px `--color-streak` ring. Right: "N gün seri" 16/900 + today's focus vs goal 12/700; wraps under the days on phones. Sits as the hero's bottom band on a `--play-track` 35 % tint.                                                                                                                                                                                                                                                                                      | `week-band.tsx`                                           |
 | **Companion bubble**    | Puhu 72 px + bubble (`--play-selected`, `--play-radius`, 16/12 padding), one line at 15/600. AI variant: `--premium-ring-from` 10 % fill and a "Koçundan bugün" label with Sparkles; long notes fold to three lines, only when at least two would hide (the toggle is taller than one line). A free user's nudge sits inside the bubble (lock nudge below).                                                                                                                                                                                                                                                                                                                                                                         | `components/panel/companion-bubble.tsx`                   |
@@ -389,7 +389,7 @@ from them (2026-09-22).
   Puhu, mood, flame, journey and premium artwork remain. This extension is scoped to `/panel`.
 - **Daily quest simplification (2026-10-07):** task rows in `DailyQuestsCard` use their titles,
   progress and reward text without leading glyphs or reserved icon slots. Completion remains
-  visible through green progress/reward ink. Keep the weekly chest glyph and the all-quests arrow.
+  visible through green progress/reward ink. Keep the weekly chest art and the all-quests arrow.
 - **Analysis mistakes extension (2026-10-06):** reason rows in `#analysis-panel-mistakes` use
   text, counts and progress bars, with no leading icons or reserved icon slots. Recent reviews
   keep 20 px Solar Bold outcome glyphs in transparent 40 px alignment slots: solved reviews
@@ -423,8 +423,8 @@ from them (2026-09-22).
   (2026-10-14).
 - **Coach mark:** Lucide `GraduationCap` in a 24 px `--coach-accent` disc (§6.1). Only for work a
   human coach assigned; AI suggestions are never marked as coach work.
-- **Custom glyphs** only where Lucide has no fit, drawn at the same 2 px stroke (e.g. the weekly
-  chest, `ChestIcon` — a gift box reads as a present, not a reward you earned).
+- **Custom glyphs** only where Lucide has no fit, drawn at the same 2 px stroke. The weekly chest was
+  one until 2026-11-01; it is now soft-3D art (`components/weekly-chest/chest-art.tsx`).
 
 ---
 
@@ -804,6 +804,28 @@ per evidence type, the backend's own sentence underneath.
   (`STAGE_TIMING`, `stageNotes`, `stageNoteIndex`, `stagePileDepth`), the scene in
   `plan-coach-adaptation-stage.tsx`, the city and video in `plan-coach-stage-sky.tsx`, the notes in
   `plan-coach-stage-notes.tsx`, the palette, city sizes and keyframes in `plan-coach-stage.css`.
+**The weekly chest opening (2026-11-01, "Masa lambası").** Five days with one focus session or one
+finished plan task fill the week's chest. Opening it is a small scene, not a modal: Puhu's lamp-lit
+desk at night (`.weekly-chest-night`, §2), always the same art, never the cookie's theme.
+
+| Beat | What happens | Time |
+| --- | --- | --- |
+| Ready | The desk still with the closed chest; its lock strip carries the week's lit lamps. "Sandığı aç" and "Sonra" under it | rests |
+| Flow | The lamps slide into the lock and fade | 400 ms |
+| Lid | A Kling clip (`chest-open.mp4`): the lid flies open, light spills out. Tap or "Atla" skips it | ~5 s |
+| Inside | The art dims and blurs; the week's paper note (Caveat hand, tape, Puhu's signature) drops on it; the Coin pops under it with the shared chime | 600 ms |
+
+- **True, not theatre:** every line of the note is the server's `summary` (active days, sessions,
+  plan tasks, focus time); a zero line is left out. The reward is the server's `reward`; with the
+  economy off, Puhu promises next Monday's chest instead.
+- **Tap to open, once:** only "Sandığı aç" stamps the chest. "Sonra", Escape and the backdrop leave it
+  ready. An unopened chest waits one more week ("Geçen haftanın sandığı").
+- **Away from the panel:** a ready chest is told once by a toast with "Aç" (→ `/panel?chest=open`);
+  its Coin receipt is held back from the usual Coin toast until the scene shows it.
+- **Reduced motion:** no clip and no hop; the closed and open stills crossfade and the note appears
+  without the drop. An opened chest reopened from the panel starts at the note, without the clip.
+- **Source of truth:** `components/weekly-chest/` (`chest-scene.tsx`, `chest-scene-note.tsx`,
+  `chest-art.tsx` with the lamp positions, `weekly-chest.css`), art in `public/visuals/chest/`.
 
 ---
 
@@ -949,7 +971,7 @@ per evidence type, the backend's own sentence underneath.
       `apps/web` needs them.
 - [ ] Faz 3 identity: sidebar PREMIUM badge, avatar ring. (Caped Puhu `puhu-premium.png` is now a
       transparent RGBA export, 2026-11-01.)
-- [ ] Weekly chest art (soft-3D, closed/open) to replace the line glyph.
+- [x] Weekly chest art (soft-3D, closed/open) to replace the line glyph (2026-11-01, `public/visuals/chest/`).
 - [ ] Map remaining Nuton library screens ↔ Mentor screens (Figma pass).
 - [ ] Puhu P0: `thinking` (AI loading), `gentle-error` (soft error toast).
 - [ ] P0 visuals (designer upload): `plan-empty.webp`, `analiz-empty.webp`.

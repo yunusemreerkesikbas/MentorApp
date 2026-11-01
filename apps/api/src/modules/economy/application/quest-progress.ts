@@ -1,3 +1,4 @@
+import type { QuestRewardUnit } from "@mentor/types";
 import type { DailyQuestSignals } from "../../coaching/application/daily-quest-signal.service";
 import {
   QUEST_PERIOD_ONCE,
@@ -11,8 +12,10 @@ export interface QuestConfig {
   streakMilestoneRewardXp: number;
   effortMilestoneRewardXp: number;
   weeklyRitualRewardXp: number;
-  /** The recurring coin faucet's payout (weekly effort allowance). */
+  /** The weekly chest's Coin bonus (weekly effort allowance). */
   weeklyAllowanceRewardCoin: number;
+  /** The daily active-day Coin (free tier only). */
+  dailyActiveRewardCoin: number;
   /** targetConfigKey → resolved value (admin-tunable weekly targets). */
   targets: Map<string, number>;
   disabledIds: Set<string>;
@@ -63,9 +66,15 @@ export function xpReward(q: QuestDef, cfg: QuestConfig): number {
 
 /** Symmetric to `xpReward` — without it every COIN quest would silently pay the onboarding amount. */
 export function coinReward(q: QuestDef, cfg: QuestConfig): number {
-  return q.type === QuestType.WEEKLY_RITUAL
-    ? cfg.weeklyAllowanceRewardCoin
-    : cfg.onboardingRewardCoin;
+  if (q.type === QuestType.DAILY_RITUAL) return cfg.dailyActiveRewardCoin;
+  if (q.type === QuestType.WEEKLY_RITUAL) return cfg.weeklyAllowanceRewardCoin;
+  return cfg.onboardingRewardCoin;
+}
+
+/** The reward unit this user gets; null = the quest is hidden for them (Premium-only rule). */
+export function rewardUnitFor(q: QuestDef, isPremium: boolean): QuestRewardUnit | null {
+  if (!isPremium || !q.premiumReward) return q.rewardUnit;
+  return q.premiumReward === "HIDDEN" ? null : "XP";
 }
 
 export function isEconomyAction(quest: QuestDef): boolean {

@@ -6,60 +6,45 @@ import { CheckCircleIcon as Completed } from "@solar-icons/react/bold/check-circ
 import { SquareAcademicCapIcon as AcademicCap } from "@solar-icons/react/bold/square-academic-cap";
 import { PlayIcon as Play } from "@solar-icons/react/bold/play";
 import { AddIcon as Plus } from "@solar-icons/react/linear/add";
-import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
+import type { PlanTaskDto, PlanTaskStatus, WeeklyChestView } from "@mentor/types";
 import {
   PATH_NODE_BASE as NODE_BASE,
   PATH_NODE_TONE as NODE_TONE,
   PathItem,
 } from "@/components/panel/path-item";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
+import { ChestArt } from "@/components/weekly-chest/chest-art";
+import { chestLamps } from "@/components/weekly-chest/weekly-chest-model";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { StudySessionHref } from "@/lib/plan-study-session-link";
-import type {
-  PathChest,
-  PathNode,
-  TodayPath as TodayPathModel,
-} from "./today-path-model";
+import type { PathNode, TodayPath as TodayPathModel } from "./today-path-model";
 
 type PanelT = ReturnType<typeof useTranslations<"panel">>;
-
-/** The chest glyph from the canvas; lucide has no chest, and a gift box reads as a present. */
-export function ChestIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="3" y="9" width="18" height="11" rx="2" />
-      <path d="M3 13h18M5 9V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v2" />
-      <rect x="10.5" y="11.5" width="3" height="4" rx="1" />
-    </svg>
-  );
-}
+type ChestT = ReturnType<typeof useTranslations<"weeklyChest">>;
 
 /**
  * The day as a path: what is done, the next step (the only big node), what follows, and the
  * weekly chest at the end. A node opens a small menu instead of acting on the tap, so a thumb
- * brushing the path never starts a session or ticks a task by accident.
+ * brushing the path never starts a session or ticks a task by accident. The chest is the one
+ * node that acts on the tap: it only ever opens a sheet or the opening scene.
  */
 export function TodayPath({
   path,
+  chest,
   busyTaskId,
   sessionHref,
   onSetStatus,
+  onChestTap,
 }: {
   path: TodayPathModel;
+  chest: WeeklyChestView | null;
   busyTaskId: string | null;
   sessionHref: (task: PlanTaskDto) => StudySessionHref;
   onSetStatus: (task: PlanTaskDto, status: PlanTaskStatus) => void;
+  onChestTap: (chest: WeeklyChestView) => void;
 }) {
   const t = useTranslations("panel");
+  const chestT = useTranslations("weeklyChest");
   const lead = path.hiddenBefore > 0 ? 1 : 0;
 
   return (
@@ -137,13 +122,13 @@ export function TodayPath({
         />
       ) : null}
 
-      {path.chest ? (
+      {chest ? (
         <PathItem
           index={1}
-          reached={path.cta.kind === "DAY_COMPLETE"}
-          title={t("chest_title")}
-          meta={chestMeta(path.chest, t)}
-          node={<ChestNode chest={path.chest} />}
+          reached={path.cta.kind === "DAY_COMPLETE" || chest.state !== "PROGRESS"}
+          title={chestTitle(chest, chestT)}
+          meta={chestMeta(chest, chestT)}
+          node={<ChestNode chest={chest} onTap={() => onChestTap(chest)} />}
         />
       ) : null}
     </ol>
@@ -163,14 +148,17 @@ function nodeMeta(node: PathNode, t: PanelT): string {
     .join(" · ");
 }
 
-function chestMeta(chest: PathChest, t: PanelT): string {
-  return chest.open
-    ? t("chest_open_meta", { reward: chest.reward })
-    : t("chest_meta", {
-        current: chest.current,
-        target: chest.target,
-        reward: chest.reward,
-      });
+function chestTitle(chest: WeeklyChestView, t: ChestT): string {
+  if (chest.state !== "READY") return t("title");
+  return chest.carriedOver ? t("carried_title") : t("ready_title");
+}
+
+function chestMeta(chest: WeeklyChestView, t: ChestT): string {
+  const reward = chest.reward ? t("reward", { amount: chest.reward.amount, unit: chest.reward.unit }) : null;
+  if (chest.state === "READY") return t("ready_meta");
+  if (chest.state === "OPENED") return reward ? t("opened_meta_reward", { reward }) : t("opened_meta");
+  const progress = { current: Math.min(chest.current, chest.target), target: chest.target };
+  return reward ? t("progress_meta_reward", { ...progress, reward }) : t("progress_meta", progress);
 }
 
 function TaskNode({
@@ -249,22 +237,36 @@ function TaskNode({
   );
 }
 
-function ChestNode({ chest }: { chest: PathChest }) {
-  const t = useTranslations("panel");
+function ChestNode({ chest, onTap }: { chest: WeeklyChestView; onTap: () => void }) {
+  const t = useTranslations("weeklyChest");
+  const ready = chest.state === "READY";
 
   return (
-    <span
-      role="img"
-      aria-label={`${t("chest_title")}, ${chestMeta(chest, t)}`}
+    <button
+      type="button"
+      onClick={onTap}
+      aria-label={`${chestTitle(chest, t)}, ${chestMeta(chest, t)}`}
       data-testid="today-path-chest"
+      data-state={chest.state}
       className={[
-        "grid size-12 place-items-center rounded-full sm:size-14",
-        chest.open
-          ? "bg-[color-mix(in_srgb,var(--color-streak-core)_65%,var(--color-surface))] text-[color-mix(in_srgb,var(--color-star)_35%,var(--color-main))] shadow-[0_4px_0_color-mix(in_srgb,var(--color-star)_70%,var(--color-main)_15%),0_0_0_8px_color-mix(in_srgb,var(--color-streak-core)_22%,transparent)]"
-          : "bg-[color-mix(in_srgb,var(--color-streak-core)_30%,var(--color-surface))] text-[color-mix(in_srgb,var(--color-star)_40%,var(--color-main))] shadow-[0_4px_0_color-mix(in_srgb,var(--color-star)_55%,var(--color-surface))]",
+        "relative grid cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2",
+        ready
+          ? "wc-hop size-16 bg-[var(--color-streak-core)] shadow-[0_4px_0_color-mix(in_srgb,var(--color-star)_60%,var(--color-main)_20%),0_0_0_8px_color-mix(in_srgb,var(--color-streak-core)_32%,transparent)]"
+          : chest.state === "OPENED"
+            ? "size-12 bg-[color-mix(in_srgb,var(--color-streak-core)_55%,var(--color-surface))] shadow-[0_4px_0_color-mix(in_srgb,var(--color-star)_60%,var(--color-main)_15%)] sm:size-14"
+            : "size-12 bg-[color-mix(in_srgb,var(--color-streak-core)_30%,var(--color-surface))] shadow-[0_4px_0_color-mix(in_srgb,var(--color-star)_55%,var(--color-surface))] sm:size-14",
       ].join(" ")}
     >
-      <ChestIcon className="size-6" />
-    </span>
+      {ready ? (
+        <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-card)] border-2 border-[var(--color-streak-core)] bg-[var(--color-surface)] px-2.5 py-0.5 text-xs font-black tracking-[0.02em] text-[color-mix(in_srgb,var(--color-star)_35%,var(--color-main))]">
+          {t("ready_tag")}
+        </span>
+      ) : null}
+      <ChestArt
+        open={chest.state === "OPENED"}
+        lamps={chestLamps(chest)}
+        className={ready ? "w-14" : "w-10 sm:w-12"}
+      />
+    </button>
   );
 }

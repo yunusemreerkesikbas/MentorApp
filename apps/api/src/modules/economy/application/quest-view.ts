@@ -7,6 +7,7 @@ import {
   isEconomyAction,
   progressKey,
   questPeriodKey,
+  rewardUnitFor,
   questTarget,
   sourceCurrent,
   xpReward,
@@ -18,6 +19,7 @@ interface QuestViewInput {
   currentStreak: number;
   cfg: QuestConfig;
   rewardsEnabled: boolean;
+  isPremium: boolean;
   rows: readonly { questId: string; periodKey: string; completedAt: Date }[];
   pendingRewards: readonly string[];
   t: (key: string, args?: Record<string, unknown>) => string;
@@ -28,6 +30,7 @@ export function toQuestViews({
   currentStreak,
   cfg,
   rewardsEnabled,
+  isPremium,
   rows,
   pendingRewards,
   t,
@@ -40,6 +43,7 @@ export function toQuestViews({
     (q) =>
       !cfg.disabledIds.has(q.id) &&
       (rewardsEnabled || !isEconomyAction(q)) &&
+      rewardUnitFor(q, isPremium) !== null &&
       (q.id !== "daily.focus-goal-met" ||
         signals.dailyFocusGoalMinutes != null),
   );
@@ -50,7 +54,7 @@ export function toQuestViews({
       rewardsEnabled &&
       !row &&
       pendingRewards.includes(progressKey(q.id, periodKey));
-    const rewardUnit = rewardsEnabled ? q.rewardUnit : "NONE";
+    const rewardUnit = rewardsEnabled ? (rewardUnitFor(q, isPremium) ?? "NONE") : "NONE";
     const rewardAmount =
       rewardUnit === "XP"
         ? xpReward(q, cfg)

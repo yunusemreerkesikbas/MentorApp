@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import type { TodayPanelResponse } from "@mentor/types";
 import { WeeklyRecapTeaser } from "@/components/weekly-recap-teaser";
 import {
@@ -23,7 +23,6 @@ export function WeeklyRecapSlot({ data }: { data: TodayPanelResponse }) {
   const period = data.weeklyRecapPeriod;
   const startDate = period?.startDate ?? null;
   const status = period?.status ?? null;
-  const [openedStartDate, setOpenedStartDate] = useState<string | null>(null);
   const stored = useSyncExternalStore(
     subscribeStorage,
     useCallback(
@@ -35,7 +34,7 @@ export function WeeklyRecapSlot({ data }: { data: TodayPanelResponse }) {
     ),
     getServerSnapshot,
   );
-  const state = openedStartDate === startDate && stored === "new" ? "replay" : stored;
+  const state = stored;
 
   if (!period || state === "hidden") return null;
 
@@ -48,7 +47,6 @@ export function WeeklyRecapSlot({ data }: { data: TodayPanelResponse }) {
       examType={data.countdown?.examType}
       compact
       viewState={state === "replay" ? "replay" : "new"}
-      onOpen={() => setOpenedStartDate(period.startDate)}
     />
   );
 }
