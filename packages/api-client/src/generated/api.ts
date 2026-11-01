@@ -76,6 +76,116 @@ export interface PhoneVerificationConfirmDto {
   code: string;
 }
 
+export type WeeklyRecapOfferResponseDtoMode = typeof WeeklyRecapOfferResponseDtoMode[keyof typeof WeeklyRecapOfferResponseDtoMode];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeeklyRecapOfferResponseDtoMode = {
+  PREMIUM: 'PREMIUM',
+  EARNED: 'EARNED',
+  COIN: 'COIN',
+  OWNED: 'OWNED',
+  NONE: 'NONE',
+} as const;
+
+export interface WeeklyRecapOfferResponseDto {
+  enabled: boolean;
+  examId: string;
+  weekStart: string;
+  endDate: string;
+  ready: boolean;
+  premium: boolean;
+  mode: WeeklyRecapOfferResponseDtoMode;
+  canOpen: boolean;
+  premiumAvailable: boolean;
+  /** @nullable */
+  reportId: string | null;
+  cost: number;
+  coinConfirmed: number;
+  coinLimit: number;
+  coinRemaining: number;
+  windowDays: number;
+  /** @nullable */
+  nextAvailableAt: string | null;
+  reason?: string;
+  message?: string;
+}
+
+export type WeeklyRecapArchiveItemResponseDtoSource = typeof WeeklyRecapArchiveItemResponseDtoSource[keyof typeof WeeklyRecapArchiveItemResponseDtoSource];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeeklyRecapArchiveItemResponseDtoSource = {
+  PREMIUM: 'PREMIUM',
+  EARNED: 'EARNED',
+  COIN: 'COIN',
+} as const;
+
+export interface WeeklyRecapArchiveItemResponseDto {
+  id: string;
+  examId: string;
+  weekStart: string;
+  endDate: string;
+  locale: string;
+  source: WeeklyRecapArchiveItemResponseDtoSource;
+  openedAt: string;
+  requiresOpening?: boolean;
+}
+
+export interface WeeklyRecapArchiveResponseDto {
+  items: WeeklyRecapArchiveItemResponseDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export type OpenWeeklyRecapBodyDtoSource = typeof OpenWeeklyRecapBodyDtoSource[keyof typeof OpenWeeklyRecapBodyDtoSource];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const OpenWeeklyRecapBodyDtoSource = {
+  PREMIUM: 'PREMIUM',
+  EARNED: 'EARNED',
+  COIN: 'COIN',
+  OWNED: 'OWNED',
+} as const;
+
+export interface OpenWeeklyRecapBodyDto {
+  examId: string;
+  weekStart: string;
+  source: OpenWeeklyRecapBodyDtoSource;
+  /** @minimum 0 */
+  expectedCost: number;
+  clientRequestId: string;
+}
+
+export type WeeklyRecapReportResponseDtoSource = typeof WeeklyRecapReportResponseDtoSource[keyof typeof WeeklyRecapReportResponseDtoSource];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeeklyRecapReportResponseDtoSource = {
+  PREMIUM: 'PREMIUM',
+  EARNED: 'EARNED',
+  COIN: 'COIN',
+} as const;
+
+export type WeeklyRecapReportResponseDtoReview = { [key: string]: unknown };
+
+export type WeeklyRecapReportResponseDtoNarration = { [key: string]: unknown };
+
+export interface WeeklyRecapReportResponseDto {
+  id: string;
+  examId: string;
+  weekStart: string;
+  endDate: string;
+  locale: string;
+  source: WeeklyRecapReportResponseDtoSource;
+  openedAt: string;
+  requiresOpening?: boolean;
+  review: WeeklyRecapReportResponseDtoReview;
+  narration: WeeklyRecapReportResponseDtoNarration;
+}
+
 export interface AiChatDto {
   /**
    * @minLength 1
@@ -750,6 +860,70 @@ export interface QuestProgressViewDto {
   rewardPendingMessage?: string;
 }
 
+export interface WeeklyChestDayDto {
+  /** yyyy-mm-dd (UTC day) */
+  date: string;
+  active: boolean;
+}
+
+export type WeeklyChestRewardDtoUnit = typeof WeeklyChestRewardDtoUnit[keyof typeof WeeklyChestRewardDtoUnit];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeeklyChestRewardDtoUnit = {
+  COIN: 'COIN',
+} as const;
+
+export interface WeeklyChestRewardDto {
+  unit: WeeklyChestRewardDtoUnit;
+  amount: number;
+}
+
+export interface WeeklyChestSummaryDto {
+  activeDays: number;
+  focusSessions: number;
+  planTasks: number;
+  focusMinutes: number;
+}
+
+export type WeeklyChestViewDtoState = typeof WeeklyChestViewDtoState[keyof typeof WeeklyChestViewDtoState];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeeklyChestViewDtoState = {
+  PROGRESS: 'PROGRESS',
+  READY: 'READY',
+  OPENED: 'OPENED',
+} as const;
+
+/**
+ * null while the economy is off or the grant waits.
+ * @nullable
+ */
+export type WeeklyChestViewDtoReward = WeeklyChestRewardDto | null;
+
+export interface WeeklyChestViewDto {
+  state: WeeklyChestViewDtoState;
+  /** ISO week key, e.g. 2026-W45; send it to open. */
+  periodKey: string;
+  /** Last week's completed chest, not opened yet. */
+  carriedOver: boolean;
+  current: number;
+  target: number;
+  /** Monday to Sunday of periodKey's week. */
+  days: WeeklyChestDayDto[];
+  /** The server's UTC day (yyyy-mm-dd). */
+  today: string;
+  /**
+   * null while the economy is off or the grant waits.
+   * @nullable
+   */
+  reward: WeeklyChestViewDtoReward;
+  rewardPendingMessage?: string;
+  /** Only when READY or OPENED. */
+  summary?: WeeklyChestSummaryDto;
+}
+
 export interface DeepAnalysisViewDto {
   eligible: boolean;
   /** @nullable */
@@ -761,6 +935,8 @@ export interface DeepAnalysisViewDto {
   premium: boolean;
   purchased: boolean;
   generationAvailable: boolean;
+  purchaseAvailable?: boolean;
+  limitReached?: boolean;
 }
 
 export interface RedeemInviteDto { [key: string]: unknown }
@@ -1641,6 +1817,19 @@ export type HealthControllerReadiness503 = {
   details?: HealthControllerReadiness503Details;
 };
 
+export type WeeklyRecapControllerOfferParams = {
+examId: string;
+weekStart?: string;
+};
+
+export type WeeklyRecapControllerArchiveParams = {
+page?: number;
+/**
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
 export type AiChatControllerPlanAdaptationPreviewBodyOneOfSource = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfSource[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfSource];
 
 
@@ -2022,6 +2211,11 @@ export type EconomyControllerSeenBody = {
   ledgerIds: string[];
 };
 
+export type EconomyControllerWeeklyChestOpenBody = {
+  /** @pattern ^\d{4}-W\d{2}$ */
+  periodKey: string;
+};
+
 export type EconomyControllerDeepAnalysisStateParams = {
 examId: string;
 };
@@ -2137,7 +2331,7 @@ export type appAvailabilityControllerGetResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type appAvailabilityControllerGetResponseSuccess = (appAvailabilityControllerGetResponse200) & {
   headers: Headers;
 };
@@ -2148,19 +2342,19 @@ export type appAvailabilityControllerGetResponse = (appAvailabilityControllerGet
 export const getAppAvailabilityControllerGetUrl = () => {
 
 
-
+  
 
   return `/v1/app/availability`
 }
 
 export const appAvailabilityControllerGet = async ( options?: RequestInit): Promise<appAvailabilityControllerGetResponse> => {
-
+  
   return http<appAvailabilityControllerGetResponse>(getAppAvailabilityControllerGetUrl(),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -3139,6 +3333,105 @@ export const phoneControllerConfirmVerification = async (challengeId: string,
 
 
 
+export const getWeeklyRecapControllerOfferUrl = (params: WeeklyRecapControllerOfferParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/coach/weekly-recaps/access?${stringifiedParams}` : `/v1/coach/weekly-recaps/access`
+}
+
+export const weeklyRecapControllerOffer = async (params: WeeklyRecapControllerOfferParams, options?: RequestInit): Promise<WeeklyRecapOfferResponseDto> => {
+  
+  return http<WeeklyRecapOfferResponseDto>(getWeeklyRecapControllerOfferUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export const getWeeklyRecapControllerArchiveUrl = (params?: WeeklyRecapControllerArchiveParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/coach/weekly-recaps?${stringifiedParams}` : `/v1/coach/weekly-recaps`
+}
+
+export const weeklyRecapControllerArchive = async (params?: WeeklyRecapControllerArchiveParams, options?: RequestInit): Promise<WeeklyRecapArchiveResponseDto> => {
+  
+  return http<WeeklyRecapArchiveResponseDto>(getWeeklyRecapControllerArchiveUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export const getWeeklyRecapControllerOpenUrl = () => {
+
+
+  
+
+  return `/v1/coach/weekly-recaps`
+}
+
+export const weeklyRecapControllerOpen = async (openWeeklyRecapBodyDto: OpenWeeklyRecapBodyDto, options?: RequestInit): Promise<WeeklyRecapReportResponseDto> => {
+  
+  return http<WeeklyRecapReportResponseDto>(getWeeklyRecapControllerOpenUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      openWeeklyRecapBodyDto,)
+  }
+);}
+
+
+
+export const getWeeklyRecapControllerReadUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coach/weekly-recaps/${id}`
+}
+
+export const weeklyRecapControllerRead = async (id: string, options?: RequestInit): Promise<WeeklyRecapReportResponseDto> => {
+  
+  return http<WeeklyRecapReportResponseDto>(getWeeklyRecapControllerReadUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type aiChatControllerGetAccessResponse200 = {
   data: void
   status: 200
@@ -3848,19 +4141,19 @@ export const aiChatControllerClearMemory = async ( options?: RequestInit): Promi
 export const getPlanPreviewControllerOfferUrl = () => {
 
 
-
+  
 
   return `/v1/coach/plan-previews/access`
 }
 
 export const planPreviewControllerOffer = async ( options?: RequestInit): Promise<PlanPreviewAccessResponseDto> => {
-
+  
   return http<PlanPreviewAccessResponseDto>(getPlanPreviewControllerOfferUrl(),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -3869,19 +4162,19 @@ export const planPreviewControllerOffer = async ( options?: RequestInit): Promis
 export const getPlanPreviewControllerBriefUrl = () => {
 
 
-
+  
 
   return `/v1/coach/plan-previews/brief`
 }
 
 export const planPreviewControllerBrief = async ( options?: RequestInit): Promise<void> => {
-
+  
   return http<void>(getPlanPreviewControllerBriefUrl(),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -3890,15 +4183,15 @@ export const planPreviewControllerBrief = async ( options?: RequestInit): Promis
 export const getPlanPreviewControllerCreateUrl = () => {
 
 
-
+  
 
   return `/v1/coach/plan-previews`
 }
 
 export const planPreviewControllerCreate = async (coinPlanPreviewBodyDto: CoinPlanPreviewBodyDto, options?: RequestInit): Promise<SavedPlanPreviewResponseDto> => {
-
+  
   return http<SavedPlanPreviewResponseDto>(getPlanPreviewControllerCreateUrl(),
-  {
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -3912,19 +4205,19 @@ export const planPreviewControllerCreate = async (coinPlanPreviewBodyDto: CoinPl
 export const getPlanPreviewControllerReadUrl = (id: string,) => {
 
 
-
+  
 
   return `/v1/coach/plan-previews/${id}`
 }
 
 export const planPreviewControllerRead = async (id: string, options?: RequestInit): Promise<SavedPlanPreviewResponseDto> => {
-
+  
   return http<SavedPlanPreviewResponseDto>(getPlanPreviewControllerReadUrl(id),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -3933,16 +4226,16 @@ export const planPreviewControllerRead = async (id: string, options?: RequestIni
 export const getPlanPreviewControllerConfirmUrl = (id: string,) => {
 
 
-
+  
 
   return `/v1/coach/plan-previews/${id}/confirm`
 }
 
 export const planPreviewControllerConfirm = async (id: string,
     confirmPlanPreviewBodyDto: ConfirmPlanPreviewBodyDto, options?: RequestInit): Promise<SavedPlanPreviewResponseDto> => {
-
+  
   return http<SavedPlanPreviewResponseDto>(getPlanPreviewControllerConfirmUrl(id),
-  {
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -7577,7 +7870,7 @@ export type publicPulseControllerGetResponse200 = {
   data: PublicPulseViewDto
   status: 200
 }
-
+    
 export type publicPulseControllerGetResponseSuccess = (publicPulseControllerGetResponse200) & {
   headers: Headers;
 };
@@ -7588,19 +7881,19 @@ export type publicPulseControllerGetResponse = (publicPulseControllerGetResponse
 export const getPublicPulseControllerGetUrl = () => {
 
 
-
+  
 
   return `/v1/coaching/public/pulse`
 }
 
 export const publicPulseControllerGet = async ( options?: RequestInit): Promise<publicPulseControllerGetResponse> => {
-
+  
   return http<publicPulseControllerGetResponse>(getPublicPulseControllerGetUrl(),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -7800,6 +8093,49 @@ export const economyControllerQuestsList = async ( options?: RequestInit): Promi
 
 
 
+export const getEconomyControllerWeeklyChestViewUrl = () => {
+
+
+  
+
+  return `/v1/economy/weekly-chest`
+}
+
+export const economyControllerWeeklyChestView = async ( options?: RequestInit): Promise<WeeklyChestViewDto> => {
+  
+  return http<WeeklyChestViewDto>(getEconomyControllerWeeklyChestViewUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export const getEconomyControllerWeeklyChestOpenUrl = () => {
+
+
+  
+
+  return `/v1/economy/weekly-chest/open`
+}
+
+export const economyControllerWeeklyChestOpen = async (economyControllerWeeklyChestOpenBody: EconomyControllerWeeklyChestOpenBody, options?: RequestInit): Promise<WeeklyChestViewDto> => {
+  
+  return http<WeeklyChestViewDto>(getEconomyControllerWeeklyChestOpenUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      economyControllerWeeklyChestOpenBody,)
+  }
+);}
+
+
+
 export type economyControllerStreakRescueStateResponse200 = {
   data: void
   status: 200
@@ -7870,7 +8206,7 @@ export const getEconomyControllerDeepAnalysisStateUrl = (params: EconomyControll
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-
+    
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : value.toString())
     }
@@ -7882,7 +8218,7 @@ export const getEconomyControllerDeepAnalysisStateUrl = (params: EconomyControll
 }
 
 export const economyControllerDeepAnalysisState = async (params: EconomyControllerDeepAnalysisStateParams, options?: RequestInit): Promise<DeepAnalysisViewDto> => {
-
+  
   return http<DeepAnalysisViewDto>(getEconomyControllerDeepAnalysisStateUrl(params),
   {      
     ...options,
@@ -7993,19 +8329,19 @@ export const invitePreviewControllerPreview = async (code: string, options?: Req
 export const getNotebookSlotsControllerStateUrl = () => {
 
 
-
+  
 
   return `/v1/economy/notebook-slots`
 }
 
 export const notebookSlotsControllerState = async ( options?: RequestInit): Promise<NotebookSlotViewDto> => {
-
+  
   return http<NotebookSlotViewDto>(getNotebookSlotsControllerStateUrl(),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -8014,15 +8350,15 @@ export const notebookSlotsControllerState = async ( options?: RequestInit): Prom
 export const getNotebookSlotsControllerPurchaseUrl = () => {
 
 
-
+  
 
   return `/v1/economy/notebook-slots`
 }
 
 export const notebookSlotsControllerPurchase = async (notebookSlotPurchaseDto: NotebookSlotPurchaseDto, options?: RequestInit): Promise<NotebookSlotViewDto> => {
-
+  
   return http<NotebookSlotViewDto>(getNotebookSlotsControllerPurchaseUrl(),
-  {
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -8036,19 +8372,19 @@ export const notebookSlotsControllerPurchase = async (notebookSlotPurchaseDto: N
 export const getEconomyUsesControllerGetUrl = () => {
 
 
-
+  
 
   return `/v1/economy/uses`
 }
 
 export const economyUsesControllerGet = async ( options?: RequestInit): Promise<EconomyUsesDto> => {
-
+  
   return http<EconomyUsesDto>(getEconomyUsesControllerGetUrl(),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -12068,7 +12404,7 @@ export type adminAdReviewsControllerPreviewCommunityResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type adminAdReviewsControllerPreviewCommunityResponseSuccess = (adminAdReviewsControllerPreviewCommunityResponse200) & {
   headers: Headers;
 };
@@ -12079,19 +12415,19 @@ export type adminAdReviewsControllerPreviewCommunityResponse = (adminAdReviewsCo
 export const getAdminAdReviewsControllerPreviewCommunityUrl = (questionId: string,) => {
 
 
-
+  
 
   return `/v1/admin/ads/questions/${questionId}/community`
 }
 
 export const adminAdReviewsControllerPreviewCommunity = async (questionId: string, options?: RequestInit): Promise<adminAdReviewsControllerPreviewCommunityResponse> => {
-
+  
   return http<adminAdReviewsControllerPreviewCommunityResponse>(getAdminAdReviewsControllerPreviewCommunityUrl(questionId),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -12101,7 +12437,7 @@ export type adminAdReviewsControllerApproveCommunityResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type adminAdReviewsControllerApproveCommunityResponseSuccess = (adminAdReviewsControllerApproveCommunityResponse200) & {
   headers: Headers;
 };
@@ -12112,16 +12448,16 @@ export type adminAdReviewsControllerApproveCommunityResponse = (adminAdReviewsCo
 export const getAdminAdReviewsControllerApproveCommunityUrl = (questionId: string,) => {
 
 
-
+  
 
   return `/v1/admin/ads/questions/${questionId}/community`
 }
 
 export const adminAdReviewsControllerApproveCommunity = async (questionId: string,
     approveQuestionDto: ApproveQuestionDto, options?: RequestInit): Promise<adminAdReviewsControllerApproveCommunityResponse> => {
-
+  
   return http<adminAdReviewsControllerApproveCommunityResponse>(getAdminAdReviewsControllerApproveCommunityUrl(questionId),
-  {
+  {      
     ...options,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -12136,7 +12472,7 @@ export type adminAdReviewsControllerRevokeCommunityResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type adminAdReviewsControllerRevokeCommunityResponseSuccess = (adminAdReviewsControllerRevokeCommunityResponse200) & {
   headers: Headers;
 };
@@ -12147,19 +12483,19 @@ export type adminAdReviewsControllerRevokeCommunityResponse = (adminAdReviewsCon
 export const getAdminAdReviewsControllerRevokeCommunityUrl = (questionId: string,) => {
 
 
-
+  
 
   return `/v1/admin/ads/questions/${questionId}/community`
 }
 
 export const adminAdReviewsControllerRevokeCommunity = async (questionId: string, options?: RequestInit): Promise<adminAdReviewsControllerRevokeCommunityResponse> => {
-
+  
   return http<adminAdReviewsControllerRevokeCommunityResponse>(getAdminAdReviewsControllerRevokeCommunityUrl(questionId),
-  {
+  {      
     ...options,
     method: 'DELETE'
-
-
+    
+    
   }
 );}
 
@@ -12169,7 +12505,7 @@ export type adminAdAnnouncementsControllerPreviewResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type adminAdAnnouncementsControllerPreviewResponseSuccess = (adminAdAnnouncementsControllerPreviewResponse200) & {
   headers: Headers;
 };
@@ -12180,19 +12516,19 @@ export type adminAdAnnouncementsControllerPreviewResponse = (adminAdAnnouncement
 export const getAdminAdAnnouncementsControllerPreviewUrl = (threadId: string,) => {
 
 
-
+  
 
   return `/v1/admin/ads/announcements/${threadId}`
 }
 
 export const adminAdAnnouncementsControllerPreview = async (threadId: string, options?: RequestInit): Promise<adminAdAnnouncementsControllerPreviewResponse> => {
-
+  
   return http<adminAdAnnouncementsControllerPreviewResponse>(getAdminAdAnnouncementsControllerPreviewUrl(threadId),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -12202,7 +12538,7 @@ export type adminAdAnnouncementsControllerApproveResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type adminAdAnnouncementsControllerApproveResponseSuccess = (adminAdAnnouncementsControllerApproveResponse200) & {
   headers: Headers;
 };
@@ -12213,16 +12549,16 @@ export type adminAdAnnouncementsControllerApproveResponse = (adminAdAnnouncement
 export const getAdminAdAnnouncementsControllerApproveUrl = (threadId: string,) => {
 
 
-
+  
 
   return `/v1/admin/ads/announcements/${threadId}`
 }
 
 export const adminAdAnnouncementsControllerApprove = async (threadId: string,
     approveAnnouncementDto: ApproveAnnouncementDto, options?: RequestInit): Promise<adminAdAnnouncementsControllerApproveResponse> => {
-
+  
   return http<adminAdAnnouncementsControllerApproveResponse>(getAdminAdAnnouncementsControllerApproveUrl(threadId),
-  {
+  {      
     ...options,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -12237,7 +12573,7 @@ export type adminAdAnnouncementsControllerRevokeResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type adminAdAnnouncementsControllerRevokeResponseSuccess = (adminAdAnnouncementsControllerRevokeResponse200) & {
   headers: Headers;
 };
@@ -12248,19 +12584,19 @@ export type adminAdAnnouncementsControllerRevokeResponse = (adminAdAnnouncements
 export const getAdminAdAnnouncementsControllerRevokeUrl = (threadId: string,) => {
 
 
-
+  
 
   return `/v1/admin/ads/announcements/${threadId}`
 }
 
 export const adminAdAnnouncementsControllerRevoke = async (threadId: string, options?: RequestInit): Promise<adminAdAnnouncementsControllerRevokeResponse> => {
-
+  
   return http<adminAdAnnouncementsControllerRevokeResponse>(getAdminAdAnnouncementsControllerRevokeUrl(threadId),
-  {
+  {      
     ...options,
     method: 'DELETE'
-
-
+    
+    
   }
 );}
 
@@ -12270,7 +12606,7 @@ export type adminAdsReadinessControllerGetReadinessResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type adminAdsReadinessControllerGetReadinessResponseSuccess = (adminAdsReadinessControllerGetReadinessResponse200) & {
   headers: Headers;
 };
@@ -12281,19 +12617,19 @@ export type adminAdsReadinessControllerGetReadinessResponse = (adminAdsReadiness
 export const getAdminAdsReadinessControllerGetReadinessUrl = () => {
 
 
-
+  
 
   return `/v1/admin/ads/readiness`
 }
 
 export const adminAdsReadinessControllerGetReadiness = async ( options?: RequestInit): Promise<adminAdsReadinessControllerGetReadinessResponse> => {
-
+  
   return http<adminAdsReadinessControllerGetReadinessResponse>(getAdminAdsReadinessControllerGetReadinessUrl(),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 

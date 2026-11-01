@@ -34,6 +34,11 @@ export class DeepAnalysisService {
     roles: string[],
     examId: string,
   ): Promise<DeepAnalysisView> {
+    if (await this.config.get("coaching.weekly_recap.access_enabled")) {
+      const resolver = this.access.get().recapState;
+      if (!resolver) throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+      return resolver(userId, roles, examId);
+    }
     await this.assertAiEnabled();
     const access = this.access.get();
     const [review, cost, balance, entitlement, included] = await Promise.all([
@@ -74,6 +79,8 @@ export class DeepAnalysisService {
   ): Promise<DeepAnalysisView> {
     const state = await this.getState(userId, roles, examId);
     if (state.unlocked) return state; // premium or already purchased — nothing to debit
+    if (await this.config.get("coaching.weekly_recap.access_enabled"))
+      throw new DomainError(ErrorCode.CONFLICT, HttpStatus.CONFLICT);
     if (!state.eligible || !state.weekStart) {
       throw new DomainError(
         ErrorCode.DEEP_ANALYSIS_NOT_ELIGIBLE,

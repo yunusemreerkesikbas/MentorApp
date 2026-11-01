@@ -50,6 +50,11 @@ export const economyRewardsSeenSchema = z.object({
   ledgerIds: z.array(z.string().uuid()).min(1).max(100),
 });
 
+/** POST /v1/economy/weekly-chest/open — the ISO week key the client was shown. */
+export const weeklyChestOpenSchema = z.object({
+  periodKey: z.string().regex(/^\d{4}-W\d{2}$/),
+});
+
 /** Confirm exactly the displayed price and capacity increment, including concurrent tabs. */
 export const notebookSlotPurchaseSchema = z.object({
   expectedCost: z.number().int().min(1).max(100000),

@@ -960,6 +960,20 @@
       "when": 1793488937670,
       "tag": "0136_coin_plan_previews",
       "breakpoints": true
+    },
+    {
+      "idx": 137,
+      "version": "7",
+      "when": 1793531394917,
+      "tag": "0137_weekly_wrapped_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 138,
+      "version": "7",
+      "when": 1793534741638,
+      "tag": "0138_weekly_chest_revealed_at",
+      "breakpoints": true
     }
   ]
 }

@@ -102,7 +102,7 @@ export class EconomyAiUsesService implements OnModuleInit {
       premiumIncluded: premium,
       canOpen: false,
     };
-    if (!(await this.config.get("ai.enabled")))
+    if (!(await this.config.get("ai.enabled")) && !(await this.config.get("coaching.weekly_recap.access_enabled")))
       return { ...base, status: "UNAVAILABLE" };
     const me = await this.users.getMe(userId);
     if (!me.examType) return { ...base, status: "NEEDS_EXAM" };
@@ -130,6 +130,8 @@ export class EconomyAiUsesService implements OnModuleInit {
     if (!premium && state.purchased) {
       return { ...base, status: "ALREADY_UNLOCKED", canOpen: true };
     }
+    if (state.limitReached) return { ...base, cost: state.cost, status: "LIMIT_REACHED" };
+    if (state.purchaseAvailable === false && !state.unlocked) return { ...base, status: "UNAVAILABLE" };
     if (!state.generationAvailable) return { ...base, status: "UNAVAILABLE" };
     if (premium) return { ...base, status: "PREMIUM_INCLUDED", canOpen: true };
     if (state.unlocked) {

@@ -76,6 +76,8 @@ describe("Weekly analysis policy (HTTP + Postgres)", () => {
     vi.restoreAllMocks();
     user = await weeklyAccount(app, pool);
     await config.set(user.id, "economy.enabled", true);
+    // This suite verifies the explicitly selectable legacy weekly-taste policy.
+    await config.set(user.id, "coaching.weekly_recap.access_enabled", false);
     await config.set(user.id, "ai.enabled", true);
     await config.set(user.id, "ai.budget.monthly_cap_usd_cents", 0);
     await config.set(user.id, "ai.budget.reservation_usd_cents", 5);

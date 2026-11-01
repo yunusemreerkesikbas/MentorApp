@@ -100,6 +100,25 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Wrapped access policy controls
+
+- **What/usage:** Existing audited Config now exposes `coaching.weekly_recap.access_enabled`
+  (default on), `free_enabled/free_limit` (one earned lifetime report),
+  `coin_enabled/coin_limit/coin_window_days` (two reports per rolling 30 days), and `ai_enabled`
+  (new narration generation). Price remains `economy.coin.deep_analysis_cost` (25 Coin).
+- **Gotchas:** Apply migration `0137_weekly_wrapped_reports` before deploying the API. The enabled
+  policy overrides legacy recurring weekly-taste switches. Zero free/Coin limits
+  stop new grants/purchases. Settings are validated and audited server-side, require no redeploy,
+  and do not revoke saved reports. Current cache invalidation is process-local, matching the
+  existing single-instance registry; multiple instances require a shared invalidation strategy.
+- **Related:** API `config.catalog.ts`, admin `config-hints.ts`, AI `weekly-recap-policy.service.ts`;
+  [verification](../qa/2026-11-01-weekly-recap-access.md).
+
+- **Default-on follow-up (2026-11-01):** At the user's request, new installations and deployments
+  without an override now enable Wrapped access enforcement automatically. Existing explicit
+  admin overrides remain authoritative; the admin can still turn the policy off/on. Registry tests
+  cover the enabled default and both override transitions. No live database setting was changed.
+
 ### 2026-10-31 — Configurable Coin notebook capacity
 
 - **What/usage:** Ayarlar → Ekonomi now exposes `economy.coin.notebook_slot_cost` (default 20)

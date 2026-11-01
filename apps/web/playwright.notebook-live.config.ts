@@ -4,6 +4,8 @@ if (process.env.QA_NOTEBOOK_LIVE !== "1" || !process.env.TEST_DATABASE_URL) {
   throw new Error("Set QA_NOTEBOOK_LIVE=1 and the dedicated TEST_DATABASE_URL");
 }
 process.env.QA_NOTEBOOK_RUN_ID ??= Date.now().toString(36);
+process.env.QA_STAGE2_API_URL ??= "http://localhost:3501/v1";
+process.env.PLAYWRIGHT_BASE_URL ??= "http://localhost:3510";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -12,6 +14,9 @@ export default defineConfig({
     "economy-rewards-real-api.spec.ts",
     "economy-paid-flows-real-api.spec.ts",
     "economy-plan-preview-real-api.spec.ts",
+    "weekly-recap-real-api.spec.ts",
+    "weekly-recap.spec.ts",
+    "weekly-analysis-access.spec.ts",
   ],
   workers: 1,
   retries: 0,

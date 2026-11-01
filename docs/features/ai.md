@@ -103,6 +103,39 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Wrapped review fixes: transaction connections and accessible dates
+
+- **What:** Recap offer dependencies and settlement entitlement/config reads now finish before
+  the recap lock acquires a connection. Reservation counts, purchase limits and the final Coin
+  debit still use the caller's transaction. Access cards and archive dates follow the active
+  locale, with UTC date-only formatting; the loading region uses a labelled `SkeletonGroup`.
+- **Usage:** Existing recap endpoints and TR/EN screens require no contract or migration changes.
+- **Gotchas:** Prepared context is request-scoped, not an authorization cache. Actual generation
+  retains its budget reservation; settlement still rechecks limits and the confirmed balance.
+- **Files:** `weekly-recap-policy.service.ts`, `weekly-recap.service.ts`,
+  `weekly-recap-settlement.service.ts`, `weekly-recap-locking.spec.ts`,
+  web recap `weekly-recap-{access-card,archive,entry}.tsx`.
+
+### 2026-11-01 — One generated narration per owned Wrapped report
+
+- **What:** AI owns the composed report snapshot and narration, using Coaching's public evidence.
+  An explicit, user-wide serialized claim precedes generation; successful output is saved under
+  the claim fence before Coin settlement. Earned, Coin and Premium reports use the same prompt/model.
+  Matching owned reports are read before new-generation flags, budgets or current entitlement.
+- **Usage:** Apply migration `0137` before deploying the default-on Wrapped policy; use
+  `coaching.weekly_recap.ai_enabled` together with global AI/budget controls for new production.
+  `POST /v1/coach/weekly-recaps` requires a matching UUID idempotency header, exam/week, offered
+  source and confirmed price. Offer reads and page navigation do not generate or claim anything.
+- **Gotchas:** Successful reports freeze evidence, narration and locale. There is no regeneration
+  action. Failed/interrupted attempts can retry; expired claims are fenced so late workers cannot
+  overwrite an accepted result. A crash before persistence can require another provider attempt,
+  still metered against the global budget. The contract guarantees one published narration, not
+  exactly-once external inference under process failure. Private snapshots participate in KVKK
+  erasure. Old weekly taste flags are ignored while owned-report enforcement is enabled.
+- **Related:** `weekly-recap.service.ts`, `weekly-recap-policy.service.ts`,
+  `weekly-recap-narrator.service.ts`, `weekly-recap-settlement.service.ts`,
+  `weekly-recap.repository.ts`, `schema-weekly-recaps.ts`; [verification](../qa/2026-11-01-weekly-recap-access.md).
+
 ### 2026-11-01 — Earned plan previews, greeting rereads and shared photo usage
 
 - **What:** The plan-page wizard has an explicit Coin path for Free accounts. The approved default

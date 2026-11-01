@@ -10,6 +10,7 @@ import type {
   ExamCalendarDto,
   WeeklyReviewDto,
   WeeklyReviewNarrationDto,
+  WeeklyRecapReportDto,
 } from "@mentor/types";
 import {
   ApiClientError,
@@ -58,7 +59,7 @@ export type NarrationState =
   | { status: "idle" | "loading" | "fallback" }
   | { status: "ready"; data: WeeklyReviewNarrationDto };
 
-export function WeeklyRecapShell() {
+export function WeeklyRecapShell({ savedReport }: { savedReport?: WeeklyRecapReportDto }) {
   const economyEnabled = useEconomyEnabled();
   const t = useTranslations("analysis.recap");
   const locale = useLocale();
@@ -106,6 +107,16 @@ export function WeeklyRecapShell() {
 
     async function load() {
       try {
+        if (savedReport) {
+          setState({ status: "ready", examId: savedReport.examId, review: savedReport.review });
+          setNarration({ status: "ready", data: savedReport.narration });
+          if (source === "dashboard") markWeeklyRecapOpened(window.localStorage, savedReport.weekStart);
+          if (!openedTracked.current) {
+            openedTracked.current = true;
+            trackWeeklyRecapEvent("weekly_recap_open", { surface: source, recap_status: savedReport.review.recap.status });
+          }
+          return;
+        }
         let examId = requestedExamId;
         if (!examId) {
           let examType = requestedExamType;
@@ -145,19 +156,6 @@ export function WeeklyRecapShell() {
           });
         }
 
-        if (review.recap.status !== "READY" || !economyEnabled) return;
-        setAccess({ status: "loading" });
-        void fetchDeepAnalysis(examId)
-          .then((view) => {
-            if (cancelled) return;
-            setAccess({ status: "ready", view });
-            if (view.eligible && (view.premium || view.unlocked)) {
-              void loadNarration(examId);
-            }
-          })
-          .catch(() => {
-            if (!cancelled) setAccess({ status: "unavailable" });
-          });
       } catch (error) {
         if (cancelled) return;
         setState({
@@ -177,14 +175,27 @@ export function WeeklyRecapShell() {
       cancelled = true;
     };
   }, [
-    economyEnabled,
+    savedReport,
     loadAttempt,
-    loadNarration,
     requestedExamId,
     requestedExamType,
     source,
     t,
   ]);
+
+  useEffect(() => {
+    if (savedReport || !economyEnabled || state.status !== "ready" || state.review.recap.status !== "READY") return;
+    let cancelled = false;
+    const examId = state.examId;
+    void fetchDeepAnalysis(examId).then((view) => {
+      if (cancelled) return;
+      setAccess({ status: "ready", view });
+      if (view.eligible && (view.premium || view.unlocked)) void loadNarration(examId);
+    }).catch(() => {
+      if (!cancelled) setAccess({ status: "unavailable" });
+    });
+    return () => { cancelled = true; };
+  }, [savedReport, economyEnabled, state, loadNarration]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;

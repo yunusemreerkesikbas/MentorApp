@@ -76,6 +76,8 @@ export interface DeepAnalysisView {
   purchased: boolean;
   /** Current capacity for a new generation; a matching cached report needs no new capacity. */
   generationAvailable: boolean;
+  purchaseAvailable?: boolean;
+  limitReached?: boolean;
 }
 
 export type QuestCategory = "daily_ritual" | "weekly_ritual" | "milestone" | "onboarding";
@@ -111,6 +113,38 @@ export interface QuestProgressView {
   completedAt: string | null;
   /** The step is met but its Coin grant is waiting on earning limits; localized by the API. */
   rewardPendingMessage?: string;
+}
+
+/** The weekly chest (`weekly.effort-allowance`): PROGRESS → READY (target met, not opened) → OPENED. */
+export type WeeklyChestState = "PROGRESS" | "READY" | "OPENED";
+
+/** The week's numbers, shown on the note inside the chest. */
+export interface WeeklyChestSummary {
+  activeDays: number;
+  focusSessions: number;
+  planTasks: number;
+  focusMinutes: number;
+}
+
+/** GET /v1/economy/weekly-chest and POST /v1/economy/weekly-chest/open — available while the economy is off. */
+export interface WeeklyChestView {
+  state: WeeklyChestState;
+  /** ISO week key, e.g. "2026-W45"; the one to send to `open`. */
+  periodKey: string;
+  /** Last week's chest, completed but not opened yet (waits one week). */
+  carriedOver: boolean;
+  current: number;
+  target: number;
+  /** Monday→Sunday of `periodKey`'s week (yyyy-mm-dd, UTC days). */
+  days: { date: string; active: boolean }[];
+  /** The server's UTC day (yyyy-mm-dd). */
+  today: string;
+  /** Coin inside: what was granted, or what the week will grant. null while the economy is off or the grant waits. */
+  reward: { unit: "COIN"; amount: number } | null;
+  /** The chest is ready but its Coin waits on earning limits; localized by the API. */
+  rewardPendingMessage?: string;
+  /** Only when READY or OPENED. */
+  summary?: WeeklyChestSummary;
 }
 
 /** One rolling window's total ledger flow. Coin credited/debited are both POSITIVE magnitudes. */

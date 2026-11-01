@@ -1,4 +1,6 @@
 import { Module } from "@nestjs/common";
+import { WeeklyRecapPurchasesService } from "./application/weekly-recap-purchases.service";
+import { WeeklyRecapPurchasesRepository } from "./infrastructure/weekly-recap-purchases.repository";
 import { RewardReceiptService } from "./application/reward-receipt.service";
 import { QuestTriggerService } from "./application/quest-trigger.service";
 import { RewardReceiptRepository } from "./infrastructure/reward-receipt.repository";
@@ -15,6 +17,7 @@ import { InviteViewService } from "./application/invite-view.service";
 import { InviteEventsListener } from "./application/invite-events.listener";
 import { RefundEventsListener } from "./application/refund-events.listener";
 import { QuestService } from "./application/quest.service";
+import { WeeklyChestService } from "./application/weekly-chest.service";
 import { QuestEventsListener } from "./application/quest-events.listener";
 import { StreakRescueService } from "./application/streak-rescue.service";
 import { SessionCompletedListener } from "./application/session-completed.listener";
@@ -40,6 +43,8 @@ import { WeeklyAnalysisAccessRegistry } from "./application/weekly-analysis-acce
   imports: [PaymentsModule, IdentityModule, CoachingModule],
   controllers: [EconomyController, InvitePreviewController, NotebookSlotsController, EconomyUsesController],
   providers: [
+    WeeklyRecapPurchasesService,
+    WeeklyRecapPurchasesRepository,
     RewardReceiptService,
     QuestTriggerService,
     RewardReceiptRepository,
@@ -57,6 +62,7 @@ import { WeeklyAnalysisAccessRegistry } from "./application/weekly-analysis-acce
     InviteEventsListener,
     RefundEventsListener,
     QuestService,
+    WeeklyChestService,
     QuestRepository,
     QuestEventsListener,
     StreakRescueService,
@@ -66,6 +72,7 @@ import { WeeklyAnalysisAccessRegistry } from "./application/weekly-analysis-acce
     ThreadPostedListener,
   ],
   exports: [
+    WeeklyRecapPurchasesService,
     WeeklyAnalysisAccessRegistry,
     EconomyUsesRegistry,
     EconomyService,

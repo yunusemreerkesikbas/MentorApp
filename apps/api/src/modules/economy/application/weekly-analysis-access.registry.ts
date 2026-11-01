@@ -1,8 +1,10 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import type { DeepAnalysisView } from "@mentor/types";
 
 export interface WeeklyAnalysisAccessPort {
+  recapState?(userId: string, roles: string[], examId: string): Promise<DeepAnalysisView>;
   isIncluded(userId: string, roles: string[]): Promise<boolean>;
   canGenerate(): Promise<boolean>;
   acquire(): Promise<string | null>;

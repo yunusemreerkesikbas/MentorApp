@@ -1,5 +1,26 @@
 # API Design & Versioning Standards + Service Catalog
 
+### Owned weekly Wrapped reports (2026-11-01)
+
+- `GET /v1/coach/weekly-recaps/access?examId=UUID[&weekStart=YYYY-MM-DD]`: side-effect-free
+  offer with readiness, owned/earned/Premium/Coin mode, quoted cost, remaining rolling allowance,
+  next available time and a localized refusal. Historic weeks can be acquired only through an
+  existing ledger-backed right; new earned/Premium/Coin claims use the previous completed week.
+- `POST /v1/coach/weekly-recaps`: `{ examId, weekStart, source, expectedCost, clientRequestId }`,
+  matching UUID `Idempotency-Key`. Returns the owned immutable report and narration (201).
+  Conflicting/stale offers and in-progress work are 409; exhausted Coin allowance is 429; global
+  budget/provider unavailability is 503. Failed generation does not spend Coin. An accepted
+  generated result retains its confirmed price for later settlement.
+- `GET /v1/coach/weekly-recaps?page=1&pageSize=20`: authenticated self-scoped paginated archive
+  (maximum 100). Legacy ledger rights have `requiresOpening: true` until explicitly materialized.
+- `GET /v1/coach/weekly-recaps/:id`: immutable self-owned report (200), foreign/missing ID is 404.
+  Existing ownership remains readable over current quota, membership expiry and generation flags.
+- With `coaching.weekly_recap.access_enabled`, existing weekly story/narration/completion routes
+  require the owned exam/week; internal evidence and basic analysis remain available. Legacy Coin
+  purchase POSTs cannot create an uncapped right. With rollout off, legacy access stays available,
+  while already saved snapshots/narrations remain immutable. See [coaching](../features/coaching.md),
+  [AI](../features/ai.md) and [economy](../features/economy.md).
+
 ### Mentorship weekly planning read (2026-09-19)
 
 `GET /v1/mentorship/students/:studentId/planning-tasks?from=YYYY-MM-DD&to=YYYY-MM-DD&page=1&pageSize=20`
@@ -431,6 +452,8 @@ through the existing audited `/v1/admin/config/:key` endpoint. See [economy](../
 
 - GET /v1/economy/rewards/unseen?page=1&pageSize=20: authenticated self-scoped Paginated<EconomyLedgerEntryView>.
 - POST /v1/economy/rewards/seen: { ledgerIds: UUID[] }, 1–100 IDs, idempotent 204; IDs belonging to other users remain untouched.
+- GET /v1/economy/weekly-chest: self-scoped `WeeklyChestView` (state PROGRESS/READY/OPENED, periodKey, carriedOver, current/target, 7 days, reward or null, optional rewardPendingMessage, summary when READY/OPENED). Last week's unopened chest comes first. Available while economy is disabled (reward null).
+- POST /v1/economy/weekly-chest/open: { periodKey: "YYYY-Www" } → 200 `WeeklyChestView`; idempotent (stamps `revealed_at` once, acks the chest's reward receipt, never grants). 404 `WEEKLY_CHEST_NOT_FOUND` for another user's, an uncompleted, or an older week's chest; 400 for a malformed key.
 - Balance retains existing fields and adds optional usage (configured costs and alternative message/analysis counts). Ledger history remains immutable.
 
 

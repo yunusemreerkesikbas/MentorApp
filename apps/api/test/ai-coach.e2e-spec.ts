@@ -612,6 +612,7 @@ describe("ai coach chat (e2e)", () => {
   });
 
   it("disabled AI refuses deep-analysis offers and purchases without taking Coin", async () => {
+    await setConfig("coaching.weekly_recap.access_enabled", false);
     await setConfig("economy.enabled", true);
     await setConfig("ai.enabled", false);
     const before = await coinBalance(brokeId);
@@ -627,6 +628,7 @@ describe("ai coach chat (e2e)", () => {
       expect(await coinBalance(brokeId)).toBe(before);
     } finally {
       await setConfig("ai.enabled", true);
+      await setConfig("coaching.weekly_recap.access_enabled", true);
     }
   });
 

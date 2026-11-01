@@ -29,6 +29,10 @@ export interface DailyQuestSignals {
   weeklyCompletedPlanTasks: number;
   /** Active days (≥1 session or ≥1 done task) within this ISO week. */
   weeklyActiveDays: number;
+  /** The active days themselves (yyyy-mm-dd, ascending, up to `date`); the weekly chest's pips. */
+  weeklyActiveDates: string[];
+  /** COMPLETED focus minutes this ISO week up to `date` (no min-focus filter, like `focusMinutesToday`). */
+  weeklyFocusMinutes: number;
 }
 
 @Injectable()
@@ -64,6 +68,7 @@ export class DailyQuestSignalService {
         weeklyCompletedFocusSessions,
         weeklyCompletedPlanTasks,
         weeklyActiveDates,
+        weeklyFocusSeconds,
       ] = await Promise.all([
         this.planTasks.countDone(tx, userId, date),
         this.sessions.hasCompletedOnDate(tx, userId, date, minFocusSeconds),
@@ -74,7 +79,9 @@ export class DailyQuestSignalService {
         this.sessions.countCompletedSince(tx, userId, weekStart, minFocusSeconds, date),
         this.planTasks.countDoneBetween(tx, userId, weekStart, date),
         this.dailyActivity.listActiveDatesSince(tx, userId, weekStart),
+        this.sessions.sumCompletedFocusSecondsBetween(tx, userId, weekStart, date),
       ]);
+      const activeDates = weeklyActiveDates.filter((day) => day <= date).sort();
       return {
         date,
         hasDonePlanTask: doneTasks > 0,
@@ -87,7 +94,9 @@ export class DailyQuestSignalService {
         weekKey,
         weeklyCompletedFocusSessions,
         weeklyCompletedPlanTasks,
-        weeklyActiveDays: weeklyActiveDates.filter((day) => day <= date).length,
+        weeklyActiveDays: activeDates.length,
+        weeklyActiveDates: activeDates,
+        weeklyFocusMinutes: Math.round(weeklyFocusSeconds / 60),
       };
     });
   }

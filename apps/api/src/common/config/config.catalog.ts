@@ -650,6 +650,13 @@ export const CONFIG_CATALOG = {
     100000,
     "Coin debited to unlock one week's deep-analysis AI narration (premium users are included free).",
   ),
+  "coaching.weekly_recap.access_enabled": flag(true, "Enforce owned Wrapped reports with earned/Premium/Coin access by default. Apply the report migration before deployment; admin may disable access enforcement."),
+  "coaching.weekly_recap.free_enabled": flag(true, "Allow a verified user to earn their first READY Wrapped report; no recurring Free AI."),
+  "coaching.weekly_recap.free_limit": economyCount(1, 100, "Lifetime earned Wrapped reports per user, separate from Coin and Premium."),
+  "coaching.weekly_recap.coin_enabled": flag(true, "Allow explicit Coin purchases of new Wrapped reports. Existing owned reports are preserved."),
+  "coaching.weekly_recap.coin_limit": economyCount(2, 100, "Successful Coin report acquisitions per user across all exams in the rolling window; 0 disables new acquisitions."),
+  "coaching.weekly_recap.coin_window_days": economyTarget(30, 365, "Rolling duration in days for the Wrapped Coin allowance; not a calendar-month reset."),
+  "coaching.weekly_recap.ai_enabled": flag(true, "Allow new Wrapped AI generation within global AI/budget controls. Saved reports remain readable."),
   "economy.coin.notebook_slot_cost": economyTarget(
     20,
     100000,

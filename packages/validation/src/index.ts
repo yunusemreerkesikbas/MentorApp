@@ -28,3 +28,4 @@ export * from "./phone.js";
 export * from "./mentorship-followup.js";
 export * from "./mentorship-weekly-report.js";
 export * from "./plan-preview.js";
+export * from "./weekly-recap.js";

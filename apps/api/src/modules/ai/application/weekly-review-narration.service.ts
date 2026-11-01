@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Optional } from "@nestjs/common";
+import { WeeklyRecapService } from "./weekly-recap.service";
 import { I18nContext } from "nestjs-i18n";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
@@ -32,9 +33,16 @@ export class WeeklyReviewNarrationService {
     private readonly usage: AiUsageRepository,
     private readonly budget: AiBudgetGuard,
     private readonly access: WeeklyAnalysisAccessService,
+    @Optional() private readonly recaps?: WeeklyRecapService,
   ) {}
 
   async narrate(user: RequestUser, examId: string) {
+    const saved = await this.recaps?.storedNarration(user.id, examId);
+    if (saved) return saved;
+    if (await this.config.get("coaching.weekly_recap.access_enabled")) {
+      if (!this.recaps) throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+      return this.recaps.narration(user.id, examId);
+    }
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }

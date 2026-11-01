@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -52,6 +52,22 @@ export class QuestRepository {
                 inArray(userQuestProgress.periodKey, [...periodKeys]),
               )
             : eq(userQuestProgress.userId, userId),
+        ),
+    );
+  }
+
+  /** Stamp the user's own completion as opened (first open wins; a repeat is a no-op). */
+  async markRevealed(userId: string, id: string): Promise<void> {
+    await withServiceContext(this.db, (tx) =>
+      tx
+        .update(userQuestProgress)
+        .set({ revealedAt: new Date() })
+        .where(
+          and(
+            eq(userQuestProgress.id, id),
+            eq(userQuestProgress.userId, userId),
+            isNull(userQuestProgress.revealedAt),
+          ),
         ),
     );
   }

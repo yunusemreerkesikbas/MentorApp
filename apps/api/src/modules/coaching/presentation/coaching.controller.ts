@@ -22,6 +22,7 @@ import { TodayService } from "../application/today.service";
 import { VisionService } from "../application/vision.service";
 import { VisionBoardImageService } from "../application/vision-board-image.service";
 import { WeeklyReviewService } from "../application/weekly-review.service";
+import { WeeklyRecapRegistry } from "../application/weekly-recap.registry";
 import { WeeklyReviewCompletionService } from "../application/weekly-review-completion.service";
 import { PreferenceSimulationService } from "../application/preference-simulation.service";
 import {
@@ -53,6 +54,7 @@ export class CoachingController {
     private readonly weeklyReview: WeeklyReviewService,
     private readonly weeklyReviewCompletion: WeeklyReviewCompletionService,
     private readonly preferenceSimulation: PreferenceSimulationService,
+    private readonly recaps: WeeklyRecapRegistry,
   ) {}
 
   /** Composite daily-hub payload for the Panel (one round-trip). */
@@ -83,11 +85,11 @@ export class CoachingController {
   /** Previous completed week, scoped to the active exam. */
   @Get("weekly-review")
   @ApiQuery({ name: "examId", required: true, type: String, format: "uuid" })
-  getWeeklyReview(
+  async getWeeklyReview(
     @CurrentUser() user: RequestUser,
     @Query() query: WeeklyReviewQueryDto,
   ): Promise<WeeklyReviewDto> {
-    return this.weeklyReview.getReview(user.id, query.examId);
+    return (await this.recaps.read(user.id, query.examId)) ?? this.weeklyReview.getReview(user.id, query.examId);
   }
 
   @Put("weekly-review/completion")

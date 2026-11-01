@@ -43,6 +43,14 @@ describe("ConfigRegistryService", () => {
   it("returns the catalog default when no override exists", async () => {
     expect(await service.get(FeatureFlag.AI_ENABLED)).toBe(true);
     expect(await service.get(FeatureFlag.ECONOMY_ENABLED)).toBe(false);
+    expect(await service.get("coaching.weekly_recap.access_enabled")).toBe(true);
+  });
+
+  it("allows admin to disable and re-enable the default-on Wrapped policy", async () => {
+    await service.set("admin", "coaching.weekly_recap.access_enabled", false);
+    expect(await service.get("coaching.weekly_recap.access_enabled")).toBe(false);
+    await service.set("admin", "coaching.weekly_recap.access_enabled", true);
+    expect(await service.get("coaching.weekly_recap.access_enabled")).toBe(true);
   });
 
   it("returns the override when set, and reflects it immediately (cache updated)", async () => {

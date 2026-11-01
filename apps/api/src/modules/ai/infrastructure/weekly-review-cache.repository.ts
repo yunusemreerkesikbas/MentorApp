@@ -1,13 +1,24 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, eq } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { aiWeeklyReviews } from "../../../database/schema";
 
 @Injectable()
 export class WeeklyReviewCacheRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+  findAny(userId: string, examId: string, weekStart: string, exec?: DatabaseTx) {
+    const read = async (tx: DatabaseTx) => (await tx.select().from(aiWeeklyReviews)
+      .where(and(eq(aiWeeklyReviews.userId, userId), eq(aiWeeklyReviews.examId, examId),
+        eq(aiWeeklyReviews.weekStart, weekStart))).orderBy(aiWeeklyReviews.createdAt, aiWeeklyReviews.id).limit(1))[0];
+    return exec ? read(exec) : withUserContext(this.db, { userId }, read);
+  }
+
+  async saveFirst(data: typeof aiWeeklyReviews.$inferInsert, tx: DatabaseTx) {
+    await tx.insert(aiWeeklyReviews).values(data).onConflictDoNothing();
+  }
 
   async find(userId: string, examId: string, weekStart: string, locale: string) {
     return withUserContext(this.db, { userId }, async (tx) => {

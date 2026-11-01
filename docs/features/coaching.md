@@ -145,6 +145,25 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Owned weekly Wrapped stories
+
+- **What:** Basic analysis remains free. The full Wrapped story is gated server-side through an
+  AI-registered public policy; internal weekly evidence remains usable by coaching consumers.
+  Saved reports retain their original snapshot, can be replayed from an archive, and remain owned
+  after subscription expiry. Completion requires access to that exact exam/week.
+- **Usage:** Apply migration `0137_weekly_wrapped_reports`; access enforcement is enabled by default
+  and managed through `coaching.weekly_recap.access_enabled` in admin. The story entry offers a verified user's first
+  earned full report, Premium inclusion or explicit Coin confirmation. The archive includes earlier
+  ledger-backed rights; older stories without a snapshot are reconstructed from surviving evidence
+  only after an explicit open, retaining any existing AI narration.
+- **Gotchas:** Access enforcement defaults on at the user's request. New access and generation switches do not revoke saved
+  reports. One report is one exam/week, but earned and Coin allowances are shared across exams.
+  The saved report's original language stays fixed; changing UI language does not generate again.
+  Loading the economy setting no longer reloads the story or silently retries a failed story read;
+  legacy Coin access is fetched independently after the story is ready.
+- **Related:** AI `weekly-recap*.service.ts`, coaching `weekly-recap.registry.ts`, web
+  `weekly-recap-entry.tsx`, `weekly-recap-archive.tsx`; [design](../plans/2026-11-01-weekly-recap-access-design.md).
+
 ### 2026-11-01 — Puhu thought cloud polish (open/close, layout, panel flash)
 
 - **What:** The mood check-in's coach note (`PuhuSpeechModal`) opens as one timeline: Puhu pops in,
