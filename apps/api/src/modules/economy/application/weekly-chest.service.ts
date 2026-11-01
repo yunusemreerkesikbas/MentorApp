@@ -50,22 +50,33 @@ export class WeeklyChestService {
   /** Lazy-evaluates like the quest list, then shows last week's unopened chest first, else this week's. */
   async getView(userId: string): Promise<WeeklyChestView> {
     const pending = await this.quests.evaluateAndGrant(userId);
-    const weeks = await this.loadWeeks(userId);
+    let weeks = await this.loadWeeks(userId);
+    if (!weeks.rows.has(weeks.lastWeek)) {
+      pending.push(...await this.quests.evaluateAndGrant(userId, weeks.lastSunday));
+      weeks = await this.loadWeeks(userId);
+    }
     const carried = weeks.rows.get(weeks.lastWeek);
-    const periodKey = carried && !carried.revealedAt ? weeks.lastWeek : weeks.thisWeek;
+    const periodKey = (carried && !carried.revealedAt) || pending.includes(progressKey(CHEST_ID, weeks.lastWeek))
+      ? weeks.lastWeek : weeks.thisWeek;
     return this.view(userId, weeks, periodKey, pending);
   }
 
-  /** Idempotent: stamps the chest opened and acks its Coin receipt. Never grants. */
+  /** Idempotent reveal and receipt acknowledgement; missing grants are delegated to QuestService. */
   async open(userId: string, periodKey: string): Promise<WeeklyChestView> {
-    const weeks = await this.loadWeeks(userId);
+    let weeks = await this.loadWeeks(userId);
     if (periodKey !== weeks.thisWeek && periodKey !== weeks.lastWeek) throw notFound();
-    const row = weeks.rows.get(periodKey);
+    let row = weeks.rows.get(periodKey);
     if (!row) {
       // ponytail: a cap-held chest has no row until its Coin lands; show the note, stamp nothing.
-      const pending = periodKey === weeks.thisWeek ? await this.quests.evaluateAndGrant(userId) : [];
-      if (!pending.includes(progressKey(CHEST_ID, periodKey))) throw notFound();
-      return this.view(userId, weeks, periodKey, pending);
+      const pending = periodKey === weeks.thisWeek
+        ? await this.quests.evaluateAndGrant(userId)
+        : await this.quests.evaluateAndGrant(userId, weeks.lastSunday);
+      weeks = await this.loadWeeks(userId);
+      row = weeks.rows.get(periodKey);
+      if (!row) {
+        if (!pending.includes(progressKey(CHEST_ID, periodKey))) throw notFound();
+        return this.view(userId, weeks, periodKey, pending);
+      }
     }
     if (!row.revealedAt) {
       await this.progress.markRevealed(userId, row.id);

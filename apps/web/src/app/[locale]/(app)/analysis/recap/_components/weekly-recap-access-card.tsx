@@ -17,7 +17,11 @@ export function WeeklyRecapAccessCard({ offer, busy, armed, error, onOpen, onPre
     <section aria-labelledby="recap-access-title" className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center shadow-[var(--shadow-card)]">
       <PuhuImage variant="premium" size={132} priority className="mx-auto" />
       <h1 id="recap-access-title" className="mt-4 text-3xl font-black text-[var(--color-main)]">{t("title")}</h1>
-      <p className="mt-2 text-sm text-[var(--color-secondary)]">{offer.weekStart} · {offer.endDate}</p>
+      <p className="mt-2 text-sm text-[var(--color-secondary)]">
+        {format.dateTime(new Date(`${offer.weekStart}T00:00:00Z`), { dateStyle: "medium", timeZone: "UTC" })}
+        {" · "}
+        {format.dateTime(new Date(`${offer.endDate}T00:00:00Z`), { dateStyle: "medium", timeZone: "UTC" })}
+      </p>
       <p className="mt-4 text-[var(--color-secondary)]">{t(offer.mode === "EARNED" ? "earned_detail" : "detail")}</p>
       {offer.mode === "COIN" ? <p className="mt-4 font-bold text-[var(--color-main)]">
         {t("allowance", { remaining: offer.coinRemaining, limit: offer.coinLimit, days: offer.windowDays })}

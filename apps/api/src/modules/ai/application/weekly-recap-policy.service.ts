@@ -46,11 +46,19 @@ export class WeeklyRecapPolicyService {
     return { enabled, freeEnabled, freeLimit, coinEnabled, coinLimit, days, aiEnabled: aiEnabled && globalAi, economy, cost };
   }
 
-  async offer(user: RequestUser, examId: string, review: WeeklyReviewDto, tx: DatabaseTx, exceptId?: string): Promise<WeeklyRecapOfferDto> {
-    const [settings, ent, me, balance, legacy] = await Promise.all([
+  /** Read independent services before the caller acquires its recap transaction. */
+  async prepare(user: RequestUser, examId: string, review: WeeklyReviewDto) {
+    const [settings, ent, me, balance, legacy, cached] = await Promise.all([
       this.settings(), this.entitlement.getEntitlement(user.id, user.roles), this.users.getMe(user.id),
       this.economy.getSelfBalance(user.id), this.deep.isUnlocked(user.id, examId, review.period.startDate),
+      this.cache.findAny(user.id, examId, review.period.startDate),
     ]);
+    const capacity = !!cached || await this.budget.hasCapacity();
+    return { settings, ent, me, balance, legacy, hasCachedNarration: !!cached, capacity };
+  }
+
+  async offer(user: RequestUser, examId: string, review: WeeklyReviewDto, context: Awaited<ReturnType<WeeklyRecapPolicyService["prepare"]>>, tx: DatabaseTx, exceptId?: string): Promise<WeeklyRecapOfferDto> {
+    const { settings, ent, me, balance, legacy, hasCachedNarration, capacity } = context;
     const owned = await this.reports.find(user.id, examId, review.period.startDate, tx);
     const reservations = await this.reports.reservations(user.id, tx, exceptId);
     const earnedUsed = await this.reports.earnedCount(user.id, tx);
@@ -70,13 +78,13 @@ export class WeeklyRecapPolicyService {
       windowDays: settings.days, nextAvailableAt: allowance.nextAvailableAt,
     };
     if (owned?.status === "READY") return result;
-    const hasNarration = !!owned?.narration || !!(await this.cache.findAny(user.id, examId, review.period.startDate));
+    const hasNarration = !!owned?.narration || hasCachedNarration;
     let reason: ErrorCode | undefined;
     if (!settings.enabled) reason = ErrorCode.NOT_FOUND;
     else if (owned?.status === "RUNNING" && owned.expiresAt > new Date()) reason = ErrorCode.WEEKLY_RECAP_PROCESSING;
     else if (review.status !== "READY" && !legacy) reason = ErrorCode.COACHING_WEEKLY_REVIEW_INSUFFICIENT;
     else if (!settings.aiEnabled && !hasNarration) reason = ErrorCode.AI_DISABLED;
-    else if (!hasNarration && !(await this.budget.hasCapacity())) reason = ErrorCode.AI_BUDGET_EXCEEDED;
+    else if (!hasNarration && !capacity) reason = ErrorCode.AI_BUDGET_EXCEEDED;
     else if (mode === "EARNED" && (!earnedAvailable || !me.emailVerified)) reason = ErrorCode.PAYMENT_PREMIUM_REQUIRED;
     else if (mode === "COIN") {
       if (!settings.economy || !settings.coinEnabled || settings.cost <= 0) reason = ErrorCode.PAYMENT_PREMIUM_REQUIRED;

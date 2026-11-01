@@ -133,6 +133,17 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Weekly chest carry-over and first-open review fixes
+
+- **What:** A missing previous-week chest is reevaluated using its Sunday. Pending reward keys
+  now participate in carry-over selection, and both weeks reload progress after evaluation so
+  a newly granted chest opens on the first request.
+- **Usage:** Existing weekly chest GET/open endpoints retain their contracts. A cap-held chest
+  remains ready with its pending message until the reward can be granted.
+- **Gotchas:** Pending chests are not stamped revealed and no receipt is acknowledged before
+  a progress row exists. Existing grants and repeated opens remain idempotent.
+- **Files:** `apps/api/src/modules/economy/application/weekly-chest.service.ts` and its unit tests.
+
 ### 2026-11-01 — Haftalık sandık: durum ve açılış uçları (arka uç dilimi)
 
 Sandık (`weekly.effort-allowance`) artık tek bir nesne: `GET /v1/economy/weekly-chest` durumunu

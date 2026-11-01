@@ -43,7 +43,8 @@ export class WeeklyRecapService implements OnModuleInit {
     const week = weekStart ?? weeklyReviewWindows().startDate;
     const saved = await this.reports.find(user.id, examId, week);
     const review = saved?.review ?? await this.reviewAt(user.id, examId, week);
-    return this.reports.locked(user.id, (tx) => this.policy.offer(user, examId, review, tx, saved?.id));
+    const context = await this.policy.prepare(user, examId, review);
+    return this.reports.locked(user.id, (tx) => this.policy.offer(user, examId, review, context, tx, saved?.id));
   }
 
   async open(user: RequestUser, body: OpenWeeklyRecapInput): Promise<WeeklyRecapReportDto> {
@@ -58,13 +59,14 @@ export class WeeklyRecapService implements OnModuleInit {
       return this.view(await this.settlement.settle(user.id, quoted));
     }
     const review = old?.review ?? await this.reviewAt(user.id, body.examId, body.weekStart);
+    const context = await this.policy.prepare(user, body.examId, review);
     const row = await this.reports.locked(user.id, async (tx) => {
       const bound = await this.reports.byRequest(user.id, body.clientRequestId, tx);
       if (bound && (bound.examId !== body.examId || bound.weekStart !== body.weekStart))
         throw new DomainError(ErrorCode.CONFLICT, HttpStatus.CONFLICT);
       const current = await this.reports.find(user.id, body.examId, body.weekStart, tx);
       if (current?.status === "READY" || current?.status === "GENERATED") return current;
-      const offer = await this.policy.offer(user, body.examId, review, tx, current?.id);
+      const offer = await this.policy.offer(user, body.examId, review, context, tx, current?.id);
       if (!offer.canOpen) this.policy.deny(offer.reason);
       if (offer.mode !== body.source || offer.cost !== body.expectedCost) this.policy.deny(ErrorCode.WEEKLY_RECAP_PRICE_CHANGED);
       if (body.weekStart !== weeklyReviewWindows().startDate && offer.mode !== "OWNED")
@@ -122,11 +124,12 @@ export class WeeklyRecapService implements OnModuleInit {
     return row?.status === "READY" ? row.narration : null;
   }
 
-  private requoteEarned(user: RequestUser, body: OpenWeeklyRecapInput, old: WeeklyRecapRow) {
+  private async requoteEarned(user: RequestUser, body: OpenWeeklyRecapInput, old: WeeklyRecapRow) {
+    const context = await this.policy.prepare(user, old.examId, old.review);
     return this.reports.locked(user.id, async (tx) => {
       const row = (await this.reports.find(user.id, old.examId, old.weekStart, tx))!;
       if (row.status !== "GENERATED") return row;
-      const offer = await this.policy.offer(user, row.examId, row.review, tx, row.id);
+      const offer = await this.policy.offer(user, row.examId, row.review, context, tx, row.id);
       if (!offer.canOpen) this.policy.deny(offer.reason);
       if (offer.mode !== body.source || offer.cost !== body.expectedCost) this.policy.deny(ErrorCode.WEEKLY_RECAP_PRICE_CHANGED);
       return (await this.reports.update(row, { source: "COIN", cost: offer.cost }, tx))!;

@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { AuthUser, ExamCalendarDto, Paginated, WeeklyRecapArchiveItemDto, WeeklyRecapOfferDto, WeeklyRecapReportDto } from "@mentor/types";
 import { ApiClientError, usersControllerMe, contentControllerCalendarByFamily } from "@mentor/api-client";
-import { Button, Skeleton } from "@mentor/ui";
+import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { notifyEconomyChanged } from "@/lib/economy";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
@@ -100,7 +100,7 @@ export function WeeklyRecapEntry() {
   if (state.kind === "legacy") return <WeeklyRecapShell />;
   if (state.kind === "report") return <WeeklyRecapShell savedReport={state.report} />;
   return <main className="mx-auto w-full max-w-xl px-4 py-8" data-testid="weekly-recap-access">
-    {state.kind === "loading" ? <div className="space-y-4" aria-busy="true"><Skeleton className="h-80 w-full" /><Skeleton className="h-32 w-full" /></div>
+    {state.kind === "loading" ? <SkeletonGroup label={t("loading")} className="space-y-4"><Skeleton className="h-80 w-full" /><Skeleton className="h-32 w-full" /></SkeletonGroup>
       : state.kind === "error" ? <section role="alert" className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-6">
         <p>{state.message}</p><Button className="mt-4" onClick={() => setAttempt((value) => value + 1)}>{t("ownership.retry")}</Button>
         <Link href="/analysis" className="mt-4 flex min-h-11 items-center underline">{t("ownership.statistics")}</Link>

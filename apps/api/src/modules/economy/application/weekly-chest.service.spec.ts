@@ -23,7 +23,7 @@ const chestRow = (periodKey: string, revealed = false): Row => ({
 
 function build(options: { economyEnabled?: boolean; disabledIds?: string; rows?: Row[]; pending?: string[] } = {}) {
   const rows = options.rows ?? [];
-  const quests = { evaluateAndGrant: vi.fn(async () => options.pending ?? []) };
+  const quests = { evaluateAndGrant: vi.fn(async (_userId: string, _date?: string) => options.pending ?? []) };
   const weeks: Record<string, { weekKey: string; dates: string[] }> = {
     "2026-11-04": { weekKey: "2026-W45", dates: ["2026-11-02", "2026-11-04"] },
     "2026-11-01": {
@@ -176,6 +176,48 @@ describe("WeeklyChestService", () => {
     const { service, progress } = build({ rows: [chestRow("2026-W44")] });
     expect(await service.open("user-1", "2026-W44")).toMatchObject({ state: "OPENED", carriedOver: true });
     expect(progress.markRevealed).toHaveBeenCalledWith("user-1", "row-2026-W44");
+  });
+
+  it("carries last week's cap-held chest even without a progress row", async () => {
+    const { service, quests } = build({ pending: ["weekly.effort-allowance:2026-W44"] });
+    expect(await service.getView("user-1")).toMatchObject({
+      state: "READY", periodKey: "2026-W44", carriedOver: true, reward: null,
+      rewardPendingMessage: trEconomy.questRewardPending,
+    });
+    expect(quests.evaluateAndGrant).toHaveBeenCalledWith("user-1", "2026-11-01");
+  });
+
+  it("opens last week's cap-held chest without stamping it", async () => {
+    const { service, quests, progress } = build({ pending: ["weekly.effort-allowance:2026-W44"] });
+    expect(await service.open("user-1", "2026-W44")).toMatchObject({
+      state: "READY", carriedOver: true, reward: null,
+    });
+    expect(quests.evaluateAndGrant).toHaveBeenCalledWith("user-1", "2026-11-01");
+    expect(progress.markRevealed).not.toHaveBeenCalled();
+  });
+
+  it.each(["2026-W45", "2026-W44"])("opens a %s chest granted during the first open request", async (periodKey) => {
+    const rows: Row[] = [];
+    const { service, quests, progress, receipts } = build({ rows });
+    quests.evaluateAndGrant.mockImplementation(async () => {
+      rows.push(chestRow(periodKey));
+      return [];
+    });
+    expect(await service.open("user-1", periodKey)).toMatchObject({ state: "OPENED", periodKey });
+    expect(progress.markRevealed).toHaveBeenCalledWith("user-1", `row-${periodKey}`);
+    expect(receipts.markSeen).toHaveBeenCalledWith("user-1", [`ledger-row-${periodKey}`]);
+  });
+
+  it("shows last week's chest when reevaluation finally grants its reward", async () => {
+    const rows: Row[] = [];
+    const { service, quests } = build({ rows });
+    quests.evaluateAndGrant.mockImplementation(async (_userId?: string, date?: string) => {
+      if (date === "2026-11-01") rows.push(chestRow("2026-W44"));
+      return [];
+    });
+    expect(await service.getView("user-1")).toMatchObject({
+      state: "READY", periodKey: "2026-W44", reward: { unit: "COIN", amount: 15 },
+    });
   });
 
   it("open shows the note for a cap-held chest without stamping it", async () => {

@@ -103,6 +103,19 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-01 — Wrapped review fixes: transaction connections and accessible dates
+
+- **What:** Recap offer dependencies and settlement entitlement/config reads now finish before
+  the recap lock acquires a connection. Reservation counts, purchase limits and the final Coin
+  debit still use the caller's transaction. Access cards and archive dates follow the active
+  locale, with UTC date-only formatting; the loading region uses a labelled `SkeletonGroup`.
+- **Usage:** Existing recap endpoints and TR/EN screens require no contract or migration changes.
+- **Gotchas:** Prepared context is request-scoped, not an authorization cache. Actual generation
+  retains its budget reservation; settlement still rechecks limits and the confirmed balance.
+- **Files:** `weekly-recap-policy.service.ts`, `weekly-recap.service.ts`,
+  `weekly-recap-settlement.service.ts`, `weekly-recap-locking.spec.ts`,
+  web recap `weekly-recap-{access-card,archive,entry}.tsx`.
+
 ### 2026-11-01 — One generated narration per owned Wrapped report
 
 - **What:** AI owns the composed report snapshot and narration, using Coaching's public evidence.

@@ -13,15 +13,17 @@ export class WeeklyRecapSettlementService {
     private readonly purchases: WeeklyRecapPurchasesService, private readonly policy: WeeklyRecapPolicyService,
     private readonly entitlement: EntitlementService) {}
 
-  settle(userId: string, old: WeeklyRecapRow): Promise<WeeklyRecapRow> {
+  async settle(userId: string, old: WeeklyRecapRow): Promise<WeeklyRecapRow> {
+    const [entitlement, settings] = await Promise.all([
+      this.entitlement.getEntitlement(userId), this.policy.settings(),
+    ]);
     return this.reports.locked(userId, async (tx) => {
       let row = await this.reports.find(userId, old.examId, old.weekStart, tx);
       if (!row) throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
       if (row.status === "READY") return row;
       if (row.status !== "GENERATED" || !row.narration) this.policy.deny(ErrorCode.WEEKLY_RECAP_PROCESSING);
-      if ((row.source !== "COIN" || row.cost > 0) && (await this.entitlement.getEntitlement(userId)).isPremium)
+      if ((row.source !== "COIN" || row.cost > 0) && entitlement.isPremium)
         row = (await this.reports.update(row, { source: "PREMIUM", cost: 0 }, tx))!;
-      const settings = await this.policy.settings();
       const pending = await this.reports.reservations(userId, tx, row.id);
       if (row.source === "EARNED") {
         const used = await this.reports.earnedCount(userId, tx);
