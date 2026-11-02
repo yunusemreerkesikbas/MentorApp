@@ -10,7 +10,7 @@ import type {
 import { UsersService } from "../../identity/application/users.service";
 import { SESSION_PRESETS } from "../domain/coaching.constants";
 import { CONTENT_PORT, type ContentPort } from "../domain/content.port";
-import { daysBetween, formatTurkishDate, todayIso } from "../domain/date.util";
+import { daysBetween, formatTurkishDate, todayInIstanbul } from "../domain/date.util";
 import { MoodService } from "./mood.service";
 import { PlanService } from "./plan.service";
 import { SessionService } from "./session.service";
@@ -42,7 +42,8 @@ export class TodayService {
   ) {}
 
   async getToday(userId: string): Promise<TodayPanelResponse> {
-    const today = todayIso();
+    const now = new Date();
+    const today = todayInIstanbul(now);
     /*
      * Two waves, not a chain. Identity owns the profile (display name + exam type), so it is read
      * via its service rather than a coaching query — but streak, plan, mood and session numbers do
@@ -53,7 +54,7 @@ export class TodayService {
       this.users.getMe(userId),
       this.streak.getSummary(userId),
       this.plan.listForDate(userId, today),
-      this.mood.getToday(userId),
+      this.mood.getToday(userId, now),
       this.sessions.getTodayFocusMinutes(userId),
       // Ambience only — a failed aggregate must never take the daily hub down (logged fallback).
       this.sessions.getFocusingNowCount().catch((err: unknown) => {
@@ -96,6 +97,9 @@ export class TodayService {
       countdown,
       streak,
       tasks,
+      canLightenPlan: tasks.some(
+        (task) => task.status === "PENDING" && task.origin?.type !== "MENTORSHIP",
+      ),
       nextAction: this.nextAction(tasks, mood),
       sessionPresets: [...SESSION_PRESETS],
       mood,

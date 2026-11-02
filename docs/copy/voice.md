@@ -79,6 +79,22 @@ professionals, so it stays plain and gets a single `!`, on the closing title.
 - **No numbers we cannot back.** The live count comes from the API and hides below its threshold.
   Demo cards (seats, league, minutes) are illustrations, never claims.
 
+## Açma seçimi (Coin veya Premium): enerjik Puhu (2026-11-03)
+
+The shared unlock choice speaks in the same **Duolingo-like Puhu** as Topluluk (owner's call,
+2026-11-03). Pilot: the weekly recap access card (`analysis.recap.ownership.*`); the plan draft,
+notebook capacity and streak freeze sheets follow when they adopt the pattern. Coach chat stays out
+(no Coin amounts in the chat zone).
+
+- **Puhu:** the card intro, the choice heading, row titles and captions, the gift, the "Coin falls
+  short" cheer and the allowance-used line. One `!` per sentence, no emoji, never in an `aria-label`:
+  "Hangi yoldan açalım?", "170 Coin daha, hikâye senin!", "İki hikâyeyi de açtın, harika!".
+- **Stay plain (companion, no "!"):** price and balance ("Bakiyen 320 → 70 Coin"), the confirm and
+  cancel buttons, payment ledges ("7 gün ücretsiz dene", "Premium'u incele"), what was or was not
+  spent ("Coin ya da hak harcanmadı."), errors.
+- **Say what lands:** "250 Coin", "+10", "+100", from the API; never "ödül" or "hak kazan".
+- **Still banned:** FOMO ("kaçırma"), guilt about a short balance, pressure toward Premium.
+
 ## Coach chat vs chrome
 
 - **Coach chat (LLM + mood/motivation/nextAction/calibration fallbacks)** uses the **companion** register. First person: “Ben buradayım.” Address the student as **sen**. Short sentences. No guilt. Same mouth as a serious mood reply.

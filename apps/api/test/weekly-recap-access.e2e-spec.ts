@@ -85,10 +85,11 @@ describe("Owned Wrapped reports (HTTP/Postgres)", () => {
     expect(await coins()).toBe(75);
   });
 
-  it("earns one verified first report without consuming Coin allowance", async () => {
+  it("earns one first report without email verification or Coin allowance", async () => {
     await h.set("coaching.weekly_recap.free_enabled", true);
-    await h.tx(async (db) => { await db.query("update users set email_verified_at=now() where id=$1", [user.id]); });
-    expect((await offer()).mode).toBe("EARNED");
+    const view = await offer();
+    expect(view).toMatchObject({ mode: "EARNED", canOpen: true });
+    expect(view.teaser).toEqual({ activeDays: 1, focusMinutes: 0, topSubject: null });
     expect((await open()).status).toBe(201);
     expect(await coins()).toBe(100);
     expect(await offer(exams[1])).toMatchObject({ mode: "COIN", coinRemaining: 2 });
@@ -96,10 +97,10 @@ describe("Owned Wrapped reports (HTTP/Postgres)", () => {
     expect((await offer(exams[1])).mode).toBe("EARNED");
   });
 
-  it("requires verification for the earned path and never charges an incomplete week", async () => {
+  it("offers the earned path to unverified users and never charges an incomplete week", async () => {
     await h.set("coaching.weekly_recap.free_enabled", true);
     await h.set("economy.coin.deep_analysis_cost", 101);
-    expect((await offer()).reason).toBe("WEEKLY_RECAP_EMAIL_REQUIRED");
+    expect(await offer()).toMatchObject({ mode: "EARNED", canOpen: true });
     user = await h.signup();
     expect((await offer()).ready).toBe(false);
     expect((await open()).status).not.toBe(201);
@@ -157,7 +158,6 @@ describe("Owned Wrapped reports (HTTP/Postgres)", () => {
 
   it("serializes the single earned allowance across concurrent exams without Coin debits", async () => {
     await h.set("coaching.weekly_recap.free_enabled", true);
-    await h.tx(async (db) => { await db.query("update users set email_verified_at=now() where id=$1", [user.id]); });
     const views = await Promise.all([offer(), offer(exams[1])]);
     const results = await Promise.all(views.map((view) => open(view)));
     expect(results.filter((r) => r.status === 201)).toHaveLength(1);
@@ -237,8 +237,7 @@ describe("Owned Wrapped reports (HTTP/Postgres)", () => {
     user = await weeklyAccount(h.app, h.pool, true);
     const first = await open(); expect(first.status).toBe(201); expect(first.body.source).toBe("PREMIUM");
     expect(await coins()).toBe(0);
-    await h.tx(async (db) => { await db.query("update subscriptions set status='EXPIRED',current_period_end=now()-interval '1 day' where user_id=$1", [user.id]);
-      await db.query("update users set email_verified_at=now() where id=$1", [user.id]); });
+    await h.tx(async (db) => { await db.query("update subscriptions set status='EXPIRED',current_period_end=now()-interval '1 day' where user_id=$1", [user.id]); });
     await h.set("coaching.weekly_recap.free_enabled", true);
     expect((await offer()).mode).toBe("OWNED");
     expect((await offer(exams[1])).mode).toBe("EARNED");
@@ -246,7 +245,6 @@ describe("Owned Wrapped reports (HTTP/Postgres)", () => {
 
   it("offers explicit Coin settlement for saved earned output after another report uses the grant", async () => {
     await h.set("coaching.weekly_recap.free_enabled", true);
-    await h.tx(async (db) => { await db.query("update users set email_verified_at=now() where id=$1", [user.id]); });
     const calls = vi.spyOn(h.app.get<LlmPort>(LLM_PORT), "complete");
     const first = await open(); expect(first.status).toBe(201);
     await h.tx(async (db) => { await db.query("update ai_weekly_recaps set status='GENERATED',opened_at=null,expires_at=now()-interval '1 second' where id=$1", [first.body.id]); });

@@ -170,7 +170,7 @@ function PanelContent() {
     <GreetingRow
       mood={moodCheckin.mood}
       busy={moodCheckin.busy}
-      canLighten={data?.tasks.some((task) => task.status === "PENDING") ?? false}
+      canLighten={data?.canLightenPlan ?? false}
       onPick={(value) => void moodCheckin.pickMood(value)}
     />
   );

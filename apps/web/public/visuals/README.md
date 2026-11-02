@@ -31,5 +31,6 @@ Paths are resolved in `src/lib/study-room-theme.ts`.
 The weekly chest is the other set: `/visuals/chest/` holds the panel chest (`chest-closed.webp`,
 `chest-open.webp`, transparent), the desk scene's first and last frames
 (`desk-chest-closed.webp`, `desk-chest-open.webp`) and the lid clip (`chest-open.mp4`, no
-watermark). The lamp positions in `components/weekly-chest/chest-art.tsx` are measured on these
+watermark). Landscape screens use the 16:9 set with the same names plus `-wide`
+(`desk-chest-closed-wide.webp`, `desk-chest-open-wide.webp`, `chest-open-wide.mp4`); upright screens the 9:16 `-tall` set. The lamp positions in `components/weekly-chest/chest-art.tsx` are measured on these
 exact files: replace one and re-measure.

@@ -237,7 +237,7 @@ export function ThreadItem({
         {!editing && poll ? <ForumPollCard poll={poll} onChange={setPoll} /> : null}
 
         {!editing && thread.attachments.length > 0 ? (
-          <AttachmentGallery attachments={thread.attachments} />
+          <AttachmentGallery attachments={thread.attachments} compactSingle={clickable} />
         ) : null}
 
         {/* Action row — reaction palette + comment count · send (share link) · bookmark. */}

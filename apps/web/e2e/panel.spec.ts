@@ -97,6 +97,7 @@ function today(tasks: PlanTaskDto[]): TodayPanelResponse {
     countdown: null,
     streak: IDLE_STREAK,
     tasks,
+    canLightenPlan: tasks.some(item => item.status === "PENDING" && item.origin?.type !== "MENTORSHIP"),
     nextAction: {
       kind: tasks.length === 0 ? "ADD_TASK" : "START_TASK",
       title: "Bugünün tek küçük adımı",
@@ -184,12 +185,13 @@ test("closing economy removes rewards from an open sheet and clears nav balance"
 test("recap banner stays new until the story actually opens", async ({ page }) => {
   const period = readyWeekly.period;
   const key = `mentor.weekly-recap.opened.v2:${period.startDate}`;
-  await mockPanel(page, [], { examId: exam.id, startDate: period.startDate, endDate: period.endDate, status: "READY" });
+  await mockPanel(page, [], { examId: exam.id, startDate: period.startDate, endDate: period.endDate, timeZone: "Europe/Istanbul", status: "READY" });
   let storyEnabled = false;
   await page.route("**/v1/coach/weekly-recaps/access?**", (route) => json(route, {
     enabled: !storyEnabled, examId: exam.id, weekStart: period.startDate, endDate: period.endDate,
-    ready: true, premium: false, mode: "COIN", canOpen: false, premiumAvailable: true,
+    ready: true, premium: false, mode: "COIN", canOpen: false, premiumAvailable: true, reason: "INSUFFICIENT_COIN",
     reportId: null, cost: 25, coinConfirmed: 0, coinLimit: 2, coinRemaining: 2, windowDays: 30, nextAvailableAt: null,
+    teaser: { activeDays: 5, focusMinutes: 340, topSubject: null },
   }));
   await page.route("**/v1/coach/weekly-recaps?**", (route) => json(route, { items: [], total: 0, page: 1, pageSize: 10 }));
   await page.route("**/v1/coaching/weekly-review?**", (route) => json(route, readyWeekly));
@@ -229,7 +231,12 @@ function json(route: Route, body: unknown, status = 200) {
   });
 }
 
-async function mockPanel(page: Page, initialTasks: PlanTaskDto[], recap: TodayPanelResponse["weeklyRecapPeriod"] = null) {
+async function mockPanel(
+  page: Page,
+  initialTasks: PlanTaskDto[],
+  recap: TodayPanelResponse["weeklyRecapPeriod"] = null,
+  premium = false,
+) {
   const tasks = initialTasks.map((item) => ({ ...item }));
   let mood: MoodCheckinDto | null = null;
   const moodBodies: unknown[] = [];
@@ -274,7 +281,9 @@ async function mockPanel(page: Page, initialTasks: PlanTaskDto[], recap: TodayPa
     if (method === "GET" && path === "/v1/subscription") {
       return json(route, {
         subscription: null,
-        entitlement: { tier: "FREE", isPremium: false, validUntil: null, reason: "NONE" },
+        entitlement: premium
+          ? { tier: "PREMIUM", isPremium: true, validUntil: "2026-12-01T00:00:00.000Z", reason: "ACTIVE" }
+          : { tier: "FREE", isPremium: false, validUntil: null, reason: "NONE" },
         features: {},
         discount: null,
       });
@@ -318,6 +327,28 @@ async function mockPanel(page: Page, initialTasks: PlanTaskDto[], recap: TodayPa
   return { moodBodies, taskPatches };
 }
 
+test("insan koçun görevleri düşük modda hafifletme kartını açmaz", async ({ page }) => {
+  const assigned = { ...task(FIRST_TASK, "Koçun görevi", "PENDING"),
+    origin: { type: "MENTORSHIP" as const, linkId: "link-1" } };
+  await mockPanel(page, [assigned]);
+  await page.goto("/panel");
+  await page.getByTestId("mood-option-2").click();
+  await expect(page.getByTestId("mood-option-2")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("link", { name: /Bugünü biraz hafifletmek/ })).toHaveCount(0);
+});
+
+test("hafifletme kartı için sunucunun uygunluk kararını kullanır", async ({ page }) => {
+  const tasks = [task(FIRST_TASK, "Bekleyen görev", "PENDING")];
+  await mockPanel(page, tasks);
+  await page.route("**/v1/coaching/today", route => json(route, {
+    ...today(tasks), canLightenPlan: false,
+  }));
+  await page.goto("/panel");
+  await page.getByTestId("mood-option-2").click();
+  await expect(page.getByTestId("mood-option-2")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("link", { name: /Bugünü biraz hafifletmek/ })).toHaveCount(0);
+});
+
 test("ruh hali selam satırında tek dokunuşla kaydedilir, çark açılmaz", async ({ page }) => {
   const api = await mockPanel(page, [task(FIRST_TASK, "Paragraf: 20 soru", "PENDING")]);
   await page.goto("/panel");
@@ -331,6 +362,20 @@ test("ruh hali selam satırında tek dokunuşla kaydedilir, çark açılmaz", as
   const speech = page.getByRole("dialog");
   await expect(speech).toContainText("Güzel bir enerji.");
   await expect(page.getByTestId("mood-option-4")).toHaveAttribute("aria-pressed", "true");
+  await expect(speech.locator('img[src*="motion%2Fpremium"]')).toHaveCount(0);
+  await expect(page.getByTestId("desktop-coach-fab").locator('img[src*="puhu-encouraging"]')).toHaveCount(1);
+});
+
+test("premium üyede ruh hali konuşmasını maskeli Puhu yapar", async ({ page }) => {
+  await mockPanel(page, [task(FIRST_TASK, "Paragraf: 20 soru", "PENDING")], null, true);
+  await page.goto("/panel");
+
+  await page.getByTestId("mood-option-4").click();
+  const speech = page.getByRole("dialog");
+  await expect(speech).toContainText("Güzel bir enerji.");
+  // Masked Puhu = premium speaking: all four frames come from the masked set.
+  await expect(speech.locator('img[src*="motion%2Fpremium"]')).toHaveCount(4);
+  await expect(page.getByTestId("desktop-coach-fab").locator('img[src*="puhu-premium-hero"]')).toHaveCount(1);
 });
 
 for (const [status, visible] of [

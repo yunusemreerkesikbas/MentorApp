@@ -30,9 +30,10 @@ export async function assertPlanSourceApplicable(
   sessions: SessionService,
   userId: string,
   input: CoachPlanAdaptationInput,
+  now = new Date(),
 ): Promise<void> {
   if (input.source === "MOOD") {
-    const mood = await moods.getToday(userId);
+    const mood = await moods.getToday(userId, now);
     if (!mood || mood.mood > 2) {
       throw new DomainError(
         ErrorCode.AI_PLAN_ADAPTATION_NOT_APPLICABLE,

@@ -1,3 +1,5 @@
+import type { WeeklyRecapTeaserDto } from "@mentor/types";
+
 export const RECAP_LEASE_MS = 5 * 60 * 1000;
 export const RECAP_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -21,4 +23,17 @@ export function recapAllowance(
 
 export function recapMode(owned: boolean, premium: boolean, earned: boolean) {
   return owned ? "OWNED" : premium ? "PREMIUM" : earned ? "EARNED" : "COIN";
+}
+
+type TeaserSource = {
+  rhythm: { activeDays: number; focusMinutes: number; subjectBreakdown: { subjectName: string; focusMinutes: number }[] };
+  plan: { subjectBreakdown: { subjectName: string; completedTaskCount: number }[] };
+};
+
+/** The locked card's cover: free basic numbers only, never the story or its narration. */
+export function recapTeaser({ rhythm, plan }: TeaserSource): WeeklyRecapTeaserDto {
+  const top = <T>(rows: T[], by: (row: T) => number) => rows.reduce<T | undefined>((best, row) => !best || by(row) > by(best) ? row : best, undefined);
+  const topSubject = top(rhythm.subjectBreakdown, (row) => row.focusMinutes)?.subjectName
+    ?? top(plan.subjectBreakdown, (row) => row.completedTaskCount)?.subjectName ?? null;
+  return { activeDays: rhythm.activeDays, focusMinutes: rhythm.focusMinutes, topSubject };
 }

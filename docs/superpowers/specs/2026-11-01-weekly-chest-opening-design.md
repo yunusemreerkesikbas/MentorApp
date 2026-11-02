@@ -255,22 +255,24 @@ The raised wings and ear tufts stay fully inside the frame. The bottom 30% stays
 ```
 
 **12. Açılış klibi, yatay** (Kling; başlangıç 10, bitiş 11; 5 sn, 16:9, 1920x1080, Professional, yüksek prompt bağlılığı; 9 için aynı metin, `16:9` yerine `9:16`)
+
+Akış (tur 3, kullanıcı önerisi): sandık kendisi canlanır. Sarsılır, sıçrar, havada patlarcasına açılır,
+ışık saçar ve yerine konar; Puhu önce şaşırır, sonra kutlar. Sandık hareket ettiği için şekil bozulmasına
+karşı negatif güçlü tutuldu; 3–4 varyasyon üretilir.
 ```
-Premium cartoony 3D mascot animation, 16:9, with snappy cartoon timing: fast moves, big exaggerated poses, strong squash and stretch, clear anticipation before every big move, springy overshoot and a short hold on each key pose. Joyful and full of personality. Punchy and lively, never slow or floaty.
+Premium cartoony 3D animation, 16:9, with snappy cartoon timing: fast moves, big exaggerated poses, strong squash and stretch, clear anticipation before every big move, springy overshoot and a short hold on each key pose. Joyful and full of personality. Punchy and lively, never slow or floaty. The chest comes alive and the owl reacts to it.
 0.0-0.3s: hold the start frame exactly, perfectly still.
-0.3-1.0s: the owl bounces on its toes twice, drumming both wings on the desk beside the chest; its fluffy feathers ripple and its ear tufts spring up and down a beat after the body.
-1.0-1.7s: it squashes down low and wiggles in anticipation, then springs up and flings the lid open with both wings in one fast snap; the lid swings back on its hinge and wobbles with a springy overshoot.
-1.7-2.5s: a burst of warm golden light pops out of the chest in soft volumetric rays with a puff of gold sparkles and tiny star bursts; the light sweeps up over the owl's face, the underside of its wings and the shelves, and glints across its glasses; the owl's eyes go huge and its whole body stretches tall in surprise.
-2.5-4.0s: the owl does one big happy jump straight up, wings thrown high, stretching in the air and squashing on landing, ear tufts flopping and feathers settling a beat late. The light from the chest keeps glowing and the sparkles drift and fade.
-4.0-4.5s: it snaps into the final pose, wings high in triumph, beaming, with a quick happy wiggle.
+0.3-1.4s: the closed chest starts to rattle on the desk by itself: three quick shakes, each one stronger than the last, the lid clattering on its hinge and thin beams of golden light leaking out of the seam under the lid with each shake. The owl jumps back a little in surprise, eyes huge behind its glasses, ear tufts springing up, then leans in close and curious.
+1.4-2.0s: the chest squashes down flat in anticipation, then springs straight up about a hand's width off the desk, and in mid-air the lid bursts open with a snap.
+2.0-2.8s: a big burst of warm golden light shoots out of the open chest in volumetric rays radiating in every direction, with a puff of gold sparkles and tiny star bursts; the light floods over the owl's face, the underside of its wings and the bookshelves, and glints across its glasses. The chest drops back down onto exactly the same spot on the desk and lands with a springy squash and bounce.
+2.8-4.5s: the owl does one big happy jump straight up, wings thrown high, stretching in the air and squashing on landing, ear tufts flopping and feathers settling a beat late, then snaps into the final pose, wings high in triumph, beaming, with a quick happy wiggle. The light keeps glowing and the sparkles drift and fade.
 4.5-5.0s: hold the end frame exactly, perfectly still.
-Background life, small and gentle: the window stars twinkle, the lantern flickers softly, a few dust motes float in the lamp light. The camera is completely static. The chest body stays fixed on the desk and keeps its shape; only the lid moves. The owl stays inside the frame and behind the chest; its wings and ear tufts never leave the frame, even at the top of the jump. The lamp, window and shelves keep their shape and place. The bottom 30% stays plain dark desk front. No text.
+The chest keeps its exact shape, wood, brass bands, blank brass strip and glasses-shaped lock plate at all times; it only shakes, hops and lands back on the same spot, and only the lid opens. Background life, small and gentle: the window stars twinkle, the lantern flickers softly, a few dust motes float in the lamp light. The camera is completely static. The owl stays inside the frame and behind the chest; its wings and ear tufts never leave the frame. The lamp, window and shelves keep their shape and place. The bottom 30% stays plain dark desk front. No text.
 ```
 Negatif:
 ```
-slow motion, slow, sluggish, calm, gentle body movement, low energy, hesitant, floaty, stiff, realistic motion, camera movement, zoom, pan, dolly, shake, chest moving, chest deforming, lid detaching, extra chests, coins flying everywhere, background change, room changing, lamp moving, owl changing size, owl changing design, text, watermark, logo, extra characters, extra limbs, extra wings, morphing, melting, deformed wings, deformed face, deformed glasses, glasses falling off, green owl, flicker, cropped wings, owl leaving frame, objects in the bottom third
-```
-Teslim: 10 ve 11 PNG (en büyük boy), klipten 2–3 varyasyon, en canlısı. Başlangıç ve bitiş karesine
+slow motion, slow, sluggish, calm, gentle body movement, low energy, hesitant, floaty, stiff, realistic motion, camera movement, zoom, pan, dolly, camera shake, chest deforming, chest changing shape, chest melting, chest stretching, lock plate changing, glasses on the chest disappearing, brass strip changing, lid detaching, lid breaking, chest flying away, chest landing in a different place, extra chests, coins flying everywhere, background change, room changing, lamp moving, owl changing size, owl changing design, text, watermark, logo, extra characters, extra limbs, extra wings, morphing, melting, deformed wings, deformed face, deformed glasses, glasses falling off, green owl, flicker, cropped wings, owl leaving frame, objects in the bottom third
+```Teslim: 10 ve 11 PNG (en büyük boy), klipten 2–3 varyasyon, en canlısı. Başlangıç ve bitiş karesine
 oturmayan varyasyon elenir: sahnenin "Hazır" ve "Açıldı" kareleri yine klibin ilk ve son karesinden
 çıkar. Filigran kırpması alttan; lamba şeridi her sette ayrı ölçülür (`chest-art.tsx` `STRIPS`).
 ## Kod etkisi (uygulayıcıya yol haritası)

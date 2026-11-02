@@ -114,7 +114,7 @@ export function usePanelData() {
     let active = true;
     // Loader state updates happen only after each awaited request (same shape as `plan-shell`).
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void Promise.all([refreshToday(), refreshQuests(), refreshWeeklyChest(), refreshStreakRescue(), refreshRewardOffer()]);
+    void Promise.all([refreshToday(), refreshQuests(), refreshWeeklyChest()]);
     // The offers call is deduped module-side; the entitlement rides the shared subscription read.
     void fetchAutoPromotionOffers().then((offers) => {
       // An empty answer (204) is "nothing to advertise", not "still resolving": `undefined` would
@@ -124,7 +124,14 @@ export function usePanelData() {
     return () => {
       active = false;
     };
-  }, [refreshQuests, refreshRewardOffer, refreshStreakRescue, refreshToday, refreshWeeklyChest]);
+  }, [refreshQuests, refreshToday, refreshWeeklyChest]);
+
+  // Economy-gated feeds follow `economyEnabled` on their own: when the economy snapshot settles
+  // after first paint, only these re-run, not `/coaching/today` (requested once per load).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void Promise.all([refreshStreakRescue(), refreshRewardOffer()]);
+  }, [refreshRewardOffer, refreshStreakRescue]);
 
   useEffect(() => {
     function refreshIfVisible() {

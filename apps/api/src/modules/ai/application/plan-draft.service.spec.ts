@@ -1,5 +1,6 @@
 import { HttpStatus } from "@nestjs/common";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { todayInIstanbul } from "../../coaching/domain/date.util";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -7,9 +8,10 @@ import { AiUsageFeature } from "../domain/ai.constants";
 import { PlanDraftService } from "./plan-draft.service";
 
 const USER = { id: "u1", roles: ["STUDENT"] } as never;
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = todayInIstanbul();
 
 describe("PlanDraftService", () => {
+  afterEach(() => vi.useRealTimers());
   let complete: ReturnType<typeof vi.fn>;
   let append: ReturnType<typeof vi.fn>;
   let configGet: ReturnType<typeof vi.fn>;
@@ -65,6 +67,20 @@ describe("PlanDraftService", () => {
       } as never,
       { assertWithinBudget: vi.fn(async () => undefined) } as never,
     );
+  });
+
+  it("drafts the Istanbul day so its first task can be saved before UTC midnight", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-02T23:18:24.004Z"));
+    complete.mockResolvedValue({
+      text: JSON.stringify({ days: [{ date: "2026-11-03", tasks: [{ title: "Paragraf" }] }] }),
+      promptTokens: 10, completionTokens: 20, model: "fake",
+    });
+
+    const draft = await service.draft(USER);
+
+    expect(draft.days[0]?.date).toBe("2026-11-03");
+    expect(complete.mock.calls[0][0].user).toContain("2026-11-03");
   });
 
   it("throws PAYMENT_PREMIUM_REQUIRED for free users (premium-only §4 #5)", async () => {

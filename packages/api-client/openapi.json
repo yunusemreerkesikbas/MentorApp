@@ -11918,6 +11918,26 @@
           "code"
         ]
       },
+      "WeeklyRecapTeaserResponseDto": {
+        "type": "object",
+        "properties": {
+          "activeDays": {
+            "type": "number"
+          },
+          "focusMinutes": {
+            "type": "number"
+          },
+          "topSubject": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "activeDays",
+          "focusMinutes",
+          "topSubject"
+        ]
+      },
       "WeeklyRecapOfferResponseDto": {
         "type": "object",
         "properties": {
@@ -11978,6 +11998,9 @@
             "type": "string",
             "nullable": true
           },
+          "teaser": {
+            "$ref": "#/components/schemas/WeeklyRecapTeaserResponseDto"
+          },
           "reason": {
             "type": "string"
           },
@@ -12001,7 +12024,8 @@
           "coinLimit",
           "coinRemaining",
           "windowDays",
-          "nextAvailableAt"
+          "nextAvailableAt",
+          "teaser"
         ]
       },
       "WeeklyRecapArchiveItemResponseDto": {

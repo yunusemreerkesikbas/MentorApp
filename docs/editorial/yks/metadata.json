@@ -1,0 +1,206 @@
+{
+  "status": "DRAFT",
+  "language": "tr",
+  "preparedOn": "2026-11-03",
+  "sourceYear": 2026,
+  "yearStrategy": "YEARLESS_TITLES_WITH_EXPLICIT_2026_SOURCE_SCOPE",
+  "articles": [
+    {
+      "slug": "yks-tyt-ayt-ydt-farklari",
+      "title": "TYT, AYT ve YDT farkları: Hangi oturumlara girmelisin?",
+      "family": "YKS",
+      "category": "EXAM_PROCESS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-tyt-ayt-ydt-farklari.md",
+      "metaTitle": "TYT, AYT ve YDT Farkları: Oturum Seçimi | PuhuKoç",
+      "metaDescription": "TYT, AYT ve YDT farklarını, hedef puan türüne göre gereken oturumları ve soru yapısını öğren. Rehber, ÖSYM'nin 2026 belgelerine dayanır.",
+      "source": "ÖSYM 2026 YKS Kılavuzu ve Sıkça Sorulan Sorular",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/basvuru_kilavuz06022026.pdf",
+      "authorName": null,
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 1,
+        "primaryKeyword": "TYT AYT YDT farkları",
+        "secondaryKeywords": ["YKS oturumları", "AYT hangi testler", "YDT hangi diller"],
+        "sourceRefs": ["G-OTURUM", "G-TEST", "G-AGIRLIK", "S-OTURUM"],
+        "relatedArticles": [
+          { "slug": "yks-basvurusu-nasil-yapilir", "anchor": "YKS başvuru adımları", "placement": "Oturum ekleme bölümünün sonu" },
+          { "slug": "yks-net-hesaplama-puan-kosullari", "anchor": "puan hesaplanması için gereken net koşulları", "placement": "Puan türü tablosunun sonrası" }
+        ]
+      }
+    },
+    {
+      "slug": "yks-basvurusu-nasil-yapilir",
+      "title": "YKS başvurusu nasıl yapılır? AİS ve ödeme adımları",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-basvurusu-nasil-yapilir.md",
+      "metaTitle": "YKS Başvurusu Nasıl Yapılır? AİS Rehberi | PuhuKoç",
+      "metaDescription": "YKS başvurusunda AİS kaydı, fotoğraf, oturum seçimi, ödeme ve muafiyet adımlarını incele. Anlatım, ÖSYM'nin 2026 belgelerini esas alır.",
+      "source": "ÖSYM 2026 YKS Kılavuzu ve Sıkça Sorulan Sorular",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/basvuru_kilavuz06022026.pdf",
+      "authorName": null,
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 2,
+        "primaryKeyword": "YKS başvurusu nasıl yapılır",
+        "secondaryKeywords": ["ÖSYM AİS başvuru", "YKS e-Devlet başvuru", "YKS başvuru ödeme"],
+        "sourceRefs": ["G-BASVURU", "G-FORM", "G-PROFIL", "S-BASVURU"],
+        "relatedArticles": [
+          { "slug": "yks-tyt-ayt-ydt-farklari", "anchor": "TYT, AYT ve YDT oturum seçimi", "placement": "3. adımın sonu" },
+          { "slug": "yks-aday-basvuru-formu-sinav-merkezi", "anchor": "aday başvuru formu ve sınav merkezi seçimi", "placement": "3. adımın sonu" },
+          { "slug": "yks-engelli-aday-basvurusu-e-rapor", "anchor": "engelli adaylar için e-rapor başvuru adımları", "placement": "Son kontrol listesinin sonrası" }
+        ]
+      }
+    },
+    {
+      "slug": "yks-aday-basvuru-formu-sinav-merkezi",
+      "title": "YKS aday başvuru formu ve sınav merkezi seçimi",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-aday-basvuru-formu-sinav-merkezi.md",
+      "metaTitle": "YKS Aday Başvuru Formu ve Sınav Merkezi | PuhuKoç",
+      "metaDescription": "YKS aday başvuru formundaki eğitim, öğrenim durumu, sınav merkezi ve dil alanlarını tanı. Açıklamalar ÖSYM'nin 2026 formu ve kılavuzuna dayanır.",
+      "source": "ÖSYM 2026 YKS Aday Başvuru Formu ve Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/abf_yk26d06022026.pdf",
+      "authorName": null,
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 3,
+        "primaryKeyword": "YKS aday başvuru formu",
+        "secondaryKeywords": ["YKS sınav merkezi seçimi", "YKS öğrenim durumu", "YKS yabancı dil seçimi"],
+        "sourceRefs": ["F-ALAN", "G-FORM", "G-PROFIL", "S-FORM"],
+        "relatedArticles": [
+          { "slug": "yks-basvurusu-nasil-yapilir", "anchor": "YKS başvurusunu tamamlama adımları", "placement": "Formun işlevi bölümünün sonu" },
+          { "slug": "yks-sinav-gunu-gerekli-belgeler", "anchor": "Sınava Giriş Belgesi ve sınav günü hazırlığı", "placement": "Sınav merkezi bölümünün sonu" }
+        ]
+      }
+    },
+    {
+      "slug": "yks-sinav-gunu-gerekli-belgeler",
+      "title": "YKS sınav günü: Gerekli belgeler ve eşya kuralları",
+      "family": "YKS",
+      "category": "EXAM_PROCESS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-sinav-gunu-gerekli-belgeler.md",
+      "metaTitle": "YKS Sınav Günü: Belge ve Eşya Kuralları | PuhuKoç",
+      "metaDescription": "YKS sınav günü için giriş belgesi, geçerli kimlik, su, kalem ve eşya kurallarını incele. Rehber, ÖSYM'nin 2026 kılavuzu ve SSS belgesine dayanır.",
+      "source": "ÖSYM 2026 YKS Kılavuzu ve Sıkça Sorulan Sorular",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/basvuru_kilavuz06022026.pdf",
+      "authorName": null,
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 4,
+        "primaryKeyword": "YKS sınav günü gerekli belgeler",
+        "secondaryKeywords": ["YKS geçerli kimlik", "YKS sınava giriş belgesi", "YKS yasaklı eşyalar"],
+        "sourceRefs": ["G-GIRIS", "S-GIRIS", "S-ENGEL"],
+        "relatedArticles": [
+          { "slug": "yks-engelli-aday-basvurusu-e-rapor", "anchor": "sağlık nedeniyle gereken sınav uygulamaları", "placement": "Sağlık araçları bölümünün sonu" },
+          { "slug": "yks-aday-basvuru-formu-sinav-merkezi", "anchor": "sınav merkezi tercihi ile bina ataması arasındaki fark", "placement": "Giriş belgesi bölümünün sonu" }
+        ]
+      }
+    },
+    {
+      "slug": "yks-net-hesaplama-puan-kosullari",
+      "title": "YKS net hesaplama ve puanın hesaplanma koşulları",
+      "family": "YKS",
+      "category": "GENERAL",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-net-hesaplama-puan-kosullari.md",
+      "metaTitle": "YKS Net Hesaplama ve 0,5 Ham Puan Koşulu | PuhuKoç",
+      "metaDescription": "YKS net hesaplama formülünü örneklerle öğren. TYT, AYT ve YDT puanlarının hesaplanma koşullarını ÖSYM'nin 2026 belgelerine göre incele.",
+      "source": "ÖSYM 2026 YKS Kılavuzu ve Sıkça Sorulan Sorular",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/basvuru_kilavuz06022026.pdf",
+      "authorName": null,
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 5,
+        "primaryKeyword": "YKS net hesaplama",
+        "secondaryKeywords": ["TYT 0,5 net şartı", "YKS puan hesaplanma koşulları", "YKS dört yanlış bir doğru"],
+        "sourceRefs": ["G-PUAN", "G-AGIRLIK", "S-PUAN"],
+        "relatedArticles": [
+          { "slug": "yks-tyt-ayt-ydt-farklari", "anchor": "puan türüne göre gereken oturumlar", "placement": "Asgari ham puan tablosunun sonrası" },
+          { "slug": "obp-hesaplama-kirik-obp", "anchor": "OBP'nin yerleştirme puanına katkısı", "placement": "Sınav puanı bölümünün sonu" }
+        ]
+      }
+    },
+    {
+      "slug": "obp-hesaplama-kirik-obp",
+      "title": "OBP nasıl hesaplanır? Diploma notu ve kırık OBP",
+      "family": "YKS",
+      "category": "GENERAL",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "obp-hesaplama-kirik-obp.md",
+      "metaTitle": "OBP Hesaplama: Diploma Notu ve Kırık OBP | PuhuKoç",
+      "metaDescription": "OBP hesaplama, diploma notunun yerleştirme puanına katkısı ve kırık OBP örneklerini incele. Açıklamalar, ÖSYM'nin 2026 kılavuzunu esas alır.",
+      "source": "ÖSYM 2026 YKS Kılavuzu ve Sıkça Sorulan Sorular",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/basvuru_kilavuz06022026.pdf",
+      "authorName": null,
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 6,
+        "primaryKeyword": "OBP hesaplama",
+        "secondaryKeywords": ["kırık OBP", "diploma notu YKS katkısı", "yerleşip kayıt yaptırmamak OBP"],
+        "sourceRefs": ["G-OBP", "S-OBP"],
+        "relatedArticles": [
+          { "slug": "yks-net-hesaplama-puan-kosullari", "anchor": "net ile sınav puanı arasındaki fark", "placement": "Hazırlık planı bölümünün sonu" },
+          { "slug": "yks-basvurusu-nasil-yapilir", "anchor": "AİS eğitim bilgisi ve başvuru adımları", "placement": "Diploma notu düzeltme bölümünün sonu" }
+        ]
+      }
+    },
+    {
+      "slug": "yks-engelli-aday-basvurusu-e-rapor",
+      "title": "YKS engelli aday başvurusu: AİS ve e-rapor adımları",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-engelli-aday-basvurusu-e-rapor.md",
+      "metaTitle": "YKS Engelli Aday Başvurusu ve E-Rapor | PuhuKoç",
+      "metaDescription": "YKS engelli aday başvurusunda AİS e-rapor kaydı, uygulama seçimi ve onay akışını öğren. Rehber, ÖSYM'nin 2026 belgelerindeki işlemleri açıklar.",
+      "source": "ÖSYM AİS Engelli Başvuru Kullanıcı Kılavuzu ve 2026 YKS SSS",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/ebkk_yk26s06022026.pdf",
+      "authorName": null,
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 7,
+        "primaryKeyword": "YKS engelli aday başvurusu",
+        "secondaryKeywords": ["AİS e-rapor", "YKS engelli sınav uygulamaları", "YKS okuyucu işaretleyici"],
+        "sourceRefs": ["E-AKIS", "S-ENGEL", "G-ENGEL"],
+        "relatedArticles": [
+          { "slug": "yks-basvurusu-nasil-yapilir", "anchor": "YKS başvurusunun kayıt ve ödeme adımları", "placement": "4. adımın sonu" },
+          { "slug": "yks-sinav-gunu-gerekli-belgeler", "anchor": "sınav gününde gereken belgeler", "placement": "4. adımın sonu" }
+        ]
+      }
+    }
+  ]
+}

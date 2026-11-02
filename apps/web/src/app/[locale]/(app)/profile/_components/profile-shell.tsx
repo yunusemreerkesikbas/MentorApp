@@ -171,7 +171,7 @@ export function ProfileShell({
               student surface, and the quests send them to /study-session and /dashboard, which
               bounce them home. The API still returns the full catalog; hiding here is enough. */}
           {!isCoach(user) && (
-            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <motion.div id="coin" className="scroll-mt-6" variants={reduceMotion ? undefined : staggerItemVariants}>
               <EconomySection refreshKey={economyRefreshKey} />
             </motion.div>
           )}

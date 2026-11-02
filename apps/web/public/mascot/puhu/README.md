@@ -15,7 +15,7 @@ Copy approved PNG/WebP exports here before wiring components:
 | `puhu-surprised.png`   | Info, alerts                | Present                          |
 | `puhu-proud.png`       | Trophy, milestones          | Present                          |
 | `puhu-sleepy.png`      | Night, rest                 | Present (file; wire when needed) |
-| `puhu-premium-hero.png` | Premium: hero mask + cape  | Present (weekly recap AI note)   |
+| `puhu-premium-hero.png` | Premium: hero mask + cape  | Present (weekly recap AI note, session bubble); speaking frames in `motion/premium/` |
 | `koc-hero.png`         | Moment hero (Koç hub)       | Present                          |
 | `thinking`             | AI loading                  | **P0 — not yet designed**        |
 | `gentle-error`         | Soft error toast            | **P0 — not yet designed**        |

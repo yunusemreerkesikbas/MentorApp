@@ -27,8 +27,10 @@ domain logic + persistence and exposes setters the AI module calls.
   a single missed day is bridged by one of 2 monthly freeze tokens; two consecutive misses
   soft-reset. Idempotent (always derives from active dates + monthly allowance → no token double-spend).
   `current_streak` is recomputed on read; `freeze_tokens` = monthly allowance − this month's bridges.
-- **Day math is UTC** (`domain/date.util.ts`); `daily_activity.activity_date` for a session = UTC date
-  of `started_at`. Per-user timezone can be threaded later without changing the pure helpers.
+- **Plan and mood days start at midnight in Europe/Istanbul** (`domain/date.util.ts`
+  `todayInIstanbul`), including task defaults/read-only dates, the panel and coach evidence.
+  Date arithmetic stays UTC. Legacy session/activity/streak aggregates retain their existing UTC
+  boundaries; `daily_activity.activity_date` for a session is the UTC date of `started_at`.
 - **ContentPort seam:** `domain/content.port.ts` (interface + `CONTENT_PORT` token) bound to the W1
   `ContentServiceAdapter`. Countdown reads `users.examType` via **identity `UsersService.getMe`**,
   never a coaching query on `users`, never `users.examDate` (deprecated/ignored for countdown).
@@ -144,6 +146,52 @@ pnpm --filter @mentor/api test
 | `GET/POST /v1/coaching/vision`                                   | Vision board (idempotent upsert, single row per user)                         |
 
 ## Geliştirmeler (timeline)
+
+### 2026-11-03 — Mood adaptation and the panel share the Istanbul calendar day
+
+- **What:** Panel tasks/countdown, mood check-ins/reflection cache, plan defaults/read-only dates,
+  coach evidence and the plan page now use Europe/Istanbul midnight. The panel returns
+  `canLightenPlan`, computed server-side from pending tasks excluding human-coach assignments;
+  the greeting CTA displays that decision. Session-linked task completion uses the same plan day.
+- **Usage:** Save a mood or open `/plan` after local midnight: the panel and adaptation both read
+  the new date. Only pending, student-editable tasks make the low-mood CTA visible. Adaptation
+  still previews changes and writes only after the student selects and confirms them.
+- **Gotchas:** Existing dated tasks/check-ins are not moved or relabelled. Session focus totals,
+  activity/streak/quest day policies keep their existing UTC boundaries. The UTC helper is not
+  globally changed. Preview requests pin one instant for plan, mood applicability and evidence.
+- **Related:** `today.service.ts`, `mood.service.ts`, `plan.service.ts`, `session.service.ts`,
+  `coach-evidence.service.ts`, `domain/date.util.ts`, `packages/types/src/coaching.ts`,
+  `dashboard/_components/{greeting-row,panel-shell}.tsx`, `plan/_components/plan-utils.ts`,
+  the corresponding service/unit tests and `e2e/{panel,plan}.spec.ts`.
+
+### 2026-11-03 — `/panel` asks for today once again; recap teaser test follows the APP-129 copy
+
+Two `coach.spec.ts` dashboard tests were red on HEAD. (1) `usePanelData`'s mount effect fetched
+`/coaching/today` together with the economy-gated feeds, so it depended on `refreshStreakRescue`
+and `refreshRewardOffer`, whose identity follows `useEconomyEnabled()`. When the economy snapshot
+settled after first paint, the whole effect re-ran and asked for today a second time. The
+economy-gated feeds now have their own effect; today, quests and the weekly chest load once.
+(2) The recap teaser test was stale on two counts from APP-129: the old headings ("Senin Haftalık
+Özetin", "Haftanın Hikâyesini Tekrar İzle") and the old "banner click marks the week opened"
+contract. It now checks the current copy ("Haftalık özetin hazır" / "Haftalık özetini tekrar
+izle"), that a click alone keeps the week new and writes no flag, and that the flag the story
+writes (`weekly-recap-shell.tsx`) shows the replay card after reload. Gotcha: on `next dev` the "today exactly once" test still sees
+2 calls, because React's dev double-invoke reruns the mount effect. Run it against a production
+build (the default Playwright config's `next start` on 3100).
+
+### 2026-11-03 — Coach chat skeleton mirrors the new-chat landing
+
+`CoachChatSkeleton` (`coach/_components/coach-content-skeleton.tsx`, used by `chat/page.tsx`'s
+Suspense and by `coach-access-shell.tsx` while access loads) followed an old layout: a header row,
+one chip row and a bordered composer bar, with no history rail and no pastel backdrop. It now
+draws what `CoachChatShell` draws: the 288 px history rail on desktop (title + collapse button,
+new chat, memory, recent chats), the round history button on phones, two greeting lines, a
+Puhu-sized blob, four starter chips at their real widths, the 18 px composer card (avatar, line,
+send) and the two disclaimer lines. The pastel blobs moved to `coach-chat-backdrop.tsx` so shell
+and skeleton share them; the backdrop sits outside `SkeletonGroup` so its fade-in does not flash
+the background on swap. Checked side by side with the loaded page at 1280 and 375.
+Gotcha: `coach.spec.ts`'s two `/panel` tests ("dashboard … yalnız bir kez ister" sees 3
+`/coaching/today` calls, the recap-teaser test finds no teaser) fail on HEAD too; not from this change.
 
 ### 2026-11-02 — Bounded session start time
 

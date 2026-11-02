@@ -81,6 +81,22 @@ http://localhost:3000/panel               # daily ritual hub
   (`session-done-checkin.tsx`) uses `variant="premium"` at 96 px (72 px left the wide art ~51 px
   tall); the coach access gate keeps `encouraging` (its reader has no AI yet). The panel mood
   cloud (`PuhuSpeakingMascot`) waits for masked speaking frames.
+  **2026-11-03:** the masked frames landed in `public/mascot/puhu/motion/premium/`
+  (`rest`, `talk-closed`, `blink`, `look-down`, 1024×734). `PuhuSpeakingMascot` reads
+  `useIsPremium()` and mounts only the masked set for premium, the old set for everyone else.
+  Gotchas: all four were keyed on one canvas and cropped with one union box (per-frame trim makes
+  the stack jitter); the generator could not close the beak without changing the eyes, so
+  `talk-closed` is the open-beak frame with the closed beak pasted in through a feathered ellipse.
+  The art is wide, so it sits a little smaller in the square box than free Puhu. e2e
+  `panel.spec.ts` checks both sets (premium = 4 masked frames, free = none).
+  Same day: the desktop coach FAB (`desktop-coach-fab.tsx`) shows masked Puhu for premium at
+  96 px (wide art, so as tall as free Puhu at 72), and `PuhuImage` now ignores career art for the
+  `premium` variant: before, a premium user with a career field never saw the mask anywhere.
+  The `/koc/sohbet` new-chat landing (`coach-empty-landing.tsx`) also shows masked Puhu for
+  premium, at 168 px scaled 1.35 (1.2 on phones) inside its square box, so it fills the box
+  without moving the layout. The composer's 28 px avatar and the first-visit
+  preference card's 44 px Puhu stay as they are: the mask doesn't read at that size.
+  `coach.spec.ts` checks premium (mask) and coin (no mask).
 
 - **2026-11-01 · Puhu premium glasses visual proposal.** Added transparent blue-and-gold,
   feather-tipped glasses artwork, a simplified SVG for 24–48 px chrome, and a matching mascot

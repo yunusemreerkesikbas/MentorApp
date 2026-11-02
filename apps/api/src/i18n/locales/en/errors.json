@@ -1,6 +1,5 @@
 {
   "WEEKLY_RECAP_LIMIT_REACHED": "You have used your Coin report allowance for this period. Your opened reports are waiting in your archive.",
-  "WEEKLY_RECAP_EMAIL_REQUIRED": "Verify your email address to open your first weekly story for free.",
   "WEEKLY_RECAP_PRICE_CHANGED": "Report access conditions have changed. Check the updated offer before opening it again.",
   "WEEKLY_RECAP_PROCESSING": "Your weekly story is being prepared. You can open it again shortly.",
   "INTERNAL_ERROR": "Something went sideways. Let's try again in a moment.",

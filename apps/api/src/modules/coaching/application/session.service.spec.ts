@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { todayInIstanbul } from "../domain/date.util";
 import { ErrorCode } from "../../../common/errors/error-code";
 import {
   ACTIVE_SESSION_GRACE_MINUTES,
@@ -10,6 +11,8 @@ import type { RecentSummaryRow } from "../infrastructure/study-session.repositor
 
 const USER = "u1";
 const TODAY = new Date().toISOString().slice(0, 10);
+
+afterEach(() => vi.useRealTimers());
 
 /** withUserContext runs `db.transaction`, then SET LOCAL via `tx.execute`. */
 const fakeDb = {
@@ -668,7 +671,11 @@ describe("SessionService.finalize", () => {
     );
   });
 
-  it("auto-completes linked plan task when focus session completes", async () => {
+  it.each(["2026-11-02T20:59:59.999Z", "2026-11-02T23:18:24.004Z"])(
+    "auto-completes the Istanbul plan and emits completion at %s", async (instant) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(instant));
+    const planDate = todayInIstanbul();
     const emit = vi.fn();
     const planTaskId = "00000000-0000-4000-8000-000000000001";
     const findById = vi.fn(async () => ({
@@ -702,7 +709,7 @@ describe("SessionService.finalize", () => {
     const planFindById = vi.fn(async () => ({
       id: planTaskId,
       status: "PENDING",
-      taskDate: TODAY,
+      taskDate: planDate,
     }));
 
     const result = await makeService(
@@ -727,7 +734,7 @@ describe("SessionService.finalize", () => {
     expect(taskUpdate).toHaveBeenCalledWith(expect.anything(), USER, planTaskId, {
       status: "DONE",
     });
-    expect(upsertTasksDone).toHaveBeenCalledWith(expect.anything(), USER, TODAY, 1);
+    expect(upsertTasksDone).toHaveBeenCalledWith(expect.anything(), USER, planDate, 1);
     expect(result.planTaskAutoCompleted).toBe(true);
     expect(emit).toHaveBeenCalledWith(
       CoachingEventTopic.PLAN_COMPLETED,

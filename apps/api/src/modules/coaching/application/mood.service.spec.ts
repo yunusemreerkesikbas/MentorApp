@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { todayInIstanbul } from "../domain/date.util";
 import { MoodService } from "./mood.service";
 
 const USER = "u1";
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = todayInIstanbul();
 
 const fakeDb = {
   transaction: async <T>(cb: (tx: unknown) => Promise<T>): Promise<T> =>
@@ -66,6 +67,35 @@ describe("MoodService", () => {
     service = new MoodService(fakeDb, moods as never, i18nFake, { emit: () => {}, emitAsync: async () => [] } as never);
   });
 
+  afterEach(() => vi.useRealTimers());
+
+  it.each([
+    ["2026-11-02T20:59:59.999Z", "2026-11-02"],
+    ["2026-11-02T21:00:00.000Z", "2026-11-03"],
+    ["2026-11-02T23:18:24.004Z", "2026-11-03"],
+  ])("saves and reads the Istanbul mood day at %s", async (instant, date) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(instant));
+    const saved = await service.upsertToday(USER, 2);
+    await service.setTodayAiReflection(USER, "Küçük bir adım yeter.", "fake", "tr");
+
+    expect(saved.checkinDate).toBe(date);
+    expect(await service.getToday(USER)).toMatchObject({
+      checkinDate: date, mood: 2, aiReflection: "Küçük bir adım yeter.",
+    });
+  });
+
+  it("starts a new mood check-in at Istanbul midnight without reusing yesterday's mood", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-02T20:59:59.999Z"));
+    await service.upsertToday(USER, 2);
+    vi.setSystemTime(new Date("2026-11-02T21:00:00.000Z"));
+
+    expect(await service.getToday(USER)).toBeNull();
+    await service.upsertToday(USER, 4);
+    expect(moods.rows.map((row) => row.checkinDate)).toEqual(["2026-11-02", "2026-11-03"]);
+  });
+
   it("upserts today's mood and returns the rule-based code + localized message", async () => {
     const dto = await service.upsertToday(USER, 1);
     expect(dto).toEqual({
@@ -95,14 +125,14 @@ describe("MoodService", () => {
 
   it("caches today's AI reflection in place and exposes it via getToday", async () => {
     await service.upsertToday(USER, 4);
-    await service.setTodayAiReflection(USER, "Harika gidiyorsun!", "fake");
+    await service.setTodayAiReflection(USER, "Harika gidiyorsun!", "fake", "tr");
     const today = await service.getToday(USER);
     expect(today?.aiReflection).toBe("Harika gidiyorsun!");
   });
 
   it("keeps the cached reflection when the same mood is re-submitted (cost control)", async () => {
     await service.upsertToday(USER, 4);
-    await service.setTodayAiReflection(USER, "Devam et!", "fake");
+    await service.setTodayAiReflection(USER, "Devam et!", "fake", "tr");
     await service.upsertToday(USER, 4); // identical → cache must survive
     expect((await service.getToday(USER))?.aiReflection).toBe("Devam et!");
 

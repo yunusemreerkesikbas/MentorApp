@@ -94,6 +94,7 @@ const pendingToday: TodayPanelResponse = {
   mood: null,
   focusGoal: { goalMinutes: null, focusMinutesToday: 0 },
   focusingNow: null,
+  canLightenPlan: false,
   weeklyRecapPeriod: null,
 };
 
@@ -132,6 +133,10 @@ test("landing next-action chip pending görevi seansa taşır", async ({
   // budget. The assertion is that the redirect happens, not how fast.
   await expect(page).toHaveURL(/\/koc\/sohbet/, { timeout: 15_000 });
   await expect(page.getByTestId("coach-empty-landing")).toBeVisible();
+  // Masked Puhu speaks for premium.
+  await expect(
+    page.getByTestId("coach-empty-landing").locator('img[src*="puhu-premium-hero"]'),
+  ).toHaveCount(1);
 
   const chip = page.getByTestId("coach-next-action-chip");
   await expect(chip).toHaveText("Odak seansına başla");
@@ -177,7 +182,7 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
   expect(coachApi.dailyGreetingCalls).toBe(0);
 });
 
-test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner, kaybolmaz", async ({
+test("dashboard recap teaser'ı hikâye açıldıktan sonra tekrar-izle kartına döner, kaybolmaz", async ({
   page,
 }) => {
   const period = {
@@ -187,25 +192,26 @@ test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner,
     timeZone: "Europe/Istanbul" as const,
     status: "READY" as const,
   };
+  const openedKey = `mentor.weekly-recap.opened.v2:${period.startDate}`;
   await mockCoachApi(page, {
     today: { ...pendingToday, weeklyRecapPeriod: period },
   });
   await page.goto("/panel");
 
   /*
-   * The teaser no longer disappears once opened — `weekly-recap-slot.tsx` renders it unless the
-   * state is "hidden", and "hidden" only ever happens for an EMPTY week. A READY
-   * week's card stays mounted for the rest of the season, switching from its "new" copy to a
-   * "tekrar izle" (replay) copy once opened — a revisit affordance, not a one-time reveal.
+   * The teaser never disappears for a READY week (`weekly-recap-slot.tsx` hides only EMPTY ones).
+   * It switches from its "new" copy to a "tekrar izle" (replay) copy once the story itself has
+   * rendered: `weekly-recap-shell.tsx` writes the opened flag, not the banner click (APP-129).
    */
   const teaser = page.getByTestId("weekly-recap-teaser-dashboard");
   await expect(teaser).toBeVisible();
   await expect(
-    teaser.getByRole("heading", { name: "Senin Haftalık Özetin" }),
+    teaser.getByRole("heading", { name: "Haftalık özetin hazır" }),
   ).toBeVisible();
 
   // The whole card is the link — its accessible name is the dynamic teaser title + message, not
-  // a static "open" CTA — so it's found by role alone, scoped to this one card.
+  // a static "open" CTA — so it's found by role alone, scoped to this one card. A click that never
+  // reaches the story (navigation prevented here) leaves the week new.
   const open = teaser.getByRole("link");
   await open.evaluate((element) =>
     element.addEventListener("click", (event) => event.preventDefault(), {
@@ -213,31 +219,24 @@ test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner,
     }),
   );
   await open.click();
-
-  await expect(teaser).toBeVisible();
   await expect(
-    teaser.getByRole("heading", { name: "Haftanın Hikâyesini Tekrar İzle" }),
+    teaser.getByRole("heading", { name: "Haftalık özetin hazır" }),
   ).toBeVisible();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        (startDate) =>
-          window.localStorage.getItem(
-            `mentor.weekly-recap.opened.v2:${startDate}`,
-          ),
-        period.startDate,
-      ),
-    )
-    .toBe("1");
+  expect(
+    await page.evaluate(
+      (key) => window.localStorage.getItem(key),
+      openedKey,
+    ),
+  ).toBeNull();
 
-  // The replay copy survives a reload too — it comes from the same localStorage flag on the
-  // next mount, not from the transient click state.
+  // The story rendering marks the week opened; the panel reads that flag on its next mount.
+  await page.evaluate((key) => window.localStorage.setItem(key, "1"), openedKey);
   await page.reload();
   const teaserAfterReload = page.getByTestId("weekly-recap-teaser-dashboard");
   await expect(teaserAfterReload).toBeVisible();
   await expect(
     teaserAfterReload.getByRole("heading", {
-      name: "Haftanın Hikâyesini Tekrar İzle",
+      name: "Haftalık özetini tekrar izle",
     }),
   ).toBeVisible();
 });
@@ -751,6 +750,7 @@ test("AI koçla değerlendir coin öğrencide yalnız mesajı doldurur", async (
     timeout: 15_000,
   });
   expect(api.streamBodies).toEqual([]);
+  await expect(page.locator('img[src*="puhu-premium-hero"]')).toHaveCount(0);
 });
 
 function makeRecentMessages(): CoachMessageDto[] {

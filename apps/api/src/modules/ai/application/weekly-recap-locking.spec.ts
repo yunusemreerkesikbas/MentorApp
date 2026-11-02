@@ -17,7 +17,8 @@ function build() {
     expect(args).toContain(tx);
     return value;
   });
-  const review = { status: "READY", period: weeklyReviewWindows() };
+  const review = { status: "READY", period: weeklyReviewWindows(),
+    rhythm: { activeDays: 4, focusMinutes: 120, subjectBreakdown: [] }, plan: { subjectBreakdown: [] } };
   let row: Record<string, unknown> | undefined;
   const reports = {
     find: vi.fn(async () => row), byRequest: inside(undefined),
@@ -34,8 +35,7 @@ function build() {
   const entitlement = { getEntitlement: outside({ isPremium: false }) };
   const purchases = { history: inside([]), debit: inside(false) };
   const cache = { findAny: outside(undefined), saveFirst: inside(undefined) };
-  const policy = new WeeklyRecapPolicyService(config as never,
-    { getMe: outside({ emailVerified: true }) } as never, entitlement as never,
+  const policy = new WeeklyRecapPolicyService(config as never, entitlement as never,
     { getSelfBalance: outside({ coinConfirmed: 100 }) } as never,
     { isUnlocked: outside(false) } as never, purchases as never, reports as never,
     { hasCapacity: outside(true) } as never, { translate: () => "denied" } as never, cache as never);

@@ -1,0 +1,115 @@
+{
+  "appliedAt": "2026-11-02T23:22:51.896Z",
+  "environment": "LOCAL",
+  "database": "localhost:5433/mentor",
+  "storage": {
+    "provider": "R2",
+    "bucket": "mentor-public",
+    "purpose": "Existing development media storage"
+  },
+  "method": "ContentService.upsertArticle in a single outer transaction",
+  "sourceManifest": "media-sources.json",
+  "totalBytes": 271788,
+  "events": [
+    {
+      "name": "content.article.updated",
+      "slug": "yks-tyt-ayt-ydt-farklari"
+    },
+    {
+      "name": "content.article.updated",
+      "slug": "yks-basvurusu-nasil-yapilir"
+    },
+    {
+      "name": "content.article.updated",
+      "slug": "yks-aday-basvuru-formu-sinav-merkezi"
+    },
+    {
+      "name": "content.article.updated",
+      "slug": "yks-sinav-gunu-gerekli-belgeler"
+    },
+    {
+      "name": "content.article.updated",
+      "slug": "yks-net-hesaplama-puan-kosullari"
+    },
+    {
+      "name": "content.article.updated",
+      "slug": "obp-hesaplama-kirik-obp"
+    },
+    {
+      "name": "content.article.updated",
+      "slug": "yks-engelli-aday-basvurusu-e-rapor"
+    }
+  ],
+  "articles": [
+    {
+      "slug": "yks-tyt-ayt-ydt-farklari",
+      "coverImageKey": "content/articles/cover/yks/yks-tyt-ayt-ydt-farklari-2e67150e2c45.webp",
+      "bodySha256": "5b7712b0f4b9e253607b25ca9f83c47a1b473f0badb3ac25a24028f46b1c2171",
+      "publishedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "yks-basvurusu-nasil-yapilir",
+      "coverImageKey": "content/articles/cover/yks/yks-basvurusu-nasil-yapilir-cf2b44beebb4.webp",
+      "bodySha256": "5351f0cf3b8da623a4928b0bf6834d44f020b8e9dc5ec5f5b6f2514f893ae867",
+      "publishedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "yks-aday-basvuru-formu-sinav-merkezi",
+      "coverImageKey": "content/articles/cover/yks/yks-aday-basvuru-formu-sinav-merkezi-cd3400492b0d.webp",
+      "bodySha256": "188ce69993a7d3799fd86825fbd22f85171190345f1be9c73549a580fa76695d",
+      "publishedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "yks-sinav-gunu-gerekli-belgeler",
+      "coverImageKey": "content/articles/cover/yks/yks-sinav-gunu-gerekli-belgeler-406df6bea2fe.webp",
+      "bodySha256": "8f1f656e8fcf53b606ac7a2f5688331fe12280317aa97b0b07689e7dc4577713",
+      "publishedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "yks-net-hesaplama-puan-kosullari",
+      "coverImageKey": "content/articles/cover/yks/yks-net-hesaplama-puan-kosullari-cd03b1670936.webp",
+      "bodySha256": "c1af20455e128fa7067500adcf4611c80dad9e4473481bd92dd0cd4e5290cc93",
+      "publishedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "obp-hesaplama-kirik-obp",
+      "coverImageKey": "content/articles/cover/yks/obp-hesaplama-kirik-obp-483584c6c83a.webp",
+      "bodySha256": "211d6d9f0d92fc3ad666ca5bbc80ce9a4a7252bfa02999fa6048cc83c806e450",
+      "publishedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "yks-engelli-aday-basvurusu-e-rapor",
+      "coverImageKey": "content/articles/cover/yks/yks-engelli-aday-basvurusu-e-rapor-735373d3b87c.webp",
+      "bodySha256": "d16ff80e1a6409e0384054f383ea453ada5d8f77a36c06a1aa24ce7116e1dfc4",
+      "publishedAt": "2026-11-02T23:10:08.985Z"
+    }
+  ],
+  "verification": {
+    "checkedAt": "2026-11-02T23:24:32.813Z",
+    "uploadedObjects": {
+      "passed": 7,
+      "status": 200,
+      "sha256": "MATCH",
+      "contentType": "image/webp"
+    },
+    "apiDetails": {
+      "passed": 7,
+      "altAndDimensions": "MATCH"
+    },
+    "webPages": {
+      "passed": 7,
+      "status": 200,
+      "coverAndCredits": "PRESENT",
+      "openGraphImage": "PRESENT"
+    },
+    "index": {
+      "status": 200,
+      "coverKeysPresent": 7
+    },
+    "browser": {
+      "index": "All seven cover descriptions present in Chrome",
+      "article": "OBP article cover and related thumbnails visibly loaded",
+      "screenshot": "tmp/yks-blog-images/blog-preview.jpg"
+    }
+  }
+}

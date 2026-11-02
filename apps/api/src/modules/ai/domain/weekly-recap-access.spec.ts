@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { recapAllowance, recapMode } from "./weekly-recap-access";
+import { recapAllowance, recapMode, recapTeaser } from "./weekly-recap-access";
 
 describe("Wrapped acquisition policy", () => {
   it("uses a rolling duration and reports when a slot becomes available", () => {
@@ -22,5 +22,15 @@ describe("Wrapped acquisition policy", () => {
     expect(recapMode(false, true, true)).toBe("PREMIUM");
     expect(recapMode(false, false, true)).toBe("EARNED");
     expect(recapMode(false, false, false)).toBe("COIN");
+  });
+  it("previews the week with free basic numbers and the most-studied subject", () => {
+    const subject = (subjectName: string, focusMinutes: number) => ({ subjectRef: subjectName, subjectName, focusMinutes, qualifyingSessionCount: 1 });
+    const task = (subjectName: string, completedTaskCount: number) => ({ subjectRef: subjectName, subjectName, completedTaskCount });
+    const review = (sessions: ReturnType<typeof subject>[], tasks: ReturnType<typeof task>[]) =>
+      ({ rhythm: { activeDays: 5, focusMinutes: 340, subjectBreakdown: sessions }, plan: { subjectBreakdown: tasks } });
+    expect(recapTeaser(review([subject("Türkçe", 40), subject("Matematik", 200)], [task("Tarih", 9)])))
+      .toEqual({ activeDays: 5, focusMinutes: 340, topSubject: "Matematik" });
+    expect(recapTeaser(review([], [task("Tarih", 1), task("Coğrafya", 4)])).topSubject).toBe("Coğrafya");
+    expect(recapTeaser(review([], [])).topSubject).toBeNull();
   });
 });

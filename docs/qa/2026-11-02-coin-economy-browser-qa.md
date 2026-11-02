@@ -59,8 +59,12 @@ now rejects a start older than the 24-hour resume window or more than one minute
 - Accepted risk (by design): an active day is self-reported (any ticked task or a session whose focus
   seconds the client reports). It pays once per day, so the honest maximum is the ceiling.
 
-## Open item (pre-existing, not fixed)
+## Second fix: nav Coin pill lagged the first-login celebration (pre-existing)
 
-After the first-login celebration the nav Coin pill can show the pre-grant balance (0) until the next
-navigation: `EconomySync` reads the balance before `/economy/quests` grants and does not re-read it
-after presenting receipts. Self-heals on the next page change.
+On the first panel visit the balance was read while `/economy/quests` and the weekly chest read were
+still granting (Premium saw 0 Coin / 200 XP under "+200 Coin"), and `EconomySync` never re-read it
+after presenting receipts, so the pill stayed stale until the next page change. The sync loop moved to
+`lib/reward-sync.ts` and reads the balance once more after presenting new receipts (a receipt the
+server keeps returning cannot loop). RED→GREEN: `reward-sync.spec.ts` (2 failing against the moved
+original loop → 2/2). Browser, fresh student `ekonomi-ilk-giris@demo.test`: celebration at
+38.609 s, pill 0 → 200 Coin at 38.861 s with no navigation.

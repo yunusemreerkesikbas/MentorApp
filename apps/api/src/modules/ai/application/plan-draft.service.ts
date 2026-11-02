@@ -1,6 +1,7 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { I18nContext } from "nestjs-i18n";
 import { PremiumFeatureId, type CoachPlanDraftDto } from "@mentor/types";
+import { todayInIstanbul } from "../../coaching/domain/date.util";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -64,7 +65,7 @@ export class PlanDraftService {
       );
     }
 
-    const todayIso = new Date().toISOString().slice(0, 10); // UTC day — same day math as plan/streak
+    const todayIso = todayInIstanbul();
     const ctx = await this.context.build(user.id);
     const { system, user: userMsg } = buildPlanDraftPrompt(
       ctx,

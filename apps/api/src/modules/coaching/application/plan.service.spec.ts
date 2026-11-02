@@ -1,10 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DomainError } from "../../../common/errors/domain-error";
-import { addDays, todayInIstanbul, todayIso } from "../domain/date.util";
+import { addDays, todayInIstanbul } from "../domain/date.util";
 import { PlanService } from "./plan.service";
 
 const USER = "u1";
-const UTC_TODAY = todayIso();
 const TODAY = todayInIstanbul();
 
 interface TaskRow {
@@ -125,6 +124,31 @@ function makeActivityFake() {
   };
 }
 
+describe("PlanService — Istanbul calendar day", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("creates, lists and adapts the same day before UTC midnight", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-02T23:18:24.004Z"));
+    const repo = makePlanRepoFake([]);
+    const service = new PlanService(fakeDb, repo as never, makeActivityFake() as never,
+      { emit: () => {}, emitAsync: async () => [] } as never);
+
+    const created = await service.create(USER, { title: "Paragraf" });
+    const listed = await service.list(USER, { page: 1, pageSize: 50 });
+    const summary = await service.getTodaySummary(USER);
+    const snapshot = await service.getAdaptationSnapshot(USER);
+
+    expect(created.taskDate).toBe("2026-11-03");
+    expect(listed.items.map((task) => task.id)).toEqual([created.id]);
+    expect(summary?.total).toBe(1);
+    expect(snapshot.window.from).toBe(created.taskDate);
+    expect(snapshot.tasks.map((task) => task.id)).toEqual([created.id]);
+    await expect(service.create(USER, { title: "Dünkü görev", taskDate: "2026-11-02" }))
+      .rejects.toMatchObject({ code: "COACHING_TASK_DATE_READONLY" });
+  });
+});
+
 describe("PlanService — task toggle keeps daily_activity in sync", () => {
   let planRepo: ReturnType<typeof makePlanRepoFake>;
   let activity: ReturnType<typeof makeActivityFake>;
@@ -139,20 +163,20 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
   it("marking a task DONE bumps daily_activity.tasks_done", async () => {
     const created = await service.create(USER, { title: "Paragraf 20 soru" });
     await service.update(USER, created.id, { status: "DONE" });
-    expect(activity.days.get(UTC_TODAY)?.tasksDone).toBe(1);
+    expect(activity.days.get(TODAY)?.tasksDone).toBe(1);
   });
 
   it("toggling a task back to PENDING decrements the day's count", async () => {
     const created = await service.create(USER, { title: "Matematik tekrar" });
     await service.update(USER, created.id, { status: "DONE" });
     await service.update(USER, created.id, { status: "PENDING" });
-    expect(activity.days.get(UTC_TODAY)?.tasksDone).toBe(0);
+    expect(activity.days.get(TODAY)?.tasksDone).toBe(0);
   });
 
   it("editing only the title does NOT touch daily_activity", async () => {
     const created = await service.create(USER, { title: "Tarih notları" });
     await service.update(USER, created.id, { title: "Tarih — İnkılap notları" });
-    expect(activity.days.has(UTC_TODAY)).toBe(false);
+    expect(activity.days.has(TODAY)).toBe(false);
   });
 
   it("deleting a DONE task recomputes the day's count", async () => {
@@ -160,9 +184,9 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
     const b = await service.create(USER, { title: "B" });
     await service.update(USER, a.id, { status: "DONE" });
     await service.update(USER, b.id, { status: "DONE" });
-    expect(activity.days.get(UTC_TODAY)?.tasksDone).toBe(2);
+    expect(activity.days.get(TODAY)?.tasksDone).toBe(2);
     await service.remove(USER, a.id);
-    expect(activity.days.get(UTC_TODAY)?.tasksDone).toBe(1);
+    expect(activity.days.get(TODAY)?.tasksDone).toBe(1);
   });
 
   it("keeps a task all-day when no time is given", async () => {
@@ -327,17 +351,17 @@ describe("PlanService.createMany", () => {
   it("creates every task in one pass (dates default to today)", async () => {
     const out = await service.createMany(USER, [
       { title: "Matematik: 20 soru", subject: "Matematik" },
-      { title: "Paragraf: 15 soru", subject: "Türkçe", taskDate: UTC_TODAY },
+      { title: "Paragraf: 15 soru", subject: "Türkçe", taskDate: TODAY },
     ]);
     expect(out).toHaveLength(2);
     expect(planRepo.rows).toHaveLength(2);
-    expect(planRepo.rows.every((r) => r.taskDate === UTC_TODAY)).toBe(true);
+    expect(planRepo.rows.every((r) => r.taskDate === TODAY)).toBe(true);
   });
 
   it("writes NOTHING when any date is in the past (all-or-nothing)", async () => {
     await expect(
       service.createMany(USER, [
-        { title: "Geçerli", taskDate: UTC_TODAY },
+        { title: "Geçerli", taskDate: TODAY },
         { title: "Geçmiş", taskDate: "2020-01-01" },
       ]),
     ).rejects.toBeInstanceOf(DomainError);
@@ -365,7 +389,7 @@ describe("PlanService.getTodaySummary", () => {
       planRepo.rows.push({
         id: `t${i}`,
         userId: USER,
-        taskDate: UTC_TODAY,
+        taskDate: TODAY,
         title: `Task ${i}`,
         subject: null,
         status: i <= 2 ? "DONE" : "PENDING",
@@ -388,7 +412,7 @@ describe("PlanService.getTodaySummary", () => {
       planRepo.rows.push({
         id: `t${i}`,
         userId: USER,
-        taskDate: UTC_TODAY,
+        taskDate: TODAY,
         title: `Task ${i}`,
         subject: null,
         status: "PENDING",

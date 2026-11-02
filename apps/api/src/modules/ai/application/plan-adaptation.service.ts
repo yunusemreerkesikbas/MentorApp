@@ -107,8 +107,9 @@ export class PlanAdaptationService {
       }
     } else await this.assertAvailable(user);
 
-    const snapshot = await this.plans.getAdaptationSnapshot(user.id);
-    await assertPlanSourceApplicable(this.moods, this.sessions, user.id, input);
+    const now = new Date();
+    const snapshot = await this.plans.getAdaptationSnapshot(user.id, now);
+    await assertPlanSourceApplicable(this.moods, this.sessions, user.id, input, now);
 
     const pendingTasks = snapshot.tasks
       .filter((task) => task.status === "PENDING")
@@ -123,7 +124,7 @@ export class PlanAdaptationService {
       !pendingTasks.some((task) => task.taskDate === snapshot.window.from)
     ) {
       // Nothing to lighten: no model call, but a true sentence and what it read, never a blank sheet.
-      const pool = await this.evidence.build(user.id);
+      const pool = await this.evidence.build(user.id, now);
       return planAdaptationResponse(
         this.i18n,
         "NO_CHANGE",
@@ -148,7 +149,7 @@ export class PlanAdaptationService {
         [AiUsageFeature.PLAN_DRAFT, AiUsageFeature.PLAN_ADAPTATION],
         new Date(Date.now() - DAY_MS),
       ),
-      this.evidence.build(user.id),
+      this.evidence.build(user.id, now),
     ]);
     if (usedToday >= dailyLimit) {
       throw new DomainError(

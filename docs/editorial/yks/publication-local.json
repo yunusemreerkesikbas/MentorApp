@@ -1,0 +1,127 @@
+{
+  "environment": "LOCAL",
+  "database": "localhost:5433/mentor",
+  "publishedAt": "2026-11-02T23:10:08.985Z",
+  "method": "ContentService.upsertArticle + ContentService.publishArticle, single outer transaction",
+  "operator": "Automated execution of user publication request",
+  "events": [
+    {
+      "name": "content.article.published",
+      "slug": "yks-tyt-ayt-ydt-farklari"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-basvurusu-nasil-yapilir"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-aday-basvuru-formu-sinav-merkezi"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-sinav-gunu-gerekli-belgeler"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-net-hesaplama-puan-kosullari"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "obp-hesaplama-kirik-obp"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-engelli-aday-basvurusu-e-rapor"
+    }
+  ],
+  "articles": [
+    {
+      "id": "d09f795b-34c8-44c9-81f3-328cbc918014",
+      "slug": "yks-tyt-ayt-ydt-farklari",
+      "publishedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "bodySha256": "4d25b6bcacd9206727b7b048b4dc3027d926491dc1918c4ec98a23f75f64ac55",
+      "url": "http://localhost:3000/blog/yks-tyt-ayt-ydt-farklari"
+    },
+    {
+      "id": "9c16d4aa-896b-4b51-8ea5-4921c364e347",
+      "slug": "yks-basvurusu-nasil-yapilir",
+      "publishedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "bodySha256": "a7e21e8009437473149b48541334547a86d3d931575feda9f19926c83bd5ea02",
+      "url": "http://localhost:3000/blog/yks-basvurusu-nasil-yapilir"
+    },
+    {
+      "id": "b01eca81-62bb-434d-ac3a-1bd90fbbe304",
+      "slug": "yks-aday-basvuru-formu-sinav-merkezi",
+      "publishedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "bodySha256": "598ccbbcf357aeb8a88e2b762b4b6908e769f7f7c0d19e2ec921964214bf1730",
+      "url": "http://localhost:3000/blog/yks-aday-basvuru-formu-sinav-merkezi"
+    },
+    {
+      "id": "6a2d78d0-4626-450c-a7c9-335003be901d",
+      "slug": "yks-sinav-gunu-gerekli-belgeler",
+      "publishedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "bodySha256": "2ab79e3682be9604eaf30081079b34000b0dc22d3bc4a5fef7a800a106895f92",
+      "url": "http://localhost:3000/blog/yks-sinav-gunu-gerekli-belgeler"
+    },
+    {
+      "id": "6c49b42a-c675-4216-bfe5-503645c4a79d",
+      "slug": "yks-net-hesaplama-puan-kosullari",
+      "publishedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "bodySha256": "290ac7154860eb09bdb5e21295c39f2e21f828db520fd09a24b4409acae3bc5d",
+      "url": "http://localhost:3000/blog/yks-net-hesaplama-puan-kosullari"
+    },
+    {
+      "id": "5b125cbb-7adf-46fa-a32c-11f2460e6727",
+      "slug": "obp-hesaplama-kirik-obp",
+      "publishedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "bodySha256": "c77898148ebb3eb871b5c2d170a04f8b70fa04a5fc8bae24fe899742bef7533c",
+      "url": "http://localhost:3000/blog/obp-hesaplama-kirik-obp"
+    },
+    {
+      "id": "75304340-4c46-4b23-886a-e7084c3d7daa",
+      "slug": "yks-engelli-aday-basvurusu-e-rapor",
+      "publishedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "bodySha256": "f77b16738b7893a1ee959def20adc09391ce05477db96866893e01efff4a8e68",
+      "url": "http://localhost:3000/blog/yks-engelli-aday-basvurusu-e-rapor"
+    }
+  ],
+  "verification": {
+    "checkedAt": "2026-11-02T23:13:06.915Z",
+    "apiDetails": {
+      "passed": 7,
+      "total": 7,
+      "status": 200,
+      "bodyHashes": "MATCH"
+    },
+    "webPages": {
+      "passed": 7,
+      "total": 7,
+      "status": 200,
+      "seoFields": "PRESENT"
+    },
+    "blogIndex": {
+      "listed": 6,
+      "featured": 1,
+      "browser": "All seven titles visible after reload"
+    },
+    "scope": "Local development only; no live database mutation",
+    "embedding": "Domain events captured in offline operator process; no running API embedding subscriber invoked"
+  },
+  "subsequentUpdateReceipts": [
+    "media-publication-local.json"
+  ]
+}

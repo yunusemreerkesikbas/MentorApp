@@ -17,6 +17,11 @@ export class OpenWeeklyRecapBodyDto extends createZodDto(openWeeklyRecapSchema) 
   @ApiProperty({ minimum: 0 }) override expectedCost!: number;
   @ApiProperty({ format: "uuid" }) override clientRequestId!: string;
 }
+export class WeeklyRecapTeaserResponseDto {
+  @ApiProperty() activeDays!: number;
+  @ApiProperty() focusMinutes!: number;
+  @ApiProperty({ type: String, nullable: true }) topSubject!: string | null;
+}
 export class WeeklyRecapOfferResponseDto {
   @ApiProperty() enabled!: boolean;
   @ApiProperty() examId!: string;
@@ -34,6 +39,7 @@ export class WeeklyRecapOfferResponseDto {
   @ApiProperty() coinRemaining!: number;
   @ApiProperty() windowDays!: number;
   @ApiProperty({ type: String, nullable: true }) nextAvailableAt!: string | null;
+  @ApiProperty({ type: WeeklyRecapTeaserResponseDto }) teaser!: WeeklyRecapTeaserResponseDto;
   @ApiPropertyOptional() reason?: string;
   @ApiPropertyOptional() message?: string;
 }

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 
 import { PuhuImage } from "@/components/puhu-image";
 import { Link } from "@/i18n/navigation";
+import { useIsPremium } from "@/lib/subscription-context";
 
 const NUDGE_DISMISS_KEY = "mentor.desktop-coach-fab.nudge-dismissed";
 const POSITION_KEY = "mentor.desktop-coach-fab.position";
@@ -93,6 +94,7 @@ function clampOffset(
 export function DesktopCoachFab() {
   const t = useTranslations("nav");
   const reduceMotion = useReducedMotion();
+  const isPremium = useIsPremium();
   // Server renders the nudge hidden, so hydration never flashes it before the storage read.
   const storedDismiss = useSyncExternalStore(
     subscribeStoredDismiss,
@@ -268,7 +270,8 @@ export function DesktopCoachFab() {
         } ${!reduceMotion && !dragging ? "mentor-puhu-bounce" : ""}`}
         draggable={false}
       >
-        <PuhuImage variant="encouraging" size="md" />
+        {/* Masked Puhu is wide, so 96 px keeps it as tall as free Puhu at 72. */}
+        {isPremium ? <PuhuImage variant="premium" size={96} /> : <PuhuImage variant="encouraging" size="md" />}
       </Link>
     </div>
   );

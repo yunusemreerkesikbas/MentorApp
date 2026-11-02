@@ -6,6 +6,7 @@ import { Coins, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { WeeklyChestView } from "@mentor/types";
 import { CoinCelebrationVisual } from "@/components/coin-celebration-visual";
+import { PREMIUM_MASK_PATH } from "@/components/premium/premium-identity-mark";
 import { PuhuImage } from "@/components/puhu-image";
 import { playCoinChime } from "@/lib/coin-sound";
 import { noteLines } from "./weekly-chest-model";
@@ -30,7 +31,7 @@ export function ChestSceneNote({ chest, animate }: { chest: WeeklyChestView; ani
         ))}
       </ul>
       <p className="mt-1 flex items-center justify-end gap-2">
-        <GlassesDoodle />
+        <MaskDoodle />
         <span className="wc-hand text-2xl font-bold">{t("note_sign")}</span>
       </p>
     </div>
@@ -90,13 +91,11 @@ export function ChestSceneReward({
   );
 }
 
-/** Puhu's glasses, scribbled next to the signature. */
-function GlassesDoodle() {
+/** Puhu's hero mask next to the signature, the same outline as the premium mark (cropped to the mask). */
+function MaskDoodle() {
   return (
-    <svg viewBox="0 0 44 18" className="h-4 w-10 text-[var(--wc-ink)]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
-      <circle cx="11" cy="10" r="7" />
-      <circle cx="33" cy="10" r="7" />
-      <path d="M18 9c2-2 6-2 8 0" />
+    <svg viewBox="1 5 22 13" className="h-4 w-7 text-[var(--wc-ink)]" aria-hidden focusable="false">
+      <path fill="currentColor" fillRule="evenodd" d={PREMIUM_MASK_PATH} />
     </svg>
   );
 }
