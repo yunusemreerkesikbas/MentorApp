@@ -17,7 +17,7 @@ describe("shared community post density", () => {
     expect(threadItem).toContain("sm:px-5");
     expect(threadItem).not.toContain("sm:p-5");
     expect(threadItem).toContain('displayedTitle ? "text-[var(--color-secondary)]"');
-    expect(threadItem).toContain("<AttachmentGallery attachments={thread.attachments} />");
+    expect(threadItem).toContain("<AttachmentGallery attachments={thread.attachments} compactSingle={clickable} />");
     expect(threadItem).toContain('<div className="mt-1 flex w-full');
     expect(threadItem).toContain("min-h-11 min-w-11");
     expect(threadItem).toContain("text-body-sm font-semibold");

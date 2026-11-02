@@ -247,7 +247,7 @@ function makeService(
     i18n as never,
     weekly as never,
   );
-  return { service, mockExams, weekly };
+  return { service, mockExams, weekly, plan };
 }
 
 const summaryOf = (
@@ -256,6 +256,11 @@ const summaryOf = (
 ) => snapshot.evidence.find((item) => item.type === type)?.summary;
 
 describe("CoachEvidenceService", () => {
+  it("grounds today's plan in the requested Istanbul day before UTC midnight", async () => {
+    const { service, plan } = makeService();
+    await service.build("user-1", new Date("2026-11-02T23:18:24.004Z"));
+    expect(plan.listForDate).toHaveBeenCalledWith("user-1", "2026-11-03");
+  });
   it("builds a PII-minimal deterministic snapshot from verified aggregates", async () => {
     const snapshot = await makeService().service.build("user-1", now);
 

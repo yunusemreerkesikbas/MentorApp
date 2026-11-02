@@ -776,6 +776,48 @@ test("showcase chrome'u İngilizce rota için yerelleştirilir", async ({ page }
   ).toHaveAttribute("href", "/en/community/member/showcase_user?tab=achievements");
 });
 
+test("profile post constrains portrait previews and opens the uncropped image", async ({ page }) => {
+  await mockProfileApi(page);
+  const imageUrl = `${browserApiOrigin}/test-assets/post-portrait.svg`;
+  await page.route(imageUrl, (route) => route.fulfill({
+    contentType: "image/svg+xml",
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000"><rect width="800" height="1000" fill="#d6dbfd"/></svg>',
+  }));
+  await page.route(`${browserApiUrl}/forum/users/ayse/activity**`, (route) => json(route, {
+    items: [{
+      type: "thread",
+      zone: { title: "Sohbet", slug: "sohbet" },
+      thread: {
+        id: "portrait-thread", zoneId: "zone-1", authorId: profile.userId,
+        authorName: profile.displayName, authorUsername: profile.username, authorAvatarUrl: null,
+        title: null, body: "Dikey görsel önizlemesi", poll: null, status: "OPEN",
+        acceptedPostId: null, isPinned: false, reactionCounts: {}, myReactions: [],
+        commentCount: 0, commenterNames: [], myBookmarked: false,
+        createdAt: "2026-11-01T10:00:00.000Z",
+        attachments: [{ id: "portrait", kind: "image", url: imageUrl, sizeBytes: 100 }],
+      },
+    }],
+    nextCursor: null,
+  }));
+  await page.goto("/topluluk/uye/ayse");
+  const preview = page.getByRole("button", { name: "Görseli aç", exact: true });
+  await expect(preview).toBeVisible();
+  const box = await preview.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.width / box!.height).toBeCloseTo(4 / 3, 1);
+  await expect(preview.locator("img")).toHaveCSS("object-fit", "cover");
+
+  await preview.click();
+  const lightbox = page.getByRole("dialog");
+  await expect(lightbox).toBeVisible();
+  await expect(lightbox.locator("img")).toHaveCSS("object-fit", "contain");
+  await expect(lightbox.locator("img")).toHaveJSProperty("naturalWidth", 800);
+  await expect(lightbox.locator("img")).toHaveJSProperty("naturalHeight", 1000);
+  await page.keyboard.press("Escape");
+  await expect(lightbox).toBeHidden();
+  await expect(page).toHaveURL(/\/topluluk\/uye\/ayse$/);
+});
+
 async function mockProfileApi(page: Page) {
   // Fixture images live on the API origin: the production CSP `img-src` only allows that origin
   // (plus WEB_CSP_STORAGE_ORIGINS, unset in CI), so a foreign CDN host is blocked and the avatar

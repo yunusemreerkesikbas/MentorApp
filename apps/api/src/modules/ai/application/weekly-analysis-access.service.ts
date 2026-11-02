@@ -24,8 +24,8 @@ export class WeeklyAnalysisAccessService implements OnModuleInit {
           cost: offer.cost, coinConfirmed: offer.coinConfirmed, canAfford: offer.coinConfirmed >= offer.cost,
           unlocked: offer.mode !== "COIN" && offer.mode !== "NONE", premium: offer.premium,
           purchased: offer.mode === "OWNED",
-          generationAvailable: offer.canOpen || offer.reason === "INSUFFICIENT_COIN" || offer.reason === "WEEKLY_RECAP_EMAIL_REQUIRED",
-          purchaseAvailable: offer.mode === "COIN" && (offer.canOpen || offer.reason === "INSUFFICIENT_COIN" || offer.reason === "WEEKLY_RECAP_EMAIL_REQUIRED"),
+          generationAvailable: offer.canOpen || offer.reason === "INSUFFICIENT_COIN",
+          purchaseAvailable: offer.mode === "COIN" && (offer.canOpen || offer.reason === "INSUFFICIENT_COIN"),
           limitReached: offer.reason === "WEEKLY_RECAP_LIMIT_REACHED",
         };
       },

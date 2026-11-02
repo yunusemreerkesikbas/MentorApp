@@ -76,6 +76,13 @@ export interface PhoneVerificationConfirmDto {
   code: string;
 }
 
+export interface WeeklyRecapTeaserResponseDto {
+  activeDays: number;
+  focusMinutes: number;
+  /** @nullable */
+  topSubject: string | null;
+}
+
 export type WeeklyRecapOfferResponseDtoMode = typeof WeeklyRecapOfferResponseDtoMode[keyof typeof WeeklyRecapOfferResponseDtoMode];
 
 
@@ -107,6 +114,7 @@ export interface WeeklyRecapOfferResponseDto {
   windowDays: number;
   /** @nullable */
   nextAvailableAt: string | null;
+  teaser: WeeklyRecapTeaserResponseDto;
   reason?: string;
   message?: string;
 }

@@ -1,5 +1,16 @@
-import { expect, it } from "vitest";
-import { stepMonth, type MonthStep } from "./plan-utils";
+import { afterEach, expect, it, vi } from "vitest";
+import { isPastDate, stepMonth, todayIso, type MonthStep } from "./plan-utils";
+
+afterEach(() => vi.useRealTimers());
+
+it("opens today's plan on the Istanbul date before UTC midnight", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-02T23:18:24.004Z"));
+
+  expect(todayIso()).toBe("2026-11-03");
+  expect(isPastDate("2026-11-02")).toBe(true);
+  expect(isPastDate("2026-11-03")).toBe(false);
+});
 
 function walk(start: string, moves: number[]): string[] {
   let last: MonthStep | null = null;

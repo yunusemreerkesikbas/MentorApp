@@ -420,6 +420,37 @@ test("Free kullanıcıya LLM isteği yapmadan paywall açar", async ({
   expect(api.previewCalls).toBe(0);
 });
 
+test("mood uyarlaması UTC gece yarısından önce İstanbul gününü açar ve uygulanabilir", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-02T23:18:24.004Z"));
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const currentTask = { ...task, taskDate: "2026-11-03" };
+  const preview: CoachPlanAdaptationDto = {
+    ...readyPreview,
+    window: { from: "2026-11-03", to: "2026-11-09" },
+    changes: [{ kind: "MOVE", taskId, title: task.title, subject: task.subject,
+      fromDate: "2026-11-03", toDate: "2026-11-04" }],
+  };
+  const api = await mockPlanApi(page, { preview, tasks: [currentTask] });
+  await page.route("**/v1/plan-tasks/adapt", async route => {
+    api.applyBodies.push(route.request().postDataJSON());
+    return json(route, { moved: [{ ...currentTask, taskDate: "2026-11-04" }], added: [] });
+  });
+  const todayRead = page.waitForRequest(request => {
+    const url = new URL(request.url());
+    return url.pathname === "/v1/plan-tasks" && url.searchParams.get("date") === "2026-11-03";
+  });
+  await page.goto("/plan?coach=adapt&source=mood");
+  await todayRead;
+
+  const dialog = page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" });
+  await expect(dialog).toBeVisible();
+  expect(api.previewBodies).toEqual([{ source: "MOOD" }]);
+  await dialog.getByRole("button", { name: "Seçilenleri uygula" }).click();
+  await expect.poll(() => api.applyBodies.length).toBe(1);
+  expect(api.applyBodies[0]).toMatchObject({ source: "MOOD", changes: preview.changes });
+  await expect(dialog).toHaveCount(0);
+});
+
 test("mood query akışını StrictMode altında bir kez tüketir", async ({
   page,
 }) => {

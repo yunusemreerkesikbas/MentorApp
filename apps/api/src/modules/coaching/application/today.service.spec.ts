@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { addDays, todayIso } from "../domain/date.util";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { addDays, todayInIstanbul } from "../domain/date.util";
 import { TodayService } from "./today.service";
 
 const USER = "u1";
@@ -27,7 +27,7 @@ function build(overrides: {
   };
   const plan = {
     listForDate: vi.fn(
-      async () =>
+      async (_userId: string, _date: string) =>
         overrides.tasks ?? [
           {
             id: "t1",
@@ -35,7 +35,7 @@ function build(overrides: {
             subject: "Türkçe",
             status: "DONE",
             sortOrder: 0,
-            taskDate: todayIso(),
+            taskDate: todayInIstanbul(),
           },
         ],
     ),
@@ -60,7 +60,7 @@ function build(overrides: {
           examId: "exam-1",
           examType: "KPSS",
           examName: "KPSS Lisans 2026",
-          examDate: addDays(todayIso(), 30),
+          examDate: addDays(todayInIstanbul(), 30),
           source: "ÖSYM",
           sourceUrl: "https://www.osym.gov.tr",
         };
@@ -103,6 +103,40 @@ function build(overrides: {
 }
 
 describe("TodayService — composite panel payload", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it.each([
+    ["2026-11-02T20:59:59.999Z", "2026-11-02"],
+    ["2026-11-02T21:00:00.000Z", "2026-11-03"],
+    ["2026-11-02T23:18:24.004Z", "2026-11-03"],
+  ])("reads the Istanbul plan day at %s", async (instant, date) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(instant));
+    const { service, plan } = build({});
+    plan.listForDate.mockImplementation(async (_userId, requestedDate) =>
+      ["2026-11-02", "2026-11-03"].map((taskDate) => ({
+        id: taskDate, title: "Paragraf", subject: "Türkçe", status: "PENDING",
+        sortOrder: 0, taskDate,
+      })).filter((task) => task.taskDate === requestedDate),
+    );
+
+    const panel = await service.getToday(USER);
+
+    expect(panel.tasks.map((task) => task.taskDate)).toEqual([date]);
+    expect(panel).toMatchObject({ canLightenPlan: true });
+  });
+
+  it.each([
+    [[], false],
+    [[{ status: "DONE", origin: null }], false],
+    [[{ status: "PENDING", origin: { type: "MENTORSHIP", linkId: "link-1" } }], false],
+    [[{ status: "PENDING", origin: null }], true],
+    [[{ status: "PENDING", origin: { type: "AI_COACH" } }], true],
+  ])("computes lightening eligibility for %j", async (tasks, canLightenPlan) => {
+    const result = await build({ tasks }).service.getToday(USER);
+    expect(result).toMatchObject({ canLightenPlan });
+  });
+
   it("assembles the full daily-hub payload (matches the panel mock shape)", async () => {
     const { service } = build({});
     const result = await service.getToday(USER);
@@ -159,7 +193,7 @@ describe("TodayService — composite panel payload", () => {
         examId: "recent-exam",
         examType: "KPSS",
         examName: "KPSS Ortaöğretim 2026",
-        examDate: addDays(todayIso(), -1),
+        examDate: addDays(todayInIstanbul(), -1),
         source: "ÖSYM",
         sourceUrl: "https://www.osym.gov.tr",
       },
@@ -222,7 +256,7 @@ describe("TodayService — composite panel payload", () => {
         subject: null,
         status: "DONE",
         sortOrder: 0,
-        taskDate: todayIso(),
+        taskDate: todayInIstanbul(),
       },
       {
         id: "first",
@@ -230,7 +264,7 @@ describe("TodayService — composite panel payload", () => {
         subject: "Language",
         status: "PENDING",
         sortOrder: 1,
-        taskDate: todayIso(),
+        taskDate: todayInIstanbul(),
       },
       {
         id: "later",
@@ -238,7 +272,7 @@ describe("TodayService — composite panel payload", () => {
         subject: "History",
         status: "PENDING",
         sortOrder: 2,
-        taskDate: todayIso(),
+        taskDate: todayInIstanbul(),
       },
     ];
 
@@ -262,7 +296,7 @@ describe("TodayService — composite panel payload", () => {
         subject: "Language",
         status: "PENDING",
         sortOrder: 0,
-        taskDate: todayIso(),
+        taskDate: todayInIstanbul(),
       },
     ];
 

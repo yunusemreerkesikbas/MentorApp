@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import { PuhuImage } from "@/components/puhu-image";
 import { useAuth } from "@/lib/auth-context";
+import { useIsPremium } from "@/lib/subscription-context";
 import { firstName, greetingKeyForHour } from "@/lib/greeting";
 import { CoachCalibrationCard } from "./coach-calibration-card";
 
@@ -25,6 +26,7 @@ export function CoachEmptyLanding() {
   const t = useTranslations("coach.landing");
   const { user } = useAuth();
   const reduceMotion = useReducedMotion();
+  const isPremium = useIsPremium();
 
   const name = user?.displayName
     ? firstName(user.displayName)
@@ -61,12 +63,17 @@ export function CoachEmptyLanding() {
       <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-y-auto py-2">
         <div className="my-auto flex w-full flex-col items-center">
           <CoachCalibrationCard>
-            <PuhuImage
-              variant="encouraging"
-              size={120}
-              priority
-              className="max-h-full w-auto drop-shadow-[var(--shadow-card)]"
-            />
+            {/* Masked Puhu speaks for premium. Its art is wide, so it sits ~120 px tall in a
+                168 px square box; scaling fills that box without moving the layout (less on phones,
+                where the greeting sits close above). */}
+            <div className={isPremium ? "scale-[1.2] sm:scale-[1.35]" : undefined}>
+              <PuhuImage
+                variant={isPremium ? "premium" : "encouraging"}
+                size={isPremium ? 168 : 120}
+                priority
+                className="max-h-full w-auto drop-shadow-[var(--shadow-card)]"
+              />
+            </div>
           </CoachCalibrationCard>
         </div>
       </div>

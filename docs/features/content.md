@@ -78,6 +78,39 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-03: Add licensed web photographs to the seven local YKS articles.** Selected six Pexels
+  photographs and one Unsplash photograph after checking their source pages and licences. Resized/cropped
+  covers to 1200×630 WebP (271,788 bytes total), stored them under new content-addressed keys in the
+  existing development media bucket `mentor-public`, and updated only the local article records through
+  ContentService. Usage: local YKS blog cards and article headers now use the existing cover field;
+  Open Graph uses the same image. Turkish alt text, photographer links, licence links and representative
+  photo disclosures are included. Gotchas: these are illustrative photos, not official exam imagery;
+  source verification metadata and publication times are preserved; production DB/media are unchanged.
+  Verified seven object hashes/content types, seven API details/pages and all seven index cover keys.
+  Related: `docs/editorial/yks/{media-sources.json,media-publication-local.json,images/}` and `metadata.json`.
+
+- **2026-11-03: Publish the seven YKS guides to local development only.** The user selected the
+  local environment. All seven payloads passed the existing article schema and were saved/published
+  through ContentService in one outer transaction against `localhost:5433/mentor`, without replacing
+  existing slugs. Usage: `/blog?family=YKS` on localhost:3000. Organisation author: PuhuKoç; source
+  verification is explicitly automated. Full official PDFs were compared before publication: three
+  byte matches and one normalized full-text match. Verified all seven public API details and web
+  pages (HTTP 200, body hashes and SEO text), plus six list entries and one featured item in Chrome.
+  Gotchas: list cache can lag five minutes; absolute related links use localhost and must be regenerated
+  for production. Offline publication events did not invoke running API embedding subscribers. Related:
+  `docs/editorial/yks/{README.md,metadata.json,source-map.md,publication-local.json}`. No live database,
+  application code or deployment changed.
+
+- **2026-11-03: YKS editorial draft package from four supplied ÖSYM PDFs.** Added seven Turkish,
+  yearless guides covering session choice, application/payment, form/centre fields, exam-day preparation,
+  net/score prerequisites, OBP and the disability e-report application flow. Each body states its 2026
+  source scope. Usage: read `docs/editorial/yks/README.md`, map `metadata.json` fields and the referenced
+  Markdown body into the existing editor after source review. Gotchas: this is a draft package, not an
+  import payload or seed; author/verification/publication fields remain null, remote PDF revision parity
+  is unconfirmed, and relative article links are only planned in metadata because `ArticleMarkdown`
+  currently renders them as text. Exact calendar dates are left to verified data cards. Related:
+  `docs/editorial/yks/{README.md,metadata.json,source-map.md}` and seven article bodies in that directory.
+
 - **2026-11-01: KPSS Lisans countdown moved to 2027.** The seed row `kpss-lisans-2026` now reads
   "KPSS Lisans 2027" with EXAM_DATE 2027-09-12 (2027-KPSS A Grubu, Genel Yetenek-Genel Kültür; Alan
   Bilgisi 18-19.09.2027), verified against the official ÖSYM 2027 calendar PDF published 28.10.2026.

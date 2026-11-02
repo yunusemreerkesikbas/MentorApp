@@ -145,7 +145,9 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 - **Usage:** Demo students: `pnpm --filter @mentor/api exec ts-node -T scripts/seed-economy-demo.ts`.
 - **Gotchas:** An old `config_overrides` set wins over catalog defaults (the local chest showed 15
   Coin for that reason); audit production before launch. A chest already paid keeps its amount.
-  The nav Coin pill can lag the first-login celebration until the next navigation (pre-existing).
+- **Pill fix:** the nav Coin pill showed the pre-grant balance under the first-login celebration.
+  The receipt loop now lives in `apps/web/src/lib/reward-sync.ts` (`createRewardSync`, used by
+  `EconomySync`) and re-reads the balance after presenting new receipts.
 
 ### 2026-11-01 — Weekly chest carry-over and first-open review fixes
 
@@ -831,6 +833,7 @@ Sandık panelde kendi nesnesiyle görünür (`GET /v1/economy/weekly-chest`, `us
   `e2e/weekly-chest.spec.ts` (`playwright.weekly-chest.config.ts`, 5 senaryo × 375/1280).
   Plan `docs/superpowers/plans/2026-11-01-weekly-chest-web.md`.
 - **Tur 2 (aynı gün, kullanıcı testi):** sahne büyüdü (720 px / %64 ekran yüksekliği) ve aynı kare bulanık arka plan olarak ekrana yayıldı. Bilgi penceresinde geçmiş boş gün düz gri (panel bandı gibi), gelecek gün kesikli. Hafta artık dolamıyorsa (`weekCanStillFill`) başlık ve satır "Pazartesi yenisi geliyor" der. Elle deneme: `pnpm --filter @mentor/api seed:weekly-chest-demo` (iki demo öğrenci, şifre betikte).
+- **Tur 3 (2026-11-03, masaüstü 16:9):** yatay ve geniş ekranda (`(orientation: landscape) and (min-width: 768px) and (min-height: 560px)`) sahne 16:9 seti kullanır: `desk-chest-closed-wide.webp`, `desk-chest-open-wide.webp`, `chest-open-wide.mp4` (Kling, filigran kırpıldı). Oda tüm ekranı kaplar (`.wc-cover`, alttan asılı, geniş ekranda tavan kırpılır), başlık ve düğmeler sandığın önündeki masada tek satır (`.wc-desk-bar`). Lamba şeridi `deskWide`. Dik tutulan ekranda (`(orientation: portrait)`) 9:16 set: `*-tall.webp`, `chest-open-tall.mp4` (filigran kırpıldı), `.wc-cover-tall`; başlık üstte rafların önünde (`.wc-shelf-bar`), düğmeler altta masada. Lamba şeridi `deskTall`. Kare set yalnızca yan çevrilmiş telefon ve kısa pencere için kalır. e2e yerel çalıştırma: `PLAYWRIGHT_BASE_URL=http://localhost:3000 QA_STAGE2_API_URL=http://localhost:3001/v1` (eski 3100 build'i giriş ekranına düşer).
 
 ### 2026-10-26 — Davet akışı son düzeltme turu (bütün dal incelemesi)
 

@@ -138,6 +138,32 @@
   mask-composite: intersect;
 }
 
+/*
+ * Landscape: the 16:9 room covers the screen. The box keeps the art's own ratio so the lamps sit on
+ * it in percent; it hangs from the bottom so a wide screen crops the ceiling, never the desk.
+ */
+.wc-cover {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: max(100vw, calc(100dvh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  transform: translateX(-50%);
+}
+/* Upright: the 9:16 room. A narrow phone crops the sides, a wide tablet the ceiling. */
+.wc-cover-tall {
+  width: max(100vw, calc(100dvh * 9 / 16));
+  aspect-ratio: 9 / 16;
+}
+/* The text row on the desk in front of the chest: the wood darkens under it so it reads. */
+.wc-desk-bar {
+  background: linear-gradient(to bottom, transparent 0, rgba(28, 19, 13, 0.7) 45%, rgba(28, 19, 13, 0.92) 100%);
+}
+/* Upright, the title sits over the shelves: the room darkens from the top instead. */
+.wc-shelf-bar {
+  background: linear-gradient(to top, transparent 0, rgba(28, 19, 13, 0.7) 45%, rgba(28, 19, 13, 0.9) 100%);
+}
+
 /* The open frame steps back so the note reads on top of it. */
 .wc-dim {
   opacity: 0.25;

@@ -24,7 +24,7 @@ export function GreetingRow({
 }: {
   mood: number | null;
   busy: boolean;
-  /** Today still has a pending task, the only thing a low-mood adaptation can lighten. */
+  /** Backend eligibility excludes finished tasks and human-coach assignments. */
   canLighten: boolean;
   onPick: (value: number) => void;
 }) {
@@ -35,6 +35,7 @@ export function GreetingRow({
   const availability = useAppAvailability();
   const name = user ? firstName(user.displayName) : "";
   const today = new Intl.DateTimeFormat(locale, {
+    timeZone: "Europe/Istanbul",
     weekday: "long",
     day: "numeric",
     month: "long",

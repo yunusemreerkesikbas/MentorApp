@@ -33,16 +33,16 @@ async function completeWeek(page: Page, headers: { Authorization: string }) {
 
 test("earned first Wrapped saves its story and rereads from archive while AI is off", async ({ page, request }, info) => {
   const learner = await account(page, info.project.name, "wrappedfree");
-  await learner.profile(); await learner.verify();
+  await learner.profile(); // no email verification: the first story needs none
   const exam = await completeWeek(page, learner.headers);
   const requests: string[] = [];
   page.on("request", (r) => { if (r.method() === "POST" && r.url().endsWith("/coach/weekly-recaps")) requests.push(r.url()); });
   await page.goto(`/analiz/haftanin-hikayesi?examId=${exam}`);
-  await expect(page.getByRole("button", { name: "İlk hikâyemi ücretsiz aç", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Hediyemi aç", exact: true })).toBeVisible();
   expect(requests).toHaveLength(0);
   await page.screenshot({ path: info.outputPath("wrapped-earned-offer.png") });
   const generated = page.waitForResponse((r) => r.url().endsWith("/coach/weekly-recaps") && r.request().method() === "POST");
-  await page.getByRole("button", { name: "İlk hikâyemi ücretsiz aç", exact: true }).click();
+  await page.getByRole("button", { name: "Hediyemi aç", exact: true }).click();
   const response = await generated; expect(response.status()).toBe(201);
   const saved = await response.json(); expect(saved.source).toBe("EARNED");
   await expect(page.getByTestId("weekly-recap-story")).toBeVisible();
@@ -70,13 +70,13 @@ test("Coin Wrapped refreshes a changed admin quote and obeys a dynamic shared ca
   await setting(request, admin, "economy.coin.deep_analysis_cost", 5);
   const stale = page.waitForResponse((r) => r.url().endsWith("/coach/weekly-recaps") && r.request().method() === "POST");
   const before = (await learner.balance()).coinConfirmed;
-  await page.getByRole("button", { name: "10 Coin kullanmayı onayla", exact: true }).click();
+  await page.getByRole("button", { name: "Onayla ve aç", exact: true }).click();
   expect((await stale).status()).toBe(409);
   await expect(page.getByRole("button", { name: "5 Coin ile aç", exact: true })).toBeVisible();
   expect((await learner.balance()).coinConfirmed).toBe(before);
   await page.getByRole("button", { name: "5 Coin ile aç", exact: true }).click();
   await page.screenshot({ path: info.outputPath("wrapped-coin-confirm.png") });
-  await page.getByRole("button", { name: "5 Coin kullanmayı onayla", exact: true }).click();
+  await page.getByRole("button", { name: "Onayla ve aç", exact: true }).click();
   await expect(page.getByTestId("weekly-recap-story")).toBeVisible();
   expect((await learner.balance()).coinConfirmed).toBe(before - 5);
   await setting(request, admin, "coaching.weekly_recap.coin_limit", 0);

@@ -615,6 +615,8 @@ export interface TodayPanelResponse {
   countdown: CountdownDto | null;
   streak: StreakSummaryDto;
   tasks: PlanTaskDto[];
+  /** Whether today's Istanbul plan has a pending task eligible for mood adaptation. */
+  canLightenPlan: boolean;
   /** Single rule-based step selected by the backend from today's ordered tasks. */
   nextAction: DailyNextActionDto;
   sessionPresets: SessionPresetDto[];

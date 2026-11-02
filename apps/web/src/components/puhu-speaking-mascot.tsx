@@ -4,13 +4,23 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { PUHU_MOTION_FRAMES } from "@/lib/onboarding-assets";
+import { useIsPremium } from "@/lib/subscription-context";
 
-const SPEECH_FRAMES = [
-  PUHU_MOTION_FRAMES.default,
-  PUHU_MOTION_FRAMES.talkClosed,
-  PUHU_MOTION_FRAMES.blink,
-  PUHU_MOTION_FRAMES.lookDown,
-] as const;
+const FREE_FRAMES = {
+  rest: PUHU_MOTION_FRAMES.default,
+  talkClosed: PUHU_MOTION_FRAMES.talkClosed,
+  blink: PUHU_MOTION_FRAMES.blink,
+  lookDown: PUHU_MOTION_FRAMES.lookDown,
+};
+
+// Masked Puhu speaks for premium (DESIGN.md §7). One shared crop box, so the stack never jitters.
+const PREMIUM_ROOT = "/mascot/puhu/motion/premium";
+const PREMIUM_FRAMES: Record<keyof typeof FREE_FRAMES, string> = {
+  rest: `${PREMIUM_ROOT}/rest.png`,
+  talkClosed: `${PREMIUM_ROOT}/talk-closed.png`,
+  blink: `${PREMIUM_ROOT}/blink.png`,
+  lookDown: `${PREMIUM_ROOT}/look-down.png`,
+};
 
 /** Keep every frame mounted so speaking never waits for a new image to decode. */
 export function PuhuSpeakingMascot({
@@ -21,6 +31,7 @@ export function PuhuSpeakingMascot({
   isLoading: boolean;
 }) {
   const reduceMotion = useReducedMotion();
+  const frames = useIsPremium() ? PREMIUM_FRAMES : FREE_FRAMES;
   const [mouthClosed, setMouthClosed] = useState(false);
   const [blinking, setBlinking] = useState(false);
   const speaking = isSpeaking && !reduceMotion;
@@ -49,10 +60,10 @@ export function PuhuSpeakingMascot({
   }, [speaking, isLoading, reduceMotion]);
 
   const currentFrame = isLoading
-    ? PUHU_MOTION_FRAMES.lookDown
+    ? frames.lookDown
     : speaking
-      ? mouthClosed ? PUHU_MOTION_FRAMES.talkClosed : PUHU_MOTION_FRAMES.default
-      : blinking && !reduceMotion ? PUHU_MOTION_FRAMES.blink : PUHU_MOTION_FRAMES.default;
+      ? mouthClosed ? frames.talkClosed : frames.rest
+      : blinking && !reduceMotion ? frames.blink : frames.rest;
 
   return (
     <motion.div
@@ -61,7 +72,7 @@ export function PuhuSpeakingMascot({
       transition={{ duration: 0.3, repeat: speaking ? Infinity : 0, ease: "easeInOut" }}
       aria-hidden="true"
     >
-      {SPEECH_FRAMES.map((src) => (
+      {Object.values(frames).map((src) => (
         <Image
           key={src}
           src={src}

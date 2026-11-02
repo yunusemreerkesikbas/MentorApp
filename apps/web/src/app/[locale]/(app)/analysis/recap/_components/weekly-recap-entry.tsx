@@ -55,6 +55,22 @@ export function WeeklyRecapEntry() {
     return () => { cancelled = true; };
   }, [requestedExam, reportId, attempt, message]);
 
+  // Coin earned in another tab or a membership just bought: the offer catches up when the tab returns.
+  const shown = state.kind === "offer" ? state.offer : null;
+  const examId = shown?.examId, weekStart = shown?.weekStart;
+  useEffect(() => {
+    if (!examId || !weekStart || busy) return;
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      // ponytail: a failed background refetch keeps the shown offer; opening re-quotes on the server anyway.
+      fetchWeeklyRecapOffer(examId, weekStart)
+        .then((offer) => setState((now) => now.kind === "offer" ? { kind: "offer", offer } : now))
+        .catch(() => undefined);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [examId, weekStart, busy]);
+
   const read = async (id: string) => {
     setBusy(true); setError(null);
     try { setState({ kind: "report", report: await fetchOwnedWeeklyRecap(id) }); }
@@ -90,7 +106,7 @@ export function WeeklyRecapEntry() {
     catch (error) { setError(message(error)); }
     finally { setBusy(false); }
   };
-  const refresh = async () => {
+  const reload = async () => {
     if (state.kind !== "offer") return;
     setBusy(true); setError(null); setArmed(false);
     try { setState({ kind: "offer", offer: await fetchWeeklyRecapOffer(state.offer.examId, state.offer.weekStart) }); }
@@ -100,12 +116,12 @@ export function WeeklyRecapEntry() {
   if (state.kind === "legacy") return <WeeklyRecapShell />;
   if (state.kind === "report") return <WeeklyRecapShell savedReport={state.report} />;
   return <main className="mx-auto w-full max-w-xl px-4 py-8" data-testid="weekly-recap-access">
-    {state.kind === "loading" ? <SkeletonGroup label={t("loading")} className="space-y-4"><Skeleton className="h-80 w-full" /><Skeleton className="h-32 w-full" /></SkeletonGroup>
+    {state.kind === "loading" ? <SkeletonGroup label={t("loading")} className="space-y-4"><Skeleton className="h-[540px] w-full" /><Skeleton className="h-32 w-full" /></SkeletonGroup>
       : state.kind === "error" ? <section role="alert" className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-6">
         <p>{state.message}</p><Button className="mt-4" onClick={() => setAttempt((value) => value + 1)}>{t("ownership.retry")}</Button>
         <Link href="/analysis" className="mt-4 flex min-h-11 items-center underline">{t("ownership.statistics")}</Link>
       </section> : <WeeklyRecapAccessCard offer={state.offer} busy={busy} armed={armed} error={error} onOpen={() => void open()}
-        onRefresh={() => void refresh()}
+        onRetry={() => void reload()} onCancel={() => setArmed(false)}
         onPremium={() => openPaywall({ sourceFeature: "weekly.narration" })} />}
     {archive ? <WeeklyRecapArchive archive={archive} busy={busy} onRead={(item) => void readArchived(item)} onPage={(number) => void page(number)} /> : null}
   </main>;

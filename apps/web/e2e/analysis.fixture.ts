@@ -6,6 +6,7 @@ import type {
   ExamSubjectDto,
   NotebookReviewHistoryItem,
   PhotoAccessDto,
+  WeeklyRecapOfferDto,
   WeeklyReviewDto,
   WeeklyReviewNarrationDto,
 } from "@mentor/types";
@@ -372,6 +373,8 @@ interface MockApiOptions {
   deepAnalysis?: DeepAnalysisView;
   deepAnalysisPurchase?: DeepAnalysisView;
   weeklyNarration?: WeeklyReviewNarrationDto | "error";
+  /** Merged into the weekly recap offer; access stays off (legacy story) unless `enabled` is set. */
+  recapOffer?: Partial<WeeklyRecapOfferDto>;
 }
 
 export interface MockApiLog {
@@ -504,7 +507,8 @@ export async function mockAnalysisApi(
     if (method === "GET" && path.startsWith("/v1/coach/weekly-recaps/access?")) {
       return json(route, { enabled: false, examId: exam.id, weekStart: readyWeekly.period.startDate,
         endDate: readyWeekly.period.endDate, ready: true, premium: false, mode: "NONE", canOpen: false,
-        reportId: null, cost: 25, coinConfirmed: 0, coinLimit: 2, coinRemaining: 2, windowDays: 30, nextAvailableAt: null });
+        reportId: null, cost: 25, coinConfirmed: 0, coinLimit: 2, coinRemaining: 2, windowDays: 30, nextAvailableAt: null,
+        premiumAvailable: false, teaser: { activeDays: 5, focusMinutes: 340, topSubject: "Matematik" }, ...options.recapOffer });
     }
     if (method === "GET" && (path === "/v1/coach/weekly-recaps" || path.startsWith("/v1/coach/weekly-recaps?"))) {
       return json(route, { items: [], total: 0, page: 1, pageSize: 10 });

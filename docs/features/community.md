@@ -67,6 +67,14 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-02 · Consistent post image previews.** Clickable shared thread cards in profiles,
+  rooms and saved lists now enable the gallery's existing 4:3 preview, matching discovery.
+  Usage: list shells pass `clickable`; message detail leaves it unset to retain the natural ratio.
+  Gotcha: tall images are cropped from the top in lists; opening the image still shows it uncropped.
+  Discovery retains its separate mixed QA card, but both renderers use `AttachmentGallery` for media.
+  Related: `thread-item.tsx`, `community-post-card.tsx`, `attachment-gallery.tsx`, post-density tests
+  and the mobile/desktop portrait-preview regression in `community-member-profile.spec.ts`.
+
 - **2026-10-30 · Own progress under social closure.** The shared social policy denies other-user
   profile/achievement reads and buddy views before composing data. Own profile, collection,
   personal summary, earned badges and cleanup remain available. The web hides social metrics,

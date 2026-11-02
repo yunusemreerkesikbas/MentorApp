@@ -359,6 +359,10 @@ refresh cookie. The existing `/v1/auth/{login,refresh,logout}` routes remain the
 > outside the API contract. The global filter passes them through unchanged.
 
 - `GET /v1/coaching/today` also carries `focusGoal { goalMinutes, focusMinutesToday }` and `focusingNow` (anonymous aggregate count, null under the server-side visibility threshold) — APP-022.
+- `GET /v1/coaching/today.canLightenPlan` (2026-11-03) is server-computed: at least one pending
+  task on today's Europe/Istanbul date whose origin is not `MENTORSHIP`. The mood CTA consumes
+  this field. Plan defaults, past-date locks, mood and adaptation share Istanbul midnight;
+  existing session/activity/streak aggregates keep their UTC boundaries.
 - `GET /v1/coaching/weekly-review?examId={uuid}` — completed-week rule summary + recap status,
   effort/rhythm aggregates, taxonomy-verified focus and plan breakdowns, backend-selected
   highlights, nullable weekly title, focus-time band and peak-focus day (JWT, Free).

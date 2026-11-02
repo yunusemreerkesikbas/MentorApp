@@ -2,6 +2,12 @@ import type { WeeklyReviewDto } from "./coaching.js";
 import type { WeeklyReviewNarrationDto } from "./ai.js";
 
 export type WeeklyRecapSource = "PREMIUM" | "EARNED" | "COIN";
+/** Free basic numbers for the locked card's cover; the story and narration stay behind access. */
+export interface WeeklyRecapTeaserDto {
+  activeDays: number;
+  focusMinutes: number;
+  topSubject: string | null;
+}
 export interface WeeklyRecapOfferDto {
   enabled: boolean;
   examId: string;
@@ -19,6 +25,7 @@ export interface WeeklyRecapOfferDto {
   coinRemaining: number;
   windowDays: number;
   nextAvailableAt: string | null;
+  teaser: WeeklyRecapTeaserDto;
   reason?: string;
   message?: string;
 }

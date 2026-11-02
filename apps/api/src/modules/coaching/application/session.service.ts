@@ -13,7 +13,7 @@ import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { DomainError, ValidationFailedError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { toIsoDate, todayIso } from "../domain/date.util";
+import { toIsoDate, todayInIstanbul, todayIso } from "../domain/date.util";
 import {
   ACTIVE_SESSION_GRACE_MINUTES,
   FOCUSING_NOW_CACHE_MS,
@@ -383,13 +383,14 @@ export class SessionService {
       let planTaskAutoCompleted = false;
       if (shouldAutoCompletePlanTask && existing.planTaskId) {
         const task = await this.planTasks.findById(tx, userId, existing.planTaskId);
-        if (task && task.status !== "DONE" && task.taskDate >= todayIso()) {
+        const planDate = todayInIstanbul();
+        if (task && task.status !== "DONE" && task.taskDate >= planDate) {
           await this.planTasks.update(tx, userId, task.id, { status: "DONE" });
           const doneCount = await this.planTasks.countDone(tx, userId, task.taskDate);
           await this.activity.upsertTasksDone(tx, userId, task.taskDate, doneCount);
           planTaskAutoCompleted = true;
           completedPlanTask = task;
-          if (task.taskDate === todayIso()) {
+          if (task.taskDate === planDate) {
             const total = await this.planTasks.countTotal(tx, userId, task.taskDate);
             if (total > 0 && doneCount === total) planCompleted = total;
           }

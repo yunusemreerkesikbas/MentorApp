@@ -2,8 +2,8 @@
  * Pure date helpers for coaching. All "day" math is done on UTC calendar dates
  * (yyyy-mm-dd) so it is deterministic and timezone-stable for the MVP.
  *
- * Gotcha (documented): the server treats the UTC date as "today". A per-user timezone
- * can be threaded through later without changing these pure helpers.
+ * Plans and mood use `todayInIstanbul`; legacy activity/streak/session aggregates use
+ * `todayIso`. Keep calendar-day selection separate from UTC date arithmetic.
  */
 
 /** Turkish month names (1-indexed via slice) for `formatTurkishDate`. */
@@ -42,7 +42,7 @@ const ISTANBUL_DATE_FORMATTER = new Intl.DateTimeFormat("en", {
   day: "2-digit",
 });
 
-/** Europe/Istanbul calendar date for event scheduling; does not change legacy UTC-day features. */
+/** Product calendar date for plans, mood and events; legacy activity aggregates stay UTC. */
 export function todayInIstanbul(now: Date = new Date()): IsoDate {
   const parts = ISTANBUL_DATE_FORMATTER.formatToParts(now);
   const value = (type: Intl.DateTimeFormatPartTypes) =>

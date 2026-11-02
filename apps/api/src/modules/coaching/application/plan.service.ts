@@ -21,7 +21,7 @@ import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { addDays, todayInIstanbul, todayIso } from "../domain/date.util";
+import { addDays, todayInIstanbul } from "../domain/date.util";
 import {
   buildPlanRevision,
   PLAN_ADAPTATION_WINDOW_DAYS,
@@ -101,7 +101,7 @@ export class PlanService {
           pageSize: query.pageSize,
         };
       }
-      const date = query.date ?? todayIso();
+      const date = query.date ?? todayInIstanbul();
       const { items, total } = await this.tasks.listByDatePaged(
         tx,
         userId,
@@ -126,7 +126,7 @@ export class PlanService {
    * Returns null when the user has no tasks scheduled for today.
    */
   async getTodaySummary(userId: string): Promise<TodayPlanSummary | null> {
-    const tasks = await this.listForDate(userId, todayIso());
+    const tasks = await this.listForDate(userId, todayInIstanbul());
     if (tasks.length === 0) return null;
     const pending = tasks.filter((t) => t.status !== PlanTaskStatus.DONE);
     return {
@@ -150,7 +150,7 @@ export class PlanService {
   }
 
   async create(userId: string, input: CreatePlanTaskInput): Promise<PlanTaskDto> {
-    const taskDate = input.taskDate ?? todayIso();
+    const taskDate = input.taskDate ?? todayInIstanbul();
     this.assertTaskDateMutable(taskDate);
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
@@ -183,7 +183,7 @@ export class PlanService {
       evidenceCount: number;
     },
   ): Promise<PlanTaskDto> {
-    const taskDate = input.taskDate ?? todayIso();
+    const taskDate = input.taskDate ?? todayInIstanbul();
     this.assertTaskDateMutable(taskDate);
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
@@ -242,7 +242,7 @@ export class PlanService {
     /** Set when an accepted coach action creates the task: one task per message, even on retries. */
     coachMessageId?: string,
   ): Promise<PlanTaskDto> {
-    const taskDate = input.taskDate ?? todayIso();
+    const taskDate = input.taskDate ?? todayInIstanbul();
     this.assertTaskDateMutable(taskDate);
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
@@ -284,7 +284,7 @@ export class PlanService {
     input: CreatePlanTaskInput,
     coachMessageId: string,
   ): Promise<PlanTaskDto> {
-    const taskDate = input.taskDate ?? todayIso();
+    const taskDate = input.taskDate ?? todayInIstanbul();
     this.assertTaskDateMutable(taskDate);
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
@@ -371,7 +371,7 @@ export class PlanService {
   ): Promise<PlanTaskDto[]> {
     const withDates = inputs.map((input) => ({
       ...input,
-      taskDate: input.taskDate ?? todayIso(),
+      taskDate: input.taskDate ?? todayInIstanbul(),
     }));
     for (const input of withDates) this.assertTaskDateMutable(input.taskDate);
     await this.tasks.acquireUserLock(tx, studentId);
@@ -416,7 +416,7 @@ export class PlanService {
     scopes: MentorshipPlanScope[],
     input: MentorshipAssignmentInput,
   ): Promise<PlanTaskDto[]> {
-    const withDate = { ...input, taskDate: input.taskDate ?? todayIso() };
+    const withDate = { ...input, taskDate: input.taskDate ?? todayInIstanbul() };
     this.assertTaskDateMutable(withDate.taskDate);
     return createMentorshipBatchWrite(tx, this.tasks, scopes, withDate);
   }
@@ -537,7 +537,7 @@ export class PlanService {
    * workstreams §2). All-or-nothing: every date is validated first, then one tx writes all rows.
    */
   async createMany(userId: string, inputs: CreatePlanTaskInput[]): Promise<PlanTaskDto[]> {
-    const withDates = inputs.map((input) => ({ ...input, taskDate: input.taskDate ?? todayIso() }));
+    const withDates = inputs.map((input) => ({ ...input, taskDate: input.taskDate ?? todayInIstanbul() }));
     for (const input of withDates) this.assertTaskDateMutable(input.taskDate);
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       const rows = [];
@@ -566,8 +566,8 @@ export class PlanService {
     return result;
   }
 
-  getAdaptationSnapshot(userId: string): Promise<PlanAdaptationSnapshot> {
-    const from = todayInIstanbul();
+  getAdaptationSnapshot(userId: string, now = new Date()): Promise<PlanAdaptationSnapshot> {
+    const from = todayInIstanbul(now);
     const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
     return withUserContext(this.db, { userId }, async (tx) => {
       const rows = await this.tasks.listByDateRange(tx, userId, from, to);
@@ -777,7 +777,7 @@ export class PlanService {
       if (input.status !== undefined) {
         const doneCount = await this.tasks.countDone(tx, userId, existing.taskDate);
         await this.activity.upsertTasksDone(tx, userId, existing.taskDate, doneCount);
-        if (input.status === "DONE" && existing.taskDate === todayIso()) {
+        if (input.status === "DONE" && existing.taskDate === todayInIstanbul()) {
           const total = await this.tasks.countTotal(tx, userId, existing.taskDate);
           if (total > 0 && doneCount === total) planCompleted = total;
         }
@@ -857,7 +857,7 @@ export class PlanService {
 
   /** Past calendar days are view-only — prevents retroactive streak/plan edits. */
   private assertTaskDateMutable(taskDate: string): void {
-    if (taskDate < todayIso()) {
+    if (taskDate < todayInIstanbul()) {
       throw new DomainError(ErrorCode.COACHING_TASK_DATE_READONLY, HttpStatus.FORBIDDEN);
     }
   }

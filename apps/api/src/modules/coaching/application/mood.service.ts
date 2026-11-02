@@ -6,7 +6,7 @@ import type { ListMoodCheckinsQuery } from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
-import { todayIso } from "../domain/date.util";
+import { todayInIstanbul } from "../domain/date.util";
 import { mapMood } from "../domain/mood";
 import { CoachingEventTopic, MoodLow } from "../domain/coaching.events";
 import { MoodCheckinRepository, type MoodCheckinRow } from "../infrastructure/mood-checkin.repository";
@@ -32,7 +32,7 @@ export class MoodService {
     mood: number,
     struggleNote?: string,
   ): Promise<MoodCheckinDto> {
-    const today = todayIso();
+    const today = todayInIstanbul();
     const trimmed = struggleNote?.trim();
     const note = trimmed ? trimmed : null;
     const row = await withUserContext(this.db, { userId }, async (tx) => {
@@ -55,29 +55,29 @@ export class MoodService {
     model: string,
     locale: string,
   ): Promise<void> {
-    const today = todayIso();
+    const today = todayInIstanbul();
     await withUserContext(this.db, { userId }, async (tx) => {
       await this.moods.setAiReflection(tx, userId, today, reflection, model, locale);
     });
   }
 
   async getTodayAiLocale(userId: string): Promise<string | null> {
-    const today = todayIso();
+    const today = todayInIstanbul();
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.moods.findByDate(tx, userId, today);
       return row?.aiLocale ?? null;
     });
   }
 
-  async getToday(userId: string): Promise<MoodCheckinDto | null> {
-    const today = todayIso();
+  async getToday(userId: string, now = new Date()): Promise<MoodCheckinDto | null> {
+    const today = todayInIstanbul(now);
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.moods.findByDate(tx, userId, today);
       return row ? this.toDto(row) : null;
     });
   }
 
-  async getCoachMoodEvidence(userId: string): Promise<{
+  async getCoachMoodEvidence(userId: string, now = new Date()): Promise<{
     today: number | null;
     trend: CoachMoodTrend;
     observedAt: Date;
@@ -85,7 +85,7 @@ export class MoodService {
     const rows = await withUserContext(this.db, { userId }, (tx) =>
       this.moods.listRecentLevels(tx, userId, 5),
     );
-    const today = rows.find((row) => row.checkinDate === todayIso())?.mood ?? null;
+    const today = rows.find((row) => row.checkinDate === todayInIstanbul(now))?.mood ?? null;
     if (rows.length < 2) {
       return { today, trend: "UNKNOWN", observedAt: new Date() };
     }

@@ -68,7 +68,13 @@ export function PuhuImage({
   const px = resolvePuhuSize(size);
   const reduceMotion = useReducedMotion();
   const { user } = useAuth();
-  const career = careerOverride === undefined ? (user?.careerGroup ?? null) : careerOverride;
+  // The hero mask marks premium (DESIGN.md §7), so it wins over career art.
+  const career =
+    variant === "premium"
+      ? null
+      : careerOverride === undefined
+        ? (user?.careerGroup ?? null)
+        : careerOverride;
   const src = career
     ? `/mascot/career/${career.toLowerCase()}.png`
     : `/mascot/puhu/${FILE_BY_VARIANT[variant]}`;

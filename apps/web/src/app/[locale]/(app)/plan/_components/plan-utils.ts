@@ -1,3 +1,5 @@
+import { todayInIstanbul } from "@/lib/date-time";
+
 export type PlanViewMode = "list" | "timeline" | "calendar";
 /** Zoom level inside the Takvim view. */
 export type PlanCalendarScale = "day" | "week" | "month";
@@ -13,10 +15,10 @@ export function planTimelineDayId(iso: string): string {
 }
 
 export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInIstanbul();
 }
 
-/** True when `iso` is strictly before the user's local calendar today. */
+/** True when `iso` is strictly before today's Istanbul calendar date. */
 export function isPastDate(iso: string): boolean {
   return iso < todayIso();
 }
@@ -222,3 +224,4 @@ export function weekCompletionStats(
   const percent = total === 0 ? 0 : Math.round((done / total) * 100);
   return { done, total, percent };
 }
+

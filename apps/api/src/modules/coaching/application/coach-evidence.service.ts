@@ -12,7 +12,7 @@ import {
   weakestSubjects,
   type CoachEvidenceSnapshot,
 } from "../domain/coach-evidence";
-import { todayInIstanbul, todayIso } from "../domain/date.util";
+import { todayInIstanbul } from "../domain/date.util";
 import { MockExamService } from "./mock-exam.service";
 import { AnalysisService } from "./analysis.service";
 import { MentorshipWeeklyEvidenceService } from "./mentorship-weekly-evidence.service";
@@ -70,9 +70,9 @@ export class CoachEvidenceService {
       actionOutcome,
       weekly,
     ] = await Promise.all([
-      this.safe("plan", () => this.plan.listForDate(userId, todayIso())),
+      this.safe("plan", () => this.plan.listForDate(userId, todayInIstanbul(now))),
       this.safe("rhythm", () => this.sessions.getCoachRhythm(userId, now)),
-      this.safe("mood", () => this.moods.getCoachMoodEvidence(userId)),
+      this.safe("mood", () => this.moods.getCoachMoodEvidence(userId, now)),
       this.safe("streak", () => this.streak.getCoachEvidence(userId)),
       this.safe("mock", () => this.loadMockEvidence(userId)),
       this.safe("goal", () => this.vision.getMine(userId)),

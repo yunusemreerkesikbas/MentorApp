@@ -103,6 +103,45 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-03 — Plan generation and mood adaptation use the panel's Istanbul day
+
+- **What:** Adaptation captures one request instant for its plan snapshot, mood eligibility and
+  evidence. The legacy plan-draft prompt also starts on the Istanbul date, so its first day can
+  be saved under the plan's read-only-date rule after local midnight and before UTC midnight.
+- **Usage:** The low-mood entry still requests `source: MOOD`; pending tasks from that Istanbul
+  day are offered in a preview and are moved only after explicit confirmation.
+- **Gotchas:** An empty or already completed day still returns rule-based `NO_CHANGE` without a
+  model call. Existing dated records, budgets, rolling quotas and human-coach task locks are
+  unchanged. See the coaching feature entry for the calendar-policy scope.
+- **Related:** `plan-adaptation.service.ts`, `plan-adaptation-context.ts`,
+  `plan-draft.service.ts`, `plan-draft.service.spec.ts`, `coaching/application/coach-evidence.service.ts`.
+
+### 2026-11-03 — Wrapped unlock choice: story cover, Coin or Premium, no email gate
+
+- **What:** The locked weekly story is redesigned as the pilot of the shared "Açma seçimi"
+  pattern (`docs/plans/2026-11-03-coin-unlock-choice-design.md`, DESIGN.md §6.1). The offer now
+  carries `teaser { activeDays, focusMinutes, topSubject }`, free basic numbers drawn on a coral
+  cover (never the story or the narration). Under it: affordable Coin leads ("250 Coin ile aç",
+  allowance pips), otherwise Premium leads (trial ledge when eligible) and the Coin row shows a
+  progress bar, what is missing and "Coin nasıl birikir" (`/profil#coin`). Coin confirms inline
+  ("Onaylarsan bakiyen 320 → 70 Coin"). "Teklifi yenile" is gone: the offer refetches when the
+  tab becomes visible and after a failed open; passing outages show "Yeniden dene".
+  The first free story no longer needs a verified email: `WEEKLY_RECAP_EMAIL_REQUIRED` and the
+  `UsersService` dependency of `WeeklyRecapPolicyService` are retired.
+- **Usage:** `recapAccessView(offer, purchases)` maps an offer to the card state (pure, specced).
+  `UnlockChoice` / `UnlockRow` in `components/unlock-choice.tsx` are the shared parts; plan draft,
+  notebook capacity and streak freeze adopt them next. Copy: `analysis.recap.ownership.*`.
+- **Gotchas:** Deploy the API first: the web card reads `offer.teaser` without a fallback.
+  Purchase availability is server-rendered, so mocked e2e cannot force the Premium row; it is
+  covered by the view spec. Caption numbers (+10 per day, +100 at 5 days, "7 gün") are copy, not
+  config: change them with the economy rebalance. The fixture week with only tasks gives
+  `focusMinutes: 0`; the cover then shows only the days line.
+- **Files:** `weekly-recap-access.ts` (+ spec), `weekly-recap-policy.service.ts`,
+  `weekly-recap.dto.ts`, `packages/types/src/weekly-recap.ts`, errors i18n,
+  `weekly-recap-access.e2e-spec.ts`; web `components/unlock-choice.tsx`,
+  `weekly-recap-{access-card,access-view,entry}.tsx`, `profile-shell.tsx` (`#coin` anchor),
+  `e2e/weekly-recap-access.spec.ts`, `weekly-recap-real-api.spec.ts`.
+
 ### 2026-11-01 — Wrapped review fixes: transaction connections and accessible dates
 
 - **What:** Recap offer dependencies and settlement entitlement/config reads now finish before

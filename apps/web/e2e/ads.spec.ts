@@ -226,6 +226,7 @@ const today: TodayPanelResponse = {
   mood: null,
   focusGoal: { goalMinutes: null, focusMinutesToday: 0 },
   focusingNow: null,
+  canLightenPlan: false,
   weeklyRecapPeriod: null,
 };
 
