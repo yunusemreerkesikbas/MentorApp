@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { ECONOMY_CHANGED_EVENT, ECONOMY_DISABLED_EVENT, fetchUnseenRewards, forgetInviteCode, isEconomyDisabled, markRewardsSeen, notifyCoinCelebration } from "@/lib/economy";
+import { ECONOMY_CHANGED_EVENT, ECONOMY_DISABLED_EVENT, fetchUnseenRewards, forgetInviteCode, isEconomyDisabled, markRewardsSeen, notifyCoinCelebration, rewardPresentation } from "@/lib/economy";
 import { disableEconomySnapshot, getEconomySnapshot, refreshEconomySnapshot, resetEconomySnapshot } from "@/lib/economy-store";
 import { useAppAvailability } from "@/lib/app-availability";
 import { useEconomyEnabled } from "@/lib/use-economy-enabled";
@@ -68,8 +68,9 @@ export function EconomySync() {
             for (const entry of shown) {
               if (displayed.current.has(entry.id)) continue;
               displayed.current.add(entry.id);
-              if (entry.unit === "COIN") notifyCoinCelebration(entry.amount, entry.title);
-              else presentation.current.toast.success({ title: entry.title, message: presentation.current.t("quest_reward_xp", { count: entry.amount }), duration: 3000 });
+              const kind = rewardPresentation(entry);
+              if (kind === "CELEBRATION") notifyCoinCelebration(entry.amount, entry.title);
+              else presentation.current.toast.success({ title: entry.title, message: presentation.current.t(kind === "COIN_TOAST" ? "quest_reward_coin" : "quest_reward_xp", { count: entry.amount }), duration: 3000 });
             }
             await markRewardsSeen(shown.map((entry) => entry.id));
             more = rewards.total > rewards.items.length;

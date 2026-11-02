@@ -175,7 +175,9 @@ export function SessionDoneSavedCheckin({
       {reflection ? (
         <PuhuCoachBubble
           message={reflection}
-          variant="encouraging"
+          // The reflection is premium AI, so masked Puhu says it; 96 px keeps the wide art legible.
+          variant="premium"
+          puhuSize={96}
           dismissible
           className="flex w-full flex-col items-center"
           dismissLabel={t("reflection_dismiss")}

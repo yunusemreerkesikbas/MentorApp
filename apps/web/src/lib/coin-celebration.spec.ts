@@ -3,6 +3,7 @@ import {
   COIN_CELEBRATE_EVENT,
   type CoinCelebrateDetail,
   notifyCoinCelebration,
+  rewardPresentation,
 } from "./economy";
 
 describe("notifyCoinCelebration", () => {
@@ -63,5 +64,21 @@ describe("notifyCoinCelebration", () => {
     ]);
 
     mockWindow.removeEventListener(COIN_CELEBRATE_EVENT, listener);
+  });
+});
+
+describe("rewardPresentation", () => {
+  it("keeps everyday Coin quiet: the daily active day and a rewarded ad get a toast", () => {
+    expect(rewardPresentation({ unit: "COIN", reason: "quest.daily.active-day" })).toBe("COIN_TOAST");
+    expect(rewardPresentation({ unit: "COIN", reason: "ad.reward.completed" })).toBe("COIN_TOAST");
+  });
+
+  it("celebrates the bigger Coin moments", () => {
+    expect(rewardPresentation({ unit: "COIN", reason: "quest.weekly.effort-allowance" })).toBe("CELEBRATION");
+    expect(rewardPresentation({ unit: "COIN", reason: "invite.converted" })).toBe("CELEBRATION");
+  });
+
+  it("shows XP as a toast, whatever earned it", () => {
+    expect(rewardPresentation({ unit: "XP", reason: "quest.weekly.effort-allowance" })).toBe("XP_TOAST");
   });
 });

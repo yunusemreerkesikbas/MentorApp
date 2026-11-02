@@ -26,6 +26,8 @@ describe("Economy earning audit (real HTTP/Postgres)", () => {
     await h.set("economy.coin.min_xp_for_coin", 0);
     await h.set("economy.quest.weekly_allowance_active_days_target", 5);
     await h.set("economy.quest.weekly_allowance_reward_coin", 15);
+    // Daily active-day Coin (2026-11-01) off here: these audits count onboarding + weekly only.
+    await h.set("economy.quest.daily_active_reward_coin", 0);
     user = await h.signup();
   });
   afterAll(async () => {

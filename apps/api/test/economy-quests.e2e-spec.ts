@@ -200,6 +200,23 @@ describe("economy onboarding quests (e2e)", () => {
       .toHaveLength(1);
   });
 
+  it("a free user earns the daily active-day Coin once for a done plan task", async () => {
+    const free = await signup("free-active");
+    const headers = { Authorization: `Bearer ${free.accessToken}` };
+    await request(app.getHttpServer()).patch("/v1/users/me").set(headers).send({ examType: "KPSS" }).expect(200);
+    const task = await request(app.getHttpServer()).post("/v1/plan-tasks").set(headers)
+      .send({ title: "Free active day", taskDate: new Date().toISOString().slice(0, 10) }).expect(201);
+    const update = (status: string) => request(app.getHttpServer()).patch(`/v1/plan-tasks/${task.body.id}`)
+      .set(headers).send({ status }).expect(200);
+    await update("DONE");
+    await update("PENDING");
+    await update("DONE");
+    const ledger = await request(app.getHttpServer()).get("/v1/economy/ledger").set(headers).expect(200);
+    const daily = ledger.body.filter((row: { reason: string }) => row.reason === "quest.daily.active-day");
+    expect(daily).toHaveLength(1);
+    expect(daily[0]).toMatchObject({ unit: "COIN", amount: 10 });
+  });
+
   it("keeps ritual progress without reward metadata when economy is off", async () => {
     await setEconomyEnabled(false);
     const res = await request(app.getHttpServer()).get("/v1/economy/quests").set(asQuester());

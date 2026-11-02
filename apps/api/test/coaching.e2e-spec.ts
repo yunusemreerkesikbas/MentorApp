@@ -132,14 +132,14 @@ describe("coaching (e2e)", () => {
       plannedFocusMinutes: null,
       status: "IN_PROGRESS",
     });
-    const old = await request(app.getHttpServer())
-      .post("/v1/study-sessions")
-      .set(authA())
-      .send({
-        preset: "stopwatch",
-        startedAt: new Date(Date.now() - 25 * 60 * 60_000).toISOString(),
-      });
-    expect(old.status).toBe(201);
+    const tooOld = { preset: "stopwatch", startedAt: new Date(Date.now() - 25 * 60 * 60_000).toISOString() };
+    // The API refuses a start time past the 24-hour resume window, so the orphan is seeded directly.
+    expect((await request(app.getHttpServer()).post("/v1/study-sessions").set(authA()).send(tooOld)).status).toBe(400);
+    const old = { body: await withUserContext(app.get<Database>(DRIZZLE), { userId: userAId }, (tx) =>
+      app.get(StudySessionRepository).create(tx, {
+        userId: userAId, startedAt: new Date(tooOld.startedAt), preset: "stopwatch",
+        plannedFocusMinutes: null, subject: null, planTaskId: null, roomId: null,
+      })) };
     const rows = await withUserContext(
       app.get<Database>(DRIZZLE),
       { userId: userAId },

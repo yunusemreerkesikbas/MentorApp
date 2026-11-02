@@ -117,7 +117,7 @@ export function ProfileHeader({
         >
           {user.displayName}
         </h1>
-        {premium ? <PremiumIdentityMark /> : null}
+        {premium ? <PremiumIdentityMark size={24} /> : null}
       </div>
       {/* Email status sits on the identity line, in words: a tick on the avatar read as a
           "verified coach" stamp, and with a username the email it vouched for was not shown. */}

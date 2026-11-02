@@ -535,7 +535,7 @@ function MobileIdentity({
         >
           {greeting}
         </p>
-        {/* No crown for a coach: their plan reads as "KOÇ PRO" in the sidebar, not as a student's
+        {/* No hero mask for a coach: their plan reads as "KOÇ PRO" in the sidebar, not as a student's
             Premium. The top bar has no room for the badge row, so it carries neither. */}
         <IdentityName
           name={user.displayName}
@@ -589,7 +589,7 @@ function SidebarIdentity({
 
 /**
  * A coach's standing under their name (DESIGN.md §2.5): "Koç" in the coach's ink, and their plan
- * in the premium clasp's gold. No crown for a coach: the clasp already says they subscribe.
+ * in the premium clasp's gold. No hero mask for a coach: the clasp already says they subscribe.
  */
 function CoachIdentity({ pro }: { pro: boolean }) {
   const t = useTranslations("nav");
@@ -627,7 +627,7 @@ function IdentityName({
       >
         {name}
       </span>
-      {premium ? <PremiumIdentityMark /> : null}
+      {premium ? <PremiumIdentityMark size={primary ? 20 : 16} /> : null}
     </p>
   );
 }

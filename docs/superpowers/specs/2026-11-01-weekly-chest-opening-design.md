@@ -190,6 +190,89 @@ Enerjiyi duraklar (3. ve 4. görseldeki pozlar) ve hareket kelimeleri taşır. 2
 Lively, bouncy idle loop with snappy cartoon timing. The owl bounces on its toes with excitement, does a quick double blink, wiggles its ear tufts, drums both wings on the desk beside the chest twice, then looks up at the viewer with an eager grin as if saying "open it!", and looks back at the chest. The lamp light pulses softly. The chest stays closed and in place; its lid never opens. Static camera. Seamless loop: the last frame exactly matches the first frame.
 ```
 
+### 7–9. Telefon için dikey set (9:16, 2026-11-01 tur 3)
+
+Kare set masaüstünde kalır; telefonda sahne bu dikey setle ekranı boydan boya doldurur, başlık ve
+düğmeler alttaki karanlık masa önüne biner. Her ChatGPT isteğine `room-puhu.webp` ve `rest.png` de eklenir.
+
+**7. Masada kapalı sandık, dikey** (ChatGPT; `public/visuals/chest/desk-chest-closed.webp` ekli)
+```
+Extend the attached square scene into a tall portrait image, 9:16, 1152x2048. Keep the owl, its round blue glasses, blue ear tufts and blue heart, the wooden chest with its glasses-shaped lock plate and blank brass strip, the brass desk lamp and the cozy bookshelf room exactly as they are: same soft 3D style, same materials, same warm night lighting. Do not redraw or restyle them.
+Frame it for a phone screen. Zoom in slightly so the owl and the chest are a little larger than in the reference: the owl's spread wings almost reach the left and right edges, the lamp head stays visible in the upper left, and nothing important is cut by the side edges.
+Top 20% of the frame: more of the room above the owl, shelves with books continuing upward, the starry night window on the left, a few hanging plants, warm lamp glow. Atmosphere only.
+Middle, from about 20% to 68% of the height: the owl leaning eagerly over the closed chest, exactly the pose of the reference. The chest's blank brass strip is fully visible and unobstructed.
+Bottom 32%: the front of the wooden desk continues down as plain warm wood that fades smoothly into deep warm shadow toward the bottom edge, so white text and buttons can sit on it. No objects, books or papers there.
+No text, no extra characters, no extra objects.
+```
+
+**8. Masada açık sandık, dikey** (ChatGPT; 7. görsel + `public/visuals/chest/desk-chest-open.webp` ekli)
+```
+Using the first attached image as the exact reference, keep the same 9:16 frame, camera, composition, room, lamp, and the same position and size of the owl and the chest. Changes only, taken from the second attached image:
+The chest lid is now swung fully open. Warm golden light pours up out of the chest, lighting the owl's face from below and glinting on its round glasses. The owl is in a big triumphant celebration pose: body stretched tall, both wings thrown high above its head, beak wide open in a huge joyful smile, eyes squeezed into happy crescents, ear tufts flung up. The corner of a folded cream paper note and one gold coin peek out of the chest. Gold sparkles and tiny star bursts pop in the air above the chest.
+The bottom 32% stays plain desk front fading into deep shadow, exactly as in the first image. The raised wings stay inside the frame. No text.
+```
+
+**9. Açılış klibi, dikey** (Kling; başlangıç 7, bitiş 8; 5 sn, 9:16, 1080x1920, Professional, yüksek prompt bağlılığı)
+```
+High-energy, cartoony 3D mascot animation with snappy cartoon timing: fast moves, big exaggerated poses, strong squash and stretch, quick anticipation, springy overshoot and a short hold on each key pose. Joyful, playful, full of personality. Punchy and lively, never slow or floaty.
+0.0-0.8s: the owl bounces on its toes twice with excitement, drumming both wings on the desk beside the chest, ear tufts springing up and down.
+0.8-1.6s: it squashes down low, then springs up and flings the lid open with both wings in one fast snap; the lid swings back and wobbles with a springy overshoot.
+1.6-2.4s: a burst of warm golden light pops out of the chest with a puff of gold sparkles and tiny star bursts, lighting the owl's face from below and glinting on its glasses; the owl's eyes go huge and its whole body stretches tall in surprise.
+2.4-4.0s: the owl does one big happy jump straight up, wings thrown high, stretching in the air and squashing on landing, ear tufts flopping.
+4.0-5.0s: it snaps into the final pose, wings high in triumph, beaming, a quick happy wiggle, then holds.
+The camera is completely static. The chest body stays fixed on the desk and keeps its shape; only the lid moves. The owl stays inside the frame, behind the chest, and its wings never leave the frame, even at the top of the jump. The room, lamp and bookshelf stay exactly the same. The bottom third of the frame stays plain dark desk front, nothing moves there. No text.
+```
+Negatif: 5. klibin negatifi aynen, sonuna `cropped wings, owl leaving frame, objects in the bottom third` eklenir.
+
+Teslim: 7 ve 8 PNG, klip en yüksek çözünürlük. 2–3 klip varyasyonu üretip en canlısını seç. Filigran
+sağ altta olacağı için kırpma alttan yapılır; alttaki boş masa önü bu yüzden de lazım. Lamba şeridinin
+yeri dikey karede yeniden ölçülür (`chest-art.tsx`, yeni bir `STRIPS` girdisi).
+### 10–12. Masaüstü için yatay set (16:9) ve geliştirilmiş klip (tur 3)
+
+Yatay ekran 16:9 seti, dikey ekran 9:16 setini (7–9) kullanır; kare set (3–5) yedekte kalır. İlk
+klipten öğrenilenler: Kling başlangıç ve bitiş karesini yeniden çiziyordu (Puhu büyüyor, poz kayıyor),
+ışık patlaması düzdü, arka plan ölüydü. Aşağıdaki klip promptu bunları hedefliyor ve 9. klibin yerine de
+geçer (yalnız oran satırı değişir).
+
+**10. Masada kapalı sandık, yatay** (ChatGPT; `desk-chest-closed.webp` + `room-puhu.webp` + `rest.png` ekli)
+```
+Create a wide cinematic 16:9 image (1920x1080 or larger) of the attached scene, as if the camera pulled back to show the whole cozy study at night. Keep the owl, its round blue glasses, blue ear tufts and blue heart, the wooden chest with its glasses-shaped lock plate and blank brass strip, and the brass desk lamp exactly as in the first image: same soft 3D clay-and-plush style, same materials, same warm amber lamp light. Do not redraw or restyle them.
+Composition:
+- Center: the owl leaning eagerly over the closed chest, exactly the pose of the reference. The chest is centered horizontally, about 22% of the frame width, its bottom edge at about 70% of the height. Leave clear space above the owl's ear tufts (at least 12% of the height) so it can jump without leaving the frame.
+- Left third: the brass desk lamp reaching in from the left, its warm cone of light falling on the chest lid; behind it a round night window with stars and distant city lights.
+- Right third: tall bookshelves with books, a small glowing lantern and hanging plants, softly out of focus.
+- Bottom 30%: the front edge of the wooden desk, plain warm wood that fades smoothly into deep warm shadow at the bottom edge, so white text and buttons can sit on it. No objects there.
+- Gentle depth: the room behind the owl is slightly softer than the owl and the chest, which are crisp.
+The chest's blank brass strip is fully visible and unobstructed. No text, no extra characters.
+If you can only make a 3:2 image, keep everything important inside the central 16:9 band and let only room and desk fill the extra top and bottom.
+```
+
+**11. Masada açık sandık, yatay** (ChatGPT; 10. görsel + `desk-chest-open.webp` ekli)
+```
+Using the first attached image as the exact reference, keep the same 16:9 frame, camera, composition, room, lamp, and the same position and size of the owl and the chest. Changes only, with the pose taken from the second attached image:
+The chest lid is swung fully open. Warm golden light pours up out of the chest in soft volumetric rays with a few floating dust motes, lighting the owl's face and the underside of its wings from below and glinting on its round glasses. The owl is in a big triumphant celebration pose: body stretched tall, both wings thrown high above its head, beak wide open in a huge joyful smile, eyes squeezed into happy crescents, ear tufts flung up. A folded cream paper note and one gold coin peek out of the chest and catch the light. A few gold sparkles and tiny star bursts hang in the air above the chest.
+The raised wings and ear tufts stay fully inside the frame. The bottom 30% stays plain desk front fading into shadow, exactly as in the first image. No text.
+```
+
+**12. Açılış klibi, yatay** (Kling; başlangıç 10, bitiş 11; 5 sn, 16:9, 1920x1080, Professional, yüksek prompt bağlılığı; 9 için aynı metin, `16:9` yerine `9:16`)
+```
+Premium cartoony 3D mascot animation, 16:9, with snappy cartoon timing: fast moves, big exaggerated poses, strong squash and stretch, clear anticipation before every big move, springy overshoot and a short hold on each key pose. Joyful and full of personality. Punchy and lively, never slow or floaty.
+0.0-0.3s: hold the start frame exactly, perfectly still.
+0.3-1.0s: the owl bounces on its toes twice, drumming both wings on the desk beside the chest; its fluffy feathers ripple and its ear tufts spring up and down a beat after the body.
+1.0-1.7s: it squashes down low and wiggles in anticipation, then springs up and flings the lid open with both wings in one fast snap; the lid swings back on its hinge and wobbles with a springy overshoot.
+1.7-2.5s: a burst of warm golden light pops out of the chest in soft volumetric rays with a puff of gold sparkles and tiny star bursts; the light sweeps up over the owl's face, the underside of its wings and the shelves, and glints across its glasses; the owl's eyes go huge and its whole body stretches tall in surprise.
+2.5-4.0s: the owl does one big happy jump straight up, wings thrown high, stretching in the air and squashing on landing, ear tufts flopping and feathers settling a beat late. The light from the chest keeps glowing and the sparkles drift and fade.
+4.0-4.5s: it snaps into the final pose, wings high in triumph, beaming, with a quick happy wiggle.
+4.5-5.0s: hold the end frame exactly, perfectly still.
+Background life, small and gentle: the window stars twinkle, the lantern flickers softly, a few dust motes float in the lamp light. The camera is completely static. The chest body stays fixed on the desk and keeps its shape; only the lid moves. The owl stays inside the frame and behind the chest; its wings and ear tufts never leave the frame, even at the top of the jump. The lamp, window and shelves keep their shape and place. The bottom 30% stays plain dark desk front. No text.
+```
+Negatif:
+```
+slow motion, slow, sluggish, calm, gentle body movement, low energy, hesitant, floaty, stiff, realistic motion, camera movement, zoom, pan, dolly, shake, chest moving, chest deforming, lid detaching, extra chests, coins flying everywhere, background change, room changing, lamp moving, owl changing size, owl changing design, text, watermark, logo, extra characters, extra limbs, extra wings, morphing, melting, deformed wings, deformed face, deformed glasses, glasses falling off, green owl, flicker, cropped wings, owl leaving frame, objects in the bottom third
+```
+Teslim: 10 ve 11 PNG (en büyük boy), klipten 2–3 varyasyon, en canlısı. Başlangıç ve bitiş karesine
+oturmayan varyasyon elenir: sahnenin "Hazır" ve "Açıldı" kareleri yine klibin ilk ve son karesinden
+çıkar. Filigran kırpması alttan; lamba şeridi her sette ayrı ölçülür (`chest-art.tsx` `STRIPS`).
 ## Kod etkisi (uygulayıcıya yol haritası)
 
 **API (economy sahibi; coaching yalnız sinyal verir):**

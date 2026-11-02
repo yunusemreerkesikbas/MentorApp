@@ -23,6 +23,7 @@
     "seed:forum": "ts-node -T scripts/seed-forum.ts",
     "achievements:backfill": "ts-node -T scripts/backfill-achievements.ts",
     "seed:analysis-demo": "ts-node -T scripts/seed-analysis-demo.ts",
+    "seed:weekly-chest-demo": "ts-node -T scripts/seed-weekly-chest-demo.ts",
     "seed:mentorship-followups": "ts-node -T scripts/seed-mentorship-followups.ts",
     "seed:mentorship-weekly-report": "ts-node -T scripts/seed-mentorship-weekly-report.ts",
     "db:generate": "drizzle-kit generate",

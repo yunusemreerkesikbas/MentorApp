@@ -139,8 +139,10 @@ export interface WeeklyChestView {
   days: { date: string; active: boolean }[];
   /** The server's UTC day (yyyy-mm-dd). */
   today: string;
-  /** Coin inside: what was granted, or what the week will grant. null while the economy is off or the grant waits. */
-  /** Premium sees XP (Premium earns XP, not Coin); free users see Coin. */
+  /**
+   * What was granted, or what the week will grant: Coin for free users, XP for Premium (Premium
+   * earns XP, not Coin). null while the economy is off or the grant waits.
+   */
   reward: { unit: "COIN" | "XP"; amount: number } | null;
   /** The chest is ready but its Coin waits on earning limits; localized by the API. */
   rewardPendingMessage?: string;

@@ -1,6 +1,6 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import type { Paginated, StudySessionDto } from "@mentor/types";
+import { SESSION_ACTUAL_SECONDS_MAX, type Paginated, type StudySessionDto } from "@mentor/types";
 import type {
   ListStudySessionsQuery,
   SessionFeedbackInput,
@@ -11,7 +11,7 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { DomainError } from "../../../common/errors/domain-error";
+import { DomainError, ValidationFailedError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { toIsoDate, todayIso } from "../domain/date.util";
 import {
@@ -243,7 +243,14 @@ export class SessionService {
       throw new DomainError(ErrorCode.COACHING_ROOM_DISABLED, HttpStatus.FORBIDDEN);
     }
     const minFocusSeconds = await this.getMinFocusSeconds();
-    const startedAt = input.startedAt ? new Date(input.startedAt) : new Date();
+    const now = Date.now();
+    const startedAt = input.startedAt ? new Date(input.startedAt) : new Date(now);
+    // A client start time stays inside the 24-hour resume window and never runs ahead of now
+    // (1 min clock skew): a backdated session would mark an old day active (streak, quests, Coin).
+    const age = now - startedAt.getTime();
+    if (age > SESSION_ACTUAL_SECONDS_MAX * 1000 || age < -60_000) {
+      throw new ValidationFailedError({ field: "startedAt" });
+    }
     const plannedFocusMinutes =
       input.preset === "custom" ? (input.focusMinutes ?? null) : null;
     return withUserContext(this.db, { userId }, async (tx) => {

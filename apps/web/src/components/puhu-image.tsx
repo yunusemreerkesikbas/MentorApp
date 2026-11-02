@@ -30,7 +30,8 @@ const FILE_BY_VARIANT: Record<PuhuVariant, string> = {
   encouraging: "puhu-encouraging.png",
   happy: "puhu-happy.png",
   host: "puhu-host.png",
-  premium: "puhu-premium.png",
+  // New art gets a new name: next/image and the CDN keep serving a reused path's old optimised copy.
+  premium: "puhu-premium-hero.png",
   proud: "puhu-proud.png",
   sleepy: "puhu-sleepy.png",
   surprised: "puhu-surprised.png",

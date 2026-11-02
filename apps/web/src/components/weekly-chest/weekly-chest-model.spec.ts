@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WeeklyChestView } from "@mentor/types";
-import { cannotOpenToday, chestLamps, daysLeft, isHeldChestReceipt, noteLines } from "./weekly-chest-model";
+import { cannotOpenToday, chestLamps, daysLeft, isHeldChestReceipt, noteLines, weekCanStillFill } from "./weekly-chest-model";
 
 const week = (active: boolean[]): WeeklyChestView["days"] =>
   active.map((on, index) => ({ date: `2026-11-0${index + 2}`, active: on }));
@@ -25,6 +25,16 @@ describe("chestLamps / daysLeft", () => {
     expect(chestLamps(view({ current: 7, target: 5 }))).toEqual([true, true, true, true, true]);
     expect(daysLeft(view())).toBe(2);
     expect(daysLeft(view({ current: 6 }))).toBe(0);
+  });
+});
+
+describe("weekCanStillFill", () => {
+  it("counts only the days still to come, today included unless it already counted", () => {
+    expect(weekCanStillFill(view())).toBe(true); // Thursday, 3/5: Thu–Sun left
+    expect(weekCanStillFill(view({ today: "2026-11-07" }))).toBe(true); // Saturday: Sat + Sun
+    expect(weekCanStillFill(view({ today: "2026-11-08" }))).toBe(false); // Sunday: one day for two
+    expect(weekCanStillFill(view({ current: 4, days: week([true, true, true, false, false, false, true]), today: "2026-11-08" }))).toBe(false);
+    expect(weekCanStillFill(view({ current: 4, days: week([true, true, true, true, false, false, false]), today: "2026-11-08" }))).toBe(true);
   });
 });
 

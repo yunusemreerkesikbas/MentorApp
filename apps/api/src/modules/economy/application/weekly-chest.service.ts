@@ -52,11 +52,12 @@ export class WeeklyChestService {
 
   /** Lazy-evaluates like the quest list, then shows last week's unopened chest first, else this week's. */
   async getView(userId: string): Promise<WeeklyChestView> {
-    const pending = await this.quests.evaluateAndGrant(userId);
-    let weeks = await this.loadWeeks(userId);
+    const premium = await this.isPremium(userId);
+    const pending = await this.quests.evaluateAndGrant(userId, undefined, false, premium);
+    let weeks = await this.loadWeeks(userId, premium);
     if (!weeks.rows.has(weeks.lastWeek)) {
-      pending.push(...await this.quests.evaluateAndGrant(userId, weeks.lastSunday));
-      weeks = await this.loadWeeks(userId);
+      pending.push(...await this.quests.evaluateAndGrant(userId, weeks.lastSunday, false, premium));
+      weeks = await this.loadWeeks(userId, premium);
     }
     const carried = weeks.rows.get(weeks.lastWeek);
     const periodKey = (carried && !carried.revealedAt) || pending.includes(progressKey(CHEST_ID, weeks.lastWeek))
@@ -66,15 +67,16 @@ export class WeeklyChestService {
 
   /** Idempotent reveal and receipt acknowledgement; missing grants are delegated to QuestService. */
   async open(userId: string, periodKey: string): Promise<WeeklyChestView> {
-    let weeks = await this.loadWeeks(userId);
+    const premium = await this.isPremium(userId);
+    let weeks = await this.loadWeeks(userId, premium);
     if (periodKey !== weeks.thisWeek && periodKey !== weeks.lastWeek) throw notFound();
     let row = weeks.rows.get(periodKey);
     if (!row) {
       // ponytail: a cap-held chest has no row until its Coin lands; show the note, stamp nothing.
       const pending = periodKey === weeks.thisWeek
-        ? await this.quests.evaluateAndGrant(userId)
-        : await this.quests.evaluateAndGrant(userId, weeks.lastSunday);
-      weeks = await this.loadWeeks(userId);
+        ? await this.quests.evaluateAndGrant(userId, undefined, false, premium)
+        : await this.quests.evaluateAndGrant(userId, weeks.lastSunday, false, premium);
+      weeks = await this.loadWeeks(userId, premium);
       row = weeks.rows.get(periodKey);
       if (!row) {
         if (!pending.includes(progressKey(CHEST_ID, periodKey))) throw notFound();
@@ -90,16 +92,19 @@ export class WeeklyChestService {
     return this.view(userId, weeks, periodKey, []);
   }
 
-  private async loadWeeks(userId: string): Promise<ChestWeeks> {
+  private async isPremium(userId: string): Promise<boolean> {
+    return (await this.entitlement.getEntitlement(userId)).isPremium;
+  }
+
+  private async loadWeeks(userId: string, isPremium: boolean): Promise<ChestWeeks> {
     const today = todayIso();
     const lastSunday = addDays(isoWeekStart(today), -1);
     const thisWeek = isoWeekKey(today);
     const lastWeek = isoWeekKey(lastSunday);
-    const [cfg, rewardsEnabled, rows, entitlement] = await Promise.all([
+    const [cfg, rewardsEnabled, rows] = await Promise.all([
       readQuestConfig(this.config),
       this.config.get("economy.enabled"),
       this.progress.listForUser(userId, [thisWeek, lastWeek]),
-      this.entitlement.getEntitlement(userId),
     ]);
     if (cfg.disabledIds.has(CHEST_ID)) throw notFound();
     const chestRows = rows.filter((r) => r.questId === CHEST_ID).map((r) => [r.periodKey, r] as const);
@@ -110,7 +115,7 @@ export class WeeklyChestService {
       lastSunday,
       cfg,
       rewardsEnabled,
-      isPremium: entitlement.isPremium,
+      isPremium,
       rows: new Map(chestRows),
     };
   }

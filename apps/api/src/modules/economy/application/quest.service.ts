@@ -6,6 +6,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DailyQuestSignalService } from "../../coaching/application/daily-quest-signal.service";
 import { StreakService } from "../../coaching/application/streak.service";
+import { addDays, todayIso } from "../../coaching/domain/date.util";
 import { UsersService } from "../../identity/application/users.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
@@ -66,12 +67,17 @@ export class QuestService {
    * Evaluate every onboarding quest for the user; for each newly-completed one record it and grant
    * the reward in one SERVICE tx (idempotent via progress unique + ledger refId).
    * Returns period-scoped keys for met steps whose Coin grant is waiting on earning conditions.
+   * `premium`: pass it when the caller already read the entitlement (saves two queries).
    */
   async evaluateAndGrant(
     userId: string,
     date?: string,
     strict = false,
+    premium?: boolean,
   ): Promise<string[]> {
+    // A plan task can be dated ahead; checking it off must not pay that future day now (that day's
+    // own evaluation pays it). Tomorrow stays open: a local task date can run ahead of the UTC day.
+    if (date && date > addDays(todayIso(), 1)) return [];
     const pendingRewards: string[] = [];
     const rewardsEnabled = await this.config.get("economy.enabled");
 
@@ -83,7 +89,7 @@ export class QuestService {
         ? this.streak.getStreakAt(userId, date)
         : this.streak.getSummary(userId),
       readQuestConfig(this.config),
-      this.isPremium(userId),
+      premium ?? this.isPremium(userId),
     ]);
     const activePeriodKeys = activeQuestPeriodKeys(signals);
     const completed = new Set(
@@ -94,8 +100,6 @@ export class QuestService {
     const pending = QUEST_CATALOG.filter((q) => {
       if (cfg.disabledIds.has(q.id) || (!rewardsEnabled && isEconomyAction(q)))
         return false;
-      // Hidden for Premium: not recorded either, so a lapse later the same day can still earn it.
-      if (rewardUnitFor(q, isPremium) === null) return false;
       const periodKey = questPeriodKey(q, signals);
       return !completed.has(progressKey(q.id, periodKey));
     });
@@ -151,6 +155,7 @@ export class QuestService {
     for (const q of pending) {
       if (!isMet(q)) continue;
       const periodKey = questPeriodKey(q, signals);
+      // Hidden for Premium (null): still recorded, so a later lapse never pays that period's Coin.
       const unit = rewardUnitFor(q, isPremium);
       const reward =
         rewardsEnabled && unit === "XP"
@@ -215,8 +220,9 @@ export class QuestService {
 
   /** User-facing: lazy-evaluate (grant newly-completed) then return the full catalog with progress. */
   async getUserProgress(userId: string): Promise<QuestProgressView[]> {
-    const pendingRewards = await this.evaluateAndGrant(userId);
-    return this.toViews(userId, pendingRewards);
+    const premium = await this.isPremium(userId);
+    const pendingRewards = await this.evaluateAndGrant(userId, undefined, false, premium);
+    return this.toViews(userId, pendingRewards, premium);
   }
 
   /** Admin: read-only progress (no evaluation/grant). */
@@ -227,13 +233,14 @@ export class QuestService {
   private async toViews(
     userId: string,
     pendingRewards: readonly string[] = [],
+    premium?: boolean,
   ): Promise<QuestProgressView[]> {
     const [signals, streak, cfg, rewardsEnabled, isPremium] = await Promise.all([
       this.dailySignals.getToday(userId),
       this.streak.getSummary(userId),
       readQuestConfig(this.config),
       this.config.get("economy.enabled"),
-      this.isPremium(userId),
+      premium ?? this.isPremium(userId),
     ]);
     const rows = await this.quests.listForUser(
       userId,

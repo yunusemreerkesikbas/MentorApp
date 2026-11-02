@@ -126,21 +126,21 @@ describe("community summary (e2e)", () => {
     await svc(async (c) => {
       await c.query(
         "insert into ledger_entries (user_id, unit, amount, reason, status) values ($1,'XP',$2,'test.seed','CONFIRMED')",
-        [userId, 100],
+        [userId, 1000], // tier 2 starts at 1000 XP (2026-11-01 ×10 curve)
       );
     });
 
     const res = await summary();
     expect(res.status).toBe(200);
     expect(res.body.economyEnabled).toBe(true);
-    expect(res.body.xp).toBeGreaterThanOrEqual(100);
+    expect(res.body.xp).toBeGreaterThanOrEqual(1000);
     expect(res.body.leaderboard.window).toBe("weekly");
     // Shared test DB: parallel suites may push this user out of the top-10 items —
     // fall back to the `me` standing (same pattern as the windowed-leaderboard test below).
     const me =
       res.body.leaderboard.items.find((e: { isMe: boolean }) => e.isMe) ??
       res.body.leaderboard.me;
-    expect(me?.xp).toBeGreaterThanOrEqual(100);
+    expect(me?.xp).toBeGreaterThanOrEqual(1000);
     // Phase 2: percentile denominator + avatar field on each row.
     expect(res.body.leaderboard.totalParticipants).toBeGreaterThanOrEqual(1);
     expect(me).toHaveProperty("avatarUrl");
@@ -155,7 +155,7 @@ describe("community summary (e2e)", () => {
     expect(res.body.window).toBe("all_time");
     expect(Array.isArray(res.body.items)).toBe(true);
     const me = res.body.items.find((e: { isMe: boolean }) => e.isMe) ?? res.body.me;
-    expect(me?.xp).toBeGreaterThanOrEqual(100); // seeded in the previous test, within all_time
+    expect(me?.xp).toBeGreaterThanOrEqual(1000); // seeded in the previous test, within all_time
     // all_time has no meaningful movement → null.
     expect(me?.movement).toBeNull();
 
