@@ -1,11 +1,12 @@
 "use client";
 
+import { PanelCardSkeleton } from "./panel-card-skeleton";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Coins } from "lucide-react";
-import { Chart2Icon as Chart } from "@solar-icons/react/bold/chart-2";
+import { Chart2Icon as Chart } from "@solar-icons/react/linear/chart-2";
 import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
-import { ChatRoundDotsIcon as Chat } from "@solar-icons/react/bold/chat-round-dots";
+import { ChatRoundDotsIcon as Chat } from "@solar-icons/react/linear/chat-round-dots";
 import type { AdRewardOfferView, PromotionOffersView } from "@mentor/types";
 import { PremiumBadge } from "@/components/premium/premium-badge";
 import { TopBanner, type TopBannerItem } from "@/components/top-banner";
@@ -44,8 +45,12 @@ export function MembershipCard({
   // Nothing until both answers are in: an upsell that flashes at a member is worse than one that
   // arrives a moment late, and a card that reshuffles under the reader is worse than a beat of
   // silence (the rewarded offer is the faster feed and would otherwise lead, then get bumped).
-  if (!availability?.studentPurchases || loading || !view || promotionOffers === undefined) return null;
+  if (!availability?.studentPurchases) return null;
+  if (loading) return <PanelCardSkeleton kind="membership" />;
+  if (!view) return null;
   if (view.entitlement.isPremium) return <PremiumPerks />;
+
+  if (promotionOffers === undefined) return <PanelCardSkeleton kind="membership" />;
 
   const promotion = pickBannerPromotion(promotionOffers, false);
   const campaignArt = (
@@ -139,7 +144,7 @@ function PremiumPerks() {
       </div>
       <ul className="flex flex-col">
         <PerkLink
-          href="/analysis"
+          href="/analysis/recap"
           icon={Chart}
           title={t("perks_analysis")}
           caption={t("perks_analysis_caption")}
@@ -164,7 +169,7 @@ function PerkLink({
   title,
   caption,
 }: {
-  href: "/analysis" | "/coach";
+  href: "/analysis/recap" | "/coach";
   icon: typeof Chart;
   title: string;
   caption: string;
@@ -172,11 +177,11 @@ function PerkLink({
   return (
     <li>
       <Link
-        href={href}
+        href={href === "/analysis/recap" ? { pathname: href, query: { view: "analysis" } } : href}
         className="flex min-h-14 items-center gap-3 rounded-[var(--radius-card)] py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       >
         <span className="grid size-10 shrink-0 place-items-center text-[var(--color-secondary)]">
-          <Icon size={20} className="size-5" aria-hidden />
+          <Icon size={20} strokeWidth={1.75} className="size-5" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-extrabold text-[var(--color-main)]">

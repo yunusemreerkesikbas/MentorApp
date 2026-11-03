@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 import { SnowflakeIcon as Snowflake } from "@solar-icons/react/bold/snowflake";
 import type { JourneyLevelKey } from "@mentor/types";
+import { PanelCardSkeleton } from "./panel-card-skeleton";
 import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-compact";
 import { useEconomySnapshot } from "@/lib/economy-store";
 import { useEconomyEnabled } from "@/lib/use-economy-enabled";
@@ -31,12 +32,14 @@ type LevelNameKey = `levels.${JourneyLevelKey}.name`;
 export function JourneyCard({ freezeTokens }: { freezeTokens: number | null }) {
   const t = useTranslations("panel");
   const tJourney = useTranslations("journey_levels");
-  const { balance } = useEconomySnapshot();
+  const { balance, revision, error } = useEconomySnapshot();
   const economyEnabled = useEconomyEnabled();
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const openerRef = useRef<HTMLButtonElement>(null);
 
-  if (!economyEnabled || !balance) return null;
+  if (!economyEnabled) return null;
+  if (!balance && revision === 0 && !error) return <PanelCardSkeleton kind="journey" />;
+  if (!balance) return null;
 
   const levelName = tJourney(`levels.${balance.level.key}.name` as LevelNameKey);
 

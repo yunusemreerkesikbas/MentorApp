@@ -183,14 +183,14 @@ test("makaleyi Koç composerına taşır ama otomatik göndermez", async ({
     page.getByRole("link", { name: "Facebook ile paylaş" }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Bağlantıyı kopyala" })).toBeVisible();
-  await page.getByRole("link", { name: "Koçla konuş" }).click();
+  await page.getByRole("link", { name: "Puhu’ya sor" }).click();
 
   await expect
     .poll(() => new URL(page.url()).searchParams.get("contextArticleSlug"))
     .toBe(article.slug);
 
   await expect(
-    page.getByRole("textbox", { name: "Koçuna mesaj yaz" }),
+    page.getByRole("textbox", { name: "Puhu’ya mesaj yaz" }),
   ).toHaveValue(
     '"KPSS Başvuru Süreci" konusunu doğrulanmış kaynaklara dayanarak açıklar mısın?',
   );

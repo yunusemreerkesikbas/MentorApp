@@ -603,7 +603,7 @@ test("Koçla planla sihirbazı koçun baktıklarıyla açılır, ritmi ve zayıf
   const subjects = page.getByRole("dialog", { name: "Ağırlık vermek istediğin dersler" });
   const math = subjects.getByRole("checkbox", { name: /Matematik/ });
   await expect(math).toHaveAttribute("aria-checked", "true");
-  await expect(math).toContainText("Koçun önerisi");
+  await expect(math).toContainText("Puhu’nun önerisi");
   // No cap: every subject stays open.
   for (const name of ["Türkçe", "Tarih", "Coğrafya"]) {
     await subjects.getByRole("checkbox", { name: new RegExp(name) }).click();

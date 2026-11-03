@@ -16,6 +16,7 @@ import {
 import { Logo, NotificationBell } from "@mentor/ui";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { AppNavSkeleton } from "@/components/app-nav-skeleton";
 import { AppNavIcon } from "@/components/app-nav-icon";
 import { PremiumBadge } from "@/components/premium/premium-badge";
 import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
@@ -185,6 +186,11 @@ const sidebarIconBtn =
   "inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-main)] transition-colors duration-200 hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 
 export function AppNav() {
+  const { status } = useAuth();
+  return status === "loading" ? <AppNavSkeleton /> : <AppNavContent />;
+}
+
+function AppNavContent() {
   const pathname = usePathname();
   const t = useTranslations("nav");
   const ui = useTranslations("common");

@@ -123,3 +123,4 @@ export * from "./mentorship-weekly-report.js";
 export * from "./app-availability.js";
 export * from "./plan-preview.js";
 export * from "./weekly-recap.js";
+export * from "./weekly-deep-analysis.js";

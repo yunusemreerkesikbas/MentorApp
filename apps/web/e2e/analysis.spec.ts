@@ -83,7 +83,7 @@ for (const deleted of [false, true]) {
     await expect(
       proposal.getByRole("link", { name: "Yeni odağı planıma ekle" }),
     ).toHaveAttribute("href", /subjectRef=matematik/);
-    const coach = card.getByRole("link", { name: "AI koçla değerlendir" });
+    const coach = card.getByRole("link", { name: "Puhu’yla değerlendir" });
     if (deleted) await expect(coach).toHaveCount(0);
     else
       await expect(coach).toHaveAttribute(
@@ -216,7 +216,7 @@ test("konu odağını tek ledge'e taşır, net seyrini ve dersleri açık göste
   await expect(page.getByRole("heading", { name: "Net seyrin" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Derslerin" })).toBeVisible();
   const plan = hero.getByRole("link", { name: "Planıma ekle" });
-  const coach = hero.getByRole("link", { name: "AI koçla değerlendir" });
+  const coach = hero.getByRole("link", { name: "Puhu’yla değerlendir" });
   await expect(plan).toHaveAttribute(
     "href",
     /\/plan\?add=1&source=analysis&examId=/,
@@ -340,13 +340,13 @@ for (const scenario of [
     const expectBubble = async () => {
       if (scenario.premium) {
         await expect(hero.getByText(scenario.cached ?? ghostNarrationText)).toBeVisible();
-        await expect(hero.getByText("Koçundan", { exact: true })).toBeVisible();
+        await expect(hero.getByText("Puhu’dan", { exact: true })).toBeVisible();
       } else {
         await expect(hero.getByText(multipleAnalysis.ghost!.headline)).toBeVisible();
         await expect(
           hero.getByRole("button", { name: /İlerlemeni koçun yorumlasın/ }),
         ).toBeVisible();
-        await expect(hero.getByText("Koçundan", { exact: true })).toHaveCount(0);
+        await expect(hero.getByText("Puhu’dan", { exact: true })).toHaveCount(0);
       }
     };
     await expectBubble();
@@ -496,7 +496,7 @@ for (const latest of [true, false]) {
     const saved = page.getByTestId("analysis-saved");
     if (latest) {
       await expect(saved.getByText(ghostNarrationText)).toBeVisible();
-      await expect(saved.getByText("Koçundan", { exact: true })).toBeVisible();
+      await expect(saved.getByText("Puhu’dan", { exact: true })).toBeVisible();
       await expect(saved.getByText("-6.00")).toBeVisible();
       await expect(saved.getByRole("heading", { name: "Derslere göre fark" })).toBeVisible();
       // The hero on Gelişim reads the same narration instead of asking again.
@@ -506,7 +506,7 @@ for (const latest of [true, false]) {
       ).toBeVisible();
     } else {
       await expect(saved.getByText("Kaydettim, geçmişine ekledim.", { exact: false })).toBeVisible();
-      await expect(saved.getByText("Koçundan", { exact: true })).toHaveCount(0);
+      await expect(saved.getByText("Puhu’dan", { exact: true })).toHaveCount(0);
       await expect(saved.getByText("geçen denemeye göre")).toHaveCount(0);
     }
     expect(api.ghostNarrationCalls).toBe(latest ? 1 : 0);

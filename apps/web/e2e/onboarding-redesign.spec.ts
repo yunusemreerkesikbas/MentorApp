@@ -96,7 +96,7 @@ test("welcome steps through the day with Devam et and the slide dots", async ({ 
   await copyLayer.evaluate((element) => element.setAttribute("data-transition-probe", "stable"));
 
   await page.getByRole("button", { name: "Devam et" }).click();
-  await expect(page.getByRole("heading", { name: "Zorlandığında AI koçun yanında." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Zorlandığında yapay zekâ koçun olarak yanındayım." })).toBeVisible();
   await expect(copyLayer).toHaveAttribute("data-transition-probe", "stable");
   await expect(page.locator("video")).toHaveCount(4);
 

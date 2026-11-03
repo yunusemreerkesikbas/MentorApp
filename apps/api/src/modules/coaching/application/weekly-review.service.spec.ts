@@ -131,6 +131,7 @@ describe("WeeklyReviewService recap evidence", () => {
     expect(review.recap.nextStorySignal).toBeNull();
     expect(review.recap.nextStorySignals).toEqual([]);
     expect(review.suggestedTask).toBeNull();
+    expect(review.deepAnalysis).toBeUndefined();
   });
 
   it("ignores sub-minimum sessions and marks one qualifying session PARTIAL", async () => {
@@ -206,6 +207,11 @@ describe("WeeklyReviewService recap evidence", () => {
       message: expect.stringContaining("coaching.weekly.PLAN"),
     });
     expect(JSON.stringify(review)).not.toContain("My private custom area");
+    expect(JSON.stringify(review)).not.toContain("PRIVATE TASK TITLE");
+    expect(review.deepAnalysis?.subjects).toEqual([
+      expect.objectContaining({ subjectRef: "turkce", averageNet: null, completedTaskCount: 2 }),
+    ]);
+    expect(review.deepAnalysis?.metrics.every((metric) => metric.previous === null)).toBe(true);
   });
 
   it("deduplicates mock, qualifying-session and completed-task Istanbul days", async () => {

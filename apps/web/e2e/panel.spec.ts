@@ -678,3 +678,50 @@ test("with reduced motion the board does not move, and the just-saved flag is st
   expect(await still).toEqual({ min: 0, max: 0, first: 0 });
   expect(await page.evaluate((flag) => window.sessionStorage.getItem(flag), HUNG_FLAG)).toBeNull();
 });
+
+
+test("panel skeletons resolve independently after silent auth", async ({ page }) => {
+  await mockPanel(page, []);
+  let releaseAuth!: () => void;
+  const authGate = new Promise<void>(resolve => { releaseAuth = resolve; });
+  let releaseToday!: () => void;
+  const todayGate = new Promise<void>(resolve => { releaseToday = resolve; });
+  let releaseVision!: () => void;
+  const visionGate = new Promise<void>(resolve => { releaseVision = resolve; });
+  await page.route("**/v1/auth/refresh", async route => {
+    if (route.request().method() === "OPTIONS") return json(route, null, 204);
+    await authGate;
+    return json(route, { accessToken: "test-token", expiresIn: 3600, user });
+  });
+  await page.route("**/v1/coaching/today", async route => {
+    if (route.request().method() === "OPTIONS") return json(route, null, 204);
+    await todayGate;
+    return json(route, today([]));
+  });
+  await page.route("**/v1/coaching/vision", async route => {
+    if (route.request().method() === "OPTIONS") return json(route, null, 204);
+    await visionGate;
+    return json(route, null);
+  });
+  try {
+    await page.goto("/panel");
+    if ((page.viewportSize()?.width ?? 0) >= 1024) {
+      await expect(page.getByTestId("app-nav-skeleton")).toBeVisible();
+    } else {
+      await expect(page.getByTestId("app-nav-identity-skeleton").last()).toBeVisible();
+    }
+    releaseAuth();
+    await expect(page.getByTestId("panel-vision-skeleton")).toHaveCount(1);
+    await expect(page.getByTestId("panel-countdown-skeleton")).toHaveCount(1);
+    releaseToday();
+    await expect(page.getByTestId("panel-countdown-skeleton")).toHaveCount(0);
+    await expect(page.getByTestId("panel-vision-skeleton")).toHaveCount(1);
+    releaseVision();
+    await expect(page.getByTestId("panel-vision-skeleton")).toHaveCount(0);
+    await expect(page.getByTestId("app-nav-skeleton")).toHaveCount(0);
+  } finally {
+    releaseAuth();
+    releaseToday();
+    releaseVision();
+  }
+});

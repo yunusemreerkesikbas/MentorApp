@@ -34,6 +34,7 @@ export type RecapTranslate = (
 ) => string;
 
 interface WeeklyRecapStoryProps {
+  onOpenAnalysis?: () => void;
   slides: readonly WeeklyRecapSlide[];
   review: WeeklyReviewDto;
   locale: string;
@@ -75,6 +76,7 @@ const STORY_ASSET_DRIFT: Record<
 };
 
 export function WeeklyRecapStory({
+  onOpenAnalysis,
   slides,
   review,
   locale,
@@ -211,6 +213,10 @@ export function WeeklyRecapStory({
           })}
         />
 
+        {onOpenAnalysis ? <button type="button" onClick={onOpenAnalysis}
+          className="absolute left-3 top-[max(24px,calc(env(safe-area-inset-top)+20px))] z-50 inline-flex min-h-11 items-center rounded-full bg-black/55 px-3 text-xs font-extrabold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+          {t("deep_analysis")}
+        </button> : null}
         <div className="absolute right-[max(12px,env(safe-area-inset-right))] top-[max(24px,calc(env(safe-area-inset-top)+20px))] z-50 flex items-center gap-1.5">
           <StoryControl
             label={

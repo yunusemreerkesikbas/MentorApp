@@ -64,8 +64,10 @@ professionals, so it stays plain and gets a single `!`, on the closing title.
   ışık yakar"), FOMO and guilt.
 - **Name the exams once, then say "sınav".** (2026-11-01, owner's call: a visitor must see at a
   glance that their exam is covered.) The supported exams appear in three places only: the hero
-  label "KPSS · YKS · LGS", the FAQ "Hangi sınavlara…" answer, and the page title + description.
-  Everywhere else the copy says "sınav". Add an exam here only when onboarding offers it.
+  label "KPSS · YKS · LGS · ALES · DGS", the FAQ "Hangi sınavlara…" answer, and the page title +
+  description (plus the blog's meta description, which lists the same families as its filter).
+  Everywhere else the copy says "sınav". Add an exam here only when onboarding offers it, in
+  `EXAM_CATALOG` order (ALES and DGS joined 2026-11-04, after APP-132 added them).
 - **Say what it is, first.** The hero lead names the product before anything else: "Sınava
   hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı: …" (2026-10-28, user's call; it also
   carries the search phrase). "Yapay zekâ destekli" describes the product, not a free AI coach.
@@ -73,15 +75,20 @@ professionals, so it stays plain and gets a single `!`, on the closing title.
   koç Premium'da." and the FAQ answers "ücretsiz mi?". The Plan note (window 4, Puhu's magic loop) carries no
   Premium line: the owner's call, 2026-11-03. Never promise a trial here: the web purchase
   channel is flag-gated.
+- **The AI coach is Puhu.** (2026-11-04, owner's call, landing and app.) Call the AI coach "Puhu",
+  never a second name; say "yapay zekâ" once per block ("Puhu, yapay zekâ koçun") so nobody
+  mistakes it for a person. Plain "koç/koçun" means the human coach. Turkish writes "yapay zekâ",
+  never "AI", badges included; English keeps "AI". The feature button is "Puhu’yla planla".
 - **The Premium sheet is the one place that offers the trial.** (2026-11-03, owner's call.) It
   renders only while the AI coach and student purchases are on, so "7 gün ücretsiz dene" is
   backed whenever it shows. Puhu title ("Sınav yolunda süper gücün hazır!", the paywall's
-  headline), then plain rows that name live Premium features, a plain ledge and "İstediğin an
+  headline), then short plain titles that name live Premium features (no sub-lines; never the
+  weekly chest, which everyone gets), a plain ledge and "İstediğin an
   iptal edersin." No price (the plan prices are not final), no FOMO, no free-versus-Premium put-down.
 - **Coin on the landing: what lands, never AI.** (2026-11-03, owner's call.) The quests card says
   how Coin comes in ("Bugün çalış" +10, five active days +100). The Gece Yolculuğu Coin tab
   names three things it opens: "Seriyi dondur", "+1 defter", "Haftalık hikâye", with their prices as
-  fixed copy of the config defaults. Coach chat and "Koçla planla" stay out of that list, so
+  fixed copy of the config defaults. Coach chat and "Puhu’yla planla" stay out of that list, so
   "Yapay zekâ koç Premium'da" stays true. No line about Premium earning XP instead of Coin.
 - **Stay companion:**
   - the coach demo's canned replies (they show the coach's voice);

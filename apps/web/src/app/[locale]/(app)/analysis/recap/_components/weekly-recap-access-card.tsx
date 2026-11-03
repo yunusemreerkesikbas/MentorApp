@@ -65,6 +65,7 @@ export function WeeklyRecapAccessCard({ offer, busy, armed, error, onOpen, onPre
         </div>
 
         <div className="p-5">
+          <p className="mb-4 text-body-sm font-bold text-[var(--color-main)]">{t("bundle")}</p>
           {view.kind === "gift" || view.kind === "choice" ? (
             <p className="mb-4 text-body-sm font-bold text-[var(--color-main)]">{t("intro")}</p>
           ) : null}

@@ -22,6 +22,7 @@ import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { useSubscription } from "@/lib/subscription-context";
 import { CommunityTopicsCard } from "./community-topics-card";
+import { PanelCardSkeleton } from "./panel-card-skeleton";
 import { CountdownPlaceholder } from "./countdown-placeholder";
 import { DailyQuestsCard } from "./daily-quests-card";
 import { DashboardContentSkeleton, TodayPathSkeleton } from "./dashboard-content-skeleton";
@@ -196,7 +197,9 @@ function PanelContent() {
   ) : (
     <TodayPathSkeleton />
   );
-  const questsCard = (
+  const questsCard = panel.questsLoading || panel.chestLoading ? (
+    <PanelCardSkeleton kind="quests" />
+  ) : (
     <DailyQuestsCard
       quests={quests}
       chest={panel.weeklyChest}
@@ -227,7 +230,7 @@ function PanelContent() {
     ) : (
       <CountdownPlaceholder />
     )
-  ) : null;
+  ) : panel.loading ? <PanelCardSkeleton kind="countdown" /> : null;
   const recap = data ? <WeeklyRecapSlot data={data} /> : null;
   const journey = <JourneyCard freezeTokens={data?.streak.freezeTokens ?? null} />;
 

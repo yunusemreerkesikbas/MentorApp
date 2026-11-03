@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 import type { MyCoachDto } from "@mentor/types";
+import { PanelCardSkeleton } from "./panel-card-skeleton";
 import { Link } from "@/i18n/navigation";
 import { fetchMyCoach } from "@/lib/mentorship";
 import { PANEL_CARD, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
@@ -26,18 +27,22 @@ export function MyCoachCard() {
   const t = useTranslations("panel");
   const [coach, setCoach] = useState<MyCoachDto | null>(null);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     let active = true;
     fetchMyCoach()
       .then((next) => {
         if (active) setCoach(next?.status === "ACTIVE" ? next : null);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => { if (active) setLoading(false); });
     return () => {
       active = false;
     };
   }, []);
 
+  if (loading) return <PanelCardSkeleton kind="coach" />;
   if (!coach) return null;
 
   return (

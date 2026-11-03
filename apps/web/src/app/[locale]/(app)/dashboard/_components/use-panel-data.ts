@@ -47,6 +47,8 @@ export function usePanelData() {
   const [data, setData] = useState<TodayPanelResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [questsLoading, setQuestsLoading] = useState(true);
+  const [chestLoading, setChestLoading] = useState(true);
   const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
   const [weeklyChest, setWeeklyChest] = useState<WeeklyChestView | null>(null);
   const [streakRescue, setStreakRescue] = useState<StreakRescueView | null>(null);
@@ -80,6 +82,8 @@ export function usePanelData() {
       setQuests(await fetchQuests());
     } catch {
       setQuests(null);
+    } finally {
+      setQuestsLoading(false);
     }
   }, []);
 
@@ -89,6 +93,8 @@ export function usePanelData() {
       setWeeklyChest(await fetchWeeklyChest());
     } catch {
       setWeeklyChest(null);
+    } finally {
+      setChestLoading(false);
     }
   }, []);
 
@@ -196,6 +202,8 @@ export function usePanelData() {
     loading,
     error,
     quests,
+    questsLoading,
+    chestLoading,
     weeklyChest,
     refreshWeeklyChest,
     streakRescue: economyEnabled ? streakRescue : null,

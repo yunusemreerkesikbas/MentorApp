@@ -396,7 +396,7 @@ test("AI Puhu coin açma yalnız finalde ve iki dokunuşla çalışır", async (
   // The coin CTA is inside the "Puhu notu" sheet, not on the final slide directly.
   await page.getByRole("button", { name: "Puhu notu" }).click();
   const unlock = page.getByRole("button", {
-    name: "25 coin ile AI Puhu notunu aç",
+    name: "25 coin ile Puhu’nun notunu aç",
   });
   await unlock.click();
   await expect(

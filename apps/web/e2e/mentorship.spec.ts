@@ -824,7 +824,7 @@ test.describe("koç tarafı", () => {
     // The student saw this same contract before consenting, and this is the half a coach must
     // not skim (AGENTS §4 #5).
     await expect(
-      contract.getByText("Öğrencinin AI koçla konuştukları", { exact: false }),
+      contract.getByText("Öğrencinin yapay zekâ koç Puhu’yla konuştukları", { exact: false }),
     ).toBeVisible();
   });
 

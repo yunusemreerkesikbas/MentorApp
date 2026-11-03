@@ -322,7 +322,7 @@ test("chat hakkı olmayan kullanıcıyı yalnız chat rotasında gate ile karş�
 
   await page.goto("/koc/sohbet");
 
-  await expect(page.getByRole("heading", { name: "Koçun yanında" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Puhu yanında" })).toBeVisible();
   await expect(page.getByTestId("coach-next-action-chip")).toHaveCount(0);
   await expect(page.getByTestId("coach-empty-landing")).toHaveCount(0);
   expect(api.todayCalls).toBe(0);
@@ -446,10 +446,10 @@ test("history hatasında composerı kilitler ve retry sonrası konuşmayı açar
   await expect(
     page.getByText("Sohbet geçmişi şu an yüklenemedi."),
   ).toBeVisible();
-  await expect(page.getByLabel("Koçuna mesaj yaz")).toBeDisabled();
+  await expect(page.getByLabel("Puhu’ya mesaj yaz")).toBeDisabled();
   await page.getByRole("button", { name: "Tekrar dene" }).click();
   await expect(page.getByText("Tekrar buradayım.")).toBeVisible();
-  await expect(page.getByLabel("Koçuna mesaj yaz")).toBeEnabled();
+  await expect(page.getByLabel("Puhu’ya mesaj yaz")).toBeEnabled();
 });
 test("eski mesajları sırayla başa ekler ve görünür konumu korur", async ({
   page,
@@ -499,7 +499,7 @@ test("eski mesajları sırayla başa ekler ve görünür konumu korur", async ({
     1,
   );
   const transcript = await page
-    .getByRole("log", { name: "Koç sohbeti" })
+    .getByRole("log", { name: "Puhu sohbeti" })
     .textContent();
   expect(transcript?.indexOf("En eski soru")).toBeLessThan(
     transcript?.indexOf("En eski yanıt") ?? -1,
@@ -543,7 +543,7 @@ test("eski sayfa hatasında görünür geçmişi korur ve yeniden dener", async 
 
   await expect(page.getByText("Daha eski mesajlar yüklenemedi.")).toBeVisible();
   await expect(page.getByText(/Yakın geçmiş ankrajı/)).toBeVisible();
-  await expect(page.getByLabel("Koçuna mesaj yaz")).toBeEnabled();
+  await expect(page.getByLabel("Puhu’ya mesaj yaz")).toBeEnabled();
 
   await loadOlder.click();
   await expect(page.getByText("Retry ile gelen eski mesaj")).toBeVisible();
@@ -615,7 +615,7 @@ test("eski sayfa yüklenirken sohbet değişince loading durumunu temizler", asy
   await history.getByRole("link", { name: /Hızlı sohbet/ }).click();
 
   await expect(page.getByText("Hızlı sohbet hazır")).toBeVisible();
-  await expect(page.getByLabel("Koçuna mesaj yaz")).toBeEnabled();
+  await expect(page.getByLabel("Puhu’ya mesaj yaz")).toBeEnabled();
   await expect(
     page.getByRole("button", { name: "Daha eski mesajları yükle" }),
   ).toHaveCount(0);
@@ -677,7 +677,7 @@ test("yarışan history isteklerinde yalnız son seçilen sohbeti gösterir", as
   await history.getByRole("link", { name: /Birinci sohbet/ }).click();
   await firstRequest;
   await expect(page.getByLabel("Sohbet geçmişin yükleniyor…")).toBeVisible();
-  await expect(page.getByLabel("Koçuna mesaj yaz")).toBeDisabled();
+  await expect(page.getByLabel("Puhu’ya mesaj yaz")).toBeDisabled();
 
   const historyAgain = await openHistory(page);
   await historyAgain.getByRole("link", { name: /İkinci sohbet/ }).click();
@@ -696,7 +696,7 @@ test("stream hatasında optimistic exchangei geri alır ve metni inputa döndür
   });
   await page.goto("/koc/sohbet");
 
-  const composer = page.getByLabel("Koçuna mesaj yaz");
+  const composer = page.getByLabel("Puhu’ya mesaj yaz");
   await composer.fill("Bu mesajı tekrar deneyeceğim");
   await page.getByRole("button", { name: "Gönder" }).click();
 
@@ -704,7 +704,7 @@ test("stream hatasında optimistic exchangei geri alır ve metni inputa döndür
     page.getByText("Yanıt gelmedi. Biraz sonra bir daha deneyelim."),
   ).toBeVisible();
   await expect(composer).toHaveValue("Bu mesajı tekrar deneyeceğim");
-  const transcript = page.getByRole("log", { name: "Koç sohbeti" });
+  const transcript = page.getByRole("log", { name: "Puhu sohbeti" });
   await expect(
     transcript.getByText("Bu mesajı tekrar deneyeceğim", { exact: true }),
   ).toHaveCount(0);
@@ -718,7 +718,7 @@ const reviewExamId = "70000000-0000-4000-8000-000000000001";
 const reviewUrl = `/koc/sohbet?seed=${encodeURIComponent(reviewSeed)}&contextMockExamId=${reviewExamId}`;
 const reviewReply = "Problemlerde bugün 10 soruyla başla.";
 
-test("AI koçla değerlendir premium öğrencide kendiliğinden başlar", async ({
+test("Puhu’yla değerlendir premium öğrencide kendiliğinden başlar", async ({
   page,
 }) => {
   const api = await mockCoachApi(page, {
@@ -735,7 +735,7 @@ test("AI koçla değerlendir premium öğrencide kendiliğinden başlar", async 
   ]);
 });
 
-test("AI koçla değerlendir coin öğrencide yalnız mesajı doldurur", async ({
+test("Puhu’yla değerlendir coin öğrencide yalnız mesajı doldurur", async ({
   page,
 }) => {
   const api = await mockCoachApi(page, {
@@ -746,7 +746,7 @@ test("AI koçla değerlendir coin öğrencide yalnız mesajı doldurur", async (
 
   await page.goto(reviewUrl);
 
-  await expect(page.getByLabel("Koçuna mesaj yaz")).toHaveValue(reviewSeed, {
+  await expect(page.getByLabel("Puhu’ya mesaj yaz")).toHaveValue(reviewSeed, {
     timeout: 15_000,
   });
   expect(api.streamBodies).toEqual([]);
