@@ -1,0 +1,50 @@
+{
+  "verifiedAt": "2026-11-03T12:49:47.422Z",
+  "environment": "LOCAL",
+  "totalPublishedYksArticles": 23,
+  "listCountExcludingFeatured": 22,
+  "indexPagesVerified": 2,
+  "existingSevenStillPublishedWithCovers": true,
+  "articles": [
+    {
+      "batch": "batch-02",
+      "slug": "acik-lise-yks-basvuru-sartlari",
+      "url": "http://localhost:3000/blog/acik-lise-yks-basvuru-sartlari",
+      "apiStatus": 200,
+      "webStatus": 200,
+      "bodyHashMatches": true,
+      "coverMatches": true,
+      "seoAndCreditsPresent": true
+    },
+    {
+      "batch": "batch-02",
+      "slug": "yks-egitim-bilgisi-guncelleme-onaylama",
+      "url": "http://localhost:3000/blog/yks-egitim-bilgisi-guncelleme-onaylama",
+      "apiStatus": 200,
+      "webStatus": 200,
+      "bodyHashMatches": true,
+      "coverMatches": true,
+      "seoAndCreditsPresent": true
+    },
+    {
+      "batch": "batch-02",
+      "slug": "yks-cevap-kagidi-kitapcik-kodlama",
+      "url": "http://localhost:3000/blog/yks-cevap-kagidi-kitapcik-kodlama",
+      "apiStatus": 200,
+      "webStatus": 200,
+      "bodyHashMatches": true,
+      "coverMatches": true,
+      "seoAndCreditsPresent": true
+    },
+    {
+      "batch": "batch-02",
+      "slug": "meslek-lisesi-yks-ek-puan",
+      "url": "http://localhost:3000/blog/meslek-lisesi-yks-ek-puan",
+      "apiStatus": 200,
+      "webStatus": 200,
+      "bodyHashMatches": true,
+      "coverMatches": true,
+      "seoAndCreditsPresent": true
+    }
+  ]
+}

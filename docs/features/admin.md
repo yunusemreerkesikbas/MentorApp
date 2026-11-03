@@ -100,6 +100,14 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-03: Catalogue-derived exam filters and metrics.** Existing exam/article editors and
+  announcement audiences now read the shared family catalogue, including ALES/DGS. Exam cohort
+  counts and their dashboard buckets are generated from the same list; existing `kpss`/`yks`/`lgs`
+  response keys remain, with additive `ales`/`dgs` keys. Usage: existing filters and dashboard work
+  without a new management screen. Gotcha: deploy the API before clients expecting the added
+  metric buckets. Related: `users.repository.ts`, `users.service.ts`, admin `MetricsCards.tsx`,
+  `content/{articles,exams}` forms and `announcements/page.tsx`.
+
 ### 2026-11-01 — Wrapped access policy controls
 
 - **What/usage:** Existing audited Config now exposes `coaching.weekly_recap.access_enabled`

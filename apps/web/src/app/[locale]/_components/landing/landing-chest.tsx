@@ -70,20 +70,20 @@ export function LandingChest({
   const [played, setPlayed] = useState(false);
   const full = lit;
 
-  // Light the lamps once the scene is half on screen; with reduced motion, all at once after
-  // hydration (the server cannot know the setting, so the first render stays unlit).
+  // Light the lamps once the scene is half on screen, one by one; with reduced motion, all at once.
+  // Never in the first render: the server cannot know the setting, so it renders them unlit.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    if (reduceMotion) {
-      setLit(DAYS);
-      return;
-    }
     let timer = 0;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry?.isIntersecting) return;
         observer.disconnect();
+        if (reduceMotion) {
+          setLit(DAYS);
+          return;
+        }
         timer = window.setInterval(() => {
           setLit((count) => {
             if (count + 1 >= DAYS) window.clearInterval(timer);

@@ -1,0 +1,88 @@
+{
+  "environment": "LOCAL",
+  "database": "localhost:5433/mentor",
+  "publishedAt": "2026-11-03T12:47:40.958Z",
+  "method": "ContentService.upsertArticle + publishArticle; one outer transaction for all sixteen",
+  "operator": "Automated execution of user local-publication request",
+  "author": "PuhuKoç (organisation)",
+  "sourceVerification": "Automated source/page comparison documented in source-map.md; no independent human review claimed",
+  "events": [
+    {
+      "name": "content.article.published",
+      "slug": "acik-lise-yks-basvuru-sartlari"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-egitim-bilgisi-guncelleme-onaylama"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-cevap-kagidi-kitapcik-kodlama"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "meslek-lisesi-yks-ek-puan"
+    }
+  ],
+  "embeddingListenerInvoked": false,
+  "existingSevenPreserved": true,
+  "coversVerifiedByHash": true,
+  "articles": [
+    {
+      "slug": "acik-lise-yks-basvuru-sartlari",
+      "bodySha256": "e36146d0b7871241ee03110021b7d474eebeb2c8d7486bdc573a1f0f68c18a1e",
+      "title": "Açık lise YKS başvuru şartları: Dönem ve kayıt bilgisi",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/acik-lise-yks-basvuru-sartlari-4441122ce840.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "Açık Lise YKS Başvuru Şartları ve Dönem Koşulu | PuhuKoç",
+      "id": "ed42d91a-98f0-4c3c-92c9-268723eaa90a",
+      "batch": "batch-02",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/acik-lise-yks-basvuru-sartlari-4441122ce840.webp",
+      "url": "http://localhost:3000/blog/acik-lise-yks-basvuru-sartlari"
+    },
+    {
+      "slug": "yks-egitim-bilgisi-guncelleme-onaylama",
+      "bodySha256": "1f41b7a6d49cbf28a6ee547ad41aeac1348b9085d99612194982503a55590b8a",
+      "title": "YKS eğitim bilgisi güncelleme ve onaylama rehberi",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/yks-egitim-bilgisi-guncelleme-onaylama-0201d690e3fb.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "YKS Eğitim Bilgisi Onayı ve Güncelleme | PuhuKoç",
+      "id": "16e260b2-9996-44ec-93a1-6b2ad6546a11",
+      "batch": "batch-02",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/yks-egitim-bilgisi-guncelleme-onaylama-0201d690e3fb.webp",
+      "url": "http://localhost:3000/blog/yks-egitim-bilgisi-guncelleme-onaylama"
+    },
+    {
+      "slug": "yks-cevap-kagidi-kitapcik-kodlama",
+      "bodySha256": "8529df5ee7b64661f43707bde27d646e49b37720f3bff688562b615b834982d9",
+      "title": "YKS cevap kâğıdı nasıl doldurulur? Kitapçık kodlama",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/yks-cevap-kagidi-kitapcik-kodlama-227417b9dffe.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "YKS Cevap Kâğıdı ve Kitapçık Kodlama | PuhuKoç",
+      "id": "5164170c-eed1-44f3-ad8a-fef580bb33e4",
+      "batch": "batch-02",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/yks-cevap-kagidi-kitapcik-kodlama-227417b9dffe.webp",
+      "url": "http://localhost:3000/blog/yks-cevap-kagidi-kitapcik-kodlama"
+    },
+    {
+      "slug": "meslek-lisesi-yks-ek-puan",
+      "bodySha256": "9a2a0cf229abf10bacc0f6cf57bf857579099c77d697de431fb4a9b5cf0f8aa5",
+      "title": "Meslek lisesi YKS ek puanı: Koşullar ve örnek hesap",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/meslek-lisesi-yks-ek-puan-23bf94bfe613.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "Meslek Lisesi YKS Ek Puanı Nasıl Hesaplanır? | PuhuKoç",
+      "id": "085c0186-4ca7-4347-a9fc-2938d3eabae7",
+      "batch": "batch-02",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/meslek-lisesi-yks-ek-puan-23bf94bfe613.webp",
+      "url": "http://localhost:3000/blog/meslek-lisesi-yks-ek-puan"
+    }
+  ]
+}

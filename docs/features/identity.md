@@ -97,6 +97,15 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-03: Shared exam selection and ALES/DGS onboarding.** Student and coach onboarding,
+  the completion summary and account settings now consume the shared exam catalogue. Usage:
+  select ALES or DGS at onboarding or under Settings > Target exam; neither asks for a KPSS level.
+  Switching away from KPSS clears its stored variant without changing historical study/mock data.
+  TR/EN option descriptions are mirrored. Gotcha: later exam groups stay unselectable until their
+  verified content is prepared; there is no generic Other exam. Related: `packages/types/src/exams.ts`,
+  `packages/validation/src/auth.ts`, onboarding `exam-step.tsx`/`complete-step.tsx`,
+  `account-links-card.tsx`, `e2e/exam-catalog.spec.ts` and `e2e/profile.spec.ts`.
+
 ### 2026-11-01 — Hanging Puhu no longer shimmers the form text
 
 - **What:** On signup/login the links under the sheet (e.g. "Giriş yap") seemed to move with Puhu.

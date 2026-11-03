@@ -78,6 +78,90 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-03: Central exam catalogue, first group (ALES/DGS).** `@mentor/types` now owns
+  `EXAM_CATALOG`/`EXAM_TYPES`; validation, blog filters and existing admin selectors derive their
+  choices from it. ALES 2026/3 plus all three 2027 periods and DGS 2027 have editorial calendar
+  seeds and separate numerical/verbal taxonomies. Usage: rebuild shared packages and restart the
+  API to fill missing exam/event rows and upsert taxonomy links. Gotchas: taxonomy linking waits
+  until module-init exam seeding finishes; a Nest lifecycle regression test guards this order for
+  fresh databases. Startup seeding never overwrites existing calendar rows. The 2027 section counts
+  and penalty rules follow the latest
+  verified 2026 guides and must be checked when new guides publish. Topic subdivisions are
+  editorial study labels, not an official exhaustive syllabus. Calendar events use UTC midnight
+  as an all-day date carrier, not a claimed start time. ALES countdown advances through upcoming
+  verified periods; target search for families without a dataset returns cities only.
+  Sources: [ALES guide](https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf)
+  sections 3.1/3.9; [DGS guide](https://dokuman.osym.gov.tr/web/2026/7/genel-bilgiler-temel-lke-ve-kurallar-q1jd4s-30102212.pdf)
+  sections 3.1/4.1; [2027 calendar](https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf),
+  [2026 calendar](https://www.osym.gov.tr/Sayfa/SinavTakvimi/tr-TR), verified 2026-11-03.
+  Related: `packages/types/src/exams.ts`, `content/seed/{exams,subjects}.seed.json`,
+  `geo.service.ts`, `aptitude-exam-seed.spec.ts`, and [design/next groups](../plans/2026-11-03-exam-catalog-design.md).
+
+- **2026-11-03: Distribute local YKS display publication dates at the user's request.** The 23
+  local articles now span 15 days from October 20 through November 3 in the Istanbul timezone.
+  Usage: refresh the local YKS blog; list order follows the mixed dates. Gotchas: these are local
+  demo display dates, not reconstructed publication history. Actual initial publication receipts
+  remain intact; source verification dates, bodies, covers and featured status were preserved.
+  Related: `docs/editorial/yks/date-mix-local.json` records before/after values; published follow-up
+  metadata reflects current local display dates. No production changes.
+
+- **2026-11-03: Consolidate blog provenance and reuse the panel countdown.** Article pages now show
+  one verification section after the body, combining the editorial scope, complete source/page
+  citations and verification/update dates. SEO descriptions remain metadata rather than duplicating
+  the visible introduction; the coach CTA no longer repeats the verification claim. Usage: all blog
+  detail pages, including the earlier bold-scope/plural-source Markdown variants. Original article
+  records and source text remain intact; HTML bodies pass through unchanged. The hub/detail sidebar
+  now uses the panel's shared CountdownCard/DataCard, with calendar attribution and ICS download;
+  pending dates and API failure retain honest empty/hidden behavior. Shared optional source/children
+  props leave existing panel callers unchanged. Validation: four provenance-preservation tests,
+  targeted ESLint, UI build and web typecheck; rendered MEB article checked locally. Related:
+  `article-provenance.ts`, article content/trust/coach components, `exam-day-card.tsx`, loading skeleton
+  and `packages/ui/src/components/countdown-card.tsx`.
+
+- **2026-11-03: Publish the sixteen follow-up YKS articles locally with covers.** User reaffirmed
+  local publication. Preflight validated existing schema, all sixteen cover hashes/public URLs, related
+  targets and absent slugs. Usage: `http://localhost:3000/blog?family=YKS` now serves 23 published YKS
+  articles (22 list entries plus the existing featured article), across two index pages. All sixteen
+  writes used ContentService upsert/publish inside one outer transaction on `localhost:5433/mentor`;
+  first-seven body/source/cover/publication proofs were unchanged. Author is the organisation PuhuKoç;
+  source comparison is explicitly automated, with real timestamps and no invented human reviewer.
+  Verified sixteen API bodies/pages, covers, SEO, credits and related links, plus both index pages and
+  the rendered new preference guide. Gotchas: localhost links must be regenerated for deployment;
+  offline publication events did not invoke running API embedding subscribers. No production DB or
+  application-code changes. Related: `docs/editorial/yks/batch-{02,03}/{publication-local.json,
+  publication-verification-local.json,metadata.json,README.md}`.
+
+- **2026-11-03: Add licensed covers to all sixteen later YKS drafts.** Selected distinct Pexels
+  photographs, checked source pages/licence and visually reviewed the crops. Usage: the batch-02/03
+  metadata now contains the four existing cover fields plus `editorial.coverImageFile`; images indexes
+  show previews and the bodies include photographer/licence credits. Sixteen 1200×630 WebP assets
+  total 986,292 bytes and use new content-addressed keys in development bucket `mentor-public`.
+  All public objects returned HTTP 200 with matching hashes and WebP content type. Gotchas: these
+  remain DRAFT files with null author/verifier/publication fields; no database writes, publication,
+  application code or production-media changes. Import the cover once through the header fields.
+  Related: `docs/editorial/yks/batch-{02,03}/{media-sources.json,images/}`, updated article bodies and
+  metadata, and `draft-cover-preview.jpg`.
+
+- **2026-11-03: Add twelve preference and enrolment drafts from the programmes-and-quotas guide.**
+  Usage: `docs/editorial/yks/batch-03/README.md` indexes independent guides for preference ordering,
+  table reading, ranking requirements, school-first/women/service-family quotas, tuition bursaries,
+  preparation, MTOK, enrolment, talent admissions and the MEB bursary. The supplied 775-page PDF and
+  the PDF linked by ÖSYM differ in bytes but match in extracted text on all corresponding pages after
+  whitespace removal. Gotchas: yearless titles retain explicit 2026 scope; historical ranking data is
+  2025, operational dates stay out of prose, and author/verifier/publication fields remain null.
+  Related-link plans require published targets; separate additional-placement/ÖZYES guides remain
+  necessary for those full workflows. Related: `batch-03/{metadata.json,source-map.md}` and twelve
+  Markdown bodies. No application code, database, existing article or media changes.
+
+- **2026-11-03: Add a second YKS editorial batch with four distinct drafts.** Covered open-high-school
+  eligibility, education-record correction/confirmation, answer-sheet/booklet coding and vocational-school
+  additional scores using the supplied 2026 guide and FAQ. Usage: `docs/editorial/yks/batch-02/README.md`
+  indexes the bodies, SEO metadata, proposed related links and claim/page map. Gotchas: these remain drafts,
+  retain the 2026 scope note and null author/verification/publication fields; eligibility-date criteria are
+  separate from omitted calendar deadlines. Further preference/quotas coverage should use the relevant
+  programmes-and-quotas guide and amendments. No database, media or application code changed. Related:
+  `batch-02/{metadata.json,source-map.md}` and its four Markdown bodies.
+
 - **2026-11-03: Add licensed web photographs to the seven local YKS articles.** Selected six Pexels
   photographs and one Unsplash photograph after checking their source pages and licences. Resized/cropped
   covers to 1200×630 WebP (271,788 bytes total), stored them under new content-addressed keys in the

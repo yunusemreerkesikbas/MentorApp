@@ -175,7 +175,7 @@ function PerkLink({
         href={href}
         className="flex min-h-14 items-center gap-3 rounded-[var(--radius-card)] py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       >
-        <span className="grid size-10 shrink-0 place-items-center text-[var(--color-main)]">
+        <span className="grid size-10 shrink-0 place-items-center text-[var(--color-secondary)]">
           <Icon size={20} className="size-5" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">

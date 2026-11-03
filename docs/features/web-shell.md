@@ -67,6 +67,61 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-03 · Landing Premium sheet.** A new section between Gece Yolculuğu and the coach band:
+  `landing-premium.tsx` + `.css` (`#premium`). Owner's picks: a section on the landing for now (a
+  `/premium` page with prices comes when the plan prices are final and web purchases open; the
+  section then gets a "Premium'u incele" link, like the coach band's link to `/for-coaches`), night
+  sky + the Işıklı şehir city, Premium Puhu flying on the left, title + three benefits + "7 gün
+  ücretsiz dene" (→ `/welcome`) on the right. It shows only while `aiCoach` and
+  `studentPurchases` are both on (unknown reads as off). The rows are the paywall's live coach,
+  daily and analysis features, with its Solar Bold glyphs in lamp yellow; the CTA is the page's one
+  lamp-yellow ledge. "7 gün" is fixed copy of the plans' default `trial_days`. The city is sized like
+  the plan stage's (`--lp-city-h`, `--lp-city-lift`: the mid layer's tallest tower stands
+  `--lp-skyline` above the sheet's bottom) and stays under the content, so the coming loop's flat
+  ground never covers a roof. Stars tile at their own 1000×600 size (cover-scaling blew them up into
+  dots beside the copy on phones). The mask paths moved to `components/premium/premium-mask.ts`: a
+  server component cannot read a constant from a `"use client"` file. Until the Kling loop lands
+  (`puhu-premium-flight-loop.mp4` + poster, prompts in chat, ground `#07122A`), the hero still
+  `puhu-premium-hero.png` stands in the art slot. Copy in `landing.premium`. Checked logged out at
+  375, 768, 1280 and 1600 (no overflow, 16px between the copy and the skyline). The coach band
+  (also dark blue) stays right under it: the owner's call after seeing the two together.
+- **2026-11-03 · Gece Yolculuğu becomes the XP + Coin section.** Title "Görevleri bitir, XP ve Coin
+  topla!", and the lead now says what Coin opens. The quests card's Ritüel tab gains "Bugün çalış"
+  (+10 Coin, done). The right card is now `journey-panel.tsx`, two tabs: "Seviye" (the lights, as
+  before) and "Coin" (a sample 320 Coin wallet, the +10 / +100 earn pills, and "Coin ile aç": freeze
+  200, +1 notebook 200, weekly story 250). Owner's picks: earn → spend flow, non-AI uses plus the
+  weekly story, fixed sample prices (the SPEND list in `landing-journey.tsx` mirrors
+  `economy.coin.*_cost` defaults: change them together), and no Premium-earns-XP line. Both panes
+  sit in one grid cell (`.lj-p-panes`), so the card keeps the same height on a tab switch. Copy in
+  `landing.journey.wallet` and `quest.active_day`. Checked logged out at 375 and 1280 (no overflow,
+  equal heights). Same day, owner follow-up: the wallet coin is the spinning Lottie of
+  `CoinCelebrationVisual` (`journey-coin.tsx`, the player loaded client-only via `next/dynamic`, the
+  still `coin.svg` under it and alone with reduced motion), and the +10 / +100 earn pills are gone
+  (the quests card already shows both). The Lottie renders a `<div>`, so `.lj-wallet-head` is a
+  `<div>`, not a `<p>` (hydration error otherwise).
+- **2026-11-03 · Landing videos: Puhu's magic in window 4, the weekly chest in Gece Yolculuğu.**
+  Window 4 (Plan, stop 3) shows the "Koçla planla" loop (`puhu-hero-magic-loop.mp4`) instead of
+  `room-plan.webp`: `plan-magic-video.tsx`, `preload="none"`, plays only while `.lc-root[data-stop]`
+  is 3 (MutationObserver), poster with reduced motion. The owner first saw it inside the note and
+  asked for the window; the note keeps its four steps. Note copy: "Haftanı Puhu kursun!"; the owner
+  dropped a "Koçla planla Premium'da." line (no Premium call-out on this note). Same day, also
+  removed by the owner: the journey's "Coin nakit değildir…" line (`coin_note`) and the desktop hero
+  hint "Aşağı kaydır, içeriyi gezelim · Turu atla" (`scroll_hint`, `.lc-hint`; phones keep
+  "Zaten hesabım var · Turu atla"). Then the chest card became the app's night desk (owner picked
+  "lambalar dolar, sandığa dokun"): the scene fills the card (`.weekly-chest-night`), five
+  `ChestLamps` light one by one when it is half on screen, a gold "Hazır!" sticker pops, and the
+  chest itself or the gold button opens it (lamps flow into the lock, then the clip). From 768px the
+  text row sits on the desk over a shade; on phones it sits on the wood under the square room.
+  Gotcha: the shade bar must not get a z-index, or its stacking context traps the gold button under
+  the chest's invisible tap target (desktop clicks hit the chest, not the button). `landing-chest.tsx` adds the app's
+  desk scene under the journey grid: tap "Sandığı aç", the clip plays once and rests on its last
+  frame. "Bir daha aç" replays the whole opening at once (lamps flow, clip from frame 0); there
+  is no reset step in between (owner's call, 2026-11-03). Wide set from 768px, square below; the clip downloads only on the
+  tap. Hidden with the rest of the journey while `economy` is off (owner's call). Do not use
+  `PremiumBadge` on the landing: it reads `common`, which the landing's client messages lack (it
+  rendered "common.premium_badge"). Checked logged out at 375 and 1440 (video playing at stop 3,
+  chest opens); e2e not run.
+
 - **2026-11-02 · Premium Puhu wears the hero mask.** `PuhuImage variant="premium"` now loads
   `puhu-premium-hero.png` (1386×990 RGBA): hero stance, night-blue domino mask with gold rims, no
   star on the mask, same cape and clasp. It matches the name-side `PremiumIdentityMark`
@@ -1809,3 +1864,15 @@ eklendi.
   (→ `/panel?chest=open`, which opens the scene and cleans the URL). `trapFocus` moved out of
   `coach-overlay.tsx` into `lib/trap-focus.ts`; the chest scene uses it too. Details in
   `docs/features/economy.md` (2026-11-01 web slice).
+
+- **2026-11-04 — Neutral dashboard card icons.** Membership perk and community topic Solar
+  glyphs now use `--color-main` instead of two different blue accents, matching the panel’s
+  monochrome foundation. Usage: open the dashboard; premium members see the perk icons and
+  a populated community feed shows the topic icons. Gotchas: the change follows the theme token;
+  links and Premium identity chrome retain their existing colors. Related:
+  `dashboard/_components/{membership-card,community-topics-card}.tsx`, `DESIGN.md`.
+
+- **2026-11-04 — Softer dashboard icon ink.** Refined membership perk and community topic
+  icons to `--color-secondary` after visual feedback on the darker ink. Usage: the same dashboard
+  cards now show neutral gray glyphs. Gotchas: the theme token controls both themes. Related:
+  `dashboard/_components/{membership-card,community-topics-card}.tsx`, `DESIGN.md`.

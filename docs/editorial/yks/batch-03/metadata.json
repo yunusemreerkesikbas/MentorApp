@@ -1,0 +1,634 @@
+{
+  "status": "PUBLISHED_LOCAL",
+  "language": "tr",
+  "preparedOn": "2026-11-03",
+  "sourceYear": 2026,
+  "yearStrategy": "YEARLESS_TITLES_WITH_EXPLICIT_2026_SOURCE_SCOPE",
+  "articles": [
+    {
+      "slug": "yks-tercih-listesi-nasil-hazirlanir",
+      "title": "YKS tercih listesi nasıl hazırlanır? Sıralama ve AİS adımları",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-tercih-listesi-nasil-hazirlanir.md",
+      "metaTitle": "YKS Tercih Listesi Nasıl Hazırlanır? | PuhuKoç",
+      "metaDescription": "YKS tercih sırasını, 24 tercih kuralını ve AİS bildirim adımlarını öğren. Rehber, ÖSYM’nin 2026 tercih kılavuzuna dayanır; yerleşme garantisi vermez.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-11-01T09:17:00.000Z",
+      "editorial": {
+        "priority": 12,
+        "primaryKeyword": "YKS tercih listesi nasıl hazırlanır",
+        "secondaryKeywords": [
+          "YKS tercih sırası",
+          "YKS kaç tercih",
+          "AİS tercih değiştirme"
+        ],
+        "sourceRefs": [
+          "B3-TERCIH"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-tercih-kilavuzu-tablo-okuma",
+            "anchor": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-basari-sirasi-sarti-olan-bolumler",
+            "anchor": "YKS başarı sırası şartı olan bölümler ve tercih koşulları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "obp-hesaplama-kirik-obp",
+            "anchor": "OBP katsayısı ve önceki yerleştirmenin etkisi",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/yks-tercih-listesi-nasil-hazirlanir-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/yks-tercih-listesi-nasil-hazirlanir-4a89b038cfdf.webp",
+      "coverImageAlt": "Defterdeki kontrol listesine kalemle not ekleyen el",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "yks-tercih-kilavuzu-tablo-okuma",
+      "title": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+      "family": "YKS",
+      "category": "GENERAL",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-tercih-kilavuzu-tablo-okuma.md",
+      "metaTitle": "YKS Tercih Kılavuzu ve Tablo Okuma Rehberi | PuhuKoç",
+      "metaDescription": "Tablo 3 ve Tablo 4’te program kodu, kontenjan, taban puan ve başarı sırası neyi gösterir? ÖSYM’nin 2026 kılavuzundaki sütun ve işaretleri incele.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-25T09:24:00.000Z",
+      "editorial": {
+        "priority": 13,
+        "primaryKeyword": "YKS tercih kılavuzu nasıl okunur",
+        "secondaryKeywords": [
+          "YKS Tablo 3 Tablo 4",
+          "taban puan başarı sırası",
+          "tercih kılavuzu işaretleri"
+        ],
+        "sourceRefs": [
+          "B3-TABLO"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-tercih-listesi-nasil-hazirlanir",
+            "anchor": "YKS tercih listesi nasıl hazırlanır? Sıralama ve AİS adımları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-basari-sirasi-sarti-olan-bolumler",
+            "anchor": "YKS başarı sırası şartı olan bölümler ve tercih koşulları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-burslu-indirimli-program-farklari",
+            "anchor": "Burslu ve indirimli üniversite programları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/yks-tercih-kilavuzu-tablo-okuma-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/yks-tercih-kilavuzu-tablo-okuma-e2165db02098.webp",
+      "coverImageAlt": "Masada sayısal tablolar, grafikler ve büyüteç",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "yks-basari-sirasi-sarti-olan-bolumler",
+      "title": "YKS başarı sırası şartı olan bölümler ve tercih koşulları",
+      "family": "YKS",
+      "category": "GENERAL",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-basari-sirasi-sarti-olan-bolumler.md",
+      "metaTitle": "YKS Başarı Sırası Şartı Olan Bölümler | PuhuKoç",
+      "metaDescription": "Tıp, hukuk, mühendislik ve öğretmenlikte başarı sırası şartını incele. Rehber 2026 ÖSYM kılavuzuna dayanır; istisnaları ve puan türü ayrımını açıklar.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-11-02T09:31:00.000Z",
+      "editorial": {
+        "priority": 14,
+        "primaryKeyword": "YKS başarı sırası şartı olan bölümler",
+        "secondaryKeywords": [
+          "YKS başarı sırası barajı",
+          "mühendislik başarı sırası şartı",
+          "hukuk başarı sırası şartı"
+        ],
+        "sourceRefs": [
+          "B3-SIRA"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-tercih-kilavuzu-tablo-okuma",
+            "anchor": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-tercih-listesi-nasil-hazirlanir",
+            "anchor": "YKS tercih listesi nasıl hazırlanır? Sıralama ve AİS adımları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-tyt-ayt-ydt-farklari",
+            "anchor": "TYT, AYT ve YDT puan türleri",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/yks-basari-sirasi-sarti-olan-bolumler-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/yks-basari-sirasi-sarti-olan-bolumler-b4182287180b.webp",
+      "coverImageAlt": "Kitapların yanında deftere not yazan bir kadın",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "yks-okul-birincisi-kontenjani",
+      "title": "YKS okul birincisi kontenjanı nasıl kullanılır?",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-okul-birincisi-kontenjani.md",
+      "metaTitle": "YKS Okul Birincisi Kontenjanı ve Tercihler | PuhuKoç",
+      "metaDescription": "Okul birincisi kontenjanında genel kontenjan önceliğini, program koşullarını ve boş kontenjan kuralını öğren. Açıklamalar 2026 ÖSYM kılavuzuna dayanır.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-26T09:38:00.000Z",
+      "editorial": {
+        "priority": 15,
+        "primaryKeyword": "YKS okul birincisi kontenjanı",
+        "secondaryKeywords": [
+          "okul birincisi tercihleri",
+          "okul birincisi kontenjanı boş kalırsa",
+          "okul birincisi yerleştirme"
+        ],
+        "sourceRefs": [
+          "B3-BIRINCI"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-tercih-listesi-nasil-hazirlanir",
+            "anchor": "YKS tercih listesi nasıl hazırlanır? Sıralama ve AİS adımları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-tercih-kilavuzu-tablo-okuma",
+            "anchor": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-egitim-bilgisi-guncelleme-onaylama",
+            "anchor": "eğitim bilgisi güncelleme ve onaylama",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/yks-okul-birincisi-kontenjani-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/yks-okul-birincisi-kontenjani-85ba24c13d57.webp",
+      "coverImageAlt": "Mezuniyet kıyafetiyle poz veren bir kadının portresi",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "yks-34-yas-ustu-kadin-kontenjani",
+      "title": "YKS 34 yaş üstü kadın kontenjanı: Kimler yararlanabilir?",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-34-yas-ustu-kadin-kontenjani.md",
+      "metaTitle": "YKS 34 Yaş Üstü Kadın Kontenjanı Şartları | PuhuKoç",
+      "metaDescription": "34 yaş üstü kadın kontenjanında yaş, mezuniyet ve program koşullarını incele. 2026 ÖSYM kılavuzuna dayanan rehber, tercih ekranındaki beyanı da açıklar.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-11-03T09:45:00.000Z",
+      "editorial": {
+        "priority": 16,
+        "primaryKeyword": "YKS 34 yaş üstü kadın kontenjanı",
+        "secondaryKeywords": [
+          "34 yaş kadın kontenjanı şartları",
+          "kadın kontenjanı lisans mezunu",
+          "34 yaş kontenjanı tercih"
+        ],
+        "sourceRefs": [
+          "B3-KADIN"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-tercih-listesi-nasil-hazirlanir",
+            "anchor": "YKS tercih listesi nasıl hazırlanır? Sıralama ve AİS adımları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-tercih-kilavuzu-tablo-okuma",
+            "anchor": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "universite-kayit-e-kayit-gerekli-belgeler",
+            "anchor": "Üniversite kaydı",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/yks-34-yas-ustu-kadin-kontenjani-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/yks-34-yas-ustu-kadin-kontenjani-0551c81a131d.webp",
+      "coverImageAlt": "Kütüphanede dizüstü bilgisayarla çalışan bir kadın",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "yks-burslu-indirimli-program-farklari",
+      "title": "Burslu ve indirimli üniversite programları: Ücret ve kapsam",
+      "family": "YKS",
+      "category": "GENERAL",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-burslu-indirimli-program-farklari.md",
+      "metaTitle": "Burslu ve İndirimli Programların Farkları | PuhuKoç",
+      "metaDescription": "Tam burslu, yüzde 50 ve yüzde 25 indirimli programları karşılaştır. 2026 ÖSYM kılavuzuna göre burs süresi, hazırlık ve ek giderleri birlikte incele.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-27T09:52:00.000Z",
+      "editorial": {
+        "priority": 17,
+        "primaryKeyword": "burslu ve indirimli program farkı",
+        "secondaryKeywords": [
+          "tam burslu neleri kapsar",
+          "yüzde 50 indirimli üniversite",
+          "üniversite burs süresi"
+        ],
+        "sourceRefs": [
+          "B3-BURS"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "universite-zorunlu-hazirlik-ogretim-dili",
+            "anchor": "Üniversitede zorunlu hazırlık, öğretim dili ve muafiyet",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-tercih-kilavuzu-tablo-okuma",
+            "anchor": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "meb-ogretmenlik-bursu-tercih-sartlari",
+            "anchor": "MEB öğretmenlik bursu",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/yks-burslu-indirimli-program-farklari-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/yks-burslu-indirimli-program-farklari-359275060bb9.webp",
+      "coverImageAlt": "Ahşap masada hesap makinesi ve notlarla bütçe hesabı yapan eller",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "universite-zorunlu-hazirlik-ogretim-dili",
+      "title": "Üniversitede zorunlu hazırlık, öğretim dili ve muafiyet",
+      "family": "YKS",
+      "category": "GENERAL",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "universite-zorunlu-hazirlik-ogretim-dili.md",
+      "metaTitle": "Zorunlu Hazırlık, Öğretim Dili ve Muafiyet | PuhuKoç",
+      "metaDescription": "Zorunlu hazırlık, yüzde 30 İngilizce öğretim ve muafiyet koşullarını öğren. Rehber, 2026 ÖSYM kılavuzundaki dil ve hazırlık açıklamalarına dayanır.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-20T09:59:00.000Z",
+      "editorial": {
+        "priority": 18,
+        "primaryKeyword": "üniversite zorunlu hazırlık",
+        "secondaryKeywords": [
+          "hazırlık sınıfı öğretim süresi",
+          "hazırlık muafiyeti",
+          "yüzde 30 İngilizce bölüm"
+        ],
+        "sourceRefs": [
+          "B3-HAZIRLIK"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-burslu-indirimli-program-farklari",
+            "anchor": "Burslu ve indirimli üniversite programları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-tercih-kilavuzu-tablo-okuma",
+            "anchor": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-tyt-ayt-ydt-farklari",
+            "anchor": "TYT, AYT ve YDT puan türleri",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/universite-zorunlu-hazirlik-ogretim-dili-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/universite-zorunlu-hazirlik-ogretim-dili-e2a2b61156a5.webp",
+      "coverImageAlt": "Kitap raflarının önünde konuşan iki öğrenci",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "mtok-nedir-kimler-tercih-edebilir",
+      "title": "M.T.O.K. nedir? Kimler tercih edebilir, alan eşleşmesi nasıl okunur?",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "mtok-nedir-kimler-tercih-edebilir.md",
+      "metaTitle": "M.T.O.K. Nedir, Kimler Tercih Edebilir? | PuhuKoç",
+      "metaDescription": "M.T.O.K. kontenjanında alan ve dal önceliğini, Tablo 6B.2’yi ve diğer lise mezunlarının durumunu öğren. Rehber 2026 ÖSYM kılavuzuna dayanır.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-28T10:06:00.000Z",
+      "editorial": {
+        "priority": 19,
+        "primaryKeyword": "M.T.O.K. nedir",
+        "secondaryKeywords": [
+          "M.T.O.K. kimler tercih edebilir",
+          "M.T.O.K. Tablo 6B.2",
+          "M.T.O.K. ek puan farkı"
+        ],
+        "sourceRefs": [
+          "B3-MTOK"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "meslek-lisesi-yks-ek-puan",
+            "anchor": "meslek lisesi ek puanı",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-basari-sirasi-sarti-olan-bolumler",
+            "anchor": "YKS başarı sırası şartı olan bölümler ve tercih koşulları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-tercih-kilavuzu-tablo-okuma",
+            "anchor": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/mtok-nedir-kimler-tercih-edebilir-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/mtok-nedir-kimler-tercih-edebilir-adf270f65b81.webp",
+      "coverImageAlt": "Masada elektronik deney devresi ve mikrodenetleyici",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "universite-kayit-e-kayit-gerekli-belgeler",
+      "title": "Üniversite kaydı: E-kayıt, gerekli belgeler ve geçici kayıt",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "universite-kayit-e-kayit-gerekli-belgeler.md",
+      "metaTitle": "Üniversite E-Kayıt ve Gerekli Belgeler | PuhuKoç",
+      "metaDescription": "Üniversite e-kayıt sürecini, gerekli belgeleri, mevcut üniversite kaydını ve geçici kaydı incele. Rehber 2026 ÖSYM kayıt açıklamalarına dayanır.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-21T10:13:00.000Z",
+      "editorial": {
+        "priority": 20,
+        "primaryKeyword": "üniversite kayıt gerekli belgeler",
+        "secondaryKeywords": [
+          "üniversite e-kayıt",
+          "üniversite geçici kayıt",
+          "e-kayıt ders kaydı farkı"
+        ],
+        "sourceRefs": [
+          "B3-KAYIT"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-tercih-kilavuzu-tablo-okuma",
+            "anchor": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "universite-zorunlu-hazirlik-ogretim-dili",
+            "anchor": "Üniversitede zorunlu hazırlık, öğretim dili ve muafiyet",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "acik-lise-yks-basvuru-sartlari",
+            "anchor": "açık lise YKS başvuru koşulları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/universite-kayit-e-kayit-gerekli-belgeler-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/universite-kayit-e-kayit-gerekli-belgeler-8af5e4d37ff0.webp",
+      "coverImageAlt": "Dizüstü bilgisayarın yanında kâğıt belgeleri düzenleyen bir kişi",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "ozel-yetenek-sinavi-ozyes-basvuru-farki",
+      "title": "Özel yetenek sınavı ve ÖZYES: Başvuru yolları nasıl ayrılır?",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ozel-yetenek-sinavi-ozyes-basvuru-farki.md",
+      "metaTitle": "Özel Yetenek Sınavı ve ÖZYES Başvurusu | PuhuKoç",
+      "metaDescription": "Özel yetenek başvurusunun üniversiteye mi ÖSYM’ye mi yapıldığını öğren. 2026 kılavuzuna göre TYT, öğretmenlik ve ÖZYES süreçlerini ayır.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-29T10:20:00.000Z",
+      "editorial": {
+        "priority": 21,
+        "primaryKeyword": "özel yetenek sınavı başvurusu",
+        "secondaryKeywords": [
+          "ÖZYES özel yetenek farkı",
+          "özel yetenek TYT şartı",
+          "özel yetenek öğretmenlik başarı sırası"
+        ],
+        "sourceRefs": [
+          "B3-YETENEK"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-basari-sirasi-sarti-olan-bolumler",
+            "anchor": "YKS başarı sırası şartı olan bölümler ve tercih koşulları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "universite-kayit-e-kayit-gerekli-belgeler",
+            "anchor": "Üniversite kaydı",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-engelli-aday-basvurusu-e-rapor",
+            "anchor": "YKS engelli aday başvurusu ve e-rapor",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/ozel-yetenek-sinavi-ozyes-basvuru-farki-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/ozel-yetenek-sinavi-ozyes-basvuru-farki-9c19f41d6db2.webp",
+      "coverImageAlt": "Ahşap masada boya paleti, fırçalar ve çizim araçları",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "yks-sehit-gazi-yakini-kontenjani",
+      "title": "YKS şehit ve gazi kapsamındaki burslu kontenjan nasıl işler?",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-sehit-gazi-yakini-kontenjani.md",
+      "metaTitle": "YKS Şehit ve Gazi Kontenjanı Koşulları | PuhuKoç",
+      "metaDescription": "Şehit ve gazi kapsamındaki burslu kontenjanın SGK doğrulaması, tercih önceliği ve kullanım koşullarını incele. Kaynak: ÖSYM’nin 2026 kılavuzu.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-22T10:27:00.000Z",
+      "editorial": {
+        "priority": 22,
+        "primaryKeyword": "YKS şehit gazi kontenjanı",
+        "secondaryKeywords": [
+          "şehit yakını üniversite kontenjanı",
+          "gazi çocuğu YKS kontenjanı",
+          "YKS SGK kontenjan doğrulama"
+        ],
+        "sourceRefs": [
+          "B3-SEHITGAZI"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-tercih-listesi-nasil-hazirlanir",
+            "anchor": "YKS tercih listesi nasıl hazırlanır? Sıralama ve AİS adımları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-tercih-kilavuzu-tablo-okuma",
+            "anchor": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-burslu-indirimli-program-farklari",
+            "anchor": "Burslu ve indirimli üniversite programları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/yks-sehit-gazi-yakini-kontenjani-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/yks-sehit-gazi-yakini-kontenjani-18a32b48470f.webp",
+      "coverImageAlt": "Ağaçlarla çevrili modern bir üniversite binası",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "meb-ogretmenlik-bursu-tercih-sartlari",
+      "title": "MEB öğretmenlik bursu: İlk beş tercih ve diğer koşullar",
+      "family": "YKS",
+      "category": "GENERAL",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "meb-ogretmenlik-bursu-tercih-sartlari.md",
+      "metaTitle": "MEB Öğretmenlik Bursu ve Tercih Şartları | PuhuKoç",
+      "metaDescription": "MEB öğretmenlik bursunda ilk beş tercih, yaş, kontenjan ve başvuru koşullarını incele. Rehber, 2026 ÖSYM kılavuzundaki MEB duyurusuna dayanır.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/2026-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu-90wzzd-04155310.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-30T10:34:00.000Z",
+      "editorial": {
+        "priority": 23,
+        "primaryKeyword": "MEB öğretmenlik bursu şartları",
+        "secondaryKeywords": [
+          "MEB bursu ilk beş tercih",
+          "öğretmenlik bursu kontenjanı",
+          "MEB bursu başvurusu"
+        ],
+        "sourceRefs": [
+          "B3-MEB"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-tercih-listesi-nasil-hazirlanir",
+            "anchor": "YKS tercih listesi nasıl hazırlanır? Sıralama ve AİS adımları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-basari-sirasi-sarti-olan-bolumler",
+            "anchor": "YKS başarı sırası şartı olan bölümler ve tercih koşulları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          },
+          {
+            "slug": "yks-burslu-indirimli-program-farklari",
+            "anchor": "Burslu ve indirimli üniversite programları",
+            "placement": "İlgili yazılar bölümü; hedef yayımlandıktan sonra"
+          }
+        ],
+        "coverImageFile": "images/meb-ogretmenlik-bursu-tercih-sartlari-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/meb-ogretmenlik-bursu-tercih-sartlari-a9b5af70a0ac.webp",
+      "coverImageAlt": "Sınıfta kitap ve notlar üzerinden birlikte çalışan öğretmen ve öğrenci",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    }
+  ],
+  "publishedOn": "2026-11-03T12:47:40.958Z"
+}
