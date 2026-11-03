@@ -90,11 +90,16 @@ describe("Coin plan previews (HTTP/Postgres)", () => {
     expect((await get(id)).body).toEqual(first.body);
     expect(complete).toHaveBeenCalledOnce();
     expect(await coins()).toBe(80);
-    expect((await get()).body).toMatchObject({
+    const used = (await get()).body;
+    expect(used).toMatchObject({
       canGenerate: false,
       dailyRemaining: 0,
       latestRequestId: id,
     });
+    // The next Coin draft arrives when this one leaves the rolling 24 hours.
+    const wait = Date.parse(used.nextAvailableAt) - Date.now();
+    expect(wait).toBeGreaterThan(23 * 3_600_000);
+    expect(wait).toBeLessThanOrEqual(24 * 3_600_000);
     await h.set("economy.enabled", false);
     await h.set("ai.plan.coin_enabled", false);
     expect((await get(id)).body).toEqual(first.body);
@@ -136,7 +141,7 @@ describe("Coin plan previews (HTTP/Postgres)", () => {
         [user.id, randomUUID()],
       );
     });
-    expect((await get()).body.dailyRemaining).toBe(1);
+    expect((await get()).body).toMatchObject({ dailyRemaining: 1, nextAvailableAt: null });
     expect((await post()).status).toBe(201);
     await h.tx(async (client) => {
       await client.query(

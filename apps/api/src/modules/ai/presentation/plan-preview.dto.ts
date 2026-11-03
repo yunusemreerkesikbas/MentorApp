@@ -38,6 +38,7 @@ export class PlanPreviewAccessResponseDto {
   @ApiProperty({ type: String, nullable: true }) latestRequestId!:
     | string
     | null;
+  @ApiProperty({ type: String, nullable: true, format: "date-time" }) nextAvailableAt!: string | null;
 }
 export class SavedPlanPreviewResponseDto {
   @ApiProperty({ format: "uuid" }) requestId!: string;

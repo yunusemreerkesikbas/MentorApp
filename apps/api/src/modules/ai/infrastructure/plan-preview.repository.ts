@@ -60,8 +60,16 @@ export class PlanPreviewRepository {
   }
 
   countSince(userId: string, since: Date, tx: DatabaseTx): Promise<number> {
+    return this.usageSince(userId, since, tx).then((row) => row.used);
+  }
+
+  /** Coin uses in the window; the oldest one frees the next slot when it leaves the window. */
+  usageSince(userId: string, since: Date, tx: DatabaseTx): Promise<{ used: number; oldest: Date | null }> {
     return tx
-      .select({ n: sql<number>`count(*)::int` })
+      .select({
+        used: sql<number>`count(*)::int`,
+        oldest: sql<Date | null>`min(${aiPlanPreviews.createdAt})`.mapWith(aiPlanPreviews.createdAt),
+      })
       .from(aiPlanPreviews)
       .where(
         and(
@@ -73,7 +81,7 @@ export class PlanPreviewRepository {
           ),
         ),
       )
-      .then(([row]) => row?.n ?? 0);
+      .then(([row]) => ({ used: row?.used ?? 0, oldest: row?.oldest ?? null }));
   }
 
   async latest(

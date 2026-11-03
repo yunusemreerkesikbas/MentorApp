@@ -103,6 +103,32 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-03 — Plan draft unlock choice: Coin or Premium before the wizard
+
+- **What:** On the Coin path, "Koçla planla" opens the shared "Açma seçimi" sheet
+  (`Modal placement="sheet"` + `UnlockChoice`) before the four-step wizard. Affordable Coin leads
+  ("200 Coin ile hazırla" → inline "320 → 120 Coin", "Onayla ve devam et"), otherwise Premium
+  leads; a short balance shows the bar and "Coin nasıl birikir", a used allowance says the exact
+  time ("Sıradaki taslak hakkın bugün 21:40'ta geliyor."). The wizard's last button then names
+  the price; the old after-wizard Coin dialog (`plan-coin-dialog.tsx`) is gone. The plan offer
+  gained `nextAvailableAt` (oldest Coin preview in the rolling 24 hours + 24 h, null otherwise).
+- **Usage:** `planAccessView(offer, purchases)` (`plan-coin-view.ts`) decides wizard, paywall,
+  sheet choice, retry (AI off or over budget, "Coin harcanmadı") or the server notice. Premium
+  and a locked free user behave as before. A Coin refusal at submit time (`AI_PLAN_PRICE_CHANGED`,
+  `INSUFFICIENT_COIN`, `AI_PLAN_COIN_LIMIT_REACHED`) refreshes the offer and reopens the sheet
+  over the wizard, armed with the new price; confirming resends the same answers. A generated but
+  unpaid draft resumes through the same sheet ("Onayla ve aç").
+- **Gotchas:** A blocked Coin tap now shows the sheet instead of jumping into the saved draft; the
+  draft stays one tap away ("Kayıtlı taslağımı aç" in the sheet and next to the button). Off the
+  Coin path a saved draft still opens straight away. The Turkish time suffix comes from
+  `clockSuffix` (21:40'ta, 09:15'te, 21:00'de); ICU needs `''` for the apostrophe before
+  `{suffix}`. `e2e/plan.spec.ts` never mocks `/coach/plan-previews/access`, so its "Koçla planla"
+  tests were already red before this change; the sheet has its own mocked spec.
+- **Related:** `plan-coin-sheet.tsx`, `plan-coin-view.ts`, `use-plan-coin-flow.ts`,
+  `plan-coach-adaptation-action.tsx`, `plan-preview-access.service.ts`,
+  `plan-preview.repository.ts` (`usageSince`), `e2e/plan-coin-sheet.spec.ts`,
+  `docs/plans/2026-11-03-coin-unlock-choice-design.md` § Round 2.
+
 ### 2026-11-03 — Plan generation and mood adaptation use the panel's Istanbul day
 
 - **What:** Adaptation captures one request instant for its plan snapshot, mood eligibility and

@@ -11,7 +11,7 @@ import { Link } from "@/i18n/navigation";
 /**
  * "Açma seçimi" (DESIGN.md §6.1): how a free user opens a Coin sink, with Coin or Premium.
  * Hairline rows, never nested cards; exactly one ledge, under the row that leads.
- * Pilot: the weekly recap. Plan draft, notebook capacity and streak freeze adopt it next.
+ * Used by the weekly recap and the plan draft. Notebook capacity and streak freeze adopt it next.
  */
 
 export const UNLOCK_GLYPH = "size-[22px] shrink-0";

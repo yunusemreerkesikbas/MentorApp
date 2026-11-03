@@ -33,7 +33,8 @@ export function usePlanCoachGeneration({
   busyRef: RefObject<boolean>;
   onBusy: (busy: boolean) => void;
   onStart: () => void;
-  onError: (error: unknown) => void;
+  /** `paid` is the Coin request that failed, when it was one. */
+  onError: (error: unknown, paid?: PlanCoinQuote) => void;
   onPremium: () => void;
   onReady: (
     preview: CoachPlanAdaptationDto,
@@ -80,7 +81,7 @@ export function usePlanCoachGeneration({
       if (run !== runRef.current) return;
       setStage(null);
       if (isPremiumRequiredError(error)) onPremium();
-      else onError(error);
+      else onError(error, paid);
     } finally {
       if (run === runRef.current) {
         busyRef.current = false;

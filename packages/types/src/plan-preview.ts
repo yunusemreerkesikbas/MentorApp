@@ -13,6 +13,8 @@ export interface PlanPreviewAccessDto {
   message?: string;
   /** Latest completed or recoverable request belonging to this user. */
   latestRequestId: string | null;
+  /** When the Coin allowance is used: the moment its next slot frees. Null otherwise. */
+  nextAvailableAt: string | null;
 }
 
 export interface SavedPlanPreviewDto {

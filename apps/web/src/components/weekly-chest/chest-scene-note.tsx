@@ -9,12 +9,15 @@ import { CoinCelebrationVisual } from "@/components/coin-celebration-visual";
 import { PREMIUM_MASK_PATH } from "@/components/premium/premium-identity-mark";
 import { PuhuImage } from "@/components/puhu-image";
 import { playCoinChime } from "@/lib/coin-sound";
+import { useIsPremium } from "@/lib/subscription-context";
 import { noteLines } from "./weekly-chest-model";
 
 /** "Bu haftanın emeği": the taped paper note with the week's numbers, signed by Puhu. */
 export function ChestSceneNote({ chest, animate }: { chest: WeeklyChestView; animate: boolean }) {
   const t = useTranslations("weeklyChest");
   const lines = chest.summary ? noteLines(chest.summary) : [];
+  // The mask is premium's mark, so only a premium member's Puhu signs with it.
+  const premium = useIsPremium();
 
   return (
     <div
@@ -31,7 +34,7 @@ export function ChestSceneNote({ chest, animate }: { chest: WeeklyChestView; ani
         ))}
       </ul>
       <p className="mt-1 flex items-center justify-end gap-2">
-        <MaskDoodle />
+        {premium ? <MaskDoodle /> : <GlassesDoodle />}
         <span className="wc-hand text-2xl font-bold">{t("note_sign")}</span>
       </p>
     </div>
@@ -91,7 +94,18 @@ export function ChestSceneReward({
   );
 }
 
-/** Puhu's hero mask next to the signature, the same outline as the premium mark (cropped to the mask). */
+/** Puhu's glasses, scribbled next to the signature. */
+function GlassesDoodle() {
+  return (
+    <svg viewBox="0 0 44 18" className="h-4 w-10 text-[var(--wc-ink)]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
+      <circle cx="11" cy="10" r="7" />
+      <circle cx="33" cy="10" r="7" />
+      <path d="M18 9c2-2 6-2 8 0" />
+    </svg>
+  );
+}
+
+/** Premium Puhu signs with the hero mask, the same outline as the premium mark (cropped to the mask). */
 function MaskDoodle() {
   return (
     <svg viewBox="1 5 22 13" className="h-4 w-7 text-[var(--wc-ink)]" aria-hidden focusable="false">
