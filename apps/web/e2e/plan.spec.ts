@@ -431,15 +431,28 @@ test("mood uyarlaması UTC gece yarısından önce İstanbul gününü açar ve 
       fromDate: "2026-11-03", toDate: "2026-11-04" }],
   };
   const api = await mockPlanApi(page, { preview, tasks: [currentTask] });
+  await page.route("**/v1/coaching/today", route => json(route, {
+    greetingName: user.displayName, motivationalLine: "Küçük bir adım yeter.", countdown: null,
+    streak: { currentStreak: 0, longestStreak: 0, freezeTokens: 2, week: [] },
+    tasks: [currentTask], canLightenPlan: true,
+    nextAction: { kind: "START_TASK", title: "Paragraf ile başla", message: "Küçük bir adım yeter.", taskId },
+    sessionPresets: [{ id: "25_5", label: "25 / 5 dk", focusMinutes: 25, breakMinutes: 5 }],
+    mood: { checkinDate: "2026-11-03", mood: 2, code: "COACHING_MOOD_LOW",
+      message: "Bugün küçük bir adımla başlayabilirsin.", struggleNote: null, aiReflection: null },
+    focusGoal: { goalMinutes: null, focusMinutesToday: 0 }, focusingNow: null, weeklyRecapPeriod: null,
+  }));
   await page.route("**/v1/plan-tasks/adapt", async route => {
     api.applyBodies.push(route.request().postDataJSON());
     return json(route, { moved: [{ ...currentTask, taskDate: "2026-11-04" }], added: [] });
   });
+  await page.goto("/panel");
+  const lighten = page.getByRole("link", { name: /Bugünü biraz hafifletmek/ });
+  await expect(lighten).toBeVisible();
   const todayRead = page.waitForRequest(request => {
     const url = new URL(request.url());
     return url.pathname === "/v1/plan-tasks" && url.searchParams.get("date") === "2026-11-03";
   });
-  await page.goto("/plan?coach=adapt&source=mood");
+  await lighten.click();
   await todayRead;
 
   const dialog = page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" });

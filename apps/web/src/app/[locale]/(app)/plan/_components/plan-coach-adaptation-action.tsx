@@ -14,7 +14,9 @@ import type {
   CoachPlanAdaptationBriefDto,
 } from "@mentor/types";
 import type { CoachPlanAdaptationInput } from "@mentor/validation";
+import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
+import { useAppAvailability } from "@/lib/app-availability";
 import { useAuth } from "@/lib/auth-context";
 import { fetchPlanAdaptationBrief } from "@/lib/coach";
 import { useMentorToast } from "@/lib/mentor-toast";
@@ -28,8 +30,9 @@ import { usePlanCoachGeneration } from "./use-plan-coach-generation";
 import { usePlanCoachPreview, readCoachError } from "./use-plan-coach-preview";
 import { fetchCoinPlanBrief, fetchSavedPlanPreview } from "@/lib/plan-previews";
 import { refreshEconomySnapshot } from "@/lib/economy-store";
-import { PlanCoinDialog } from "./plan-coin-dialog";
-import { usePlanCoinFlow } from "./use-plan-coin-flow";
+import { PlanCoinSheet } from "./plan-coin-sheet";
+import { COIN_SHEET_ERRORS, planAccessView } from "./plan-coin-view";
+import { newQuote, usePlanCoinFlow } from "./use-plan-coin-flow";
 
 interface PlanCoachAdaptationActionProps {
   knownWeek: PlanAdaptationKnownWeek;
@@ -53,6 +56,7 @@ export const PlanCoachAdaptationAction = forwardRef<
   const { user } = useAuth();
   const { openPaywall } = usePremiumPaywall();
   const toast = useMentorToast();
+  const purchases = useAppAvailability()?.studentPurchases ?? false;
   const triggerRef = useRef<HTMLSpanElement>(null);
   const wizardLock = useRef(false);
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -67,6 +71,15 @@ export const PlanCoachAdaptationAction = forwardRef<
     wizardLock.current = false;
     setWizardOpen(false);
   }, []);
+  const showError = (error: unknown) =>
+    toast.error({
+      title: tCommon("error_title"),
+      message: readCoachError(error, tCommon("error_unknown")),
+    });
+  const report = (message: string) => {
+    if (wizardLock.current) setWizardError(message);
+    else toast.error({ title: tCommon("error_title"), message });
+  };
   const {
     stage,
     generate: generatePreview,
@@ -84,10 +97,15 @@ export const PlanCoachAdaptationAction = forwardRef<
       closeWizard();
       void openPreview(preview, input);
     },
-    onError: (error) => {
+    onError: (error, paid) => {
       const message = readCoachError(error, tCommon("error_unknown"));
-      if (wizardLock.current) setWizardError(message);
-      else toast.error({ title: tCommon("error_title"), message });
+      if (!(paid && error instanceof ApiClientError && COIN_SHEET_ERRORS.has(error.body.code)))
+        return report(message);
+      // A changed price or a used allowance goes back to the sheet; the wizard keeps its answers underneath.
+      void coin.refresh().then(
+        () => coin.show({ armed: true, error: message, pending: paid.resume ? null : paid }),
+        () => report(message),
+      );
     },
     onSaved: () => {
       void refreshEconomySnapshot();
@@ -102,33 +120,47 @@ export const PlanCoachAdaptationAction = forwardRef<
     returnFocusRef: triggerRef,
     onApplied,
     onPlanChanged,
-    onRegenerate: (input) =>
-      void (
-        input.source === "PLAN" && coin.offer?.mode === "COIN"
-          ? coin.request(input, null)
-          : generatePreview(input)
-      ).catch((error) =>
-        toast.error({
-          title: tCommon("error_title"),
-          message: readCoachError(error, tCommon("error_unknown")),
-        }),
-      ),
+    onRegenerate: (input) => {
+      if (input.source === "PLAN" && coin.offer?.mode === "COIN")
+        void coin.refresh().then(() => coin.show({ pending: { input, progress: null } }), showError);
+      else void generatePreview(input);
+    },
   });
 
   async function readSaved(requestId: string) {
     const saved = await fetchSavedPlanPreview(requestId);
     if (saved.preview) {
+      coin.setSheet(null);
       closeWizard();
       void openPreview(saved.preview, { source: "PLAN" });
     } else if (saved.state === "GENERATED") {
-      coin.setQuote({
-        requestId,
-        cost: saved.cost,
-        input: { source: "PLAN" },
-        progress: null,
-        resume: true,
+      coin.show({
+        resume: { requestId, cost: saved.cost, input: { source: "PLAN" }, progress: null, resume: true },
       });
     }
+  }
+
+  /** `paid` is the Coin price confirmed in the sheet; null on the included path. */
+  function openWizard(paid: number | null) {
+    wizardLock.current = true;
+    coin.setPaid(paid);
+    // The wizard opens at once; the coach's reading lands in it when ready, and a failed read
+    // leaves today's defaults.
+    setBrief(null);
+    setWizardError(null);
+    void (paid === null ? fetchPlanAdaptationBrief() : fetchCoinPlanBrief()).then(setBrief, () => undefined);
+    setWizardOpen(true);
+  }
+
+  function confirmSheet() {
+    const { sheet, offer } = coin;
+    if (!sheet) return;
+    coin.setSheet(null);
+    if (sheet.resume) return void generatePreview(sheet.resume.input, null, sheet.resume);
+    if (offer?.cost == null) return;
+    if (!sheet.pending) return openWizard(offer.cost);
+    coin.setPaid(offer.cost);
+    void generatePreview(sheet.pending.input, sheet.pending.progress, newQuote(sheet.pending, offer.cost));
   }
 
   async function open(input: CoachPlanAdaptationInput) {
@@ -149,25 +181,13 @@ export const PlanCoachAdaptationAction = forwardRef<
       }
 
       const offer = await coin.refresh();
-      if (!offer.canGenerate) {
-        if (offer.latestRequestId) await readSaved(offer.latestRequestId);
-        else if (offer.reason === "PAYMENT_PREMIUM_REQUIRED")
-          openPaywall({ sourceFeature: "plan.ai" });
-        else coin.setBlocked(offer);
-        return;
-      }
-
-      wizardLock.current = true;
-      // The wizard opens at once; the coach's reading lands in it when ready, and a failed read
-      // leaves today's defaults.
-      setBrief(null);
-      setWizardError(null);
-      void (
-        offer.mode === "COIN"
-          ? fetchCoinPlanBrief()
-          : fetchPlanAdaptationBrief()
-      ).then(setBrief, () => undefined);
-      setWizardOpen(true);
+      // Off the Coin path a draft already paid for still opens; on it the sheet shows the way.
+      if (offer.mode !== "COIN" && !offer.canGenerate && offer.latestRequestId)
+        return await readSaved(offer.latestRequestId);
+      const view = planAccessView(offer, purchases);
+      if (view.kind === "paywall") openPaywall({ sourceFeature: "plan.ai" });
+      else if (view.kind === "wizard") openWizard(null);
+      else coin.show();
     } catch (error) {
       toast.error({
         title: tCommon("error_title"),
@@ -184,6 +204,11 @@ export const PlanCoachAdaptationAction = forwardRef<
     open: (input) => void open(input),
   }));
 
+  const openSaved = () => {
+    const id = coin.offer?.latestRequestId;
+    if (id) void readSaved(id).catch(showError);
+  };
+
   return (
     <>
       <span ref={triggerRef} className="contents">
@@ -199,18 +224,7 @@ export const PlanCoachAdaptationAction = forwardRef<
         </Button>
       </span>
       {coin.offer?.latestRequestId ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() =>
-            void readSaved(coin.offer!.latestRequestId!).catch((error) =>
-              toast.error({
-                title: tCommon("error_title"),
-                message: readCoachError(error, tCommon("error_unknown")),
-              }),
-            )
-          }
-        >
+        <Button variant="ghost" size="sm" onClick={openSaved}>
           {t("coin_preview.saved")}
         </Button>
       ) : null}
@@ -224,48 +238,33 @@ export const PlanCoachAdaptationAction = forwardRef<
             dailyFocusGoalMinutes: user?.dailyFocusGoalMinutes ?? null,
           }}
           submitError={wizardError}
+          submitLabel={coin.paid === null ? undefined : t("coin_preview.coin", { cost: coin.paid })}
           onClose={closeWizard}
           onComplete={(input, progress) => {
             if (busyRef.current) return;
             // The wizard stays open underneath, so a failed request finds the answers still there.
-            if (coin.offer?.mode === "COIN")
-              void coin
-                .request(input, progress)
-                .catch((error) =>
-                  setWizardError(
-                    readCoachError(error, tCommon("error_unknown")),
-                  ),
-                );
-            else void generatePreview(input, progress);
+            void generatePreview(input, progress,
+              coin.paid === null ? undefined : newQuote({ input, progress }, coin.paid));
           }}
         />
       ) : null}
-      {coin.quote || coin.blocked ? (
-        <PlanCoinDialog
-          cost={coin.quote?.cost ?? coin.blocked?.cost ?? null}
-          message={coin.blocked?.message}
-          canConfirm={coin.quote !== null}
-          onClose={() => {
-            coin.setQuote(null);
-            coin.setBlocked(null);
+      {coin.sheet && coin.offer ? (
+        <PlanCoinSheet
+          offer={coin.offer}
+          sheet={coin.sheet}
+          purchases={purchases}
+          busy={busy}
+          onArm={() => coin.setSheet((s) => s && { ...s, armed: true, error: null })}
+          onCancel={() => coin.setSheet((s) => s && !s.resume ? { ...s, armed: false } : null)}
+          onConfirm={confirmSheet}
+          onPremium={() => {
+            coin.setSheet(null);
+            closeWizard();
+            openPaywall({ sourceFeature: "plan.ai" });
           }}
-          onPremium={
-            coin.blocked?.mode === "COIN" &&
-            (coin.blocked.reason === "INSUFFICIENT_COIN" ||
-              coin.blocked.reason === "AI_PLAN_COIN_LIMIT_REACHED")
-              ? () => {
-                  coin.setBlocked(null);
-                  closeWizard();
-                  openPaywall({ sourceFeature: "plan.ai" });
-                }
-              : undefined
-          }
-          onConfirm={() => {
-            const quote = coin.quote;
-            if (!quote) return;
-            coin.setQuote(null);
-            void generatePreview(quote.input, quote.progress, quote);
-          }}
+          onRetry={() => void open({ source: "PLAN" })}
+          onSaved={openSaved}
+          onClose={() => coin.setSheet(null)}
         />
       ) : null}
       {stage ? (

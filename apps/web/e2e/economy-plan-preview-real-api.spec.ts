@@ -36,20 +36,24 @@ test.afterEach(async ({ request }) => {
   );
 });
 
+const sheet = (page: Page) =>
+  page.getByRole("dialog", { name: "Planını koçla hazırla", exact: true });
+
+/** Choice first: confirm the Coin price in the sheet, then walk the wizard to its priced last button. */
 async function wizard(page: Page) {
   await page.getByRole("button", { name: "Koçla planla", exact: true }).click();
+  await sheet(page)
+    .getByRole("button", { name: "20 Coin ile hazırla", exact: true })
+    .click();
+  await sheet(page)
+    .getByRole("button", { name: "Onayla ve devam et", exact: true })
+    .click();
   for (let i = 0; i < 3; i++)
     await page
       .getByRole("button", { name: "Şimdilik geç", exact: true })
       .click();
-  await page
-    .getByRole("button", { name: "Önizlemeyi hazırla", exact: true })
-    .click();
   await expect(
-    page.getByRole("dialog", {
-      name: "Planını Coin hakkınla hazırla",
-      exact: true,
-    }),
+    page.getByRole("button", { name: "20 Coin ile hazırla", exact: true }),
   ).toBeVisible();
 }
 
@@ -73,7 +77,7 @@ test("Coin plan preview: earned 20 Coin funds one saved preview; reread/apply ne
       r.request().method() === "POST",
   );
   await page
-    .getByRole("button", { name: "20 Coin ile taslak hazırla", exact: true })
+    .getByRole("button", { name: "20 Coin ile hazırla", exact: true })
     .click();
   const result = await generated;
   expect(result.status()).toBe(201);
@@ -91,7 +95,11 @@ test("Coin plan preview: earned 20 Coin funds one saved preview; reread/apply ne
   ).toHaveCount(0);
   await page.screenshot({ path: info.outputPath("paid-plan-preview.png") });
   await page.reload();
+  // Today's Coin draft is used: the sheet says so and keeps the saved draft one tap away.
   await page.getByRole("button", { name: "Koçla planla", exact: true }).click();
+  await sheet(page)
+    .getByRole("button", { name: "Kayıtlı taslağımı aç", exact: true })
+    .click();
   await expect(
     page.getByRole("button", { name: "Seçilenleri uygula", exact: true }),
   ).toBeVisible();
@@ -136,7 +144,7 @@ test("Coin plan preview: changed admin quote requires fresh confirmation", async
       r.request().method() === "POST",
   );
   await page
-    .getByRole("button", { name: "20 Coin ile taslak hazırla", exact: true })
+    .getByRole("button", { name: "20 Coin ile hazırla", exact: true })
     .click();
   expect((await rejected).status()).toBe(409);
   await expect(
@@ -146,16 +154,17 @@ test("Coin plan preview: changed admin quote requires fresh confirmation", async
     ),
   ).toBeVisible();
   expect((await learner.balance()).coinConfirmed).toBe(20);
-  await page
-    .getByRole("button", { name: "Önizlemeyi hazırla", exact: true })
-    .click();
+  // The sheet comes back armed with the new price; confirming sends the same answers again.
   const generated = page.waitForResponse(
     (r) =>
       r.url().endsWith("/coach/plan-previews") &&
       r.request().method() === "POST",
   );
-  await page
-    .getByRole("button", { name: "10 Coin ile taslak hazırla", exact: true })
+  await expect(
+    sheet(page).getByRole("group", { name: "10 Coin ile yeni taslak" }),
+  ).toBeVisible();
+  await sheet(page)
+    .getByRole("button", { name: "Onayla ve devam et", exact: true })
     .click();
   expect((await generated).status()).toBe(201);
   await expect(

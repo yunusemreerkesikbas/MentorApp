@@ -50,11 +50,11 @@ export class PlanPreviewAccessService {
       this.economy.getAdminBalance(user.id),
       this.budget.hasCapacity(),
       this.previews.withUserLock(user.id, async (tx) => ({
-        used: await this.previews.countSince(
+        ...(await this.previews.usageSince(
           user.id,
           new Date(Date.now() - PLAN_PREVIEW_WINDOW_MS),
           tx,
-        ),
+        )),
         latest: await this.previews.latest(user.id, tx),
       })),
       this.config.get("ai.plan_draft.daily_limit"),
@@ -96,6 +96,10 @@ export class PlanPreviewAccessService {
       dailyRemaining: remaining,
       coinConfirmed: balance.coinConfirmed,
       latestRequestId,
+      nextAvailableAt:
+        mode === "COIN" && history.used >= limit && history.oldest
+          ? new Date(history.oldest.getTime() + PLAN_PREVIEW_WINDOW_MS).toISOString()
+          : null,
       ...(reason
         ? {
             reason,

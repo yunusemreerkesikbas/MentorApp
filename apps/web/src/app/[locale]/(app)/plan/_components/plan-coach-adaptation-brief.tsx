@@ -44,6 +44,7 @@ export function PlanCoachAdaptationBrief({
   brief,
   profile,
   submitError,
+  submitLabel,
   onComplete,
   onClose,
 }: {
@@ -53,6 +54,8 @@ export function PlanCoachAdaptationBrief({
   profile: PlanAdaptationBriefProfile;
   /** Why the last preview did not arrive. Said above the button: a toast would sit under this dialog. */
   submitError?: string | null;
+  /** The last button on the Coin path names the price confirmed before the wizard. */
+  submitLabel?: string;
   /** `progress` is this wizard's bar as it stands, for the waiting scene to carry on from. */
   onComplete: (
     input: Extract<CoachPlanAdaptationInput, { source: "PLAN" }>,
@@ -289,7 +292,7 @@ export function PlanCoachAdaptationBrief({
                 disabled={step === "subjects" && !taxonomy.loaded}
               >
                 {step === "note"
-                  ? t("coach_adaptation_generate")
+                  ? (submitLabel ?? t("coach_adaptation_generate"))
                   : t("coach_adaptation_continue")}
               </Button>
             </PlayFooter>

@@ -81,6 +81,38 @@ açalım?", "Her hafta yeni bir hikâye!", "170 Coin daha, hikâye senin! Çalı
 harcanmadı." (`docs/copy/voice.md` § Açma seçimi). Say what lands: "250 Coin", never "ödül".
 Dates as a range ("19–25 Ekim", en dash allowed in numeric ranges).
 
+## Round 2: plan draft ("Koçla planla", 2026-11-03)
+
+Today the price shows only after the four-step wizard (days, minutes, subjects, note), the
+balance and the 24-hour allowance never show, and a short balance gets a plain dialog with the
+server text ("Görevlerden hak kazanabilir…") and one Premium button. Owner decisions:
+
+1. **Choice first.** Tapping "Koçla planla" on the Coin path opens the choice sheet (`Modal`
+   from `@mentor/ui` + `UnlockChoice`) before the wizard. Confirming opens the wizard; no second
+   dialog at the end. Coin is still spent only when the draft is saved. If the price changes
+   while the student answers, the server refuses with `AI_PLAN_PRICE_CHANGED` and nothing is
+   spent; the sheet reopens with the new price.
+2. **Exact time when the allowance is used:** the plan offer gains `nextAvailableAt` (oldest
+   Coin preview in the rolling 24 hours + 24 h), like the recap offer.
+3. **The wizard's last button reminds the price** on the Coin path: "200 Coin ile hazırla".
+   Premium keeps "Önizlemeyi hazırla".
+
+| Offer | What the student sees |
+|---|---|
+| `INCLUDED` (Premium) | Straight to the wizard, as today |
+| `NONE` / `PAYMENT_PREMIUM_REQUIRED` | The paywall, as today |
+| `COIN`, can generate | Sheet "Planını koçla hazırla": Coin row leads ("200 Coin ile yeni taslak", "Bakiyen 320", one pip), ledge "200 Coin ile hazırla" → inline "320 → 120 Coin", "Onayla ve devam et" → wizard |
+| `INSUFFICIENT_COIN` | Premium leads (trial ledge when eligible); Coin row 80/200 bar, "120 Coin daha, taslak senin!", "Coin nasıl birikir" |
+| `AI_PLAN_COIN_LIMIT_REACHED` | Premium leads; Coin row "Bugünkü taslağını hazırladın, süper!", "Sıradaki taslak hakkın bugün 21:40'ta geliyor." |
+| `AI_DISABLED`, `AI_BUDGET_EXCEEDED` | "Yeniden dene", "Coin harcanmadı." |
+| `AI_RATE_LIMITED` (shared daily cap) | The server message, no ledge |
+
+A saved draft stays reachable as "Kayıtlı taslağımı aç" (a text link in the sheet and the
+existing button). Default, open to change: a blocked Coin tap now shows the sheet instead of
+jumping straight into the saved draft, so a short balance always shows how Coin adds up.
+
+Status: implemented 2026-11-03 (`plan-coin-sheet.tsx`, `plan-coin-view.ts`, `e2e/plan-coin-sheet.spec.ts`). A Coin refusal at submit time reopens the sheet over the wizard, armed with the new price.
+
 ## Out of scope
 
 Price and allowance changes (250 Coin, 2 per 30 days stay: a fully active free week brings

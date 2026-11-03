@@ -326,6 +326,8 @@ export interface PlanPreviewAccessResponseDto {
   message?: string;
   /** @nullable */
   latestRequestId: string | null;
+  /** @nullable */
+  nextAvailableAt: string | null;
 }
 
 export type CoinPlanInputDtoSource = typeof CoinPlanInputDtoSource[keyof typeof CoinPlanInputDtoSource];

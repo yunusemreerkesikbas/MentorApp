@@ -12344,6 +12344,11 @@
           "latestRequestId": {
             "type": "string",
             "nullable": true
+          },
+          "nextAvailableAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
           }
         },
         "required": [
@@ -12353,7 +12358,8 @@
           "dailyLimit",
           "dailyRemaining",
           "coinConfirmed",
-          "latestRequestId"
+          "latestRequestId",
+          "nextAvailableAt"
         ]
       },
       "CoinPlanInputDto": {
