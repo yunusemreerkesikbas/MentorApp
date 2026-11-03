@@ -1,0 +1,208 @@
+{
+  "status": "PUBLISHED_LOCAL",
+  "language": "tr",
+  "preparedOn": "2026-11-03",
+  "sourceYear": 2026,
+  "yearStrategy": "YEARLESS_TITLES_WITH_EXPLICIT_2026_SOURCE_SCOPE",
+  "articles": [
+    {
+      "slug": "acik-lise-yks-basvuru-sartlari",
+      "title": "Açık lise YKS başvuru şartları: Dönem ve kayıt bilgisi",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "acik-lise-yks-basvuru-sartlari.md",
+      "metaTitle": "Açık Lise YKS Başvuru Şartları ve Dönem Koşulu | PuhuKoç",
+      "metaDescription": "Açık lise YKS başvurusunda kayıt tarihi, toplam dönem ve eğitim bilgisi koşullarını incele. Açıklamalar ÖSYM'nin 2026 kılavuzu ve SSS belgesine dayanır.",
+      "source": "ÖSYM 2026 YKS Kılavuzu ve Sıkça Sorulan Sorular",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/basvuru_kilavuz06022026.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-30T08:49:00.000Z",
+      "editorial": {
+        "priority": 8,
+        "primaryKeyword": "açık lise YKS başvuru şartları",
+        "secondaryKeywords": [
+          "açık lise YKS dönem şartı",
+          "açık lise öğrencisi YKS başvurusu",
+          "açık lise eğitim bilgisi"
+        ],
+        "sourceRefs": [
+          "B2-ACIKLISE"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-basvurusu-nasil-yapilir",
+            "anchor": "YKS başvuru adımları",
+            "placement": "Başvuru hazırlığı bölümünün sonu"
+          },
+          {
+            "slug": "yks-egitim-bilgisi-guncelleme-onaylama",
+            "anchor": "eğitim bilgisi güncelleme ve onaylama",
+            "placement": "Eğitim kaydı düzeltme bölümünün sonu"
+          }
+        ],
+        "coverImageFile": "images/acik-lise-yks-basvuru-sartlari-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/acik-lise-yks-basvuru-sartlari-4441122ce840.webp",
+      "coverImageAlt": "Dizüstü bilgisayarın başında oturan bir kadın",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "yks-egitim-bilgisi-guncelleme-onaylama",
+      "title": "YKS eğitim bilgisi güncelleme ve onaylama rehberi",
+      "family": "YKS",
+      "category": "APPLICATION",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-egitim-bilgisi-guncelleme-onaylama.md",
+      "metaTitle": "YKS Eğitim Bilgisi Onayı ve Güncelleme | PuhuKoç",
+      "metaDescription": "YKS eğitim bilgisi onayı, diploma notu düzeltme ve birden fazla diploma seçiminde izlenecek yolu öğren. Rehber ÖSYM'nin 2026 belgelerini esas alır.",
+      "source": "ÖSYM 2026 YKS Kılavuzu ve Sıkça Sorulan Sorular",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/basvuru_kilavuz06022026.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-23T08:56:00.000Z",
+      "editorial": {
+        "priority": 9,
+        "primaryKeyword": "YKS eğitim bilgisi onaylama",
+        "secondaryKeywords": [
+          "YKS eğitim bilgisi güncelleme",
+          "AİS diploma notu düzeltme",
+          "YKS birden fazla diploma"
+        ],
+        "sourceRefs": [
+          "B2-EGITIM"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "obp-hesaplama-kirik-obp",
+            "anchor": "diploma notundan OBP hesaplama",
+            "placement": "Eğitim bilgisi onayının amacı bölümünün sonu"
+          },
+          {
+            "slug": "meslek-lisesi-yks-ek-puan",
+            "anchor": "alan bilgisiyle bağlantılı ek puan koşulları",
+            "placement": "Birden fazla diploma bölümünün sonu"
+          },
+          {
+            "slug": "acik-lise-yks-basvuru-sartlari",
+            "anchor": "açık lise adaylarının kayıt koşulları",
+            "placement": "Kaynak sistemler bölümünün sonu"
+          }
+        ],
+        "coverImageFile": "images/yks-egitim-bilgisi-guncelleme-onaylama-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/yks-egitim-bilgisi-guncelleme-onaylama-0201d690e3fb.webp",
+      "coverImageAlt": "Dizüstü bilgisayarın yanında kâğıt belgeleri inceleyen eller",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "yks-cevap-kagidi-kitapcik-kodlama",
+      "title": "YKS cevap kâğıdı nasıl doldurulur? Kitapçık kodlama",
+      "family": "YKS",
+      "category": "EXAM_PROCESS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "yks-cevap-kagidi-kitapcik-kodlama.md",
+      "metaTitle": "YKS Cevap Kâğıdı ve Kitapçık Kodlama | PuhuKoç",
+      "metaDescription": "YKS cevap kâğıdında kitapçık numarası, test alanı, cevap değiştirme ve evrak teslim kurallarını ÖSYM'nin 2026 kılavuzuna göre incele.",
+      "source": "ÖSYM 2026 YKS Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/basvuru_kilavuz06022026.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-31T09:03:00.000Z",
+      "editorial": {
+        "priority": 10,
+        "primaryKeyword": "YKS cevap kâğıdı nasıl doldurulur",
+        "secondaryKeywords": [
+          "YKS kitapçık numarası kodlama",
+          "YKS optik form",
+          "YKS cevap değiştirme"
+        ],
+        "sourceRefs": [
+          "B2-EVRAK"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "yks-sinav-gunu-gerekli-belgeler",
+            "anchor": "sınav günü gerekli belgeler",
+            "placement": "İlk evrak kontrolü bölümünün sonu"
+          },
+          {
+            "slug": "yks-engelli-aday-basvurusu-e-rapor",
+            "anchor": "okuyucu ve işaretleyici uygulamaları",
+            "placement": "Kaynak kapsamı notunun sonrası"
+          }
+        ],
+        "coverImageFile": "images/yks-cevap-kagidi-kitapcik-kodlama-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/yks-cevap-kagidi-kitapcik-kodlama-227417b9dffe.webp",
+      "coverImageAlt": "Kâğıttaki işaretleri silgiyle temizleyen eller",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "meslek-lisesi-yks-ek-puan",
+      "title": "Meslek lisesi YKS ek puanı: Koşullar ve örnek hesap",
+      "family": "YKS",
+      "category": "GENERAL",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "meslek-lisesi-yks-ek-puan.md",
+      "metaTitle": "Meslek Lisesi YKS Ek Puanı Nasıl Hesaplanır? | PuhuKoç",
+      "metaDescription": "Meslek lisesi YKS ek puanında alan-program eşleşmesini, ilgili tabloları ve örnek hesabı incele. Rehber ÖSYM'nin 2026 belgelerine dayanır.",
+      "source": "ÖSYM 2026 YKS Kılavuzu ve Sıkça Sorulan Sorular",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/basvuru_kilavuz06022026.pdf",
+      "authorName": "PuhuKoç",
+      "authorTitle": null,
+      "authorBio": null,
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-24T09:10:00.000Z",
+      "editorial": {
+        "priority": 11,
+        "primaryKeyword": "meslek lisesi YKS ek puan",
+        "secondaryKeywords": [
+          "meslek lisesi ek puan hesaplama",
+          "YKS Tablo 3C",
+          "ön lisans ek puan koşulları"
+        ],
+        "sourceRefs": [
+          "B2-EKPUAN"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "obp-hesaplama-kirik-obp",
+            "anchor": "OBP ve katsayı düşüşü",
+            "placement": "Örnek hesap tablosunun sonrası"
+          },
+          {
+            "slug": "yks-egitim-bilgisi-guncelleme-onaylama",
+            "anchor": "okul ve alan bilgisinin düzeltilmesi",
+            "placement": "Tercih öncesi inceleme bölümünün sonu"
+          },
+          {
+            "slug": "yks-tyt-ayt-ydt-farklari",
+            "anchor": "puan türüne göre oturum seçimi",
+            "placement": "Sınavsız geçiş açıklamasının sonu"
+          }
+        ],
+        "coverImageFile": "images/meslek-lisesi-yks-ek-puan-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/yks/meslek-lisesi-yks-ek-puan-23bf94bfe613.webp",
+      "coverImageAlt": "Ahşap masada hesap makinesi, kalem ve sayısal tablolar",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    }
+  ],
+  "publishedOn": "2026-11-03T12:47:40.958Z"
+}

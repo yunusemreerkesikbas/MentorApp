@@ -6,11 +6,17 @@ Metinler sakin, açıklayıcı eğitmen diliyle ve öğrenciye “sen” diye se
 
 ## Kapak görselleri
 
+İkinci ve üçüncü paketteki toplam 16 yazıya da farklı Pexels kapakları eklendi ve bu yazılar yerel geliştirme ortamında yayımlandı. Böylece toplam 23 YKS yazısı kapaklarıyla yerelde yayında. [İkinci paket kapakları](./batch-02/images/README.md) · [Üçüncü paket kapakları](./batch-03/images/README.md) · [Toplu ön izleme](./draft-cover-preview.jpg). Yayın ve doğrulama kayıtları her paketin klasöründedir.
+
 Yedi yazıya Pexels ve Unsplash'tan seçilen farklı temsili kapak fotoğrafları eklendi. Görseller 1200 × 630 WebP olarak hazırlandı; toplamları yaklaşık 272 KB. Türkçe alternatif metinleri, fotoğrafçı adları ve lisans bağlantıları kaydedildi. Fotoğraflar blog kartında, yazı başında ve paylaşım ön izlemesinde mevcut kapak alanından kullanılır. Ayrıntılı kaynaklar [media-sources.json](./media-sources.json), görseller ve kullanım notları [images/README.md](./images/README.md), yerel güncelleme kaydı [media-publication-local.json](./media-publication-local.json) içindedir.
 
 Yazı kayıtları yalnız yerel veritabanında güncellendi. Görseller, bu yerel uygulamanın zaten kullandığı geliştirme medya alanına (`mentor-public`) eklendi; ayrı canlı medya alanlarına aktarılmadı. İlk yayın kaydı tarihsel olarak korunur; görsel eklendikten sonraki gövde özetleri medya güncelleme kaydındadır.
 
 ## Yazılar
+
+Bu ilk pakete ek olarak [ikinci pakette dört yeni yazı](./batch-02/README.md) hazırlandı ve yerelde yayımlandı: açık lise başvuru koşulları, eğitim bilgisi onayı, cevap kâğıdı kodlama ve meslek lisesi ek puanı. İkinci paketin SEO alanları ve kaynak eşleştirmesi kendi klasöründedir.
+
+Programlar ve kontenjanlar kılavuzundan [üçüncü pakette 12 yeni yazı](./batch-03/README.md) hazırlandı: tercih listesi, tablo okuma, başarı sırası koşulları, özel kontenjanlar, burs, hazırlık, M.T.O.K., kayıt ve özel yetenek başvuruları. Bu paket de kendi SEO alanlarını ve sayfa/koşul eşleştirmesini içerir; kapaklarıyla yerelde yayımlandı.
 
 | Öncelik | Başlık | Ana arama ifadesi | Arama ihtiyacı |
 | --- | --- | --- | --- |

@@ -70,8 +70,19 @@ professionals, so it stays plain and gets a single `!`, on the closing title.
   hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı: …" (2026-10-28, user's call; it also
   carries the search phrase). "Yapay zekâ destekli" describes the product, not a free AI coach.
 - **Premium is said where AI is shown.** The coach demo ends with "Bu bir örnek cevap. Yapay zekâ
-  koç Premium'da." and the FAQ answers "ücretsiz mi?". Never promise a trial here: the web purchase
+  koç Premium'da." and the FAQ answers "ücretsiz mi?". The Plan note (window 4, Puhu's magic loop) carries no
+  Premium line: the owner's call, 2026-11-03. Never promise a trial here: the web purchase
   channel is flag-gated.
+- **The Premium sheet is the one place that offers the trial.** (2026-11-03, owner's call.) It
+  renders only while the AI coach and student purchases are on, so "7 gün ücretsiz dene" is
+  backed whenever it shows. Puhu title ("Sınav yolunda süper gücün hazır!", the paywall's
+  headline), then plain rows that name live Premium features, a plain ledge and "İstediğin an
+  iptal edersin." No price (the plan prices are not final), no FOMO, no free-versus-Premium put-down.
+- **Coin on the landing: what lands, never AI.** (2026-11-03, owner's call.) The quests card says
+  how Coin comes in ("Bugün çalış" +10, five active days +100). The Gece Yolculuğu Coin tab
+  names three things it opens: "Seriyi dondur", "+1 defter", "Haftalık hikâye", with their prices as
+  fixed copy of the config defaults. Coach chat and "Koçla planla" stay out of that list, so
+  "Yapay zekâ koç Premium'da" stays true. No line about Premium earning XP instead of Coin.
 - **Stay companion:**
   - the coach demo's canned replies (they show the coach's voice);
   - the FAQ answers about data, KVKK, payment and what the AI does not do;

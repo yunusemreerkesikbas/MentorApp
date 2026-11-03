@@ -1,0 +1,78 @@
+{
+  "articles": [
+    {
+      "slug": "yks-tercih-listesi-nasil-hazirlanir",
+      "words": 558,
+      "titleCharacters": 46,
+      "descriptionCharacters": 149
+    },
+    {
+      "slug": "yks-tercih-kilavuzu-tablo-okuma",
+      "words": 627,
+      "titleCharacters": 52,
+      "descriptionCharacters": 145
+    },
+    {
+      "slug": "yks-basari-sirasi-sarti-olan-bolumler",
+      "words": 578,
+      "titleCharacters": 47,
+      "descriptionCharacters": 150
+    },
+    {
+      "slug": "yks-okul-birincisi-kontenjani",
+      "words": 515,
+      "titleCharacters": 52,
+      "descriptionCharacters": 151
+    },
+    {
+      "slug": "yks-34-yas-ustu-kadin-kontenjani",
+      "words": 519,
+      "titleCharacters": 51,
+      "descriptionCharacters": 152
+    },
+    {
+      "slug": "yks-burslu-indirimli-program-farklari",
+      "words": 547,
+      "titleCharacters": 51,
+      "descriptionCharacters": 148
+    },
+    {
+      "slug": "universite-zorunlu-hazirlik-ogretim-dili",
+      "words": 537,
+      "titleCharacters": 52,
+      "descriptionCharacters": 147
+    },
+    {
+      "slug": "mtok-nedir-kimler-tercih-edebilir",
+      "words": 521,
+      "titleCharacters": 49,
+      "descriptionCharacters": 140
+    },
+    {
+      "slug": "universite-kayit-e-kayit-gerekli-belgeler",
+      "words": 578,
+      "titleCharacters": 48,
+      "descriptionCharacters": 144
+    },
+    {
+      "slug": "ozel-yetenek-sinavi-ozyes-basvuru-farki",
+      "words": 559,
+      "titleCharacters": 48,
+      "descriptionCharacters": 136
+    },
+    {
+      "slug": "yks-sehit-gazi-yakini-kontenjani",
+      "words": 507,
+      "titleCharacters": 48,
+      "descriptionCharacters": 142
+    },
+    {
+      "slug": "meb-ogretmenlik-bursu-tercih-sartlari",
+      "words": 525,
+      "titleCharacters": 50,
+      "descriptionCharacters": 142
+    }
+  ],
+  "totalWords": 6571,
+  "checks": "Schema, files, uniqueness, null trust fields, scope, references, related targets, copy markers, examples and source comparison passed. No database operations."
+}

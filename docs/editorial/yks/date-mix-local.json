@@ -1,0 +1,147 @@
+{
+  "environment": "LOCAL",
+  "purpose": "LOCAL_DEMO_DISPLAY_DATES",
+  "changedAt": "2026-11-03T13:11:45.249Z",
+  "range": "2026-10-20 through 2026-11-03, Europe/Istanbul",
+  "note": "User-requested local display-date distribution. Initial publication receipts retain actual operation timestamps. Source verification dates were preserved.",
+  "articles": [
+    {
+      "slug": "yks-tyt-ayt-ydt-farklari",
+      "previousPublishedAt": "2026-11-02T23:10:08.985Z",
+      "publishedAt": "2026-11-03T08:00:00.000Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "yks-basvurusu-nasil-yapilir",
+      "previousPublishedAt": "2026-11-02T23:10:08.985Z",
+      "publishedAt": "2026-10-27T08:07:00.000Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "yks-aday-basvuru-formu-sinav-merkezi",
+      "previousPublishedAt": "2026-11-02T23:10:08.985Z",
+      "publishedAt": "2026-10-20T08:14:00.000Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "yks-sinav-gunu-gerekli-belgeler",
+      "previousPublishedAt": "2026-11-02T23:10:08.985Z",
+      "publishedAt": "2026-10-28T08:21:00.000Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "yks-net-hesaplama-puan-kosullari",
+      "previousPublishedAt": "2026-11-02T23:10:08.985Z",
+      "publishedAt": "2026-10-21T08:28:00.000Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "obp-hesaplama-kirik-obp",
+      "previousPublishedAt": "2026-11-02T23:10:08.985Z",
+      "publishedAt": "2026-10-29T08:35:00.000Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "yks-engelli-aday-basvurusu-e-rapor",
+      "previousPublishedAt": "2026-11-02T23:10:08.985Z",
+      "publishedAt": "2026-10-22T08:42:00.000Z",
+      "verifiedAt": "2026-11-02T23:10:08.985Z"
+    },
+    {
+      "slug": "acik-lise-yks-basvuru-sartlari",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-30T08:49:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "yks-egitim-bilgisi-guncelleme-onaylama",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-23T08:56:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "yks-cevap-kagidi-kitapcik-kodlama",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-31T09:03:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "meslek-lisesi-yks-ek-puan",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-24T09:10:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "yks-tercih-listesi-nasil-hazirlanir",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-11-01T09:17:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "yks-tercih-kilavuzu-tablo-okuma",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-25T09:24:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "yks-basari-sirasi-sarti-olan-bolumler",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-11-02T09:31:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "yks-okul-birincisi-kontenjani",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-26T09:38:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "yks-34-yas-ustu-kadin-kontenjani",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-11-03T09:45:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "yks-burslu-indirimli-program-farklari",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-27T09:52:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "universite-zorunlu-hazirlik-ogretim-dili",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-20T09:59:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "mtok-nedir-kimler-tercih-edebilir",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-28T10:06:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "universite-kayit-e-kayit-gerekli-belgeler",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-21T10:13:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "ozel-yetenek-sinavi-ozyes-basvuru-farki",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-29T10:20:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "yks-sehit-gazi-yakini-kontenjani",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-22T10:27:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    },
+    {
+      "slug": "meb-ogretmenlik-bursu-tercih-sartlari",
+      "previousPublishedAt": "2026-11-03T12:47:40.958Z",
+      "publishedAt": "2026-10-30T10:34:00.000Z",
+      "verifiedAt": "2026-11-03T12:47:40.958Z"
+    }
+  ]
+}

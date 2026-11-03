@@ -481,3 +481,12 @@ remain unchanged.
 inferring permission from contact ownership. `GET /v1/subscription` adds
 `trialEligibility.phoneVerificationRequired` for current trial disclosure. Existing routes, request
 bodies and machine error codes remain compatible; SMS availability never implies a requirement.
+
+### 2026-11-03: Shared exam catalogue, ALES and DGS
+
+Existing profile `examType`, content family queries, geo search and announcement audience inputs
+accept `ALES` and `DGS` alongside existing codes. Valid values derive from `@mentor/types`
+`EXAM_TYPES`; no new catalogue endpoint or admin management surface. Exam variants remain
+KPSS-only for the prepared group. `GET /v1/admin/metrics` adds `users.byExamType.ales` and `.dgs`
+while preserving existing keys. Families without target datasets return only cities from geo
+search, never another family's programs. OpenAPI and the generated client enums are refreshed.

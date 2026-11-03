@@ -1,0 +1,232 @@
+{
+  "environment": "LOCAL",
+  "database": "localhost:5433/mentor",
+  "publishedAt": "2026-11-03T12:47:40.958Z",
+  "method": "ContentService.upsertArticle + publishArticle; one outer transaction for all sixteen",
+  "operator": "Automated execution of user local-publication request",
+  "author": "PuhuKoç (organisation)",
+  "sourceVerification": "Automated source/page comparison documented in source-map.md; no independent human review claimed",
+  "events": [
+    {
+      "name": "content.article.published",
+      "slug": "yks-tercih-listesi-nasil-hazirlanir"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-tercih-kilavuzu-tablo-okuma"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-basari-sirasi-sarti-olan-bolumler"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-okul-birincisi-kontenjani"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-34-yas-ustu-kadin-kontenjani"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-burslu-indirimli-program-farklari"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "universite-zorunlu-hazirlik-ogretim-dili"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "mtok-nedir-kimler-tercih-edebilir"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "universite-kayit-e-kayit-gerekli-belgeler"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "ozel-yetenek-sinavi-ozyes-basvuru-farki"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "yks-sehit-gazi-yakini-kontenjani"
+    },
+    {
+      "name": "content.article.published",
+      "slug": "meb-ogretmenlik-bursu-tercih-sartlari"
+    }
+  ],
+  "embeddingListenerInvoked": false,
+  "existingSevenPreserved": true,
+  "coversVerifiedByHash": true,
+  "articles": [
+    {
+      "slug": "yks-tercih-listesi-nasil-hazirlanir",
+      "bodySha256": "943ca3daa13c988502fc4355f1d78596c8002e34ee94f132e3baf9c72c0c66d8",
+      "title": "YKS tercih listesi nasıl hazırlanır? Sıralama ve AİS adımları",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/yks-tercih-listesi-nasil-hazirlanir-4a89b038cfdf.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "YKS Tercih Listesi Nasıl Hazırlanır? | PuhuKoç",
+      "id": "4a0e4d69-881e-49fd-aa45-fa02ce84ee44",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/yks-tercih-listesi-nasil-hazirlanir-4a89b038cfdf.webp",
+      "url": "http://localhost:3000/blog/yks-tercih-listesi-nasil-hazirlanir"
+    },
+    {
+      "slug": "yks-tercih-kilavuzu-tablo-okuma",
+      "bodySha256": "c74330ccca0a134fbd0c14536cd823ec4db4c9aac352d5068ed026c53e22cd54",
+      "title": "YKS tercih kılavuzu nasıl okunur? Tablo 3, Tablo 4 ve taban sıralar",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/yks-tercih-kilavuzu-tablo-okuma-e2165db02098.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "YKS Tercih Kılavuzu ve Tablo Okuma Rehberi | PuhuKoç",
+      "id": "f837cc06-81e9-467d-87c6-082c51e70b35",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/yks-tercih-kilavuzu-tablo-okuma-e2165db02098.webp",
+      "url": "http://localhost:3000/blog/yks-tercih-kilavuzu-tablo-okuma"
+    },
+    {
+      "slug": "yks-basari-sirasi-sarti-olan-bolumler",
+      "bodySha256": "68a7cff6c9a05556c8097b9a314b4d9ad2ccb99ac8a102f1916fe3a7eb28814c",
+      "title": "YKS başarı sırası şartı olan bölümler ve tercih koşulları",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/yks-basari-sirasi-sarti-olan-bolumler-b4182287180b.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "YKS Başarı Sırası Şartı Olan Bölümler | PuhuKoç",
+      "id": "14331b1c-917d-4e8f-968f-055bad1c6b52",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/yks-basari-sirasi-sarti-olan-bolumler-b4182287180b.webp",
+      "url": "http://localhost:3000/blog/yks-basari-sirasi-sarti-olan-bolumler"
+    },
+    {
+      "slug": "yks-okul-birincisi-kontenjani",
+      "bodySha256": "6cde23a3f2edf2e7be3dc34aee78bfcad76ad960d03c2e7cffee187266112c86",
+      "title": "YKS okul birincisi kontenjanı nasıl kullanılır?",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/yks-okul-birincisi-kontenjani-85ba24c13d57.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "YKS Okul Birincisi Kontenjanı ve Tercihler | PuhuKoç",
+      "id": "42d8c99b-008f-4d92-840b-ba24959cedae",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/yks-okul-birincisi-kontenjani-85ba24c13d57.webp",
+      "url": "http://localhost:3000/blog/yks-okul-birincisi-kontenjani"
+    },
+    {
+      "slug": "yks-34-yas-ustu-kadin-kontenjani",
+      "bodySha256": "a48d7e29f808afce7ffe541f0eaa92f74d5c3a291a89ce7a2550fc70be279dc5",
+      "title": "YKS 34 yaş üstü kadın kontenjanı: Kimler yararlanabilir?",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/yks-34-yas-ustu-kadin-kontenjani-0551c81a131d.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "YKS 34 Yaş Üstü Kadın Kontenjanı Şartları | PuhuKoç",
+      "id": "3057d7c6-900c-4f34-a157-9c3c19e8ab88",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/yks-34-yas-ustu-kadin-kontenjani-0551c81a131d.webp",
+      "url": "http://localhost:3000/blog/yks-34-yas-ustu-kadin-kontenjani"
+    },
+    {
+      "slug": "yks-burslu-indirimli-program-farklari",
+      "bodySha256": "59069fae37daad7ff78c74f8a60fea1c60da394656bad0e3abcc63937458f2a9",
+      "title": "Burslu ve indirimli üniversite programları: Ücret ve kapsam",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/yks-burslu-indirimli-program-farklari-359275060bb9.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "Burslu ve İndirimli Programların Farkları | PuhuKoç",
+      "id": "19696ac9-f284-4e50-b170-9741afda244d",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/yks-burslu-indirimli-program-farklari-359275060bb9.webp",
+      "url": "http://localhost:3000/blog/yks-burslu-indirimli-program-farklari"
+    },
+    {
+      "slug": "universite-zorunlu-hazirlik-ogretim-dili",
+      "bodySha256": "f51dc7ddc04f671a7d99e4113db7dae6f3be34277cf1af6588ce57e5d27db65d",
+      "title": "Üniversitede zorunlu hazırlık, öğretim dili ve muafiyet",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/universite-zorunlu-hazirlik-ogretim-dili-e2a2b61156a5.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "Zorunlu Hazırlık, Öğretim Dili ve Muafiyet | PuhuKoç",
+      "id": "29c818a5-4bf9-4f8b-9b55-c674c5522c06",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/universite-zorunlu-hazirlik-ogretim-dili-e2a2b61156a5.webp",
+      "url": "http://localhost:3000/blog/universite-zorunlu-hazirlik-ogretim-dili"
+    },
+    {
+      "slug": "mtok-nedir-kimler-tercih-edebilir",
+      "bodySha256": "c404df7a961016a4900670876339c9505f72669c4ff5dad979d3c937bf7ddd05",
+      "title": "M.T.O.K. nedir? Kimler tercih edebilir, alan eşleşmesi nasıl okunur?",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/mtok-nedir-kimler-tercih-edebilir-adf270f65b81.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "M.T.O.K. Nedir, Kimler Tercih Edebilir? | PuhuKoç",
+      "id": "bfc64eb7-ee11-4ecd-923e-001d53e17510",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/mtok-nedir-kimler-tercih-edebilir-adf270f65b81.webp",
+      "url": "http://localhost:3000/blog/mtok-nedir-kimler-tercih-edebilir"
+    },
+    {
+      "slug": "universite-kayit-e-kayit-gerekli-belgeler",
+      "bodySha256": "8591c04fe9caaaf7f9957251ad3f10b77505ae26699e19d2e57a1274aab3d24c",
+      "title": "Üniversite kaydı: E-kayıt, gerekli belgeler ve geçici kayıt",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/universite-kayit-e-kayit-gerekli-belgeler-8af5e4d37ff0.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "Üniversite E-Kayıt ve Gerekli Belgeler | PuhuKoç",
+      "id": "ce1dd624-cff1-4f48-96d3-b1a531a9e67b",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/universite-kayit-e-kayit-gerekli-belgeler-8af5e4d37ff0.webp",
+      "url": "http://localhost:3000/blog/universite-kayit-e-kayit-gerekli-belgeler"
+    },
+    {
+      "slug": "ozel-yetenek-sinavi-ozyes-basvuru-farki",
+      "bodySha256": "b905b521f9b9b710910c3cec7f0a96dfecdbd4286c1f40228a28fa28ef4d0729",
+      "title": "Özel yetenek sınavı ve ÖZYES: Başvuru yolları nasıl ayrılır?",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/ozel-yetenek-sinavi-ozyes-basvuru-farki-9c19f41d6db2.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "Özel Yetenek Sınavı ve ÖZYES Başvurusu | PuhuKoç",
+      "id": "4ad17fee-37dc-4f79-af22-d4c498e70aa5",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/ozel-yetenek-sinavi-ozyes-basvuru-farki-9c19f41d6db2.webp",
+      "url": "http://localhost:3000/blog/ozel-yetenek-sinavi-ozyes-basvuru-farki"
+    },
+    {
+      "slug": "yks-sehit-gazi-yakini-kontenjani",
+      "bodySha256": "8164f4dbc0e0af19a3630f390f3a0066efda01afc41dc63e8f02589d925e4b00",
+      "title": "YKS şehit ve gazi kapsamındaki burslu kontenjan nasıl işler?",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/yks-sehit-gazi-yakini-kontenjani-18a32b48470f.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "YKS Şehit ve Gazi Kontenjanı Koşulları | PuhuKoç",
+      "id": "63ea9b6c-53a4-4d74-843b-f5f392bdbb63",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/yks-sehit-gazi-yakini-kontenjani-18a32b48470f.webp",
+      "url": "http://localhost:3000/blog/yks-sehit-gazi-yakini-kontenjani"
+    },
+    {
+      "slug": "meb-ogretmenlik-bursu-tercih-sartlari",
+      "bodySha256": "1af8bfc05a6cb1f3c52ca9ab692a4257826074445ceeaee852d7e6415dcd8751",
+      "title": "MEB öğretmenlik bursu: İlk beş tercih ve diğer koşullar",
+      "publishedAt": "2026-11-03T12:47:40.958Z",
+      "coverImageKey": "content/articles/cover/yks/meb-ogretmenlik-bursu-tercih-sartlari-a9b5af70a0ac.webp",
+      "verifiedAt": "2026-11-03T12:47:40.958Z",
+      "verifiedBy": "ÖSYM kaynak karşılaştırması (otomatik)",
+      "metaTitle": "MEB Öğretmenlik Bursu ve Tercih Şartları | PuhuKoç",
+      "id": "bbcd364a-937c-47bc-888d-b5a24efd1890",
+      "batch": "batch-03",
+      "coverImageUrl": "https://pub-f9267758a64f43de93f52448196e40b5.r2.dev/content/articles/cover/yks/meb-ogretmenlik-bursu-tercih-sartlari-a9b5af70a0ac.webp",
+      "url": "http://localhost:3000/blog/meb-ogretmenlik-bursu-tercih-sartlari"
+    }
+  ]
+}
