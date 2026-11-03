@@ -33,6 +33,8 @@ describe("metadata routes", () => {
       { url: "https://mentor.example/blog", changeFrequency: "weekly", priority: 0.6 },
       { url: "https://mentor.example/blog?family=YKS", changeFrequency: "weekly", priority: 0.6 },
       { url: "https://mentor.example/blog?family=LGS", changeFrequency: "weekly", priority: 0.6 },
+      { url: "https://mentor.example/blog?family=ALES", changeFrequency: "weekly", priority: 0.6 },
+      { url: "https://mentor.example/blog?family=DGS", changeFrequency: "weekly", priority: 0.6 },
     ]);
   });
 });

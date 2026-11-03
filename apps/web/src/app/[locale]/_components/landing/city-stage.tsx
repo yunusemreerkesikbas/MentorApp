@@ -29,6 +29,7 @@ import {
   type SceneArt,
 } from "./city-scene";
 import { useCookieCardFlutter, usePaperFlutter } from "./paper-flutter";
+import { PlanMagicVideo } from "./plan-magic-video";
 import { SceneImg, sceneBackground } from "./scene-img";
 
 const WIDE = "(min-width: 1024px)";
@@ -286,7 +287,11 @@ export function CityStage({
                 {WINDOWS.filter((w) => w.room !== "puhu").map((w) => (
                   <div key={w.room} className="lc-win" data-stop={w.stop} style={{ left: w.left, top: w.top, width: w.width, height: w.height }}>
                     <div className="lc-room" />
-                    {roomsOn ? <SceneImg className="lc-room-art" src={`/visuals/landing/room-${w.room}.webp`} /> : null}
+                    {!roomsOn ? null : w.room === "plan" ? (
+                      <PlanMagicVideo stop={w.stop} className="lc-room-art is-cover" />
+                    ) : (
+                      <SceneImg className="lc-room-art" src={`/visuals/landing/room-${w.room}.webp`} />
+                    )}
                   </div>
                 ))}
               </div>

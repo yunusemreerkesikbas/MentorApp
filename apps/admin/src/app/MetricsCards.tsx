@@ -1,4 +1,5 @@
 'use client'
+import { EXAM_TYPES, type ExamType } from "@mentor/types";
 import { DashboardError, DashboardSection, DashboardSkeleton } from "@/components/shared/admin/dashboard/DashboardSection";
 import { BucketDonut } from "@/components/shared/admin/dashboard/BucketDonut";
 import { KpiStatRow } from "@/components/shared/admin/dashboard/KpiStatRow";
@@ -27,6 +28,10 @@ export default function MetricsCards() {
 
     const inviteTotal = m.economy.invite.invited;
     const adsFaulty = m.ads.expired + m.ads.rejected;
+    const examBuckets = EXAM_TYPES.map((family) => ({
+        id: family.toLowerCase(), label: family,
+        value: m.users.byExamType[family.toLowerCase() as Lowercase<ExamType>],
+    }));
 
     return (
         <>
@@ -50,20 +55,14 @@ export default function MetricsCards() {
                     { id: "st-active", icon: "feather-user-check", title: "Aktif", value: fmtInt(m.users.byStatus.active), tone: "success" },
                     { id: "st-suspended", icon: "feather-pause", title: "Askıda", value: fmtInt(m.users.byStatus.suspended), tone: "warning" },
                     { id: "st-banned", icon: "feather-x", title: "Yasaklı", value: fmtInt(m.users.byStatus.banned), tone: "danger" },
-                    { id: "ex-kpss", icon: "feather-clipboard", title: "KPSS", value: fmtInt(m.users.byExamType.kpss), tone: "primary" },
-                    { id: "ex-yks", icon: "feather-layers", title: "YKS", value: fmtInt(m.users.byExamType.yks), tone: "teal" },
-                    { id: "ex-lgs", icon: "feather-grid", title: "LGS", value: fmtInt(m.users.byExamType.lgs), tone: "success" },
+                    ...examBuckets.map((bucket) => ({ id: `ex-${bucket.id}`, icon: "feather-clipboard", title: bucket.label, value: fmtInt(bucket.value), tone: "primary" as const })),
                 ]}
             />
 
             <div className="row g-4 mb-4">
                 <BucketDonut
                     title="Sınav tipi"
-                    items={[
-                        { id: "kpss", label: "KPSS", value: m.users.byExamType.kpss },
-                        { id: "yks", label: "YKS", value: m.users.byExamType.yks },
-                        { id: "lgs", label: "LGS", value: m.users.byExamType.lgs },
-                    ]}
+                    items={examBuckets}
                 />
                 <BucketDonut
                     title="Abonelik durumu"

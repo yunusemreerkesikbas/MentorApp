@@ -266,9 +266,8 @@
       }
     },
     "journey": {
-      "title": "Finish quests, collect XP, level up!",
-      "lead": "A task from your plan, a focus session, five active days in a week: each one brings XP. As your XP adds up you reach new levels in the Night Journey, and steady weeks bring Coin too.",
-      "coin_note": "Coin is not money. You earn it with your effort.",
+      "title": "Finish quests, collect XP and Coin!",
+      "lead": "A task from your plan, a focus session, five active days a week: they all bring XP, and XP levels you up. Every day you study brings Coin too; use it to freeze your streak, add a notebook or open your weekly story.",
       "goal_progress": "60/120 min",
       "quest": {
         "plan_task": "Complete 1 task from today's plan",
@@ -281,8 +280,46 @@
         "full_week": "Be active all 7 days this week",
         "milestone_sessions": "Complete {count} focus sessions",
         "milestone_rhythm": "Reach a {days}-day rhythm",
-        "milestone_tasks": "Complete {count} plan tasks"
+        "milestone_tasks": "Complete {count} plan tasks",
+        "active_day": "Study today"
+      },
+      "wallet": {
+        "tabs_label": "Level and Coin",
+        "tab_level": "Level",
+        "tab_coin": "Coin",
+        "label": "Your Coin wallet",
+        "balance": "{count} Coin",
+        "spend_title": "Open with Coin",
+        "price": "{count} Coin",
+        "freeze": "Freeze your streak",
+        "freeze_body": "One empty day won't break your streak.",
+        "notebook": "+1 notebook",
+        "notebook_body": "A permanent custom notebook slot.",
+        "story": "Weekly story",
+        "story_body": "Your week's recap, with its cover."
+      },
+      "chest": {
+        "title": "Finish your week, open your chest!",
+        "body": "Study five days in a week and the chest on Puhu's desk is ready. Inside: your week in review and Coin.",
+        "open": "Open the chest",
+        "ready": "Ready!",
+        "again": "Open it again",
+        "closed_alt": "A closed chest on Puhu's desk",
+        "open_alt": "Puhu at the open chest, light spilling out"
       }
+    },
+    "premium": {
+      "pill": "Premium",
+      "title": "Your exam prep <lit>superpower</lit> is ready!",
+      "lead": "Your AI coach knows your plan and your sessions, and is there the moment you get stuck.",
+      "chat_title": "Message your coach any time",
+      "chat_body": "It answers knowing your plan and your history.",
+      "daily_title": "A coach note for every day",
+      "daily_body": "A morning hello, support for your mood, a comment after every session.",
+      "analysis_title": "A deep look at your week",
+      "analysis_body": "Compares your scores and focus rhythm with your past self.",
+      "cta": "Try 7 days free",
+      "cancel": "Cancel any time."
     },
     "faq": {
       "pill": "FAQ",
@@ -305,7 +342,6 @@
       "body": "Open your account and make tonight your first focus session."
     },
     "skip_story": "Skip the tour",
-    "scroll_hint": "Scroll down, let's look inside",
     "plate": "No {no}",
     "intercom_title": "PUHU APT.",
     "intercom_label": "Building doorbells",
@@ -336,9 +372,9 @@
     },
     "plan": {
       "name": "Plan",
-      "title": "Today's plan is ready. You just start!",
-      "body": "Tell us your goal and how much time you have each day, and we'll build your week together. Finish the daily tasks, open the weekly chest.",
-      "scribble": "80 minutes today",
+      "title": "Let Puhu build your week!",
+      "body": "Tell it your goal and how much time you have a day, and Puhu puts the tasks on your days.",
+      "scribble": "abracadabra, week ready",
       "step1": "Turkish",
       "step1_time": "25 min",
       "step2": "Maths",
@@ -2401,7 +2437,9 @@
     "families": {
       "kpss": "KPSS",
       "yks": "YKS",
-      "lgs": "LGS"
+      "lgs": "LGS",
+      "ales": "ALES",
+      "dgs": "DGS"
     },
     "related_posts": "Related posts",
     "editor_fallback": "PuhuKoç Editor",
@@ -3358,7 +3396,9 @@
       "options": {
         "KPSS": "For public-sector posts",
         "YKS": "University entrance",
-        "LGS": "High school entrance"
+        "LGS": "High school entrance",
+        "ALES": "Graduate study and an academic career",
+        "DGS": "From an associate degree to a bachelor's degree"
       },
       "continue": "Continue",
       "save_error": "It didn't save just now. Let's try again in a moment."

@@ -243,6 +243,9 @@ describe("UsersService.updateMe", () => {
 });
 
 describe("resolveExamVariantPatch", () => {
+  it.each(["ALES", "DGS"] as const)("clears a prior KPSS level when switching to %s", (examType) => {
+    expect(resolveExamVariantPatch({ examType, examVariant: "LISANS" }, "KPSS")).toEqual({ examVariant: null });
+  });
   it("keeps the variant when the family is KPSS", () => {
     expect(
       resolveExamVariantPatch({ examType: "KPSS", examVariant: "ORTAOGRETIM" }, null),
@@ -272,5 +275,15 @@ describe("resolveExamVariantPatch", () => {
   it("leaves the column alone when neither field is being written", () => {
     expect(resolveExamVariantPatch({}, "YKS")).toEqual({});
     expect(resolveExamVariantPatch({}, "KPSS")).toEqual({});
+  });
+});
+
+describe("UsersService exam distribution", () => {
+  it("includes the new exam cohorts and preserves the existing metric keys", async () => {
+    const service = new UsersService({ statsSnapshot: async () => ({
+      total: 15, new7d: 0, new30d: 0, verified: 15, active: 15, suspended: 0, banned: 0,
+      kpss: 1, yks: 2, lgs: 3, ales: 4, dgs: 5,
+    }) } as never, {} as never, {} as never);
+    expect((await service.getUserStats()).byExamType).toEqual({ kpss: 1, yks: 2, lgs: 3, ales: 4, dgs: 5 });
   });
 });

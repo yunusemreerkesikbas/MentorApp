@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Backpack, GraduationCap, Landmark, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
-import type { AuthUser, ExamType } from "@mentor/types";
+import { EXAM_CATALOG, EXAM_TYPES, type AuthUser, type ExamType } from "@mentor/types";
 import { Button } from "@mentor/ui";
 import { PlayIconWell, PlayOptionRow, type PlayWell } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
@@ -13,11 +13,11 @@ import { useAuth } from "@/lib/auth-context";
 import type { OnboardingAudience } from "../onboarding-flow";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
 
-const OPTIONS: { value: ExamType; icon: LucideIcon; well: PlayWell }[] = [
-  { value: "KPSS", icon: Landmark, well: "blue" },
-  { value: "YKS", icon: GraduationCap, well: "peri" },
-  { value: "LGS", icon: Backpack, well: "coral" },
-];
+const OPTIONS: { value: ExamType; icon: LucideIcon; well: PlayWell }[] = EXAM_TYPES.map((value) => ({
+  value,
+  icon: value === "KPSS" ? Landmark : value === "LGS" ? Backpack : GraduationCap,
+  well: value === "KPSS" ? "blue" : value === "LGS" ? "coral" : "peri",
+}));
 
 /**
  * Which exam. Asked of a coach too, reworded (APP-089): same column either way, which is what lets
@@ -45,7 +45,7 @@ export function ExamStep({
 
   async function save() {
     if (!selected || saving) return;
-    if (selected === "KPSS") {
+    if (EXAM_CATALOG[selected].variants.length > 0) {
       onSaved(selected);
       return;
     }

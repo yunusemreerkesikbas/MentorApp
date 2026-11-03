@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { EXAM_TYPES } from "@mentor/types";
 import { getPathname } from "@/i18n/navigation";
 import { fetchPublicQuestionRefs, questionUrl, siteUrl } from "@/lib/forum-public";
 import { blogUrl } from "@/lib/blog-url";
@@ -24,7 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     // The public blog hub per exam (TR); topic and page views canonicalise to them. Listed because the
     // exam switch is a tab bar now, not links a crawler follows.
-    ...(["KPSS", "YKS", "LGS"] as const).map((family) => ({
+    ...EXAM_TYPES.map((family) => ({
       url: blogUrl(family),
       changeFrequency: "weekly" as const,
       priority: 0.6,
@@ -33,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const [questions, ...articlePages] = await Promise.allSettled([
       fetchPublicQuestionRefs(),
-      ...["KPSS", "YKS", "LGS"].map((family) =>
+      ...EXAM_TYPES.map((family) =>
         fetchInfoArticlesByFamily(family, 1, 100, { revalidate: 3600 }),
       ),
     ]);

@@ -7,6 +7,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { IdentityEventTopic } from "../domain/identity.events";
 import { HttpStatus, Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import type { AuthUser, AvatarUploadUrlDto, CareerGroup, ForumPublicPerson } from "@mentor/types";
+import { EXAM_TYPES, type ExamType } from "@mentor/types";
 import type { AvatarUploadUrlInput, UpdateMeInput } from "@mentor/validation";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -44,7 +45,7 @@ export interface UserStats {
   new30d: number;
   verified: number;
   byStatus: { active: number; suspended: number; banned: number };
-  byExamType: { kpss: number; yks: number; lgs: number };
+  byExamType: Record<Lowercase<ExamType>, number>;
 }
 
 @Injectable()
@@ -221,7 +222,10 @@ export class UsersService {
       new30d: s.new30d,
       verified: s.verified,
       byStatus: { active: s.active, suspended: s.suspended, banned: s.banned },
-      byExamType: { kpss: s.kpss, yks: s.yks, lgs: s.lgs },
+      byExamType: Object.fromEntries(EXAM_TYPES.map((family) => {
+        const key = family.toLowerCase() as Lowercase<ExamType>;
+        return [key, s[key]];
+      })) as UserStats["byExamType"],
     };
   }
 

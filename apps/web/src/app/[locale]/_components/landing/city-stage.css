@@ -367,10 +367,6 @@
   color: var(--lc-ink-quiet);
 }
 
-.lc-hint {
-  display: none;
-}
-
 .lc-tape {
   position: absolute;
   top: -16px;
@@ -909,20 +905,6 @@ body:has(.lc-root) .cookie-consent-banner::before {
 
   .lc-links {
     display: none;
-  }
-
-  .lc-hint {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 22px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #8fa3c0;
-  }
-
-  .lc-hint .lc-text-link {
-    color: var(--landing-on-night-soft);
   }
 
   .lc-pulse {

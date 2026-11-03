@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from "react";
+import { EXAM_TYPES } from "@mentor/types";
 import { FiSend, FiTrash2 } from "react-icons/fi";
 import Swal from "sweetalert2";
 import { AdminPageHeader } from "@/components/shared/admin/AdminPageHeader";
@@ -13,7 +14,10 @@ import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
 import type { AdminAnnouncement, AnnouncementAudience } from "@/lib/types";
 
-const AUDIENCE_OPTIONS = [{ value: "ALL", label: "Tüm kullanıcılar" }, { value: "KPSS", label: "Sadece KPSS" }, { value: "YKS", label: "Sadece YKS" }, { value: "LGS", label: "Sadece LGS" }] as const;
+const AUDIENCE_OPTIONS = [
+    { value: "ALL" as const, label: "Tüm kullanıcılar" },
+    ...EXAM_TYPES.map((value) => ({ value, label: `Sadece ${value}` })),
+];
 const VOICE_EXAMPLES = [
     { label: "Yeni özellik", title: "Yeni bir ritim başladı", body: "Çalışma odaları açıldı. İstersen bir masaya otur, yalnız çalışmak zorunda değilsin." },
     { label: "Bakım", title: "Kısa bir bakım", body: "Bu gece kısa bir bakım olacak. Yarın yine buradayız." },

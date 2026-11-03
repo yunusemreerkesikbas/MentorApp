@@ -3,6 +3,7 @@
  * Field copy is NOT here: messages are localized by the backend (error pipeline).
  */
 import { z } from "zod";
+import { EXAM_TYPES, EXAM_VARIANTS } from "@mentor/types";
 
 export const emailSchema = z.string().trim().toLowerCase().email().max(254);
 
@@ -116,13 +117,13 @@ export const updateMeSchema = z
     bio: z.preprocess(emptyToNull, z.string().trim().max(200).nullable()).optional(),
     /** Public personal link (http/https); empty clears it. */
     website: z.preprocess(emptyToNull, z.string().trim().url().max(200).nullable()).optional(),
-    examType: z.enum(["KPSS", "YKS", "LGS"]).optional(),
+    examType: z.enum(EXAM_TYPES).optional(),
     /**
      * KPSS guide level. Only meaningful with `examType: "KPSS"`; the service clears it for any
      * other family rather than trusting the client to keep the pair consistent.
      */
     examVariant: z
-      .enum(["LISANS", "ONLISANS", "ORTAOGRETIM"])
+      .enum(EXAM_VARIANTS)
       .nullable()
       .optional(),
     /** ISO date (yyyy-mm-dd) of the target exam — must be a real calendar date. */

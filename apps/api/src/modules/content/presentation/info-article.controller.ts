@@ -2,6 +2,7 @@ import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nest
 import { ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { InfoArticleDto, InfoArticleSummaryDto, Paginated } from "@mentor/types";
+import { EXAM_TYPES } from "@mentor/types";
 import { Public } from "../../../common/auth/public.decorator";
 import { ContentService } from "../application/content.service";
 import { FeaturedArticleQueryDto, ListInfoArticlesQueryDto } from "./content.dto";
@@ -14,7 +15,7 @@ export class InfoArticleController {
   constructor(private readonly content: ContentService) {}
 
   @Get()
-  @ApiQuery({ name: "family", enum: ["KPSS", "YKS", "LGS"] })
+  @ApiQuery({ name: "family", enum: EXAM_TYPES })
   @ApiQuery({ name: "category", enum: ["EXAM_PROCESS", "APPLICATION", "GENERAL"], required: false })
   @ApiQuery({ name: "excludeSlug", required: false })
   @ApiQuery({ name: "page", required: false })
@@ -26,7 +27,7 @@ export class InfoArticleController {
   }
 
   @Get("featured")
-  @ApiQuery({ name: "family", enum: ["KPSS", "YKS", "LGS"] })
+  @ApiQuery({ name: "family", enum: EXAM_TYPES })
   getFeatured(
     @Query() query: FeaturedArticleQueryDto,
   ): Promise<InfoArticleSummaryDto | null> {

@@ -1,4 +1,4 @@
-import type { ExamType } from "@mentor/types";
+import { EXAM_CATALOG, type ExamType } from "@mentor/types";
 
 export type OnboardingStep =
   | "intro"
@@ -37,7 +37,7 @@ function walk(
   const order = ORDER[audience];
   for (let i = order.indexOf(step) + direction; i >= 0 && i < order.length; i += direction) {
     const candidate = order[i];
-    if (candidate && (candidate !== "kpssLevel" || examType === "KPSS")) return candidate;
+    if (candidate && (candidate !== "kpssLevel" || (examType && EXAM_CATALOG[examType].variants.length > 0))) return candidate;
   }
   return step;
 }

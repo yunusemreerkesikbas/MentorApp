@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, notInArray, sql, type SQL } from "drizzle-orm";
+import { EXAM_TYPES, type ExamType } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
@@ -363,10 +364,11 @@ export class UsersRepository {
     active: number;
     suspended: number;
     banned: number;
-    kpss: number;
-    yks: number;
-    lgs: number;
-  }> {
+  } & Record<Lowercase<ExamType>, number>> {
+    const examCounts = Object.fromEntries(EXAM_TYPES.map((family) => [
+      family.toLowerCase(),
+      sql<number>`count(*) filter (where ${users.examType} = ${family})::int`,
+    ])) as Record<Lowercase<ExamType>, SQL<number>>;
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx
         .select({
@@ -377,9 +379,7 @@ export class UsersRepository {
           active: sql<number>`count(*) filter (where ${users.status} = 'ACTIVE')::int`,
           suspended: sql<number>`count(*) filter (where ${users.status} = 'SUSPENDED')::int`,
           banned: sql<number>`count(*) filter (where ${users.status} = 'BANNED')::int`,
-          kpss: sql<number>`count(*) filter (where ${users.examType} = 'KPSS')::int`,
-          yks: sql<number>`count(*) filter (where ${users.examType} = 'YKS')::int`,
-          lgs: sql<number>`count(*) filter (where ${users.examType} = 'LGS')::int`,
+          ...examCounts,
         })
         .from(users);
       return rows[0]!;

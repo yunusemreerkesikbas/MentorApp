@@ -23,12 +23,10 @@ export function JourneyQuests({
   title,
   tabsLabel,
   groups,
-  coinNote,
 }: {
   title: string;
   tabsLabel: string;
   groups: QuestGroup[];
-  coinNote: string;
 }) {
   const [active, setActive] = useState(0);
   const group = groups[active] ?? groups[0]!;
@@ -57,7 +55,6 @@ export function JourneyQuests({
           </li>
         ))}
       </ul>
-      <p className="lj-q-coin">{coinNote}</p>
     </div>
   );
 }

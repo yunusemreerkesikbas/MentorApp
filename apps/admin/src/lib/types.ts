@@ -199,7 +199,7 @@ export interface AdminMetrics {
         new30d: number;
         verified: number;
         byStatus: { active: number; suspended: number; banned: number };
-        byExamType: { kpss: number; yks: number; lgs: number };
+        byExamType: Record<Lowercase<import("@mentor/types").ExamType>, number>;
     };
     subscriptions: {
         byStatus: { trialing: number; active: number; pastDue: number; canceled: number; expired: number; total: number };
@@ -314,7 +314,7 @@ export interface AuditEntry {
 // GET /admin/announcements — team-authored broadcast (in-app only, W5 notifications).
 export type AnnouncementAudience =
     | { kind: "ALL" }
-    | { kind: "EXAM_TYPE"; examType: "KPSS" | "YKS" | "LGS" };
+    | { kind: "EXAM_TYPE"; examType: import("@mentor/types").ExamType };
 
 export interface AdminAnnouncement {
     id: string;

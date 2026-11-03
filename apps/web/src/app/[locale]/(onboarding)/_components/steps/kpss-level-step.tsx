@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
-import type { AuthUser, ExamVariant } from "@mentor/types";
+import { EXAM_CATALOG, type AuthUser, type ExamVariant } from "@mentor/types";
 import { Button } from "@mentor/ui";
 import { PlayOptionRow } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth-context";
 import type { OnboardingAudience } from "../onboarding-flow";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
 
-const OPTIONS: ExamVariant[] = ["LISANS", "ONLISANS", "ORTAOGRETIM"];
+const OPTIONS = EXAM_CATALOG.KPSS.variants;
 
 export function KpssLevelStep({
   user,

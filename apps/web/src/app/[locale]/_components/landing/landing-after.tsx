@@ -9,6 +9,7 @@ import { LandingBlog } from "./landing-blog";
 import { LandingFocus } from "./landing-focus";
 import { LandingJourney } from "./landing-journey";
 import { LandingMorning } from "./landing-morning";
+import { LandingPremium } from "./landing-premium";
 import { LEDGE_ON_PAPER, PAGE_FRAME, PAPER_PILL, PAPER_TITLE, PaperFaq } from "./landing-paper";
 
 const FAQ = [1, 2, 3, 4, 5, 6] as const;
@@ -77,6 +78,9 @@ export async function LandingAfter() {
       </Suspense>
       <Suspense fallback={null}>
         <LandingJourney />
+      </Suspense>
+      <Suspense fallback={null}>
+        <LandingPremium />
       </Suspense>
       <Suspense fallback={null}>
         <CoachBand />

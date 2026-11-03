@@ -202,10 +202,12 @@ describe("GeoService.search", () => {
 });
 
 describe("GeoService.search — LGS", () => {
-  it("returns provinces only, never university programmes", async () => {
+  it.each(["LGS", "ALES", "DGS"] as const)("returns only provinces for %s without borrowing YKS programmes", async (family) => {
     // Before `family` covered LGS, the schema defaulted to YKS and an LGS student searching
     // "bilgisayar" was shown degree programmes they cannot apply to for another four years.
     const geo = makeGeoFake();
+    geo.searchPrograms = async () => { throw new Error("YKS programmes must not be queried for this family"); };
+    geo.searchUniversities = async () => { throw new Error("YKS universities must not be queried for this family"); };
     const service = new GeoService(
       {} as never,
       geo as never,
@@ -213,7 +215,7 @@ describe("GeoService.search — LGS", () => {
       { getCurrent: async () => undefined, info: () => null } as never,
     );
 
-    const result = await service.search("bilgisayar", "LGS");
+    const result = await service.search("bilgisayar", family);
     expect(result.programs).toEqual([]);
     expect(result.universities).toEqual([]);
     expect(result.titles).toEqual([]);

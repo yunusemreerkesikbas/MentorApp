@@ -35,6 +35,8 @@ describe("subject/topic taxonomy seed", () => {
   it("keeps unique subject and topic slugs and every topic has a parent", () => {
     expect(seed.sourceUrl).toContain("/2026/KPSS/LISANS/");
     expect(seed.sources.map((source) => source.family).sort()).toEqual([
+      "ALES",
+      "DGS",
       "KPSS",
       "LGS",
       "YKS",
@@ -48,6 +50,19 @@ describe("subject/topic taxonomy seed", () => {
       true,
     );
   });
+
+  it.each(["ales-3-2026", "ales-1-2027", "ales-2-2027", "ales-3-2027", "dgs-2027"])(
+    "prepares numerical/verbal sections and topics for %s",
+    (examSlug) => {
+      const sections = seed.examSubjects.filter((link) => link.examSlug === examSlug && link.subjectSlug !== "diger");
+      expect(sections).toHaveLength(2);
+      expect(sections.map((section) => section.questionCount)).toEqual([50, 50]);
+      for (const section of sections) {
+        const topics = seed.examTopics.filter((link) => link.examSlug === examSlug && link.subjectSlug === section.subjectSlug);
+        expect(topics.length).toBeGreaterThan(4);
+      }
+    },
+  );
 
   it("links the same KPSS GY-GK tree to all three 2026 exams", () => {
     const lisans = seed.examTopics.filter(

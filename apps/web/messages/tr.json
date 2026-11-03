@@ -266,9 +266,8 @@
       }
     },
     "journey": {
-      "title": "Görevleri bitir, XP topla, seviye atla!",
-      "lead": "Plandan bir görev, bir odak seansı, haftada beş aktif gün: hepsi XP getirir. XP biriktikçe Gece Yolculuğu'nda yeni bir seviyeye geçersin, düzenli haftalara Coin de düşer.",
-      "coin_note": "Coin nakit değildir. Emeğinle hak kazanırsın.",
+      "title": "Görevleri bitir, XP ve Coin topla!",
+      "lead": "Plandan bir görev, bir odak seansı, haftada beş aktif gün: hepsi XP getirir, XP biriktikçe seviye atlarsın. Çalıştığın her gün Coin de birikir; onunla serini dondurur, defter ekler, haftalık hikâyeni açarsın.",
       "goal_progress": "60/120 dk",
       "quest": {
         "plan_task": "Bugünün planından 1 görev tamamla",
@@ -281,8 +280,46 @@
         "full_week": "Haftanın 7 gününde aktif ol",
         "milestone_sessions": "{count} odak seansı tamamla",
         "milestone_rhythm": "{days} günlük ritme ulaş",
-        "milestone_tasks": "{count} plan görevi tamamla"
+        "milestone_tasks": "{count} plan görevi tamamla",
+        "active_day": "Bugün çalış"
+      },
+      "wallet": {
+        "tabs_label": "Seviye ve Coin",
+        "tab_level": "Seviye",
+        "tab_coin": "Coin",
+        "label": "Coin cüzdanın",
+        "balance": "{count} Coin",
+        "spend_title": "Coin ile aç",
+        "price": "{count} Coin",
+        "freeze": "Seriyi dondur",
+        "freeze_body": "Boş geçen bir gün serini bozmaz.",
+        "notebook": "+1 defter",
+        "notebook_body": "Kalıcı bir özel defter yeri.",
+        "story": "Haftalık hikâye",
+        "story_body": "Haftanın özeti, kapağıyla birlikte."
+      },
+      "chest": {
+        "title": "Haftanı tamamla, sandığını aç!",
+        "body": "Haftada beş gün çalıştığında Puhu'nun masasındaki sandık hazır olur. İçinde haftanın özeti ve Coin var.",
+        "open": "Sandığı aç",
+        "ready": "Hazır!",
+        "again": "Bir daha aç",
+        "closed_alt": "Puhu'nun masasında kapalı bir sandık",
+        "open_alt": "Puhu açık sandığın başında, içinden ışık taşıyor"
       }
+    },
+    "premium": {
+      "pill": "Premium",
+      "title": "Sınav yolunda <lit>süper gücün</lit> hazır!",
+      "lead": "Yapay zekâ koçun planını ve seanslarını bilir, takıldığın an yanında olur.",
+      "chat_title": "Koçuna istediğin an yaz",
+      "chat_body": "Planını ve geçmişini bilerek cevap verir.",
+      "daily_title": "Her güne koç notu",
+      "daily_body": "Sabah selamı, moduna göre destek, her seanstan sonra yorum.",
+      "analysis_title": "Haftana derin bakış",
+      "analysis_body": "Netlerini ve odak ritmini geçmişteki senle kıyaslar.",
+      "cta": "7 gün ücretsiz dene",
+      "cancel": "İstediğin an iptal edersin."
     },
     "faq": {
       "pill": "SSS",
@@ -305,7 +342,6 @@
       "body": "Hesabını aç, ilk odak seansın bu akşam olsun."
     },
     "skip_story": "Turu atla",
-    "scroll_hint": "Aşağı kaydır, içeriyi gezelim",
     "plate": "No {no}",
     "intercom_title": "PUHU APT.",
     "intercom_label": "Apartman zilleri",
@@ -336,9 +372,9 @@
     },
     "plan": {
       "name": "Plan",
-      "title": "Bugünün planı hazır. Sen sadece başla!",
-      "body": "Hedefini ve günde ne kadar vaktin olduğunu söyle, haftanı birlikte kuralım. Günlük görevleri bitir, haftanın sandığını aç.",
-      "scribble": "bugün 80 dakika",
+      "title": "Haftanı Puhu kursun!",
+      "body": "Hedefini ve günde ne kadar vaktin olduğunu söyle, görevleri Puhu günlere yerleştirsin.",
+      "scribble": "abrakadabra, hafta hazır",
       "step1": "Türkçe",
       "step1_time": "25 dk",
       "step2": "Matematik",
@@ -2401,7 +2437,9 @@
     "families": {
       "kpss": "KPSS",
       "yks": "YKS",
-      "lgs": "LGS"
+      "lgs": "LGS",
+      "ales": "ALES",
+      "dgs": "DGS"
     },
     "related_posts": "İlgili yazılar",
     "editor_fallback": "PuhuKoç Editör",
@@ -3360,7 +3398,9 @@
       "options": {
         "KPSS": "Kamu kadroları için",
         "YKS": "Üniversiteye giriş",
-        "LGS": "Liseye geçiş"
+        "LGS": "Liseye geçiş",
+        "ALES": "Lisansüstü eğitim ve akademik kariyer",
+        "DGS": "Ön lisanstan lisansa geçiş"
       },
       "continue": "Devam",
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."

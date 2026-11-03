@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, OnApplicationBootstrap } from "@nestjs/common";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ContentService } from "../application/content.service";
@@ -38,15 +38,15 @@ interface SeedFile {
 
 /**
  * Loads editorial subject taxonomy seed on startup (idempotent upserts).
- * Runs after exam calendar seed so exam rows exist for exam_subjects links.
+ * Bootstrap runs after module-init seeds, so exam rows exist before their taxonomy is linked.
  */
 @Injectable()
-export class SubjectSeedService implements OnModuleInit {
+export class SubjectSeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SubjectSeedService.name);
 
   constructor(private readonly content: ContentService) {}
 
-  async onModuleInit(): Promise<void> {
+  async onApplicationBootstrap(): Promise<void> {
     try {
       const path = resolve(__dirname, "../seed/subjects.seed.json");
       const raw = readFileSync(path, "utf8");

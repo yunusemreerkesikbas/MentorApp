@@ -158,13 +158,6 @@
   color: #7a5200;
 }
 
-.lj-q-coin {
-  margin: 14px 0 0;
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--lj-wood);
-}
-
 /* ---- The lights ---- */
 .lj-path {
   display: flex;
@@ -287,6 +280,132 @@
   color: var(--lj-wood);
 }
 
+/* ---- The right card's tabs and the Coin wallet (journey-panel.tsx) ---- */
+.lj-p-tabs {
+  margin: 0 0 16px;
+  background: #f1e6d3;
+}
+
+.lj-p-panes {
+  display: grid;
+  flex: 1;
+}
+
+.lj-p-pane {
+  display: flex;
+  flex-direction: column;
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.lj-p-pane[data-on="false"] {
+  visibility: hidden;
+}
+
+.lj-wallet-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+
+.lj-coin {
+  position: relative;
+  flex: none;
+  /* The Lottie has its own padding: a larger box, pulled in, reads as a 56px coin. */
+  width: 88px;
+  height: 88px;
+  margin: -14px -10px -14px -14px;
+  filter: drop-shadow(0 6px 14px rgba(255, 199, 0, 0.45));
+}
+
+.lj-coin img,
+.lj-coin > div {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.lj-wallet-head small {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--lj-wood);
+}
+
+.lj-wallet-head b {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.lj-wallet .lj-q-section {
+  margin: 18px 0 2px;
+}
+
+.lj-spend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lj-spend li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eadfcb;
+}
+
+.lj-spend li:last-child {
+  border-bottom: 0;
+}
+
+.lj-spend i {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1a5fa3;
+  box-shadow: 0 0 0 1px rgba(138, 106, 79, 0.16);
+}
+
+.lj-spend span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lj-spend b {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.lj-spend small {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--lj-ink-quiet);
+}
+
+.lj-spend em {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff0c7;
+  color: #7a5200;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 @media (max-width: 639px) {
   .lj-lights {
     min-height: 170px;
@@ -309,5 +428,121 @@
 
   .lj-chapters {
     font-size: 9px;
+  }
+}
+
+/*
+ * ---- Weekly chest (landing-chest.tsx): the app's "Masa lambası" scene, tap the chest ----
+ * The card is the night desk itself (`.weekly-chest-night` from weekly-chest.css). Phones: the
+ * square room, the text on the wood below it. From a tablet up: the 16:9 room fills the card and
+ * the text row sits on the desk in front of the chest, as in the app's wide scene.
+ */
+.lj-chest {
+  position: relative;
+  margin-top: 28px;
+  overflow: hidden;
+  border-radius: 28px;
+  box-shadow: 0 28px 50px -30px rgba(3, 10, 24, 0.65);
+}
+
+.lj-chest-stage {
+  position: relative;
+  aspect-ratio: 1;
+  user-select: none;
+}
+
+.lj-chest-stage img,
+.lj-chest-stage video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Lamps, sticker and tap target sit above the desk bar's shade, so the lit lamps read as lit. */
+.lj-chest-lamps {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+/* "Hazır!": a gold sticker that pops at the chest's corner once the five lamps are lit. */
+.lj-chest-ready {
+  position: absolute;
+  left: 66%;
+  top: 60%;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--wc-gold);
+  color: var(--wc-gold-ink);
+  box-shadow: 0 4px 0 var(--wc-gold-edge), 0 0 24px rgba(255, 209, 92, 0.55);
+  font-size: 15px;
+  font-weight: 900;
+  rotate: 8deg;
+  pointer-events: none;
+  z-index: 2;
+  animation: wc-pop 0.42s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+
+.lj-chest-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 22px 24px;
+}
+
+.lj-chest-title {
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--wc-title);
+}
+
+.lj-chest-body {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--wc-body);
+}
+
+@media (min-width: 768px) {
+  .lj-chest-stage {
+    aspect-ratio: 16 / 9;
+  }
+
+  .lj-chest-ready {
+    left: 60%;
+    top: 58%;
+  }
+
+  .lj-chest-bar {
+    position: absolute;
+    inset: auto 0 0;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 80px 32px 28px;
+    background: linear-gradient(to bottom, transparent 0, rgba(28, 19, 13, 0.7) 45%, rgba(28, 19, 13, 0.92) 100%);
+    pointer-events: none;
+    /* No z-index: a stacking context here would trap the button under the chest's tap target. */
+  }
+
+  .lj-chest-bar > div {
+    max-width: 24rem;
+  }
+
+  .lj-chest-bar button {
+    pointer-events: auto;
+    position: relative;
+    z-index: 4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lj-chest-ready {
+    animation: none;
   }
 }

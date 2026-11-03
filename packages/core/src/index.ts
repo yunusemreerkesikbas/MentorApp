@@ -17,6 +17,8 @@ export const NET_PENALTY_DIVISOR: Record<ExamType, number> = {
   [ExamType.KPSS]: 4,
   [ExamType.YKS]: 4,
   [ExamType.LGS]: 3,
+  [ExamType.ALES]: 4,
+  [ExamType.DGS]: 4,
 };
 
 export const APP_NAME = "PuhuKoç" as const;
