@@ -6,7 +6,10 @@
       "family": "KPSS",
       "variant": "LISANS",
       "isCurrent": true,
-      "netRule": { "kind": "PENALTY", "divisor": 4 },
+      "netRule": {
+        "kind": "PENALTY",
+        "divisor": 4
+      },
       "events": [
         {
           "type": "EXAM_DATE",
@@ -24,7 +27,10 @@
       "family": "KPSS",
       "variant": "ONLISANS",
       "isCurrent": false,
-      "netRule": { "kind": "PENALTY", "divisor": 4 },
+      "netRule": {
+        "kind": "PENALTY",
+        "divisor": 4
+      },
       "events": [
         {
           "type": "EXAM_DATE",
@@ -42,7 +48,10 @@
       "family": "KPSS",
       "variant": "ORTAOGRETIM",
       "isCurrent": false,
-      "netRule": { "kind": "PENALTY", "divisor": 4 },
+      "netRule": {
+        "kind": "PENALTY",
+        "divisor": 4
+      },
       "events": [
         {
           "type": "EXAM_DATE",
@@ -60,7 +69,10 @@
       "family": "YKS",
       "variant": null,
       "isCurrent": true,
-      "netRule": { "kind": "PENALTY", "divisor": 4 },
+      "netRule": {
+        "kind": "PENALTY",
+        "divisor": 4
+      },
       "events": []
     },
     {
@@ -69,8 +81,236 @@
       "family": "LGS",
       "variant": null,
       "isCurrent": true,
-      "netRule": { "kind": "PENALTY", "divisor": 3 },
+      "netRule": {
+        "kind": "PENALTY",
+        "divisor": 3
+      },
       "events": []
+    },
+    {
+      "slug": "ales-3-2026",
+      "name": "ALES 2026/3",
+      "family": "ALES",
+      "variant": null,
+      "isCurrent": true,
+      "netRule": {
+        "kind": "PENALTY",
+        "divisor": 4
+      },
+      "events": [
+        {
+          "type": "EXAM_DATE",
+          "eventAt": "2026-11-29T00:00:00.000Z",
+          "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_START",
+          "eventAt": "2026-10-07T00:00:00.000Z",
+          "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_END",
+          "eventAt": "2026-10-15T00:00:00.000Z",
+          "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "RESULT_DATE",
+          "eventAt": "2026-12-17T00:00:00.000Z",
+          "source": "ÖSYM 2026 Sınav Takvimi",
+          "sourceUrl": "https://www.osym.gov.tr/Sayfa/SinavTakvimi/tr-TR",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        }
+      ]
+    },
+    {
+      "slug": "ales-1-2027",
+      "name": "ALES 2027/1",
+      "family": "ALES",
+      "variant": null,
+      "isCurrent": false,
+      "netRule": {
+        "kind": "PENALTY",
+        "divisor": 4
+      },
+      "events": [
+        {
+          "type": "EXAM_DATE",
+          "eventAt": "2027-04-18T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_START",
+          "eventAt": "2027-02-24T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_END",
+          "eventAt": "2027-03-04T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "RESULT_DATE",
+          "eventAt": "2027-05-07T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        }
+      ]
+    },
+    {
+      "slug": "ales-2-2027",
+      "name": "ALES 2027/2",
+      "family": "ALES",
+      "variant": null,
+      "isCurrent": false,
+      "netRule": {
+        "kind": "PENALTY",
+        "divisor": 4
+      },
+      "events": [
+        {
+          "type": "EXAM_DATE",
+          "eventAt": "2027-07-11T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_START",
+          "eventAt": "2027-05-25T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_END",
+          "eventAt": "2027-06-02T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "RESULT_DATE",
+          "eventAt": "2027-07-30T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        }
+      ]
+    },
+    {
+      "slug": "ales-3-2027",
+      "name": "ALES 2027/3",
+      "family": "ALES",
+      "variant": null,
+      "isCurrent": false,
+      "netRule": {
+        "kind": "PENALTY",
+        "divisor": 4
+      },
+      "events": [
+        {
+          "type": "EXAM_DATE",
+          "eventAt": "2027-11-28T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_START",
+          "eventAt": "2027-10-12T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_END",
+          "eventAt": "2027-10-20T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "RESULT_DATE",
+          "eventAt": "2027-12-17T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        }
+      ]
+    },
+    {
+      "slug": "dgs-2027",
+      "name": "DGS 2027",
+      "family": "DGS",
+      "variant": null,
+      "isCurrent": true,
+      "netRule": {
+        "kind": "PENALTY",
+        "divisor": 4
+      },
+      "events": [
+        {
+          "type": "EXAM_DATE",
+          "eventAt": "2027-07-18T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_START",
+          "eventAt": "2027-05-26T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_END",
+          "eventAt": "2027-06-03T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "RESULT_DATE",
+          "eventAt": "2027-08-12T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-03T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        }
+      ]
     }
   ]
 }

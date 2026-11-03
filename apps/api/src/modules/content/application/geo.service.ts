@@ -206,10 +206,9 @@ export class GeoService {
       region: c.region as GeoRegion,
     }));
 
-    // LGS has no target dataset yet (the school chain needs 973 district geometries). Provinces
-    // are all it can honestly answer with — and returning them alone closes the same leak as
-    // below: without this branch an LGS student searching "bilgisayar" got YKS degree programmes.
-    if (family === "LGS") return { ...empty, cities };
+    // Only KPSS/YKS have published target datasets. Other families may choose a city without
+    // borrowing YKS programmes or implying that their admission requirements apply.
+    if (family !== "YKS" && family !== "KPSS") return { ...empty, cities };
 
     // A KPSS student has no use for university programs; surfacing them was the leak this closes.
     if (family === "KPSS") {

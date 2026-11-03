@@ -2296,9 +2296,11 @@
             "in": "query",
             "schema": {
               "enum": [
-                "YKS",
                 "KPSS",
-                "LGS"
+                "YKS",
+                "LGS",
+                "ALES",
+                "DGS"
               ],
               "type": "string"
             }
@@ -2624,7 +2626,9 @@
               "enum": [
                 "KPSS",
                 "YKS",
-                "LGS"
+                "LGS",
+                "ALES",
+                "DGS"
               ],
               "type": "string"
             }
@@ -2652,7 +2656,9 @@
               "enum": [
                 "KPSS",
                 "YKS",
-                "LGS"
+                "LGS",
+                "ALES",
+                "DGS"
               ],
               "type": "string"
             }

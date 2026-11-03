@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { isoDateSchema } from "./coaching.js";
 import { paginationQuerySchema } from "./pagination.js";
-import { YKS_SCORE_TYPES } from "@mentor/types";
+import { EXAM_TYPES, EXAM_VARIANTS, YKS_SCORE_TYPES } from "@mentor/types";
 
 export const PUBLIC_HOLIDAY_KINDS = ["FULL", "HALF"] as const;
 
@@ -34,12 +34,12 @@ export const listExamsQuerySchema = paginationQuerySchema;
 export type ListExamsQuery = z.infer<typeof listExamsQuerySchema>;
 
 export const examFamilyParamSchema = z.object({
-  type: z.enum(["KPSS", "YKS", "LGS"]),
+  type: z.enum(EXAM_TYPES),
 });
 export type ExamFamilyParam = z.infer<typeof examFamilyParamSchema>;
 
 export const examFamilyCurrentQuerySchema = z.object({
-  variant: z.enum(["LISANS", "ONLISANS", "ORTAOGRETIM"]).optional(),
+  variant: z.enum(EXAM_VARIANTS).optional(),
 });
 export type ExamFamilyCurrentQuery = z.infer<typeof examFamilyCurrentQuerySchema>;
 
@@ -49,7 +49,7 @@ export const examSlugParamSchema = z.object({
 export type ExamSlugParam = z.infer<typeof examSlugParamSchema>;
 
 export const listInfoArticlesQuerySchema = paginationQuerySchema.extend({
-  family: z.enum(["KPSS", "YKS", "LGS"]),
+  family: z.enum(EXAM_TYPES),
   category: z.enum(["EXAM_PROCESS", "APPLICATION", "GENERAL"]).optional(),
   excludeSlug: z
     .string()
@@ -62,7 +62,7 @@ export const listInfoArticlesQuerySchema = paginationQuerySchema.extend({
 export type ListInfoArticlesQuery = z.infer<typeof listInfoArticlesQuerySchema>;
 
 export const featuredArticleQuerySchema = z.object({
-  family: z.enum(["KPSS", "YKS", "LGS"]),
+  family: z.enum(EXAM_TYPES),
 });
 export type FeaturedArticleQuery = z.infer<typeof featuredArticleQuerySchema>;
 
@@ -81,7 +81,7 @@ export const geoSearchQuerySchema = z.object({
    * Which reference sets to search. Defaults to YKS so existing callers keep working; a KPSS
    * client sends "KPSS" and stops receiving university programs it has no use for.
    */
-  family: z.enum(["YKS", "KPSS", "LGS"]).default("YKS"),
+  family: z.enum(EXAM_TYPES).default("YKS"),
 });
 export type GeoSearchQuery = z.infer<typeof geoSearchQuerySchema>;
 
@@ -96,13 +96,12 @@ export type ProgramCatalogSearchQuery = z.infer<
 
 /* --------------------- admin content editor (W6) --------------------- */
 
-const EXAM_FAMILIES = ["KPSS", "YKS", "LGS"] as const;
+const EXAM_FAMILIES = EXAM_TYPES;
 
 const ARTICLE_CATEGORIES = ["EXAM_PROCESS", "APPLICATION", "GENERAL"] as const;
 export const ARTICLE_BODY_FORMATS = ["MARKDOWN", "HTML"] as const;
 export const ARTICLE_FEATURED_DAYS = [1, 3, 7, 14] as const;
 export const ARTICLE_GALLERY_MAX = 4;
-const EXAM_VARIANTS = ["LISANS", "ONLISANS", "ORTAOGRETIM"] as const;
 const httpUrlSchema = z
   .string()
   .url()

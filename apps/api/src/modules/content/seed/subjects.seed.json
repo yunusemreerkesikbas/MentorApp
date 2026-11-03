@@ -1,6 +1,6 @@
 {
   "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
-  "verifiedAt": "2026-09-17",
+  "verifiedAt": "2026-11-03",
   "sources": [
     {
       "family": "KPSS",
@@ -19,6 +19,18 @@
       "sourceUrl": "https://www.meb.gov.tr",
       "verifiedAt": "2026-09-17",
       "note": "Six-test LGS paper counts. Topic labels are editorial coaching grain."
+    },
+    {
+      "family": "ALES",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "verifiedAt": "2026-11-03",
+      "note": "Sections and 50+50 question counts verified in guide section 3.1; net penalty verified in assessment section. Topic subdivisions are editorial coaching labels, not an official exhaustive syllabus. Recheck counts and scoring when each new guide is published."
+    },
+    {
+      "family": "DGS",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/7/genel-bilgiler-temel-lke-ve-kurallar-q1jd4s-30102212.pdf",
+      "verifiedAt": "2026-11-03",
+      "note": "Sections and 50+50 question counts verified in guide section 3.1; net penalty verified in assessment section. Topic subdivisions are editorial coaching labels, not an official exhaustive syllabus. Recheck counts and scoring when each new guide is published."
     }
   ],
   "subjects": [
@@ -149,6 +161,22 @@
     {
       "slug": "diger",
       "name": "Diğer"
+    },
+    {
+      "slug": "ales-sayisal",
+      "name": "ALES Sayısal"
+    },
+    {
+      "slug": "ales-sozel",
+      "name": "ALES Sözel"
+    },
+    {
+      "slug": "dgs-sayisal",
+      "name": "DGS Sayısal"
+    },
+    {
+      "slug": "dgs-sozel",
+      "name": "DGS Sözel"
     }
   ],
   "topics": [
@@ -1281,6 +1309,146 @@
       "subjectSlug": "diger",
       "slug": "diger",
       "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ales-sayisal",
+      "slug": "temel-kavramlar",
+      "name": "Temel kavramlar ve sayılar"
+    },
+    {
+      "subjectSlug": "ales-sayisal",
+      "slug": "cebir",
+      "name": "Denklemler ve eşitsizlikler"
+    },
+    {
+      "subjectSlug": "ales-sayisal",
+      "slug": "oran-oranti",
+      "name": "Oran, orantı ve yüzde"
+    },
+    {
+      "subjectSlug": "ales-sayisal",
+      "slug": "problemler",
+      "name": "Problemler"
+    },
+    {
+      "subjectSlug": "ales-sayisal",
+      "slug": "geometri",
+      "name": "Geometri"
+    },
+    {
+      "subjectSlug": "ales-sayisal",
+      "slug": "sayisal-mantik",
+      "name": "Sayısal mantık ve muhakeme"
+    },
+    {
+      "subjectSlug": "ales-sayisal",
+      "slug": "grafik-tablo",
+      "name": "Grafik ve tablo yorumlama"
+    },
+    {
+      "subjectSlug": "ales-sayisal",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ales-sozel",
+      "slug": "sozcukte-anlam",
+      "name": "Sözcükte anlam"
+    },
+    {
+      "subjectSlug": "ales-sozel",
+      "slug": "cumlede-anlam",
+      "name": "Cümlede anlam"
+    },
+    {
+      "subjectSlug": "ales-sozel",
+      "slug": "paragraf",
+      "name": "Paragraf ve okuduğunu anlama"
+    },
+    {
+      "subjectSlug": "ales-sozel",
+      "slug": "anlatim-butunlugu",
+      "name": "Anlatım bütünlüğü"
+    },
+    {
+      "subjectSlug": "ales-sozel",
+      "slug": "sozel-mantik",
+      "name": "Sözel mantık ve muhakeme"
+    },
+    {
+      "subjectSlug": "ales-sozel",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "dgs-sayisal",
+      "slug": "temel-kavramlar",
+      "name": "Temel kavramlar ve sayılar"
+    },
+    {
+      "subjectSlug": "dgs-sayisal",
+      "slug": "cebir",
+      "name": "Denklemler ve eşitsizlikler"
+    },
+    {
+      "subjectSlug": "dgs-sayisal",
+      "slug": "oran-oranti",
+      "name": "Oran, orantı ve yüzde"
+    },
+    {
+      "subjectSlug": "dgs-sayisal",
+      "slug": "problemler",
+      "name": "Problemler"
+    },
+    {
+      "subjectSlug": "dgs-sayisal",
+      "slug": "geometri",
+      "name": "Geometri"
+    },
+    {
+      "subjectSlug": "dgs-sayisal",
+      "slug": "sayisal-mantik",
+      "name": "Sayısal mantık ve muhakeme"
+    },
+    {
+      "subjectSlug": "dgs-sayisal",
+      "slug": "grafik-tablo",
+      "name": "Grafik ve tablo yorumlama"
+    },
+    {
+      "subjectSlug": "dgs-sayisal",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "dgs-sozel",
+      "slug": "sozcukte-anlam",
+      "name": "Sözcükte anlam"
+    },
+    {
+      "subjectSlug": "dgs-sozel",
+      "slug": "cumlede-anlam",
+      "name": "Cümlede anlam"
+    },
+    {
+      "subjectSlug": "dgs-sozel",
+      "slug": "paragraf",
+      "name": "Paragraf ve okuduğunu anlama"
+    },
+    {
+      "subjectSlug": "dgs-sozel",
+      "slug": "anlatim-butunlugu",
+      "name": "Anlatım bütünlüğü"
+    },
+    {
+      "subjectSlug": "dgs-sozel",
+      "slug": "sozel-mantik",
+      "name": "Sözel mantık ve muhakeme"
+    },
+    {
+      "subjectSlug": "dgs-sozel",
+      "slug": "diger",
+      "name": "Diğer"
     }
   ],
   "examSubjects": [
@@ -1571,6 +1739,96 @@
       "subjectSlug": "diger",
       "questionCount": null,
       "sortOrder": 6
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sayisal",
+      "questionCount": 50,
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sozel",
+      "questionCount": 50,
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "diger",
+      "questionCount": null,
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sayisal",
+      "questionCount": 50,
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sozel",
+      "questionCount": 50,
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "diger",
+      "questionCount": null,
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sayisal",
+      "questionCount": 50,
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sozel",
+      "questionCount": 50,
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "diger",
+      "questionCount": null,
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sayisal",
+      "questionCount": 50,
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sozel",
+      "questionCount": 50,
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "diger",
+      "questionCount": null,
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sayisal",
+      "questionCount": 50,
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sozel",
+      "questionCount": 50,
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "diger",
+      "questionCount": null,
+      "sortOrder": 2
     }
   ],
   "examTopics": [
@@ -3517,6 +3775,456 @@
       "subjectSlug": "diger",
       "topicSlug": "diger",
       "sortOrder": 44
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "temel-kavramlar",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "cebir",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "oran-oranti",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "problemler",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "geometri",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "sayisal-mantik",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "grafik-tablo",
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "diger",
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "sozcukte-anlam",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "cumlede-anlam",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "paragraf",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "anlatim-butunlugu",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "sozel-mantik",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "diger",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "ales-3-2026",
+      "subjectSlug": "diger",
+      "topicSlug": "diger",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "temel-kavramlar",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "cebir",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "oran-oranti",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "problemler",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "geometri",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "sayisal-mantik",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "grafik-tablo",
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "diger",
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "sozcukte-anlam",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "cumlede-anlam",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "paragraf",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "anlatim-butunlugu",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "sozel-mantik",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "diger",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "ales-1-2027",
+      "subjectSlug": "diger",
+      "topicSlug": "diger",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "temel-kavramlar",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "cebir",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "oran-oranti",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "problemler",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "geometri",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "sayisal-mantik",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "grafik-tablo",
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "diger",
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "sozcukte-anlam",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "cumlede-anlam",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "paragraf",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "anlatim-butunlugu",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "sozel-mantik",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "diger",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "ales-2-2027",
+      "subjectSlug": "diger",
+      "topicSlug": "diger",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "temel-kavramlar",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "cebir",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "oran-oranti",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "problemler",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "geometri",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "sayisal-mantik",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "grafik-tablo",
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sayisal",
+      "topicSlug": "diger",
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "sozcukte-anlam",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "cumlede-anlam",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "paragraf",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "anlatim-butunlugu",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "sozel-mantik",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "ales-sozel",
+      "topicSlug": "diger",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "ales-3-2027",
+      "subjectSlug": "diger",
+      "topicSlug": "diger",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sayisal",
+      "topicSlug": "temel-kavramlar",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sayisal",
+      "topicSlug": "cebir",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sayisal",
+      "topicSlug": "oran-oranti",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sayisal",
+      "topicSlug": "problemler",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sayisal",
+      "topicSlug": "geometri",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sayisal",
+      "topicSlug": "sayisal-mantik",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sayisal",
+      "topicSlug": "grafik-tablo",
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sayisal",
+      "topicSlug": "diger",
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sozel",
+      "topicSlug": "sozcukte-anlam",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sozel",
+      "topicSlug": "cumlede-anlam",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sozel",
+      "topicSlug": "paragraf",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sozel",
+      "topicSlug": "anlatim-butunlugu",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sozel",
+      "topicSlug": "sozel-mantik",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "dgs-sozel",
+      "topicSlug": "diger",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "dgs-2027",
+      "subjectSlug": "diger",
+      "topicSlug": "diger",
+      "sortOrder": 0
     }
   ]
 }

@@ -1,0 +1,165 @@
+/*
+ * "Premium" (landing-premium.tsx): a night sheet inside the paper, the landing's own sky and city
+ * (`.lc-sky`, `city-scene.ts` art), Puhu on the left and the copy on the right. The city stands
+ * along the bottom only, under the content, so the flying loop's flat ground never covers a roof.
+ */
+.lp-root {
+  /*
+   * The art is 3:2. The mid layer's tallest tower starts 31.2% down it, so `--lp-city-lift` pushes
+   * the layers down until that tower stands `--lp-skyline` above the sheet's bottom.
+   */
+  --lp-city-h: max(440px, 66.667vw);
+  --lp-skyline: clamp(140px, 15vw, 220px);
+  --lp-city-lift: calc(var(--lp-skyline) - 0.688 * var(--lp-city-h));
+  --lp-city-slack: calc((1.5 * var(--lp-city-h) - 100vw) / 2);
+  --color-focus-ring: var(--landing-lamp);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin-top: 64px;
+  border-radius: var(--play-sheet-radius);
+  /* The top is the flying loop's measured ground (#030B27), so its soft edge melts into the sky. */
+  background: linear-gradient(180deg, #030b27 0%, #030b27 45%, var(--landing-night-bottom) 100%);
+  color: var(--landing-on-night);
+}
+
+.lp-sky {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+/* Tiled at the art's own size, so a phone never blows the stars up into dots beside the copy. */
+.lp-stars {
+  position: absolute;
+  inset: 0 0 30%;
+  background: url("/visuals/landing/stars.svg") center top / 1000px 600px repeat;
+  opacity: 0.6;
+}
+.lp-city {
+  position: absolute;
+  left: 50%;
+  height: var(--lp-city-h);
+  width: auto;
+  max-width: none;
+  transform: translateX(-50%);
+}
+.lp-city-far {
+  bottom: calc(var(--lp-city-lift) + 20px);
+}
+.lp-city-mid {
+  bottom: var(--lp-city-lift);
+  transform: translateX(calc(-50% + min(20px, var(--lp-city-slack))));
+}
+.lp-city-front {
+  bottom: calc(var(--lp-city-lift) - 20px);
+}
+
+.lp-inner {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding-top: 40px;
+  padding-bottom: calc(var(--lp-skyline) + 16px);
+}
+
+.lp-art {
+  width: min(80vw, 320px);
+  aspect-ratio: 1;
+}
+/* The loop sits on a flat ground; a wide soft circle fades its square edge (the cape tip reaches it). */
+.lp-art img,
+.lp-art video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-mask-image: radial-gradient(circle at 50% 48%, #000 60%, transparent 71%);
+  mask-image: radial-gradient(circle at 50% 48%, #000 60%, transparent 71%);
+}
+
+.lp-copy {
+  width: 100%;
+  max-width: 34rem;
+}
+.lp-pill {
+  gap: 6px;
+  padding-left: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--landing-on-night);
+}
+.lp-pill svg {
+  color: var(--premium-ring-to);
+}
+.lp-lit {
+  color: var(--landing-lamp);
+  white-space: nowrap;
+}
+.lp-lead {
+  margin-top: 12px;
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--landing-on-night-soft);
+}
+
+.lp-benefits {
+  display: grid;
+  gap: 18px;
+  margin: 26px 0 30px;
+  padding: 0;
+  list-style: none;
+}
+.lp-benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.lp-benefits svg {
+  flex: none;
+  color: var(--landing-lamp);
+}
+.lp-benefits b {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.lp-benefits small {
+  display: block;
+  margin-top: 2px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--landing-on-night-soft);
+}
+
+/* Lamp light, the landing's own accent, as the one gold ledge on the page. */
+.lp-cta {
+  background: var(--landing-lamp);
+  color: var(--landing-ink);
+  box-shadow: 0 4px 0 #c99a2e;
+}
+.lp-cta:focus-visible {
+  --tw-ring-offset-color: var(--landing-night-top);
+}
+.lp-note {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--landing-on-night-soft);
+}
+
+@media (width >= 64rem) {
+  .lp-root {
+    margin-top: 96px;
+  }
+  .lp-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    justify-items: stretch;
+    gap: 56px;
+    padding-top: 72px;
+  }
+  .lp-art {
+    justify-self: center;
+    width: min(100%, 460px);
+  }
+}

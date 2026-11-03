@@ -107,14 +107,6 @@ function Hero({ t }: { t: Translate }) {
           {t("skip_story")}
         </a>
       </p>
-      <p className="lc-hint">
-        <Icon d={["M6 9l6 6 6-6"]} />
-        {t("scroll_hint")}
-        <span aria-hidden="true">·</span>
-        <a href="#durak-7" className="lc-text-link">
-          {t("skip_story")}
-        </a>
-      </p>
     </div>
   );
 }

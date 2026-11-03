@@ -58,7 +58,7 @@ export interface SessionReturnReminderDto {
 
 export type AnnouncementAudience =
   | { kind: "ALL" }
-  | { kind: "EXAM_TYPE"; examType: "KPSS" | "YKS" | "LGS" };
+  | { kind: "EXAM_TYPE"; examType: import("./exams.js").ExamType };
 
 /** DRAFT → SENDING (job queued/fanning out) → SENT. */
 export type AnnouncementStatus = "DRAFT" | "SENDING" | "SENT";

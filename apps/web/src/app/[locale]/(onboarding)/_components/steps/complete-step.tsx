@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Backpack, Bell, CalendarDays, GraduationCap, Landmark, Target, Timer, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { AuthUser, CareerGroup } from "@mentor/types";
+import type { AuthUser, CareerGroup, ExamType } from "@mentor/types";
 import { Button, StreamingText } from "@mentor/ui";
 import { PlayIconWell, type PlayWell } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
@@ -17,7 +17,7 @@ import type { OnboardingAudience } from "../onboarding-flow";
 import { useRedeemPendingReferral } from "../use-redeem-pending-referral";
 import { ReadyWindow } from "./ready-window";
 
-const EXAM_ICON = { KPSS: Landmark, YKS: GraduationCap, LGS: Backpack } as const;
+const EXAM_ICON: Partial<Record<ExamType, LucideIcon>> = { KPSS: Landmark, LGS: Backpack };
 
 export type ReadySummary = {
   dailyGoalMinutes: number | null;
@@ -70,7 +70,7 @@ export function CompleteStep({
   const rows: Row[] = [];
   if (user.examType) {
     const level = user.examType === "KPSS" && user.examVariant ? ` · ${examCopy(`variant.${user.examVariant}`)}` : "";
-    rows.push({ icon: EXAM_ICON[user.examType], well: "blue", title: `${user.examType}${level}` });
+    rows.push({ icon: EXAM_ICON[user.examType] ?? GraduationCap, well: "blue", title: `${user.examType}${level}` });
   }
   if (summary.dailyGoalMinutes) rows.push({ icon: Timer, well: "peri", title: t("summary_goal", { minutes: summary.dailyGoalMinutes }) });
   if (summary.careerGroup) rows.push({ icon: Target, well: "coral", title: t("summary_field", { field: career(`group.${summary.careerGroup}`) }) });

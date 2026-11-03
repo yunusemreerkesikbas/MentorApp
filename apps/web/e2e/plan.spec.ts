@@ -298,7 +298,7 @@ test("Koçla planla sahnesi azaltılmış harekette videosuz ve notlar düşmede
   await expect(stage).toContainText(coverageLine);
   // Puhu holds still on the loop's first frame.
   await expect(stage.locator("video")).toHaveCount(0);
-  await expect(stage.locator("img[src*='puhu-magic']")).toBeVisible();
+  await expect(stage.locator("img[src*='puhu-hero-magic']")).toBeVisible();
   // The notes still change, without the drop.
   const note = stage.locator("[data-stage-note]");
   await expect(note).toContainText(weakLine);
@@ -1111,6 +1111,14 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
         total: tasks.length,
         page: 1,
         pageSize: 50,
+      });
+    }
+    // Premium is included; free has no Coin path here (economy is off), so it meets the paywall.
+    if (method === "GET" && path === "/v1/coach/plan-previews/access") {
+      const premium = options.premium !== false;
+      return json(route, {
+        mode: premium ? "INCLUDED" : "NONE", canGenerate: premium, cost: null, dailyLimit: 0,
+        dailyRemaining: 0, coinConfirmed: 0, latestRequestId: null, nextAvailableAt: null,
       });
     }
     if (method === "POST" && path === "/v1/coach/plan-adaptation") {

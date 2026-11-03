@@ -13,7 +13,7 @@
     radial-gradient(1px 1px at 50% 4%, rgba(255, 255, 255, 0.4), transparent),
     radial-gradient(1.3px 1.3px at 69% 20%, rgba(255, 255, 255, 0.55), transparent),
     radial-gradient(1px 1px at 33% 25%, rgba(255, 255, 255, 0.4), transparent),
-    linear-gradient(to bottom, #08113a 0%, #09133d 52%, #132552 74%, #1b3563 100%);
+    linear-gradient(to bottom, #0d0e25 0%, #0d0e25 50%, #132552 74%, #1b3563 100%);
   /* The scene's own palette (the landing's paper language, `city-stage.css` `.lc-root`). */
   --pcs-on-night: #ffffff;
   --pcs-on-night-soft: #c9d6ea;
@@ -77,8 +77,8 @@
   width: clamp(200px, 34dvh, 320px);
   aspect-ratio: 1;
   object-fit: cover;
-  -webkit-mask-image: radial-gradient(circle at 50% 48%, #000 50%, transparent 69%);
-  mask-image: radial-gradient(circle at 50% 48%, #000 50%, transparent 69%);
+  -webkit-mask-image: radial-gradient(circle at 50% 46%, #000 58%, transparent 68%);
+  mask-image: radial-gradient(circle at 50% 46%, #000 58%, transparent 68%);
 }
 @media (width >= 48rem) {
   .pcs-video {

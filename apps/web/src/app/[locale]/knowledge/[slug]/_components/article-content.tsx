@@ -6,6 +6,7 @@ import { DeferredContextualAdSlot } from "@/components/ads/deferred-contextual-a
 import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import type { ArticleAnalyticsParams } from "@/lib/analytics";
+import { splitArticleProvenance } from "@/lib/article-provenance";
 import { blogHref } from "@/lib/blog-url";
 import { infoArticleUrl, type ArticleCategory } from "@/lib/content-api";
 import { ExamDaySkeleton } from "../../_components/blog-skeletons";
@@ -43,6 +44,7 @@ export async function ArticleContent({
   readingMinutes: number;
 }) {
   const [t, k] = await Promise.all([getTranslations("article"), getTranslations("knowledge")]);
+  const provenance = splitArticleProvenance(article.body, article.bodyFormat);
   const family = article.family as ExamType;
   const category = article.category as ArticleCategory;
   const slides = [...(article.coverImage ? [article.coverImage] : []), ...article.galleryImages];
@@ -73,11 +75,6 @@ export async function ArticleContent({
             <h1 className="text-balance text-display font-extrabold leading-tight tracking-[-0.01em] text-[var(--color-main)]">
               {article.title}
             </h1>
-            {article.metaDescription ? (
-              <p className="text-pretty text-base font-semibold leading-relaxed text-[var(--color-body)] sm:text-lg">
-                {article.metaDescription}
-              </p>
-            ) : null}
             <p className="flex flex-wrap items-center gap-x-1.5 text-caption font-bold text-[var(--color-secondary)]">
               <span>{article.author?.name ?? k("editor_fallback")}</span>
               {publishedLabel ? (
@@ -90,20 +87,22 @@ export async function ArticleContent({
               <span>{t("reading_time", { minutes: readingMinutes })}</span>
             </p>
           </header>
-          <ArticleTrustRow
-            article={article}
-            analyticsParams={analyticsParams}
-            verifiedLabel={verifiedLabel}
-            updatedLabel={updatedLabel}
-          />
           {slides.length > 0 ? (
             <div className="mt-6">
               <ArticleGallerySlider images={slides} />
             </div>
           ) : null}
           <div className="mt-8">
-            <ArticleMarkdown body={article.body} format={article.bodyFormat} />
+            <ArticleMarkdown body={provenance.body} format={article.bodyFormat} />
           </div>
+          <ArticleTrustRow
+            scope={provenance.scope}
+            citation={provenance.citation}
+            article={article}
+            analyticsParams={analyticsParams}
+            verifiedLabel={verifiedLabel}
+            updatedLabel={updatedLabel}
+          />
           <ArticleViewTracker articleSlug={article.slug} analyticsParams={analyticsParams} />
           <DeferredContextualAdSlot contentSlug={article.slug} examType={family} />
           <ArticleCoachCard

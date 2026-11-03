@@ -6,7 +6,7 @@ import { Coins, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { WeeklyChestView } from "@mentor/types";
 import { CoinCelebrationVisual } from "@/components/coin-celebration-visual";
-import { PREMIUM_MASK_PATH } from "@/components/premium/premium-identity-mark";
+import { PREMIUM_MASK_PATH } from "@/components/premium/premium-mask";
 import { PuhuImage } from "@/components/puhu-image";
 import { playCoinChime } from "@/lib/coin-sound";
 import { useIsPremium } from "@/lib/subscription-context";

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { SceneImg } from "@/app/[locale]/_components/landing/scene-img";
 
-const LOOP = "/mascot/puhu/motion/puhu-magic-loop.mp4";
+const LOOP = "/mascot/puhu/motion/puhu-hero-magic-loop.mp4";
 /** The loop's first frame: what shows while it loads, if it fails, and with reduced motion. */
-const POSTER = "/mascot/puhu/motion/puhu-magic.webp";
+const POSTER = "/mascot/puhu/motion/puhu-hero-magic.webp";
 
 /**
  * The landing's night city along the bottom of the scene (sizes in `plan-coach-stage.css`). Fixed,

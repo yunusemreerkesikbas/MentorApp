@@ -3,7 +3,7 @@
  * User-facing copy is NOT here: messages are localized by the backend.
  */
 import { z } from "zod";
-import { UserRole } from "@mentor/types";
+import { EXAM_TYPES, UserRole } from "@mentor/types";
 // NOTE: import from the leaf module, NOT "./index.js" — a barrel import here would
 // create an index↔admin cycle that crashes sync ESM-from-CJS loading (see payments gotcha).
 import { paginationQuerySchema } from "./pagination.js";
@@ -44,7 +44,7 @@ export type UpdateConfig = z.infer<typeof updateConfigSchema>;
 /** Who a broadcast reaches. Resolved server-side against ACTIVE users only. */
 export const announcementAudienceSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("ALL") }),
-  z.object({ kind: z.literal("EXAM_TYPE"), examType: z.enum(["KPSS", "YKS", "LGS"]) }),
+  z.object({ kind: z.literal("EXAM_TYPE"), examType: z.enum(EXAM_TYPES) }),
 ]);
 export type AnnouncementAudienceInput = z.infer<typeof announcementAudienceSchema>;
 

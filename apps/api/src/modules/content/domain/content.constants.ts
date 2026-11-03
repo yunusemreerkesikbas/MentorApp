@@ -12,20 +12,10 @@ export const ExamEventType = {
 export type ExamEventType = (typeof ExamEventType)[keyof typeof ExamEventType];
 
 /** Matches `@mentor/types` ExamType / identity `users.examType`. */
-export const ExamFamily = {
-  KPSS: "KPSS",
-  YKS: "YKS",
-  LGS: "LGS",
-} as const;
-export type ExamFamily = (typeof ExamFamily)[keyof typeof ExamFamily];
+export { ExamType as ExamFamily } from "@mentor/types";
 
 /** KPSS sub-types stored on `exams.variant` (countdown variant pick deferred). */
-export const ExamVariant = {
-  LISANS: "LISANS",
-  ONLISANS: "ONLISANS",
-  ORTAOGRETIM: "ORTAOGRETIM",
-} as const;
-export type ExamVariant = (typeof ExamVariant)[keyof typeof ExamVariant];
+export { ExamVariant } from "@mentor/types";
 
 /** Knowledge-center article categories (A-layer). */
 export const InfoArticleCategory = {

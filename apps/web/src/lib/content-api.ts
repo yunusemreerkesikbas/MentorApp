@@ -5,6 +5,7 @@ import type {
   InfoArticleSummaryDto,
   Paginated,
 } from "@mentor/types";
+import { EXAM_TYPES } from "@mentor/types";
 
 import { getPathname } from "../i18n/navigation";
 
@@ -20,7 +21,7 @@ export const ARTICLE_CATEGORIES = [
 ] as const;
 export type ArticleCategory = (typeof ARTICLE_CATEGORIES)[number];
 
-export const EXAM_FAMILIES: ExamType[] = ["KPSS", "YKS", "LGS"];
+export const EXAM_FAMILIES: ExamType[] = EXAM_TYPES;
 
 export function infoArticleUrl(slug: string): string {
   return `${siteUrl()}${getPathname({

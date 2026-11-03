@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from "next/dynamic";
+import { EXAM_TYPES } from "@mentor/types";
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
@@ -12,7 +13,7 @@ import { ArticleMediaSection } from "./ArticleMediaSection";
 import { ACCEPTED_IMAGES, escapeAttribute, imageDimensions, resolveUploadUrl, uploadArticleImage } from "./article-image-utils";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
-const FAMILIES = ["KPSS", "YKS", "LGS"];
+const FAMILIES = EXAM_TYPES;
 const CATEGORIES = [
     { value: "EXAM_PROCESS", label: "Sınav süreci" },
     { value: "APPLICATION", label: "Başvuru" },

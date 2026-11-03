@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EXAM_TYPES } from "@mentor/types";
 import { listInfoArticlesQuerySchema } from "./content.js";
 
 export const adPlacementIdSchema = z.enum([
@@ -32,7 +33,7 @@ export const adAnnouncementContextSchema = adAnnouncementParamsSchema.extend({ c
 export const approveAdQuestionSchema = adQuestionContextSchema.pick({ contentRevision: true });
 export const adPlacementQuerySchema = z.object({
   ...adBlogListContextSchema.partial().shape,
-  examType: z.enum(["KPSS", "YKS", "LGS"]).optional(),
+  examType: z.enum(EXAM_TYPES).optional(),
   contentSlug: z.string().trim().min(1).max(128).optional(),
   ...adQuestionContextSchema.partial().shape,
   threadId: z.string().uuid().optional(),

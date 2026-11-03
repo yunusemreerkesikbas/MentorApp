@@ -1,7 +1,8 @@
-import { DataCard } from "./data-card.js";
+import type { ReactNode } from "react";
+import { DataCard, type DataCardSource } from "./data-card.js";
 import { DigitPopIn } from "./transitions/digit-pop-in.js";
 
-/** Web `public/img` asset — CountdownCard is panel-only. */
+/** Shared web `public/img` asset for panel and public blog countdowns. */
 const HOURGLASS_SRC = "/img/hourglass.svg";
 
 export interface CountdownCardProps {
@@ -21,6 +22,8 @@ export interface CountdownCardProps {
     today: string;
   };
   className?: string;
+  source?: DataCardSource;
+  children?: ReactNode;
 }
 
 /**
@@ -58,6 +61,8 @@ export function CountdownCard({
   examDateLabel,
   labels,
   className,
+  source,
+  children,
 }: CountdownCardProps) {
   const isToday = daysRemaining <= 0;
   const caption = examDateLabel ? `${examName} · ${examDateLabel}` : examName;
@@ -83,6 +88,9 @@ export function CountdownCard({
         )
       }
       caption={caption}
-    />
+      source={source}
+    >
+      {children}
+    </DataCard>
   );
 }

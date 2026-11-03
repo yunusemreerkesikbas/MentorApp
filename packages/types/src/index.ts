@@ -63,26 +63,7 @@ export const ASSIGNABLE_ADMIN_ROLES = [
 export const ASSIGNABLE_ROLES = [...ASSIGNABLE_ADMIN_ROLES, UserRole.COACH] as const;
 
 // --- Exam-agnostic core (§0): exams differ only by content/config ---
-export const ExamType = {
-  KPSS: "KPSS",
-  YKS: "YKS",
-  LGS: "LGS",
-} as const;
-export type ExamType = (typeof ExamType)[keyof typeof ExamType];
-
-/**
- * Which KPSS guide a candidate sits — stored on `users.examVariant` and on `exams.variant`.
- *
- * Only KPSS splits this way, and the split is not cosmetic: the three guides have different exam
- * dates and advertise different vacancies, so without it an ORTAOGRETIM candidate counts down to
- * the LISANS date and browses vacancies they cannot apply to.
- */
-export const ExamVariant = {
-  LISANS: "LISANS",
-  ONLISANS: "ONLISANS",
-  ORTAOGRETIM: "ORTAOGRETIM",
-} as const;
-export type ExamVariant = (typeof ExamVariant)[keyof typeof ExamVariant];
+export { EXAM_CATALOG, EXAM_TYPES, EXAM_VARIANTS, ExamType, ExamVariant } from "./exams.js";
 
 // --- Economy ledger (§3/§11): balance = sum of rows, never a single number ---
 export const Currency = {

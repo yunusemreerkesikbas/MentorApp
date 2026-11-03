@@ -185,8 +185,9 @@ export interface DatasetInfoDto {
 
 /* ---------------------------------- search ---------------------------------- */
 
-export const EXAM_FAMILIES_WITH_TARGETS = ["YKS", "KPSS", "LGS"] as const;
-export type ExamFamilyWithTargets = (typeof EXAM_FAMILIES_WITH_TARGETS)[number];
+/** Compatibility export: all families may search cities; target datasets stay family-scoped. */
+export { EXAM_TYPES as EXAM_FAMILIES_WITH_TARGETS } from "./exams.js";
+export type ExamFamilyWithTargets = import("./exams.js").ExamType;
 
 /**
  * One search box, results grouped by kind. Which groups fill depends on the caller's exam family:

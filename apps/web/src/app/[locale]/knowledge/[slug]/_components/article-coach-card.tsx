@@ -41,9 +41,6 @@ export async function ArticleCoachCard({
           anonymousLabel={t("coach_sign_in_cta")}
           analyticsParams={analyticsParams}
         />
-        <p className="text-center text-caption font-semibold text-[var(--color-secondary)] sm:text-left">
-          {t("coach_body")}
-        </p>
       </div>
     </section>
   );

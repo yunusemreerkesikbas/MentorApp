@@ -1912,9 +1912,11 @@ export type GeoControllerSearchFamily = typeof GeoControllerSearchFamily[keyof t
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const GeoControllerSearchFamily = {
-  YKS: 'YKS',
   KPSS: 'KPSS',
+  YKS: 'YKS',
   LGS: 'LGS',
+  ALES: 'ALES',
+  DGS: 'DGS',
 } as const;
 
 export type GeoControllerGetKpssTargetsParams = {
@@ -2022,6 +2024,8 @@ export const InfoArticleControllerListArticlesFamily = {
   KPSS: 'KPSS',
   YKS: 'YKS',
   LGS: 'LGS',
+  ALES: 'ALES',
+  DGS: 'DGS',
 } as const;
 
 export type InfoArticleControllerGetFeaturedParams = {
@@ -2036,6 +2040,8 @@ export const InfoArticleControllerGetFeaturedFamily = {
   KPSS: 'KPSS',
   YKS: 'YKS',
   LGS: 'LGS',
+  ALES: 'ALES',
+  DGS: 'DGS',
 } as const;
 
 export type NotebookReviewControllerSummaryParams = {

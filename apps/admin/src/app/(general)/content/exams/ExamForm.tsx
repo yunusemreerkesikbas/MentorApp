@@ -1,5 +1,6 @@
 'use client'
 import { useState, type FormEvent } from "react";
+import { EXAM_TYPES, EXAM_VARIANTS } from "@mentor/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
@@ -9,8 +10,8 @@ import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
 import type { AdminExam } from "@/lib/types";
 
-const FAMILIES = ["KPSS", "YKS", "LGS"];
-const VARIANTS = ["", "LISANS", "ONLISANS", "ORTAOGRETIM"];
+const FAMILIES = EXAM_TYPES;
+const VARIANTS = ["", ...EXAM_VARIANTS];
 
 // Editorial exam form. Idempotent upsert by slug; netRule is the net-scoring penalty divisor.
 export default function ExamForm({ initial }: { initial?: AdminExam | null }) {

@@ -21,6 +21,24 @@ const user: AuthUser = {
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
+for (const examType of ["ALES", "DGS"] as const) {
+  test(`sınav kataloğu ayarlardan ${examType} seçimini kaydeder`, async ({ page }) => {
+    await mockProfileApi(page, { ...user, examVariant: "LISANS" });
+    const patches: unknown[] = [];
+    await page.route(`${browserApiUrl}/users/me`, async (route) => {
+      if (route.request().method() !== "PATCH") return route.fallback();
+      const patch = route.request().postDataJSON();
+      patches.push(patch);
+      return json(route, { ...user, ...patch });
+    });
+    await page.goto("/ayarlar");
+    await page.getByRole("button", { name: /Hedef sınav/ }).click();
+    await page.getByRole("button", { name: examType, exact: true }).click();
+    await expect.poll(() => patches).toEqual([{ examType, examVariant: null }]);
+    await expect(page.getByRole("button", { name: /Hedef sınav/ })).toContainText(examType);
+  });
+}
+
 test("ayarlar yasal footer bağlantısını AppNav içindeki belgeye açar", async ({ page }) => {
   await mockProfileApi(page);
   await page.addInitScript(() =>

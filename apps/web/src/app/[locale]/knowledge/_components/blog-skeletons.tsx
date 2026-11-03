@@ -46,10 +46,15 @@ export function ExamDaySkeleton() {
   const t = useTranslations("knowledge");
   return (
     <SkeletonGroup label={t("loading")} className={`${PANEL_CARD} flex flex-col gap-3`}>
-      <Skeleton className={`h-4 w-24 ${BONE}`} />
-      <Skeleton className={`h-6 w-44 ${BONE}`} />
-      <Skeleton className={`h-4 w-40 ${BONE}`} />
-      <Skeleton className={`h-3.5 w-full ${BONE}`} />
+      <div className="flex items-start gap-4">
+        <Skeleton className={`size-10 shrink-0 ${BONE}`} />
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <Skeleton className={`h-3 w-24 ${BONE}`} />
+          <Skeleton className={`h-8 w-28 ${BONE}`} />
+          <Skeleton className={`h-4 w-full ${BONE}`} />
+          <Skeleton className={`h-3 w-20 ${BONE}`} />
+        </div>
+      </div>
     </SkeletonGroup>
   );
 }

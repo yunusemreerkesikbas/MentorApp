@@ -36,6 +36,12 @@ describe("onboarding flow", () => {
     expect(nextOnboardingStep("complete", "KPSS")).toBe("complete");
   });
 
+  it.each(["ALES", "DGS"] as const)("walks %s without a KPSS level for students and coaches", (examType) => {
+    expect(nextOnboardingStep("exam", examType)).toBe("why");
+    expect(previousOnboardingStep("why", examType)).toBe("exam");
+    expect(walkForward(examType, "coach")).toEqual(["exam", "coachProfile", "profile", "complete"]);
+  });
+
   it("fills seven segments and leaves the last one to completion", () => {
     expect(onboardingProgress("intro")).toBeNull();
     expect(onboardingProgress("exam")).toEqual({ done: 1, total: 7 });

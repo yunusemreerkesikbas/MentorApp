@@ -478,7 +478,7 @@ export interface ForumFeed {
 
 export interface ForumHubView {
   /** Available only after both operational gates and a conservative public-context check. */
-  adContext?: { contentRevision: string; waitingQuestions: ForumFeedItem[]; sidebarRooms: ZoneView[]; examType: "KPSS" | "YKS" | "LGS" | null };
+  adContext?: { contentRevision: string; waitingQuestions: ForumFeedItem[]; sidebarRooms: ZoneView[]; examType: import("./exams.js").ExamType | null };
   featured: ForumFeedItem | null;
   continueDiscussions: ForumFeedItem[];
   trendingTags: Array<ForumTagView & { threadCount: number }>;

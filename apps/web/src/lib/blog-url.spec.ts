@@ -15,7 +15,7 @@ describe("parseBlogQuery", () => {
   });
 
   it("drops unknown or malformed values instead of failing the page", () => {
-    expect(parseBlogQuery({ family: "ALES", category: "NEWS", page: "-2" })).toEqual({
+    expect(parseBlogQuery({ family: "OTHER", category: "NEWS", page: "-2" })).toEqual({
       family: "KPSS",
       category: null,
       page: 1,
@@ -25,6 +25,12 @@ describe("parseBlogQuery", () => {
       category: null,
       page: 1,
     });
+  });
+
+  it.each(["ALES", "DGS"])("keeps %s in blog filters and navigation", (family) => {
+    const query = parseBlogQuery({ family });
+    expect(query.family).toBe(family);
+    expect(blogHref(query)).toMatchObject({ query: { family } });
   });
 });
 
