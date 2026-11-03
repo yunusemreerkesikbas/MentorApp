@@ -65,10 +65,15 @@ Thumbs.db
 .github/prompts/
 .github/skills/
 
+# tokensave code-index cache (local, machine-specific)
+.tokensave/
+
 # impeccable design-hook runtime cache
 **/.impeccable/
 apps/web/test-results/
 apps/web/playwright-report/
+apps/web/test-results-*/
+apps/web/.test-results/
 apps/api/eval-results/
 
 # Local deployment evidence; never includes published source
