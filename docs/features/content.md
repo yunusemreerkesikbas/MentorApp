@@ -78,6 +78,27 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-04: Add covers to the ten local KPSS Lisans articles.** The distinct Pexels photos
+  were cropped to 1200 × 630 WebP and uploaded to the existing development media bucket.
+  Refresh the local KPSS blog to see the covers. Each article credits its representative photo
+  separately from the ÖSYM source. Local publication and verification dates were preserved.
+  All public asset hashes and ten rendered cover references were checked. The assets and source
+  manifest are under `docs/editorial/kpss/lisans/`.
+
+- **2026-11-04: Publish ten KPSS Lisans articles locally.** Published the batch through the
+  content service in one transaction on `localhost:5433/mentor`. Verified all ten detail routes,
+  direct PDF links and KPSS index entries. See `docs/editorial/kpss/lisans/publication-local.json`
+  for the local publication record.
+
+- **2026-11-04: Complete the ten-article KPSS Lisans draft package.** Added candidate guides
+  on application confirmation and fees, admission documents and identity, and result review
+  versus question objections. See `docs/editorial/kpss/lisans/` for bodies and related links.
+  The review guide distinguishes the 2026 calendar-day and business-day windows.
+
+- **2026-11-04: Extend the KPSS Lisans editorial package.** Added drafts on score validity and
+  branch rankings in `docs/editorial/kpss/lisans/`. The ranking article cites the separate 2024
+  ÖSYM notice for ranking data and the 2026 PDF for central placement rules.
+
 - **2026-11-04: Prepare five KPSS Lisans blog drafts.** The package covers eligibility, A and B
   Group recruitment, field sessions with a P48 example, P3 and DHBT/P124. Review the drafts,
   SEO fields and source page links in `docs/editorial/kpss/lisans/`. Recruitment guides explain

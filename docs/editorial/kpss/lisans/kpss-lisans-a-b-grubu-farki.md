@@ -17,3 +17,7 @@ Bir kurum B Grubu alımı için kendi ilanını yayımladığında başvuru kana
 ## Kaynaklar
 
 - [ÖSYM 2026 KPSS Lisans Kılavuzu](https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf#page=4), §§1.2 ve 1.5–1.7, PDF s. 4, §1.13, PDF s. 5 ve §§5.1–5.3, PDF s. 32.
+
+## Görsel kaynağı
+
+Temsilî kapak fotoğrafı: [George Pak / Pexels](https://www.pexels.com/photo/close-up-shot-of-a-person-holding-a-papers-7972282/). [Pexels lisansı](https://www.pexels.com/license/).

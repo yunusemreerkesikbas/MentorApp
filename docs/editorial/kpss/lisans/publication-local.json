@@ -1,0 +1,47 @@
+{
+  "environment": "LOCAL",
+  "database": "localhost:5433/mentor",
+  "author": "PuhuKoç",
+  "published": [
+    {
+      "slug": "kpss-lisans-kimler-basvurabilir",
+      "publishedAt": "2026-11-04T12:48:25.844Z"
+    },
+    {
+      "slug": "kpss-lisans-a-b-grubu-farki",
+      "publishedAt": "2026-11-04T12:48:25.844Z"
+    },
+    {
+      "slug": "kpss-lisans-alan-bilgisi-oturumlari",
+      "publishedAt": "2026-11-04T12:48:25.844Z"
+    },
+    {
+      "slug": "kpss-lisans-p3-net-hesaplama",
+      "publishedAt": "2026-11-04T12:48:25.844Z"
+    },
+    {
+      "slug": "kpss-lisans-dhbt-p124",
+      "publishedAt": "2026-11-04T12:48:25.844Z"
+    },
+    {
+      "slug": "kpss-lisans-puan-gecerlilik-suresi",
+      "publishedAt": "2026-11-04T12:48:25.844Z"
+    },
+    {
+      "slug": "kpss-lisans-brans-siralamasi",
+      "publishedAt": "2026-11-04T12:48:25.844Z"
+    },
+    {
+      "slug": "kpss-lisans-basvuru-onay-ucret",
+      "publishedAt": "2026-11-04T12:48:25.844Z"
+    },
+    {
+      "slug": "kpss-lisans-sinava-giris-belgesi-kimlik",
+      "publishedAt": "2026-11-04T12:48:25.844Z"
+    },
+    {
+      "slug": "kpss-lisans-sonuc-inceleme-itiraz",
+      "publishedAt": "2026-11-04T12:48:25.844Z"
+    }
+  ]
+}

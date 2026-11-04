@@ -19,3 +19,7 @@ A Grubu kadrolarında kuruma başvurduğun tarihte, ÖSYM’nin B Grubu merkezî
 ## Kaynaklar
 
 - [ÖSYM 2026 KPSS Lisans Kılavuzu](https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf#page=4), §1.4, PDF s. 4, §1.13, PDF s. 5 ve §2.1, PDF s. 6.
+
+## Görsel kaynağı
+
+Temsilî kapak fotoğrafı: [Pavel Danilyuk / Pexels](https://www.pexels.com/photo/selective-focus-photo-of-woman-in-academic-dress-holding-diploma-7944037/). [Pexels lisansı](https://www.pexels.com/license/).
