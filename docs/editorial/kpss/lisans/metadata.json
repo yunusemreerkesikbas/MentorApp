@@ -32,8 +32,13 @@
           {
             "slug": "kpss-lisans-p3-net-hesaplama"
           }
-        ]
-      }
+        ],
+        "coverImageFile": "images/kpss-lisans-kimler-basvurabilir-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/kpss/kpss-lisans-kimler-basvurabilir-1d98ea516538.webp",
+      "coverImageAlt": "Mezuniyet kıyafetiyle diplomasını tutan bir kadın",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
     },
     {
       "slug": "kpss-lisans-a-b-grubu-farki",
@@ -63,8 +68,13 @@
           {
             "slug": "kpss-lisans-p3-net-hesaplama"
           }
-        ]
-      }
+        ],
+        "coverImageFile": "images/kpss-lisans-a-b-grubu-farki-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/kpss/kpss-lisans-a-b-grubu-farki-1b861e87aa85.webp",
+      "coverImageAlt": "Masada dizüstü bilgisayar ve belgelerle çalışan bir kişi",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
     },
     {
       "slug": "kpss-lisans-alan-bilgisi-oturumlari",
@@ -85,7 +95,7 @@
         "priority": 3,
         "primaryKeyword": "kpss lisans alan bilgisi oturumları nasıl seçilir",
         "sourceRefs": [
-          "§1.10, PDF s. 5, oturum çizelgesi, PDF s. 33 ve Tablo 2, PDF s. 39–40"
+          "§1.10, PDF s. 5, §§2.2 ve 3.1, PDF s. 11 ve 19, oturum çizelgesi, PDF s. 33 ve Tablo 2, PDF s. 39–40"
         ],
         "relatedArticles": [
           {
@@ -93,9 +103,17 @@
           },
           {
             "slug": "kpss-lisans-p3-net-hesaplama"
+          },
+          {
+            "slug": "kpss-lisans-basvuru-onay-ucret"
           }
-        ]
-      }
+        ],
+        "coverImageFile": "images/kpss-lisans-alan-bilgisi-oturumlari-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/kpss/kpss-lisans-alan-bilgisi-oturumlari-ac7ed0795027.webp",
+      "coverImageAlt": "Kitaplar ve dizüstü bilgisayar eşliğinde not alan öğrenciler",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
     },
     {
       "slug": "kpss-lisans-p3-net-hesaplama",
@@ -125,8 +143,13 @@
           {
             "slug": "kpss-lisans-dhbt-p124"
           }
-        ]
-      }
+        ],
+        "coverImageFile": "images/kpss-lisans-p3-net-hesaplama-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/kpss/kpss-lisans-p3-net-hesaplama-35d4f9b84c66.webp",
+      "coverImageAlt": "Masada açık defter, hesap makinesi ve kalem",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
     },
     {
       "slug": "kpss-lisans-dhbt-p124",
@@ -156,8 +179,187 @@
           {
             "slug": "kpss-lisans-p3-net-hesaplama"
           }
-        ]
-      }
+        ],
+        "coverImageFile": "images/kpss-lisans-dhbt-p124-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/kpss/kpss-lisans-dhbt-p124-f7d4b7188c2a.webp",
+      "coverImageAlt": "Açık bir Kuran sayfasının yakın planı",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "kpss-lisans-puan-gecerlilik-suresi",
+      "title": "KPSS Lisans puanı kaç yıl geçerli?",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-lisans-puan-gecerlilik-suresi.md",
+      "metaTitle": "KPSS Lisans puanı kaç yıl geçerli? | PuhuKoç",
+      "metaDescription": "KPSS Lisans puanının geçerliliğinin ne zaman başladığını, yeni sınav yapılamadığında ne olduğunu ve alım ilanında hangi döneme bakacağını öğren.",
+      "source": "ÖSYM 2026 KPSS Lisans Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 6,
+        "primaryKeyword": "kpss lisans puanı kaç yıl geçerli",
+        "sourceRefs": [
+          "§§1.11–1.13, PDF s. 5"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-lisans-p3-net-hesaplama"
+          }
+        ],
+        "coverImageFile": "images/kpss-lisans-puan-gecerlilik-suresi-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/kpss/kpss-lisans-puan-gecerlilik-suresi-e32e1b1385e7.webp",
+      "coverImageAlt": "Masada açık takvim, kalem ve defter",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "kpss-lisans-brans-siralamasi",
+      "title": "KPSS Lisans branş sıralaması neyi gösterir?",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-lisans-brans-siralamasi.md",
+      "metaTitle": "KPSS Lisans branş sıralaması neyi gösterir? | PuhuKoç",
+      "metaDescription": "ÖSYM’nin KPSS Lisans branş sıralamasının hangi eğitim bilgisine dayandığını ve merkezî tercih sonucundan nasıl ayrıldığını öğren.",
+      "source": "ÖSYM 2026 KPSS Lisans Kılavuzu ve 2024 branş sıralaması duyurusu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 7,
+        "primaryKeyword": "kpss lisans branş sıralaması",
+        "sourceRefs": [
+          "§5.2, PDF s. 32 ve ÖSYM’nin 2024 KPSS Lisans branş sıralaması duyurusu"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-lisans-a-b-grubu-farki"
+          }
+        ],
+        "coverImageFile": "images/kpss-lisans-brans-siralamasi-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/kpss/kpss-lisans-brans-siralamasi-b2d24d2d2c9b.webp",
+      "coverImageAlt": "Beyaz masada grafik çıktıları, kitap ve dizüstü bilgisayar",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "kpss-lisans-basvuru-onay-ucret",
+      "title": "KPSS Lisans başvurusu tamamlandı mı? Onay, ücret ve oturum ekleme",
+      "category": "APPLICATION",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-lisans-basvuru-onay-ucret.md",
+      "metaTitle": "KPSS Lisans başvurusu tamamlandı mı? Onay, ücret ve oturum ekleme | PuhuKoç",
+      "metaDescription": "KPSS Lisans başvurunun AİS’te kaydedildiğini nasıl kontrol edeceğini, ödemenin ne zaman gerektiğini ve Alan Bilgisi oturumunu nasıl ekleyeceğini öğren.",
+      "source": "ÖSYM 2026 KPSS Lisans Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 8,
+        "primaryKeyword": "kpss lisans başvuru onay ücret",
+        "sourceRefs": [
+          "§2.2, PDF s. 10–11 ve §4.2, PDF s. 27"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-lisans-alan-bilgisi-oturumlari"
+          },
+          {
+            "slug": "kpss-lisans-sinava-giris-belgesi-kimlik"
+          }
+        ],
+        "coverImageFile": "images/kpss-lisans-basvuru-onay-ucret-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/kpss/kpss-lisans-basvuru-onay-ucret-15d7610a4987.webp",
+      "coverImageAlt": "Dizüstü bilgisayar başında kart okuyucu tutan bir kişi",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "kpss-lisans-sinava-giris-belgesi-kimlik",
+      "title": "KPSS Lisans sınavına hangi belgelerle girilir?",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-lisans-sinava-giris-belgesi-kimlik.md",
+      "metaTitle": "KPSS Lisans sınavına hangi belgelerle girilir? | PuhuKoç",
+      "metaDescription": "KPSS Lisans sınava giriş belgesinin çıktısı, kabul edilen kimlikler ve Alan Bilgisi oturumları için ayrı belge şartını incele.",
+      "source": "ÖSYM 2026 KPSS Lisans Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 9,
+        "primaryKeyword": "kpss lisans sınava giriş belgesi kimlik",
+        "sourceRefs": [
+          "§3.2, PDF s. 19–21 ve oturum çizelgesi, PDF s. 33"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-lisans-alan-bilgisi-oturumlari"
+          },
+          {
+            "slug": "kpss-lisans-basvuru-onay-ucret"
+          }
+        ],
+        "coverImageFile": "images/kpss-lisans-sinava-giris-belgesi-kimlik-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/kpss/kpss-lisans-sinava-giris-belgesi-kimlik-a5eceb724a7b.webp",
+      "coverImageAlt": "Masa üzerinde kâğıt takılı bir yazı altlığını tutan eller",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
+    },
+    {
+      "slug": "kpss-lisans-sonuc-inceleme-itiraz",
+      "title": "KPSS Lisans sonucunun incelenmesi nasıl istenir?",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-lisans-sonuc-inceleme-itiraz.md",
+      "metaTitle": "KPSS Lisans sonucunun incelenmesi nasıl istenir? | PuhuKoç",
+      "metaDescription": "KPSS Lisans sonuç inceleme talebi ile soru itirazının sürelerini, dilekçe için gereken evrakı ve hangi tarihin esas alındığını öğren.",
+      "source": "ÖSYM 2026 KPSS Lisans Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 10,
+        "primaryKeyword": "kpss lisans sonuç inceleme itiraz",
+        "sourceRefs": [
+          "§3.11, PDF s. 26, §4.3, PDF s. 28 ve dilekçe açıklamaları, PDF s. 64"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-lisans-p3-net-hesaplama"
+          },
+          {
+            "slug": "kpss-lisans-puan-gecerlilik-suresi"
+          }
+        ],
+        "coverImageFile": "images/kpss-lisans-sonuc-inceleme-itiraz-cover.webp"
+      },
+      "coverImageKey": "content/articles/cover/kpss/kpss-lisans-sonuc-inceleme-itiraz-1d9e9dc1837a.webp",
+      "coverImageAlt": "Ahşap masada kalemle belge üzerinde çalışan bir kişi",
+      "coverImageWidth": 1200,
+      "coverImageHeight": 630
     }
   ]
 }

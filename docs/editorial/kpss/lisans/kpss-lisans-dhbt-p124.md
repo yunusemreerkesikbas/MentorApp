@@ -24,3 +24,7 @@ KPSSP124, DHBT sonuç bilgisinde açıklanır. KPSSP3 ise KPSS Lisans’ın Gene
 ## Kaynaklar
 
 - [ÖSYM 2026 KPSS Lisans Kılavuzu](https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf#page=35), §1.8, PDF s. 5, DHBT açıklamaları, PDF s. 35–36 ve Tablo 2, PDF s. 40.
+
+## Görsel kaynağı
+
+Temsilî kapak fotoğrafı: [Defrino Maasy / Pexels](https://www.pexels.com/photo/open-quran-with-arabic-text-in-focus-31364182/). [Pexels lisansı](https://www.pexels.com/license/).

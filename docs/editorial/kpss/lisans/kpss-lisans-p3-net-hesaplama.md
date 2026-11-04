@@ -17,3 +17,7 @@ Bir net şartı, puanın hesaplanmasında kullanılan her test için ayrı uygul
 ## Kaynaklar
 
 - [ÖSYM 2026 KPSS Lisans Kılavuzu](https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf#page=25), §3.10, PDF s. 25–26 ve Tablo 2, PDF s. 39.
+
+## Görsel kaynağı
+
+Temsilî kapak fotoğrafı: [PNW Production / Pexels](https://www.pexels.com/photo/close-up-of-an-open-notebook-calculator-and-a-pen-8250947/). [Pexels lisansı](https://www.pexels.com/license/).
