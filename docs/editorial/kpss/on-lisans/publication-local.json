@@ -1,0 +1,35 @@
+{
+  "environment": "LOCAL",
+  "database": "localhost:5433/mentor",
+  "author": "PuhuKoç",
+  "published": [
+    {
+      "slug": "kpss-on-lisans-kimler-basvurabilir",
+      "publishedAt": "2026-11-04T12:12:10.156Z"
+    },
+    {
+      "slug": "kpss-on-lisans-yoksis-egitim-bilgisi",
+      "publishedAt": "2026-11-04T12:12:10.156Z"
+    },
+    {
+      "slug": "kpss-on-lisans-p93-net-hesaplama",
+      "publishedAt": "2026-11-04T12:12:10.156Z"
+    },
+    {
+      "slug": "kpss-on-lisans-dhbt-p123",
+      "publishedAt": "2026-11-04T12:12:10.156Z"
+    },
+    {
+      "slug": "kpss-on-lisans-engelli-aday-ek-sure",
+      "publishedAt": "2026-11-04T12:12:10.156Z"
+    },
+    {
+      "slug": "kpss-on-lisans-p93-gecerlilik-suresi",
+      "publishedAt": "2026-11-04T12:12:10.156Z"
+    },
+    {
+      "slug": "kpss-on-lisans-sinav-merkezi-tercihi",
+      "publishedAt": "2026-11-04T12:12:10.156Z"
+    }
+  ]
+}

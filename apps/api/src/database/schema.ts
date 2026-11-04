@@ -1320,6 +1320,7 @@ export const planTasks = pgTable(
           zoneType: "CHAT" | "QA";
         }
       | { coachMessageId: string }
+      | { examId: string; weekStart: string; subjectRef: string | null; baselineAverageNet: string | null }
       | {
           baselineMockExamId: string;
           subjectRef: string;
@@ -1350,7 +1351,7 @@ export const planTasks = pgTable(
       sql`(
         (${t.originType} is null and ${t.originRefId} is null and ${t.originMeta} is null)
         or
-        (${t.originType} in ('COMMUNITY_COACH', 'AI_COACH', 'ANALYSIS') and ${t.originRefId} is not null and ${t.originMeta} is not null)
+        (${t.originType} in ('COMMUNITY_COACH', 'AI_COACH', 'ANALYSIS', 'WEEKLY_REPORT') and ${t.originRefId} is not null and ${t.originMeta} is not null)
         or
         (${t.originType} = 'MENTORSHIP' and ${t.originRefId} is not null and ${t.originMeta} is null)
       )`,

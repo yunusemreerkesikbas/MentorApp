@@ -85,7 +85,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await page.goto("/profil");
 
       const dialog = page.getByRole("dialog", {
-        name: reducedMotion === "reduce" ? "Seviye 4 · Döngü" : "Döngü",
+        name: reducedMotion === "reduce" ? "Seviye 4 · Yavru Baykuş" : "Yavru Baykuş",
         exact: true,
       });
       const continueButton = dialog.getByRole("button", {
@@ -157,7 +157,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       });
 
       const dialog = page.getByRole("dialog", {
-        name: reducedMotion === "reduce" ? "Seviye 5 · Nabız" : "Nabız",
+        name: reducedMotion === "reduce" ? "Seviye 5 · Gece Gözcüsü" : "Gece Gözcüsü",
         exact: true,
       });
       await expect(dialog).toBeVisible();
@@ -179,7 +179,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
 
       await expect(
         page.getByRole("dialog", {
-          name: reducedMotion === "reduce" ? "Seviye 5 · Nabız" : "Nabız",
+          name: reducedMotion === "reduce" ? "Seviye 5 · Gece Gözcüsü" : "Gece Gözcüsü",
           exact: true,
         }),
       ).toBeVisible();
@@ -246,12 +246,12 @@ test("panel rozeti sahneyi tıklayınca yükler ve odağı geri verir", async ({
   );
 
   await page.goto("/panel");
-  const opener = page.getByRole("button", { name: "Döngü rozetini sahne ışığında gör" });
+  const opener = page.getByRole("button", { name: "Yavru Baykuş rozetini sahne ışığında gör" });
   await expect(opener).toBeVisible();
   await opener.focus();
   await expect(opener).toBeFocused();
   await opener.click();
-  const dialog = page.getByRole("dialog", { name: "Döngü", exact: true });
+  const dialog = page.getByRole("dialog", { name: "Yavru Baykuş", exact: true });
   await expect(dialog).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);

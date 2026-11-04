@@ -35,10 +35,10 @@ Files: `packages/types/src/weekly-deep-analysis.ts`, `packages/types/src/coachin
 Produces: optional `WeeklyReviewDto.deepAnalysis`, containing backend-localized comparison rows,
 subject rows and evidence qualification, saved as part of the existing review JSON.
 
-- [ ] Write tests asserting two-week deltas, absent baselines, negative nets, taxonomy-only subjects
+- [x] Write tests asserting two-week deltas, absent baselines, negative nets, taxonomy-only subjects
   and no raw titles; run focused tests and observe failure.
-- [ ] Implement pure calculation/localization with explicit input/output types and wire the builder.
-- [ ] Run new tests and existing weekly-review/policy/settlement tests with local Vitest.
+- [x] Implement pure calculation/localization with explicit input/output types and wire the builder.
+- [x] Run new tests and existing weekly-review/policy/settlement tests with local Vitest.
 
 ## Task 2: Shared report views and entry points
 
@@ -50,17 +50,19 @@ analysis `analysis-shell.tsx`, new `weekly-analysis-entry.tsx`, dashboard `membe
 Consumes: the acquired `WeeklyRecapReportDto` and optional saved detail from Task 1.
 Produces: `view=analysis` entry and local switching that reuses the already acquired report.
 
-- [ ] Write browser scenarios for shared Coin/earned/Premium access and view switching, frozen
+- [x] Write browser scenarios for shared Coin/earned/Premium access and view switching, frozen
   legacy reports, missing evidence and TR/EN rendering.
-- [ ] Implement token-based responsive reading view, original AI provenance and one plan-prefill
+- [x] Implement token-based responsive reading view, original AI provenance and one plan-prefill
   CTA. Route all access through the existing offer/open flow.
-- [ ] Add discoverability to ordinary analysis and correct the Premium benefit destination.
-- [ ] Run browser tests at mobile/desktop widths plus touched-package type/lint checks.
+- [x] Add discoverability to ordinary analysis and correct the Premium benefit destination.
+- [x] Run browser tests at mobile/desktop widths plus touched-package type/lint checks.
 
 ## Task 3: Review and feature records
 
 Files: `docs/features/{coaching,ai,economy}.md`, `docs/standards/api.md`.
 
-- [ ] Record contract, usage, old-snapshot limitation and no-extra-charge/model behavior.
-- [ ] Review access/privacy/payment invariants and inspect the final scoped diff.
-- [ ] Record exact checks and remaining operational limitations; do not claim full CI readiness.
+- [x] Record contract, usage, old-snapshot limitation and no-extra-charge/model behavior.
+- [x] Review access/privacy/payment invariants and inspect the final scoped diff.
+- [x] Record exact checks and remaining operational limitations; do not claim full CI readiness.
+
+Verification: [141 focused tests and independent review](../qa/2026-11-04-weekly-deep-analysis.md).

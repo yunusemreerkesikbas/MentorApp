@@ -119,6 +119,20 @@ function task(id: string, taskDate: string, subject: string | null) {
 }
 
 describe("WeeklyReviewService recap evidence", () => {
+  it("builds frozen detail from the two completed weeks without including private labels", async () => {
+    const dates = ["2026-07-06T10:00:00Z", "2026-07-13T10:00:00Z", "2026-07-14T10:00:00Z"];
+    const review = await makeService({
+      exams: dates.map((date, index) => ({ id: `m${index}`, takenAt: new Date(date), totalNet: "10", updatedAt: new Date(date) })),
+      subjects: dates.map((date, index) => ({ mockExamId: `m${index}`, subjectRef: "matematik", net: String(10 + index * 2), takenAt: new Date(date) })),
+      sessions: [session("previous", 1800, dates[0]), session("current", 3600, dates[1], "Matematik")],
+      tasks: [task("old", "2026-07-06", "Matematik"), task("new", "2026-07-13", "Private subject")],
+    }).service.getReview("user", "exam", new Date("2026-07-22T10:00:00Z"));
+    expect(review.deepAnalysis?.metrics[0]).toMatchObject({ current: 60, previous: 30, delta: 30 });
+    expect(review.deepAnalysis?.subjects[0]).toMatchObject({ subjectRef: "matematik", averageNet: "13.00",
+      previousAverageNet: "10.00", delta: "+3.00", mockExamCount: 2, previousMockExamCount: 1 });
+    expect(JSON.stringify(review.deepAnalysis)).not.toMatch(/Private subject|PRIVATE TASK TITLE/);
+  });
+
   it("returns EMPTY and preserves the legacy INSUFFICIENT status without evidence", async () => {
     const review = await makeService().service.getReview(
       "user",

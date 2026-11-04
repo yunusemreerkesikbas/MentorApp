@@ -755,7 +755,7 @@ export class PlanService {
       }
       this.assertTaskDateMutable(existing.taskDate);
       this.assertMentorshipTaskEditable(existing.originType, input);
-      if (existing.originType === "ANALYSIS" && input.subject !== undefined && input.subject !== existing.subject) {
+        if ((existing.originType === "ANALYSIS" || existing.originType === "WEEKLY_REPORT") && input.subject !== undefined && input.subject !== existing.subject) {
         throw new DomainError(ErrorCode.ANALYSIS_FOCUS_CHANGED, HttpStatus.CONFLICT);
       }
       const updated = await this.tasks.update(tx, userId, id, {

@@ -35,6 +35,7 @@ import {
   updatePlanTask,
 } from "@/lib/plan-tasks";
 import { createCommunityCoachPlanTask } from "@/lib/coach";
+import { createWeeklyReportTask } from "@/lib/weekly-report-follow-up";
 import { coachPlanQueryTransition } from "@/lib/coach-plan-calendar";
 import { monthGridDays } from "@/lib/plan-calendar-layout";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
@@ -167,6 +168,7 @@ export function PlanShell() {
         baselineMockExamId: searchParams.get("baselineMockExamId"),
         subjectRef: searchParams.get("subjectRef"),
         topicRef: searchParams.get("topicRef"),
+        weeklyReportId: searchParams.get("weeklyReportId"),
       }),
     [searchParams],
   );
@@ -547,7 +549,7 @@ export function PlanShell() {
             ref={addFormRef}
             initialTitle={task.title}
             initialSubject={task.subject ?? ""}
-            lockedFocus={task.origin?.type === "ANALYSIS" ? { subjectName: task.subject ?? "", topicName: task.topic ?? undefined } : undefined}
+            lockedFocus={task.origin?.type === "ANALYSIS" || task.origin?.type === "WEEKLY_REPORT" ? { subjectName: task.subject ?? t("weekly_report_rhythm"), topicName: task.topic ?? undefined } : undefined}
             initialStartTime={task.startTime}
             initialEndTime={task.endTime}
             initialDescription={task.description}
@@ -560,7 +562,7 @@ export function PlanShell() {
             addFormRef.current.getValues();
           const updated = await updatePlanTask(task.id, {
             title: title.trim(),
-            subject: subject.trim() ? subject.trim() : null,
+            subject: task.origin?.type === "WEEKLY_REPORT" ? task.subject : subject.trim() ? subject.trim() : null,
             // Times are always sent as a pair — that's the contract updatePlanTaskSchema enforces.
             startTime,
             endTime,
@@ -658,10 +660,11 @@ export function PlanShell() {
           initialTitle={taskPrefill?.title}
           initialSubject={taskPrefill?.subject}
           initialStartTime={taskPrefill?.startTime ?? null}
-          initialTaskDate={taskPrefill?.source === "analysis" ? targetDate : undefined}
+          initialTaskDate={taskPrefill?.source === "analysis" || taskPrefill?.weeklyReportId ? targetDate : undefined}
           analysisFocus={taskPrefill?.source === "analysis" && taskPrefill.examId && taskPrefill.subjectRef ? { examId: taskPrefill.examId, subjectRef: taskPrefill.subjectRef, topicRef: taskPrefill.topicRef } : undefined}
           lockedFocus={
-            taskPrefill?.source === "analysis" && taskPrefill.subject
+            taskPrefill?.weeklyReportId ? { subjectName: taskPrefill.subject || t("weekly_report_rhythm") }
+            : taskPrefill?.source === "analysis" && taskPrefill.subject
               ? {
                   subjectName: taskPrefill.subject,
                   ...(taskPrefill.topic && { topicName: taskPrefill.topic }),
@@ -684,7 +687,12 @@ export function PlanShell() {
         };
         let created: PlanTaskDto;
         try {
-        created = taskPrefill?.source === "analysis" &&
+        created = taskPrefill?.weeklyReportId
+          ? await createWeeklyReportTask(taskPrefill.weeklyReportId, {
+              title: input.title, taskDate: editedDate || targetDate, durationMinutes,
+              ...(startTime ? { startTime, endTime } : {}), ...(description ? { description } : {}),
+            })
+          : taskPrefill?.source === "analysis" &&
           taskPrefill.examId &&
           taskPrefill.baselineMockExamId &&
           taskPrefill.subjectRef
@@ -715,7 +723,7 @@ export function PlanShell() {
           throw failure;
         }
         appendTask(created);
-        if (taskPrefill?.source === "analysis" && created.taskDate !== date) {
+        if ((taskPrefill?.source === "analysis" || taskPrefill?.weeklyReportId) && created.taskDate !== date) {
           setDate(created.taskDate);
           setWeekAnchor(weekStart(created.taskDate));
         }

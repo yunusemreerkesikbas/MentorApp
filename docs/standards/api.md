@@ -1,6 +1,24 @@
 # API Design & Versioning Standards + Service Catalog
 
+### Weekly recommendation follow-up (2026-11-04)
+
+- `GET /v1/coach/weekly-recaps/:id/follow-up`: owned READY report's live task plus an optional
+  immediately preceding owned report's task/baseline/first later measurement. Returns
+  `{ task: PlanTaskDto | null, previous: object | null }`. Localized evidence caveats are server-owned.
+- `POST /v1/coach/weekly-recaps/:id/plan-task`: strict plan fields without subject/topic/source;
+  server resolves provenance and subject from the saved report. Returns the created/existing
+  task (201). Serialized per user and idempotent per extant report-linked task, including DONE.
+- Foreign/unopened reports return 404; missing saved suggestion or a changed linked subject is
+  409; invalid/extra input fields are 400. Existing task edit/delete routes apply. Deletion permits
+  a new explicitly accepted task. No purchase, AI call or report content rewrite occurs.
+
 ### Owned weekly Wrapped reports (2026-11-01)
+
+2026-11-04 addition: newly acquired `review` snapshots include optional `deepAnalysis` with
+backend-localized completed-week study comparisons, taxonomy-backed subject averages/sample
+counts and an evidence caveat. The recap and detailed view share the same report ID, acquisition,
+Coin debit and allowance. Saved older reports may omit this field; clients show the original
+summary without fetching mutable evidence or generating again. No new endpoint is introduced.
 
 - `GET /v1/coach/weekly-recaps/access?examId=UUID[&weekStart=YYYY-MM-DD]`: side-effect-free
   offer with readiness, owned/earned/Premium/Coin mode, quoted cost, remaining rolling allowance,

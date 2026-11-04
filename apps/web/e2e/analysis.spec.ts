@@ -344,7 +344,7 @@ for (const scenario of [
       } else {
         await expect(hero.getByText(multipleAnalysis.ghost!.headline)).toBeVisible();
         await expect(
-          hero.getByRole("button", { name: /İlerlemeni koçun yorumlasın/ }),
+          hero.getByRole("button", { name: /İlerlemeni Puhu yorumlasın/ }),
         ).toBeVisible();
         await expect(hero.getByText("Puhu’dan", { exact: true })).toHaveCount(0);
       }

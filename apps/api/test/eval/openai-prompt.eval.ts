@@ -89,8 +89,8 @@ const weeklyReview: WeeklyReviewDto = {
     activeDays: 3,
     weeklyTitle: {
       id: "PLAN_ARCHITECT",
-      label: "Rota Mimarı",
-      message: "Tamamladığın görevlerle haftanın rotasını çizdin.",
+      label: "Görev Avcısı",
+      message: "Görevleri tek tek avladın!",
     },
     nextStorySignal: null,
     nextStorySignals: [],

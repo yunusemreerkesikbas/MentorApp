@@ -74,7 +74,7 @@ const achievementShowcase = {
     },
     {
       id: "rhythm_found" as const,
-      title: "Ritmi Yakaladın",
+      title: "Bir Hafta Tam!",
       description: "Yedi günlük çalışma ritmini yakaladın.",
       unlockHint: "Yedi günlük çalışma ritmine ulaş.",
       artKey: "rhythm_found" as const,
@@ -84,7 +84,7 @@ const achievementShowcase = {
     },
     {
       id: "first_step" as const,
-      title: "İlk Adım",
+      title: "İlk Seans Tamam!",
       description: "İlk geçerli odak oturumunu tamamladın.",
       unlockHint: "İlk geçerli odak oturumunu tamamla.",
       artKey: "first_step" as const,
@@ -105,7 +105,7 @@ const achievementCollection: AchievementCollectionDto = {
   items: [
     {
       id: "first_step",
-      title: "İlk Adım",
+      title: "İlk Seans Tamam!",
       description: "İlk geçerli odak oturumunu tamamladın.",
       unlockHint: "İlk geçerli odak oturumunu tamamla.",
       artKey: "first_step",
@@ -115,7 +115,7 @@ const achievementCollection: AchievementCollectionDto = {
     },
     {
       id: "rhythm_found",
-      title: "Ritmi Yakaladın",
+      title: "Bir Hafta Tam!",
       description: "Yedi günlük çalışma ritmini yakaladın.",
       unlockHint: "Yedi günlük çalışma ritmine ulaş.",
       artKey: "rhythm_found",
@@ -306,7 +306,7 @@ test("üye profili kimlik kartı, aksiyonlar ve yolculuk panelini her genişlikt
   ).toBe(true);
 });
 
-test("profil sahibi Gece Yolculuğu kimliğini ve seviye içi ilerlemeyi görür", async ({
+test("profil sahibi Seviye Yolu kimliğini ve seviye içi ilerlemeyi görür", async ({
   page,
 }) => {
   await mockProfileApi(page);
@@ -317,12 +317,12 @@ test("profil sahibi Gece Yolculuğu kimliğini ve seviye içi ilerlemeyi görür
   await page.goto("/topluluk/uye/yunus_emre");
 
   const panel = page.locator(".profile-progress-panel:visible");
-  await expect(panel.getByText("Seviye 3 · Pusula", { exact: true })).toBeVisible();
-  await expect(panel.getByText("I. Bölüm · Uyanış", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Seviye 3 · Meraklı", { exact: true })).toBeVisible();
+  await expect(panel.getByText("I. Bölüm · Başlangıç", { exact: true })).toBeVisible();
   await expect(panel.getByText("Kendi yönünü bulmaya başladın.", { exact: true })).toBeVisible();
   await expect(panel.getByText("111 / 300 XP", { exact: true })).toBeVisible();
   await expect(
-    panel.getByRole("progressbar", { name: "Pusula seviye ilerlemesi" }),
+    panel.getByRole("progressbar", { name: "Meraklı seviye ilerlemesi" }),
   ).toHaveAttribute("aria-valuenow", "111");
   // Their own profile lights "Profilim" in the sidebar (phones carry the sidebar in the drawer).
   if ((page.viewportSize()?.width ?? 0) >= 1024) {
@@ -343,14 +343,14 @@ test("ziyaretçi yolculuk kimliğini görür fakat sayısal XP ilerlemesini gör
   await page.goto("/topluluk/uye/ayse");
 
   const panel = page.locator(".profile-progress-panel:visible");
-  await expect(panel.getByText("Seviye 3 · Pusula", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Seviye 3 · Meraklı", { exact: true })).toBeVisible();
   // A visitor reads about the owner, not to themselves (Topluluk Tur 2).
   await expect(panel.getByText("Kendi yönünü bulmaya başladı.", { exact: true })).toBeVisible();
   await expect(panel.getByRole("progressbar")).toHaveCount(0);
   await expect(panel.getByText(/XP daha/)).toHaveCount(0);
 
-  await panel.getByRole("button", { name: "Gece Yolculuğu rehberini aç" }).click();
-  const dialog = page.getByRole("dialog", { name: "Gece Yolculuğu" });
+  await panel.getByRole("button", { name: "Seviye yolunu aç" }).click();
+  const dialog = page.getByRole("dialog", { name: "Seviye Yolu" });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("progressbar")).toHaveCount(0);
   await dialog.getByRole("button", { name: "Kapat" }).click();
@@ -367,13 +367,13 @@ test("yüklenen profil ve oda listesi 'Yükleniyor…' canlı bölgesinin içind
   );
 
   await page.goto("/topluluk/uye/ayse");
-  await expect(page.locator(".profile-progress-panel:visible").getByText("Seviye 3 · Pusula", { exact: true })).toBeVisible();
+  await expect(page.locator(".profile-progress-panel:visible").getByText("Seviye 3 · Meraklı", { exact: true })).toBeVisible();
   await expect(page.locator("main h1").first()).toBeVisible();
   await expect(page.locator('[role="status"] h1')).toHaveCount(0);
   await expect(page.locator('[aria-live] h1')).toHaveCount(0);
 });
 
-test("Gece Yolculuğu rehberi erişilebilir dialog davranışını korur", async ({
+test("Seviye Yolu rehberi erişilebilir dialog davranışını korur", async ({
   page,
 }) => {
   await mockProfileApi(page);
@@ -385,19 +385,19 @@ test("Gece Yolculuğu rehberi erişilebilir dialog davranışını korur", async
 
   const trigger = page
     .locator(".profile-progress-panel:visible")
-    .getByRole("button", { name: "Gece Yolculuğu rehberini aç" });
+    .getByRole("button", { name: "Seviye yolunu aç" });
   await trigger.focus();
   await trigger.press("Enter");
 
-  const dialog = page.getByRole("dialog", { name: "Gece Yolculuğu" });
+  const dialog = page.getByRole("dialog", { name: "Seviye Yolu" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("heading", { name: "Uyanış" })).toBeVisible();
-  await expect(dialog.getByRole("heading", { name: "Ahenk" })).toBeVisible();
-  await expect(dialog.getByRole("heading", { name: "Derinleşme" })).toBeVisible();
-  await expect(dialog.getByRole("heading", { name: "Birlikte Işık" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Başlangıç" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Tempo" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Ustalık" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Zirve" })).toBeVisible();
   const levelButtons = dialog.locator('button[aria-label^="Seviye "]');
   await expect(levelButtons).toHaveCount(12);
-  const lastLevelButton = dialog.getByRole("button", { name: /Takımyıldız/ });
+  const lastLevelButton = dialog.getByRole("button", { name: /Efsane/ });
   await expect(lastLevelButton).toBeVisible();
 
   const closeButton = dialog.getByRole("button", { name: "Kapat" });
@@ -425,7 +425,7 @@ test("Gece Yolculuğu rehberi erişilebilir dialog davranışını korur", async
   await expect(trigger).toBeFocused();
 });
 
-test("Gece Yolculuğu rehberi azaltılmış hareket tercihinde kullanılabilir kalır", async ({
+test("Seviye Yolu rehberi azaltılmış hareket tercihinde kullanılabilir kalır", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -437,16 +437,16 @@ test("Gece Yolculuğu rehberi azaltılmış hareket tercihinde kullanılabilir k
   await page.goto("/topluluk/uye/yunus_emre");
   const trigger = page
     .locator(".profile-progress-panel:visible")
-    .getByRole("button", { name: "Gece Yolculuğu rehberini aç" });
+    .getByRole("button", { name: "Seviye yolunu aç" });
   await trigger.click();
-  const dialog = page.getByRole("dialog", { name: "Gece Yolculuğu" });
+  const dialog = page.getByRole("dialog", { name: "Seviye Yolu" });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "Kapat" }).click();
   await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
 });
 
-test("Takımyıldız seviyesinde yolculuğun devam ettiğini söyler", async ({ page }) => {
+test("Efsane seviyesinde yolculuğun devam ettiğini söyler", async ({ page }) => {
   await mockProfileApi(page);
   await page.addInitScript(() =>
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
@@ -457,7 +457,7 @@ test("Takımyıldız seviyesinde yolculuğun devam ettiğini söyler", async ({ 
   await expect(
     page
       .locator(".profile-progress-panel:visible")
-      .getByText("Bütün ışıklar birbirine bağlandı; yolculuğun devam ediyor.", {
+      .getByText("Zirvedesin! Yolculuk yine de devam ediyor.", {
         exact: true,
       }),
   ).toBeVisible();
@@ -520,11 +520,11 @@ test("kilitli başarılar gridde sade kalır ve ilerlemeyi bilgi kartında açı
   await expect(page.getByText("3/7", { exact: true })).toHaveCount(0);
 
   await page
-    .getByRole("button", { name: /Ritmi Yakaladın başarısı kilitli/ })
+    .getByRole("button", { name: /Bir Hafta Tam! başarısı kilitli/ })
     .click();
-  const detail = page.getByRole("dialog", { name: "Ritmi Yakaladın" });
+  const detail = page.getByRole("dialog", { name: "Bir Hafta Tam!" });
   await expect(
-    detail.getByText("Nasıl uyanır?", { exact: true }),
+    detail.getByText("Nasıl açılır?", { exact: true }),
   ).toBeVisible();
   await expect(
     detail.getByText("Yedi günlük çalışma ritmine ulaş."),
@@ -543,17 +543,17 @@ test("profil sahibi koleksiyon özetini görür ve sıradaki keşiften bilgi kar
 
   await page.goto("/topluluk/uye/yunus_emre?tab=achievements");
 
-  await expect(page.getByRole("heading", { name: "Koleksiyonun" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tüm başarıların" })).toBeVisible();
   await expect(page.getByText("0 / 12", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("progressbar", { name: "Koleksiyon ilerlemesi" }),
   ).toHaveAttribute("aria-valuenow", "0");
 
   const suggestion = page.getByRole("button", {
-    name: /Sıradaki keşif.*Ritmi Yakaladın.*Nasıl uyanır?/,
+    name: /Sıradaki başarı.*Bir Hafta Tam!.*Nasıl açılır?/,
   });
   await suggestion.click();
-  const detail = page.getByRole("dialog", { name: "Ritmi Yakaladın" });
+  const detail = page.getByRole("dialog", { name: "Bir Hafta Tam!" });
   await expect(detail).toBeVisible();
   await detail.getByRole("button", { name: "Kapat" }).click();
   await expect(suggestion).toBeFocused();
@@ -573,11 +573,11 @@ test("ziyaretçi görünümünde koleksiyon rehberi gösterilmez", async ({ page
 
   await page.goto("/topluluk/uye/public_learner?tab=achievements");
 
-  await expect(page.getByRole("heading", { name: "Koleksiyonun" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Tüm başarıların" })).toHaveCount(0);
   await expect(
     page.getByRole("progressbar", { name: "Koleksiyon ilerlemesi" }),
   ).toHaveCount(0);
-  await expect(page.getByText("İlk Adım", { exact: true })).toBeVisible();
+  await expect(page.getByText("İlk Seans Tamam!", { exact: true })).toBeVisible();
 });
 
 test("tamamlanan koleksiyon sakin kutlama durumunu gösterir", async ({ page }) => {
@@ -589,11 +589,11 @@ test("tamamlanan koleksiyon sakin kutlama durumunu gösterir", async ({ page }) 
   await page.goto("/topluluk/uye/complete_user?tab=achievements");
 
   await expect(page.getByText("12 / 12", { exact: true })).toBeVisible();
-  await expect(page.getByText("Koleksiyon tamamlandı.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Koleksiyon tamam!", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("Bütün rozetler seninle; yolculuğun devam ediyor.", { exact: true }),
+    page.getByText("Bütün başarılar açıldı.", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Sıradaki keşif", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Sıradaki başarı", { exact: true })).toHaveCount(0);
 });
 
 test("başarı bilgi kartı odağı içeride tutar ve kapandığında tetikleyiciye döndürür", async ({
@@ -607,12 +607,12 @@ test("başarı bilgi kartı odağı içeride tutar ve kapandığında tetikleyic
   await page.goto("/topluluk/uye/yunus_emre?tab=achievements");
 
   const trigger = page.getByRole("button", {
-    name: /Ritmi Yakaladın başarısı kilitli/,
+    name: /Bir Hafta Tam! başarısı kilitli/,
   });
   await trigger.focus();
   await trigger.press("Enter");
 
-  const detail = page.getByRole("dialog", { name: "Ritmi Yakaladın" });
+  const detail = page.getByRole("dialog", { name: "Bir Hafta Tam!" });
   const closeButton = detail.getByRole("button", { name: "Kapat" });
   await expect(closeButton).toBeFocused();
   await expect
@@ -640,11 +640,11 @@ test("başarı bilgi kartı dış alana tıklanınca kapanır", async ({ page })
   await page.goto("/topluluk/uye/yunus_emre?tab=achievements");
 
   const trigger = page.getByRole("button", {
-    name: /Ritmi Yakaladın başarısı kilitli/,
+    name: /Bir Hafta Tam! başarısı kilitli/,
   });
   await trigger.click();
 
-  const detail = page.getByRole("dialog", { name: "Ritmi Yakaladın" });
+  const detail = page.getByRole("dialog", { name: "Bir Hafta Tam!" });
   await page
     .locator("[data-achievement-detail-backdrop]")
     .click({ position: { x: 2, y: 2 } });
@@ -663,7 +663,7 @@ test("profil, API'nin sıraladığı yolculuk izlerini erişilebilir detay ve t�
 
   await page.goto("/topluluk/uye/showcase_user");
 
-  const showcase = page.getByRole("region", { name: "Yolculuktan İzler" });
+  const showcase = page.getByRole("region", { name: "Başarıların" });
   await expect(showcase).toBeVisible();
   const triggers = showcase.getByRole("button");
   await expect(triggers).toHaveCount(3);
@@ -677,12 +677,12 @@ test("profil, API'nin sıraladığı yolculuk izlerini erişilebilir detay ve t�
     await expect(image).toHaveAttribute("sizes", "80px");
   }
   await expect(triggers.nth(0)).toHaveAccessibleName(
-    "Haftanı Dinledin seninle",
+    "Haftanı Dinledin açıldı",
   );
   await expect(triggers.nth(1)).toHaveAccessibleName(
-    "Ritmi Yakaladın seninle",
+    "Bir Hafta Tam! açıldı",
   );
-  await expect(triggers.nth(2)).toHaveAccessibleName("İlk Adım seninle");
+  await expect(triggers.nth(2)).toHaveAccessibleName("İlk Seans Tamam! açıldı");
   await expect(showcase.getByText("Haftanı Dinledin", { exact: true })).toHaveCount(0);
   await expect(showcase.getByRole("link", { name: "Tümünü gör" })).toHaveAttribute(
     "href",
@@ -718,7 +718,7 @@ test("profil, API'nin sıraladığı yolculuk izlerini erişilebilir detay ve t�
   const detail = page.getByRole("dialog", { name: "Haftanı Dinledin" });
   await expect(detail).toBeVisible();
   await expect(detail.getByText("Haftanın sesini duymak için durdun.")).toBeVisible();
-  await expect(detail.getByText("21.08.2026 tarihinde seninle")).toBeVisible();
+  await expect(detail.getByText("21.08.2026 tarihinde açıldı")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(detail).toBeHidden();
   await expect(trigger).toBeFocused();
@@ -735,13 +735,13 @@ test("boş veya devre dışı başarı gösterimi profil başlığında yer kapl
   await page.goto("/topluluk/uye/ayse");
 
   await expect(
-    page.getByRole("region", { name: "Yolculuktan İzler" }),
+    page.getByRole("region", { name: "Başarıların" }),
   ).toHaveCount(0);
 
   await page.goto("/topluluk/uye/empty_showcase");
 
   await expect(
-    page.getByRole("region", { name: "Yolculuktan İzler" }),
+    page.getByRole("region", { name: "Başarıların" }),
   ).toHaveCount(0);
 });
 
@@ -755,7 +755,7 @@ test("tümünü gör bağlantısı yalnızca üçten fazla kazanımda görünür
 
   await page.goto("/topluluk/uye/three_showcase");
 
-  const showcase = page.getByRole("region", { name: "Yolculuktan İzler" });
+  const showcase = page.getByRole("region", { name: "Başarıların" });
   await expect(showcase).toBeVisible();
   await expect(showcase.getByRole("button")).toHaveCount(3);
   await expect(showcase.getByRole("link", { name: "Tümünü gör" })).toHaveCount(0);

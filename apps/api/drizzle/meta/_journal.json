@@ -974,6 +974,13 @@
       "when": 1793534741638,
       "tag": "0138_weekly_chest_revealed_at",
       "breakpoints": true
+    },
+    {
+      "idx": 139,
+      "version": "7",
+      "when": 1793746439036,
+      "tag": "0139_weekly_report_task_origin",
+      "breakpoints": true
     }
   ]
 }

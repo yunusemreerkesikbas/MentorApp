@@ -103,6 +103,31 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-04 — Owned-report recommendation follow-up
+
+- **What:** New report follow-up/task endpoints authorize READY report ownership before calling
+  Coaching's public tracking service. No report snapshot, narration, entitlement or Coin rule changes.
+- **Usage:** Follow-up returns live task status and an optional preceding-week action/measurement;
+  the existing Plan editor submits the student's confirmed draft to the source report endpoint.
+- **Gotchas:** Foreign/unopened IDs are 404. A missing saved suggestion cannot create a task.
+  Subject/source fields are rejected at validation; repeated saves reuse the extant task. Live
+  progress remains separate from frozen report content and adds no AI request.
+- **Related:** `weekly-report-follow-up.service{,.spec}.ts`, `weekly-recap.controller.ts`,
+  `weekly-recap.dto.ts`, generated client; migration/Coaching details in [coaching](./coaching.md).
+
+### 2026-11-04 — One acquired report includes recap and deep analysis
+
+- **What:** The detail view renders frozen Coaching facts alongside the report's existing AI
+  narration. AI still owns the same claim/generation/settlement flow; the extra facts are not
+  sent through another prompt or generated on navigation.
+- **Usage:** First earned, Coin and Premium opening include both views. Switching views reuses
+  the returned report; archived reads use the existing self-owned report endpoint.
+- **Gotchas:** A historical snapshot may lack detailed facts and is explicitly labelled instead
+  of silently rebuilding it. Its original language and narration are preserved. Global budget,
+  access and acquired-report reread behavior are unchanged.
+- **Related:** `weekly-recap.dto.ts`, `weekly-recap-locking.spec.ts`, web recap
+  `weekly-report-view.tsx`, `weekly-deep-analysis*.tsx`, `e2e/weekly-deep-analysis.spec.ts`.
+
 ### 2026-11-03 — Plan draft unlock choice: Coin or Premium before the wizard
 
 - **What:** On the Coin path, "Koçla planla" opens the shared "Açma seçimi" sheet

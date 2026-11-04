@@ -137,6 +137,18 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-04 — One weekly Coin acquisition opens both report views
+
+- **What:** Recap and deep analysis are two views of one exam/week report. No second Coin sink,
+  purchase endpoint or allowance is added.
+- **Usage:** Existing central defaults remain 250 Coin and two new Coin reports per rolling
+  30 days across exams. The first earned report includes both views; Premium opening is included.
+  Switching views and rereading consume no additional Coin or allowance.
+- **Gotchas:** Existing acquired reports retain ownership, including after subscription expiry;
+  older snapshots show an explicit limitation where detailed data was not saved.
+- **Related:** AI report acquisition/settlement, `weekly-recap-locking.spec.ts`, web
+  `weekly-report-view.tsx`, `e2e/weekly-deep-analysis.spec.ts`; no ledger/config changes.
+
 ### 2026-11-02 — Rebalance browser QA and backdated-session fix
 
 - **What:** Free and Premium flows of the ×10 rebalance verified in the browser with the economy on

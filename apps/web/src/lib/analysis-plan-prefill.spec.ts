@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { parseAnalysisPlanPrefill } from "./analysis-plan-prefill";
 
 describe("parseAnalysisPlanPrefill", () => {
+  it("preserves a valid weekly report handoff and rejects forged IDs", () => {
+    const input = { add: "1", source: "weekly-report", title: "Review", subject: "Mathematics", weeklyReportId: "00000000-0000-4000-8000-000000000001" };
+    expect(parseAnalysisPlanPrefill(input)?.weeklyReportId).toBe(input.weeklyReportId);
+    expect(parseAnalysisPlanPrefill({ ...input, weeklyReportId: "forged" })).toBeNull();
+  });
   it("keeps the verified refs needed by the analysis task endpoint", () => {
     expect(
       parseAnalysisPlanPrefill({

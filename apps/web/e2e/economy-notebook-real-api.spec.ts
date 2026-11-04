@@ -94,7 +94,7 @@ async function earnedAccount(page: Page, project: string, scenario: string) {
     page.getByRole("heading", { name: "Defterlerim", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Harika!", exact: true }).click();
-  const journey = page.getByRole("dialog", { name: "Seviye 1 · Kıvılcım", exact: true });
+  const journey = page.getByRole("dialog", { name: "Seviye 1 · Civciv", exact: true });
   await journey.getByRole("button", { name: "Devam et", exact: true }).click();
   await expect(journey).toHaveCount(0);
   return { headers, balance, email };

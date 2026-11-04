@@ -200,6 +200,7 @@ async function main(): Promise<void> {
          from exam_subjects es
          join subjects s on s.id = es.subject_id
         where es.exam_id = $1
+          and es.question_count is not null -- "diger" has no questions to score
         order by es.sort_order`,
       [exam.id],
     );

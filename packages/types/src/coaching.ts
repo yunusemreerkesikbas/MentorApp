@@ -27,6 +27,7 @@ export const PlanTaskOriginType = {
   AI_COACH: "AI_COACH",
   /** Explicitly accepted task created from the deterministic analysis focus. */
   ANALYSIS: "ANALYSIS",
+  WEEKLY_REPORT: "WEEKLY_REPORT",
   /** Assigned by a HUMAN coach over an active mentorship link (W8). Not the AI. */
   MENTORSHIP: "MENTORSHIP",
 } as const;
@@ -69,6 +70,7 @@ export interface MentorshipPlanTaskOriginDto {
 }
 
 export type PlanTaskOriginDto =
+  | { type: "WEEKLY_REPORT"; reportId: string; examId: string; weekStart: string; subjectRef: string | null }
   | CommunityCoachPlanTaskOriginDto
   | AiCoachPlanTaskOriginDto
   | AnalysisPlanTaskOriginDto

@@ -1,0 +1,259 @@
+{
+  "status": "DRAFT",
+  "language": "tr",
+  "preparedOn": "2026-11-04",
+  "sourceYear": 2026,
+  "articles": [
+    {
+      "slug": "kpss-ortaogretim-kimler-basvurabilir",
+      "title": "KPSS Ortaöğretime kimler başvurabilir?",
+      "category": "APPLICATION",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-ortaogretim-kimler-basvurabilir.md",
+      "metaTitle": "KPSS Ortaöğretime kimler başvurabilir? | PuhuKoç",
+      "metaDescription": "Son sınıf, lise mezuniyeti ve üniversite eğitimi KPSS Ortaöğretim başvurusunu nasıl etkiler? 2026 kılavuzundaki mezuniyet ölçütlerini incele.",
+      "source": "ÖSYM 2026 KPSS Ortaöğretim Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-ci4pae-27090228.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 1,
+        "primaryKeyword": "kpss ortaogretim kimler basvurabilir",
+        "sourceRefs": [
+          "§1.4–1.6 ve §2.1, PDF s. 4–5"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-ortaogretim-basvuru-formu"
+          },
+          {
+            "slug": "kpss-basvuru-sureci"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-ortaogretim-basvuru-formu",
+      "title": "KPSS Ortaöğretim aday başvuru formu nasıl okunur?",
+      "category": "APPLICATION",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-ortaogretim-basvuru-formu.md",
+      "metaTitle": "KPSS Ortaöğretim aday başvuru formu nasıl okunur? | PuhuKoç",
+      "metaDescription": "Aday başvuru formundaki okul türü, alan ve dal kodlarını, e-Okul düzeltme yolunu ve iki sınav merkezi tercihinin nasıl çalıştığını öğren.",
+      "source": "ÖSYM 2026 KPSS Ortaöğretim Başvuru Kılavuzu ve Aday Başvuru Formu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-ci4pae-27090228.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 2,
+        "primaryKeyword": "kpss ortaogretim basvuru formu",
+        "sourceRefs": [
+          "§2.2–2.3, PDF s. 8 ve 12–13; Tablo 3–4"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-ortaogretim-soru-dagilimi"
+          },
+          {
+            "slug": "kpss-basvuru-sureci"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-ortaogretim-soru-dagilimi",
+      "title": "KPSS Ortaöğretim soru dağılımı ve sınav süresi",
+      "category": "EXAM_PROCESS",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-ortaogretim-soru-dagilimi.md",
+      "metaTitle": "KPSS Ortaöğretim soru dağılımı ve sınav süresi | PuhuKoç",
+      "metaDescription": "Genel Yetenek ve Genel Kültür testlerinin soru sayısını, sınav süresini ve kılavuzdaki yaklaşık konu ağırlıklarını tek tabloda incele.",
+      "source": "ÖSYM 2026 KPSS Ortaöğretim Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-ci4pae-27090228.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 3,
+        "primaryKeyword": "kpss ortaogretim soru dagilimi",
+        "sourceRefs": [
+          "PDF s. 2 ve 16, §3.1; Tablo 1, PDF s. 34"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-ortaogretim-p94-net-hesaplama"
+          },
+          {
+            "slug": "kpss-sonuc-yerlestirme-sureci"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-ortaogretim-p94-net-hesaplama",
+      "title": "KPSSP94 nasıl hesaplanır? Net ve puan farkı",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-ortaogretim-p94-net-hesaplama.md",
+      "metaTitle": "KPSSP94 nasıl hesaplanır? Net ve puan farkı | PuhuKoç",
+      "metaDescription": "KPSS Ortaöğretimde dört yanlış kuralını, her testte bir net koşulunu ve KPSSP94 hesabında kullanılan eşit test ağırlıklarını öğren.",
+      "source": "ÖSYM 2026 KPSS Ortaöğretim Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-ci4pae-27090228.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 4,
+        "primaryKeyword": "kpss ortaogretim p94 net hesaplama",
+        "sourceRefs": [
+          "§3.10, PDF s. 22 ve Tablo 2, PDF s. 34"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-ortaogretim-dhbt-p122"
+          },
+          {
+            "slug": "kpss-sonuc-yerlestirme-sureci"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-ortaogretim-dhbt-p122",
+      "title": "KPSS Ortaöğretim ve DHBT ilişkisi: KPSSP122 nasıl oluşur?",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-ortaogretim-dhbt-p122.md",
+      "metaTitle": "KPSS Ortaöğretim ve DHBT ilişkisi: KPSSP122 nasıl oluşur? | PuhuKoç",
+      "metaDescription": "DHBT için aynı öğrenim düzeyinde KPSS’ye katılma şartını, dört testin KPSSP122 ağırlıklarını ve puanın nerede açıklandığını incele.",
+      "source": "ÖSYM 2026 KPSS Ortaöğretim Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-ci4pae-27090228.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 5,
+        "primaryKeyword": "kpss ortaogretim dhbt p122",
+        "sourceRefs": [
+          "§1.8, PDF s. 4; DİB/DHBT açıklamaları, PDF s. 32–33 ve Tablo 2, PDF s. 34"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-ortaogretim-kimler-basvurabilir"
+          },
+          {
+            "slug": "kpss-sonuc-yerlestirme-sureci"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-ortaogretim-cevap-kagidi-kodlama",
+      "title": "KPSS cevap kâğıdı nasıl kodlanır? Kitapçık ve optik form",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-ortaogretim-cevap-kagidi-kodlama.md",
+      "metaTitle": "KPSS cevap kâğıdı nasıl kodlanır? Kitapçık ve optik form | PuhuKoç",
+      "metaDescription": "KPSS’de kitapçık numarasını hangi alanlara yazıp kodlayacağını, optik formu nasıl kontrol edeceğini ve sınav sonunda neyi teslim edeceğini öğren.",
+      "source": "ÖSYM 2026 KPSS Ortaöğretim Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-ci4pae-27090228.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 6,
+        "primaryKeyword": "kpss cevap kağıdı kodlama",
+        "sourceRefs": [
+          "§§3.6–3.7, PDF s. 20"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-sinav-gunu-kurallari"
+          },
+          {
+            "slug": "kpss-ortaogretim-soru-dagilimi"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-ortaogretim-engelli-aday-basvurusu",
+      "title": "KPSS Ortaöğretim engelli aday başvurusu ve sınav düzenlemeleri",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-ortaogretim-engelli-aday-basvurusu.md",
+      "metaTitle": "KPSS Ortaöğretim engelli aday başvurusu ve sınav düzenlemeleri | PuhuKoç",
+      "metaDescription": "KPSS Ortaöğretim başvurusunda e-rapor kaydını nerede kontrol edeceğini ve okuyucu, işaretleyici veya erişilebilir salon talebini nasıl ileteceğini öğren.",
+      "source": "ÖSYM 2026 KPSS Ortaöğretim Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-ci4pae-27090228.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 7,
+        "primaryKeyword": "kpss ortaöğretim engelli aday başvurusu",
+        "sourceRefs": [
+          "§§4.5–4.5.2, PDF s. 26–27"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-ortaogretim-basvuru-formu"
+          },
+          {
+            "slug": "kpss-sinav-gunu-kurallari"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-ortaogretim-merkezi-tercih-mezuniyet",
+      "title": "KPSS Ortaöğretim merkezî tercihlerinde mezuniyet ve nitelik kodları",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-ortaogretim-merkezi-tercih-mezuniyet.md",
+      "metaTitle": "KPSS Ortaöğretim merkezî tercihlerinde mezuniyet ve nitelik kodları | PuhuKoç",
+      "metaDescription": "KPSSP94 ile merkezî tercih yaparken mezuniyet tarihini, nitelik kodlarını ve atama için istenen belgeleri nasıl kontrol edeceğini öğren.",
+      "source": "ÖSYM 2026 KPSS Ortaöğretim Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-ci4pae-27090228.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 8,
+        "primaryKeyword": "kpss ortaöğretim tercih mezuniyet şartı",
+        "sourceRefs": [
+          "§1.6, PDF s. 4 ve §§5.1–6, PDF s. 29"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-ortaogretim-kimler-basvurabilir"
+          },
+          {
+            "slug": "kpss-ortaogretim-p94-net-hesaplama"
+          },
+          {
+            "slug": "kpss-sonuc-yerlestirme-sureci"
+          }
+        ]
+      }
+    }
+  ]
+}

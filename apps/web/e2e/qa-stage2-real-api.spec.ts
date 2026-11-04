@@ -330,7 +330,7 @@ test("K05: Free plan gate opens without an AI preview request", async ({ page, c
     if (request.method() === "POST" && /\/v1\/coach\/plan-adaptation$/.test(request.url())) aiPreviewRequests++;
   });
   await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await page.getByRole("button", { name: "Puhu’yla planla" }).click();
   await expect(page.getByTestId("premium-paywall")).toBeVisible();
   expect(aiPreviewRequests).toBe(0);
 });
@@ -350,7 +350,7 @@ test("K05: fake-Premium plan reaches one AI preview request", async ({ page, con
     if (request.method() === "POST" && /\/v1\/coach\/plan-adaptation$/.test(request.url())) previewRequests++;
   });
   await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await page.getByRole("button", { name: "Puhu’yla planla" }).click();
   await expect(page.getByRole("dialog", { name: "Bu hafta hangi günler çalışacaksın?" })).toBeVisible();
   for (const next of [
     "Günde yaklaşık kaç dakika?",

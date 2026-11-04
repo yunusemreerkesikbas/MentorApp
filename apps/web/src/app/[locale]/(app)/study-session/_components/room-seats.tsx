@@ -7,7 +7,11 @@ import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import type { StudyRoomSeatDto, StudyRoomTheme } from "@mentor/types";
 import { seatPositions } from "./room-seat-layout";
-import { STUDY_ROOM_SEAT_SRC, STUDY_ROOM_TABLE_SRC } from "@/lib/study-room-theme";
+import {
+  STUDY_ROOM_SEAT_SRC,
+  STUDY_ROOM_TABLE_HAS_SHADOW,
+  STUDY_ROOM_TABLE_SRC,
+} from "@/lib/study-room-theme";
 import { AuthorAvatar } from "../../community/_components/author-avatar";
 
 /** Below this the room is taller than it is wide, so the table stands on its end. */
@@ -178,7 +182,12 @@ export function RoomSeats({
       {failedSrc.includes(tableSrc) ? (
         <TableFallback radiusX={layout.fallbackX} radiusY={layout.fallbackY} />
       ) : (
-        <TableImage src={tableSrc} layout={layout} onError={() => markFailed(tableSrc)} />
+        <TableImage
+          src={tableSrc}
+          layout={layout}
+          addShadow={!STUDY_ROOM_TABLE_HAS_SHADOW[theme]}
+          onError={() => markFailed(tableSrc)}
+        />
       )}
 
       <ul className="contents">
@@ -235,10 +244,13 @@ type Layout = (typeof LAYOUT)[keyof typeof LAYOUT];
 function TableImage({
   src,
   layout,
+  addShadow,
   onError,
 }: {
   src: string;
   layout: Layout;
+  /** True when the art has no floor shadow of its own. */
+  addShadow: boolean;
   onError: () => void;
 }) {
   return (
@@ -251,12 +263,15 @@ function TableImage({
         width: `${layout.tableW}%`,
         height: `${layout.tableH}%`,
         transform: layout.rotated ? "rotate(90deg)" : undefined,
+        // Zero offset on purpose: the filter turns with the box on portrait, so an offset
+        // shadow would swing sideways there.
+        filter: addShadow
+          ? "drop-shadow(0 0 1.5rem color-mix(in srgb, var(--room-table-edge) 70%, transparent))"
+          : undefined,
       }}
     >
       {/* `object-contain`, not `-cover`: the box above is a layout convenience, not the
-          asset's real proportions, so the image is never stretched to fill it. Its own
-          baked-in contact shadow (from the generation prompt) is the only grounding — no
-          CSS shadow stacked under it, that would just double up and go muddy. */}
+          asset's real proportions, so the image is never stretched to fill it. */}
       <Image
         src={src}
         alt=""

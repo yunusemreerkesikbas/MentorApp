@@ -76,6 +76,37 @@ export interface PhoneVerificationConfirmDto {
   code: string;
 }
 
+/**
+ * @nullable
+ */
+export type WeeklyReportFollowUpResponseDtoTask = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type WeeklyReportFollowUpResponseDtoPrevious = { [key: string]: unknown } | null;
+
+export interface WeeklyReportFollowUpResponseDto {
+  /** @nullable */
+  task: WeeklyReportFollowUpResponseDtoTask;
+  /** @nullable */
+  previous: WeeklyReportFollowUpResponseDtoPrevious;
+}
+
+export interface CreateWeeklyReportTaskBodyDto {
+  title: string;
+  taskDate?: string;
+  /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  endTime?: string | null;
+  /** @nullable */
+  durationMinutes?: number | null;
+  /** @nullable */
+  description?: string | null;
+  sortOrder?: number;
+}
+
 export interface WeeklyRecapTeaserResponseDto {
   activeDays: number;
   focusMinutes: number;
@@ -177,6 +208,9 @@ export const WeeklyRecapReportResponseDtoSource = {
   COIN: 'COIN',
 } as const;
 
+/**
+ * Frozen weekly review. New snapshots include optional deepAnalysis: localized study comparisons, subject net averages/sample counts and evidence qualification. Both report views share this acquisition; older snapshots omit deepAnalysis.
+ */
 export type WeeklyRecapReportResponseDtoReview = { [key: string]: unknown };
 
 export type WeeklyRecapReportResponseDtoNarration = { [key: string]: unknown };
@@ -190,6 +224,7 @@ export interface WeeklyRecapReportResponseDto {
   source: WeeklyRecapReportResponseDtoSource;
   openedAt: string;
   requiresOpening?: boolean;
+  /** Frozen weekly review. New snapshots include optional deepAnalysis: localized study comparisons, subject net averages/sample counts and evidence qualification. Both report views share this acquisition; older snapshots omit deepAnalysis. */
   review: WeeklyRecapReportResponseDtoReview;
   narration: WeeklyRecapReportResponseDtoNarration;
 }
@@ -1827,6 +1862,8 @@ export type HealthControllerReadiness503 = {
   details?: HealthControllerReadiness503Details;
 };
 
+export type WeeklyRecapControllerCreateTask201 = { [key: string]: unknown };
+
 export type WeeklyRecapControllerOfferParams = {
 examId: string;
 weekStart?: string;
@@ -3344,6 +3381,50 @@ export const phoneControllerConfirmVerification = async (challengeId: string,
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       phoneVerificationConfirmDto,)
+  }
+);}
+
+
+
+export const getWeeklyRecapControllerTrackingUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coach/weekly-recaps/${id}/follow-up`
+}
+
+export const weeklyRecapControllerTracking = async (id: string, options?: RequestInit): Promise<WeeklyReportFollowUpResponseDto> => {
+  
+  return http<WeeklyReportFollowUpResponseDto>(getWeeklyRecapControllerTrackingUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export const getWeeklyRecapControllerCreateTaskUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coach/weekly-recaps/${id}/plan-task`
+}
+
+export const weeklyRecapControllerCreateTask = async (id: string,
+    createWeeklyReportTaskBodyDto: CreateWeeklyReportTaskBodyDto, options?: RequestInit): Promise<WeeklyRecapControllerCreateTask201> => {
+  
+  return http<WeeklyRecapControllerCreateTask201>(getWeeklyRecapControllerCreateTaskUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createWeeklyReportTaskBodyDto,)
   }
 );}
 

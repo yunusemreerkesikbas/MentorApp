@@ -69,6 +69,19 @@ describe("Weekly recap connection ownership", () => {
     expect(h.purchases.debit).not.toHaveBeenCalled();
   });
 
+  it("returns the acquired deep-analysis snapshot on retry without a second debit or evidence read", async () => {
+    const h = build();
+    const deepAnalysis = { metrics: [], subjects: [], evidenceMessage: "frozen" };
+    h.setRow({ id: "report", examId: "exam", weekStart: h.review.period.startDate,
+      review: { ...h.review, deepAnalysis }, status: "READY", narration: { narration: "original" },
+      source: "COIN", cost: 250, openedAt: new Date() });
+    const input = { examId: "exam", weekStart: h.review.period.startDate, source: "COIN" as const,
+      expectedCost: 250, clientRequestId: "retry" };
+    expect(await h.service.open(h.user as never, input)).toMatchObject({ review: { deepAnalysis }, narration: { narration: "original" } });
+    expect(h.purchases.debit).not.toHaveBeenCalled();
+    expect(h.reports.locked).not.toHaveBeenCalled();
+  });
+
   it("keeps Coin limits and the final debit inside the settlement transaction", async () => {
     const h = build();
     const row = { id: "report", examId: "exam", weekStart: h.review.period.startDate,

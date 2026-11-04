@@ -1,4 +1,5 @@
 import type { WeeklyReviewDto } from "./coaching.js";
+import type { PlanTaskDto } from "./coaching.js";
 import type { WeeklyReviewNarrationDto } from "./ai.js";
 
 export type WeeklyRecapSource = "PREMIUM" | "EARNED" | "COIN";
@@ -42,4 +43,16 @@ export interface WeeklyRecapArchiveItemDto {
 export interface WeeklyRecapReportDto extends WeeklyRecapArchiveItemDto {
   review: WeeklyReviewDto;
   narration: WeeklyReviewNarrationDto;
+}
+
+export interface WeeklyReportFollowUpDto {
+  task: PlanTaskDto | null;
+  previous: {
+    reportId: string;
+    weekStart: string;
+    task: PlanTaskDto;
+    baselineNet: string | null;
+    measurement: { net: string; takenAt: string; delta: string | null } | null;
+    message: string;
+  } | null;
 }

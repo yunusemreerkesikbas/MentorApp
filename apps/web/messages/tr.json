@@ -234,9 +234,9 @@
         "name": "Haftanın hikâyesi",
         "tab": "Hikâye",
         "title": "Hafta bitti mi? Hikâyen hazır!",
-        "body": "Kaç gün çalıştın, kaç dakika odaklandın, hangi ders parladı: hepsi kısa bir hikâyede. Dolu geçen haftanın sonunda bir de kod adın olur.",
+        "body": "Kaç gün çalıştın, kaç dakika odaklandın, hangi ders parladı: hepsi kısa bir hikâyede. Dolu geçen haftanın sonunda bir de lakabın olur.",
         "dates": "20 – 26 Ekim",
-        "codename": "Nebula Dalgıcı"
+        "codename": "Odak Makinesi"
       }
     },
     "focus": {
@@ -814,10 +814,10 @@
     "stat_streak": "Seri",
     "badges_title": "Rozetlerin",
     "badges_title_other": "Rozetleri",
-    "badge_marathon": "Maraton",
+    "badge_marathon": "Maratoncu",
     "badge_night_owl": "Gece Kuşu",
-    "badge_motivator": "Motivatör",
-    "badge_newcomer": "Yeni Yoldaş",
+    "badge_motivator": "Moral Kaynağı",
+    "badge_newcomer": "Yeni Komşu",
     "badge_marathon_description": "Düzenli devam ederek ritmini korudun.",
     "badge_marathon_description_other": "Düzenli devam ederek ritmini korudu.",
     "badge_night_owl_description": "Gece saatlerinde topluluğa katkı verdin.",
@@ -1466,6 +1466,7 @@
     "title": "Puhu’yu yanına al, yolda yalnız yürüme"
   },
   "plan": {
+    "weekly_report_rhythm": "Çalışma düzenin",
     "duration_label": "Çalışma süresi (dk)",
     "duration_optional": "İsteğe bağlı",
     "duration_invalid": "5–200 arasında tam dakika yazabilirsin.",
@@ -1801,27 +1802,59 @@
   },
   "analysis": {
     "report": {
-      "title": "Derin analiz",
+      "follow_up": {
+        "title": "Sıradaki adımın",
+        "loading": "Sıradaki adımın yükleniyor",
+        "error": "Sıradaki adımın yüklenemedi.",
+        "retry": "Tekrar dene",
+        "previous": "Geçen haftanın adımı",
+        "done": "Tamamladın",
+        "planned": "Planında · {date}",
+        "baseline_label": "O haftanın ortalaması",
+        "measurement_label": "Sonraki ilk denemen",
+        "measurement_pending": "Deneme bekleniyor",
+        "go_plan": "Planımdaki göreve git",
+        "add": "Planıma ekle",
+        "add_hint": "Kaydetmeden önce plan ekranında düzenleyebilirsin.",
+        "no_task": "Bu raporda kayıtlı bir görev önerisi yok."
+      },
+      "eyebrow": "{range} · Derin analiz",
       "back": "Analize dön",
-      "story": "Haftanın hikâyesi",
-      "saved": "Bu değerlendirme tamamlanmış haftanın kayıtlarına dayanır. Hikâyenle birlikte açıldı; tekrar okumak Coin veya yeni bir hak harcamaz.",
+      "story": "Haftanın hikâyesini izle",
+      "nickname": "Bu haftaki lakabın: {label}",
+      "verdict_metric_ACTIVE_DAYS": "Aktif günlerin {previous} günden {current} güne çıktı",
+      "verdict_metric_FOCUS_MINUTES": "Odak süren {previous} dakikadan {current} dakikaya çıktı",
+      "verdict_metric_PLAN_TASKS": "Tamamladığın görevler {previous} taneden {current} taneye çıktı",
+      "verdict_with_subject": "{metric}, {subject} {delta} net.",
+      "verdict_metric_only": "{metric}.",
+      "verdict_subject_only": "{subject} ortalaman {delta} net yükseldi.",
       "rhythm": "Çalışma düzenin",
+      "legend_previous": "Geçen hafta",
+      "legend_current": "Bu hafta",
       "metric_FOCUS_MINUTES": "Odak süren",
       "metric_ACTIVE_DAYS": "Aktif günlerin",
       "metric_PLAN_TASKS": "Tamamladığın görevler",
+      "metric_value_FOCUS_MINUTES": "{count} dk",
+      "metric_value_ACTIVE_DAYS": "{count} gün",
+      "metric_value_PLAN_TASKS": "{count} görev",
+      "metric_aria": "{label}: bu hafta {current}, geçen hafta {previous}",
+      "metric_aria_new": "{label}: bu hafta {current}, geçen haftanın kaydı yok",
+      "previous_value": "Geçen hafta {value}",
+      "previous_missing": "Geçen haftanın kaydı yok",
       "subjects": "Ders ders gelişimin",
-      "current_week": "Bu haftanın ortalaması",
-      "previous_week": "Önceki haftanın ortalaması",
-      "no_attempt": "Deneme kaydı yok",
+      "subjects_hint": "Ortalama net · geçen haftaya göre",
+      "no_attempt": "Deneme yok",
       "net": "{net} net",
-      "subject_activity": "{minutes} dk odak · {tasks} tamamlanan görev",
+      "subject_current": "Bu hafta {count} deneme",
+      "subject_previous": "Geçen hafta {net}, {count} deneme",
+      "subject_previous_missing": "Geçen hafta deneme yok",
+      "subject_focus": "{minutes} dk odak",
+      "subject_tasks": "{count} görev",
       "subjects_empty": "Bu hafta ders bazlı çalışma kaydı yok.",
-      "evidence": "Bu kıyas neye dayanıyor?",
-      "ai_note": "Puhu'nun yapay zekâ yorumu",
-      "next_step": "Sıradaki küçük adımın",
-      "add_to_plan": "Planıma ekle",
-      "legacy_title": "Kaydettiğin haftan",
-      "legacy_detail": "Bu rapor açıldığında ders bazlı ayrıntılar ve önceki haftanın çalışma kıyası kaydedilmemişti. O günkü özetin ve Puhu'nun notu burada duruyor.",
+      "ai_note": "Puhu'nun notu · yapay zekâ",
+      "footnote": "Görev durumları güncel, raporun kendisi açıldığı günkü haliyle kalır. Tekrar okumak Coin veya yeni bir hak harcamaz.",
+      "legacy_title": "O haftanın özeti",
+      "legacy_detail": "Bu rapor, ders ders kıyas eklenmeden önce açıldı. O günkü özetin ve Puhu'nun notu burada duruyor.",
       "entry_title": "Haftana biraz daha yakından bak",
       "entry_detail": "Çalışma düzenin, ders ders gelişimin ve sıradaki adımın. Haftanın hikâyesi ve derin analiz aynı raporda, birlikte açılır.",
       "entry_cta": "Haftalık raporuma bak"
@@ -2156,8 +2189,8 @@
         "comparison_LONGEST_SESSION": "+{count} dakika"
       },
       "weekly_title": {
-        "label": "Haftanın kod adı",
-        "fallback": "Nova Yolcusu"
+        "label": "Bu haftaki lakabın",
+        "fallback": "Gizli Kahraman"
       },
       "partial_unlocks": {
         "title": "Sırada ne var?",
@@ -2192,7 +2225,7 @@
         "minutes": "{count} dakika",
         "active_days": "{count} aktif gün",
         "tasks": "{count} tamamlanan görev",
-        "weekly_title": "Unvanım: {label}",
+        "weekly_title": "Lakabım: {label}",
         "top_subject": "{name}: {minutes} dakika",
         "preparing_short": "Hazırlanıyor…",
         "downloaded": "Paylaşım kartın indirildi",
@@ -2201,8 +2234,8 @@
       },
       "share_card": {
         "title": "İşte senin haftan!",
-        "weekly_title_label": "Haftanın kod adı",
-        "weekly_title_fallback": "Nova Yolcusu",
+        "weekly_title_label": "Bu haftaki lakabın",
+        "weekly_title_fallback": "Gizli Kahraman",
         "focus": "odakta geçen zaman",
         "active_days": "ritmini taşıdığın gün",
         "sessions": "kendine ayırdığın seans",
@@ -3115,18 +3148,18 @@
     "progress_label": "Bu seviyedeki yolun",
     "progress_aria": "{name} seviye ilerlemesi",
     "progress_value": "{current} / {target} XP",
-    "complete_message": "Bütün ışıklar birbirine bağlandı; yolculuğun devam ediyor.",
+    "complete_message": "Zirvedesin! Yolculuk yine de devam ediyor.",
     "spotlight_travel": "{name} seviyesine geç",
-    "spotlight_locked": "Bu ışık henüz yanmadı.",
+    "spotlight_locked": "Bu seviye henüz açılmadı.",
     "spotlight_open": "{name} rozetini sahne ışığında gör",
-    "guide_open": "Gece Yolculuğu rehberini aç",
-    "guide_title": "Gece Yolculuğu",
-    "guide_description": "Her ışık, emek verdiğin yolun başka bir dönemini anlatıyor.",
+    "guide_open": "Seviye yolunu aç",
+    "guide_title": "Seviye Yolu",
+    "guide_description": "12 seviye, 4 bölüm. Her XP seni bir basamak yukarı taşır!",
     "guide_level_aria": "Seviye {tier}, {name}, {state}",
     "close": "Kapat",
     "celebration": {
-      "introduction_eyebrow": "Gece Yolculuğu",
-      "level_up_eyebrow": "Yeni bir ışık yandı",
+      "introduction_eyebrow": "Seviye Yolu",
+      "level_up_eyebrow": "Seviye atladın!",
       "continue": "Devam et",
       "acknowledge_error": "Kutlamayı şimdilik kapatamadık. Tekrar deneyebilirsin."
     },
@@ -3137,82 +3170,82 @@
     },
     "chapters": {
       "awakening": {
-        "name": "Uyanış",
-        "label": "I. Bölüm · Uyanış"
+        "name": "Başlangıç",
+        "label": "I. Bölüm · Başlangıç"
       },
       "harmony": {
-        "name": "Ahenk",
-        "label": "II. Bölüm · Ahenk"
+        "name": "Tempo",
+        "label": "II. Bölüm · Tempo"
       },
       "deepening": {
-        "name": "Derinleşme",
-        "label": "III. Bölüm · Derinleşme"
+        "name": "Ustalık",
+        "label": "III. Bölüm · Ustalık"
       },
       "shared_light": {
-        "name": "Birlikte Işık",
-        "label": "IV. Bölüm · Birlikte Işık"
+        "name": "Zirve",
+        "label": "IV. Bölüm · Zirve"
       }
     },
     "levels": {
       "spark": {
-        "name": "Kıvılcım",
-        "story": "Yolculuğunda ilk ışık yandı.",
-        "story_visitor": "Yolculuğunda ilk ışık yandı."
+        "name": "Civciv",
+        "story": "Kabuğu kırdın! Yolculuk başladı.",
+        "story_visitor": "Kabuğu kırdı! Yolculuk başladı."
       },
       "trail": {
-        "name": "Alev",
-        "story": "Kıvılcım tutuştu; artık kolay sönmüyor.",
-        "story_visitor": "Kıvılcım tutuştu; artık kolay sönmüyor."
+        "name": "Çaylak",
+        "story": "Yenisin ama hevesin kocaman!",
+        "story_visitor": "Yeni ama hevesi kocaman!"
       },
       "compass": {
-        "name": "Pusula",
-        "story": "Kendi yönünü bulmaya başladın.",
-        "story_visitor": "Kendi yönünü bulmaya başladı."
+        "name": "Meraklı",
+        "story": "Kurcalıyorsun, soruyorsun, öğreniyorsun!",
+        "story_visitor": "Kurcalıyor, soruyor, öğreniyor!"
       },
       "cycle": {
-        "name": "Döngü",
-        "story": "Aynı şeyleri bilerek tekrarlıyorsun; düzen oturuyor.",
-        "story_visitor": "Aynı şeyleri bilerek tekrarlıyor; düzen oturuyor."
+        "name": "Yavru Baykuş",
+        "story": "Gözlerin açıldı! Artık yolunu görüyorsun.",
+        "story_visitor": "Gözleri açıldı! Artık yolunu görüyor."
       },
       "rhythm": {
-        "name": "Nabız",
-        "story": "Tekrarların artık kendiliğinden atıyor.",
-        "story_visitor": "Tekrarları artık kendiliğinden atıyor."
+        "name": "Gece Gözcüsü",
+        "story": "Gözün hep hedefte, hiçbir şeyi kaçırmıyorsun!",
+        "story_visitor": "Gözü hep hedefte, hiçbir şeyi kaçırmıyor!"
       },
       "flow": {
-        "name": "Akış",
-        "story": "Çabayı artık ayrı bir yük gibi taşımıyorsun.",
-        "story_visitor": "Çabayı artık ayrı bir yük gibi taşımıyor."
+        "name": "Durdurulamaz",
+        "story": "Tempo tuttu! Seni artık kimse durduramaz.",
+        "story_visitor": "Tempo tuttu! Onu artık kimse durduramaz."
       },
       "root": {
-        "name": "Kök",
-        "story": "Emeğin geçici bir hevesten daha fazlası.",
-        "story_visitor": "Emeği geçici bir hevesten daha fazlası."
+        "name": "Bilge Baykuş",
+        "story": "Bildiklerin birikiyor, sen bilgeleşiyorsun!",
+        "story_visitor": "Bildikleri birikiyor, bilgeleşiyor!"
       },
       "wing": {
-        "name": "Kanat",
-        "story": "Biriktirdiklerin sana hareket alanı açıyor.",
-        "story_visitor": "Biriktirdikleri ona hareket alanı açıyor."
+        "name": "Eski Kurt",
+        "story": "Bu yolları artık ezbere biliyorsun!",
+        "story_visitor": "Bu yolları artık ezbere biliyor!"
       },
       "horizon": {
-        "name": "Ufuk",
-        "story": "Artık yalnız bugünü değil, önündeki yolu görüyorsun.",
-        "story_visitor": "Artık yalnız bugünü değil, önündeki yolu görüyor."
+        "name": "Kaptan",
+        "story": "Dümen sende, yönü sen belirliyorsun!",
+        "story_visitor": "Dümen onda, yönü o belirliyor!"
       },
       "lantern": {
-        "name": "Fener",
-        "story": "Kendi ışığın başkalarının yoluna da eşlik ediyor.",
-        "story_visitor": "Kendi ışığı başkalarının yoluna da eşlik ediyor."
+        "name": "Şampiyon",
+        "story": "Emeğin kürsüye çıktı!",
+        "story_visitor": "Emeği kürsüye çıktı!"
       },
       "star": {
-        "name": "Yıldız",
-        "story": "Varlığın yolculuğa yön ve cesaret katıyor.",
-        "story_visitor": "Varlığı yolculuğa yön ve cesaret katıyor."
+        "name": "Fenomen",
+        "story": "Herkes senin temponu konuşuyor!",
+        "story_visitor": "Herkes onun temposunu konuşuyor!"
       },
       "constellation": {
-        "name": "Takımyıldız",
-        "story": "Tek başına parlamaktan öte, birlikte anlam oluşturuyorsun.",
-        "story_visitor": "Tek başına parlamaktan öte, birlikte anlam oluşturuyor."
+        "name": "Efsane",
+        "story": "Burası zirve! Sen artık bir efsanesin.",
+        "story_visitor": "Burası zirve! O artık bir efsane."
       }
     }
   },
@@ -3252,18 +3285,37 @@
       "slots": "Coin ile alınan ek kapasite: {used} / {max}",
       "recheck": "Seçeneği açmak Coin harcamaz. Kullanım koşullarını ilgili ekranda görebilirsin.",
       "items": {
-        "NOTEBOOK_SLOT": { "title": "Ek defter kapasitesi", "description": "Kalıcı +1 özel defter kapasitesi. Sayfa ve fotoğraf sınırların aynı kalır.", "action": "Defterlerime git" },
-        "PLAN_PREVIEW": { "title": "Puhu’yla plan taslağı", "description": "Açık onayınla bir yeni plan taslağı hazırlar. Kaydedilmiş taslağı yeniden açmak ve uygulamak ek Coin kullanmaz.", "action": "Plan ekranını aç" },
-        "COACH_CHAT": { "title": "Puhu mesaj hakkı", "description": "Puhu’ya bir mesaj için kullanım hakkı. Günlük sınırlar geçerlidir.", "action": "Puhu sohbetini aç" },
-        "DEEP_ANALYSIS": { "title": "Haftalık derin analiz", "description": "Hazır haftalık raporun ayrıntılı Puhu yorumunu açar. Hak, ilgili hafta ve sınav içindir.", "action": "Analiz ekranını aç" }
+        "NOTEBOOK_SLOT": {
+          "title": "Ek defter kapasitesi",
+          "description": "Kalıcı +1 özel defter kapasitesi. Sayfa ve fotoğraf sınırların aynı kalır.",
+          "action": "Defterlerime git"
+        },
+        "PLAN_PREVIEW": {
+          "title": "Puhu’yla plan taslağı",
+          "description": "Açık onayınla bir yeni plan taslağı hazırlar. Kaydedilmiş taslağı yeniden açmak ve uygulamak ek Coin kullanmaz.",
+          "action": "Plan ekranını aç"
+        },
+        "COACH_CHAT": {
+          "title": "Puhu mesaj hakkı",
+          "description": "Puhu’ya bir mesaj için kullanım hakkı. Günlük sınırlar geçerlidir.",
+          "action": "Puhu sohbetini aç"
+        },
+        "DEEP_ANALYSIS": {
+          "title": "Haftalık derin analiz",
+          "description": "Hazır haftalık raporun ayrıntılı Puhu yorumunu açar. Hak, ilgili hafta ve sınav içindir.",
+          "action": "Analiz ekranını aç"
+        }
       },
       "status": {
-        "AVAILABLE": "Kullanılabilir.", "INSUFFICIENT_COIN": "Bu seçenek için henüz yeterli Coin'in yok.",
-        "PREMIUM_INCLUDED": "Bu kullanım Premium'a dahil, Coin harcanmaz.", "INCLUDED": "Mevcut kullanım hakkına dahil, Coin harcanmaz.",
+        "AVAILABLE": "Kullanılabilir.",
+        "INSUFFICIENT_COIN": "Bu seçenek için henüz yeterli Coin'in yok.",
+        "PREMIUM_INCLUDED": "Bu kullanım Premium'a dahil, Coin harcanmaz.",
+        "INCLUDED": "Mevcut kullanım hakkına dahil, Coin harcanmaz.",
         "ALREADY_UNLOCKED": "Bu kullanım hakkı zaten açık, yeniden Coin harcanmaz.",
         "LIMIT_REACHED": "Yeni ek kapasite alım sınırına ulaştın. Mevcut kapasiten sende kalır.",
         "DAILY_LIMIT_REACHED": "Son 24 saatlik kullanım hakkın doldu. Yeni hak açıldığında kullanabilirsin.",
-        "UNAVAILABLE": "Bu seçenek şu an kullanılamıyor.", "NEEDS_EXAM": "Profilinden sınavını seçince bu seçeneği kontrol edebiliriz.",
+        "UNAVAILABLE": "Bu seçenek şu an kullanılamıyor.",
+        "NEEDS_EXAM": "Profilinden sınavını seçince bu seçeneği kontrol edebiliriz.",
         "REVIEW_NOT_READY": "Bu haftanın raporu henüz hazır değil. Coin harcanmaz."
       }
     },
@@ -3943,81 +3995,81 @@
     }
   },
   "achievements": {
-    "showcase_title": "Yolculuktan İzler",
+    "showcase_title": "Başarıların",
     "showcase_view_all": "Tümünü gör",
-    "showcase_earned_aria": "{title} seninle",
-    "public_empty": "Paylaşılan bir iz henüz yok. Yanına düşünce burada durur.",
-    "collection_title": "Koleksiyonun",
+    "showcase_earned_aria": "{title} açıldı",
+    "public_empty": "Henüz paylaşılan bir başarı yok.",
+    "collection_title": "Tüm başarıların",
     "collection_count": "{earned} / {total}",
     "collection_progress_aria": "Koleksiyon ilerlemesi",
-    "collection_progress_value": "{earned} / {total} başarı seninle",
-    "next_discovery": "Sıradaki keşif",
-    "suggestion_aria": "Sıradaki keşif: {title}. Nasıl uyanır?",
-    "collection_complete_title": "Koleksiyon tamamlandı.",
-    "collection_complete_body": "Bütün rozetler seninle; yolculuğun devam ediyor.",
+    "collection_progress_value": "{earned} / {total} başarı açıldı",
+    "next_discovery": "Sıradaki başarı",
+    "suggestion_aria": "Sıradaki başarı: {title}. Nasıl açılır?",
+    "collection_complete_title": "Koleksiyon tamam!",
+    "collection_complete_body": "Bütün başarılar açıldı.",
     "locked_aria": "{title} başarısı kilitli",
-    "how_to_earn": "Nasıl uyanır?",
+    "how_to_earn": "Nasıl açılır?",
     "progress_label": "İlerlemen",
     "progress_days": "{current} / {target} gün",
-    "earned_on": "{date} tarihinde seninle",
-    "earned": "Seninle",
+    "earned_on": "{date} tarihinde açıldı",
+    "earned": "Açıldı",
     "locked": "Kilitli",
     "close": "Kapat",
-    "celebration_eyebrow": "Yeni bir ışık yandı",
+    "celebration_eyebrow": "Yeni başarı açıldı!",
     "celebration_more": "+{count}",
     "celebration_close_error": "Kutlamayı şimdilik kapatamadık. Tekrar deneyebilirsin.",
-    "history_eyebrow": "{count, plural, one {Bir ışık daha yandı} other {# ışık birden yandı}}",
-    "history_title": "Geçmiş emeklerin de burada",
-    "history_body": "Daha önce verdiğin emeğin karşılığı olan {count} başarı da burada.",
+    "history_eyebrow": "{count, plural, one {Bir başarı daha açıldı!} other {# başarı birden açıldı!}}",
+    "history_title": "Eski emeklerin de sayıldı!",
+    "history_body": "Daha önceki emeğinle {count} başarı daha açıldı.",
     "continue": "Devam edelim",
     "celebration_items": {
       "first_step": {
-        "eyebrow": "Yolculuğun başladı",
-        "body": "Hazır olmayı beklemedin; ilk adımı attın. Yol şimdi senin."
+        "eyebrow": "Başladın bile!",
+        "body": "İlk seans bitti! Gerisi bundan çok daha kolay."
       },
       "route_drawn": {
-        "eyebrow": "Yolun belirginleşiyor",
-        "body": "Nereye gideceğini düşünmekle kalmadın; kendine ilerleyeceğin bir rota çizdin."
+        "eyebrow": "Liste açıldı!",
+        "body": "Planına ilk görevi yazdın. Şimdi sırayla tik atma zamanı!"
       },
       "dream_space_created": {
-        "eyebrow": "Hayalin görünür oldu",
-        "body": "Aklındaki hayale hayatında bir yer açtın. Artık dönüp bakabileceğin bir yönün var."
+        "eyebrow": "Hayalin duvarda!",
+        "body": "Hayalini panoya taşıdın. Her bakışında neden başladığını hatırlatacak."
       },
       "rhythm_found": {
-        "eyebrow": "Ritmin oluşuyor",
-        "body": "Yedi gündür kendin için geri dönüyorsun. Bu artık tek bir gün değil, senin ritmin."
+        "eyebrow": "7 gün, hiç boşluk yok!",
+        "body": "Bir haftadır her gün buradasın. Bu artık alışkanlık oluyor!"
       },
       "rhythm_kept": {
-        "eyebrow": "Ritmin seninle",
-        "body": "Otuz gün boyunca yolundan kopmadın. Kurduğun bu ritim artık güçlü bir parçan."
+        "eyebrow": "30 gün, inanılmaz!",
+        "body": "Tam bir ay hiç kopmadın. Bu emeğe şapka çıkarılır!"
       },
       "returned_to_path": {
-        "eyebrow": "Yol seni bekliyordu",
-        "body": "Ara vermek yolculuğu bitirmedi. Bugün kaldığın yerden yeniden kendine döndün."
+        "eyebrow": "Tekrar hoş geldin!",
+        "body": "Ara vermek bitirmek değil. Kaldığın yerden devam ediyorsun!"
       },
       "route_renewed": {
-        "eyebrow": "Rotan sana uydu",
-        "body": "Planına tutunmak yerine onu ihtiyacına göre yeniledin. Yolunu sahiplenmek tam da bu."
+        "eyebrow": "Plan güncellendi!",
+        "body": "Planı kendine uydurdun, olması gereken de buydu. Yeni hâliyle devam!"
       },
       "starting_point_set": {
-        "eyebrow": "Nerede olduğunu gördün",
-        "body": "İlk denemeni kaydettin. Şimdi ilerledikçe ne kadar yol aldığını görebileceksin."
+        "eyebrow": "Çıta kondu!",
+        "body": "İlk denemen kayıtta. Artık her yeni denemede ne kadar ilerlediğini göreceksin!"
       },
       "mistake_revisited": {
-        "eyebrow": "Bir kez daha baktın",
-        "body": "Bir yanlışa dönüp yeniden baktın. Öğrenmek, bazen tam da burada derinleşir."
+        "eyebrow": "Rövanş zamanı!",
+        "body": "Bir yanlışına geri döndün. O soru seni bir daha yakalayamaz!"
       },
       "week_reflected": {
-        "eyebrow": "Kendini dinledin",
-        "body": "Haftanın sesini duymak için durdun. Şimdi bir sonraki adımın sana daha yakın."
+        "eyebrow": "Hafta mercek altında!",
+        "body": "Haftana dönüp baktın. Sıradaki hafta daha da iyi olacak!"
       },
       "first_hello": {
-        "eyebrow": "Artık burada bir izin var",
-        "body": "İlk sözünü toplulukla paylaştın. Bu yolculukta artık yalnız yürümüyorsun."
+        "eyebrow": "Sesin duyuldu!",
+        "body": "Toplulukta ilk kez yazdın. Artık bu kalabalığın bir parçasısın!"
       },
       "helped_someone": {
-        "eyebrow": "Sözün birine ulaştı",
-        "body": "Paylaştığın bir şey başka bir öğrenciye iyi geldi. Bazen küçük bir destek çok yol aldırır."
+        "eyebrow": "Birine iyi geldin!",
+        "body": "Yazdığın bir şey başka bir öğrencinin işine yaradı. Harika bir his!"
       }
     }
   },

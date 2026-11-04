@@ -1,72 +1,79 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import { Sparkles } from "lucide-react";
+import { Check, ChevronLeft, Info, Play } from "lucide-react";
 import type { WeeklyRecapReportDto } from "@mentor/types";
 import { Link } from "@/i18n/navigation";
-import { PuhuImage } from "@/components/puhu-image";
-import { LEDGE, LEDGE_FILLED, PANEL_CARD, PANEL_CARD_TITLE, PANEL_HERO, PANEL_HERO_TITLE, PANEL_MAIN_CLASS, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
+import { CompanionBubble } from "@/components/panel/companion-bubble";
+import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_HERO, PANEL_HERO_TITLE, PANEL_MAIN_CLASS, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
+import { pickWeeklyVerdict } from "@/lib/weekly-deep-analysis";
+import { EYEBROW, WeeklyDeepAnalysisRhythm } from "./weekly-deep-analysis-parts";
 import { WeeklyDeepAnalysisSubjects } from "./weekly-deep-analysis-subjects";
+import { useWeeklyReportFollowUp, WeeklyNextStep, WeeklyPreviousStep } from "./weekly-report-follow-up";
 
+/** One finding, then one step: the hero names the week's gain, the next card holds the only ledge. */
 export function WeeklyDeepAnalysis({ report, onStory }: { report: WeeklyRecapReportDto; onStory: () => void }) {
   const t = useTranslations("analysis.report");
   const format = useFormatter();
   const { review, narration } = report;
   const detail = review.deepAnalysis;
-  const task = review.suggestedTask;
-  return <main className={`${PANEL_MAIN_CLASS} max-w-3xl`} data-testid="weekly-deep-analysis">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <Link href="/analysis" className={PANEL_TEXT_LINK}>{t("back")}</Link>
-      <button type="button" onClick={onStory} className={PANEL_TEXT_LINK}>{t("story")}</button>
-    </div>
+  const followUp = useWeeklyReportFollowUp(report.id);
+  const verdict = useVerdict(report);
+  // Alone, the first card takes the row; it halves only when last week's step loads beside it.
+  const solo = followUp.state.kind !== "ready" || !followUp.state.data.previous ? "lg:col-span-2" : "";
+  const legacyLines = [review.rhythm.message, review.plan.message, review.performance?.message].filter((line): line is string => Boolean(line));
+  return <main className={`${PANEL_MAIN_CLASS} max-w-5xl`} data-testid="weekly-deep-analysis">
+    <Link href="/analysis" className={`${PANEL_TEXT_LINK} self-start`}><ChevronLeft className="size-4" aria-hidden />{t("back")}</Link>
+
     <header className={PANEL_HERO}>
-      <p className="text-sm font-bold text-[var(--color-secondary)]">{format.dateTimeRange(
+      <p className={EYEBROW}>{t("eyebrow", { range: format.dateTimeRange(
         new Date(`${report.weekStart}T00:00:00Z`), new Date(`${report.endDate}T00:00:00Z`),
         { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" },
-      )}</p>
-      <h1 tabIndex={-1} className={PANEL_HERO_TITLE}>{t("title")}</h1>
-      <p className="text-sm leading-relaxed text-[var(--color-secondary)]">{t("saved")}</p>
+      ) })}</p>
+      <h1 tabIndex={-1} className={`${PANEL_HERO_TITLE} max-w-[40ch] text-balance focus:outline-none`}>{verdict}</h1>
+      {detail && review.recap.weeklyTitle ? <span className="-mt-1 inline-flex h-7 self-start items-center rounded-full bg-[var(--play-well-violet)] px-3 text-sm font-extrabold text-[var(--color-main)]">
+        {t("nickname", { label: review.recap.weeklyTitle.label })}
+      </span> : null}
+      <CompanionBubble puhu="encouraging" text={narration.narration} aiLabel={t("ai_note")} />
+      <button type="button" onClick={onStory} className={`${PANEL_TEXT_LINK} self-start`}>
+        <Play className="size-4 fill-current" aria-hidden />{t("story")}
+      </button>
     </header>
 
-    {detail ? <>
-      <section className={PANEL_CARD} aria-labelledby="deep-rhythm-title">
-        <h2 id="deep-rhythm-title" className={PANEL_CARD_TITLE}>{t("rhythm")}</h2>
-        <ul className="mt-4 space-y-4">{detail.metrics.map((metric) => <li key={metric.id}>
-          <h3 className="text-sm font-extrabold text-[var(--color-main)]">{t(`metric_${metric.id}`)}</h3>
-          <p className="mt-1 text-sm leading-relaxed text-[var(--color-secondary)]">{metric.message}</p>
+    <WeeklyNextStep report={report} state={followUp.state} onRetry={followUp.retry} />
+
+    <div className="grid items-start gap-5 lg:grid-cols-2">
+      {detail ? <WeeklyDeepAnalysisRhythm metrics={detail.metrics} className={solo} /> : <section className={`${PANEL_CARD} flex flex-col gap-3 ${solo}`} aria-labelledby="deep-legacy-title">
+        <h2 id="deep-legacy-title" className={PANEL_CARD_TITLE}>{t("legacy_title")}</h2>
+        <ul className="flex flex-col gap-2.5">{legacyLines.map((line) => <li key={line} className="flex items-start gap-2.5">
+          <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--color-success)_14%,var(--color-surface))] text-[var(--color-success)]">
+            <Check className="size-3.5" strokeWidth={3} aria-hidden />
+          </span>
+          <span className="text-sm leading-relaxed text-[var(--color-main)]">{line}</span>
         </li>)}</ul>
-      </section>
-      <WeeklyDeepAnalysisSubjects subjects={detail.subjects} />
-      <section className={PANEL_CARD} aria-labelledby="deep-evidence-title">
-        <h2 id="deep-evidence-title" className={PANEL_CARD_TITLE}>{t("evidence")}</h2>
-        <p className="mt-3 text-sm leading-relaxed text-[var(--color-secondary)]">{detail.evidenceMessage}</p>
-      </section>
-    </> : <section className={PANEL_CARD}>
-      <h2 className={PANEL_CARD_TITLE}>{t("legacy_title")}</h2>
-      <p className="mt-3 text-sm leading-relaxed text-[var(--color-secondary)]">{t("legacy_detail")}</p>
-      <p className="mt-3 text-sm text-[var(--color-main)]">{review.rhythm.message}</p>
-      <p className="mt-2 text-sm text-[var(--color-main)]">{review.plan.message}</p>
-      {review.performance ? <p className="mt-2 text-sm text-[var(--color-main)]">{review.performance.message}</p> : null}
-    </section>}
+        <p className="text-caption leading-relaxed text-[var(--color-secondary)]">{t("legacy_detail")}</p>
+      </section>}
+      <WeeklyPreviousStep state={followUp.state} />
+    </div>
 
-    <section className={`${PANEL_CARD} flex items-start gap-3`} aria-labelledby="deep-note-title">
-      <PuhuImage variant="encouraging" size="sm" />
-      <div className="min-w-0">
-        <h2 id="deep-note-title" className={`${PANEL_CARD_TITLE} flex items-center gap-2`}>
-          <Sparkles className="size-4 shrink-0" aria-hidden />{t("ai_note")}
-        </h2>
-        <p className="mt-3 text-pretty text-sm leading-relaxed text-[var(--color-main)]">{narration.narration}</p>
-      </div>
-    </section>
+    {detail ? <WeeklyDeepAnalysisSubjects subjects={detail.subjects} /> : null}
 
-    {review.focus || task ? <section className={PANEL_CARD} aria-labelledby="deep-next-title">
-      <h2 id="deep-next-title" className={PANEL_CARD_TITLE}>{t("next_step")}</h2>
-      {review.focus ? <p className="mt-3 text-sm leading-relaxed text-[var(--color-secondary)]">{review.focus.message}</p> : null}
-      {task ? <>
-        <p className="mt-3 font-bold text-[var(--color-main)]">{task.title}</p>
-        <Link href={{ pathname: "/plan", query: { add: "1", title: task.title, ...(task.subject ? { subject: task.subject } : {}) } }}
-          className={`${LEDGE} ${LEDGE_FILLED} mt-4 w-full`}>{t("add_to_plan")}</Link>
-      </> : null}
-    </section> : null}
+    <p className="flex max-w-prose items-start gap-1.5 px-1 text-caption leading-relaxed text-[var(--color-secondary)]">
+      <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <span>{detail?.evidenceMessage ? `${detail.evidenceMessage} ` : ""}{t("footnote")}</span>
+    </p>
   </main>;
+}
+
+function useVerdict(report: WeeklyRecapReportDto): string {
+  const t = useTranslations("analysis.report");
+  const format = useFormatter();
+  const { review } = report;
+  const fallback = review.recap.weeklyTitle?.message ?? review.recap.closingMessage;
+  if (!review.deepAnalysis) return fallback;
+  const { metric, subject } = pickWeeklyVerdict(review.deepAnalysis);
+  const delta = subject ? format.number(subject.delta, { maximumFractionDigits: 2, signDisplay: "exceptZero" }) : "";
+  if (!metric) return subject ? t("verdict_subject_only", { subject: subject.name, delta }) : fallback;
+  const gain = t(`verdict_metric_${metric.id}`, { previous: metric.previous, current: metric.current });
+  return subject ? t("verdict_with_subject", { metric: gain, subject: subject.name, delta }) : t("verdict_metric_only", { metric: gain });
 }
