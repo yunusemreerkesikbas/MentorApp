@@ -62,6 +62,7 @@ Thumbs.db
 .agent/
 .cursor/
 .codex/
+.superpowers/
 .github/prompts/
 .github/skills/
 
