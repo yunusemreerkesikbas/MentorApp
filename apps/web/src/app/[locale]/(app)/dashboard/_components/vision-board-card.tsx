@@ -8,6 +8,7 @@ import { CloseCircleIcon as X } from "@solar-icons/react/linear/close-circle";
 import type { VisionDto, VisionNoteDto } from "@mentor/types";
 import { aiVisionControllerNote, coachingControllerGetVision } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
+import { PanelCardSkeleton } from "./panel-card-skeleton";
 import { BoardFrame } from "@/components/vision-board/board-frame";
 import { BoardStage } from "@/components/vision-board/board-stage";
 import { HungBoard, useBoardSway } from "@/components/vision-board/hung-board";
@@ -103,7 +104,7 @@ export function VisionBoardCard() {
   }, [vision, premium, generate]);
 
   // Avoid a layout flash before we know whether a goal exists.
-  if (!loaded) return null;
+  if (!loaded) return <PanelCardSkeleton kind="vision" />;
 
   return (
     <>

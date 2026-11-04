@@ -27,6 +27,7 @@ import {
   type WeeklyHighlightCandidate,
 } from "../domain/weekly-review";
 import { WeeklyReviewRepository } from "../infrastructure/weekly-review.repository";
+import { buildWeeklyDeepAnalysis } from "../domain/weekly-deep-analysis";
 
 @Injectable()
 export class WeeklyReviewService {
@@ -483,6 +484,22 @@ export class WeeklyReviewService {
       focus,
       suggestedTask: reviewSuggestedTask,
     };
+
+    if (ready) review.deepAnalysis = buildWeeklyDeepAnalysis({
+      current: { focusMinutes, activeDays, completedTaskCount: completedPlanTaskCount, mockExamCount: currentExams.length },
+      previous: previousExams.length || previousQualifyingSessions.length || previousTasks.length ? {
+        focusMinutes: Math.round(previousQualifyingSessions.reduce((sum, row) => sum + row.actualFocusSeconds, 0) / 60),
+        activeDays: previousActivity.activeDays, completedTaskCount: previousTasks.length, mockExamCount: previousExams.length,
+      } : null,
+      subjects: taxonomy.map((subject) => ({
+        subjectRef: subject.slug, subjectName: subject.name,
+        currentNets: evidence.subjects.filter((row) => row.subjectRef === subject.slug && currentIds.has(row.mockExamId)).map((row) => Number(row.net)),
+        previousNets: evidence.subjects.filter((row) => row.subjectRef === subject.slug && previousIds.has(row.mockExamId)).map((row) => Number(row.net)),
+        focusMinutes: sessionSubjectBreakdown.find((row) => row.subjectRef === subject.slug)?.focusMinutes ?? 0,
+        completedTaskCount: planSubjectBreakdown.find((row) => row.subjectRef === subject.slug)?.completedTaskCount ?? 0,
+      })),
+      translate: t,
+    });
 
     const suggestedTask = focusSelection?.subjectName
       ? {

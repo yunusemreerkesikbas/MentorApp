@@ -66,6 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         className={`mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`}
         style={{ backgroundColor: "var(--color-bg)" }}
       >
+        <AppNav />
         {children}
       </div>
     );

@@ -59,7 +59,7 @@ export type NarrationState =
   | { status: "idle" | "loading" | "fallback" }
   | { status: "ready"; data: WeeklyReviewNarrationDto };
 
-export function WeeklyRecapShell({ savedReport }: { savedReport?: WeeklyRecapReportDto }) {
+export function WeeklyRecapShell({ savedReport, onOpenAnalysis }: { savedReport?: WeeklyRecapReportDto; onOpenAnalysis?: () => void }) {
   const economyEnabled = useEconomyEnabled();
   const t = useTranslations("analysis.recap");
   const locale = useLocale();
@@ -435,6 +435,7 @@ export function WeeklyRecapShell({ savedReport }: { savedReport?: WeeklyRecapRep
   return (
     <>
       <WeeklyRecapStory
+        onOpenAnalysis={onOpenAnalysis}
         slides={slides}
         review={state.review}
         locale={locale}

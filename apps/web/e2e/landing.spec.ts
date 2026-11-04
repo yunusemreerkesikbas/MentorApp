@@ -54,7 +54,7 @@ test("koç notunda bir his seçilince örnek cevap gelir", async ({ page }) => {
   await chip.click();
   await expect(chip).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText(/Son üç denemene bakalım/)).toBeVisible();
-  await expect(page.getByText("Bu bir örnek cevap. Yapay zekâ koç Premium'da.")).toBeVisible();
+  await expect(page.getByText("Bu bir örnek cevap. Yapay zekâ koç Puhu, Premium’da.")).toBeVisible();
 });
 
 test("alan seçimi pencereyi yakar ve onboarding'e taşınır", async ({ page }) => {

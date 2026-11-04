@@ -37,6 +37,7 @@ import { SubjectsCard } from "./subjects-card";
 import { useAnalysisData } from "./use-analysis-data";
 import { useGhostNarration } from "./use-ghost-narration";
 import { useMockExamEntry } from "./use-mock-exam-entry";
+import { WeeklyAnalysisEntry } from "./weekly-analysis-entry";
 
 const tabTransition = {
   type: "tween" as const,
@@ -230,6 +231,7 @@ export function AnalysisShell() {
       <div className={PANEL_GRID_CLASS}>
         <div className="flex min-w-0 flex-col gap-5">
           {header}
+          {examId ? <WeeklyAnalysisEntry examId={examId} /> : null}
           {view}
         </div>
         <aside className="flex min-w-0 flex-col gap-5">{history}</aside>

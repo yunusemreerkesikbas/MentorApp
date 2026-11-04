@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
+import { PanelCardSkeleton } from "./panel-card-skeleton";
 import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 
 /**
@@ -19,13 +20,19 @@ export function DashboardContentSkeleton() {
             <Skeleton className="h-8 w-64 rounded-[var(--radius-card)]" />
             <Skeleton className="h-4 w-36 rounded-[var(--radius-card)]" />
           </div>
-          <Skeleton className="h-14 rounded-[var(--play-radius)]" />
           <TodayPathSkeleton />
+          <div className="grid gap-5 xl:hidden">
+            <PanelCardSkeleton kind="quests" />
+            <PanelCardSkeleton kind="membership" />
+            <PanelCardSkeleton kind="countdown" />
+          </div>
         </div>
         <div className="hidden flex-col gap-5 xl:flex">
-          <Skeleton className="h-36 rounded-[var(--radius-card)]" />
-          <Skeleton className="h-64 rounded-[var(--radius-card)]" />
-          <Skeleton className="h-56 rounded-[var(--radius-card)]" />
+          <PanelCardSkeleton kind="journey" />
+          <PanelCardSkeleton kind="membership" />
+          <PanelCardSkeleton kind="quests" />
+          <PanelCardSkeleton kind="countdown" />
+          <PanelCardSkeleton kind="vision" />
         </div>
       </SkeletonGroup>
     </main>

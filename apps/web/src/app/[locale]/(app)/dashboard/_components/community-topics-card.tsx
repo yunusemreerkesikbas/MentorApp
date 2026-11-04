@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
-import { ChatRoundDotsIcon as Chat } from "@solar-icons/react/bold/chat-round-dots";
+import { ChatRoundDotsIcon as Chat } from "@solar-icons/react/linear/chat-round-dots";
 import { ForumFeedScope, ForumFeedSort, type ForumFeedItem } from "@mentor/types";
+import { PanelCardSkeleton } from "./panel-card-skeleton";
 import { Link } from "@/i18n/navigation";
 import { getForumFeed } from "@/lib/forum";
 import { relativeTime } from "@/lib/relative-time";
@@ -20,6 +21,8 @@ export function CommunityTopicsCard() {
   const locale = useLocale();
   const [items, setItems] = useState<ForumFeedItem[]>([]);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     let active = true;
     getForumFeed({
@@ -30,12 +33,14 @@ export function CommunityTopicsCard() {
       .then((feed) => {
         if (active) setItems(feed.items.slice(0, 2));
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => { if (active) setLoading(false); });
     return () => {
       active = false;
     };
   }, []);
 
+  if (loading) return <PanelCardSkeleton kind="community" />;
   if (items.length === 0) return null;
 
   return (
@@ -71,7 +76,7 @@ export function CommunityTopicsCard() {
                 className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-secondary)]"
                 aria-hidden
               >
-                <Chat size={20} className="size-5" />
+                <Chat size={20} strokeWidth={1.75} className="size-5" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="line-clamp-2 text-body-sm font-extrabold leading-snug text-[var(--color-main)]">

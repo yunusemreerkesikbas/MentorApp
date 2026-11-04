@@ -12,6 +12,7 @@ import { fetchOwnedWeeklyRecap, fetchWeeklyRecapArchive, fetchWeeklyRecapOffer, 
 import { WeeklyRecapShell } from "./weekly-recap-shell";
 import { WeeklyRecapAccessCard } from "./weekly-recap-access-card";
 import { WeeklyRecapArchive } from "./weekly-recap-archive";
+import { WeeklyReportView } from "./weekly-report-view";
 
 type State = { kind: "loading" } | { kind: "legacy" } | { kind: "error"; message: string }
   | { kind: "offer"; offer: WeeklyRecapOfferDto } | { kind: "report"; report: WeeklyRecapReportDto };
@@ -114,7 +115,7 @@ export function WeeklyRecapEntry() {
     finally { setBusy(false); }
   };
   if (state.kind === "legacy") return <WeeklyRecapShell />;
-  if (state.kind === "report") return <WeeklyRecapShell savedReport={state.report} />;
+  if (state.kind === "report") return <WeeklyReportView key={state.report.id} report={state.report} />;
   return <main className="mx-auto w-full max-w-xl px-4 py-8" data-testid="weekly-recap-access">
     {state.kind === "loading" ? <SkeletonGroup label={t("loading")} className="space-y-4"><Skeleton className="h-[540px] w-full" /><Skeleton className="h-32 w-full" /></SkeletonGroup>
       : state.kind === "error" ? <section role="alert" className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-6">

@@ -1,6 +1,10 @@
 import { getTranslations } from "next-intl/server";
 import { Chart2Icon } from "@solar-icons/react/bold/chart-2";
 import { ChatRoundDotsIcon } from "@solar-icons/react/bold/chat-round-dots";
+import { ClipboardCheckIcon } from "@solar-icons/react/bold/clipboard-check";
+import { ForbiddenIcon } from "@solar-icons/react/bold/forbidden";
+import { NotebookIcon } from "@solar-icons/react/bold/notebook";
+import { PlayCircleIcon } from "@solar-icons/react/bold/play-circle";
 import { Sun2Icon } from "@solar-icons/react/bold/sun-2";
 import { LEDGE } from "@/components/panel/panel-styles";
 import { PREMIUM_MASK_PATH } from "@/components/premium/premium-mask";
@@ -16,13 +20,19 @@ import "./landing-premium.css";
  * Premium adds on the right. Only while the AI coach and student purchases are both on; an unknown
  * availability reads as off, so the landing never offers a trial nobody can start.
  *
- * The three rows are live Premium features (the paywall's coach, daily and analysis rows). "7 gün"
- * is fixed copy of the plan catalog's default `trial_days`: change them together.
+ * Every row is something Premium opens on the web today: the paywall's coach, daily, analysis,
+ * notebook and ad-free rows, plus "Koçla planla" and the weekly story (both Coin or Premium). The
+ * weekly chest is not here: everyone gets it, Premium only turns its Coin into XP. "7 gün" is fixed
+ * copy of the plan catalog's default `trial_days`: change them together.
  */
 const BENEFITS = [
   { key: "chat", Icon: ChatRoundDotsIcon },
   { key: "daily", Icon: Sun2Icon },
+  { key: "plan", Icon: ClipboardCheckIcon },
   { key: "analysis", Icon: Chart2Icon },
+  { key: "story", Icon: PlayCircleIcon },
+  { key: "notebook", Icon: NotebookIcon },
+  { key: "adfree", Icon: ForbiddenIcon },
 ] as const;
 
 export async function LandingPremium() {
@@ -58,11 +68,8 @@ export async function LandingPremium() {
           <ul className="lp-benefits">
             {BENEFITS.map(({ key, Icon }) => (
               <li key={key}>
-                <Icon size={26} aria-hidden="true" />
-                <span>
-                  <b>{p(`${key}_title`)}</b>
-                  <small>{p(`${key}_body`)}</small>
-                </span>
+                <Icon size={24} aria-hidden="true" />
+                {p(`benefit.${key}`)}
               </li>
             ))}
           </ul>

@@ -1031,6 +1031,8 @@ export type WeeklyFocusSource =
   | "SESSION_RHYTHM";
 
 export interface WeeklyReviewDto {
+  /** Included in newly opened reports; absent in historical frozen snapshots. */
+  deepAnalysis?: import("./weekly-deep-analysis.js").WeeklyDeepAnalysisDto;
   period: { startDate: string; endDate: string; timeZone: "Europe/Istanbul" };
   status: WeeklyReviewStatus;
   recap: {

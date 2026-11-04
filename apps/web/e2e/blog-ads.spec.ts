@@ -139,7 +139,7 @@ for (const mode of ["empty", "blocked", "denied"] as const) {
     await approachAd(page);
     await expect.poll(() => api.placementCalls.length).toBeGreaterThanOrEqual(1);
     await expect(page.getByRole("complementary", { name: "Reklam" })).toBeHidden();
-    await expect(page.getByRole("link", { name: "Koçla konuşmak için giriş yap" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Puhu’ya sormak için giriş yap" })).toBeVisible();
     if (mode === "denied") expect(api.scriptRequests).toBe(0);
   });
 }

@@ -47,7 +47,7 @@ test("Coin-rich Free account sees plan/greeting paywalls while chat has Coin acc
   });
 
   await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla", exact: true }).click();
+  await page.getByRole("button", { name: "Puhu’yla planla", exact: true }).click();
   await expect(page.getByTestId("premium-paywall")).toBeVisible();
   expect((await learner.balance()).coinConfirmed).toBe(20);
   await page.screenshot({
@@ -55,7 +55,7 @@ test("Coin-rich Free account sees plan/greeting paywalls while chat has Coin acc
   });
 
   await page.goto("/panel");
-  await page.getByRole("button", { name: /Güne koçunla uyan/ }).click();
+  await page.getByRole("button", { name: /Güne Puhu’yla uyan/ }).click();
   await expect(page.getByTestId("premium-paywall")).toBeVisible();
   expect((await learner.balance()).coinConfirmed).toBe(20);
   await page.screenshot({
@@ -73,7 +73,7 @@ test("Coin-rich Free account sees plan/greeting paywalls while chat has Coin acc
   });
   await page.goto("/koc");
   await expect(
-    page.getByRole("textbox", { name: "Koçuna mesaj yaz", exact: true }),
+    page.getByRole("textbox", { name: "Puhu’ya mesaj yaz", exact: true }),
   ).toBeVisible();
   expect((await learner.balance()).coinConfirmed).toBe(20);
   expect(billablePosts).toHaveLength(0);

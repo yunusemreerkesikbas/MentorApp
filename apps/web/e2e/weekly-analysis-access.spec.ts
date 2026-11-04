@@ -40,7 +40,7 @@ test("bütçe kapalıyken Coin teklifi ve Premium satın alma yönlendirmesi gö
   await expect(
     page
       .getByRole("status")
-      .filter({ hasText: "AI Puhu notu şu an hazırlanamadı" }),
+      .filter({ hasText: "Puhu’nun notu şu an hazırlanamadı" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: /coin ile|Premium ile aç/i }),
@@ -73,7 +73,7 @@ test("bütçe kapalıyken alınmış haftalık hakkın önbellekteki notu okunur
   await expect(page.getByText("Bu haftalık notun hazır.")).toBeVisible();
   await expect(page.getByRole("button", { name: /coin ile/i })).toHaveCount(0);
   await expect(
-    page.getByText("AI Puhu notu şu an hazırlanamadı", { exact: false }),
+    page.getByText("Puhu’nun notu şu an hazırlanamadı", { exact: false }),
   ).toHaveCount(0);
   expect(
     api.requests.filter(
@@ -135,7 +135,7 @@ test("tekliften sonra bütçe kapanırsa satın alma reddi Coin düğmesini kald
   });
   await openNote(page);
   await page
-    .getByRole("button", { name: "25 coin ile AI Puhu notunu aç" })
+    .getByRole("button", { name: "25 coin ile Puhu’nun notunu aç" })
     .click();
   await page
     .getByRole("button", { name: "Emin misin? 25 coin harcanacak" })
@@ -143,7 +143,7 @@ test("tekliften sonra bütçe kapanırsa satın alma reddi Coin düğmesini kald
   await expect(
     page
       .getByRole("status")
-      .filter({ hasText: "AI Puhu notu şu an hazırlanamadı" }),
+      .filter({ hasText: "Puhu’nun notu şu an hazırlanamadı" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: /coin ile|Premium ile aç/i }),

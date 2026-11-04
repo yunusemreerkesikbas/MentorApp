@@ -67,6 +67,31 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-04 · In-app copy names the AI coach "Puhu" too.** ~80 tr/en strings across paywall,
+  campaign, coach chat (`coach`, `coach_chat`), "Koçla planla" (now **"Puhu’yla planla"**, `plan.*`,
+  `economy.uses`), panel, analysis/recap, session, ghost, mood, vision, article coach box, nav
+  (`nav.coach` = "Puhu"), checkout, welcome slide 2 and account deletion. Owner's call on badges:
+  Turkish says "yapay zekâ", never "AI" ("AI Puhu notun" → "Puhu’nun yapay zekâ notu"); English
+  keeps "AI". The chat disclaimer now opens "Puhu bir yapay zekâ koç". Mentorship strings that
+  mean the student's AI chat now say Puhu. Unchanged: human-coach copy (mentorship, coaches,
+  coachPlan, "Koçundan" tasks, "Koçun açtı"), `coach_chat.privacy_notice` ("AI sağlayıcısı",
+  legal) and server prompts. e2e locators updated (13 specs). Code comments still say "Koçla
+  planla" as the feature's working name.
+
+- **2026-11-04 · The landing names the AI coach "Puhu".** Owner's call: no new name, the AI coach
+  is Puhu (masked Puhu = Premium AI), so plain "koç" stays free for the human coach. Changed
+  `landing.premium` lead + chat/daily/plan rows, `faq.a1`/`q2`/`a4` (also feeds the FAQ JSON-LD)
+  and the coach note's title/body/empty/demo_note (tr + en). Each block says "yapay zekâ" once
+  (AI disclosure). Left as is: the note's plate name "Koç", `puhu.body` ("koçun bir mesaj
+  uzağında"), `welcome.slide2` ("AI koçun") and every in-app string (paywall, chat, Koçla planla).
+
+- **2026-11-04 · ALES and DGS in the landing's exam names.** APP-132 added both to `EXAM_CATALOG`
+  and onboarding, so every place that names the exams now lists all five in catalog order: layout
+  META title + description (TR 51/149 chars, EN 52/153), the hero label `landing.exams`
+  ("KPSS · YKS · LGS · ALES · DGS", one line at 320 px), FAQ `a3`, and the blog's
+  `knowledge.meta_description` (its family filter already had ALES and DGS). Rule in
+  `docs/copy/voice.md`.
+
 - **2026-11-03 · Landing Premium sheet.** A new section between Gece Yolculuğu and the coach band:
   `landing-premium.tsx` + `.css` (`#premium`). Owner's picks: a section on the landing for now (a
   `/premium` page with prices comes when the plan prices are final and web purchases open; the
@@ -85,6 +110,27 @@ http://localhost:3000/panel               # daily ritual hub
   `puhu-premium-hero.png` stands in the art slot. Copy in `landing.premium`. Checked logged out at
   375, 768, 1280 and 1600 (no overflow, 16px between the copy and the skyline). The coach band
   (also dark blue) stays right under it: the owner's call after seeing the two together.
+  2026-11-04, the loop landed (take 2; take 1's barrel roll showed his back and its middle was an
+  upright hover): `public/mascot/puhu/motion/puhu-premium-flight-loop.mp4` (Kling 940² → KlingAI
+  mark cropped with WinRT, 880² at x=30 → 720², 2.2 MB, frame 0 checked against the source) and
+  `puhu-premium-flight.webp` (frame 0). `premium-flight-video.tsx`: `preload="none"`, plays only
+  while a quarter of it is on screen (IntersectionObserver), never with reduced motion (checked in
+  the effect, so the server and the first client render are the same `<video>`), poster `<img>` if
+  it fails. Soft round mask (`.lp-art video`, solid to 60%, clear at 71%); the sheet's sky is flat
+  at the loop's measured ground `#030B27` down to 62%, so no darker disc shows under Puhu. Same
+  day, two reduced-motion hydration errors fixed on this landing: the chest rendered its lamps lit
+  on the client only (`LandingChest` now lights them in the IntersectionObserver callback), and
+  `JourneyCoin` dropped its Lottie (now always mounted, `autoplay`/`loop` off). Checked in Chrome
+  (Playwright's own Chromium has no H.264): plays on screen, pauses off screen, still with reduced
+  motion, no console errors besides the logged-out 401. Same day, owner follow-up: the rows lost
+  their sub-lines and grew to seven short titles (`landing.premium.benefit.*`, two columns from
+  30rem): coach chat, daily note, Koçla planla, deep weekly analysis, weekly story, unlimited
+  notebooks, ad-free. The owner also named the weekly chest; it stays out, because everyone gets
+  the chest and Premium only turns its Coin into XP (and the landing says no Premium-XP line).
+  Then, after a copy review, the four rows that carried in-app names say what they give ("Takıldığın
+  an koçuna yaz", "Haftanı koçun senin için kursun", "Netlerini geçmişteki senle kıyasla",
+  "Haftanın özeti hikâye olarak gelsin"), and the list is one column (each row still fits one line
+  at 375).
 - **2026-11-03 · Gece Yolculuğu becomes the XP + Coin section.** Title "Görevleri bitir, XP ve Coin
   topla!", and the lead now says what Coin opens. The quests card's Ritüel tab gains "Bugün çalış"
   (+10 Coin, done). The right card is now `journey-panel.tsx`, two tabs: "Seviye" (the lights, as
@@ -1876,3 +1922,20 @@ eklendi.
   icons to `--color-secondary` after visual feedback on the darker ink. Usage: the same dashboard
   cards now show neutral gray glyphs. Gotchas: the theme token controls both themes. Related:
   `dashboard/_components/{membership-card,community-topics-card}.tsx`, `DESIGN.md`.
+
+- **2026-11-04 — Dashboard cards follow navigation icon style.** Membership chart/chat and
+  community topic chat glyphs now use direct Solar linear imports, 20 px and stroke 1.75,
+  matching inactive desktop navigation. Usage: open the dashboard cards; neutral secondary ink
+  stays theme-aware. Gotchas: cards have no selected state, so they always use the outline variant.
+  Related: `dashboard/_components/{membership-card,community-topics-card}.tsx`,
+  `components/app-nav-icon.tsx` (reference), `DESIGN.md`.
+
+- **2026-11-04 — Independent panel and navigation skeletons.** Profile identity, membership,
+  journey, quests/chest, countdown, community, coach and vision sections now reserve their layout
+  while their initial requests resolve, using shared `Skeleton`/`SkeletonGroup` motion. Auth-time
+  placeholders include the responsive rail cards. Usage: open the panel on a slow connection.
+  Gotchas: optional empty/failed feeds remove their placeholders when settled; background refreshes
+  preserve existing content. Premium perks do not wait for unrelated promotions. Related:
+  `components/app-nav{,-skeleton}.tsx`, dashboard `_components/{panel-shell,panel-card-skeleton,
+  dashboard-content-skeleton,use-panel-data,membership-card,journey-card,community-topics-card,
+  my-coach-card,vision-board-card}.tsx`.

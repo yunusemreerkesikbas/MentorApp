@@ -37,15 +37,15 @@ export const revalidate = 0;
 
 const META = {
   tr: {
-    title: "PuhuKoç: KPSS, YKS ve LGS Sınav Yoldaşın",
+    title: "PuhuKoç: KPSS, YKS, LGS, ALES ve DGS Sınav Yoldaşın",
     description:
-      "KPSS, YKS ve LGS’ye hazırlananlar için yapay zekâ destekli koç ve çalışma topluluğu. Günlük plan, odak seansı ve arkadaşlarınla aynı masa.",
+      "KPSS, YKS, LGS, ALES ve DGS’ye hazırlananlar için yapay zekâ destekli koç ve çalışma topluluğu. Günlük plan, odak seansı ve arkadaşlarınla aynı masa.",
     ogLocale: "tr_TR" as const,
   },
   en: {
-    title: "PuhuKoç: Your KPSS, YKS and LGS Companion",
+    title: "PuhuKoç: Your KPSS, YKS, LGS, ALES and DGS Companion",
     description:
-      "An AI-powered coach and study community for people preparing for KPSS, YKS and LGS. A daily plan, focus sessions and a desk with your friends.",
+      "An AI-powered coach and study community for people preparing for KPSS, YKS, LGS, ALES and DGS. A daily plan, focus sessions and a desk with your friends.",
     ogLocale: "en_US" as const,
   },
 } as const;

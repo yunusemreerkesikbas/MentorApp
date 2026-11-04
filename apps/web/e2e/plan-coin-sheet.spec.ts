@@ -10,7 +10,7 @@ import { browserApiUrl } from "./api.fixture";
 import { clockSuffix } from "../src/app/[locale]/(app)/plan/_components/plan-coin-view";
 
 /**
- * "Koçla planla" on the Coin path (docs/plans/2026-11-03-coin-unlock-choice-design.md § Round 2):
+ * "Puhu’yla planla" on the Coin path (docs/plans/2026-11-03-coin-unlock-choice-design.md § Round 2):
  * the choice sheet comes before the wizard, and the wizard's last button names the price.
  */
 const user: AuthUser = {
@@ -28,7 +28,7 @@ const ready: PlanPreviewAccessDto = {
   mode: "COIN", canGenerate: true, cost: 200, dailyLimit: 1, dailyRemaining: 1, coinConfirmed: 320,
   latestRequestId: null, nextAvailableAt: null,
 };
-const sheetName = "Planını koçla hazırla";
+const sheetName = "Planını Puhu’yla hazırla";
 
 async function mockCoinPlan(page: Page, offers: PlanPreviewAccessDto[], answer?: (call: number) => [number, unknown]) {
   const posts: Record<string, unknown>[] = [];
@@ -86,7 +86,7 @@ async function walkWizard(page: Page) {
 test("Coin yolu: seçim sihirbazdan önce gelir, son düğme fiyatı söyler, ikinci pencere çıkmaz", async ({ page }) => {
   const api = await mockCoinPlan(page, [ready]);
   await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await page.getByRole("button", { name: "Puhu’yla planla" }).click();
 
   const sheet = page.getByRole("dialog", { name: sheetName });
   await expect(sheet.getByRole("heading", { name: "200 Coin ile yeni taslak" })).toBeVisible();
@@ -113,7 +113,7 @@ test("Coin yolu: seçim sihirbazdan önce gelir, son düğme fiyatı söyler, ik
 test("Coin yetmezse ilerleme ve Coin nasıl birikir görünür, Coin düğmesi çıkmaz", async ({ page }) => {
   await mockCoinPlan(page, [{ ...ready, canGenerate: false, coinConfirmed: 80, reason: "INSUFFICIENT_COIN", message: "Yetersiz" }]);
   await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await page.getByRole("button", { name: "Puhu’yla planla" }).click();
 
   const sheet = page.getByRole("dialog", { name: sheetName });
   await expect(sheet.getByText("80/200")).toBeVisible();
@@ -131,7 +131,7 @@ test("Günlük hak dolunca kesin saat yazar, kayıtlı taslak açılır", async 
   await mockCoinPlan(page, [{ ...ready, canGenerate: false, dailyRemaining: 0, reason: "AI_PLAN_COIN_LIMIT_REACHED",
     message: "Dolu", latestRequestId: "55555555-5555-4555-8555-555555555555", nextAvailableAt: next.toISOString() }]);
   await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await page.getByRole("button", { name: "Puhu’yla planla" }).click();
 
   const sheet = page.getByRole("dialog", { name: sheetName });
   await expect(sheet.getByRole("heading", { name: "Bugünkü taslağını hazırladın, süper!" })).toBeVisible();
@@ -146,7 +146,7 @@ test("Fiyat değişirse seçim yeni fiyatla geri gelir ve Coin harcanmadan yenid
     ? [409, { code: "AI_PLAN_PRICE_CHANGED", message: "Plan taslağının Coin bedeli değişti. Güncel bedelle yeniden onay verebilirsin." }]
     : [201, null]);
   await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await page.getByRole("button", { name: "Puhu’yla planla" }).click();
   const sheet = page.getByRole("dialog", { name: sheetName });
   await sheet.getByRole("button", { name: "200 Coin ile hazırla" }).click();
   await sheet.getByRole("button", { name: "Onayla ve devam et" }).click();

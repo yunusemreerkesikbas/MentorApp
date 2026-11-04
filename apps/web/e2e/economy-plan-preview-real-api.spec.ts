@@ -37,11 +37,11 @@ test.afterEach(async ({ request }) => {
 });
 
 const sheet = (page: Page) =>
-  page.getByRole("dialog", { name: "Planını koçla hazırla", exact: true });
+  page.getByRole("dialog", { name: "Planını Puhu’yla hazırla", exact: true });
 
 /** Choice first: confirm the Coin price in the sheet, then walk the wizard to its priced last button. */
 async function wizard(page: Page) {
-  await page.getByRole("button", { name: "Koçla planla", exact: true }).click();
+  await page.getByRole("button", { name: "Puhu’yla planla", exact: true }).click();
   await sheet(page)
     .getByRole("button", { name: "20 Coin ile hazırla", exact: true })
     .click();
@@ -89,14 +89,14 @@ test("Coin plan preview: earned 20 Coin funds one saved preview; reread/apply ne
   expect((await learner.balance()).coinConfirmed).toBe(0);
   await expect(
     page
-      .getByText("Koçun baktıkları", { exact: true })
+      .getByText("Puhu’nun baktıkları", { exact: true })
       .locator("..")
       .getByText("PREMIUM", { exact: true }),
   ).toHaveCount(0);
   await page.screenshot({ path: info.outputPath("paid-plan-preview.png") });
   await page.reload();
   // Today's Coin draft is used: the sheet says so and keeps the saved draft one tap away.
-  await page.getByRole("button", { name: "Koçla planla", exact: true }).click();
+  await page.getByRole("button", { name: "Puhu’yla planla", exact: true }).click();
   await sheet(page)
     .getByRole("button", { name: "Kayıtlı taslağımı aç", exact: true })
     .click();
@@ -120,7 +120,7 @@ test("Coin plan preview: earned 20 Coin funds one saved preview; reread/apply ne
   ).toHaveLength(1);
   await setting(request, await operator(request), "economy.enabled", false);
   await page.reload();
-  await page.getByRole("button", { name: "Koçla planla", exact: true }).click();
+  await page.getByRole("button", { name: "Puhu’yla planla", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Seçilenleri uygula", exact: true }),
   ).toBeVisible();
