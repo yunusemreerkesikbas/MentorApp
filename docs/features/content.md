@@ -78,6 +78,51 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-04: Prepare five KPSS Lisans blog drafts.** The package covers eligibility, A and B
+  Group recruitment, field sessions with a P48 example, P3 and DHBT/P124. Review the drafts,
+  SEO fields and source page links in `docs/editorial/kpss/lisans/`. Recruitment guides explain
+  the 2026 framework and refer readers to the applicable institution notice for role requirements.
+
+- **2026-11-04: Publish seven KPSS Ön Lisans articles locally.** The content service published
+  the batch in a single transaction on `localhost:5433/mentor`, resolving related article links
+  and keeping the direct ÖSYM PDF links. See the publication record under
+  `docs/editorial/kpss/on-lisans/`. All seven detail routes and index links were verified after
+  refreshing the cached KPSS list.
+
+- **2026-11-04: Extend the KPSS Ön Lisans editorial package.** Two drafts cover the P93 validity
+  period and exam centre preferences. Review the article bodies, SEO fields and direct PDF page
+  links in `docs/editorial/kpss/on-lisans/`. The validity article distinguishes later A Group
+  and B Group exams. The centre guide leaves operational deadlines to the applicable ÖSYM notice.
+
+- **2026-11-04: Prepare five KPSS Ön Lisans blog drafts.** The guides cover eligibility, YÖKSİS
+  records, KPSSP93, DHBT/KPSSP123 and accessibility. Review the Markdown bodies, SEO fields and
+  PDF page references in `docs/editorial/kpss/on-lisans/`. The 2026 graduation cutoffs and
+  approved extra-time durations apply to the source period and the exam identified in each guide.
+
+- **2026-11-04: Recheck the eight KPSS articles against the ÖSYM PDFs.** Updated three local
+  articles to clarify booklet confirmation and document handover, electronic health report
+  requirements, and the graduation date used for central preferences. The editorial files and
+  local article bodies agree. Original publication dates were preserved. The accessibility guide
+  leaves out the extra-time duration because the PDF names a different exam level.
+
+- **2026-11-04: Publish eight KPSS Ortaöğretim articles locally.** The content service published the
+  batch in one transaction on `localhost:5433/mentor`. See `/blog?family=KPSS` and the publication
+  record in `docs/editorial/kpss/publication-local.json`. The import resolved related article links
+  and used the actual publication date. All eight detail routes and their links on the KPSS blog
+  index were verified after the cached list refreshed.
+
+- **2026-11-04: Extend the KPSS Ortaöğretim draft package.** Three guides cover answer sheet
+  coding, accessibility requests and central placement eligibility. Review the drafts, SEO fields
+  and PDF references in `docs/editorial/kpss/`. The accessibility guide omits the extra-time
+  duration because the source sentence names the associate degree exam.
+
+- **2026-11-04: Prepare five KPSS Ortaöğretim blog drafts.** The package covers eligibility,
+  education and centre fields in the application form, test coverage, P94 calculation and DHBT/P122.
+  Use `docs/editorial/kpss/README.md` for the bodies, SEO fields and related article targets. Each
+  draft identifies the 2026 source period and cites the relevant PDF pages. The eligibility dates
+  describe the 2026 graduation cutoffs. Operational deadlines belong in verified calendar cards.
+  The five payloads passed the article schema with temporary in-memory verification values.
+
 - **2026-11-03: Central exam catalogue, first group (ALES/DGS).** `@mentor/types` now owns
   `EXAM_CATALOG`/`EXAM_TYPES`; validation, blog filters and existing admin selectors derive their
   choices from it. ALES 2026/3 plus all three 2027 periods and DGS 2027 have editorial calendar

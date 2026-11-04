@@ -40,15 +40,15 @@ function earned(id: AchievementView["id"], title: string): AchievementView {
 
 const firstStep: AchievementCelebrationDto = {
   kind: "ACHIEVEMENT",
-  items: [earned("first_step", "İlk Adım")],
+  items: [earned("first_step", "İlk Seans Tamam!")],
 };
 
 const backfill: AchievementCelebrationDto = {
   kind: "BACKFILL_SUMMARY",
   items: [
-    earned("first_step", "İlk Adım"),
-    earned("route_drawn", "Rotanı Çizdin"),
-    earned("rhythm_found", "Ritmi Yakaladın"),
+    earned("first_step", "İlk Seans Tamam!"),
+    earned("route_drawn", "Plan Hazır"),
+    earned("rhythm_found", "Bir Hafta Tam!"),
   ],
 };
 
@@ -137,7 +137,7 @@ test("sahne kendiliğinden oynar; CTA odağı alır ve tek istekle kapanır", as
   const api = await mockSceneApi(page, firstStep);
   await page.goto("/profil");
 
-  const dialog = page.getByRole("dialog", { name: "İlk Adım" });
+  const dialog = page.getByRole("dialog", { name: "İlk Seans Tamam!" });
   await expect(dialog).toBeVisible();
   // Nothing to tap: the dialog holds focus while the light gathers and comes on.
   await expect(dialog).toBeFocused();
@@ -165,7 +165,7 @@ test("ışık toplanırken Escape sahneyi tek istekle kapatır", async ({ page }
   const api = await mockSceneApi(page, firstStep);
   await page.goto("/profil");
 
-  const dialog = page.getByRole("dialog", { name: "İlk Adım" });
+  const dialog = page.getByRole("dialog", { name: "İlk Seans Tamam!" });
   await expect(dialog).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
@@ -176,7 +176,7 @@ test("kapanış başarısız olursa sahne geri gelir ve nedenini söyler", async
   const api = await mockSceneApi(page, firstStep);
   await page.goto("/profil");
 
-  const dialog = page.getByRole("dialog", { name: "İlk Adım" });
+  const dialog = page.getByRole("dialog", { name: "İlk Seans Tamam!" });
   const proceed = dialog.getByRole("button", { name: "Devam edelim" });
   await expect(proceed).toBeFocused(REVEAL);
 
@@ -197,10 +197,10 @@ test("geçmiş özeti, yanan ışıkların sayısını söyler", async ({ page }
   const api = await mockSceneApi(page, backfill);
   await page.goto("/profil");
 
-  const dialog = page.getByRole("dialog", { name: "Geçmiş emeklerin de burada" });
+  const dialog = page.getByRole("dialog", { name: "Eski emeklerin de sayıldı!" });
   const proceed = dialog.getByRole("button", { name: "Devam edelim" });
   await expect(proceed).toBeFocused(REVEAL);
-  await expect(dialog.getByText("3 ışık birden yandı")).toBeVisible();
+  await expect(dialog.getByText("3 başarı birden açıldı!")).toBeVisible();
 
   await proceed.click();
   await expect(dialog).toHaveCount(0);

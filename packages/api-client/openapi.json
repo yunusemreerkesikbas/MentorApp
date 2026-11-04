@@ -831,6 +831,86 @@
         ]
       }
     },
+    "/v1/coach/weekly-recaps/{id}/follow-up": {
+      "get": {
+        "operationId": "WeeklyRecapController_tracking",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklyReportFollowUpResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "weekly-recaps"
+        ]
+      }
+    },
+    "/v1/coach/weekly-recaps/{id}/plan-task": {
+      "post": {
+        "operationId": "WeeklyRecapController_createTask",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWeeklyReportTaskBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "weekly-recaps"
+        ]
+      }
+    },
     "/v1/coach/weekly-recaps/access": {
       "get": {
         "operationId": "WeeklyRecapController_offer",
@@ -11924,6 +12004,57 @@
           "code"
         ]
       },
+      "WeeklyReportFollowUpResponseDto": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "type": "object",
+            "nullable": true
+          },
+          "previous": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "task",
+          "previous"
+        ]
+      },
+      "CreateWeeklyReportTaskBodyDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "taskDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "endTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "durationMinutes": {
+            "type": "number",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
       "WeeklyRecapTeaserResponseDto": {
         "type": "object",
         "properties": {
@@ -12173,7 +12304,8 @@
             "type": "boolean"
           },
           "review": {
-            "type": "object"
+            "type": "object",
+            "description": "Frozen weekly review. New snapshots include optional deepAnalysis: localized study comparisons, subject net averages/sample counts and evidence qualification. Both report views share this acquisition; older snapshots omit deepAnalysis."
           },
           "narration": {
             "type": "object"

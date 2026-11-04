@@ -65,22 +65,22 @@ for (const reducedMotion of [false, true]) {
       level: { tier: 3, xp: 411, nextAt: 600, key: "compass", chapter: "awakening", currentAt: 300, nextKey: "cycle", progress: { current: 111, target: 300, remaining: 189, percent: 37 } },
     }));
     await page.goto("/panel");
-    const opener = page.getByRole("button", { name: "Pusula rozetini sahne ışığında gör" });
+    const opener = page.getByRole("button", { name: "Meraklı rozetini sahne ışığında gör" });
     await opener.click();
     const scene = page.locator(".journey-spotlight-theme");
-    await expect(scene.getByRole("heading", { name: "Pusula", exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(scene.getByRole("heading", { name: "Meraklı", exact: true })).toBeVisible({ timeout: 10000 });
     // Let the initial sweep hand control to the visitor before travelling.
     await expect(scene.getByRole("button", { name: "Kapat", exact: true })).toBeFocused({ timeout: 10000 });
     await page.screenshot({ path: testInfo.outputPath("spotlight.png") });
-    await scene.getByRole("button", { name: "Alev seviyesine geç", exact: true }).click();
-    await expect(scene.getByRole("heading", { name: "Alev", exact: true })).toBeVisible();
-    await scene.getByRole("button", { name: "Kıvılcım seviyesine geç", exact: true }).click();
-    await expect(scene.getByRole("heading", { name: "Kıvılcım", exact: true })).toBeVisible();
-    await expect(scene.getByRole("button", { name: "Alev seviyesine geç", exact: true })).toBeVisible();
-    await scene.getByRole("button", { name: "Alev seviyesine geç", exact: true }).click();
-    await expect(scene.getByRole("heading", { name: "Alev", exact: true })).toBeVisible();
-    await scene.getByRole("button", { name: "Pusula seviyesine geç", exact: true }).click();
-    await expect(scene.getByRole("heading", { name: "Pusula", exact: true })).toBeVisible();
+    await scene.getByRole("button", { name: "Çaylak seviyesine geç", exact: true }).click();
+    await expect(scene.getByRole("heading", { name: "Çaylak", exact: true })).toBeVisible();
+    await scene.getByRole("button", { name: "Civciv seviyesine geç", exact: true }).click();
+    await expect(scene.getByRole("heading", { name: "Civciv", exact: true })).toBeVisible();
+    await expect(scene.getByRole("button", { name: "Çaylak seviyesine geç", exact: true })).toBeVisible();
+    await scene.getByRole("button", { name: "Çaylak seviyesine geç", exact: true }).click();
+    await expect(scene.getByRole("heading", { name: "Çaylak", exact: true })).toBeVisible();
+    await scene.getByRole("button", { name: "Meraklı seviyesine geç", exact: true }).click();
+    await expect(scene.getByRole("heading", { name: "Meraklı", exact: true })).toBeVisible();
     await scene.getByRole("button", { name: "Kapat", exact: true }).click();
     await expect(scene).toHaveCount(0);
     await expect(opener).toBeFocused();

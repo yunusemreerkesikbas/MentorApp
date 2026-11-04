@@ -1,5 +1,5 @@
 import type { WeeklyDeepAnalysisDto } from "@mentor/types";
-import { formatNet, formatNetDelta } from "./net";
+import { formatNet, formatNetDelta, formatNetText } from "./net";
 
 interface WeekSummary {
   focusMinutes: number;
@@ -22,12 +22,14 @@ interface DeepAnalysisInput {
   previous: WeekSummary | null;
   subjects: SubjectEvidence[];
   translate: (key: string, args?: Record<string, unknown>) => string;
+  /** Formats nets inside messages ("12 net", "-2 net"); DTO fields stay "12.00". */
+  locale: string;
 }
 
 const average = (values: number[]) => values.length
   ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
 
-export function buildWeeklyDeepAnalysis({ current, previous, subjects, translate: t }: DeepAnalysisInput): WeeklyDeepAnalysisDto {
+export function buildWeeklyDeepAnalysis({ current, previous, subjects, translate: t, locale }: DeepAnalysisInput): WeeklyDeepAnalysisDto {
   const metrics = ([
     ["FOCUS_MINUTES", "focusMinutes"], ["ACTIVE_DAYS", "activeDays"], ["PLAN_TASKS", "completedTaskCount"],
   ] as const).map(([id, key]) => ({
@@ -48,7 +50,9 @@ export function buildWeeklyDeepAnalysis({ current, previous, subjects, translate
         averageNet: net === null ? null : formatNet(net), previousAverageNet: old === null ? null : formatNet(old), delta,
         mockExamCount: row.currentNets.length, previousMockExamCount: row.previousNets.length,
         focusMinutes: row.focusMinutes, completedTaskCount: row.completedTaskCount, trend,
-        message: t(`DEEP_SUBJECT_${trend}`, { subject: row.subjectName, net: net === null ? null : formatNet(net), delta,
+        message: t(`DEEP_SUBJECT_${trend}`, { subject: row.subjectName,
+          net: net === null ? null : formatNetText(net, locale),
+          delta: net !== null && old !== null ? formatNetText(net - old, locale, true) : null,
           count: row.currentNets.length, previousCount: row.previousNets.length }),
       };
     });

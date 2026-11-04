@@ -1,6 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { openWeeklyRecapSchema, weeklyRecapOfferQuerySchema, paginationQuerySchema } from "@mentor/validation";
+import { openWeeklyRecapSchema, weeklyRecapOfferQuerySchema, paginationQuerySchema, createWeeklyReportTaskSchema } from "@mentor/validation";
 import { createZodDto } from "../../../common/validation/zod-dto";
+
+export class CreateWeeklyReportTaskBodyDto extends createZodDto(createWeeklyReportTaskSchema) {
+  @ApiProperty() override title!: string;
+  @ApiPropertyOptional({ format: "date" }) override taskDate?: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) override startTime?: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) override endTime?: string | null;
+  @ApiPropertyOptional({ type: Number, nullable: true }) override durationMinutes?: number | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) override description?: string | null;
+  @ApiPropertyOptional({ type: Number }) override sortOrder?: number;
+}
+export class WeeklyReportFollowUpResponseDto {
+  @ApiProperty({ type: Object, nullable: true }) task!: object | null;
+  @ApiProperty({ type: Object, nullable: true }) previous!: object | null;
+}
 
 export class WeeklyRecapOfferQueryDto extends createZodDto(weeklyRecapOfferQuerySchema) {
   @ApiProperty({ format: "uuid" }) override examId!: string;
@@ -54,7 +68,7 @@ export class WeeklyRecapArchiveItemResponseDto {
   @ApiPropertyOptional() requiresOpening?: boolean;
 }
 export class WeeklyRecapReportResponseDto extends WeeklyRecapArchiveItemResponseDto {
-  @ApiProperty({ type: Object }) review!: object;
+  @ApiProperty({ type: Object, description: "Frozen weekly review. New snapshots include optional deepAnalysis: localized study comparisons, subject net averages/sample counts and evidence qualification. Both report views share this acquisition; older snapshots omit deepAnalysis." }) review!: object;
   @ApiProperty({ type: Object }) narration!: object;
 }
 export class WeeklyRecapArchiveResponseDto {

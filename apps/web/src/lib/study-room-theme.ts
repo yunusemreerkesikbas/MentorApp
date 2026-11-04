@@ -39,6 +39,17 @@ export const STUDY_ROOM_TABLE_SRC: Record<StudyRoomTheme, string> = {
 };
 
 /**
+ * Whether the table art already carries its own floor shadow. The library table (2026-11-04)
+ * does; the café and home tables were cut out without one and read as stickers on the floor, so
+ * `RoomSeats` adds a soft CSS shadow under those two only (stacking both goes muddy).
+ */
+export const STUDY_ROOM_TABLE_HAS_SHADOW: Record<StudyRoomTheme, boolean> = {
+  LIBRARY: true,
+  CAFE: false,
+  HOME: false,
+};
+
+/**
  * Approved chair illustration per theme. Deliberately radially symmetric from directly above
  * (no visible armrests or a directional backrest) — the SAME image is reused, unrotated, at
  * every position around the table, so one asset covers every capacity from 2 to 10.

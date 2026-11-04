@@ -4,6 +4,8 @@ import { CurrentUser, type RequestUser } from "../../../common/auth/current-user
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { WeeklyRecapService } from "../application/weekly-recap.service";
+import { WeeklyReportFollowUpService } from "../application/weekly-report-follow-up.service";
+import { CreateWeeklyReportTaskBodyDto, WeeklyReportFollowUpResponseDto } from "./weekly-recap.dto";
 import { OpenWeeklyRecapBodyDto, WeeklyRecapArchiveQueryDto, WeeklyRecapArchiveResponseDto,
   WeeklyRecapOfferQueryDto, WeeklyRecapOfferResponseDto, WeeklyRecapReportResponseDto } from "./weekly-recap.dto";
 
@@ -11,7 +13,17 @@ import { OpenWeeklyRecapBodyDto, WeeklyRecapArchiveQueryDto, WeeklyRecapArchiveR
 @ApiBearerAuth()
 @Controller("coach/weekly-recaps")
 export class WeeklyRecapController {
-  constructor(private readonly recaps: WeeklyRecapService) {}
+  constructor(private readonly recaps: WeeklyRecapService, private readonly followUp: WeeklyReportFollowUpService) {}
+  @Get(":id/follow-up")
+  @ApiOkResponse({ type: WeeklyReportFollowUpResponseDto })
+  tracking(@CurrentUser() user: RequestUser, @Param("id", ParseUUIDPipe) id: string) {
+    return this.followUp.get(user.id, id);
+  }
+  @Post(":id/plan-task")
+  @ApiCreatedResponse({ type: Object })
+  createTask(@CurrentUser() user: RequestUser, @Param("id", ParseUUIDPipe) id: string, @Body() body: CreateWeeklyReportTaskBodyDto) {
+    return this.followUp.create(user.id, id, body);
+  }
   @Get("access")
   @ApiOkResponse({ type: WeeklyRecapOfferResponseDto })
   offer(@CurrentUser() user: RequestUser, @Query() query: WeeklyRecapOfferQueryDto) {

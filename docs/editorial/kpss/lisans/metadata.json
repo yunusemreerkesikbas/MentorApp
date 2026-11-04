@@ -1,0 +1,163 @@
+{
+  "status": "DRAFT",
+  "language": "tr",
+  "preparedOn": "2026-11-04",
+  "sourceYear": 2026,
+  "articles": [
+    {
+      "slug": "kpss-lisans-kimler-basvurabilir",
+      "title": "KPSS Lisansa kimler başvurabilir?",
+      "category": "APPLICATION",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-lisans-kimler-basvurabilir.md",
+      "metaTitle": "KPSS Lisansa kimler başvurabilir? | PuhuKoç",
+      "metaDescription": "Son sınıf öğrencileri KPSS Lisansa girebilir mi? Lisans mezuniyet eşiğini ve başvuru ile merkezî tercih arasındaki farkı öğren.",
+      "source": "ÖSYM 2026 KPSS Lisans Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 1,
+        "primaryKeyword": "kpss lisansa kimler başvurabilir",
+        "sourceRefs": [
+          "§1.4, PDF s. 4, §1.13, PDF s. 5 ve §2.1, PDF s. 6"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-lisans-a-b-grubu-farki"
+          },
+          {
+            "slug": "kpss-lisans-p3-net-hesaplama"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-lisans-a-b-grubu-farki",
+      "title": "KPSS A Grubu ve B Grubu arasındaki fark nedir?",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-lisans-a-b-grubu-farki.md",
+      "metaTitle": "KPSS A Grubu ve B Grubu arasındaki fark nedir? | PuhuKoç",
+      "metaDescription": "KPSS A ve B Grubu kadrolarında başvurunun nereye yapıldığını, puan türünü nereden öğreneceğini ve merkezî atama sürecini incele.",
+      "source": "ÖSYM 2026 KPSS Lisans Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 2,
+        "primaryKeyword": "kpss a grubu ve b grubu arasındaki fark nedir",
+        "sourceRefs": [
+          "§§1.2 ve 1.5–1.7, PDF s. 4, §1.13, PDF s. 5 ve §§5.1–5.3, PDF s. 32"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-lisans-alan-bilgisi-oturumlari"
+          },
+          {
+            "slug": "kpss-lisans-p3-net-hesaplama"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-lisans-alan-bilgisi-oturumlari",
+      "title": "KPSS Lisans Alan Bilgisi oturumları nasıl seçilir?",
+      "category": "APPLICATION",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-lisans-alan-bilgisi-oturumlari.md",
+      "metaTitle": "KPSS Lisans Alan Bilgisi oturumları nasıl seçilir? | PuhuKoç",
+      "metaDescription": "KPSS Lisans Alan Bilgisi oturumlarında hangi testlerin bulunduğunu ve KPSSP48 örneğiyle gereken oturumların nasıl belirlendiğini öğren.",
+      "source": "ÖSYM 2026 KPSS Lisans Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 3,
+        "primaryKeyword": "kpss lisans alan bilgisi oturumları nasıl seçilir",
+        "sourceRefs": [
+          "§1.10, PDF s. 5, oturum çizelgesi, PDF s. 33 ve Tablo 2, PDF s. 39–40"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-lisans-a-b-grubu-farki"
+          },
+          {
+            "slug": "kpss-lisans-p3-net-hesaplama"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-lisans-p3-net-hesaplama",
+      "title": "KPSSP3 nasıl hesaplanır? Lisans net ve puan hesabı",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-lisans-p3-net-hesaplama.md",
+      "metaTitle": "KPSSP3 nasıl hesaplanır? Lisans net ve puan hesabı | PuhuKoç",
+      "metaDescription": "KPSSP3 için Genel Yetenek ve Genel Kültür netlerini nasıl hesaplayacağını, bir net şartını ve yüzde 50 ağırlıkların neye uygulandığını öğren.",
+      "source": "ÖSYM 2026 KPSS Lisans Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 4,
+        "primaryKeyword": "kpssp3 nasıl hesaplanır",
+        "sourceRefs": [
+          "§3.10, PDF s. 25–26 ve Tablo 2, PDF s. 39"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-lisans-alan-bilgisi-oturumlari"
+          },
+          {
+            "slug": "kpss-lisans-dhbt-p124"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-lisans-dhbt-p124",
+      "title": "KPSS Lisans ve DHBT puanı KPSSP124 nasıl hesaplanır?",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-lisans-dhbt-p124.md",
+      "metaTitle": "KPSS Lisans ve DHBT puanı KPSSP124 nasıl hesaplanır? | PuhuKoç",
+      "metaDescription": "Lisans düzeyinde KPSSP124 için gereken iki sınavı, dört testin ağırlıklarını ve DHBT sonuç bilgisinde hangi puana bakacağını öğren.",
+      "source": "ÖSYM 2026 KPSS Lisans Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 5,
+        "primaryKeyword": "kpss lisans ve dhbt puanı kpssp124 nasıl hesaplanır",
+        "sourceRefs": [
+          "§1.8, PDF s. 5, DHBT açıklamaları, PDF s. 35–36 ve Tablo 2, PDF s. 40"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-lisans-kimler-basvurabilir"
+          },
+          {
+            "slug": "kpss-lisans-p3-net-hesaplama"
+          }
+        ]
+      }
+    }
+  ]
+}

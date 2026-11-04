@@ -22,8 +22,8 @@ const evidence = {
       activeDays: 2,
       weeklyTitle: {
         id: "PLAN_ARCHITECT",
-        label: "Rota Mimarı",
-        message: "Tamamladığın üç görevle haftanın rotasını çizdin.",
+        label: "Görev Avcısı",
+        message: "3 görevi tek tek avladın!",
       },
       nextStorySignal: null,
       nextStorySignals: [],

@@ -67,6 +67,30 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-04 · Başarılar ve rozetler enerjik Puhu sesine geçti.** 12 başarının adı ve açıklaması
+  (API `achievements.json`) ile kutlama üst satırı ve metni (web `achievements.celebration_items`)
+  yenilendi: İlk Seans Tamam!, Plan Hazır, Hayal Panon Açıldı, Bir Hafta Tam!, Bir Ay Tam!, Geri
+  Döndün!, Plan Tazelendi, İlk Deneme Kayıtta, Yanlışa Rövanş, Haftanı Okudun, Selam Topluluk!, Günü
+  Kurtardın!. Koleksiyon chrome'u "ışık / uyanır / seninle" dilinden "açıldı" diline geçti
+  (Başarıların, Tüm başarıların, Nasıl açılır?, Yeni başarı açıldı!), bildirim "Yeni başarı açıldı!".
+  Topluluk rozetleri: Maratoncu, Gece Kuşu, Moral Kaynağı, Yeni Komşu. **Gotcha:** başarı anahtarları,
+  açılma ipuçları (`unlockHint`) ve "Işık Yandı" sahnesinin görsel/ses tasarımı değişmedi; yalnız
+  metin. İlgili: `i18n/locales/{tr,en}/achievements.json`, `messages/{tr,en}.json`,
+  `achievement-scene-preview.tsx`, `achievement-celebration.spec.ts`,
+  `community-member-profile.spec.ts`.
+
+- **2026-11-04 · Seviye adları enerjik Puhu sesine geçti.** 12 seviye artık karışık ama tonu
+  yükselen kimlik adları taşıyor (sahibin kararı): Civciv, Çaylak, Meraklı, Yavru Baykuş, Gece
+  Gözcüsü, Durdurulamaz, Bilge Baykuş, Eski Kurt, Kaptan, Şampiyon, Fenomen, Efsane (EN: Chick …
+  Legend). Bölümler Başlangıç · Tempo · Ustalık · Zirve. Rehber "Gece Yolculuğu" → "Seviye Yolu",
+  seviye kutlaması "Seviye atladın!", hikâye satırları kısa ve tezahüratlı. **Gotcha:** yalnız
+  metin değişti; `JourneyLevelKey` (spark … constellation), bölüm kimlikleri ve rozet görselleri
+  (pusula, kök, kanat sembolleri) eski kaldı, yeni Puhu görselleri ayrı tur. Landing'in "Gece
+  Yolculuğu" bölümü ve başarı koleksiyonunun "ışık" dili bu turda değişmedi. İlgili:
+  `messages/{tr,en}.json` (`journey_levels`), `panel.spec.ts`,
+  `community-member-profile.spec.ts`, `journey-level-celebration.spec.ts`,
+  `economy-notebook-real-api.spec.ts`.
+
 - **2026-11-02 · Consistent post image previews.** Clickable shared thread cards in profiles,
   rooms and saved lists now enable the gallery's existing 4:3 preview, matching discovery.
   Usage: list shells pass `clickable`; message detail leaves it unset to retain the natural ratio.

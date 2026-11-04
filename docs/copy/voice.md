@@ -113,10 +113,32 @@ notebook capacity and streak freeze sheets follow when they adopt the pattern. C
 - **Say what lands:** "250 Coin", "+10", "+100", from the API; never "ödül" or "hak kazan".
 - **Still banned:** FOMO ("kaçırma"), guilt about a short balance, pressure toward Premium.
 
+## Haftalık lakap: enerjik Puhu (2026-11-04)
+
+The weekly recap title is a **nickname** ("Bu haftaki lakabın"), not a codename. Two words, about 16
+letters at most, saying what the student did with a wink they would share: "Seri Canavarı", "Odak
+Makinesi", "Korkusuz Denemeci". No space or fantasy metaphors, no gendered words (Kral/Kraliçe),
+nothing violent, no score promises ("Net Avcısı"). The line under it is concrete and cheering.
+
+## Seviye adları: enerjik Puhu (2026-11-04)
+
+The 12 journey levels are mixed identity names whose tone climbs: humble and funny at the start
+(Civciv, Çaylak), momentum in the middle (Durdurulamaz), grand at the top (Şampiyon, Fenomen, Efsane).
+Every name fits "Sen bir ___sın"; no places or moments. A level never reuses a weekly nickname or
+community badge word (Seri, Avcı, Odak). Level-up is "Seviye atladın!"; the guide is "Seviye Yolu".
+
+## Başarılar ve rozetler: enerjik Puhu (2026-11-04)
+
+Achievement titles say what you did, short and concrete, sometimes with one `!`: "İlk Seans Tamam!",
+"Bir Hafta Tam!", "Yanlışa Rövanş". The celebration eyebrow cheers ("Rövanş zamanı!"), the body is one
+or two sentences. Chrome: "Başarıların", "Nasıl açılır?", "Açıldı", "Yeni başarı açıldı!". No light
+metaphor ("ışık yandı", "uyanır", "seninle"). Unlock hints stay plain instructions. Community badges
+are identities: Maratoncu, Gece Kuşu, Moral Kaynağı, Yeni Komşu.
+
 ## Coach chat vs chrome
 
 - **Coach chat (LLM + mood/motivation/nextAction/calibration fallbacks)** uses the **companion** register. First person: “Ben buradayım.” Address the student as **sen**. Short sentences. No guilt. Same mouth as a serious mood reply.
-- **Puhu stays in chrome only:** empty-chat prompt, first-visit empty states, FAB nudge, onboarding slides and “Merhaba {name}”, paywall delight headlines, weekly recap host, economy invite overlay and `/davet` landing (all Puhu except the disclosure line and the error cards), invite notifications, quest-complete toast, streak-rescue success overlay, achievement collection labels (`how_to_earn`, `earned`, `earned_on`). Collection is a mark/light, not an economy prize — no “kazanıldı / how to earn”. Do not let the chat model invent a third character.
+- **Puhu stays in chrome only:** empty-chat prompt, first-visit empty states, FAB nudge, onboarding slides and “Merhaba {name}”, paywall delight headlines, weekly recap host, economy invite overlay and `/davet` landing (all Puhu except the disclosure line and the error cards), invite notifications, quest-complete toast, streak-rescue success overlay, achievement collection labels (`how_to_earn`, `earned`, `earned_on`). Achievements are “açıldı”, not light and not an economy prize: no Coin or “ödül” words (2026-11-04). Do not let the chat model invent a third character.
 - **Filter/search empty, the rights ledger, quest cards, quest sheet intro (`quests_subtitle`), streak-rescue offer and insufficient-coin copy, optional rewarded-ad offer (`ads.rewarded`), knowledge/calendar gaps, rank banners (effort, not place), coach access gate (`coach.gate` default/insufficient), deep-analysis insufficient (`analysis.deep.insufficient`), and API errors (`errors.json`) are companion.** Short, sen, no jokes. Payment and official facts stay companion. Admin operator UI is out of this constitution. Prize-verb FOMO (“hak kazan”, “earn a right”) stays out of these lines; coin is a non-monetary **hak**. Keep “kazanılmış hak” / “earned right” as the noun for a right already in hand.
 - **The LLM must not sign as Puhu.** No bird jokes, wings, mascot name, or “we’re Puhu” in generated chat, mood reflection, daily greeting, session reflection, ghost narration, vision notes, or plan-draft prose. Weekly recap narration is the exception (Puhu host, chrome).
 
@@ -150,7 +172,7 @@ notebook capacity and streak freeze sheets follow when they adopt the pattern. C
 | Ödeme işlemin tamamlanamadı. Lütfen abonelik ayarlarını kontrol et. | Ödeme tamamlanamadı / Premium’un durmasın diye ayarlardan bir bakman yeterli. | Companion |
 | Gönderinize yorum yapıldı | Yorumun var / Paylaşımına birinin sözü düştü. | Puhu |
 | Sizden bahsedildi | Adın geçti / Bir gönderide senden bahsedildi. | Puhu |
-| Yeni bir başarı kazandın / {title} artık başarı koleksiyonunda. | Yeni bir ışık yandı / {title} artık seninle. | Puhu |
+| Yeni bir başarı kazandın / {title} artık başarı koleksiyonunda. | Yeni başarı açıldı! / {title} başarın açıldı! | Puhu |
 | Görev tamamlandı. | Bu da tamam. | Puhu |
 | Görev tamamlandı / {reward} kazandın | Bu da tamam / {reward} seninle. | Puhu |
 | Günlük ritüelini tamamla, XP kazan. | Ritüel bugün burada. Başlangıç adımları tamamlanınca hak düşer. | Companion |
@@ -173,7 +195,7 @@ notebook capacity and streak freeze sheets follow when they adopt the pattern. C
 | Sıralama / Emek panosu (sayfa başlığı) | Haftalık lig / Weekly league (sekmeye göre: Bugünün ligi, Tüm zamanların ligi) | Puhu (Topluluk) |
 | Koç için hak kazan / Profilden … hakkı kazanabilirsin | Koç için hak / Profilden görev veya davet. Sohbet hakkı orada düşer. | Companion |
 | Görev tamamlayarak kazanabilirsin. / Complete quests to earn more. | Görevlerden hak düşebilir. / A right can land from quests. | Companion |
-| Nasıl kazanılır? / {title} kazanıldı | Nasıl uyanır? / {title} seninle | Puhu |
+| Nasıl kazanılır? / {title} kazanıldı | Nasıl açılır? / {title} açıldı | Puhu |
 | Formatını kontrol et. / Check your inbox. | Kullanıcı adı uymadı. / Gelen kutuna bir bak. | Companion |
 | İstikrar da bir kazanç; öne geç / Consistency is a win too | İstikrar yerinde; küçük bir adım yeter. / Consistency held; one small step is enough. | Companion |
 | Soru kökünü iki kez okumak burada net kazandırır. / pays off here | Soru kökünü iki kez okumak burada işe yarar. / helps here | Companion |

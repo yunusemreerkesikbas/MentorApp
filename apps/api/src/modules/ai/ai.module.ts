@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { WeeklyReportFollowUpService } from "./application/weekly-report-follow-up.service";
 import { WeeklyRecapRepository } from "./infrastructure/weekly-recap.repository";
 import { WeeklyRecapPolicyService } from "./application/weekly-recap-policy.service";
 import { WeeklyRecapNarratorService } from "./application/weekly-recap-narrator.service";
@@ -117,6 +118,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     AiInternalController,
   ],
   providers: [
+    WeeklyReportFollowUpService,
     WeeklyRecapRepository,
     WeeklyRecapPolicyService,
     WeeklyRecapNarratorService,

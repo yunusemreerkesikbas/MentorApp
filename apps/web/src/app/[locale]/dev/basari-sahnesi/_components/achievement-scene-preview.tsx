@@ -13,18 +13,18 @@ import { installLastPointer } from "@/lib/last-pointer";
 
 /** Sample data: the titles the API's catalog gives these achievements (tr). */
 const SAMPLE_TITLES: Record<AchievementId, string> = {
-  first_step: "İlk Adım",
-  route_drawn: "Rotanı Çizdin",
-  dream_space_created: "Hayaline Yer Açtın",
-  rhythm_found: "Ritmi Yakaladın",
-  rhythm_kept: "Ritmi Korudun",
-  returned_to_path: "Kaldığın Yerden",
-  route_renewed: "Rotayı Yeniledin",
-  starting_point_set: "Başlangıç Noktan",
-  mistake_revisited: "Bir Daha Baktın",
-  week_reflected: "Haftana Kulak Verdin",
-  first_hello: "İlk Merhaba",
-  helped_someone: "Birine İyi Geldin",
+  first_step: "İlk Seans Tamam!",
+  route_drawn: "Plan Hazır",
+  dream_space_created: "Hayal Panon Açıldı",
+  rhythm_found: "Bir Hafta Tam!",
+  rhythm_kept: "Bir Ay Tam!",
+  returned_to_path: "Geri Döndün!",
+  route_renewed: "Plan Tazelendi",
+  starting_point_set: "İlk Deneme Kayıtta",
+  mistake_revisited: "Yanlışa Rövanş",
+  week_reflected: "Haftanı Okudun",
+  first_hello: "Selam Topluluk!",
+  helped_someone: "Günü Kurtardın!",
 };
 const SAMPLE_IDS = Object.keys(SAMPLE_TITLES) as AchievementId[];
 /** What the acknowledge request would take on a good connection. */

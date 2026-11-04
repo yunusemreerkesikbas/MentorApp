@@ -55,6 +55,10 @@ export function planTaskSessionMinutes(row: PlanTaskRow): number | null {
 
 function toPlanTaskOriginDto(row: PlanTaskRow): PlanTaskOriginDto | null {
   const meta = row.originMeta;
+  if (row.originType === "WEEKLY_REPORT" && row.originRefId && meta && "examId" in meta && "weekStart" in meta && "subjectRef" in meta) {
+    return { type: "WEEKLY_REPORT", reportId: row.originRefId, examId: meta.examId,
+      weekStart: meta.weekStart, subjectRef: meta.subjectRef };
+  }
   // A human coach's assignment: ref id only, no meta (see the schema comment on origin_type).
   if (row.originType === "MENTORSHIP" && row.originRefId) {
     return { type: "MENTORSHIP", linkId: row.originRefId };

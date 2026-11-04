@@ -59,6 +59,83 @@ describe("Owned Wrapped reports (HTTP/Postgres)", () => {
     expect(llm).not.toHaveBeenCalled(); expect(await coins()).toBe(100);
   });
 
+  it("saves one report-linked task across concurrent confirmations and keeps live completion", async () => {
+    const report = (await open()).body;
+    const path = `/v1/coach/weekly-recaps/${report.id}`;
+    const get = () => request(h.app.getHttpServer()).get(`${path}/follow-up`).set(headers());
+    expect((await get()).body).toEqual({ task: null, previous: null });
+    const calls = await Promise.all([1, 2].map(() => request(h.app.getHttpServer()).post(`${path}/plan-task`)
+      .set(headers()).send({ title: "My edited recommendation" })));
+    expect(calls.map((r) => r.status)).toEqual([201, 201]);
+    expect(calls[0]!.body.id).toBe(calls[1]!.body.id);
+    const task = calls[0]!.body;
+    expect(task.origin).toMatchObject({ type: "WEEKLY_REPORT", reportId: report.id });
+    expect((await request(h.app.getHttpServer()).patch(`/v1/plan-tasks/${task.id}`).set(headers())
+      .send({ status: "DONE" })).status).toBe(200);
+    expect((await get()).body.task.status).toBe("DONE");
+    const again = await request(h.app.getHttpServer()).post(`${path}/plan-task`).set(headers()).send({ title: "Duplicate" });
+    expect(again.body.id).toBe(task.id);
+    expect(again.body.status).toBe("DONE");
+    await h.tx(async (db) => {
+      const purchases = await db.query("select id from ledger_entries where user_id=$1 and ref_type='deep_analysis'", [user.id]);
+      expect(purchases.rows).toHaveLength(1);
+    });
+    const owner = user; user = await h.signup();
+    expect((await get()).status).toBe(404);
+    expect((await request(h.app.getHttpServer()).post(`${path}/plan-task`).set(headers()).send({ title: "Foreign" })).status).toBe(404);
+    user = owner;
+  });
+
+  it("rejects injected subject labels and permits explicit re-add after task deletion", async () => {
+    const report = (await open()).body;
+    const path = `/v1/coach/weekly-recaps/${report.id}/plan-task`;
+    expect((await request(h.app.getHttpServer()).post(path).set(headers()).send({ title: "Forged", subject: "Injected" })).status).toBe(400);
+    const first = await request(h.app.getHttpServer()).post(path).set(headers()).send({ title: "Original" });
+    expect(first.status).toBe(201);
+    expect((await request(h.app.getHttpServer()).patch(`/v1/plan-tasks/${first.body.id}`).set(headers()).send({ subject: "Different" })).status).toBe(409);
+    expect((await request(h.app.getHttpServer()).delete(`/v1/plan-tasks/${first.body.id}`).set(headers())).status).toBe(204);
+    const second = await request(h.app.getHttpServer()).post(path).set(headers()).send({ title: "Re-added" });
+    expect(second.status).toBe(201);
+    expect(second.body.id).not.toBe(first.body.id);
+  });
+
+  it("shows the previous report's action with only a genuinely later measurement inside this report's period", async () => {
+    const report = (await open()).body;
+    const sourceId = randomUUID();
+    const windows = weeklyReviewWindows();
+    const sourceWeek = new Date(new Date(`${windows.startDate}T12:00:00Z`).getTime() - 7 * 86400000).toISOString().slice(0, 10);
+    const sourceReview = { ...report.review, focus: { subjectRef: "math", subjectName: "Mathematics", message: "Review" },
+      suggestedTask: { title: "Math review", subject: "Mathematics" },
+      deepAnalysis: { subjects: [{ subjectRef: "math", averageNet: "12.00" }] } };
+    await h.tx(async (db) => {
+      await db.query(`insert into ai_weekly_recaps(id,user_id,org_id,exam_id,week_start,locale,source,status,client_request_id,claim_id,expires_at,cost,review,narration,opened_at)
+        select $1,user_id,org_id,exam_id,$2,locale,'PREMIUM','READY',$3,$4,expires_at,0,$5::jsonb,narration,opened_at
+        from ai_weekly_recaps where id=$6 and user_id=$7`, [sourceId, sourceWeek, randomUUID(), randomUUID(), JSON.stringify(sourceReview), report.id, user.id]);
+    });
+    const task = await request(h.app.getHttpServer()).post(`/v1/coach/weekly-recaps/${sourceId}/plan-task`).set(headers()).send({ title: "Math review" });
+    expect(task.status).toBe(201);
+    const created = new Date(windows.current.start.getTime() + 12 * 3600000);
+    await h.tx(async (db) => {
+      await db.query("update plan_tasks set created_at=$1 where id=$2 and user_id=$3", [created, task.body.id, user.id]);
+      for (const [taken, recorded, net] of [
+        [created, created, "77.00"],
+        [new Date(created.getTime() - 3600000), new Date(created.getTime() + 3600000), "99.00"],
+        [new Date(created.getTime() + 7200000), new Date(created.getTime() + 7200000), "15.00"],
+        [windows.current.end, windows.current.end, "66.00"],
+        [new Date(windows.current.end.getTime() + 3600000), new Date(windows.current.end.getTime() + 3600000), "88.00"],
+      ] as const) {
+        const id = randomUUID();
+        await db.query("insert into mock_exams(id,user_id,exam_id,taken_at,total_net,created_at) values($1,$2,$3,$4,$5,$6)", [id, user.id, exams[0], taken, net, recorded]);
+        await db.query("insert into mock_exam_subjects(mock_exam_id,subject_ref,correct,wrong,blank,net) values($1,'math',15,0,0,$2)", [id, net]);
+      }
+    });
+    const response = await request(h.app.getHttpServer()).get(`/v1/coach/weekly-recaps/${report.id}/follow-up`).set(headers());
+    expect(response.status).toBe(200);
+    expect(response.body.previous).toMatchObject({ reportId: sourceId, baselineNet: "12.00", measurement: { net: "15.00", delta: "+3.00" } });
+    const saved = await request(h.app.getHttpServer()).get(`/v1/coach/weekly-recaps/${report.id}`).set(headers());
+    expect(saved.body.review).toEqual(report.review);
+  });
+
   it("owns one immutable report and replays without a second debit or model call", async () => {
     const llm = vi.spyOn(h.app.get<LlmPort>(LLM_PORT), "complete");
     const view = await offer();
@@ -66,6 +143,10 @@ describe("Owned Wrapped reports (HTTP/Postgres)", () => {
     expect(first.status).toBe(201);
     expect(first.body.source).toBe("COIN");
     expect(first.body.narration.narration).toBeTruthy();
+    expect(first.body.review.deepAnalysis).toMatchObject({
+      metrics: expect.arrayContaining([expect.objectContaining({ id: "PLAN_TASKS" })]),
+      evidenceMessage: expect.any(String),
+    });
     expect(await coins()).toBe(75);
     expect((await open(view)).body).toEqual(first.body);
     await h.set("ai.enabled", false); await h.set("economy.enabled", false);

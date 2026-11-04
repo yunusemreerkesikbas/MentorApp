@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { planTaskFieldsSchema, refinePlanTaskTimes } from "./coaching.js";
 
 export const weeklyRecapOfferQuerySchema = z.object({ examId: z.string().uuid(), weekStart: z.string().date().optional() });
 export const openWeeklyRecapSchema = z.object({
@@ -9,3 +10,7 @@ export const openWeeklyRecapSchema = z.object({
   clientRequestId: z.string().uuid(),
 });
 export type OpenWeeklyRecapInput = z.infer<typeof openWeeklyRecapSchema>;
+
+export const createWeeklyReportTaskSchema = planTaskFieldsSchema.omit({ subject: true, topic: true })
+  .strict().superRefine(refinePlanTaskTimes);
+export type CreateWeeklyReportTaskInput = z.infer<typeof createWeeklyReportTaskSchema>;

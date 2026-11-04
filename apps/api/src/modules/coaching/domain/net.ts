@@ -46,3 +46,14 @@ export function formatNetDelta(value: number): string {
   const rounded = Math.round(value * 100) / 100;
   return rounded > 0 ? `+${rounded.toFixed(2)}` : rounded.toFixed(2);
 }
+
+/**
+ * A net inside a localized sentence: "12", "13,25", "+2" (tr) / "13.25" (en). Transport fields
+ * keep `formatNet`; this is only for message text.
+ */
+export function formatNetText(value: number, locale: string, signed = false): string {
+  return new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 2,
+    signDisplay: signed ? "exceptZero" : "auto",
+  }).format(Math.round(value * 100) / 100);
+}

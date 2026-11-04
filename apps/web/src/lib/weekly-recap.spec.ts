@@ -167,7 +167,7 @@ describe("composeWeeklyRecapSlides", () => {
           activeDays: 3,
           weeklyTitle: {
             id: "FOCUS_DIVER",
-            label: "Nebula Dalgıcı",
+            label: "Odak Makinesi",
             message: "80 dakika derinleştin.",
           },
           nextStorySignal: null,
@@ -429,7 +429,7 @@ describe("composeWeeklyRecapSlides", () => {
           activeDays: 1,
           weeklyTitle: {
             id: "FOCUS_TRAVELER",
-            label: "Nova Yolcusu",
+            label: "Gizli Kahraman",
             message: "İlk izini bıraktın.",
           },
           nextStorySignal: null,
@@ -571,7 +571,7 @@ describe("weekly recap playback", () => {
         activeDays: 2,
         weeklyTitle: {
           id: "FOCUS_TRAVELER",
-          label: "Nova Yolcusu",
+          label: "Gizli Kahraman",
           message: "Devam.",
         },
         nextStorySignal: null,
@@ -706,7 +706,7 @@ describe("weekly recap privacy and return source", () => {
         activeDays: 3,
         weeklyTitle: {
           id: "FOCUS_DIVER",
-          label: "Nebula Dalgıcı",
+          label: "Odak Makinesi",
           message: "Private title reason",
         },
         nextStorySignal: null,
@@ -767,19 +767,19 @@ describe("weekly recap privacy and return source", () => {
       minutes: (count) => `${count} dakika`,
       activeDays: (count) => `${count} aktif gün`,
       completedTasks: (count) => `${count} görev`,
-      weeklyTitle: (label) => `Unvanım: ${label}`,
+      weeklyTitle: (label) => `Lakabım: ${label}`,
       topSubject: (name, minutes) => `${name}: ${minutes} dakika`,
     });
 
     expect(value).toBe(
-      "Haftanın Hikâyesi · Unvanım: Nebula Dalgıcı · 2 seans · 50 dakika · 3 aktif gün · 4 görev · Matematik: 50 dakika",
+      "Haftanın Hikâyesi · Lakabım: Odak Makinesi · 2 seans · 50 dakika · 3 aktif gün · 4 görev · Matematik: 50 dakika",
     );
     expect(value).not.toMatch(
       /SECRET-NET|Private mood|Private task|private-subject|taxonomy-matematik/i,
     );
 
     expect(buildWeeklyRecapShareCardModel(shareReview)).toEqual({
-      weeklyTitle: "Nebula Dalgıcı",
+      weeklyTitle: "Odak Makinesi",
       characterImageSrc: WEEKLY_RECAP_CHARACTER_IMAGE_ASSETS.nebulaDiver,
       focusMinutes: 50,
       activeDays: 3,

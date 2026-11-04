@@ -1,0 +1,225 @@
+{
+  "status": "DRAFT",
+  "language": "tr",
+  "preparedOn": "2026-11-04",
+  "sourceYear": 2026,
+  "articles": [
+    {
+      "slug": "kpss-on-lisans-kimler-basvurabilir",
+      "title": "KPSS Ön Lisansa kimler başvurabilir?",
+      "category": "APPLICATION",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-on-lisans-kimler-basvurabilir.md",
+      "metaTitle": "KPSS Ön Lisansa kimler başvurabilir? | PuhuKoç",
+      "metaDescription": "Ön lisans öğrencilerinin KPSS’ye başvuru koşulunu, lisans mezuniyeti eşiğini ve merkezî tercihte mezuniyet şartını incele.",
+      "source": "ÖSYM 2026 KPSS Ön Lisans Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-fqs59p-13083438.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 1,
+        "primaryKeyword": "kpss ön lisans kimler başvurabilir",
+        "sourceRefs": [
+          "§§1.4–1.6, PDF s. 4 ve §2.1, PDF s. 5–6"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-on-lisans-yoksis-egitim-bilgisi"
+          },
+          {
+            "slug": "kpss-on-lisans-p93-net-hesaplama"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-on-lisans-yoksis-egitim-bilgisi",
+      "title": "KPSS Ön Lisans başvurusunda YÖKSİS bilgisi nasıl düzeltilir?",
+      "category": "APPLICATION",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-on-lisans-yoksis-egitim-bilgisi.md",
+      "metaTitle": "KPSS Ön Lisans başvurusunda YÖKSİS bilgisi nasıl düzeltilir? | PuhuKoç",
+      "metaDescription": "KPSS Ön Lisans başvurusunda YÖKSİS kaydını AİS’e aktarmayı ve hatalı eğitim bilgisini doğru kurum üzerinden düzeltmeyi öğren.",
+      "source": "ÖSYM 2026 KPSS Ön Lisans Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-fqs59p-13083438.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 2,
+        "primaryKeyword": "kpss ön lisans yöksis eğitim bilgisi",
+        "sourceRefs": [
+          "§2.3, PDF s. 12–13 ve §4.2, PDF s. 23–24"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-on-lisans-kimler-basvurabilir"
+          },
+          {
+            "slug": "kpss-on-lisans-p93-net-hesaplama"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-on-lisans-p93-net-hesaplama",
+      "title": "KPSSP93 nasıl hesaplanır? Ön Lisans net ve puan hesabı",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-on-lisans-p93-net-hesaplama.md",
+      "metaTitle": "KPSSP93 nasıl hesaplanır? Ön Lisans net ve puan hesabı | PuhuKoç",
+      "metaDescription": "KPSS Ön Lisans netini test başına hesapla. Genel Yetenek ve Genel Kültürün ağırlıklarını ve KPSSP93 için bir net şartını incele.",
+      "source": "ÖSYM 2026 KPSS Ön Lisans Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-fqs59p-13083438.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 3,
+        "primaryKeyword": "kpssp93 nasıl hesaplanır",
+        "sourceRefs": [
+          "§3.10, PDF s. 21–22 ve Tablo 2, PDF s. 33"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-on-lisans-kimler-basvurabilir"
+          },
+          {
+            "slug": "kpss-on-lisans-dhbt-p123"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-on-lisans-dhbt-p123",
+      "title": "KPSS Ön Lisans ve DHBT puanı KPSSP123 nasıl hesaplanır?",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-on-lisans-dhbt-p123.md",
+      "metaTitle": "KPSS Ön Lisans ve DHBT puanı KPSSP123 nasıl hesaplanır? | PuhuKoç",
+      "metaDescription": "KPSSP123 için hangi oturumlara katılman gerektiğini, dört testin ağırlıklarını ve sonuç belgesinde hangi puana bakacağını öğren.",
+      "source": "ÖSYM 2026 KPSS Ön Lisans Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-fqs59p-13083438.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 4,
+        "primaryKeyword": "kpss ön lisans dhbt p123",
+        "sourceRefs": [
+          "§1.8, PDF s. 4, DHBT açıklamaları, PDF s. 31–32 ve Tablo 2, PDF s. 33"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-on-lisans-p93-net-hesaplama"
+          },
+          {
+            "slug": "kpss-on-lisans-kimler-basvurabilir"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-on-lisans-engelli-aday-ek-sure",
+      "title": "KPSS Ön Lisans ek süre ve erişilebilir sınav düzenlemeleri",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-on-lisans-engelli-aday-ek-sure.md",
+      "metaTitle": "KPSS Ön Lisans ek süre ve erişilebilir sınav düzenlemeleri | PuhuKoç",
+      "metaDescription": "ÖSYM’nin 2026 Ön Lisans kılavuzundaki 30 dakikalık ek süreyi, başvuru yolunu ve onaylanan düzenlemeyi nereden kontrol edeceğini incele.",
+      "source": "ÖSYM 2026 KPSS Ön Lisans Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-fqs59p-13083438.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 5,
+        "primaryKeyword": "kpss ön lisans ek süre engelli aday",
+        "sourceRefs": [
+          "§§4.5–4.5.2, PDF s. 25–27"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-on-lisans-kimler-basvurabilir"
+          },
+          {
+            "slug": "kpss-on-lisans-yoksis-egitim-bilgisi"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-on-lisans-p93-gecerlilik-suresi",
+      "title": "KPSS Ön Lisans puanı kaç yıl geçerli?",
+      "category": "GENERAL",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-on-lisans-p93-gecerlilik-suresi.md",
+      "metaTitle": "KPSS Ön Lisans puanı kaç yıl geçerli? | PuhuKoç",
+      "metaDescription": "KPSSP93’ün iki yıllık geçerlilik süresinin ne zaman başladığını ve sonraki KPSS B Grubu Lisans sınavının bu puana etkisini öğren.",
+      "source": "ÖSYM 2026 KPSS Ön Lisans Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-fqs59p-13083438.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 6,
+        "primaryKeyword": "kpss ön lisans puanı kaç yıl geçerli",
+        "sourceRefs": [
+          "§§1.5–1.6 ve §1.11, PDF s. 4"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-on-lisans-p93-net-hesaplama"
+          },
+          {
+            "slug": "kpss-on-lisans-kimler-basvurabilir"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "kpss-on-lisans-sinav-merkezi-tercihi",
+      "title": "KPSS Ön Lisans sınav merkezi tercihi nasıl yapılır?",
+      "category": "APPLICATION",
+      "family": "KPSS",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "kpss-on-lisans-sinav-merkezi-tercihi.md",
+      "metaTitle": "KPSS Ön Lisans sınav merkezi tercihi nasıl yapılır? | PuhuKoç",
+      "metaDescription": "KPSS Ön Lisans için iki sınav merkezi tercihinin nasıl seçildiğini, AİS’te ne zaman değiştirilebildiğini ve kesin sınav yerini nereden öğreneceğini incele.",
+      "source": "ÖSYM 2026 KPSS Ön Lisans Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/8/basvuru-kilavuzu-fqs59p-13083438.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 7,
+        "primaryKeyword": "kpss ön lisans sınav merkezi tercihi",
+        "sourceRefs": [
+          "§2.3 alan 16, PDF s. 13–14 ve §3.2, PDF s. 16"
+        ],
+        "relatedArticles": [
+          {
+            "slug": "kpss-on-lisans-yoksis-egitim-bilgisi"
+          },
+          {
+            "slug": "kpss-on-lisans-kimler-basvurabilir"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -147,6 +147,111 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-04 — Deep analysis redesign: one finding, one step
+
+- **What:** The `view=analysis` reading view was rebuilt in the panel language (owner approved the
+  canvas https://claude.ai/artifact/YM9ia87eH8kygB1fEfEuSQ). Order: hero (date eyebrow, a verdict h1,
+  the week's nickname chip, Puhu's AI note in `CompanionBubble`, story link) → "Sıradaki adımın"
+  with the only ledge → grid of "Çalışma düzenin" (last week vs this week bars + delta chips) and
+  "Geçen haftanın adımı" (baseline → next attempt box) → subject rows (net, delta chip, "Deneme
+  yok") → one footnote (backend `evidenceMessage` + live-status and no-Coin line). Legacy snapshots
+  show "O haftanın özeti" with their three saved lines.
+- **Usage:** The verdict comes from `pickWeeklyVerdict` (`lib/weekly-deep-analysis.ts`): the first
+  risen metric with a recorded previous week (active days → focus → tasks) plus the subject with
+  the largest rise, filled into static i18n templates. No gain → `weeklyTitle.message` or the
+  recap's `closingMessage`. Nets are formatted with the locale (`12 net`, `13,25 net`), never the
+  API's `12.00`.
+- **Gotchas:** Backend metric sentences are not shown (the numbers say the same); a subject's
+  backend line shows only for DOWN / NO_EXAM / EARLY. Drops are grey chips, never red. The follow-up
+  fetch is one `useWeeklyReportFollowUp` hook feeding two cards: `weekly-report-follow-up` (next
+  step) and `weekly-report-previous-step` (hidden until loaded and only when there is one).
+- **Backend:** nets inside sentences (`DEEP_SUBJECT_*`, `PERFORMANCE_*`) now go through
+  `formatNetText(value, locale, signed)` in `domain/net.ts`: "-2 net" / "13,25 net" (tr), "13.25" (en).
+  DTO fields (`averageNet`, `delta`) keep `formatNet` / `formatNetDelta` ("12.00", "+2.00"); the web
+  parses those. Reports opened before this keep their frozen "-2.00 net" text.
+- **Try it locally:** `pnpm --filter @mentor/api exec ts-node -T scripts/seed-deep-analysis-demo.ts`
+  creates the Premium student `derin-analiz@demo.test` (password in the script) on top of
+  `seed-analysis-demo.ts`; open `/analiz/haftanin-hikayesi?view=analysis` and choose "Haftamı aç".
+  `seed-analysis-demo.ts` now skips subjects without a question count (the KPSS "diger" row).
+- **Related:** recap `weekly-deep-analysis{,-parts,-subjects}.tsx`, `weekly-report-follow-up.tsx`,
+  `lib/weekly-deep-analysis{,.spec}.ts`, `e2e/weekly-{deep-analysis,report-follow-up}.spec.ts`,
+  API `domain/{net,weekly-deep-analysis}.ts`, `weekly-review.service.ts`.
+
+### 2026-11-04 — Track accepted weekly-report recommendations
+
+- **What:** A report recommendation is edited/confirmed through the existing Plan form and saved
+  with `WEEKLY_REPORT` provenance. The plan user lock deduplicates even completed tasks. Coaching
+  owns all task/exam reads and writes; subject labels come from the owned report, not the client.
+- **Usage:** Choose “Planıma ekle” in the report, edit title/date, then save. The report's separate
+  live follow-up card shows planned/completed state and a date-specific Plan link. Next week's
+  owned report shows the preceding report's task and first later eligible subject measurement.
+- **Gotchas:** Apply generated migration `0139_weekly_report_task_origin` before deployment.
+  Explicit task deletion permits re-add. Only the immediately preceding owned report is followed;
+  missing/deleted tasks produce no invented state. New measurements must be recorded and taken
+  after task creation and before the displayed week's Istanbul end. Results do not prove causation.
+- **Related:** Coaching `weekly-report-task.{service,repository}.ts`, AI
+  `weekly-report-follow-up.service.ts`, shared weekly contracts, Plan prefill/save flow,
+  recap `weekly-report-follow-up.tsx`; [design](../plans/2026-11-04-weekly-report-follow-up-design.md).
+
+### 2026-11-04 — Seans room art refresh (café floor, home seat, library table)
+
+- **What:** Three of the nine `public/img/seans-theme` files were regenerated after a design
+  critique. `room-cafe-bg`: empty herringbone floor with no second table or chairs, brighter mid-tones
+  (it went near black under the 58–86 % veil), upscaled from 1672×941 to 1920×1080.
+  `room-home-seat`: cream linen instead of lilac, which vanished on the lilac rug (empty "Davet et"
+  seats were hard to see). `room-library-table`: strictly top-down (the lamp and book were shot at 3/4
+  against flat seats), dimmer green lamp, its own soft floor shadow.
+- **Usage:** `STUDY_ROOM_TABLE_HAS_SHADOW` in `lib/study-room-theme.ts` says which table art carries
+  its own floor shadow. `RoomSeats` adds a zero-offset CSS `drop-shadow` to the others (café, home) so
+  they stop reading as stickers. A new theme sets this flag with its three files.
+- **Gotchas:** The `next/image` cache (`.next/**/cache/images`) is keyed by URL, not content, so a
+  replaced file keeps showing the old image on a running server until the cache expires. To check new
+  art locally, route `/_next/image**` to the file on disk in Playwright, or restart with an empty
+  cache. A fresh deploy is unaffected. The shadow has no offset because the box rotates 90° on
+  portrait, and an offset shadow would swing sideways there.
+- **Related:** `room-seats.tsx`, `study-room-theme.ts`.
+
+### 2026-11-04 — Deep-analysis action closes the weekly story
+
+- **What:** Moved “Derin analizi oku” from the persistent story header to the final slide,
+  above its existing action dock. It appears with the closing actions and opens the same owned
+  report without another purchase or model request.
+- **Usage:** Finish the recap or advance to its last slide to read the detailed analysis.
+- **Gotchas:** Earlier slides have no analysis button; legacy stories without an owned-report
+  switch keep their existing closing actions. The saved analysis still offers story replay.
+- **Related:** `weekly-recap-story.tsx`, `e2e/weekly-deep-analysis.spec.ts`.
+
+### 2026-11-04 — Weekly recap nicknames: energetic Puhu names
+
+- **What:** The seven weekly titles are now short, concrete nicknames in the Duolingo-like Puhu voice
+  (owner's call): İsviçre Çakısı (BALANCE_MASTER), Seri Canavarı (RHYTHM_GUARDIAN), Odak Makinesi
+  (FOCUS_DIVER), Görev Avcısı (PLAN_ARCHITECT), Ders Avcısı (SUBJECT_EXPLORER), Korkusuz Denemeci
+  (MOCK_BRAVE), fallback Gizli Kahraman (FOCUS_TRAVELER). EN: Swiss Army Knife, Streak Monster, Focus
+  Machine, Task Hunter, Subject Hunter, Fearless Test-Taker, Hidden Hero. Evidence lines rewritten
+  without space metaphors. The slide label "Haftanın kod adı" became "Bu haftaki lakabın", the share
+  line "Lakabım: {label}"; landing story says "lakabın".
+- **Gotcha:** only copy changed. `WeeklyTitleId` values, thresholds, config keys and the
+  `public/{video,img}/character/*` file names (cosmic-maestro, time-bender, ...) keep the old names;
+  the costumed-Puhu art still has a space backdrop. Names stay two words (story slide auto-advances,
+  share card).
+- **Related:** `i18n/locales/{tr,en}/coaching.json`, `messages/{tr,en}.json`, `config.catalog.ts`,
+  admin `config-hints.ts`, `weekly-recap.spec.ts`, `analysis.fixture.ts`.
+
+### 2026-11-04 — Weekly deep analysis shares the recap report
+
+- **What:** READY weekly reviews now carry optional structured `deepAnalysis`: completed-week
+  focus time, active days and tasks versus the preceding week, plus taxonomy-backed subject net
+  averages, sample counts and study activity. Missing baselines remain null; negative nets remain
+  valid and messages avoid causal claims. Raw task titles/custom subject labels are excluded.
+- **Usage:** Open the weekly report entry on Analysis, or the Premium benefit. The report's
+  `view=analysis` reading view and visual story switch locally over the same acquired snapshot.
+  The deterministic next-step action prefills the existing plan editor without saving automatically.
+- **Gotchas:** Old snapshots retain their original summary/note and explain unavailable detail.
+  No migration, historical recomputation, extra model call or daily report is introduced.
+- **Related:** `weekly-deep-analysis{,.spec}.ts`, `weekly-review.service{,.spec}.ts`,
+  `packages/types/src/weekly-deep-analysis.ts`, recap `weekly-report-view.tsx` and
+  `weekly-deep-analysis*.tsx`; [design](../plans/2026-11-04-weekly-deep-analysis-design.md).
+
 ### 2026-11-03 — Mood adaptation and the panel share the Istanbul calendar day
 
 - **What:** Panel tasks/countdown, mood check-ins/reflection cache, plan defaults/read-only dates,

@@ -234,9 +234,9 @@
         "name": "Story of the week",
         "tab": "Story",
         "title": "Week's over? Your story is ready!",
-        "body": "How many days you studied, how many minutes you focused, which subject shone: it's all in one short story. Finish a full week and you get a codename too.",
+        "body": "How many days you studied, how many minutes you focused, which subject shone: it's all in one short story. Finish a full week and you get a nickname too.",
         "dates": "Oct 20 – 26",
-        "codename": "Nebula Diver"
+        "codename": "Focus Machine"
       }
     },
     "focus": {
@@ -814,10 +814,10 @@
     "stat_streak": "Streak",
     "badges_title": "Your badges",
     "badges_title_other": "Their badges",
-    "badge_marathon": "Marathon",
+    "badge_marathon": "Marathoner",
     "badge_night_owl": "Night Owl",
-    "badge_motivator": "Motivator",
-    "badge_newcomer": "Newcomer",
+    "badge_motivator": "Morale Booster",
+    "badge_newcomer": "New Neighbor",
     "badge_marathon_description": "You kept your rhythm through steady effort.",
     "badge_marathon_description_other": "They kept their rhythm through steady effort.",
     "badge_night_owl_description": "You contributed to the community at night.",
@@ -1466,6 +1466,7 @@
     "title": "Bring Puhu along. Don't walk it alone"
   },
   "plan": {
+    "weekly_report_rhythm": "Your study routine",
     "duration_label": "Study duration (min)",
     "duration_optional": "Optional",
     "duration_invalid": "Use whole minutes between 5 and 200.",
@@ -1801,27 +1802,59 @@
   },
   "analysis": {
     "report": {
-      "title": "Deep analysis",
+      "follow_up": {
+        "title": "Your next step",
+        "loading": "Loading your next step",
+        "error": "Could not load your next step.",
+        "retry": "Try again",
+        "previous": "Last week's step",
+        "done": "Done",
+        "planned": "In your plan · {date}",
+        "baseline_label": "That week's average",
+        "measurement_label": "Your next attempt",
+        "measurement_pending": "Waiting for an attempt",
+        "go_plan": "View the task in my plan",
+        "add": "Add to my plan",
+        "add_hint": "You can adjust it on the plan screen before saving.",
+        "no_task": "This report has no saved task recommendation."
+      },
+      "eyebrow": "{range} · Deep analysis",
       "back": "Back to analysis",
-      "story": "Weekly story",
-      "saved": "This review uses the completed week's records. It opened with your story; rereading spends no Coin or additional allowance.",
+      "story": "Watch the weekly story",
+      "nickname": "This week's nickname: {label}",
+      "verdict_metric_ACTIVE_DAYS": "Your active days went from {previous} to {current}",
+      "verdict_metric_FOCUS_MINUTES": "Your focus time went from {previous} to {current} minutes",
+      "verdict_metric_PLAN_TASKS": "Your completed tasks went from {previous} to {current}",
+      "verdict_with_subject": "{metric}, {subject} {delta} net.",
+      "verdict_metric_only": "{metric}.",
+      "verdict_subject_only": "Your {subject} average rose by {delta} net.",
       "rhythm": "Your study routine",
+      "legend_previous": "Last week",
+      "legend_current": "This week",
       "metric_FOCUS_MINUTES": "Focus time",
       "metric_ACTIVE_DAYS": "Active days",
       "metric_PLAN_TASKS": "Completed tasks",
+      "metric_value_FOCUS_MINUTES": "{count} min",
+      "metric_value_ACTIVE_DAYS": "{count, plural, one {# day} other {# days}}",
+      "metric_value_PLAN_TASKS": "{count, plural, one {# task} other {# tasks}}",
+      "metric_aria": "{label}: {current} this week, {previous} last week",
+      "metric_aria_new": "{label}: {current} this week, no record last week",
+      "previous_value": "Last week {value}",
+      "previous_missing": "No record last week",
       "subjects": "Your subjects in detail",
-      "current_week": "This week's average",
-      "previous_week": "Previous week's average",
-      "no_attempt": "No attempt recorded",
+      "subjects_hint": "Average net · against last week",
+      "no_attempt": "No attempt",
       "net": "{net} net",
-      "subject_activity": "{minutes} min focused · {tasks} completed tasks",
+      "subject_current": "This week {count, plural, one {# attempt} other {# attempts}}",
+      "subject_previous": "Last week {net}, {count, plural, one {# attempt} other {# attempts}}",
+      "subject_previous_missing": "No attempt last week",
+      "subject_focus": "{minutes} min focus",
+      "subject_tasks": "{count, plural, one {# task} other {# tasks}}",
       "subjects_empty": "No subject-level activity was recorded this week.",
-      "evidence": "What is this comparison based on?",
-      "ai_note": "Puhu's AI reflection",
-      "next_step": "Your next small step",
-      "add_to_plan": "Add to my plan",
-      "legacy_title": "Your saved week",
-      "legacy_detail": "Subject details and the previous week's study comparison were not saved when this report opened. Your original summary and Puhu's note are still here.",
+      "ai_note": "Puhu's note · AI",
+      "footnote": "Task statuses are current; the report itself stays as it was when it opened. Rereading spends no Coin or additional allowance.",
+      "legacy_title": "That week's summary",
+      "legacy_detail": "This report opened before subject-by-subject comparison was added. Your original summary and Puhu's note are still here.",
       "entry_title": "Take a closer look at your week",
       "entry_detail": "Your study routine, subject progress and next step. The weekly story and deep analysis open together as one report.",
       "entry_cta": "View my weekly report"
@@ -2156,8 +2189,8 @@
         "comparison_LONGEST_SESSION": "+{count} minutes"
       },
       "weekly_title": {
-        "label": "Weekly codename",
-        "fallback": "Nova Traveler"
+        "label": "Your nickname this week",
+        "fallback": "Hidden Hero"
       },
       "partial_unlocks": {
         "title": "What’s next?",
@@ -2192,7 +2225,7 @@
         "minutes": "{count} minutes",
         "active_days": "{count} active days",
         "tasks": "{count} completed tasks",
-        "weekly_title": "My title: {label}",
+        "weekly_title": "My nickname: {label}",
         "top_subject": "{name}: {minutes} minutes",
         "preparing_short": "Preparing…",
         "downloaded": "Your share card was downloaded",
@@ -2201,8 +2234,8 @@
       },
       "share_card": {
         "title": "Here’s your week!",
-        "weekly_title_label": "Weekly codename",
-        "weekly_title_fallback": "Nova Traveler",
+        "weekly_title_label": "Your nickname this week",
+        "weekly_title_fallback": "Hidden Hero",
         "focus": "time spent in focus",
         "active_days": "days you kept your rhythm",
         "sessions": "sessions you made time for",
@@ -3115,18 +3148,18 @@
     "progress_label": "Your path through this level",
     "progress_aria": "{name} level progress",
     "progress_value": "{current} / {target} XP",
-    "complete_message": "All the lights are connected; your journey continues.",
+    "complete_message": "You're at the top! The journey still goes on.",
     "spotlight_travel": "Go to {name}",
-    "spotlight_locked": "This light has not been lit yet.",
+    "spotlight_locked": "This level isn't unlocked yet.",
     "spotlight_open": "See the {name} badge under the stage light",
-    "guide_open": "Open the Night Journey guide",
-    "guide_title": "Night Journey",
-    "guide_description": "Each light tells the story of another season of your effort.",
+    "guide_open": "Open the level path",
+    "guide_title": "Level Path",
+    "guide_description": "12 levels, 4 chapters. Every bit of XP moves you up a step!",
     "guide_level_aria": "Level {tier}, {name}, {state}",
     "close": "Close",
     "celebration": {
-      "introduction_eyebrow": "Night Journey",
-      "level_up_eyebrow": "A new light appeared",
+      "introduction_eyebrow": "Level Path",
+      "level_up_eyebrow": "Level up!",
       "continue": "Continue",
       "acknowledge_error": "We couldn't close the celebration just yet. Let's try again in a moment."
     },
@@ -3137,82 +3170,82 @@
     },
     "chapters": {
       "awakening": {
-        "name": "Awakening",
-        "label": "Chapter I · Awakening"
+        "name": "Beginning",
+        "label": "Chapter I · Beginning"
       },
       "harmony": {
-        "name": "Harmony",
-        "label": "Chapter II · Harmony"
+        "name": "Tempo",
+        "label": "Chapter II · Tempo"
       },
       "deepening": {
-        "name": "Deepening",
-        "label": "Chapter III · Deepening"
+        "name": "Mastery",
+        "label": "Chapter III · Mastery"
       },
       "shared_light": {
-        "name": "Shared Light",
-        "label": "Chapter IV · Shared Light"
+        "name": "Summit",
+        "label": "Chapter IV · Summit"
       }
     },
     "levels": {
       "spark": {
-        "name": "Spark",
-        "story": "The first light of your journey has appeared.",
-        "story_visitor": "The first light of their journey has appeared."
+        "name": "Chick",
+        "story": "You cracked the shell! The journey has begun.",
+        "story_visitor": "They cracked the shell! The journey has begun."
       },
       "trail": {
-        "name": "Flame",
-        "story": "The spark caught; it does not go out easily now.",
-        "story_visitor": "The spark caught; it does not go out easily now."
+        "name": "Rookie",
+        "story": "New here, but full of drive!",
+        "story_visitor": "New here, but full of drive!"
       },
       "compass": {
-        "name": "Compass",
-        "story": "You are beginning to find your own direction.",
-        "story_visitor": "They are beginning to find their own direction."
+        "name": "Curious",
+        "story": "Poking around, asking, learning!",
+        "story_visitor": "Poking around, asking, learning!"
       },
       "cycle": {
-        "name": "Cycle",
-        "story": "You repeat on purpose; the order is settling.",
-        "story_visitor": "They repeat on purpose; the order is settling."
+        "name": "Owlet",
+        "story": "Your eyes are open! Now you can see your path.",
+        "story_visitor": "Their eyes are open! Now they can see their path."
       },
       "rhythm": {
-        "name": "Pulse",
-        "story": "Your repetitions beat on their own now.",
-        "story_visitor": "Their repetitions beat on their own now."
+        "name": "Night Watch",
+        "story": "Eyes on the goal, you miss nothing!",
+        "story_visitor": "Eyes on the goal, they miss nothing!"
       },
       "flow": {
-        "name": "Flow",
-        "story": "Effort is no longer a separate weight you carry.",
-        "story_visitor": "Effort is no longer a separate weight they carry."
+        "name": "Unstoppable",
+        "story": "The pace is set! Nobody can stop you now.",
+        "story_visitor": "The pace is set! Nobody can stop them now."
       },
       "root": {
-        "name": "Root",
-        "story": "Your effort is more than a passing enthusiasm.",
-        "story_visitor": "Their effort is more than a passing enthusiasm."
+        "name": "Wise Owl",
+        "story": "What you know keeps piling up. You're getting wise!",
+        "story_visitor": "What they know keeps piling up. They're getting wise!"
       },
       "wing": {
-        "name": "Wing",
-        "story": "What you have gathered is giving you room to move.",
-        "story_visitor": "What they have gathered is giving them room to move."
+        "name": "Old Hand",
+        "story": "You know these roads by heart now!",
+        "story_visitor": "They know these roads by heart now!"
       },
       "horizon": {
-        "name": "Horizon",
-        "story": "You can now see not only today, but the road ahead.",
-        "story_visitor": "They can now see not only today, but the road ahead."
+        "name": "Captain",
+        "story": "You're at the helm, you set the course!",
+        "story_visitor": "They're at the helm, they set the course!"
       },
       "lantern": {
-        "name": "Lantern",
-        "story": "Your own light is accompanying others on their way.",
-        "story_visitor": "Their own light is accompanying others on their way."
+        "name": "Champion",
+        "story": "Your effort made the podium!",
+        "story_visitor": "Their effort made the podium!"
       },
       "star": {
-        "name": "Star",
-        "story": "Your presence brings direction and courage to the journey.",
-        "story_visitor": "Their presence brings direction and courage to the journey."
+        "name": "Phenomenon",
+        "story": "Everyone's talking about your pace!",
+        "story_visitor": "Everyone's talking about their pace!"
       },
       "constellation": {
-        "name": "Constellation",
-        "story": "Beyond shining alone, you are creating meaning together.",
-        "story_visitor": "Beyond shining alone, they are creating meaning together."
+        "name": "Legend",
+        "story": "This is the summit! You're a legend now.",
+        "story_visitor": "This is the summit! They're a legend now."
       }
     }
   },
@@ -3245,23 +3278,44 @@
       "loading": "Loading usage options",
       "error": "Usage options could not load. Refresh to try again.",
       "xp_note": "XP shows your personal progress. It cannot be spent or converted to Coin.",
-      "balance": "Available Coin: {coin}", "cost": "{cost} Coin", "premium": "Included with Premium",
+      "balance": "Available Coin: {coin}",
+      "cost": "{cost} Coin",
+      "premium": "Included with Premium",
       "daily": "Uses remaining in the rolling 24-hour limit: {count}",
       "slots": "Extra capacity purchased with Coin: {used} / {max}",
       "recheck": "Opening a feature does not spend Coin. Review its usage conditions on the feature screen.",
       "items": {
-        "NOTEBOOK_SLOT": { "title": "Extra notebook capacity", "description": "Permanent capacity for one more custom notebook. Page and photo limits stay the same.", "action": "Go to my notebooks" },
-        "PLAN_PREVIEW": { "title": "Plan preview with Puhu", "description": "Prepares one new plan preview after your explicit confirmation. Reopening and applying a saved preview use no extra Coin.", "action": "Open plan screen" },
-        "COACH_CHAT": { "title": "Message access for Puhu", "description": "Access for one message to Puhu. Daily limits apply.", "action": "Open chat with Puhu" },
-        "DEEP_ANALYSIS": { "title": "Weekly deep analysis", "description": "Unlocks Puhu's detailed commentary for a ready weekly report. Access applies to that week and exam.", "action": "Open analysis screen" }
+        "NOTEBOOK_SLOT": {
+          "title": "Extra notebook capacity",
+          "description": "Permanent capacity for one more custom notebook. Page and photo limits stay the same.",
+          "action": "Go to my notebooks"
+        },
+        "PLAN_PREVIEW": {
+          "title": "Plan preview with Puhu",
+          "description": "Prepares one new plan preview after your explicit confirmation. Reopening and applying a saved preview use no extra Coin.",
+          "action": "Open plan screen"
+        },
+        "COACH_CHAT": {
+          "title": "Message access for Puhu",
+          "description": "Access for one message to Puhu. Daily limits apply.",
+          "action": "Open chat with Puhu"
+        },
+        "DEEP_ANALYSIS": {
+          "title": "Weekly deep analysis",
+          "description": "Unlocks Puhu's detailed commentary for a ready weekly report. Access applies to that week and exam.",
+          "action": "Open analysis screen"
+        }
       },
       "status": {
-        "AVAILABLE": "Available.", "INSUFFICIENT_COIN": "You do not have enough Coin for this option yet.",
-        "PREMIUM_INCLUDED": "Included with Premium; no Coin is spent.", "INCLUDED": "Included in your current access; no Coin is spent.",
+        "AVAILABLE": "Available.",
+        "INSUFFICIENT_COIN": "You do not have enough Coin for this option yet.",
+        "PREMIUM_INCLUDED": "Included with Premium; no Coin is spent.",
+        "INCLUDED": "Included in your current access; no Coin is spent.",
         "ALREADY_UNLOCKED": "This access is already unlocked; no further Coin is spent.",
         "LIMIT_REACHED": "You have reached the extra capacity purchase limit. Your existing capacity stays available.",
         "DAILY_LIMIT_REACHED": "Your allowance for the last 24 hours is used. You can use it when access becomes available again.",
-        "UNAVAILABLE": "This option is currently unavailable.", "NEEDS_EXAM": "Choose your exam in your profile to check this option.",
+        "UNAVAILABLE": "This option is currently unavailable.",
+        "NEEDS_EXAM": "Choose your exam in your profile to check this option.",
         "REVIEW_NOT_READY": "This week's report is not ready yet. No Coin is spent."
       }
     },
@@ -3941,81 +3995,81 @@
     }
   },
   "achievements": {
-    "showcase_title": "Traces of the Journey",
+    "showcase_title": "Your achievements",
     "showcase_view_all": "View all",
-    "showcase_earned_aria": "{title} is with you",
-    "public_empty": "No shared mark yet. When one lands, it lives here.",
-    "collection_title": "Your collection",
+    "showcase_earned_aria": "{title} unlocked",
+    "public_empty": "No shared achievements yet.",
+    "collection_title": "All your achievements",
     "collection_count": "{earned} / {total}",
     "collection_progress_aria": "Collection progress",
-    "collection_progress_value": "{earned} / {total} achievements with you",
-    "next_discovery": "Next discovery",
-    "suggestion_aria": "Next discovery: {title}. How it wakes",
-    "collection_complete_title": "Collection complete.",
-    "collection_complete_body": "Every badge is with you; your journey continues.",
+    "collection_progress_value": "{earned} / {total} achievements unlocked",
+    "next_discovery": "Next achievement",
+    "suggestion_aria": "Next achievement: {title}. How to unlock",
+    "collection_complete_title": "Collection complete!",
+    "collection_complete_body": "Every achievement is unlocked.",
     "locked_aria": "{title} achievement is locked",
-    "how_to_earn": "How it wakes",
+    "how_to_earn": "How to unlock",
     "progress_label": "Your progress",
     "progress_days": "{current} / {target} days",
-    "earned_on": "With you since {date}",
-    "earned": "With you",
+    "earned_on": "Unlocked on {date}",
+    "earned": "Unlocked",
     "locked": "Locked",
     "close": "Close",
-    "celebration_eyebrow": "A new light came on",
+    "celebration_eyebrow": "New achievement unlocked!",
     "celebration_more": "+{count}",
     "celebration_close_error": "We couldn't close the celebration just yet. Let's try again in a moment.",
-    "history_eyebrow": "{count, plural, one {One more light came on} other {# lights came on at once}}",
-    "history_title": "Your past effort is here too",
-    "history_body": "{count} achievements from earlier effort are here too.",
+    "history_eyebrow": "{count, plural, one {One more achievement unlocked!} other {# achievements unlocked at once!}}",
+    "history_title": "Your past effort counted too!",
+    "history_body": "{count} more achievements unlocked from your earlier effort.",
     "continue": "Let's keep going",
     "celebration_items": {
       "first_step": {
-        "eyebrow": "Your journey has begun",
-        "body": "You didn't wait to feel ready; you took the first step. The path is yours now."
+        "eyebrow": "Off you go!",
+        "body": "First session done! It only gets easier from here."
       },
       "route_drawn": {
-        "eyebrow": "Your path is taking shape",
-        "body": "You did more than think about where to go; you drew yourself a route forward."
+        "eyebrow": "List started!",
+        "body": "You wrote the first task in your plan. Time to start ticking!"
       },
       "dream_space_created": {
-        "eyebrow": "Your dream is in sight",
-        "body": "You made room in your life for the dream in your mind. Now you have a direction to return to."
+        "eyebrow": "Your dream is on the wall!",
+        "body": "You put your dream on the board. Every look will remind you why you started."
       },
       "rhythm_found": {
-        "eyebrow": "Your rhythm is forming",
-        "body": "For seven days, you kept coming back for yourself. This is more than one day now; it's your rhythm."
+        "eyebrow": "7 days, no gaps!",
+        "body": "You've shown up every day for a week. This is becoming a habit!"
       },
       "rhythm_kept": {
-        "eyebrow": "Your rhythm is with you",
-        "body": "You stayed with your path for thirty days. The rhythm you built is now a strong part of you."
+        "eyebrow": "30 days, incredible!",
+        "body": "A whole month without a break. Hats off to that effort!"
       },
       "returned_to_path": {
-        "eyebrow": "Your path was waiting",
-        "body": "A pause didn't end your journey. Today, you returned to yourself right where you left off."
+        "eyebrow": "Welcome back!",
+        "body": "A break isn't the end. You're picking up right where you left off!"
       },
       "route_renewed": {
-        "eyebrow": "Your route fits you",
-        "body": "Instead of clinging to the plan, you renewed it around what you need. That's how you own your path."
+        "eyebrow": "Plan updated!",
+        "body": "You made the plan fit you, exactly as it should be. On with the new version!"
       },
       "starting_point_set": {
-        "eyebrow": "You saw where you stand",
-        "body": "You recorded your first mock exam. Now you'll be able to see how far you travel."
+        "eyebrow": "The bar is set!",
+        "body": "Your first mock is logged. Now every new one will show how far you've come!"
       },
       "mistake_revisited": {
-        "eyebrow": "You looked once more",
-        "body": "You returned to a mistake and looked again. Sometimes, that's exactly where learning deepens."
+        "eyebrow": "Rematch time!",
+        "body": "You went back to a mistake. That question won't catch you again!"
       },
       "week_reflected": {
-        "eyebrow": "You listened to yourself",
-        "body": "You paused to hear what your week was telling you. Your next step is a little clearer now."
+        "eyebrow": "Week under the lens!",
+        "body": "You looked back on your week. The next one will be even better!"
       },
       "first_hello": {
-        "eyebrow": "You left your first mark here",
-        "body": "You shared your first words with the community. You no longer have to walk this path alone."
+        "eyebrow": "You've been heard!",
+        "body": "You posted in the community for the first time. You're part of the crowd now!"
       },
       "helped_someone": {
-        "eyebrow": "Your words reached someone",
-        "body": "Something you shared helped another learner. Sometimes a little support carries us a long way."
+        "eyebrow": "You made someone's day!",
+        "body": "Something you wrote helped another learner. Great feeling!"
       }
     }
   },

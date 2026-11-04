@@ -8,7 +8,7 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { CONTENT_PORT, type ContentPort } from "../domain/content.port";
-import { formatNet, formatNetDelta } from "../domain/net";
+import { formatNet, formatNetDelta, formatNetText } from "../domain/net";
 import {
   buildWeeklyActivitySummary,
   energySignal,
@@ -338,6 +338,7 @@ export class WeeklyReviewService {
       completedPlanTaskCount,
     });
     const lang = I18nContext.current()?.lang;
+    const textLocale = lang ?? "tr";
     const t = (key: string, args?: Record<string, unknown>) =>
       this.i18n.translate(`coaching.weekly.${key}`, {
         lang,
@@ -470,14 +471,14 @@ export class WeeklyReviewService {
               evidenceLevel: previousAverage == null ? "EARLY" : "COMPARABLE",
               message:
                 previousAverage == null
-                  ? t("PERFORMANCE_EARLY", { net: formatNet(currentAverage) })
+                  ? t("PERFORMANCE_EARLY", { net: formatNetText(currentAverage, textLocale) })
                   : t(
                       currentAverage < previousAverage
                         ? "PERFORMANCE_COMPARABLE_DOWN"
                         : "PERFORMANCE_COMPARABLE",
                       {
-                        net: formatNet(currentAverage),
-                        delta: formatNetDelta(currentAverage - previousAverage),
+                        net: formatNetText(currentAverage, textLocale),
+                        delta: formatNetText(currentAverage - previousAverage, textLocale, true),
                       },
                     ),
             },
@@ -499,6 +500,7 @@ export class WeeklyReviewService {
         completedTaskCount: planSubjectBreakdown.find((row) => row.subjectRef === subject.slug)?.completedTaskCount ?? 0,
       })),
       translate: t,
+      locale: textLocale,
     });
 
     const suggestedTask = focusSelection?.subjectName

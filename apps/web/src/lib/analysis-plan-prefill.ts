@@ -10,6 +10,7 @@ export interface AnalysisPlanPrefill {
   baselineMockExamId?: string;
   subjectRef?: string;
   topicRef?: string;
+  weeklyReportId?: string;
 }
 
 /** Parse the one-time Analysis → Plan task prefill from URL search parameters. */
@@ -23,6 +24,7 @@ export function parseAnalysisPlanPrefill(params: {
   baselineMockExamId?: string | null;
   subjectRef?: string | null;
   topicRef?: string | null;
+  weeklyReportId?: string | null;
 }): AnalysisPlanPrefill | null {
   if (params.add !== "1") return null;
 
@@ -33,6 +35,11 @@ export function parseAnalysisPlanPrefill(params: {
     title,
     subject: params.subject?.trim().slice(0, PLAN_TASK_SUBJECT_MAX) ?? "",
   };
+  if (params.source === "weekly-report") {
+    const id = params.weeklyReportId ?? "";
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return null;
+    return { ...base, weeklyReportId: id };
+  }
   if (params.source !== "analysis") return base;
 
   const examId = params.examId?.trim() ?? "";

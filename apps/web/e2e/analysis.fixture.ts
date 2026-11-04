@@ -235,7 +235,7 @@ export const readyWeekly: WeeklyReviewDto = {
     activeDays: 5,
     weeklyTitle: {
       id: "FOCUS_DIVER",
-      label: "Nebula Dalgıcı",
+      label: "Odak Makinesi",
       message: "En uzun seansında 80 dakika derinleştin.",
     },
     nextStorySignal: null,
@@ -503,6 +503,9 @@ export async function mockAnalysisApi(
     }
     if (method === "GET" && path.startsWith("/v1/mock-exams?")) {
       return json(route, { items: [], total: 0, page: 1, pageSize: 5 });
+    }
+    if (method === "GET" && /^\/v1\/coach\/weekly-recaps\/[^/]+\/follow-up$/.test(path)) {
+      return json(route, { task: null, previous: null });
     }
     if (method === "GET" && path.startsWith("/v1/coach/weekly-recaps/access?")) {
       return json(route, { enabled: false, examId: exam.id, weekStart: readyWeekly.period.startDate,

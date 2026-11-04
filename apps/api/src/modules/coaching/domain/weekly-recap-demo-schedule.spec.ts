@@ -6,7 +6,7 @@ import {
 import { buildWeeklyRecapDemoSchedule } from "../../../../scripts/weekly-recap-demo.schedule";
 
 describe("weekly recap demo schedule", () => {
-  it("creates a completed-week showcase whose dominant title is Nebula Diver", () => {
+  it("creates a completed-week showcase whose dominant title is Focus Machine", () => {
     const schedule = buildWeeklyRecapDemoSchedule(
       new Date("2026-07-22T10:00:00.000Z"),
     );
