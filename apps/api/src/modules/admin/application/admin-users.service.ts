@@ -1,7 +1,8 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { ASSIGNABLE_ROLES, UserRole } from "@mentor/types";
+import { ADMIN_PANEL_ROLES, ASSIGNABLE_ROLES, UserRole } from "@mentor/types";
+import { ADMIN_FULL_ACCESS_ROLES } from "../../../common/auth/roles.decorator";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { DomainError } from "../../../common/errors/domain-error";
+import { DomainError, ForbiddenError } from "../../../common/errors/domain-error";
 import { isUniqueViolation, uniqueConstraint } from "../../../common/errors/postgres-error";
 import { AccountErasureService } from "../../account/application/account-erasure.service";
 import { UsersService } from "../../identity/application/users.service";
@@ -138,7 +139,6 @@ export class AdminUsersService {
     return { user: toView(row!), before: change.before, after: change.after };
   }
 
-  /** Full (secret-free) detail for the user screen. */
   /**
    * Display identity + roles for a set of ids, keyed by id.
    *
@@ -157,19 +157,28 @@ export class AdminUsersService {
     return toDetail(row);
   }
 
-  /** Graduated status change (§9). Admins cannot change their own status (self-lockout guard). */
+  /**
+   * Graduated status change (§9). Admins cannot change their own status (self-lockout guard),
+   * root admins (SUPER_ADMIN/ADMIN) cannot be suspended/banned via API, and scoped SUPPORT
+   * actors cannot modify internal panel/staff accounts.
+   */
   async setStatus(
     actorId: string,
     userId: string,
     status: string,
+    actorRoles: readonly string[] = [UserRole.SUPER_ADMIN],
   ): Promise<FieldChangeResult<string>> {
     this.assertNotSelf(actorId, userId);
-    const change = await this.repo.updateStatus(userId, status).catch((error: unknown) => {
-      if (isUniqueViolation(error) && uniqueConstraint(error) === "users_active_phone_unique_idx") {
-        throw new DomainError(ErrorCode.AUTH_PHONE_UNAVAILABLE, HttpStatus.CONFLICT);
-      }
-      throw error;
-    });
+    const change = await this.repo
+      .updateStatus(userId, status, (targetRoles) =>
+        this.assertCanModifyStatus(actorRoles, targetRoles),
+      )
+      .catch((error: unknown) => {
+        if (isUniqueViolation(error) && uniqueConstraint(error) === "users_active_phone_unique_idx") {
+          throw new DomainError(ErrorCode.AUTH_PHONE_UNAVAILABLE, HttpStatus.CONFLICT);
+        }
+        throw error;
+      });
     if (!change) throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);
     const row = await this.repo.findById(userId);
     return { user: toView(row!), before: change.before, after: change.after };
@@ -195,7 +204,7 @@ export class AdminUsersService {
    * {@link AccountErasureService} so there is exactly ONE erasure path: subscription cancelled,
    * every module's behavioral data erased, identity row anonymized, sessions revoked.
    *
-   * Admins cannot anonymize themselves.
+   * Admins cannot anonymize themselves or root admin accounts.
    */
   async anonymize(
     actorId: string,
@@ -205,6 +214,7 @@ export class AdminUsersService {
 
     const existing = await this.repo.findById(userId);
     if (!existing) throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    this.assertNotRootAdmin(existing.roles);
 
     const change = await this.accountErasure.eraseAccount(userId, UserStatus.BANNED);
 
@@ -215,6 +225,31 @@ export class AdminUsersService {
   private assertNotSelf(actorId: string, userId: string): void {
     if (actorId === userId) {
       throw new DomainError(ErrorCode.ADMIN_CANNOT_MODIFY_SELF, HttpStatus.FORBIDDEN);
+    }
+  }
+
+  private assertNotRootAdmin(targetRoles: readonly string[]): void {
+    if (targetRoles.some((r) => ADMIN_FULL_ACCESS_ROLES.includes(r as UserRole))) {
+      throw new ForbiddenError();
+    }
+  }
+
+  private assertCanModifyStatus(
+    actorRoles: readonly string[],
+    targetRoles: readonly string[],
+  ): void {
+    this.assertNotRootAdmin(targetRoles);
+    const actorIsUmbrella = actorRoles.some((r) =>
+      ADMIN_FULL_ACCESS_ROLES.includes(r as UserRole),
+    );
+    if (
+      !actorIsUmbrella &&
+      targetRoles.some(
+        (r) =>
+          (ADMIN_PANEL_ROLES as readonly string[]).includes(r) || r === UserRole.STAFF,
+      )
+    ) {
+      throw new ForbiddenError();
     }
   }
 }

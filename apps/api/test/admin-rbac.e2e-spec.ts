@@ -19,6 +19,7 @@ describe("admin fine sub-roles RBAC (e2e)", () => {
   let app: INestApplication;
   let pool: Pool;
   const tokens: Record<string, string> = {};
+  const actorIds: Record<string, string> = {};
   let targetId = ""; // a plain user with a seeded charge (refund target + role-assign target)
 
   const signup = async (label: string) => {
@@ -49,6 +50,7 @@ describe("admin fine sub-roles RBAC (e2e)", () => {
   /** Signup + grant a role + login so the JWT carries that role. */
   const makeActor = async (label: string, role: string): Promise<void> => {
     const u = await signup(label);
+    actorIds[label] = u.user.id;
     await grantRole(u.user.id, role);
     const login = await request(app.getHttpServer())
       .post("/v1/auth/login")
@@ -156,5 +158,30 @@ describe("admin fine sub-roles RBAC (e2e)", () => {
       .post(`/v1/admin/users/${targetId}/roles/MODERATOR`)
       .set(auth("support"));
     expect(res.status).toBe(403);
+  });
+
+  it("SUPPORT cannot suspend root admins or fellow panel team members, and root admins cannot suspend/anonymize each other", async () => {
+    const suspendSuper = await request(app.getHttpServer())
+      .patch(`/v1/admin/users/${actorIds["super"]}/status`)
+      .set(auth("support"))
+      .send({ status: "BANNED" });
+    expect(suspendSuper.status).toBe(403);
+
+    const suspendFinance = await request(app.getHttpServer())
+      .patch(`/v1/admin/users/${actorIds["finance"]}/status`)
+      .set(auth("support"))
+      .send({ status: "SUSPENDED" });
+    expect(suspendFinance.status).toBe(403);
+
+    const superSuspendAdmin = await request(app.getHttpServer())
+      .patch(`/v1/admin/users/${actorIds["admin"]}/status`)
+      .set(auth("super"))
+      .send({ status: "SUSPENDED" });
+    expect(superSuspendAdmin.status).toBe(403);
+
+    const superAnonymizeAdmin = await request(app.getHttpServer())
+      .post(`/v1/admin/users/${actorIds["admin"]}/anonymize`)
+      .set(auth("super"));
+    expect(superAnonymizeAdmin.status).toBe(403);
   });
 });

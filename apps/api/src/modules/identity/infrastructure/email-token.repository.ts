@@ -23,6 +23,18 @@ export class EmailTokenRepository {
     return withServiceContext(this.db, async (tx) => {
       const user = await lockUser(tx, input.userId);
       if (!user || user.status !== "ACTIVE" || user.erasureStartedAt || user.email !== expectedEmail) return undefined;
+      if (input.type === "VERIFY_EMAIL") {
+        await tx
+          .update(emailTokens)
+          .set({ usedAt: sql`now()` })
+          .where(
+            and(
+              eq(emailTokens.userId, input.userId),
+              eq(emailTokens.type, "VERIFY_EMAIL"),
+              isNull(emailTokens.usedAt),
+            ),
+          );
+      }
       const rows = await tx.insert(emailTokens).values(input).returning();
       await enqueue(tx);
       return rows[0]!;
@@ -40,7 +52,16 @@ export class EmailTokenRepository {
       const [token] = await tx.select().from(emailTokens).where(eq(emailTokens.id, hint.id));
       if (!token || token.usedAt) return { status: "invalid" };
       if (token.expiresAt <= new Date()) return { status: "expired" };
-      await tx.update(emailTokens).set({ usedAt: sql`now()` }).where(eq(emailTokens.id, token.id));
+      await tx
+        .update(emailTokens)
+        .set({ usedAt: sql`now()` })
+        .where(
+          and(
+            eq(emailTokens.userId, user.id),
+            eq(emailTokens.type, "VERIFY_EMAIL"),
+            isNull(emailTokens.usedAt),
+          ),
+        );
       await tx.update(users).set({ emailVerifiedAt: sql`now()` }).where(eq(users.id, user.id));
       return { status: "ok", userId: user.id };
     });
@@ -62,8 +83,44 @@ export class EmailTokenRepository {
       if (!hint) return false;
       const user = await lockUser(tx, hint.userId);
       if (!user || user.status !== "ACTIVE" || user.erasureStartedAt || user.email !== expectedEmail) return false;
+      if (hint.type === "VERIFY_EMAIL" && user.emailVerifiedAt) return false;
       const [token] = await tx.select().from(emailTokens).where(eq(emailTokens.id, hint.id));
       return !!token && !token.usedAt && token.expiresAt > new Date();
+    });
+  }
+
+  /**
+   * Atomically checks the rolling resend quota and records a new attempt under `lockUser`
+   * so concurrent requests cannot race the read-then-insert window.
+   */
+  async tryClaimVerificationResendAttempt(
+    userId: string,
+     since: Date,
+    limit: number,
+  ): Promise<"allowed" | "rate_limited" | "already_verified" | "not_found"> {
+    return withServiceContext(this.db, async (tx) => {
+      const user = await lockUser(tx, userId);
+      if (!user || user.status !== "ACTIVE" || user.erasureStartedAt) {
+        return "not_found";
+      }
+      if (user.emailVerifiedAt) {
+        return "already_verified";
+      }
+      const rows = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(emailVerificationResendAttempts)
+        .where(
+          and(
+            eq(emailVerificationResendAttempts.userId, userId),
+            gte(emailVerificationResendAttempts.createdAt, since),
+          ),
+        );
+      const count = rows[0]?.count ?? 0;
+      if (count >= limit) {
+        return "rate_limited";
+      }
+      await tx.insert(emailVerificationResendAttempts).values({ userId });
+      return "allowed";
     });
   }
 

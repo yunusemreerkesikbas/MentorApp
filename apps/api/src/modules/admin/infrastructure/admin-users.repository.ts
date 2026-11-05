@@ -74,19 +74,20 @@ export class AdminUsersRepository {
   async updateStatus(
     id: string,
     status: string,
+    assertAllowed?: (targetRoles: readonly string[]) => void,
   ): Promise<{ before: string; after: string } | undefined> {
     return withServiceContext(this.db, async (tx: DatabaseTx) => {
       const rows = await tx
-        .select({ status: users.status })
+        .select({ status: users.status, roles: users.roles })
         .from(users)
         .where(eq(users.id, id))
         .for("update")
         .limit(1);
-      const before = rows[0]?.status;
-      if (before === undefined) return undefined;
+      const target = rows[0];
+      if (!target) return undefined;
+      assertAllowed?.(target.roles);
       await tx.update(users).set({ status }).where(eq(users.id, id));
-      return { before, after: status };
+      return { before: target.status, after: status };
     });
   }
-
 }

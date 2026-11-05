@@ -1,8 +1,10 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import type { Paginated } from "@mentor/types";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
 import {
   signupInvitations,
@@ -12,6 +14,12 @@ import {
 
 export type { InvitationRole, InvitationStatus };
 export type SignupInvitationRow = typeof signupInvitations.$inferSelect;
+
+const activeInvitedWhere = () =>
+  and(
+    eq(signupInvitations.status, "invited"),
+    sql`${signupInvitations.invitedAt} >= now() - interval '6 months'`,
+  );
 
 /**
  * Invite-only signup list (`signup_invitations`). Always SERVICE context; callers pass
@@ -26,7 +34,7 @@ export class SignupInvitationRepository {
       const [row] = await tx
         .select({ role: signupInvitations.role })
         .from(signupInvitations)
-        .where(and(eq(signupInvitations.email, email), eq(signupInvitations.status, "invited")))
+        .where(and(eq(signupInvitations.email, email), activeInvitedWhere()))
         .limit(1);
       return row ?? null;
     });
@@ -41,13 +49,19 @@ export class SignupInvitationRepository {
     );
   }
 
-  async upsertInvited(input: {
-    email: string;
-    role: InvitationRole;
-    locale: "tr" | "en";
-    invitedBy: string;
-  }): Promise<SignupInvitationRow> {
+  async upsertInvited(
+    input: {
+      email: string;
+      role: InvitationRole;
+      locale: "tr" | "en";
+      invitedBy: string;
+    },
+    maxInvited?: number,
+  ): Promise<SignupInvitationRow> {
     return withServiceContext(this.db, async (tx) => {
+      if (maxInvited !== undefined) {
+        await assertCapacityInTx(tx, maxInvited, { email: input.email });
+      }
       const invitedAt = new Date();
       const [row] = await tx
         .insert(signupInvitations)
@@ -74,8 +88,11 @@ export class SignupInvitationRepository {
     });
   }
 
-  async markInvited(id: string, invitedBy: string): Promise<SignupInvitationRow | null> {
+  async markInvited(id: string, invitedBy: string, maxInvited?: number): Promise<SignupInvitationRow | null> {
     return withServiceContext(this.db, async (tx) => {
+      if (maxInvited !== undefined) {
+        await assertCapacityInTx(tx, maxInvited, { id });
+      }
       const [row] = await tx
         .update(signupInvitations)
         .set({ status: "invited", invitedAt: new Date(), invitedBy })
@@ -85,13 +102,13 @@ export class SignupInvitationRepository {
     });
   }
 
-  /** Outstanding invitations: invited, not yet registered (registration deletes the row). */
+  /** Outstanding active invitations: invited within 6 months, not yet registered (registration deletes the row). */
   async countInvited(): Promise<number> {
     return withServiceContext(this.db, async (tx) => {
       const [row] = await tx
         .select({ count: sql<number>`count(*)::int` })
         .from(signupInvitations)
-        .where(eq(signupInvitations.status, "invited"));
+        .where(activeInvitedWhere());
       return row?.count ?? 0;
     });
   }
@@ -157,6 +174,28 @@ export class SignupInvitationRepository {
         ),
       ),
     );
+  }
+}
+
+async function assertCapacityInTx(
+  tx: DatabaseTx,
+  maxInvited: number,
+  target: { id: string } | { email: string },
+): Promise<void> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext('signup_invitations_capacity'))`);
+  const targetCond = "id" in target ? eq(signupInvitations.id, target.id) : eq(signupInvitations.email, target.email);
+  const [alreadyInvited] = await tx
+    .select({ id: signupInvitations.id })
+    .from(signupInvitations)
+    .where(and(targetCond, activeInvitedWhere()))
+    .limit(1);
+  if (alreadyInvited) return;
+  const [row] = await tx
+    .select({ count: sql<number>`count(*)::int` })
+    .from(signupInvitations)
+    .where(activeInvitedWhere());
+  if ((row?.count ?? 0) >= maxInvited) {
+    throw new DomainError(ErrorCode.WAITLIST_INVITE_LIMIT, HttpStatus.CONFLICT);
   }
 }
 

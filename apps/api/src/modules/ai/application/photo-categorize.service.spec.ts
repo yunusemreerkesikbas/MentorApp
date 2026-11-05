@@ -17,6 +17,7 @@ describe("PhotoCategorizeService", () => {
   let findByClientRequestId: ReturnType<typeof vi.fn>;
   let assertCanCategorize: ReturnType<typeof vi.fn>;
   let recordPhotoCategorizations: ReturnType<typeof vi.fn>;
+  let appendUsage: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     categorizeImage = vi.fn(async () => ({
@@ -25,11 +26,13 @@ describe("PhotoCategorizeService", () => {
       model: "fake-vision",
       promptTokens: 1,
       completionTokens: 1,
+      budgetReservationId: "res-1",
     }));
     readObject = vi.fn(async () => Buffer.from("jpeg"));
     findByClientRequestId = vi.fn(async () => []);
     assertCanCategorize = vi.fn(async () => undefined);
     recordPhotoCategorizations = vi.fn(async () => undefined);
+    appendUsage = vi.fn(async () => undefined);
 
     const config = {
       get: vi.fn(async (key: string) => {
@@ -61,7 +64,7 @@ describe("PhotoCategorizeService", () => {
         recordPhotoCategorizations,
         countPhotoCategorizationsSince: vi.fn(),
       } as never,
-      { append: vi.fn() } as never,
+      { append: appendUsage } as never,
       { assertCanCategorize } as never,
       { assertWithinBudget: vi.fn(async () => undefined) } as never,
     );
@@ -117,7 +120,7 @@ describe("PhotoCategorizeService", () => {
     });
   });
 
-  it("runs vision and records when no idempotent rows exist", async () => {
+  it("runs vision and records usage before persisting categorizations", async () => {
     const result = await service.categorize(USER_ID, [], MOCK_EXAM_ID, {
       storageKey: STORAGE_KEY,
       clientRequestId: CLIENT_REQUEST_ID,
@@ -134,6 +137,12 @@ describe("PhotoCategorizeService", () => {
     );
     expect(result.subjectRefs).toEqual([{ slug: "turkce", name: "Türkçe" }]);
     expect(result.topicRefs).toHaveLength(1);
+    expect(appendUsage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        budgetReservationId: "res-1",
+        userId: USER_ID,
+      }),
+    );
     expect(recordPhotoCategorizations).toHaveBeenCalledWith(
       USER_ID,
       MOCK_EXAM_ID,
@@ -141,6 +150,37 @@ describe("PhotoCategorizeService", () => {
       STORAGE_KEY,
       CLIENT_REQUEST_ID,
     );
+  });
+
+  it("still records provider usage and settles the budget reservation if persistence fails", async () => {
+    recordPhotoCategorizations.mockRejectedValueOnce(new Error("db write failed"));
+
+    await expect(
+      service.categorize(USER_ID, [], MOCK_EXAM_ID, {
+        storageKey: STORAGE_KEY,
+        clientRequestId: CLIENT_REQUEST_ID,
+      }),
+    ).rejects.toThrow("db write failed");
+
+    expect(appendUsage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        budgetReservationId: "res-1",
+        userId: USER_ID,
+      }),
+    );
+  });
+
+  it("rejects traversal or non-UUID notebook photo keys in prelabelNotebookPhoto", async () => {
+    await expect(
+      service.prelabelNotebookPhoto(USER_ID, [], {
+        storageKey: `notebook/${USER_ID}/../other/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg`,
+        examId: MOCK_EXAM_ID,
+      }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.AI_PHOTO_INVALID_IMAGE,
+      httpStatus: HttpStatus.BAD_REQUEST,
+    });
+    expect(categorizeImage).not.toHaveBeenCalled();
   });
 
   it("keeps a valid subject when the provider returns an invalid topic", async () => {

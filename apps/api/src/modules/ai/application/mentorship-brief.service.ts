@@ -18,6 +18,7 @@ import type { PromptLocale } from "../domain/prompt-locale";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { assertWithinFeatureDailyCap, withUserFeatureLock } from "./ai-generation-guard";
 
 /**
  * Writes one coach's brief about one student (W8).
@@ -57,34 +58,45 @@ export class MentorshipBriefService {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
-    // Charged to the coach: Pro passes flat, everyone else gets the configured daily taste.
-    await this.featureGate.assertAllowed(
-      coach.id,
-      coach.roles,
-      PremiumFeatureId.MENTORSHIP_BRIEF,
-      ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
-    );
 
-    const prompt = buildMentorshipBriefPrompt(
-      buildMentorshipBriefEvidence(report),
-      delta,
-      locale,
-    );
-    await this.budget.assertWithinBudget();
-    const result = await this.llm.complete(prompt);
-    await this.usage.append({
-      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
-      userId: coach.id,
-      model: result.model,
-      feature: AiUsageFeature.MENTORSHIP_BRIEF,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(
-        result.model,
-        result.promptTokens,
-        result.completionTokens,
-      ),
+    return withUserFeatureLock(coach.id, AiUsageFeature.MENTORSHIP_BRIEF, async () => {
+      // Charged to the coach: Pro passes flat, everyone else gets the configured daily taste.
+      await this.featureGate.assertAllowed(
+        coach.id,
+        coach.roles,
+        PremiumFeatureId.MENTORSHIP_BRIEF,
+        ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+      );
+
+      await assertWithinFeatureDailyCap(
+        this.usage,
+        coach.id,
+        AiUsageFeature.MENTORSHIP_BRIEF,
+        ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+        HttpStatus.FORBIDDEN,
+      );
+
+      const prompt = buildMentorshipBriefPrompt(
+        buildMentorshipBriefEvidence(report),
+        delta,
+        locale,
+      );
+      await this.budget.assertWithinBudget();
+      const result = await this.llm.complete(prompt);
+      await this.usage.append({
+        ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
+        userId: coach.id,
+        model: result.model,
+        feature: AiUsageFeature.MENTORSHIP_BRIEF,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costMicros: estimateCostMicros(
+          result.model,
+          result.promptTokens,
+          result.completionTokens,
+        ),
+      });
+      return { text: result.text, model: result.model };
     });
-    return { text: result.text, model: result.model };
   }
 }

@@ -112,6 +112,7 @@ export class PrivacyPreservingLlmAdapter implements LlmPort {
 
   async embed(text: string): Promise<number[]> {
     await this.assertEnabled();
+    await this.budget.assertWithinBudget?.();
     // Embeddings are restricted to verified editorial content by the caller.
     return this.delegate.embed(text);
   }

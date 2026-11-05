@@ -100,6 +100,15 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-05 — Root-admin lockout protection & SUPPORT status boundary
+
+- **What/usage:** Hardened `AdminUsersService.setStatus` (`PATCH /v1/admin/users/:userId/status`) and `AdminUsersService.anonymize` (`POST /v1/admin/users/:userId/anonymize`) against horizontal and vertical privilege abuse:
+  1. Accounts holding full-access root roles (`SUPER_ADMIN` or `ADMIN`) cannot be suspended, banned, or anonymized via the admin API (`403 FORBIDDEN`), matching the existing root-role assignment guard.
+  2. Scoped `SUPPORT` actors (without `SUPER_ADMIN`/`ADMIN`) cannot change the status of any internal panel or staff account (`ADMIN_PANEL_ROLES` or `STAFF`), preventing a support sub-role from locking out fellow team members.
+  3. Target role checks execute inside the `FOR UPDATE` row lock in `AdminUsersRepository.updateStatus`.
+- **Gotchas:** Root admin bootstrap and demotion remain SERVICE-context SQL operations only.
+- **Related:** `admin-users.service.ts`, `admin-users.repository.ts`, `admin-users.controller.ts`, `admin-users.service.spec.ts`, `test/admin-rbac.e2e-spec.ts`.
+
 - **2026-11-03: Catalogue-derived exam filters and metrics.** Existing exam/article editors and
   announcement audiences now read the shared family catalogue, including ALES/DGS. Exam cohort
   counts and their dashboard buckets are generated from the same list; existing `kpss`/`yks`/`lgs`

@@ -173,6 +173,8 @@ Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs 
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-05: Align rewarded web production guard across `NODE_ENV` and `APP_ENV`.** `AdsService` now uses a shared `isProductionEnv()` helper (`NODE_ENV === "production" || APP_ENV === "production"`) for both sample display inventory blocking and rewarded web server-verification fail-closed checks in `getRewardOffer` and `completeRewardSession`. Usage/gotchas: rewarded web ads remain closed with `SERVER_VERIFICATION_UNAVAILABLE` whenever either production environment variable is set. Related: `ads.service.ts`, `ads.service.spec.ts`.
+
 - **2026-11-01: Rewarded Coin ad defaults follow the ×10 economy.** `ads.rewarded.web.reward_coin`
   default 10 (bounds 1–500), `ads.rewarded.web.daily_limit` default 1. Every ad flag stays off and
   the production guard in `ads.service.ts` (no server-side verification for web rewarded ads) is

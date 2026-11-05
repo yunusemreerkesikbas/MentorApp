@@ -16,6 +16,7 @@ import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { assertWithinFeatureDailyCap, withUserFeatureLock } from "./ai-generation-guard";
 
 /**
  * Premium AI-adaptive reflection on today's mood check-in (W3 · §4 #5 premium-only — free tier
@@ -24,7 +25,7 @@ import { PremiumFeatureGateService } from "./premium-feature-gate.service";
  * when the mood changes, so an unchanged mood re-fetch costs nothing. The table write stays inside
  * coaching ({@link MoodService.setTodayAiReflection}) — AI never touches `mood_checkins` directly
  * (workstreams §2). Usage is metered into `ai_usage` (§7), counting toward the global premium AI
- * budget; precise per-feature caps are backlog (ai_usage isn't feature-labeled — devnote 0048).
+ * budget; per-feature daily cap bounds cache-invalidation/locale-thrashing loops.
  */
 @Injectable()
 export class MoodReflectionService {
@@ -50,54 +51,60 @@ export class MoodReflectionService {
       PremiumFeatureId.MOOD_REFLECTION,
     );
 
-    const today = await this.mood.getToday(user.id);
-    if (!today) {
-      throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
-    }
+    const lang = I18nContext.current()?.lang;
+    const locale = promptLocale(lang);
 
-    if (hasSeriousDistressSignal(today.struggleNote)) {
-      const reflection = this.i18n.translate("coaching.mood.SERIOUS_DISTRESS", {
-        lang: I18nContext.current()?.lang,
-      }) as unknown as string;
-      return { reflection, model: "safety" };
-    }
+    return withUserFeatureLock(user.id, AiUsageFeature.MOOD, async () => {
+      const today = await this.mood.getToday(user.id);
+      if (!today) {
+        throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
+      }
 
-    const locale = promptLocale(I18nContext.current()?.lang);
-    // Idempotent cache: reuse today's reflection (no LLM call / no cost) until the mood changes.
-    if (
-      today.aiReflection &&
-      (await this.mood.getTodayAiLocale(user.id)) === locale
-    ) {
-      return { reflection: today.aiReflection, model: "cache" };
-    }
+      if (hasSeriousDistressSignal(today.struggleNote)) {
+        const reflection = this.i18n.translate("coaching.mood.SERIOUS_DISTRESS", {
+          lang,
+        }) as unknown as string;
+        return { reflection, model: "safety" };
+      }
 
-    const ctx = await this.context.build(user.id);
-    const { system, user: userMsg } = buildMoodReflectionPrompt(
-      ctx,
-      today.mood,
-      locale,
-    );
+      // Idempotent cache: reuse today's reflection (no LLM call / no cost) until the mood changes.
+      if (
+        today.aiReflection &&
+        (await this.mood.getTodayAiLocale(user.id)) === locale
+      ) {
+        return { reflection: today.aiReflection, model: "cache" };
+      }
 
-    await this.budget.assertWithinBudget();
-    const result = await this.llm.complete({ system, user: userMsg });
+      await assertWithinFeatureDailyCap(this.usage, user.id, AiUsageFeature.MOOD);
 
-    await this.usage.append({
-      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
-      userId: user.id,
-      model: result.model,
-      feature: AiUsageFeature.MOOD,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+      const ctx = await this.context.build(user.id);
+      const { system, user: userMsg } = buildMoodReflectionPrompt(
+        ctx,
+        today.mood,
+        locale,
+      );
+
+      await this.budget.assertWithinBudget();
+      const result = await this.llm.complete({ system, user: userMsg });
+
+      await this.usage.append({
+        ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
+        userId: user.id,
+        model: result.model,
+        feature: AiUsageFeature.MOOD,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+      });
+
+      await this.mood.setTodayAiReflection(
+        user.id,
+        result.text,
+        result.model,
+        locale,
+      );
+
+      return { reflection: result.text, model: result.model };
     });
-
-    await this.mood.setTodayAiReflection(
-      user.id,
-      result.text,
-      result.model,
-      locale,
-    );
-
-    return { reflection: result.text, model: result.model };
   }
 }

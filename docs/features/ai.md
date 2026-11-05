@@ -104,6 +104,16 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-05 — Vision usage settlement order, notebook key regex, embedding budget guard & per-feature concurrency/regeneration caps
+
+- **What/usage:** Closed defense-in-depth and cost-amplification gaps in the AI/Vision pipeline:
+  1. `PhotoCategorizeService.categorize` now records `ai_usage` and settles `budgetReservationId` immediately after `vision.categorizeImage()` returns (before `mockExams.recordPhotoCategorizations`), matching `prelabelNotebookPhoto` and all LLM services so downstream persistence failures cannot leak unrecorded provider spend or hold budget reservations.
+  2. `PhotoCategorizeService.prelabelNotebookPhoto` validates keys with `isValidNotebookPhotoStorageKey` (`^notebook/{userId}/{uuid}.(jpg|jpeg|png)$`) in addition to controller DTO validation.
+  3. `PrivacyPreservingLlmAdapter.embed` enforces `budget.assertWithinBudget()` before calling the provider embedding endpoint.
+  4. Added `withUserFeatureLock` and `assertWithinFeatureDailyCap` (`ai-generation-guard.ts`) across `MoodReflectionService`, `VisionNoteService`, `GhostNarrationService`, `SessionReflectionService`, `DailyGreetingService`, `WeeklyReviewNarrationService`, `PlanDraftService`, `PlanAdaptationService`, `PhotoCategorizeService`, `AssignmentSuggestionService`, `MentorshipBriefService`, `CohortBriefService`, and `MentorshipWeeklyBriefWriterService`. Concurrent bursts for the same `(userId, feature)` serialize in-process (coalescing onto the populated cache or accurate `ai_usage` quota counter), and cache-miss regeneration / locale-thrashing loops (`Accept-Language: tr`/`en` toggling or repeated state edits) are bounded by per-feature rolling 24h ceilings while keeping cache hits free.
+- **Gotchas:** None; existing public `/v1` contracts are unchanged and cache hits never consume the daily generation ceiling.
+- **Related:** `ai-generation-guard.ts`, `ai-generation-guard.spec.ts`, `mood-reflection.service.ts`, `vision-note.service.ts`, `ghost-narration.service.ts`, `session-reflection.service.ts`, `daily-greeting.service.ts`, `weekly-review-narration.service.ts`, `plan-draft.service.ts`, `plan-adaptation.service.ts`, `photo-categorize.service.ts`, `assignment-suggestion.service.ts`, `mentorship-brief.service.ts`, `cohort-brief.service.ts`, `mentorship-weekly-brief-writer.service.ts`, `photo-upload.service.ts`, `privacy-preserving-llm.adapter.ts`.
+
 - **2026-11-04 · Premium coach chat quota.** Normal, streaming and regenerated
   model replies share rolling 24-hour and 30-day allowances. Set the two limits
   under Admin `/config` using `ai.chat.daily_limit` and `ai.chat.monthly_limit`.

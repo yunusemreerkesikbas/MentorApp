@@ -216,19 +216,36 @@ export class AuthService {
       this.configRegistry.get("identity.verification_email.resend_window_seconds"),
     ]);
     const since = new Date(Date.now() - windowSeconds * 1000);
-    const attempts =
-      await this.emailTokenRepo.countVerificationResendAttemptsSince(
+
+    if (this.emailTokenRepo.tryClaimVerificationResendAttempt) {
+      const claim = await this.emailTokenRepo.tryClaimVerificationResendAttempt(
         user.id,
         since,
+        limit,
       );
-    if (attempts >= limit) {
-      throw new DomainError(
-        ErrorCode.AUTH_VERIFICATION_EMAIL_RATE_LIMITED,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      if (claim === "not_found") throw new UnauthorizedError();
+      if (claim === "already_verified") return;
+      if (claim === "rate_limited") {
+        throw new DomainError(
+          ErrorCode.AUTH_VERIFICATION_EMAIL_RATE_LIMITED,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    } else {
+      const attempts =
+        await this.emailTokenRepo.countVerificationResendAttemptsSince(
+          user.id,
+          since,
+        );
+      if (attempts >= limit) {
+        throw new DomainError(
+          ErrorCode.AUTH_VERIFICATION_EMAIL_RATE_LIMITED,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+      await this.emailTokenRepo.createVerificationResendAttempt(user.id);
     }
 
-    await this.emailTokenRepo.createVerificationResendAttempt(user.id);
     await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
   }
 

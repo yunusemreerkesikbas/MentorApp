@@ -19,8 +19,12 @@ import { AiUsageFeature, estimateCostMicros } from "../domain/ai.constants";
 import { PHOTO_MAX_BYTES } from "../domain/photo-classify.constants";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
-import { isValidPhotoStorageKey } from "./photo-upload.service";
+import {
+  isValidNotebookPhotoStorageKey,
+  isValidPhotoStorageKey,
+} from "./photo-upload.service";
 import { PhotoAccessService } from "./photo-access.service";
+import { withUserFeatureLock } from "./ai-generation-guard";
 
 /** Premium single-question photo → subject/topic classification; never solves. */
 @Injectable()
@@ -46,121 +50,126 @@ export class PhotoCategorizeService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
 
-    if (input.clientRequestId) {
-      const existing =
-        await this.mockExams.findPhotoCategorizationsByClientRequestId(
-          userId,
-          input.clientRequestId,
-        );
-      if (existing.length > 0) {
-        if (existing.some((row) => row.mockExamId !== mockExamId)) {
-          throw new DomainError(ErrorCode.CONFLICT, HttpStatus.CONFLICT);
+    return withUserFeatureLock(userId, AiUsageFeature.VISION, async () => {
+      if (input.clientRequestId) {
+        const existing =
+          await this.mockExams.findPhotoCategorizationsByClientRequestId(
+            userId,
+            input.clientRequestId,
+          );
+        if (existing.length > 0) {
+          if (existing.some((row) => row.mockExamId !== mockExamId)) {
+            throw new DomainError(ErrorCode.CONFLICT, HttpStatus.CONFLICT);
+          }
+          const owned = await this.mockExams.getOwnedMockExam(userId, mockExamId);
+          const [subjects, topics] = await Promise.all([
+            this.content.listExamSubjectsByExamId(owned.examId),
+            this.content.listExamTopicsByExamId(owned.examId),
+          ]);
+          return this.toResult(existing, subjects, topics);
         }
-        const owned = await this.mockExams.getOwnedMockExam(userId, mockExamId);
-        const [subjects, topics] = await Promise.all([
-          this.content.listExamSubjectsByExamId(owned.examId),
-          this.content.listExamTopicsByExamId(owned.examId),
-        ]);
-        return this.toResult(existing, subjects, topics);
       }
-    }
 
-    await this.photoAccess.assertCanCategorize(userId, rolesHint);
-    if (!isValidPhotoStorageKey(userId, input.storageKey)) {
-      throw new DomainError(
-        ErrorCode.AI_PHOTO_INVALID_IMAGE,
-        HttpStatus.BAD_REQUEST,
+      await this.photoAccess.assertCanCategorize(userId, rolesHint);
+      if (!isValidPhotoStorageKey(userId, input.storageKey)) {
+        throw new DomainError(
+          ErrorCode.AI_PHOTO_INVALID_IMAGE,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const owned = await this.mockExams.getOwnedMockExam(userId, mockExamId);
+      const imageBytes = await this.storage.readObject(input.storageKey);
+      if (!imageBytes?.length) {
+        throw new DomainError(
+          ErrorCode.AI_PHOTO_INVALID_IMAGE,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (imageBytes.length > PHOTO_MAX_BYTES) {
+        throw new DomainError(
+          ErrorCode.PAYLOAD_TOO_LARGE,
+          HttpStatus.PAYLOAD_TOO_LARGE,
+        );
+      }
+
+      const [subjects, topics] = await Promise.all([
+        this.content.listExamSubjectsByExamId(owned.examId),
+        this.content.listExamTopicsByExamId(owned.examId),
+      ]);
+      const allowedSubjects = subjects.map(({ slug, name }) => ({ slug, name }));
+      const allowedTopics = topics.map(({ subjectSlug, slug, name }) => ({
+        subjectSlug,
+        slug,
+        name,
+      }));
+      const mimeType = input.storageKey.toLowerCase().endsWith(".png")
+        ? "image/png"
+        : "image/jpeg";
+
+      await this.budget.assertWithinBudget();
+      const visionResult = await this.vision.categorizeImage({
+        imageBytes,
+        mimeType,
+        allowedSubjects,
+        allowedTopics,
+      });
+
+      // Record usage and settle the budget hold immediately after the provider call,
+      // before downstream persistence (matching prelabelNotebookPhoto and all LLM services).
+      await this.usage.append({
+        ...(visionResult.budgetReservationId
+          ? { budgetReservationId: visionResult.budgetReservationId }
+          : {}),
+        userId,
+        model: visionResult.model,
+        feature: AiUsageFeature.VISION,
+        promptTokens: visionResult.promptTokens,
+        completionTokens: visionResult.completionTokens,
+        costMicros: estimateCostMicros(
+          visionResult.model,
+          visionResult.promptTokens,
+          visionResult.completionTokens,
+        ),
+      });
+
+      const subject = allowedSubjects.find(
+        (item) => item.slug === visionResult.subjectSlug,
       );
-    }
+      const topic = subject
+        ? allowedTopics.find(
+            (item) =>
+              item.subjectSlug === subject.slug &&
+              item.slug === visionResult.topicSlug,
+          )
+        : undefined;
+      const classifications = subject
+        ? [{ subjectRef: subject.slug, topicRef: topic?.slug ?? null }]
+        : [];
 
-    const owned = await this.mockExams.getOwnedMockExam(userId, mockExamId);
-    const imageBytes = await this.storage.readObject(input.storageKey);
-    if (!imageBytes?.length) {
-      throw new DomainError(
-        ErrorCode.AI_PHOTO_INVALID_IMAGE,
-        HttpStatus.BAD_REQUEST,
+      await this.mockExams.recordPhotoCategorizations(
+        userId,
+        mockExamId,
+        classifications,
+        input.storageKey,
+        input.clientRequestId,
       );
-    }
-    if (imageBytes.length > PHOTO_MAX_BYTES) {
-      throw new DomainError(
-        ErrorCode.PAYLOAD_TOO_LARGE,
-        HttpStatus.PAYLOAD_TOO_LARGE,
-      );
-    }
 
-    const [subjects, topics] = await Promise.all([
-      this.content.listExamSubjectsByExamId(owned.examId),
-      this.content.listExamTopicsByExamId(owned.examId),
-    ]);
-    const allowedSubjects = subjects.map(({ slug, name }) => ({ slug, name }));
-    const allowedTopics = topics.map(({ subjectSlug, slug, name }) => ({
-      subjectSlug,
-      slug,
-      name,
-    }));
-    const mimeType = input.storageKey.toLowerCase().endsWith(".png")
-      ? "image/png"
-      : "image/jpeg";
-
-    await this.budget.assertWithinBudget();
-    const visionResult = await this.vision.categorizeImage({
-      imageBytes,
-      mimeType,
-      allowedSubjects,
-      allowedTopics,
+      return {
+        subjectRefs: subject ? [{ slug: subject.slug, name: subject.name }] : [],
+        topicRefs:
+          topic && subject
+            ? [
+                {
+                  slug: topic.slug,
+                  name: topic.name,
+                  subjectSlug: subject.slug,
+                  subjectName: subject.name,
+                },
+              ]
+            : [],
+      };
     });
-
-    const subject = allowedSubjects.find(
-      (item) => item.slug === visionResult.subjectSlug,
-    );
-    const topic = subject
-      ? allowedTopics.find(
-          (item) =>
-            item.subjectSlug === subject.slug &&
-            item.slug === visionResult.topicSlug,
-        )
-      : undefined;
-    const classifications = subject
-      ? [{ subjectRef: subject.slug, topicRef: topic?.slug ?? null }]
-      : [];
-
-    await this.mockExams.recordPhotoCategorizations(
-      userId,
-      mockExamId,
-      classifications,
-      input.storageKey,
-      input.clientRequestId,
-    );
-    await this.usage.append({
-      ...(visionResult.budgetReservationId
-        ? { budgetReservationId: visionResult.budgetReservationId }
-        : {}),
-      userId,
-      model: visionResult.model,
-      feature: AiUsageFeature.VISION,
-      promptTokens: visionResult.promptTokens,
-      completionTokens: visionResult.completionTokens,
-      costMicros: estimateCostMicros(
-        visionResult.model,
-        visionResult.promptTokens,
-        visionResult.completionTokens,
-      ),
-    });
-
-    return {
-      subjectRefs: subject ? [{ slug: subject.slug, name: subject.name }] : [],
-      topicRefs:
-        topic && subject
-          ? [
-              {
-                slug: topic.slug,
-                name: topic.name,
-                subjectSlug: subject.slug,
-                subjectName: subject.name,
-              },
-            ]
-          : [],
-    };
   }
 
   /**
@@ -182,85 +191,87 @@ export class PhotoCategorizeService {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
-    await this.photoAccess.assertCanCategorize(userId, rolesHint);
 
-    // The schema proves the key's shape; only the request knows whose it should be. Without this
-    // a crafted key would read another user's photo through our vision quota.
-    if (!input.storageKey.startsWith(`notebook/${userId}/`)) {
-      throw new DomainError(
-        ErrorCode.AI_PHOTO_INVALID_IMAGE,
-        HttpStatus.BAD_REQUEST,
+    return withUserFeatureLock(userId, AiUsageFeature.VISION, async () => {
+      await this.photoAccess.assertCanCategorize(userId, rolesHint);
+
+      // Enforce both user ownership and strict UUID + image extension shape.
+      if (!isValidNotebookPhotoStorageKey(userId, input.storageKey)) {
+        throw new DomainError(
+          ErrorCode.AI_PHOTO_INVALID_IMAGE,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const imageBytes = await this.storage.readObject(input.storageKey);
+      if (!imageBytes?.length) {
+        throw new DomainError(
+          ErrorCode.AI_PHOTO_INVALID_IMAGE,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (imageBytes.length > PHOTO_MAX_BYTES) {
+        throw new DomainError(
+          ErrorCode.PAYLOAD_TOO_LARGE,
+          HttpStatus.PAYLOAD_TOO_LARGE,
+        );
+      }
+
+      const [subjects, topics] = await Promise.all([
+        this.content.listExamSubjectsByExamId(input.examId),
+        this.content.listExamTopicsByExamId(input.examId),
+      ]);
+      const allowedSubjects = subjects.map(({ slug, name }) => ({ slug, name }));
+      const allowedTopics = topics.map(({ subjectSlug, slug, name }) => ({
+        subjectSlug,
+        slug,
+        name,
+      }));
+
+      await this.budget.assertWithinBudget();
+      const visionResult = await this.vision.categorizeImage({
+        imageBytes,
+        mimeType: input.storageKey.toLowerCase().endsWith(".png")
+          ? "image/png"
+          : "image/jpeg",
+        allowedSubjects,
+        allowedTopics,
+      });
+
+      await this.usage.append({
+        ...(visionResult.budgetReservationId
+          ? { budgetReservationId: visionResult.budgetReservationId }
+          : {}),
+        userId,
+        model: visionResult.model,
+        feature: AiUsageFeature.VISION,
+        promptTokens: visionResult.promptTokens,
+        completionTokens: visionResult.completionTokens,
+        costMicros: estimateCostMicros(
+          visionResult.model,
+          visionResult.promptTokens,
+          visionResult.completionTokens,
+        ),
+      });
+
+      const subject = allowedSubjects.find(
+        (item) => item.slug === visionResult.subjectSlug,
       );
-    }
+      const topic = subject
+        ? allowedTopics.find(
+            (item) =>
+              item.subjectSlug === subject.slug &&
+              item.slug === visionResult.topicSlug,
+          )
+        : undefined;
 
-    const imageBytes = await this.storage.readObject(input.storageKey);
-    if (!imageBytes?.length) {
-      throw new DomainError(
-        ErrorCode.AI_PHOTO_INVALID_IMAGE,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    if (imageBytes.length > PHOTO_MAX_BYTES) {
-      throw new DomainError(
-        ErrorCode.PAYLOAD_TOO_LARGE,
-        HttpStatus.PAYLOAD_TOO_LARGE,
-      );
-    }
-
-    const [subjects, topics] = await Promise.all([
-      this.content.listExamSubjectsByExamId(input.examId),
-      this.content.listExamTopicsByExamId(input.examId),
-    ]);
-    const allowedSubjects = subjects.map(({ slug, name }) => ({ slug, name }));
-    const allowedTopics = topics.map(({ subjectSlug, slug, name }) => ({
-      subjectSlug,
-      slug,
-      name,
-    }));
-
-    await this.budget.assertWithinBudget();
-    const visionResult = await this.vision.categorizeImage({
-      imageBytes,
-      mimeType: input.storageKey.toLowerCase().endsWith(".png")
-        ? "image/png"
-        : "image/jpeg",
-      allowedSubjects,
-      allowedTopics,
+      return {
+        subjectRef: subject?.slug ?? null,
+        subjectName: subject?.name ?? null,
+        topicRef: topic?.slug ?? null,
+        topicName: topic?.name ?? null,
+      };
     });
-
-    await this.usage.append({
-      ...(visionResult.budgetReservationId
-        ? { budgetReservationId: visionResult.budgetReservationId }
-        : {}),
-      userId,
-      model: visionResult.model,
-      feature: AiUsageFeature.VISION,
-      promptTokens: visionResult.promptTokens,
-      completionTokens: visionResult.completionTokens,
-      costMicros: estimateCostMicros(
-        visionResult.model,
-        visionResult.promptTokens,
-        visionResult.completionTokens,
-      ),
-    });
-
-    const subject = allowedSubjects.find(
-      (item) => item.slug === visionResult.subjectSlug,
-    );
-    const topic = subject
-      ? allowedTopics.find(
-          (item) =>
-            item.subjectSlug === subject.slug &&
-            item.slug === visionResult.topicSlug,
-        )
-      : undefined;
-
-    return {
-      subjectRef: subject?.slug ?? null,
-      subjectName: subject?.name ?? null,
-      topicRef: topic?.slug ?? null,
-      topicName: topic?.name ?? null,
-    };
   }
 
   private toResult(
