@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type * as React from "react";
 import { DataCard, type DataCardSource } from "./data-card.js";
 import { DigitPopIn } from "./transitions/digit-pop-in.js";
 
@@ -23,7 +23,7 @@ export interface CountdownCardProps {
   };
   className?: string;
   source?: DataCardSource;
-  children?: ReactNode;
+  children?: React.ReactNode;
 }
 
 /**
