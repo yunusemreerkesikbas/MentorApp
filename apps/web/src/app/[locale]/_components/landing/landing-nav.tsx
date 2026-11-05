@@ -1,5 +1,6 @@
 import { Logo } from "@mentor/ui";
 import { getTranslations } from "next-intl/server";
+import { SignupCta } from "@/components/waitlist/signup-cta";
 import { Link } from "@/i18n/navigation";
 
 const FOCUS =
@@ -13,7 +14,7 @@ const NAV_CTA = `inline-flex min-h-11 items-center justify-center whitespace-now
 /**
  * The bar that floats over the page and stays there. On a phone it keeps the wordmark, "Giriş yap"
  * and the CTA. `coaches` is the coach page: a daytime bar (`.landing-day`), its own sections, and the
- * coach CTA while coach signup is open.
+ * coach CTA when the page shows one (`coachSignupOpen`: coach signup open, or the waitlist on).
  */
 export async function LandingNav({
   variant = "home",
@@ -64,14 +65,14 @@ export async function LandingNav({
         </Link>
         {coaches ? (
           coachSignupOpen ? (
-            <Link href={{ pathname: "/signup", query: { rol: "koc" } }} className={NAV_CTA}>
+            <SignupCta href={{ pathname: "/signup", query: { rol: "koc" } }} role="coach" className={NAV_CTA}>
               {c("cta")}
-            </Link>
+            </SignupCta>
           ) : null
         ) : (
-          <Link href="/welcome" className={NAV_CTA}>
+          <SignupCta href="/welcome" role="student" className={NAV_CTA}>
             {t("start")}
-          </Link>
+          </SignupCta>
         )}
       </nav>
     </header>

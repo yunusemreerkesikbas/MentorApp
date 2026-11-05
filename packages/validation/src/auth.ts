@@ -95,6 +95,14 @@ export type GoogleOAuthCallbackQuery = z.infer<typeof googleOAuthCallbackQuerySc
 export const forgotPasswordSchema = z.object({ email: emailSchema, turnstileToken: z.string().max(2048).optional() });
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
+export const joinWaitlistSchema = z.object({
+  email: emailSchema,
+  role: z.enum(["student", "coach"]),
+  locale: z.enum(["tr", "en"]),
+  turnstileToken: z.string().max(2048).optional(),
+});
+export type JoinWaitlistInput = z.infer<typeof joinWaitlistSchema>;
+
 export const resetPasswordSchema = z.object({
   token: z.string().min(16),
   password: passwordSchema,

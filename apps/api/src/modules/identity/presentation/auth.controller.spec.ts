@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
 import { AuthController } from "./auth.controller";
 
 const result = {
@@ -76,5 +78,48 @@ describe("separate web and admin refresh cookies", () => {
     expect(auth.logout).toHaveBeenCalledWith("web");
     expect(response.clearCookie).toHaveBeenCalledWith("mentor_web_refresh", { path: "/v1/auth" });
     expect(response.clearCookie).not.toHaveBeenCalledWith("mentor_admin_refresh", expect.anything());
+  });
+});
+
+describe("Google callback error redirects", () => {
+  async function failWith(mode: "signup" | "login", locale: "tr" | "en") {
+    const googleAuth = {
+      verifyState: vi.fn(() => ({ mode, locale, returnTo: "/dashboard" })),
+      callback: vi.fn(async () => {
+        throw new DomainError(ErrorCode.AUTH_PILOT_INVITATION_REQUIRED, 403);
+      }),
+    };
+    const controller = new AuthController(
+      {} as never,
+      googleAuth as never,
+      { get: vi.fn(() => "https://app.test/") } as never,
+      { translate: vi.fn(() => "Davet gerekli") } as never,
+    );
+    const res = { clearCookie: vi.fn(), redirect: vi.fn() };
+    await controller.googleCallback(
+      { state: "s", code: "c" } as never,
+      { cookies: { mentor_google_oauth: "x" } } as never,
+      res as never,
+    );
+    return new URL(res.redirect.mock.calls[0]![0] as string);
+  }
+
+  it("sends a refused signup back to the signup page with davet=1", async () => {
+    const tr = await failWith("signup", "tr");
+    expect(tr.pathname).toBe("/kayit");
+    expect(tr.searchParams.get("davet")).toBe("1");
+    expect(tr.searchParams.get("googleErrorCode")).toBe(ErrorCode.AUTH_PILOT_INVITATION_REQUIRED);
+    expect(tr.searchParams.get("googleError")).toBe("Davet gerekli");
+
+    const en = await failWith("signup", "en");
+    expect(en.pathname).toBe("/en/signup");
+    expect(en.searchParams.get("davet")).toBe("1");
+  });
+
+  it("keeps login-mode errors on the login page", async () => {
+    const tr = await failWith("login", "tr");
+    expect(tr.pathname).toBe("/giris");
+    expect(tr.searchParams.has("davet")).toBe(false);
+    expect((await failWith("login", "en")).pathname).toBe("/en/login");
   });
 });

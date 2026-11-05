@@ -3,6 +3,7 @@ import {
   forgotPasswordSchema,
   googleOAuthCallbackQuerySchema,
   googleOAuthStartQuerySchema,
+  joinWaitlistSchema,
   loginSchema,
   resetPasswordSchema,
   signupSchema,
@@ -12,6 +13,7 @@ import {
 import { createZodDto } from "../../../common/validation/zod-dto";
 
 export class SignupDto extends createZodDto(signupSchema) {}
+export class JoinWaitlistDto extends createZodDto(joinWaitlistSchema) {}
 export class LoginDto extends createZodDto(loginSchema) {}
 export class GoogleOAuthStartQueryDto extends createZodDto(googleOAuthStartQuerySchema) {}
 export class GoogleOAuthCallbackQueryDto extends createZodDto(googleOAuthCallbackQuerySchema) {}

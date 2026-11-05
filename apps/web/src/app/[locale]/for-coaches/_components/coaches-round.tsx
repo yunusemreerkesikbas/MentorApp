@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { LEDGE } from "@/components/panel/panel-styles";
+import { SignupCta } from "@/components/waitlist/signup-cta";
 import { Link } from "@/i18n/navigation";
 import { LEDGE_ON_PAPER, PAGE_FRAME, PAPER_TITLE } from "../../_components/landing/landing-paper";
 import { LEDGE_COACH } from "./coaches-hero";
@@ -158,9 +159,9 @@ export async function CoachesFinal({ signupOpen }: { signupOpen: boolean }) {
       <p className="mt-3 text-lg text-[var(--landing-ink-soft)]">{t("final.body")}</p>
       <div className="mt-7 flex w-full flex-wrap justify-center gap-3">
         {signupOpen ? (
-          <Link href={{ pathname: "/signup", query: { rol: "koc" } }} className={`${LEDGE_COACH} max-sm:w-full`}>
+          <SignupCta href={{ pathname: "/signup", query: { rol: "koc" } }} role="coach" className={`${LEDGE_COACH} max-sm:w-full`}>
             {t("cta")}
-          </Link>
+          </SignupCta>
         ) : null}
         <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
           {landing("has_account")}

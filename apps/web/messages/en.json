@@ -4816,5 +4816,33 @@
     "reward_body": "It's in your account.",
     "off_bubble": "A new chest comes Monday!",
     "open_error": "The chest didn't open just now. Try again in a moment."
+  },
+  "waitlist": {
+    "close": "Close",
+    "idle": {
+      "badge": "Coming soon",
+      "title": "Let's save your spot!",
+      "body": "We're getting PuhuKoç ready for you. Leave your email and you'll be the first to hear when we open.",
+      "label": "Your email",
+      "placeholder": "name@example.com",
+      "submit": "Add me to the list",
+      "error": "This address looks incomplete. Could you type it again?",
+      "network": "We couldn't save it just now. Could you try again in a moment?",
+      "login_prompt": "Have an account?",
+      "login": "Log in"
+    },
+    "success": {
+      "badge": "Your spot is ready",
+      "title": "Great, you're on the list!",
+      "body": "When we open, the first news goes to <b>{email}</b>.",
+      "done": "Done",
+      "edit_prompt": "Typed the wrong address?",
+      "edit": "Fix it"
+    },
+    "turnstile": {
+      "error": "The security check could not load. You can try again.",
+      "expired": "The check expired. Refresh it to continue.",
+      "retry": "Refresh verification"
+    }
   }
 }

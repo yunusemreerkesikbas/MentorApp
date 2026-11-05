@@ -199,6 +199,96 @@ describe("Google OAuth linking", () => {
   });
 });
 
+describe("Google OAuth invited signup", () => {
+  function makeSignup(role: "student" | "coach", profileEmail = "ayse@ornek.com") {
+    const usersRepo = {
+      findByEmailService: vi.fn(async () => undefined),
+      createService: vi.fn(async (input: Record<string, unknown>) => ({
+        id: "user-1",
+        email: input.email,
+        roles: input.roles ?? ["STUDENT"],
+        organizationId: null,
+        displayName: "Ayşe",
+        createdAt: new Date(),
+        emailVerifiedAt: new Date(),
+      })),
+    };
+    const invitations = {
+      findInvited: vi.fn(async () => ({ role })),
+      deleteByEmail: vi.fn(async () => undefined),
+    };
+    const authAccounts = { findByProviderSubject: vi.fn(async () => undefined), create: vi.fn(async () => undefined) };
+    const service = new GoogleAuthService(
+      { get: () => "configured" } as never,
+      { get: async () => true } as never,
+      usersRepo as never,
+      authAccounts as never,
+      { issue: vi.fn(async () => ({})) } as never,
+      { getPublicUrl: vi.fn() } as never,
+      {} as never,
+      invitations as never,
+    );
+    (service as unknown as { exchangeCode: unknown }).exchangeCode = async () => ({
+      sub: "sub-1",
+      email: profileEmail,
+      emailVerified: true,
+      displayName: "Ayşe",
+    });
+    return { usersRepo, invitations, authAccounts, service };
+  }
+
+  it("invited coach via Google becomes COACH and the invitation is deleted", async () => {
+    const { usersRepo, invitations, service } = makeSignup("coach");
+
+    await service.callback("code", STATE);
+
+    expect(usersRepo.createService).toHaveBeenCalledWith(
+      expect.objectContaining({ roles: ["STUDENT", "COACH"] }),
+    );
+    expect(invitations.deleteByEmail).toHaveBeenCalledWith("ayse@ornek.com");
+  });
+
+  it("still signs up and links Google when invitation cleanup rejects", async () => {
+    const { invitations, authAccounts, service } = makeSignup("student");
+    invitations.deleteByEmail.mockRejectedValue(new Error("db down"));
+
+    await expect(service.callback("code", STATE)).resolves.toBeDefined();
+    expect(authAccounts.create).toHaveBeenCalled();
+  });
+
+  it("invited student via Google stays a student", async () => {
+    const { usersRepo, invitations, service } = makeSignup("student");
+
+    await service.callback("code", STATE);
+
+    expect(usersRepo.createService.mock.calls[0]![0]).not.toHaveProperty("roles");
+    expect(invitations.deleteByEmail).toHaveBeenCalledWith("ayse@ornek.com");
+  });
+
+  it("normalizes the Google profile email (trim + lower-case) before admission", async () => {
+    const service = new GoogleAuthService(
+      { get: () => "configured" } as never,
+      { get: async () => true } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+    (service as unknown as { client: unknown }).client = () => ({
+      getToken: async () => ({ tokens: { id_token: "t" } }),
+      verifyIdToken: async () => ({
+        getPayload: () => ({ sub: "s", email: " Ayse@Ornek.COM ", email_verified: true, name: "Ayşe" }),
+      }),
+    });
+
+    await expect(
+      (service as unknown as { exchangeCode: (c: string) => Promise<GoogleOAuthProfile> }).exchangeCode("c"),
+    ).resolves.toMatchObject({ email: "ayse@ornek.com" });
+  });
+});
+
 describe("Google OAuth redirect", () => {
   it("keeps users without usernames in onboarding", () => {
     const service = new GoogleAuthService(

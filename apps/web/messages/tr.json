@@ -4816,5 +4816,33 @@
     "reward_body": "Hesabına geçti.",
     "off_bubble": "Pazartesi yeni sandık geliyor!",
     "open_error": "Sandık şu an açılmadı, birazdan yine dene."
+  },
+  "waitlist": {
+    "close": "Kapat",
+    "idle": {
+      "badge": "Çok yakında",
+      "title": "Yerini şimdiden ayıralım!",
+      "body": "PuhuKoç'u senin için hazırlıyoruz. E-postanı bırak, açıldığında ilk sana haber verelim.",
+      "label": "E-posta adresin",
+      "placeholder": "ornek@eposta.com",
+      "submit": "Beni listeye ekle",
+      "error": "Bu adres eksik görünüyor. Bir daha yazar mısın?",
+      "network": "Şu an kaydedemedik. Birazdan tekrar dener misin?",
+      "login_prompt": "Hesabın var mı?",
+      "login": "Giriş yap"
+    },
+    "success": {
+      "badge": "Yerin hazır",
+      "title": "Harika, listedesin!",
+      "body": "Açıldığımızda ilk haber <b>{email}</b> adresine gelecek.",
+      "done": "Tamam",
+      "edit_prompt": "Adresi yanlış mı yazdın?",
+      "edit": "Düzelt"
+    },
+    "turnstile": {
+      "error": "Güvenlik doğrulaması yüklenemedi. Yeniden deneyebilirsin.",
+      "expired": "Doğrulamanın süresi doldu. Yenileyip devam edebilirsin.",
+      "retry": "Doğrulamayı yenile"
+    }
   }
 }

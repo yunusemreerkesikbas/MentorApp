@@ -29,6 +29,7 @@ import { AdminPromotionsController } from "./presentation/admin-promotions.contr
 import { AdminSubscriptionController } from "./presentation/admin-subscription.controller";
 import { AdminUsersController } from "./presentation/admin-users.controller";
 import { AdminCoachApplicationsController } from "./presentation/admin-coach-applications.controller";
+import { AdminWaitlistController } from "./presentation/admin-waitlist.controller";
 import { AdminForumController } from "./presentation/admin-forum.controller";
 
 /**
@@ -69,6 +70,7 @@ import { AdminForumController } from "./presentation/admin-forum.controller";
     AdminForumController,
     AdminAnnouncementsController,
     AdminCoachApplicationsController,
+    AdminWaitlistController,
   ],
   providers: [
     AdminUsersService,

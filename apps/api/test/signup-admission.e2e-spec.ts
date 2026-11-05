@@ -8,6 +8,7 @@ import type { Env } from "../src/config/env.validation";
 import { PG_POOL } from "../src/database/database.constants";
 import { GoogleAuthService, signGoogleOAuthState, type GoogleOAuthProfile, type GoogleOAuthState } from "../src/modules/identity/application/google-auth.service";
 import { CURRENT_TERMS_VERSION, GOOGLE_OAUTH_STATE_COOKIE } from "../src/modules/identity/domain/identity.constants";
+import { SignupInvitationRepository } from "../src/modules/identity/infrastructure/signup-invitation.repository";
 import { UsersRepository } from "../src/modules/identity/infrastructure/users.repository";
 import { createTestApp } from "./app-harness";
 import request from "./browser-request";
@@ -18,12 +19,13 @@ describe("invited signup boundary (real PostgreSQL)", () => {
   let config: ConfigService<Env, true>;
   let pool: Pool;
   let actorId: string;
+  let invitations: SignupInvitationRepository;
   let exchange: ReturnType<typeof vi.fn>;
   const runId = Date.now();
   const passwordEmail = `pilot-password-${runId}@test.local`;
   const googleEmail = `pilot-google-${runId}@test.local`;
   const password = "Password123";
-  const originalList = process.env.PILOT_INVITED_EMAILS;
+  const coachEmail = `pilot-coach-${runId}@test.local`;
   const legal = { kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true };
   const body = (email: string) => ({ email, password, displayName: "Pilot Student", ...legal });
 
@@ -35,6 +37,7 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     config = module.get(ConfigService);
     pool = module.get(PG_POOL);
     registry = module.get(ConfigRegistryService);
+    invitations = module.get(SignupInvitationRepository);
     actorId = (await module.get(UsersRepository).createService({
       email: `pilot-operator-${runId}@test.local`, displayName: "Pilot Fixture",
       passwordHash: "unused-fixture-hash",
@@ -52,7 +55,11 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     await registry.set(actorId, "signup.pilot.enabled", true);
     await registry.set(actorId, "signup.pilot.max_invited_emails", 50);
     await registry.set(actorId, "identity.google_oauth.enabled", true);
-    config.set("PILOT_INVITED_EMAILS", [passwordEmail, googleEmail]);
+    await registry.set(actorId, "mentorship.applications.open", true);
+    await pool.query("DELETE FROM signup_invitations WHERE email = ANY($1)", [[passwordEmail, googleEmail, coachEmail]]);
+    for (const email of [passwordEmail, googleEmail]) {
+      await invitations.upsertInvited({ email, role: "student", locale: "tr", invitedBy: actorId });
+    }
     exchange.mockReset();
   });
 
@@ -63,9 +70,8 @@ describe("invited signup boundary (real PostgreSQL)", () => {
       await registry.set(actorId, "signup.pilot.max_invited_emails", 50);
       await registry.set(actorId, "identity.google_oauth.enabled", false);
     }
+    await pool?.query("DELETE FROM signup_invitations WHERE email = ANY($1)", [[passwordEmail, googleEmail, coachEmail]]);
     await app?.close();
-    if (originalList === undefined) delete process.env.PILOT_INVITED_EMAILS;
-    else process.env.PILOT_INVITED_EMAILS = originalList;
   });
 
   async function expectNoAccount(email: string): Promise<void> {
@@ -96,24 +102,25 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     const result = await request(app.getHttpServer()).post("/v1/auth/signup").set("Accept-Language", locale).send(body(email));
     expect(result.status).toBe(403);
     expect(result.body.code).toBe("AUTH_PILOT_INVITATION_REQUIRED");
-    expect(result.body.message).toContain(locale === "tr" ? "davetli" : "invited");
+    expect(result.body.message).toContain(locale === "tr" ? "davet listesinde" : "invitation");
     expect(JSON.stringify(result.body)).not.toContain(passwordEmail);
     expect(result.headers["set-cookie"]).toBeUndefined();
     await expectNoAccount(email);
   });
 
-  it("an empty invitation list admits nobody", async () => {
-    config.set("PILOT_INVITED_EMAILS", []);
+  it("an address without an invited row admits nobody", async () => {
+    await pool.query("DELETE FROM signup_invitations WHERE email = $1", [passwordEmail]);
     const result = await request(app.getHttpServer()).post("/v1/auth/signup").send(body(passwordEmail));
     expect(result.body.code).toBe("AUTH_PILOT_INVITATION_REQUIRED");
     await expectNoAccount(passwordEmail);
   });
 
-  it("an oversized list fails closed instead of admitting a prefix", async () => {
-    await registry.set(actorId, "signup.pilot.max_invited_emails", 1);
-    const result = await request(app.getHttpServer()).post("/v1/auth/signup").send(body(passwordEmail));
-    expect(result.body.code).toBe("AUTH_SIGNUP_CLOSED");
-    await expectNoAccount(passwordEmail);
+  it("a waiting row does not admit", async () => {
+    await pool.query("DELETE FROM signup_invitations WHERE email = $1", [coachEmail]);
+    await invitations.insertWaiting({ email: coachEmail, role: "student", locale: "tr" });
+    const result = await request(app.getHttpServer()).post("/v1/auth/signup").send(body(coachEmail));
+    expect(result.body.code).toBe("AUTH_PILOT_INVITATION_REQUIRED");
+    await expectNoAccount(coachEmail);
   });
 
   it("normalizes invited password signup and retains email verification", async () => {
@@ -121,11 +128,37 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     expect(result.status).toBe(201);
     expect(result.body.user).toMatchObject({ email: passwordEmail, emailVerified: false });
     expect(result.headers["set-cookie"]?.join(";")).toContain("HttpOnly");
+    const left = await pool.query("SELECT 1 FROM signup_invitations WHERE email = $1", [passwordEmail]);
+    expect(left.rows).toEqual([]);
+  });
+
+  it("an invited coach row makes a COACH account even while applications are closed", async () => {
+    await registry.set(actorId, "mentorship.applications.open", false);
+    await invitations.upsertInvited({ email: coachEmail, role: "coach", locale: "tr", invitedBy: actorId });
+    const result = await request(app.getHttpServer()).post("/v1/auth/signup").send(body(coachEmail));
+    expect(result.status).toBe(201);
+    expect(result.body.user.roles).toContain("COACH");
+
+    // ...and can finish the onboarding coachProfile step (no skip) with the intake still shut.
+    const auth = { Authorization: `Bearer ${result.body.accessToken}` };
+    const state = await request(app.getHttpServer()).get("/v1/mentorship/coach-registration/mine").set(auth);
+    expect(state.body.registrationOpen).toBe(true);
+    const registered = await request(app.getHttpServer()).post("/v1/mentorship/coach-registration").set(auth)
+      .send({ headline: "KPSS Türkçe koçu", bio: "On yıldır KPSS adaylarıyla çalışıyorum, paragraf ağırlıklı." });
+    expect(registered.status).toBe(201);
+    expect(registered.body.status).toBe("ACTIVE");
+  });
+
+  it("an invited student keeps STUDENT even when the form asks for COACH", async () => {
+    const studentEmail = `pilot-student-${runId}@test.local`;
+    await invitations.upsertInvited({ email: studentEmail, role: "student", locale: "tr", invitedBy: actorId });
+    const result = await request(app.getHttpServer()).post("/v1/auth/signup").send({ ...body(studentEmail), intent: "COACH" });
+    expect(result.status).toBe(201);
+    expect(result.body.user.roles).not.toContain("COACH");
   });
 
   it("existing password login works after admission is closed and the list is cleared", async () => {
     await registry.set(actorId, "signup.enabled", false);
-    config.set("PILOT_INVITED_EMAILS", []);
     const result = await request(app.getHttpServer()).post("/v1/auth/login").send({ email: passwordEmail, password });
     expect(result.status).toBe(200);
     expect(result.body.user.email).toBe(passwordEmail);
@@ -136,8 +169,10 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     const result = await oauth(email, locale);
     expect(result.status).toBe(302);
     const location = new URL(result.headers.location);
+    expect(location.pathname).toBe(locale === "tr" ? "/kayit" : "/en/signup");
+    expect(location.searchParams.get("davet")).toBe("1");
     expect(location.searchParams.get("googleErrorCode")).toBe("AUTH_PILOT_INVITATION_REQUIRED");
-    expect(location.searchParams.get("googleError")).toContain(locale === "tr" ? "davetli" : "invited");
+    expect(location.searchParams.get("googleError")).toContain(locale === "tr" ? "davet listesinde" : "invitation");
     expect(location.toString()).not.toContain(passwordEmail);
     expect(result.headers["set-cookie"]?.join(";")).not.toContain("mentor_web_refresh");
     await expectNoAccount(email);
@@ -161,7 +196,6 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     expect(new URL(created.headers.location).pathname).toBe("/baslangic");
     expect(created.headers["set-cookie"]?.join(";")).toContain("mentor_web_refresh");
     await registry.set(actorId, "signup.enabled", false);
-    config.set("PILOT_INVITED_EMAILS", []);
     const login = await oauth(googleEmail, "tr");
     expect(login.headers["set-cookie"]?.join(";")).toContain("mentor_web_refresh");
   });

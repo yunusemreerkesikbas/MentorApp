@@ -1,6 +1,6 @@
 interface TurnstileOptions {
   sitekey: string;
-  action: "signup" | "login" | "forgot-password" | "phone-verification";
+  action: "signup" | "login" | "forgot-password" | "phone-verification" | "waitlist";
   callback: (token: string) => void;
   "expired-callback": () => void;
   "error-callback": () => void;

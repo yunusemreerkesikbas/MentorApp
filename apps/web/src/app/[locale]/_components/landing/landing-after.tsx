@@ -3,8 +3,11 @@ import { headers } from "next/headers";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
+import { SignupCta } from "@/components/waitlist/signup-cta";
 import { Link } from "@/i18n/navigation";
 import { fetchCoachSignupOpen } from "@/lib/coach-signup";
+import { isWaitlistOn } from "@/lib/signup-waitlist";
+import { landingAvailability } from "./landing-availability";
 import { LandingBlog } from "./landing-blog";
 import { LandingFocus } from "./landing-focus";
 import { LandingJourney } from "./landing-journey";
@@ -15,12 +18,17 @@ import { LEDGE_ON_PAPER, PAGE_FRAME, PAPER_PILL, PAPER_TITLE, PaperFaq } from ".
 const FAQ = [1, 2, 3, 4, 5, 6] as const;
 
 /**
- * The coach band. Hidden while coach signup is closed (it fails closed); its own Suspense boundary,
- * so the status read never holds the page back.
+ * The coach band. Shown while coach signup is open, or while signup is invite-only (its CTA then
+ * opens the waitlist, which takes coaches too). Hidden otherwise (it fails closed); its own Suspense
+ * boundary, so the status reads never hold the page back.
  */
 async function CoachBand() {
-  const [open, t] = await Promise.all([fetchCoachSignupOpen(), getTranslations("landing.coach_band")]);
-  if (!open) return null;
+  const [open, availability, t] = await Promise.all([
+    fetchCoachSignupOpen(),
+    landingAvailability(),
+    getTranslations("landing.coach_band"),
+  ]);
+  if (!isWaitlistOn(availability) && !open) return null;
   return (
     <section id="koclar" aria-labelledby="landing-coach-title" className={`${PAGE_FRAME} scroll-mt-24 pt-16 lg:pt-24`}>
       <div className="flex flex-col overflow-hidden rounded-[var(--play-sheet-radius)] bg-[var(--landing-coach)] px-6 pt-8 text-[var(--landing-on-night)] lg:flex-row lg:items-center lg:gap-8 lg:px-14 lg:pt-12">
@@ -31,12 +39,13 @@ async function CoachBand() {
           </h2>
           <p className="mb-6 mt-3 max-w-xl text-lg leading-relaxed text-[var(--landing-coach-soft)]">{t("body")}</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <Link
+            <SignupCta
               href={{ pathname: "/signup", query: { rol: "koc" } }}
+              role="coach"
               className={`${LEDGE} bg-[var(--landing-on-night)] text-[var(--landing-coach)] shadow-[0_4px_0_var(--landing-coach-soft)] max-lg:w-full`}
             >
               {t("cta")}
-            </Link>
+            </SignupCta>
             <Link
               href="/for-coaches"
               className="inline-flex min-h-11 items-center text-base font-bold text-[var(--landing-coach-soft)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-lamp)]"
@@ -105,9 +114,9 @@ export async function LandingAfter() {
         </h2>
         <p className="mt-3 text-lg text-[var(--landing-ink-soft)]">{t("final.body")}</p>
         <div className="mt-7 flex w-full flex-wrap justify-center gap-3">
-          <Link href="/welcome" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
+          <SignupCta href="/welcome" role="student" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
             {t("start")}
-          </Link>
+          </SignupCta>
           <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
             {t("has_account")}
           </Link>

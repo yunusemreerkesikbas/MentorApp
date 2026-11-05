@@ -4,8 +4,9 @@ import { UnauthorizedException, type INestApplication } from "@nestjs/common";
 import { I18nService } from "nestjs-i18n";
 import cookieParser from "cookie-parser";
 import request from "supertest";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AuthService } from "../application/auth.service";
+import { WaitlistService } from "../application/waitlist.service";
 import { GoogleAuthService } from "../application/google-auth.service";
 import { AuthController } from "./auth.controller";
 
@@ -42,6 +43,7 @@ describe("web and admin HTTP session isolation", () => {
         { provide: GoogleAuthService, useValue: {} },
         { provide: ConfigService, useValue: { get: () => "test" } },
         { provide: I18nService, useValue: {} },
+        { provide: WaitlistService, useValue: { join: vi.fn() } },
       ],
     }).compile();
     app = moduleRef.createNestApplication();

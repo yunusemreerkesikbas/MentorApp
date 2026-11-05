@@ -84,6 +84,7 @@ describe("authentication security gates", () => {
     expect(authRateBucket("/auth/google/start")).toBe("oauth");
     expect(authRateBucket("/auth/verify-email")).toBe("verify");
     expect(authRateBucket("/auth/reset-password")).toBe("reset");
+    expect(authRateBucket("/auth/waitlist")).toBe("waitlist");
   });
 
   it("bounds optional challenge tokens and narrowly accepts the existing phone return suffix", () => {

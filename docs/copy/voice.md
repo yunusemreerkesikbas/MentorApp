@@ -127,6 +127,13 @@ The 12 journey levels are mixed identity names whose tone climbs: humble and fun
 Every name fits "Sen bir ___sın"; no places or moments. A level never reuses a weekly nickname or
 community badge word (Seri, Avcı, Odak). Level-up is "Seviye atladın!"; the guide is "Seviye Yolu".
 
+## Bekleme listesi: enerjik Puhu (2026-11-05)
+
+The waitlist modal and CTAs speak in the energetic Puhu voice ("Çok yakında · Yerini şimdiden
+ayıralım!"). The modal never mentions invitation, restriction or retention, and (user decision
+2026-11-05) carries no "Aydınlatma metni" link. Those legal facts live only in the KVKK
+aydınlatma text (`LEGAL_COPY.kvkk`, "Bekleme Listesi" section).
+
 ## Başarılar ve rozetler: enerjik Puhu (2026-11-04)
 
 Achievement titles say what you did, short and concrete, sometimes with one `!`: "İlk Seans Tamam!",

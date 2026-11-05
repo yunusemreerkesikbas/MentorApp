@@ -75,7 +75,11 @@ Veriler yalnız işleme amacı, sözleşme ilişkisi, güvenlik ihtiyacı ve uyg
 
 ## İlgili Kişinin Hakları ve Başvuru
 
-KVKK m.11 uyarınca verilerinizin işlenip işlenmediğini öğrenme, bilgi isteme, amacı ve amaca uygun kullanımı öğrenme, aktarılan kişileri bilme, düzeltme, silme veya yok etme isteme, bu işlemlerin alıcılara bildirilmesini isteme, yalnız otomatik analiz sonucu aleyhe bir sonuca itiraz etme ve zararın giderilmesini talep etme haklarına sahipsiniz. Kimliğinizi doğrulamaya elverişli talebinizi **destek@puhukoc.com** adresine veya yukarıdaki posta adresine iletebilirsiniz.`,
+KVKK m.11 uyarınca verilerinizin işlenip işlenmediğini öğrenme, bilgi isteme, amacı ve amaca uygun kullanımı öğrenme, aktarılan kişileri bilme, düzeltme, silme veya yok etme isteme, bu işlemlerin alıcılara bildirilmesini isteme, yalnız otomatik analiz sonucu aleyhe bir sonuca itiraz etme ve zararın giderilmesini talep etme haklarına sahipsiniz. Kimliğinizi doğrulamaya elverişli talebinizi **destek@puhukoc.com** adresine veya yukarıdaki posta adresine iletebilirsiniz.
+
+## Bekleme Listesi
+
+Bekleme listesine yazdığın e-posta adresini yalnızca PuhuKoç açıldığında ve davetin hazır olduğunda sana haber vermek için işleriz. Kayıt olduğunda bu kayıt silinir. Kayıt olmazsan listeye katıldığın, davet edildiysen davet edildiğin tarihten 6 ay sonra otomatik olarak silinir.`,
     en: `## Data Controller
 
 The data controller under Turkish Law No. 6698 is Yunus Emre Erkesikbaş at ${CONTROLLER_EN}. This notice explains personal-data processing in the PuhuKoç web application. The Turkish version is binding.
@@ -96,7 +100,11 @@ Necessary data may be shared, in a purpose-limited way, with Render (application
 
 Eligible anonymous and Free visitors in Turkey may automatically see one non-personalized Google ad at the end of a blog article. Premium and STAFF stay ad-free. Analytics choices do not change ad delivery; Google Analytics loads only after separate acceptance. Personalized ads and behavioral targeting are disabled. Google may use IP addresses for delivery and, when programmatic limited ads are enabled, cookies and local storage for invalid traffic and abuse detection, with processing abroad. See [Google's data-use explanation](https://policies.google.com/technologies/partner-sites). The stricter child/teen protection of the profile and article is applied; profiles, exam results and AI conversations are not sent to the ad provider. Analytics choices can be changed in [cookie preferences](/en/cookie-preferences); rejecting analytics does not remove ads.
 
-Data is retained only for the service, security, legal duty, or dispute period that requires it. Account deletion removes or anonymises profile data and behavioural free text, while limited payment, security, dispute, and append-only ledger records may remain where legally necessary. You may exercise the rights listed in Article 11 of Law No. 6698 by writing to **destek@puhukoc.com** or the postal address above.`,
+Data is retained only for the service, security, legal duty, or dispute period that requires it. Account deletion removes or anonymises profile data and behavioural free text, while limited payment, security, dispute, and append-only ledger records may remain where legally necessary. You may exercise the rights listed in Article 11 of Law No. 6698 by writing to **destek@puhukoc.com** or the postal address above.
+
+## Waitlist
+
+We use the email address you enter on the waitlist only to let you know when PuhuKoç opens and your invitation is ready. This record is deleted when you sign up. If you do not sign up, it is deleted automatically 6 months after the date you joined the list, or 6 months after the date you were invited if you were invited.`,
   },
   privacy: {
     tr: `## Kapsam

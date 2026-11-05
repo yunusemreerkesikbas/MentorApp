@@ -1,0 +1,98 @@
+/*
+ * Waitlist modal (direction A, 2026-11-05): the landing's night card. It opens from the landing,
+ * the auth pages and the coach page, so it carries its own scope instead of relying on the page:
+ * the wrapper gets `.landing-city-theme` (the `--landing-*` sky, lamp and night ink, plus the lamp
+ * focus ring) and `.waitlist-theme` below. Like the landing, it never follows `html.dark`.
+ *
+ * The card's own values (`--lw-*`) come from the approved canvas; the kit `Modal` reads the
+ * `--color-*` / `--play-line` / shadow tokens, so they are re-pointed at the night here.
+ */
+.waitlist-theme {
+  display: contents;
+  color-scheme: dark;
+  --lw-card: #0f1f45;
+  --lw-card-line: rgba(255, 209, 92, 0.28);
+  /* The landing's one gold ledge edge (`.lp-cta`), so both lamp-yellow buttons press the same. */
+  --lw-lamp-edge: #c99a2e;
+  --lw-close-bg: rgba(7, 18, 42, 0.72);
+  --lw-field-ink: #0f2233;
+  --lw-field-placeholder: #5f7086;
+  --lw-error: #ffc2b8;
+  --lw-error-line: #ff8a78;
+  --lw-glow: rgba(255, 205, 120, 0.55);
+
+  --color-surface: var(--lw-card);
+  --color-border: var(--lw-card-line);
+  --color-main: var(--landing-on-night);
+  --color-secondary: var(--landing-on-night-soft);
+  --color-scrim: rgba(3, 11, 39, 0.66);
+  /* The sheet's grab handle; the header rule that also reads it is dropped below. */
+  --play-line: rgba(255, 255, 255, 0.3);
+  --shadow-overlay: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
+  --shadow-sheet: 0 -10px 40px -10px rgba(3, 10, 24, 0.6);
+}
+
+/*
+ * The kit Modal's chrome, re-laid for the card: art and badge (banner) → title (header) → body.
+ * Unlayered on purpose, so these win over the Modal's Tailwind utilities without `!important`.
+ */
+.lw-card {
+  padding: 32px 16px calc(28px + env(safe-area-inset-bottom));
+}
+
+.lw-card > header {
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+}
+
+.lw-card > header > h2 {
+  font-size: var(--text-display);
+  line-height: var(--text-hero--line-height);
+  font-weight: 900;
+}
+
+/* The close button floats over the art's top-right corner, as on the canvas. */
+.lw-card > header > button {
+  position: absolute;
+  top: 40px;
+  right: 24px;
+  z-index: 2;
+  border-radius: 9999px;
+  background: var(--lw-close-bg);
+  color: var(--landing-on-night);
+}
+
+/* Room for the field's focus outline and the ledge's 4px edge inside the scrolling body. */
+.lw-card > header + div {
+  margin: 4px -6px -6px;
+  padding: 6px;
+}
+
+.lw-art {
+  height: 168px;
+}
+
+@media (width >= 64rem) {
+  .waitlist-theme > dialog {
+    width: min(92vw, 27.5rem);
+    border-radius: var(--play-sheet-radius);
+  }
+
+  .lw-card {
+    padding: 20px 24px 24px;
+  }
+
+  .lw-card > header > h2 {
+    font-size: var(--text-hero);
+  }
+
+  .lw-card > header > button {
+    top: 28px;
+    right: 32px;
+  }
+
+  .lw-art {
+    height: 210px;
+  }
+}

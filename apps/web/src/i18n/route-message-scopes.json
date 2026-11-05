@@ -1,8 +1,9 @@
 {
   "root": ["consentBanner", "availability", "media"],
+  "landing": ["consentBanner", "availability", "media", "waitlist"],
   "welcome": ["welcome"],
   "article": ["article", "knowledge", "ads", "media"],
-  "auth": ["auth", "common", "economy"],
+  "auth": ["auth", "common", "economy", "waitlist"],
   "onboarding": [
     "onboarding",
     "profile",

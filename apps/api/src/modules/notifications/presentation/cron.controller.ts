@@ -8,6 +8,7 @@ import { NotebookReviewReminderService } from "../application/notebook-review-re
 import { MentorshipRiskDigestService } from "../application/mentorship-risk-digest.service";
 import { MentorshipFollowupDueService } from "../application/mentorship-followup-due.service";
 import { CronSecretGuard } from "../../../common/auth/cron-secret.guard";
+import { WaitlistService } from "../../identity/application/waitlist.service";
 import { PhoneVerificationService } from "../../identity/application/phone-verification.service";
 import { PhoneTrialService } from "../../payments/application/phone-trial.service";
 
@@ -26,6 +27,7 @@ export class CronController {
     private readonly phone: PhoneVerificationService,
     private readonly authRates: AuthRateLimitService,
     private readonly phoneTrials: PhoneTrialService,
+    private readonly waitlist: WaitlistService,
   ) {}
 
   @Post("process-jobs")
@@ -40,6 +42,7 @@ export class CronController {
       this.phone.purgeExpired(),
       this.authRates.purgeExpired(),
       this.phoneTrials.purgeExpired(),
+      this.waitlist.purgeExpired(),
     ]);
     return result;
   }

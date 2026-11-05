@@ -3,6 +3,9 @@ import trErrors from "../../api/src/i18n/locales/tr/errors.json";
 import enErrors from "../../api/src/i18n/locales/en/errors.json";
 import { completeCaptcha, expectSecurityPageHealthy, mockSecurity } from "./helpers/account-security";
 
+// The invite email's link: it reaches the form in every signup mode, invite-only included.
+const SIGNUP = { tr: "/kayit?davet=1", en: "/en/signup?davet=1" } as const;
+
 test.afterEach(async ({ page }) => expectSecurityPageHealthy(page));
 
 for (const locale of ["tr", "en"] as const) {
@@ -22,7 +25,7 @@ for (const locale of ["tr", "en"] as const) {
         return route.fulfill({ status: 403, headers, contentType: "application/json",
           body: JSON.stringify({ code, message: errors[code] }) });
       });
-      await page.goto(locale === "tr" ? "/kayit" : "/en/signup");
+      await page.goto(SIGNUP[locale]);
       await page.locator('input[name="displayName"]').fill("Pilot Student");
       await page.locator('input[name="email"]').fill("student@test.local");
       await page.locator('input[name="password"]').fill("Password123");
@@ -32,14 +35,15 @@ for (const locale of ["tr", "en"] as const) {
       await page.locator('button[type="submit"]').click();
       await expect(page.locator("form").getByRole("alert")).toHaveText(errors[code]);
       expect(attempts).toBe(1);
-      await expect(page).toHaveURL(locale === "tr" ? /\/kayit$/ : /\/en\/signup$/);
+      await expect(page).toHaveURL(locale === "tr" ? /\/kayit\?davet=1$/ : /\/en\/signup\?davet=1$/);
       await expect(page.locator('input[name="email"]')).toHaveValue("student@test.local");
     });
 
     test(`${locale} OAuth feedback displays the localized ${code}`, async ({ page }) => {
       await mockSecurity(page);
+      // A refused Google signup comes back to the invite form (API: signup-mode Google errors).
       const query = new URLSearchParams({ googleError: errors[code], googleErrorCode: code });
-      await page.goto(`${locale === "tr" ? "/giris" : "/en/login"}?${query}`);
+      await page.goto(`${SIGNUP[locale]}&${query}`);
       await expect(page.locator("form").getByRole("alert")).toHaveText(errors[code]);
       await expect(page.locator('input[name="email"]')).toBeVisible();
     });

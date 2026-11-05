@@ -216,6 +216,35 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 - **2026-10-05 — Netgsm release preparation.** Kept the reviewed sender minimum and extended transport acceptance: an empty/whitespace task ID with code 00 stays UNKNOWN, without retry. Added a disabled-transport no-call check and renewed privacy/phone/trial/sponsorship acceptance. Existing profile/settings browser fixtures now return the typed unavailable phone state instead of a bare 204, preserving achievement and mentorship navigation checks. A stale coach AI quota test call was aligned with its existing delta argument; no AI or frontend production behavior changed. Usage: follow the ordered checklist in docs/core/integrations.md for sender approval/KEP, SMS service permission, OTP package, actual Render egress, secrets, Turnstile, migration and isolated carrier pilot. Gotchas: preliminary application is not approval; Render ranges may require provider format confirmation; identity.phone.enabled=false blocks both sends and confirmations, while a zero global daily quota pauses only sends. Production switches stay off; no live SMS or production migration was performed. Related: netgsm-sms.adapter{,.spec}.ts, env-phone.validation.spec.ts, docs/qa/2026-10-05-netgsm-release-prep.md.
 
+### 2026-11-05 · Waitlist and invite-only signup
+
+- `signup_invitations` table (migration 0141, must run before the API deploys) replaces the
+  `PILOT_INVITED_EMAILS` env (removed from env validation, `.env.example`, render.yaml). Rows are
+  `waiting` then `invited`; the invite carries the role (a coach invite creates a COACH account).
+- Modes: `signup.enabled=false` closes everything; `signup.enabled=true` + `signup.pilot.enabled=true`
+  admits only emails with an `invited` row (invite-only, waitlist CTAs shown); pilot off = public
+  signup. Availability key `signupWaitlist` drives the web CTAs; if availability is null/unreachable
+  the web fails closed to the waitlist modal.
+- Public `POST /v1/auth/waitlist` (own `waitlist` rate bucket, `identity.auth_rate.waitlist_ip_limit`).
+  Admins manage `/v1/admin/waitlist` from the admin `/waitlist` page; inviting sends the
+  `identity.signup-invitation` email whose link is `/kayit?davet=1`. The email never goes in a URL.
+  A coach invite bypasses `mentorship.applications.open`.
+- Retention: the daily `dispatch-daily-reminders` cron purges rows 6 months after join (waiting) or
+  invite (invited); signup deletes the row. Legal text: KVKK "Bekleme Listesi" section.
+- Web: `WaitlistModal` / `SignupCta` on landing, `/koclar`, `/kayit`, `/giris`. Styling tokens are the
+  `--lw-*` custom properties in `components/waitlist/waitlist.css`.
+- Gotchas: deploy API before web (web calls the new endpoint and availability key). The waitlist
+  e2e suite runs with its own config (`apps/web/playwright.waitlist.config.ts`, needs a build) and is
+  not in CI. The 2026-10-13 notes below about `PILOT_INVITED_EMAILS` are historical.
+- Review fixes (same day): a user who already holds COACH passes `mentorship.applications.open` in
+  `MentorshipApplicationService.register()` and in `registrationOpen` (`UsersService.hasRole`), so an
+  invited coach finishes the onboarding `coachProfile` step while the intake is shut. Closed mode
+  (`studentSignup` false) shows the modal on `/kayit?davet=1` too; the coach-intake notice is skipped
+  only for `waitlist && davet=1`. The invite email carries `lang` from the row's locale; admin
+  "E-postayla davet et" refuses an existing account with 409 `AUTH_EMAIL_IN_USE`. Email bubble/heading
+  are "Davetin geldi!" / "Yerin hazır!". Purge is covered by `test/signup-invitation-purge.e2e-spec.ts`
+  (re-invite clock is `invited_at`) and `cron.controller.spec.ts`.
+
 ### 2026-10-13 · Invited pilot registration
 
 - Password and Google account creation share an API admission policy. `signup.enabled=false`

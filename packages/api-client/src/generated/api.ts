@@ -7,6 +7,8 @@
 import { http } from '../http';
 export interface SignupDto { [key: string]: unknown }
 
+export interface JoinWaitlistDto { [key: string]: unknown }
+
 export interface LoginDto {
   /**
    * Single-use Turnstile token. Required for production web submissions.
@@ -1790,6 +1792,8 @@ export interface SetCoachStatusDto { [key: string]: unknown }
 
 export interface VerifyCoachClaimsDto { [key: string]: unknown }
 
+export interface WaitlistInviteEmailDto { [key: string]: unknown }
+
 export interface CelebrateAchievementsDto { [key: string]: unknown }
 
 export interface CelebrateJourneyLevelDto { [key: string]: unknown }
@@ -2548,6 +2552,40 @@ export const authControllerSignup = async (signupDto: SignupDto, options?: Reque
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       signupDto,)
+  }
+);}
+
+
+
+export type authControllerJoinWaitlistResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type authControllerJoinWaitlistResponseSuccess = (authControllerJoinWaitlistResponse204) & {
+  headers: Headers;
+};
+;
+
+export type authControllerJoinWaitlistResponse = (authControllerJoinWaitlistResponseSuccess)
+
+export const getAuthControllerJoinWaitlistUrl = () => {
+
+
+  
+
+  return `/v1/auth/waitlist`
+}
+
+export const authControllerJoinWaitlist = async (joinWaitlistDto: JoinWaitlistDto, options?: RequestInit): Promise<authControllerJoinWaitlistResponse> => {
+  
+  return http<authControllerJoinWaitlistResponse>(getAuthControllerJoinWaitlistUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      joinWaitlistDto,)
   }
 );}
 
@@ -14546,6 +14584,172 @@ export const adminCoachApplicationsControllerVerifyClaims = async (userId: strin
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       verifyCoachClaimsDto,)
+  }
+);}
+
+
+
+export type adminWaitlistControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminWaitlistControllerListResponseSuccess = (adminWaitlistControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminWaitlistControllerListResponse = (adminWaitlistControllerListResponseSuccess)
+
+export const getAdminWaitlistControllerListUrl = () => {
+
+
+  
+
+  return `/v1/admin/waitlist`
+}
+
+export const adminWaitlistControllerList = async ( options?: RequestInit): Promise<adminWaitlistControllerListResponse> => {
+  
+  return http<adminWaitlistControllerListResponse>(getAdminWaitlistControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminWaitlistControllerInviteEmailResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminWaitlistControllerInviteEmailResponseSuccess = (adminWaitlistControllerInviteEmailResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminWaitlistControllerInviteEmailResponse = (adminWaitlistControllerInviteEmailResponseSuccess)
+
+export const getAdminWaitlistControllerInviteEmailUrl = () => {
+
+
+  
+
+  return `/v1/admin/waitlist/invite`
+}
+
+export const adminWaitlistControllerInviteEmail = async (waitlistInviteEmailDto: WaitlistInviteEmailDto, options?: RequestInit): Promise<adminWaitlistControllerInviteEmailResponse> => {
+  
+  return http<adminWaitlistControllerInviteEmailResponse>(getAdminWaitlistControllerInviteEmailUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      waitlistInviteEmailDto,)
+  }
+);}
+
+
+
+export type adminWaitlistControllerInviteResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminWaitlistControllerInviteResponseSuccess = (adminWaitlistControllerInviteResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminWaitlistControllerInviteResponse = (adminWaitlistControllerInviteResponseSuccess)
+
+export const getAdminWaitlistControllerInviteUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/admin/waitlist/${id}/invite`
+}
+
+export const adminWaitlistControllerInvite = async (id: string, options?: RequestInit): Promise<adminWaitlistControllerInviteResponse> => {
+  
+  return http<adminWaitlistControllerInviteResponse>(getAdminWaitlistControllerInviteUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type adminWaitlistControllerResendResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type adminWaitlistControllerResendResponseSuccess = (adminWaitlistControllerResendResponse204) & {
+  headers: Headers;
+};
+;
+
+export type adminWaitlistControllerResendResponse = (adminWaitlistControllerResendResponseSuccess)
+
+export const getAdminWaitlistControllerResendUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/admin/waitlist/${id}/resend`
+}
+
+export const adminWaitlistControllerResend = async (id: string, options?: RequestInit): Promise<adminWaitlistControllerResendResponse> => {
+  
+  return http<adminWaitlistControllerResendResponse>(getAdminWaitlistControllerResendUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type adminWaitlistControllerRemoveResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type adminWaitlistControllerRemoveResponseSuccess = (adminWaitlistControllerRemoveResponse204) & {
+  headers: Headers;
+};
+;
+
+export type adminWaitlistControllerRemoveResponse = (adminWaitlistControllerRemoveResponseSuccess)
+
+export const getAdminWaitlistControllerRemoveUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/admin/waitlist/${id}`
+}
+
+export const adminWaitlistControllerRemove = async (id: string, options?: RequestInit): Promise<adminWaitlistControllerRemoveResponse> => {
+  
+  return http<adminWaitlistControllerRemoveResponse>(getAdminWaitlistControllerRemoveUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
   }
 );}
 

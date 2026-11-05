@@ -69,7 +69,9 @@
     ".next/recap-banner-qa/types/**/*.ts",
     ".next/recap-banner-qa/dev/types/**/*.ts",
     ".next/weekly-chest-qa/types/**/*.ts",
-    ".next/weekly-chest-qa/dev/types/**/*.ts"
+    ".next/weekly-chest-qa/dev/types/**/*.ts",
+    ".next/waitlist-build/types/**/*.ts",
+    ".next/waitlist-build/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

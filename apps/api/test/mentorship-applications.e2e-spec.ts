@@ -196,16 +196,23 @@ describe("mentorship coach registry (e2e)", () => {
 
   it("refuses the form while the intake is shut, without touching mentorship.enabled", async () => {
     await setOpen(false);
-    const res = await http()
-      .post("/v1/mentorship/coach-registration")
-      .set(auth("coach"))
-      .send(REGISTRATION);
-    expect(res.status).toBe(403);
-    expect(res.body.code).toBe("MENTORSHIP_APPLICATIONS_CLOSED");
-    // And the screen can now learn this without submitting anything.
-    const state = await http().get("/v1/mentorship/coach-registration/mine").set(auth("coach"));
-    expect(state.body.registrationOpen).toBe(false);
-    await setOpen(true);
+    try {
+      // `outsider` holds no COACH. Somebody who already does (`coach`, signed up with the intent, or
+      // a coach invitation) passes the shut intake: their onboarding profile step has no skip.
+      const res = await http()
+        .post("/v1/mentorship/coach-registration")
+        .set(auth("outsider"))
+        .send(REGISTRATION);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("MENTORSHIP_APPLICATIONS_CLOSED");
+      // And the screen can now learn this without submitting anything.
+      const state = await http().get("/v1/mentorship/coach-registration/mine").set(auth("outsider"));
+      expect(state.body.registrationOpen).toBe(false);
+      const coachState = await http().get("/v1/mentorship/coach-registration/mine").set(auth("coach"));
+      expect(coachState.body.registrationOpen).toBe(true);
+    } finally {
+      await setOpen(true);
+    }
   });
 
   it("tells the unauthenticated signup screen whether coach signup is open", async () => {

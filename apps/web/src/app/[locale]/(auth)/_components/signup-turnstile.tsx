@@ -10,9 +10,12 @@ export const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim
 export function SignupTurnstile({ onToken, resetKey, action = "signup" }: {
   onToken: (token: string | null) => void;
   resetKey: number;
-  action?: "signup" | "login" | "forgot-password" | "phone-verification";
+  action?: "signup" | "login" | "forgot-password" | "phone-verification" | "waitlist";
 }) {
-  const translate = useTranslations(action === "phone-verification" ? "phone.turnstile" : "auth.turnstile");
+  // The waitlist modal renders on public pages that only carry the `waitlist` namespace.
+  const translate = useTranslations(
+    action === "phone-verification" ? "phone.turnstile" : action === "waitlist" ? "waitlist.turnstile" : "auth.turnstile",
+  );
   const container = useRef<HTMLDivElement>(null);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState("loading");

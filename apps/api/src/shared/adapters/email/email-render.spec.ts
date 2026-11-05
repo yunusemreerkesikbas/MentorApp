@@ -115,6 +115,27 @@ describe("renderEmail", () => {
     expect(buttons(html)).toHaveLength(0);
   });
 
+  it("signup invitation renders subject, CTA and the link", () => {
+    const link = "https://puhukoc.com/kayit?davet=1";
+    const { html, subject } = render("identity.signup-invitation", { link });
+    expect(subject).toBe("Pencerenin ışığı yandı, davetin geldi!");
+    expect(html).toContain("Hesabımı aç");
+    expect(html).toContain(`href="${link}"`);
+    expect(buttons(html)).toHaveLength(1);
+    // Bubble, heading and body each say something different: the body's opener appears once.
+    expect(html).toContain("Davetin geldi!");
+    expect(html).toContain("Yerin hazır!");
+    expect(html.split("Sıra sana geldi!")).toHaveLength(2);
+  });
+
+  it("signup invitation renders the EN bubble and heading", () => {
+    const { html, subject } = render("identity.signup-invitation", { link: "https://puhukoc.com/en/signup?davet=1" }, "en");
+    expect(subject).toBe("Your window is lit, your invite is here!");
+    expect(html).toContain("Your invite is here!");
+    expect(html).toContain("Your spot is ready!");
+    expect(html).toContain("Open my account");
+  });
+
   it("unknown template", () => {
     const { html, subject } = render("x.y");
     expect(subject).toBe("PuhuKoç");

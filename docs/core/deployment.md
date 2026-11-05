@@ -63,7 +63,10 @@ and `SMS_PROVIDER=disabled`. Explicitly set `payments.web.enabled=false`,
 `payments.mobile.enabled=false`, `payments.web.redirect_to_mobile=false`,
 `mentorship.seats.billing_enabled=false` and `mentorship.seats.mobile_billing_enabled=false`.
 Keep `community.achievements.enabled=true` for personal progress, `signup.enabled=true`
-and `signup.pilot.enabled=false`. Public signup remains the selected direction; expected
+and `signup.pilot.enabled=true`. Launch is invite-only (2026-11-05): signup requires an
+`invited` row in `signup_invitations` (migration 0141 must run; admins invite from `/waitlist`);
+there is no `PILOT_INVITED_EMAILS` env any more. Public signup is not open: to open it later,
+set `signup.pilot.enabled=false` deliberately. Deploy the API before the web. Expected
 trial users are not an account-count or invoice cap. Verify effective values, not only
 catalog defaults. The registry caches overrides per process: an attended offline change
 requires controlled restart and verification. No live flag was changed in source preparation.

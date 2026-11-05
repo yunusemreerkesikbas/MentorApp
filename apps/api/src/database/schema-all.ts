@@ -12,3 +12,4 @@ export * from "./schema-auth-rate-limits";
 export * from "./schema-storage-budget";
 export * from "./schema-plan-previews";
 export * from "./schema-weekly-recaps";
+export * from "./schema-signup-invitations";

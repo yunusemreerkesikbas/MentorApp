@@ -2,6 +2,7 @@ import { Suspense, type CSSProperties, type ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { CAREER_GROUPS } from "@mentor/types";
 import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
+import { SignupCta } from "@/components/waitlist/signup-cta";
 import { Link } from "@/i18n/navigation";
 import { AskPuhuDemo } from "./ask-puhu-demo";
 import { CareerPicker, type CareerChoice } from "./career-picker";
@@ -88,9 +89,9 @@ function Hero({ t }: { t: Translate }) {
       </h1>
       <p className="lc-lead">{t("hero_lead")}</p>
       <div className="flex flex-wrap gap-3">
-        <Link href="/welcome" className={`${LEDGE} ${LEDGE_FILLED} max-lg:w-full`}>
+        <SignupCta href="/welcome" role="student" className={`${LEDGE} ${LEDGE_FILLED} max-lg:w-full`}>
           {t("start")}
-        </Link>
+        </SignupCta>
         <Link href="/login" className={`${LEDGE} ${LEDGE_ON_NIGHT} max-lg:hidden`}>
           {t("has_account")}
         </Link>
@@ -233,9 +234,9 @@ export async function cityStageContent(): Promise<{
       <h2>{t("dawn.title")}</h2>
       <p className="lc-body">{t("dawn.body")}</p>
       <div className="mt-6 flex justify-center">
-        <Link href="/welcome" className={`${LEDGE} ${LEDGE_FILLED} max-lg:w-full`}>
+        <SignupCta href="/welcome" role="student" className={`${LEDGE} ${LEDGE_FILLED} max-lg:w-full`}>
           {t("start")}
-        </Link>
+        </SignupCta>
       </div>
     </div>,
   ];

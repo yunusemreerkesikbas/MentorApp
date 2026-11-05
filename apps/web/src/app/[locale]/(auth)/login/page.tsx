@@ -6,12 +6,14 @@ import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { GoogleAuthFeedback } from "@/components/google-auth-feedback";
+import { LazyWaitlistModal, SignupCta } from "@/components/waitlist/signup-cta";
 import { useAuth } from "@/lib/auth-context";
 import { useAppAvailability } from "@/lib/app-availability";
 import { trackProductEvent } from "@/lib/analytics";
 import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
 import { loginSecurityReason } from "@/lib/account-security";
-import { AuthNavLink } from "../_components/auth-nav-link";
+import { isWaitlistOn, opensWaitlist } from "@/lib/signup-waitlist";
+import { AUTH_NAV_LINK, AuthNavLink } from "../_components/auth-nav-link";
 import { useAuthSheetExit } from "../_components/auth-shell";
 import { GoogleAuthButton } from "../_components/google-auth-button";
 import { SignupTurnstile, turnstileSiteKey } from "../_components/signup-turnstile";
@@ -30,6 +32,14 @@ export default function LoginPage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const reason = useSyncExternalStore(subscribe, () => loginSecurityReason(window.location.search), () => null);
+  const googleErrorCode = useSyncExternalStore(
+    subscribe,
+    () => new URLSearchParams(window.location.search).get("googleErrorCode"),
+    () => null,
+  );
+  // A Google account that is not invited yet: the answer is the waitlist card, not an error line.
+  const googleWaitlist = isWaitlistOn(availability) && opensWaitlist(googleErrorCode);
+  const [waitlistDismissed, setWaitlistDismissed] = useState(false);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -86,14 +96,19 @@ export default function LoginPage() {
         <AuthNavLink href="/forgot-password">{translate("forgot_link")}</AuthNavLink>
       </div>
       <FormError message={error} />
-      <GoogleAuthFeedback />
+      {googleWaitlist ? null : <GoogleAuthFeedback />}
       <SignupTurnstile action="login" onToken={setTurnstileToken} resetKey={turnstileResetKey} />
       <SubmitButton busy={busy} disabled={Boolean(turnstileSiteKey && !turnstileToken)}>{translate("submit")}</SubmitButton>
       <GoogleAuthButton mode="login" />
       <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
         {translate("register_prompt")}{" "}
-        <AuthNavLink href="/signup">{translate("register_link")}</AuthNavLink>
+        <SignupCta href="/signup" role="student" className={AUTH_NAV_LINK}>
+          {translate("register_link")}
+        </SignupCta>
       </p>
+      {googleWaitlist && !waitlistDismissed ? (
+        <LazyWaitlistModal role="student" onClose={() => setWaitlistDismissed(true)} />
+      ) : null}
     </form>
   );
 }

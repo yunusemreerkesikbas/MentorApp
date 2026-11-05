@@ -20,11 +20,13 @@ import {
   REFRESH_COOKIE_PATH,
 } from "../domain/identity.constants";
 import { AuthService, type AuthResult, type CoachSignupStatus } from "../application/auth.service";
+import { WaitlistService } from "../application/waitlist.service";
 import { GoogleAuthService, type GoogleOAuthState, type GoogleOAuthStatus } from "../application/google-auth.service";
 import {
   ForgotPasswordDto,
   GoogleOAuthCallbackQueryDto,
   GoogleOAuthStartQueryDto,
+  JoinWaitlistDto,
   LoginDto,
   ResetPasswordDto,
   SignupDto,
@@ -46,6 +48,7 @@ export class AuthController {
     private readonly googleAuth: GoogleAuthService,
     private readonly config: ConfigService<Env, true>,
     private readonly i18n: I18nService,
+    private readonly waitlist: WaitlistService,
   ) {}
 
   @Post("signup")
@@ -55,6 +58,14 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthSession> {
     return this.finish(await this.auth.signup(dto), res);
+  }
+
+  /** Public waitlist: the same 204 for new, duplicate, existing-user and open-mode requests. */
+  @Post("waitlist")
+  @HttpCode(204)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  async joinWaitlist(@Body() dto: JoinWaitlistDto): Promise<void> {
+    await this.waitlist.join(dto);
   }
 
   @Post("login")
@@ -141,12 +152,18 @@ export class AuthController {
     } catch (err) {
       if (!(err instanceof DomainError)) throw err;
       const locale = state?.locale ?? "tr";
-      const path = state?.mode === "link" ? state.returnTo : locale === "tr" ? "/giris" : "/en/login";
+      // A refused Google SIGNUP lands back on the signup page (invite flag kept), not on login.
+      const signup = state?.mode === "signup";
+      const path =
+        state?.mode === "link"
+          ? state.returnTo
+          : signup
+            ? locale === "tr" ? "/kayit" : "/en/signup"
+            : locale === "tr" ? "/giris" : "/en/login";
       const appUrl = this.config.get("APP_URL", { infer: true }).replace(/\/$/, "");
-      const params = new URLSearchParams({
-        googleError: this.i18n.translate(`errors.${err.code}`, { lang: locale }),
-        googleErrorCode: err.code,
-      });
+      const params = new URLSearchParams(signup ? { davet: "1" } : {});
+      params.set("googleError", this.i18n.translate(`errors.${err.code}`, { lang: locale }));
+      params.set("googleErrorCode", err.code);
       res.redirect(`${appUrl}${path}?${params.toString()}`);
     }
   }

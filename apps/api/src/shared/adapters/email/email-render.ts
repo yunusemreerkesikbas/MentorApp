@@ -25,6 +25,7 @@ type Path = "link" | "dashboard" | "subscription" | "students";
 const DEFS: Record<string, { kind: Kind; footer: Footer; path: Path }> = {
   "identity.verify-email": { kind: "plain", footer: "transaction", path: "link" },
   "identity.reset-password": { kind: "plain", footer: "transaction", path: "link" },
+  "identity.signup-invitation": { kind: "reminder", footer: "transaction", path: "link" },
   "payments.dunning": { kind: "plain", footer: "transaction", path: "subscription" },
   "payments.subscription-welcome": { kind: "welcome", footer: "subscription", path: "dashboard" },
   "coaching.daily-reminder": { kind: "reminder", footer: "notification", path: "dashboard" },

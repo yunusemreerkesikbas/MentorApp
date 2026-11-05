@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
-import { Link } from "@/i18n/navigation";
+import { SignupCta } from "@/components/waitlist/signup-cta";
 import { readLandingCareer, saveLandingCareer, type LandingCareer } from "@/lib/landing-career";
 
 export interface CareerChoice {
@@ -70,9 +70,9 @@ export function CareerPicker({
       </div>
       {choice ? (
         <div className="mt-5">
-          <Link href="/welcome" className={`${LEDGE} ${LEDGE_FILLED} max-lg:w-full`}>
+          <SignupCta href="/welcome" role="student" className={`${LEDGE} ${LEDGE_FILLED} max-lg:w-full`}>
             {cta}
-          </Link>
+          </SignupCta>
         </div>
       ) : null}
     </div>
