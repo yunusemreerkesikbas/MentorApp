@@ -13,6 +13,18 @@ optional; source checks do not prove that production services or domains are liv
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-05 · Operator access for first release.** The owner selected admin access behind
+  Cloudflare Access and MFA, subject to provider acceptance. Follow the [deployment procedure](../core/deployment.md#operator-access-for-the-first-release-2026-11-05)
+  for account checks, browser acceptance and rollback. Keep the closed profile until those checks
+  pass. The shared countdown component also uses the repository's React type import convention
+  to clear the lint error in CI #647. Related: `render.yaml` and `packages/ui/src/components/countdown-card.tsx`.
+
+- **2026-11-05 · Waitlist browser checks in CI.** CI now runs the dedicated waitlist suite.
+  Use `pnpm --filter @mentor/web test:e2e:waitlist` to run it separately. The suite uses a fake
+  availability API and an isolated production build. Real CAPTCHA, email delivery and admission
+  still need acceptance checks. Related: `.github/workflows/ci.yml` and
+  `apps/web/playwright.waitlist.config.ts`.
+
 - **2026-10-31 · Free-trial scheduler and launch decisions.** Render Free has no cron, so
   `.github/workflows/trial-maintenance.yml` runs the daily reminder and notebook review dispatches
   at 06:00 UTC (also `workflow_dispatch`). Usage: set repo variable `TRIAL_API_ORIGIN` to the
