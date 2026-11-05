@@ -156,6 +156,7 @@ describe("ChatService mentor", () => {
       expect.objectContaining({
         system: expect.stringContaining("Bugünkü planın 1/4 tamamlandı."),
       }),
+      expect.any(Function),
     );
     expect(result).toMatchObject({
       coachMessageId: persisted.coachMessageId,

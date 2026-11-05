@@ -27,15 +27,17 @@ export interface LlmResult {
   model: string;
   /** Internal aggregate-budget hold; callers settle it with the usage row. */
   budgetReservationId?: string;
+  /** Internal Premium chat admission; settled with the actual usage row on success. */
+  chatQuotaAttemptId?: string;
 }
 
 /** Incremental completion event: text deltas while generating, then exactly one `final`. */
 export type LlmStreamEvent = { delta: string; final?: never } | { delta?: never; final: LlmResult };
 
 export interface LlmPort {
-  complete(input: LlmCompleteInput): Promise<LlmResult>;
+  complete(input: LlmCompleteInput, admitChat?: () => Promise<string>): Promise<LlmResult>;
   /** Streaming variant of `complete` — yields text deltas, ends with one `final` result. */
-  completeStream(input: LlmCompleteInput): AsyncIterable<LlmStreamEvent>;
+  completeStream(input: LlmCompleteInput, admitChat?: () => Promise<string>): AsyncIterable<LlmStreamEvent>;
   /** Embed text into a 1536-dim vector (RAG, §1). Content-only — never behavioral/PII data (§4 #6). */
   embed(text: string): Promise<number[]>;
 }

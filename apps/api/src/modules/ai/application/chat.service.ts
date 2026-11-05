@@ -627,6 +627,7 @@ export class ChatService {
           ...(contextMockExamId ? { mockExamId: contextMockExamId } : {}),
           ...(contextArticleSlug ? { articleSlug: contextArticleSlug } : {}),
         },
+        this.premiumAdmission(user.id, isPremium),
       );
     } catch (err) {
       if (!isPremium && shouldRefundOnFailure && coinCost > 0) {
@@ -652,7 +653,6 @@ export class ChatService {
   }> {
     const ent = await this.entitlement.getEntitlement(user.id, user.roles);
     if (ent.isPremium) {
-      await this.assertPremiumRateLimit(user.id);
       return { isPremium: true, coinCost: 0, shouldRefundOnFailure: false };
     }
     if (
@@ -673,20 +673,8 @@ export class ChatService {
     };
   }
 
-  private async assertPremiumRateLimit(userId: string): Promise<void> {
-    const dailyLimit = await this.config.get("ai.chat.daily_limit");
-    // CHAT only — greeting/plan-draft/mood have their own caps and must not eat the chat quota.
-    const usedToday = await this.usage.countFeatureSince(
-      userId,
-      AiUsageFeature.CHAT,
-      new Date(Date.now() - DAY_MS),
-    );
-    if (usedToday >= dailyLimit) {
-      throw new DomainError(
-        ErrorCode.AI_RATE_LIMITED,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
+  private premiumAdmission(userId: string, isPremium: boolean) {
+    return isPremium ? () => this.access.admitPremiumChat(userId) : undefined;
   }
 
   private async prepareCoinSpend(
@@ -874,6 +862,7 @@ export class ChatService {
   }> {
     await this.usage.append({
       ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
+      ...(result.chatQuotaAttemptId ? { chatQuotaAttemptId: result.chatQuotaAttemptId } : {}),
       userId,
       model: result.model,
       feature: AiUsageFeature.CHAT,
@@ -930,6 +919,7 @@ export class ChatService {
     contextArticleSlug?: string,
     community?: ForumCoachContext,
     requestContext?: CoachRequestContext,
+    admitChat?: () => Promise<string>,
   ): Promise<CoachReplyResult> {
     const { llmInput, sources, personalization, locale, focusLine } =
       await this.prepareChat(
@@ -941,7 +931,7 @@ export class ChatService {
         { contextArticleSlug },
         community,
       );
-    const result = await this.llm.complete(llmInput);
+    const result = await this.llm.complete(llmInput, admitChat);
     // Order-agnostic: models sometimes reverse the FOLLOWUP/TASK order — never leak a marker.
     const personalized = this.visibleCoachReply(
       result.text,
@@ -1100,7 +1090,9 @@ export class ChatService {
           { contextArticleSlug },
           community,
         );
-      const final = yield* this.streamLlm(llmInput, personalization, locale, focusLine);
+      const final = yield* this.streamLlm(
+        llmInput, personalization, locale, focusLine, this.premiumAdmission(user.id, isPremium),
+      );
       const personalized = this.visibleCoachReply(
         final.text,
         personalization,
@@ -1342,7 +1334,9 @@ export class ChatService {
           },
           community,
         );
-      const final = yield* this.streamLlm(llmInput, personalization, locale, focusLine);
+      const final = yield* this.streamLlm(
+        llmInput, personalization, locale, focusLine, this.premiumAdmission(user.id, isPremium),
+      );
       const personalized = this.visibleCoachReply(
         final.text,
         personalization,
@@ -1359,6 +1353,7 @@ export class ChatService {
 
       await this.usage.append({
         ...(final.budgetReservationId ? { budgetReservationId: final.budgetReservationId } : {}),
+        ...(final.chatQuotaAttemptId ? { chatQuotaAttemptId: final.chatQuotaAttemptId } : {}),
         userId: user.id,
         model: final.model,
         feature: AiUsageFeature.CHAT,
@@ -1425,6 +1420,7 @@ export class ChatService {
     personalization: CoachPersonalizationDto,
     locale: PromptLocale,
     focusLine: string | null,
+    admitChat?: () => Promise<string>,
   ): AsyncGenerator<CoachChatStreamEvent, LlmResult> {
     const markerFilter = createTaskMarkerFilter();
     const personalizationFilter = createPersonalizationMarkerFilter(
@@ -1433,7 +1429,7 @@ export class ChatService {
       focusLine,
     );
     let final: LlmResult | null = null;
-    for await (const ev of this.llm.completeStream(llmInput)) {
+    for await (const ev of this.llm.completeStream(llmInput, admitChat)) {
       if (ev.delta) {
         const safe = markerFilter.push(personalizationFilter.push(ev.delta));
         if (safe) yield { delta: safe };

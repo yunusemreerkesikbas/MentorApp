@@ -68,14 +68,15 @@ export function CoachAccessShell({ children }: { children: ReactNode }) {
       </main>
     );
   }
-  if (isChatRoute && state.status === "ready" && !state.access.canChat) {
-    return <CoachAccessGate access={state.access} />;
+  const access = state.status === "ready" ? state.access : null;
+  const canOpenChat = access?.canChat === true || access?.reason === "AI_CHAT_QUOTA_EXCEEDED";
+  if (isChatRoute && access && !canOpenChat) {
+    return <CoachAccessGate access={access} />;
   }
 
-  const access = state.status === "ready" ? state.access : null;
   return (
     <CoachAccessContext.Provider value={access}>
-      <CoachSessionProvider enabled={access?.canChat === true}>
+      <CoachSessionProvider enabled={canOpenChat}>
         {children}
       </CoachSessionProvider>
     </CoachAccessContext.Provider>

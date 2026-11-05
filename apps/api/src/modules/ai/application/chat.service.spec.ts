@@ -229,7 +229,7 @@ describe("ChatService coin refund", () => {
       "11111111-1111-4111-8111-111111111111",
       expect.any(String),
     );
-    expect(llmComplete).toHaveBeenCalledWith(
+    expect(llmComplete.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({
         system: expect.stringContaining("No community post text"),
       }),
@@ -381,7 +381,7 @@ describe("ChatService coin refund", () => {
 
     await service.reply(USER, "Yeni soru", MSG_ID, CONV_ID);
 
-    expect(llmComplete).toHaveBeenCalledWith(
+    expect(llmComplete.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({
         history: [
           { role: "user", content: "Önceki soru" },
@@ -943,7 +943,7 @@ describe("ChatService coin refund", () => {
     const res = await service.reply(USER, "Merhaba", MSG_ID);
 
     expect(res.reply).toBe("Yanıt");
-    expect(llmComplete).toHaveBeenCalledWith(
+    expect(llmComplete.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ history: [] }),
     );
   });
@@ -1075,7 +1075,7 @@ describe("ChatService coin refund", () => {
 
     expect(events.at(-1)).toMatchObject({ done: { reply: "Yanıt" } });
     expect(getMockExam).toHaveBeenCalledWith(USER.id, MOCK_EXAM_ID);
-    expect(llmCompleteStream).toHaveBeenCalledWith(
+    expect(llmCompleteStream.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({
         system: expect.stringContaining("total net=72.50"),
       }),
@@ -1165,7 +1165,7 @@ describe("ChatService coin refund", () => {
     );
     expect(persistExchange).not.toHaveBeenCalled();
     // The old (disliked) reply must not be replayed into the prompt history.
-    expect(llmCompleteStream).toHaveBeenCalledWith(
+    expect(llmCompleteStream.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ user: "Nasıl çalışmalıyım?", history: [] }),
     );
   });
@@ -1195,7 +1195,7 @@ describe("ChatService coin refund", () => {
       "11111111-1111-4111-8111-111111111111",
       expect.any(String),
     );
-    expect(llmCompleteStream).toHaveBeenCalledWith(
+    expect(llmCompleteStream.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({
         system: expect.stringContaining("intent=PLAN"),
       }),

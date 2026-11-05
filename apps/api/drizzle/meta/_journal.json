@@ -981,6 +981,13 @@
       "when": 1793746439036,
       "tag": "0139_weekly_report_task_origin",
       "breakpoints": true
+    },
+    {
+      "idx": 140,
+      "version": "7",
+      "when": 1793799851174,
+      "tag": "0140_premium_chat_quota",
+      "breakpoints": true
     }
   ]
 }

@@ -1149,7 +1149,9 @@
       "history_new_chat": "Yeni sohbet",
       "load_older": "Daha eski mesajları yükle",
       "remaining_hint": "Kalan mesaj hakkın: {count}",
-      "remaining_hint_zero": "Bugünlük mesaj hakkın doldu. Yarın devam."
+      "remaining_hint_zero": "Bugünlük mesaj hakkın doldu. Yarın devam.",
+      "premium_quota_full": "Koç sohbeti hakkın doldu. Eski sohbetlerini açabilirsin.",
+      "premium_quota_retry": "Koç sohbeti hakkın doldu. {time} itibarıyla yeniden yazabilirsin."
     }
   },
   "profile": {

@@ -5,14 +5,17 @@ import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
 import { Pool } from "pg";
 import request from "./browser-request";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { UserRole } from "@mentor/types";
+import { CONFIG_CATALOG } from "../src/common/config/config.catalog";
 import { buildSystemPrompt } from "../src/modules/ai/domain/ai.constants";
+import { RAW_LLM_PORT, type LlmPort } from "../src/modules/ai/domain/llm.port";
 import { CoachMessageRepository } from "../src/modules/ai/infrastructure/coach-message.repository";
 import { EconomyService } from "../src/modules/economy/application/economy.service";
 
 const RUN = Date.now();
 const PREMIUM_PLAN_ID = "9f1c0a10-0000-4000-8000-00000000ai01";
+const COIN_CHAT_COST = CONFIG_CATALOG["economy.coin.ai_chat_cost"].default;
 
 /**
  * W3 AI coach chat (e2e, fake LLM): premium flat + earned-coin path, access probe, rate-limits,
@@ -302,7 +305,7 @@ describe("ai coach chat (e2e)", () => {
   it("keeps local calibration free and blocks regeneration after the earned right is disabled", async () => {
     await setConfig("economy.enabled", false);
     const originalBalance = await coinBalance(freeId);
-    await grantCoin(freeId, 20);
+    await grantCoin(freeId, COIN_CHAT_COST);
     const c = await pool.connect();
     try {
       await c.query("begin");
@@ -353,7 +356,7 @@ describe("ai coach chat (e2e)", () => {
 
   it("GET /coach/access reflects premium vs coin vs none", async () => {
     await setConfig("economy.enabled", true);
-    await grantCoin(freeId, 20);
+    await grantCoin(freeId, COIN_CHAT_COST);
 
     const premiumAccess = await access(premiumToken);
     expect(premiumAccess.status).toBe(200);
@@ -365,7 +368,7 @@ describe("ai coach chat (e2e)", () => {
     expect(coinAccess.status).toBe(200);
     expect(coinAccess.body.mode).toBe("COIN");
     expect(coinAccess.body.canChat).toBe(true);
-    expect(coinAccess.body.chatCost).toBe(5);
+    expect(coinAccess.body.chatCost).toBe(COIN_CHAT_COST);
   });
 
   it("premium user gets a reply and coin ledger is unchanged", async () => {
@@ -567,11 +570,11 @@ describe("ai coach chat (e2e)", () => {
 
   it("free user with coin spends on chat (201, balance drops)", async () => {
     await setConfig("economy.enabled", true);
-    await grantCoin(freeId, 20);
+    await grantCoin(freeId, COIN_CHAT_COST);
     const before = await coinBalance(freeId);
     const res = await chat(freeToken);
     expect(res.status).toBe(201);
-    expect(await coinBalance(freeId)).toBe(before - 5);
+    expect(await coinBalance(freeId)).toBe(before - COIN_CHAT_COST);
   });
 
   it("free user with insufficient coin → 422 INSUFFICIENT_COIN", async () => {
@@ -651,13 +654,58 @@ describe("ai coach chat (e2e)", () => {
     await setConfig("ai.enabled", true);
   });
 
-  it("premium daily rate-limit → 429 after the cap", async () => {
-    await setConfig("ai.chat.daily_limit", 1);
+  it("admits just one concurrent request for the last Premium monthly slot", async () => {
+    expect((await setConfig("ai.chat.monthly_limit", 1)).status).toBe(200);
     try {
-      expect((await chat(rlToken)).status).toBe(201);
+      const replies = await Promise.all([chat(rlToken), chat(rlToken)]);
+      expect(replies.map((reply) => reply.status).sort()).toEqual([201, 429]);
+      const conversationId = replies.find((reply) => reply.status === 201)!.body.conversationId;
+      const blocked = await access(rlToken);
+      expect(blocked.body).toMatchObject({
+        canChat: false,
+        dailyMessagesRemaining: 19,
+        monthlyMessagesRemaining: 0,
+        reason: "AI_CHAT_QUOTA_EXCEEDED",
+        retryAt: expect.any(String),
+      });
+
+      const stream = await request(app.getHttpServer())
+        .post("/v1/coach/chat/stream")
+        .set({ Authorization: `Bearer ${rlToken}` })
+        .send({ message: "Bugün nasıl çalışmalıyım?" });
+      const regenerate = await request(app.getHttpServer())
+        .post(`/v1/coach/conversations/${conversationId}/regenerate/stream`)
+        .set({ Authorization: `Bearer ${rlToken}` });
+      expect(stream.status).toBe(429);
+      expect(regenerate.status).toBe(429);
+      expect((await chat(rlToken, "KPSS sınav tarihi ne zaman?")).status).toBe(201);
+    } finally {
+      await setConfig("ai.chat.monthly_limit", 100);
+    }
+
+    expect((await setConfig("ai.chat.daily_limit", 1)).status).toBe(200);
+    try {
       expect((await chat(rlToken)).status).toBe(429);
     } finally {
-      await setConfig("ai.chat.daily_limit", 30);
+      await setConfig("ai.chat.daily_limit", 20);
+    }
+  });
+
+  it("counts a provider failure after dispatch against the Premium quota", async () => {
+    const student = await signup("interrupted");
+    await seedSubscription(student.user.id);
+    const token = await login(student.email);
+    expect((await setConfig("ai.chat.monthly_limit", 1)).status).toBe(200);
+    const provider = app.get<LlmPort>(RAW_LLM_PORT);
+    const complete = vi.spyOn(provider, "complete").mockRejectedValueOnce(new Error("provider interrupted"));
+    try {
+      expect((await chat(token)).status).toBe(500);
+      expect((await chat(token)).status).toBe(429);
+      expect(complete).toHaveBeenCalledTimes(1);
+      expect((await access(token)).body.monthlyMessagesRemaining).toBe(0);
+    } finally {
+      complete.mockRestore();
+      await setConfig("ai.chat.monthly_limit", 100);
     }
   });
 

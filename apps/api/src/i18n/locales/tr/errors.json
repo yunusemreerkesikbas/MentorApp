@@ -88,6 +88,7 @@
   "AI_PROVIDER_ERROR": "Koça şimdi ulaşılamadı. Biraz sonra bir daha deneyelim.",
   "AI_COACH_CONTEXT_STALE": "Bu yanıtın dayandığı kaynak artık yok. Güncel bağlamla yeni bir mesaj gönder.",
   "AI_RATE_LIMITED": "Bugünlük koç hakkı doldu. Yarın yine buradayım.",
+  "AI_CHAT_QUOTA_EXCEEDED": "Koç sohbeti hakkın doldu. Eski sohbetlerini açabilirsin.",
   "AI_PLAN_ADAPTATION_NOT_APPLICABLE": "Bu sinyal artık plan uyarlaması için uygun değil. Plan ekranından yeniden hazırlayabilirsin.",
   "AI_BUDGET_EXCEEDED": "Koç şimdi kısa bir mola verdi. Biraz sonra bir daha deneyelim.",
   "AI_PHOTO_RATE_LIMITED": "Bu ayın foto analiz hakkı doldu. Sonra tekrar, ya da Premium.",

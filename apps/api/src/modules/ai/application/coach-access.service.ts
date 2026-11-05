@@ -9,6 +9,7 @@ import { AiUsageFeature } from "../domain/ai.constants";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { PremiumChatQuotaService } from "./premium-chat-quota.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -25,7 +26,12 @@ export class CoachAccessService {
     private readonly budget: AiBudgetGuard,
     private readonly usage: AiUsageRepository,
     private readonly featureGate: PremiumFeatureGateService,
+    private readonly quota: PremiumChatQuotaService,
   ) {}
+
+  admitPremiumChat(userId: string): Promise<string> {
+    return this.quota.admit(userId);
+  }
 
   async getAccess(
     userId: string,
@@ -48,21 +54,14 @@ export class CoachAccessService {
 
     const ent = await this.entitlement.getEntitlement(userId, rolesHint);
     if (ent.isPremium) {
-      // Same counter as ChatService.assertPremiumRateLimit so the hint matches enforcement.
-      const [dailyLimit, usedToday] = await Promise.all([
-        this.config.get("ai.chat.daily_limit"),
-        this.usage.countFeatureSince(
-          userId,
-          AiUsageFeature.CHAT,
-          new Date(Date.now() - DAY_MS),
-        ),
-      ]);
-      const remaining = Math.max(0, dailyLimit - usedToday);
+      const { dailyRemaining, monthlyRemaining, retryAt } = await this.quota.read(userId);
+      const canChat = dailyRemaining > 0 && monthlyRemaining > 0;
       return {
-        canChat: remaining > 0,
+        canChat,
         mode: CoachAccessMode.PREMIUM,
-        ...(remaining === 0 ? { reason: ErrorCode.AI_RATE_LIMITED } : {}),
-        dailyMessagesRemaining: remaining,
+        ...(!canChat ? { reason: ErrorCode.AI_CHAT_QUOTA_EXCEEDED, retryAt } : {}),
+        dailyMessagesRemaining: dailyRemaining,
+        monthlyMessagesRemaining: monthlyRemaining,
       };
     }
 

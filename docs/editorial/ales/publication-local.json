@@ -1,0 +1,57 @@
+{
+  "environment": "LOCAL",
+  "database": "localhost:5433/mentor",
+  "author": "PuhuKoç",
+  "published": [
+    {
+      "slug": "ales-kimler-basvurabilir",
+      "publishedAt": "2026-11-04T14:29:48.119Z",
+      "coverImageKey": "content/articles/cover/ales/ales-kimler-basvurabilir-7023cf6212ca.webp"
+    },
+    {
+      "slug": "ales-soru-sayisi-sure",
+      "publishedAt": "2026-11-04T14:29:48.119Z",
+      "coverImageKey": "content/articles/cover/ales/ales-soru-sayisi-sure-3396d350a273.webp"
+    },
+    {
+      "slug": "ales-puan-net-hesaplama",
+      "publishedAt": "2026-11-04T14:29:48.119Z",
+      "coverImageKey": "content/articles/cover/ales/ales-puan-net-hesaplama-01b2ad0685ad.webp"
+    },
+    {
+      "slug": "ales-puan-gecerlilik-suresi",
+      "publishedAt": "2026-11-04T14:29:48.119Z",
+      "coverImageKey": "content/articles/cover/ales/ales-puan-gecerlilik-suresi-38c9a99154a2.webp"
+    },
+    {
+      "slug": "ales-sinava-giris-belgesi-kimlik",
+      "publishedAt": "2026-11-04T14:29:48.119Z",
+      "coverImageKey": "content/articles/cover/ales/ales-sinava-giris-belgesi-kimlik-a1e2ee8b14f8.webp"
+    },
+    {
+      "slug": "ales-sinav-merkezi-degistirme",
+      "publishedAt": "2026-11-04T14:29:48.119Z",
+      "coverImageKey": "content/articles/cover/ales/ales-sinav-merkezi-degistirme-ab8aece79a21.webp"
+    },
+    {
+      "slug": "ales-yoksis-egitim-bilgisi",
+      "publishedAt": "2026-11-04T14:29:48.119Z",
+      "coverImageKey": "content/articles/cover/ales/ales-yoksis-egitim-bilgisi-a344dc129807.webp"
+    },
+    {
+      "slug": "ales-cevap-kagidi-kitapcik-kodlama",
+      "publishedAt": "2026-11-04T14:29:48.119Z",
+      "coverImageKey": "content/articles/cover/ales/ales-cevap-kagidi-kitapcik-kodlama-5c654ced45c9.webp"
+    },
+    {
+      "slug": "ales-engelli-aday-ek-sure",
+      "publishedAt": "2026-11-04T14:29:48.119Z",
+      "coverImageKey": "content/articles/cover/ales/ales-engelli-aday-ek-sure-7464daf0adcc.webp"
+    },
+    {
+      "slug": "ales-sonuc-inceleme-soru-itirazi",
+      "publishedAt": "2026-11-04T14:29:48.119Z",
+      "coverImageKey": "content/articles/cover/ales/ales-sonuc-inceleme-soru-itirazi-cfc153d0ef6e.webp"
+    }
+  ]
+}
