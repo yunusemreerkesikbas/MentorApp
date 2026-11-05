@@ -13,11 +13,11 @@ const result = {
   },
 };
 
-function setup() {
+function setup(authResult = result, nodeEnv = "test") {
   const auth = {
-    login: vi.fn(async () => result),
-    loginAdmin: vi.fn(async () => result),
-    refresh: vi.fn(async () => result),
+    login: vi.fn(async () => authResult),
+    loginAdmin: vi.fn(async () => authResult),
+    refresh: vi.fn(async () => authResult),
     refreshAdmin: vi.fn(async () => result),
     logout: vi.fn(async () => undefined),
   };
@@ -25,13 +25,30 @@ function setup() {
   const controller = new AuthController(
     auth as never,
     {} as never,
-    { get: vi.fn(() => "test") } as never,
+    { get: vi.fn(() => nodeEnv) } as never,
     {} as never,
   );
   return { auth, controller, response };
 }
 
 describe("separate web and admin refresh cookies", () => {
+  it("sets the private-media proof only for web sessions and keeps it out of JSON", async () => {
+    const proof = "test-media-proof";
+    const authResult = { ...result, tokens: { ...result.tokens, mediaSessionProof: proof } };
+    const { controller, response } = setup(authResult, "production");
+    const session = await controller.login({} as never, response as never);
+    expect(JSON.stringify(session)).not.toContain(proof);
+    expect(response.cookie).toHaveBeenCalledWith("mentor_media_session", proof,
+      expect.objectContaining({ path: "/v1/storage/media/private", httpOnly: true, secure: true, sameSite: "lax" }));
+    response.cookie.mockClear();
+
+    await controller.adminLogin({} as never, response as never, { cloudflareAccessEmail: "admin@test.local" } as never);
+    expect(response.cookie).not.toHaveBeenCalledWith("mentor_media_session", expect.anything(), expect.anything());
+
+    await controller.logout({} as never, response as never);
+    expect(response.clearCookie).toHaveBeenCalledWith("mentor_media_session", { path: "/v1/storage/media/private" });
+  });
+
   it("sets a web cookie on regular login and an admin-only cookie on admin login", async () => {
     const { controller, response } = setup();
 

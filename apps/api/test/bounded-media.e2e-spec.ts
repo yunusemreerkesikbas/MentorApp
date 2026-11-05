@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import request from "supertest";
+import cookieParser from "cookie-parser";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { Test } from "@nestjs/testing";
@@ -19,10 +20,12 @@ import { BoundedStorageAdapter } from "../src/shared/storage/bounded-storage.ada
 import { MediaReadGrantService } from "../src/shared/storage/media-read-grant.service";
 import { MediaReadService } from "../src/shared/storage/media-read.service";
 import { MediaController } from "../src/shared/storage/media.controller";
+import { MEDIA_SESSION_COOKIE, signMediaSession } from "../src/shared/storage/media-session-proof";
 import { assertLocalTestDatabase } from "./database-target";
 
 const tables=["storage_budget_state","storage_reservations","storage_object_manifest"];
 const limits={storedBytes: 524288000, classA: 10000, classB: 100000, transferBytes: 1073741824};
+const mediaSecret="test-media-http-secret-0000000000000000000";
 const actor={userId:randomUUID(),sessionId:randomUUID()}; const otherSession=randomUUID();
 const privateKey=`notebook/${actor.userId}/${randomUUID()}.png`;
 const publicKey=`avatars/${actor.userId}/${randomUUID()}.png`;
@@ -38,7 +41,7 @@ describe("bounded media HTTP boundary", () => {
     await pool.query("insert into users(id,email,password_hash,display_name,kvkk_accepted_at) values ($1,$2,'fixture','Media fixture',now())",[actor.userId,`media-${actor.userId}@example.test`]);
     await pool.query("insert into auth_sessions(id,user_id,expires_at) values ($1,$3,now()+interval '1 hour'),($2,$3,now()+interval '1 hour')",[actor.sessionId,otherSession,actor.userId]);
     const db=createDatabase(pool); repository=new StorageBudgetRepository(db);
-    const config=new ConfigService({STORAGE_ACCESS_MODE:"bounded",MEDIA_READ_SECRET:"test-media-http-secret-0000000000000000000"});
+    const config=new ConfigService({STORAGE_ACCESS_MODE:"bounded",MEDIA_READ_SECRET:mediaSecret});
     const registry={get:vi.fn(async (key:keyof typeof CONFIG_CATALOG) => CONFIG_CATALOG[key].default)};
     const budget=new StorageBudgetService(repository,registry as never);
     tokens=new TokenService(new JwtService(),config,new AuthSessionRepository(db));
@@ -47,7 +50,7 @@ describe("bounded media HTTP boundary", () => {
       {provide:ConfigService,useValue:config},{provide:ConfigRegistryService,useValue:registry},
       {provide:StorageBudgetRepository,useValue:repository},{provide:TokenService,useValue:tokens},{provide:RAW_STORAGE_PORT,useValue:bounded},
     ]}).compile();
-    app=module.createNestApplication(); app.setGlobalPrefix("v1"); app.useGlobalFilters(new AllExceptionsFilter()); await app.init();
+    app=module.createNestApplication(); app.setGlobalPrefix("v1"); app.use(cookieParser()); app.useGlobalFilters(new AllExceptionsFilter()); await app.init();
     grants=app.get(MediaReadGrantService);
   });
   beforeEach(async () => {
@@ -69,16 +72,26 @@ describe("bounded media HTTP boundary", () => {
   });
   const privateUrl=() => `/v1/storage/media/private?grant=${grants.issue(privateKey,actor,300)}`;
   const publicUrl=() => `/v1/storage/media/public/${publicKey}`;
+  const cookieFor=(sessionId:string) => `${MEDIA_SESSION_COOKIE}=${signMediaSession({...actor,sessionId},mediaSecret)}`;
+  const privateGet=(url=privateUrl()) => request(app.getHttpServer()).get(url).set("Cookie",cookieFor(actor.sessionId));
+  const privateHead=() => request(app.getHttpServer()).head(privateUrl()).set("Cookie",cookieFor(actor.sessionId));
+
+  it("rejects a copied private link without the issuing browser's session proof", async () => {
+    const copiedLink = privateUrl();
+    await request(app.getHttpServer()).get(copiedLink).expect(401);
+    await request(app.getHttpServer()).get(copiedLink).set("Cookie",cookieFor(otherSession)).expect(401);
+    expect(raw.readObject).not.toHaveBeenCalled();
+  });
 
   it("serves private bytes with no-store, no-referrer and explicit MIME",async () => {
-    const res=await request(app.getHttpServer()).get(privateUrl()).expect(200);
+    const res=await privateGet().expect(200);
     expect(res.headers).toMatchObject({"cache-control":"no-store","referrer-policy":"no-referrer","x-content-type-options":"nosniff"});
     expect(res.headers["content-type"]).toContain("image/png"); expect(raw.readObject).toHaveBeenCalledWith(privateKey,3);
   });
   it("refuses a grant from a revoked session while the owner has another live session",async () => {
     const url=privateUrl(); await pool.query("update auth_sessions set revoked_at=now() where id=$1",[actor.sessionId]);
     await expect(tokens.validateSession(otherSession,actor.userId)).resolves.toMatchObject({sessionId:otherSession});
-    await request(app.getHttpServer()).get(url).expect(401); expect(raw.readObject).not.toHaveBeenCalled();
+    await privateGet(url).expect(401); expect(raw.readObject).not.toHaveBeenCalled();
   });
   it("serves public content but refuses private prefixes and encoded paths",async () => {
     await request(app.getHttpServer()).get(publicUrl()).expect(200); raw.readObject.mockClear();
@@ -89,7 +102,7 @@ describe("bounded media HTTP boundary", () => {
     expect(raw.readObject).not.toHaveBeenCalled();
   });
   it("authorizes HEAD without provider calls, and refuses unsupported methods",async () => {
-    await request(app.getHttpServer()).head(privateUrl()).expect(200);
+    await privateHead().expect(200);
     await request(app.getHttpServer()).head(publicUrl()).expect(200);
     await request(app.getHttpServer()).head("/v1/storage/media/private?grant=bad").expect(401);
     await request(app.getHttpServer()).post(privateUrl()).expect(405);
@@ -97,20 +110,20 @@ describe("bounded media HTTP boundary", () => {
   });
   it("refuses exhausted reads before the backend and does not disclose usage",async () => {
     await pool.query("update storage_budget_state set class_b=100000");
-    const res=await request(app.getHttpServer()).get(privateUrl()).expect(503);
+    const res=await privateGet().expect(503);
     expect(res.body.code).toBe("STORAGE_TEMPORARILY_UNAVAILABLE"); expect(JSON.stringify(res.body)).not.toContain("100000");
     expect(raw.readObject).not.toHaveBeenCalled();
   });
   it("serializes concurrent requests for the final two read attempts",async () => {
     await pool.query("update storage_budget_state set class_b=99998");
-    const url=privateUrl(); const responses=await Promise.all([request(app.getHttpServer()).get(url),request(app.getHttpServer()).get(url)]);
+    const url=privateUrl(); const responses=await Promise.all([privateGet(url),privateGet(url)]);
     expect(responses.map(res=>res.status).sort()).toEqual([200,503]); expect(raw.readObject).toHaveBeenCalledTimes(1);
     expect((await pool.query("select class_b from storage_budget_state")).rows[0]?.class_b).toBe(100000);
   });
   it("stops photo bytes at the transfer ceiling while HEAD still authorizes metadata",async () => {
     await pool.query("update storage_budget_state set transfer_bytes=1073741824");
-    await request(app.getHttpServer()).get(privateUrl()).expect(503);
-    await request(app.getHttpServer()).head(privateUrl()).expect(200);
+    await privateGet().expect(503);
+    await privateHead().expect(200);
     expect(raw.readObject).not.toHaveBeenCalled();
   });
 });

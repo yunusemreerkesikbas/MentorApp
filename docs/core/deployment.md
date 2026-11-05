@@ -18,6 +18,42 @@ HttpOnly, SameSite=Lax cookies; do not add a shared cookie Domain attribute. Web
 URLs and sitemap use the apex; admin sends `X-Robots-Tag: noindex, nofollow, noarchive`.
 Noindex does not replace authentication or Cloudflare Access.
 
+## Selected release: closed web cohort (2026-11-05)
+
+Run the web trial with named tester accounts until the mobile app is ready. Keep public account
+creation closed (`signup.enabled=false`) and keep `ADMIN_ACCESS_MODE=disabled`. Leave Cloudflare
+Zero Trust unactivated because checkout asks for permission to bill usage above the Free limits.
+Use the dedicated trial database and verify that its sign-in-capable accounts belong to approved
+testers before admission. If testers need new accounts, first complete and verify a mailbox-proof
+invitation flow with a restricted operator procedure. Close signup again after enrollment.
+
+### Deferred operator panel
+
+When operator access is needed, review provider terms and verify these gates before publishing
+the panel.
+
+1. Verify the actual Cloudflare Free checkout and Render Hobby domain inventory. Include any
+   automatically paired `www` hostname in the count. Get a separate decision before accepting
+   payment or overage terms. Use a Free admin service and confirm headroom in the shared instance,
+   build and bandwidth allowances. The optional paid Blueprint is not the trial deployment.
+2. Configure one self-hosted Access application for `admin.puhukoc.com` and the two admin API
+   route families listed in section 4. Allow only the intended operator identity and require MFA.
+   Set `ADMIN_ACCESS_MODE=cloudflare`, the matching Access team origin and audience. Keep the
+   application role and matching email checks enabled. Disable the admin Render alias.
+3. Enable the Access eager cookie redirect for the concrete API hostname and configure Access to
+   answer credentialed CORS preflights for the exact admin origin. Allow the methods and headers
+   used by the admin client. Actual admin requests must still pass Access and API authentication.
+   Verify from a fresh browser session that the operator can sign in, refresh and list the waitlist.
+   Verify denial for a different identity, a missing or invalid assertion and direct-origin access.
+   Confirm that the student web and public API remain reachable without Access.
+4. On failure, take the admin frontend offline and return the API to `ADMIN_ACCESS_MODE=disabled`.
+   Verify public readiness and denial of admin calls from both new and existing sessions.
+
+Provider references: [Access MFA](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/mfa-requirements/),
+[Access cookies](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/),
+[Access CORS](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/cors/),
+and [Render domain allowances](https://render.com/docs/custom-domains).
+
 ## Closed-admin core-only Free trial
 
 The owner selected this profile on 2026-10-29. Set `ADMIN_ACCESS_MODE=disabled` on the
@@ -62,11 +98,10 @@ and `ads.enabled=false`. Keep checkout/billing channels off, `PAYMENTS_PROVIDER=
 and `SMS_PROVIDER=disabled`. Explicitly set `payments.web.enabled=false`,
 `payments.mobile.enabled=false`, `payments.web.redirect_to_mobile=false`,
 `mentorship.seats.billing_enabled=false` and `mentorship.seats.mobile_billing_enabled=false`.
-Keep `community.achievements.enabled=true` for personal progress, `signup.enabled=true`
-and `signup.pilot.enabled=true`. Launch is invite-only (2026-11-05): signup requires an
-`invited` row in `signup_invitations` (migration 0141 must run; admins invite from `/waitlist`);
-there is no `PILOT_INVITED_EMAILS` env any more. Public signup is not open: to open it later,
-set `signup.pilot.enabled=false` deliberately. Deploy the API before the web. Expected
+Keep `community.achievements.enabled=true` for personal progress, `signup.enabled=false`
+and `signup.pilot.enabled=true`. The closed web cohort uses approved existing accounts. Keep the
+pilot flag enabled as a safeguard for any later controlled enrollment. Migration 0141 adds the
+waitlist and invitation table. Deploy the API before the web. Expected
 trial users are not an account-count or invoice cap. Verify effective values, not only
 catalog defaults. The registry caches overrides per process: an attended offline change
 requires controlled restart and verification. No live flag was changed in source preparation.

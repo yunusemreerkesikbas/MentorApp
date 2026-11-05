@@ -13,6 +13,25 @@ optional; source checks do not prove that production services or domains are liv
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-05 · Private media browser binding.** A bounded private image requires the grant and
+  an HttpOnly cookie matching the web session that received it. Existing sessions obtain the
+  cookie on refresh. Vision board previews and exports send credentials only to the private API
+  route. Deploy the API and web from the same release before opening admission. Verify both the
+  owner read and a copied link in a second browser before admission.
+  Related: `media-read.service.ts`, `auth.controller.ts` and `board-export-layout.ts`.
+
+- **2026-11-05 · Closed web cohort.** The owner selected a closed test with named accounts until
+  mobile is ready. Follow the [deployment procedure](../core/deployment.md#selected-release-closed-web-cohort-2026-11-05)
+  to verify the tester accounts and keep signup and admin closed. Cloudflare Zero Trust activation
+  and its overage authorization are deferred. The shared countdown uses the React type import convention
+  to clear the lint error in CI #647. Related: `render.yaml` and `packages/ui/src/components/countdown-card.tsx`.
+
+- **2026-11-05 · Waitlist browser checks in CI.** CI now runs the dedicated waitlist suite.
+  Use `pnpm --filter @mentor/web test:e2e:waitlist` to run it separately. The suite uses a fake
+  availability API and an isolated production build. Real CAPTCHA, email delivery and admission
+  still need acceptance checks. Related: `.github/workflows/ci.yml` and
+  `apps/web/playwright.waitlist.config.ts`.
+
 - **2026-10-31 · Free-trial scheduler and launch decisions.** Render Free has no cron, so
   `.github/workflows/trial-maintenance.yml` runs the daily reminder and notebook review dispatches
   at 06:00 UTC (also `workflow_dispatch`). Usage: set repo variable `TRIAL_API_ORIGIN` to the

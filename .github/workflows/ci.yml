@@ -170,7 +170,7 @@ jobs:
       - name: Bounded media browser checks
         run: pnpm --filter @mentor/web exec playwright test --config=playwright.bounded-media.config.ts
 
-      - name: Waitlist admission browser checks
+      - name: Invite-only waitlist browser checks
         run: pnpm --filter @mentor/web test:e2e:waitlist
 
       - name: Upload Playwright diagnostics
