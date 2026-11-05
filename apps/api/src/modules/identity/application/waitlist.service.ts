@@ -54,6 +54,16 @@ function toEntry(row: SignupInvitationRow): AdminWaitlistEntry {
   };
 }
 
+const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
+
+function isActiveInvited(row: SignupInvitationRow): boolean {
+  return (
+    row.status === "invited" &&
+    row.invitedAt instanceof Date &&
+    row.invitedAt.getTime() >= Date.now() - SIX_MONTHS_MS
+  );
+}
+
 const notFound = () => new DomainError(ErrorCode.WAITLIST_ENTRY_NOT_FOUND, HttpStatus.NOT_FOUND);
 
 /** Public waitlist. Never reveals whether an address is new, duplicate, registered or the mode is open. */
@@ -95,8 +105,11 @@ export class WaitlistService {
   async invite(id: string, actorId: string): Promise<AdminWaitlistEntry> {
     const existing = await this.invitations.findById(id);
     if (!existing) throw notFound();
-    if (existing.status !== "invited") await this.assertCapacity();
-    const row = await this.invitations.markInvited(id, actorId);
+    if (await this.users.findByEmailService(existing.email)) {
+      throw new DomainError(ErrorCode.AUTH_EMAIL_IN_USE, HttpStatus.CONFLICT);
+    }
+    const max = !isActiveInvited(existing) ? await this.assertCapacity() : undefined;
+    const row = await this.invitations.markInvited(id, actorId, max);
     if (!row) throw notFound();
     await this.sendInvitation(row);
     return toEntry(row);
@@ -112,8 +125,11 @@ export class WaitlistService {
     if (await this.users.findByEmailService(email)) {
       throw new DomainError(ErrorCode.AUTH_EMAIL_IN_USE, HttpStatus.CONFLICT);
     }
-    if (!(await this.invitations.findInvited(email))) await this.assertCapacity();
-    const row = await this.invitations.upsertInvited({ email, role: input.role, locale: input.locale, invitedBy: actorId });
+    const max = !(await this.invitations.findInvited(email)) ? await this.assertCapacity() : undefined;
+    const row = await this.invitations.upsertInvited(
+      { email, role: input.role, locale: input.locale, invitedBy: actorId },
+      max,
+    );
     await this.sendInvitation(row);
     return toEntry(row);
   }
@@ -121,7 +137,7 @@ export class WaitlistService {
   /** Resend is never capacity-gated: the person already holds an invitation. */
   async resend(id: string): Promise<void> {
     const row = await this.invitations.findById(id);
-    if (!row || row.status !== "invited") throw notFound();
+    if (!row || !isActiveInvited(row)) throw notFound();
     await this.sendInvitation(row);
   }
 
@@ -130,12 +146,14 @@ export class WaitlistService {
   }
 
   /** Only NEW invites are blocked at the cap; lowering it never locks out people already invited. */
-  private async assertCapacity(): Promise<void> {
+  private async assertCapacity(): Promise<number> {
     const [max, invited] = await Promise.all([
       this.registry.get("signup.pilot.max_invited_emails"),
       this.invitations.countInvited(),
     ]);
-    if (invited >= Number(max)) throw new DomainError(ErrorCode.WAITLIST_INVITE_LIMIT, HttpStatus.CONFLICT);
+    const limit = Number(max);
+    if (invited >= limit) throw new DomainError(ErrorCode.WAITLIST_INVITE_LIMIT, HttpStatus.CONFLICT);
+    return limit;
   }
 
   private async sendInvitation(row: SignupInvitationRow): Promise<void> {

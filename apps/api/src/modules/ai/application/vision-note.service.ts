@@ -15,6 +15,7 @@ import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { assertWithinFeatureDailyCap, withUserFeatureLock } from "./ai-generation-guard";
 
 /**
  * Premium AI motivation note for the vision/goal board ("hayal/hedef panosu") — W3 · §4 #5
@@ -47,66 +48,72 @@ export class VisionNoteService {
       PremiumFeatureId.VISION_NOTE,
     );
 
-    const board = await this.vision.getMine(user.id);
-    if (!board) {
-      throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
-    }
+    const lang = I18nContext.current()?.lang;
+    const locale = promptLocale(lang);
 
-    const locale = promptLocale(I18nContext.current()?.lang);
-    // Idempotent cache: reuse the note (no LLM call / no cost) until the goal changes.
-    if (
-      board.aiNote &&
-      (await this.vision.getAiNoteLocale(user.id)) === locale
-    ) {
-      return { note: board.aiNote, model: "cache" };
-    }
+    return withUserFeatureLock(user.id, AiUsageFeature.VISION_NOTE, async () => {
+      const board = await this.vision.getMine(user.id);
+      if (!board) {
+        throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
+      }
 
-    const [ctx, names] = await Promise.all([
-      this.context.build(user.id),
-      this.vision.resolveTargetNames(board),
-    ]);
-    const { system, user: userMsg } = buildVisionNotePrompt(
-      ctx,
-      {
-        goalTitle: board.goalTitle,
-        cityName: names.cityName,
-        universityName: names.universityName,
-        titleName: names.titleName,
-        institutionName: names.institutionName,
-        careerLabel: board.careerGroup
-          ? this.careerLabel(board.careerGroup)
-          : null,
-        motivation: board.motivation,
-      },
-      locale,
-    );
+      // Idempotent cache: reuse the note (no LLM call / no cost) until the goal changes.
+      if (
+        board.aiNote &&
+        (await this.vision.getAiNoteLocale(user.id)) === locale
+      ) {
+        return { note: board.aiNote, model: "cache" };
+      }
 
-    await this.budget.assertWithinBudget();
-    const result = await this.llm.complete({ system, user: userMsg });
+      await assertWithinFeatureDailyCap(this.usage, user.id, AiUsageFeature.VISION_NOTE);
 
-    await this.usage.append({
-      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
-      userId: user.id,
-      model: result.model,
-      feature: AiUsageFeature.VISION_NOTE,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+      const [ctx, names] = await Promise.all([
+        this.context.build(user.id),
+        this.vision.resolveTargetNames(board),
+      ]);
+      const { system, user: userMsg } = buildVisionNotePrompt(
+        ctx,
+        {
+          goalTitle: board.goalTitle,
+          cityName: names.cityName,
+          universityName: names.universityName,
+          titleName: names.titleName,
+          institutionName: names.institutionName,
+          careerLabel: board.careerGroup
+            ? this.careerLabel(board.careerGroup, lang)
+            : null,
+          motivation: board.motivation,
+        },
+        locale,
+      );
+
+      await this.budget.assertWithinBudget();
+      const result = await this.llm.complete({ system, user: userMsg });
+
+      await this.usage.append({
+        ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
+        userId: user.id,
+        model: result.model,
+        feature: AiUsageFeature.VISION_NOTE,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+      });
+
+      await this.vision.setAiNote(user.id, result.text, result.model, locale);
+
+      return { note: result.text, model: result.model };
     });
-
-    await this.vision.setAiNote(user.id, result.text, result.model, locale);
-
-    return { note: result.text, model: result.model };
   }
 
   /**
    * Career enum → localized label, reusing the table `coach-evidence` already reads. The prompt
    * should say "Yazılım ve Bilişim", not "YAZILIM".
    */
-  private careerLabel(group: string): string {
+  private careerLabel(group: string, lang?: string): string {
     return this.i18n.translate(
       `coaching.coachEvidence.values.careerGroup.${group}`,
-      { lang: I18nContext.current()?.lang },
+      { lang },
     ) as unknown as string;
   }
 }

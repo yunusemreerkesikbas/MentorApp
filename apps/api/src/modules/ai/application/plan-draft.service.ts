@@ -19,6 +19,7 @@ import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { withUserFeatureLock } from "./ai-generation-guard";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -50,56 +51,60 @@ export class PlanDraftService {
       PremiumFeatureId.PLAN_AI,
     );
 
-    const [dailyLimit, usedToday] = await Promise.all([
-      this.config.get("ai.plan_draft.daily_limit"),
-      this.usage.countFeaturesSince(
-        user.id,
-        [AiUsageFeature.PLAN_DRAFT, AiUsageFeature.PLAN_ADAPTATION],
-        new Date(Date.now() - DAY_MS),
-      ),
-    ]);
-    if (usedToday >= dailyLimit) {
-      throw new DomainError(
-        ErrorCode.AI_RATE_LIMITED,
-        HttpStatus.TOO_MANY_REQUESTS,
+    const locale = promptLocale(I18nContext.current()?.lang);
+
+    return withUserFeatureLock(user.id, AiUsageFeature.PLAN_DRAFT, async () => {
+      const [dailyLimit, usedToday] = await Promise.all([
+        this.config.get("ai.plan_draft.daily_limit"),
+        this.usage.countFeaturesSince(
+          user.id,
+          [AiUsageFeature.PLAN_DRAFT, AiUsageFeature.PLAN_ADAPTATION],
+          new Date(Date.now() - DAY_MS),
+        ),
+      ]);
+      if (usedToday >= dailyLimit) {
+        throw new DomainError(
+          ErrorCode.AI_RATE_LIMITED,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
+      const todayIso = todayInIstanbul();
+      const ctx = await this.context.build(user.id);
+      const { system, user: userMsg } = buildPlanDraftPrompt(
+        ctx,
+        note,
+        todayIso,
+        locale,
       );
-    }
 
-    const todayIso = todayInIstanbul();
-    const ctx = await this.context.build(user.id);
-    const { system, user: userMsg } = buildPlanDraftPrompt(
-      ctx,
-      note,
-      todayIso,
-      promptLocale(I18nContext.current()?.lang),
-    );
+      await this.budget.assertWithinBudget();
+      const result = await this.llm.complete({ system, user: userMsg });
 
-    await this.budget.assertWithinBudget();
-    const result = await this.llm.complete({ system, user: userMsg });
+      // The call happened — meter it even when the output turns out unusable.
+      await this.usage.append({
+        ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
+        userId: user.id,
+        model: result.model,
+        feature: AiUsageFeature.PLAN_DRAFT,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costMicros: estimateCostMicros(
+          result.model,
+          result.promptTokens,
+          result.completionTokens,
+        ),
+      });
 
-    // The call happened — meter it even when the output turns out unusable.
-    await this.usage.append({
-      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
-      userId: user.id,
-      model: result.model,
-      feature: AiUsageFeature.PLAN_DRAFT,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(
-        result.model,
-        result.promptTokens,
-        result.completionTokens,
-      ),
+      const days = parsePlanDraft(result.text, todayIso);
+      if (!days) {
+        throw new DomainError(
+          ErrorCode.AI_PROVIDER_ERROR,
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+
+      return { days, model: result.model };
     });
-
-    const days = parsePlanDraft(result.text, todayIso);
-    if (!days) {
-      throw new DomainError(
-        ErrorCode.AI_PROVIDER_ERROR,
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
-    }
-
-    return { days, model: result.model };
   }
 }

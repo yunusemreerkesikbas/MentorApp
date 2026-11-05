@@ -71,7 +71,11 @@
     ".next/weekly-chest-qa/types/**/*.ts",
     ".next/weekly-chest-qa/dev/types/**/*.ts",
     ".next/waitlist-build/types/**/*.ts",
-    ".next/waitlist-build/dev/types/**/*.ts"
+    ".next/waitlist-build/dev/types/**/*.ts",
+    ".next/cohort-smoke/types/**/*.ts",
+    ".next/cohort-smoke/dev/types/**/*.ts",
+    ".next/cohort-smoke-2/types/**/*.ts",
+    ".next/cohort-smoke-2/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

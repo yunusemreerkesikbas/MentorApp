@@ -20,6 +20,7 @@ import type { PromptLocale } from "../domain/prompt-locale";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { assertWithinFeatureDailyCap, withUserFeatureLock } from "./ai-generation-guard";
 
 /**
  * Drafts a week of homework for one student (W8).
@@ -55,42 +56,53 @@ export class AssignmentSuggestionService {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
-    await this.featureGate.assertAllowed(
-      coach.id,
-      coach.roles,
-      PremiumFeatureId.MENTORSHIP_SUGGESTIONS,
-      ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
-    );
 
-    // The brief's evidence shaper, reused: names and the coach's own note are already stripped
-    // there, so this prompt inherits both without a second place to keep them stripped.
-    const evidence = buildMentorshipBriefEvidence(report);
-    const prompt = buildAssignmentSuggestionPrompt(evidence, locale);
-    await this.budget.assertWithinBudget();
-    const result = await this.llm.complete(prompt);
-    await this.usage.append({
-      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
-      userId: coach.id,
-      model: result.model,
-      feature: AiUsageFeature.MENTORSHIP_SUGGESTIONS,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(
-        result.model,
-        result.promptTokens,
-        result.completionTokens,
-      ),
+    return withUserFeatureLock(coach.id, AiUsageFeature.MENTORSHIP_SUGGESTIONS, async () => {
+      await this.featureGate.assertAllowed(
+        coach.id,
+        coach.roles,
+        PremiumFeatureId.MENTORSHIP_SUGGESTIONS,
+        ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+      );
+
+      await assertWithinFeatureDailyCap(
+        this.usage,
+        coach.id,
+        AiUsageFeature.MENTORSHIP_SUGGESTIONS,
+        ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+        HttpStatus.FORBIDDEN,
+      );
+
+      // The brief's evidence shaper, reused: names and the coach's own note are already stripped
+      // there, so this prompt inherits both without a second place to keep them stripped.
+      const evidence = buildMentorshipBriefEvidence(report);
+      const prompt = buildAssignmentSuggestionPrompt(evidence, locale);
+      await this.budget.assertWithinBudget();
+      const result = await this.llm.complete(prompt);
+      await this.usage.append({
+        ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
+        userId: coach.id,
+        model: result.model,
+        feature: AiUsageFeature.MENTORSHIP_SUGGESTIONS,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costMicros: estimateCostMicros(
+          result.model,
+          result.promptTokens,
+          result.completionTokens,
+        ),
+      });
+
+      // The subject allowlist comes from the same evidence the model read, so a subject it invented
+      // for an exam it assumed is blanked rather than written into the student's plan.
+      const parsed = parseAssignmentSuggestions(
+        result.text,
+        collectEvidenceSubjects(evidence),
+      );
+      if (parsed.kind === "MALFORMED") {
+        throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      return { tasks: parsed.tasks, model: result.model };
     });
-
-    // The subject allowlist comes from the same evidence the model read, so a subject it invented
-    // for an exam it assumed is blanked rather than written into the student's plan.
-    const parsed = parseAssignmentSuggestions(
-      result.text,
-      collectEvidenceSubjects(evidence),
-    );
-    if (parsed.kind === "MALFORMED") {
-      throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
-    }
-    return { tasks: parsed.tasks, model: result.model };
   }
 }

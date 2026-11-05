@@ -15,7 +15,7 @@ function setup(opts: { enabled?: boolean; pilot?: boolean; user?: boolean; invit
     insertWaiting: vi.fn(async () => undefined),
     purgeExpired: vi.fn(async () => undefined),
     countInvited: vi.fn(async () => opts.invited ?? 0),
-    findById: vi.fn(async () => opts.row === undefined ? row() : opts.row),
+    findById: vi.fn(async () => opts.row === null ? null : row(opts.row ?? {})),
     findInvited: vi.fn(async () => opts.alreadyInvited ? { role: "student" } : null),
     markInvited: vi.fn(async (_id: string, by: string) =>
       row({ status: "invited", invitedAt: new Date("2026-11-05T10:00:00Z"), invitedBy: by, ...(opts.row ?? {}) })),
@@ -84,6 +84,14 @@ describe("WaitlistService", () => {
       expect(f.queue.enqueue).not.toHaveBeenCalled();
     });
 
+    it("invite refuses a waiting row whose email already belongs to an account", async () => {
+      const f = setup({ user: true });
+      await expect(f.service.invite("r1", "admin1")).rejects.toMatchObject({ code: "AUTH_EMAIL_IN_USE", httpStatus: 409 });
+      expect(f.users.findByEmailService).toHaveBeenCalledWith("a@b.com");
+      expect(f.invitations.markInvited).not.toHaveBeenCalled();
+      expect(f.queue.enqueue).not.toHaveBeenCalled();
+    });
+
     it("lowered capacity still lets an already-invited row be re-invited and resent", async () => {
       const f = setup({ invited: 9, max: 5, row: { status: "invited", invitedAt: new Date() } });
       await expect(f.service.invite("r1", "admin1")).resolves.toMatchObject({ status: "invited" });
@@ -91,11 +99,19 @@ describe("WaitlistService", () => {
       expect(f.queue.enqueue).toHaveBeenCalledTimes(2);
     });
 
+    it("expired (>6m) invited row requires capacity on invite and cannot be resent", async () => {
+      const expiredDate = new Date(Date.now() - 190 * 24 * 60 * 60 * 1000);
+      const f = setup({ invited: 5, max: 5, row: { status: "invited", invitedAt: expiredDate } });
+      await expect(f.service.invite("r1", "admin1")).rejects.toMatchObject({ code: "WAITLIST_INVITE_LIMIT", httpStatus: 409 });
+      await expect(f.service.resend("r1")).rejects.toMatchObject({ code: "WAITLIST_ENTRY_NOT_FOUND", httpStatus: 404 });
+      expect(f.queue.enqueue).not.toHaveBeenCalled();
+    });
+
     it("invite enqueues the invitation email", async () => {
       const f = setup();
       const entry = await f.service.invite("r1", "admin1");
       expect(entry).toMatchObject({ id: "r1", status: "invited", createdAt: "2026-11-01T10:00:00.000Z" });
-      expect(f.invitations.markInvited).toHaveBeenCalledWith("r1", "admin1");
+      expect(f.invitations.markInvited).toHaveBeenCalledWith("r1", "admin1", 50);
       expect(f.queue.enqueue).toHaveBeenCalledWith("notifications.send-email", mail("a@b.com", "https://app.test/kayit?davet=1"));
     });
 
@@ -125,7 +141,7 @@ describe("WaitlistService", () => {
     it("inviteEmail trims and lower-cases before the repository", async () => {
       const f = setup();
       await f.service.inviteEmail({ email: "  New@Ornek.COM ", role: "coach", locale: "en" }, "admin1");
-      expect(f.invitations.upsertInvited).toHaveBeenCalledWith({ email: "new@ornek.com", role: "coach", locale: "en", invitedBy: "admin1" });
+      expect(f.invitations.upsertInvited).toHaveBeenCalledWith({ email: "new@ornek.com", role: "coach", locale: "en", invitedBy: "admin1" }, 50);
       expect(f.queue.enqueue).toHaveBeenCalledWith("notifications.send-email", mail("new@ornek.com", "https://app.test/en/signup?davet=1&rol=koc", "en"));
     });
 

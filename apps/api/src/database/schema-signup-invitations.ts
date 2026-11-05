@@ -1,4 +1,5 @@
-import { index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { index, pgPolicy, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { organizations, users } from "./schema";
 
 export type InvitationRole = "student" | "coach";
@@ -22,5 +23,10 @@ export const signupInvitations = pgTable(
   (table) => [
     uniqueIndex("signup_invitations_email_uq").on(table.email),
     index("signup_invitations_status_created_idx").on(table.status, table.createdAt),
+    pgPolicy("signup_invitations_service", {
+      for: "all",
+      using: sql`current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
+    }),
   ],
-);
+).enableRLS();

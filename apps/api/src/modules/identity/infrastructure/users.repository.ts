@@ -8,6 +8,7 @@ import { emailTokens, users } from "../../../database/schema";
 import { lockUser, revoke } from "./auth-session.repository";
 import { requireRecentAuthentication } from "./recent-authentication";
 import { phoneVerifications } from "../../../database/schema-phone";
+import { signupInvitations } from "../../../database/schema-signup-invitations";
 
 export type UserRow = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -278,6 +279,9 @@ export class UsersRepository {
   async createService(data: NewUser): Promise<UserRow> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx.insert(users).values(data).returning();
+      await tx
+        .delete(signupInvitations)
+        .where(sql`lower(${signupInvitations.email}) = lower(${data.email})`);
       return rows[0]!;
     });
   }
@@ -335,6 +339,9 @@ export class UsersRepository {
         const [updated] = await tx.update(users).set({ ...patch,
           emailVerifiedAt: changed ? null : current.emailVerifiedAt,
         }).where(eq(users.id, userId)).returning();
+        await tx
+          .delete(signupInvitations)
+          .where(sql`lower(${signupInvitations.email}) in (lower(${current.email}), lower(${patch.email}))`);
         return updated;
       });
     }
@@ -442,6 +449,9 @@ export class UsersRepository {
         .where(eq(users.id, id));
 
       await tx.delete(phoneVerifications).where(eq(phoneVerifications.userId, id));
+      await tx
+        .delete(signupInvitations)
+        .where(sql`lower(${signupInvitations.email}) = lower(${current.email})`);
 
       const { avatarStorageKey, ...before } = current;
       return { before, after, avatarStorageKey };

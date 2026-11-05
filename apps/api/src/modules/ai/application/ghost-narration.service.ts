@@ -14,6 +14,7 @@ import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { assertWithinFeatureDailyCap, withUserFeatureLock } from "./ai-generation-guard";
 
 /**
  * Premium AI narration of the user's "geçmiş-ben" progress (W3 · §4 #5 premium-only — free tier
@@ -44,48 +45,52 @@ export class GhostNarrationService {
       PremiumFeatureId.GHOST_NARRATION,
     );
 
-    const ghost = await this.mockExams.getGhostComparison(user.id, examId);
-    if (!ghost) {
-      // Need at least two attempts to compare against the past.
-      throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
-    }
-
     const locale = promptLocale(I18nContext.current()?.lang);
-    // Idempotent cache: reuse this attempt's narration (no LLM call / no cost).
-    if (
-      ghost.aiNarration &&
-      (await this.mockExams.getLatestGhostNarrationLocale(user.id, examId)) ===
-        locale
-    ) {
-      return { narration: ghost.aiNarration, model: "cache" };
-    }
 
-    const { system, user: userMsg } = buildGhostPrompt(
-      ghost,
-      locale,
-    );
-    await this.budget.assertWithinBudget();
-    const result = await this.llm.complete({ system, user: userMsg });
+    return withUserFeatureLock(user.id, AiUsageFeature.GHOST, async () => {
+      const ghost = await this.mockExams.getGhostComparison(user.id, examId);
+      if (!ghost) {
+        // Need at least two attempts to compare against the past.
+        throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
+      }
 
-    await this.usage.append({
-      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
-      userId: user.id,
-      model: result.model,
-      feature: AiUsageFeature.GHOST,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+      // Idempotent cache: reuse this attempt's narration (no LLM call / no cost).
+      if (
+        ghost.aiNarration &&
+        (await this.mockExams.getLatestGhostNarrationLocale(user.id, examId)) ===
+          locale
+      ) {
+        return { narration: ghost.aiNarration, model: "cache" };
+      }
+
+      await assertWithinFeatureDailyCap(this.usage, user.id, AiUsageFeature.GHOST);
+
+      const { system, user: userMsg } = buildGhostPrompt(
+        ghost,
+        locale,
+      );
+      await this.budget.assertWithinBudget();
+      const result = await this.llm.complete({ system, user: userMsg });
+
+      await this.usage.append({
+        ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
+        userId: user.id,
+        model: result.model,
+        feature: AiUsageFeature.GHOST,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+      });
+
+      await this.mockExams.setLatestGhostNarration(
+        user.id,
+        result.text,
+        result.model,
+        examId,
+        locale,
+      );
+
+      return { narration: result.text, model: result.model };
     });
-
-    await this.mockExams.setLatestGhostNarration(
-      user.id,
-      result.text,
-      result.model,
-      examId,
-      locale,
-    );
-
-    return { narration: result.text, model: result.model };
   }
 }
-

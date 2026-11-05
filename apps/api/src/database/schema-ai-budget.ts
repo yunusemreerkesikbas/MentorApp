@@ -1,4 +1,5 @@
-import { index, integer, pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { index, integer, pgPolicy, pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /** Short-lived aggregate budget holds. No prompt, response, user identifier or other PII. */
 export const aiBudgetReservations = pgTable(
@@ -9,5 +10,12 @@ export const aiBudgetReservations = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("ai_budget_reservations_expires_idx").on(table.expiresAt)],
-);
+  (table) => [
+    index("ai_budget_reservations_expires_idx").on(table.expiresAt),
+    pgPolicy("ai_budget_reservations_service", {
+      for: "all",
+      using: sql`current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
+    }),
+  ],
+).enableRLS();

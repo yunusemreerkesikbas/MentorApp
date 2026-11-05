@@ -63,7 +63,7 @@ export class AdminUsersController {
     @Body() dto: UpdateUserStatusDto,
     @Req() req: AuditableRequest,
   ): Promise<AdminUserView> {
-    const result = await this.users.setStatus(actor.id, userId, dto.status);
+    const result = await this.users.setStatus(actor.id, userId, dto.status, actor.roles);
     setAuditContext(req, {
       targetType: AuditTargetType.USER,
       targetId: userId,

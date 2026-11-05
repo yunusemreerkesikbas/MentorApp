@@ -70,8 +70,9 @@ describe("AI provider privacy boundary", () => {
     expect(original.user).toContain("emre@example.com");
   });
 
-  it("passes editorial embedding content through unchanged", async () => {
+  it("passes editorial embedding content through unchanged and enforces the monthly budget guard", async () => {
     const embed = vi.fn(async () => [1]);
+    const assertWithinBudget = vi.fn(async () => undefined);
     const delegate = {
       complete: vi.fn(),
       completeStream: vi.fn(),
@@ -80,10 +81,12 @@ describe("AI provider privacy boundary", () => {
     const adapter = new PrivacyPreservingLlmAdapter(delegate, {
       acquire: vi.fn(async () => null),
       release: vi.fn(async () => undefined),
+      assertWithinBudget,
     } as never, { get: async () => true } as never);
 
     await adapter.embed("Source: https://osym.gov.tr/contact@example.com");
 
+    expect(assertWithinBudget).toHaveBeenCalledOnce();
     expect(embed).toHaveBeenCalledWith("Source: https://osym.gov.tr/contact@example.com");
   });
 

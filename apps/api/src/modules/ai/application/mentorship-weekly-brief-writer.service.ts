@@ -15,6 +15,7 @@ import type { PromptLocale } from "../domain/prompt-locale";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { assertWithinFeatureDailyCap, withUserFeatureLock } from "./ai-generation-guard";
 
 @Injectable()
 export class MentorshipWeeklyBriefWriterService {
@@ -41,6 +42,13 @@ export class MentorshipWeeklyBriefWriterService {
       PremiumFeatureId.MENTORSHIP_BRIEF,
       ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
     );
+    await assertWithinFeatureDailyCap(
+      this.usage,
+      coach.id,
+      AiUsageFeature.MENTORSHIP_BRIEF,
+      ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+      HttpStatus.FORBIDDEN,
+    );
   }
 
   async generate(
@@ -50,35 +58,37 @@ export class MentorshipWeeklyBriefWriterService {
     locale: PromptLocale,
     coachContext: string | null = null,
   ) {
-    await this.assertAvailable(coach);
-    await this.budget.assertWithinBudget();
-    const result = await this.llm.complete(
-      buildMentorshipWeeklyBriefPrompt(snapshot, locale, coachContext),
-    );
-    // Recorded before parsing: a malformed answer still spent the tokens.
-    await this.usage.append({
-      ...(result.budgetReservationId
-        ? { budgetReservationId: result.budgetReservationId }
-        : {}),
-      userId: coach.id,
-      model: result.model,
-      feature: AiUsageFeature.MENTORSHIP_BRIEF,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(
-        result.model,
-        result.promptTokens,
-        result.completionTokens,
-      ),
+    return withUserFeatureLock(coach.id, AiUsageFeature.MENTORSHIP_BRIEF, async () => {
+      await this.assertAvailable(coach);
+      await this.budget.assertWithinBudget();
+      const result = await this.llm.complete(
+        buildMentorshipWeeklyBriefPrompt(snapshot, locale, coachContext),
+      );
+      // Recorded before parsing: a malformed answer still spent the tokens.
+      await this.usage.append({
+        ...(result.budgetReservationId
+          ? { budgetReservationId: result.budgetReservationId }
+          : {}),
+        userId: coach.id,
+        model: result.model,
+        feature: AiUsageFeature.MENTORSHIP_BRIEF,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costMicros: estimateCostMicros(
+          result.model,
+          result.promptTokens,
+          result.completionTokens,
+        ),
+      });
+      const parsed = parseMentorshipWeeklyBrief(result.text, snapshot.evidence);
+      if (parsed.kind === "MALFORMED") {
+        throw new DomainError("AI_MALFORMED_RESPONSE", HttpStatus.BAD_GATEWAY);
+      }
+      return {
+        findings: parsed.findings,
+        preparation: parsed.preparation,
+        model: result.model,
+      };
     });
-    const parsed = parseMentorshipWeeklyBrief(result.text, snapshot.evidence);
-    if (parsed.kind === "MALFORMED") {
-      throw new DomainError("AI_MALFORMED_RESPONSE", HttpStatus.BAD_GATEWAY);
-    }
-    return {
-      findings: parsed.findings,
-      preparation: parsed.preparation,
-      model: result.model,
-    };
   }
 }

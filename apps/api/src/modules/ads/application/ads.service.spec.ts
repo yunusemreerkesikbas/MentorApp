@@ -183,22 +183,43 @@ describe("AdsService", () => {
     });
   });
 
-  it("fails closed for rewarded web ads in production without server verification", async () => {
-    const { service } = setup(false, { nodeEnv: "production" });
+  it.each([{ nodeEnv: "production" }, { appEnv: "production" }])(
+    "fails closed for rewarded web ads in production without server verification (%j)",
+    async (environment) => {
+      const { service, sessions } = setup(false, environment);
 
-    const offer = await service.getRewardOffer(
-      AdPlacementId.DASHBOARD_REWARDED_COIN,
-      "user-1",
-      [],
-      "TR",
-    );
+      const offer = await service.getRewardOffer(
+        AdPlacementId.DASHBOARD_REWARDED_COIN,
+        "user-1",
+        [],
+        "TR",
+      );
 
-    expect(offer).toMatchObject({
-      enabled: false,
-      eligible: false,
-      reason: "SERVER_VERIFICATION_UNAVAILABLE",
-    });
-  });
+      expect(offer).toMatchObject({
+        enabled: false,
+        eligible: false,
+        reason: "SERVER_VERIFICATION_UNAVAILABLE",
+      });
+
+      sessions.push({
+        id: "pre-existing-session",
+        userId: "user-1",
+        placementId: AdPlacementId.DASHBOARD_REWARDED_COIN,
+        status: "CREATED",
+        rewardCoin: 5,
+        expiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as AdRewardSessionRow);
+
+      await expect(
+        service.completeRewardSession("pre-existing-session", "user-1"),
+      ).rejects.toMatchObject({
+        code: "ADS_NOT_ELIGIBLE",
+        details: { reason: "SERVER_VERIFICATION_UNAVAILABLE" },
+      });
+    },
+  );
 
   it("creates one reserved session and completes duplicate callbacks idempotently", async () => {
     const { service, economy } = setup();

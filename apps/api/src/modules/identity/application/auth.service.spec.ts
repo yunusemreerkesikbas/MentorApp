@@ -243,6 +243,7 @@ describe("AuthService.verifyEmail", () => {
       {} as never,
       events as never,
       {} as never,
+      {} as never,
     );
 
     await expect(service.verifyEmail({ token: "stale" })).rejects.toMatchObject({
@@ -292,6 +293,29 @@ describe("AuthService.resendVerificationEmail", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("uses atomic tryClaimVerificationResendAttempt to prevent parallel TOCTOU resend bursts", async () => {
+    const { emailTokenRepo, queue, service } = makeService(0);
+    let claimed = 0;
+    const tryClaimVerificationResendAttempt = vi.fn(async () => {
+      claimed += 1;
+      return claimed === 1 ? ("allowed" as const) : ("rate_limited" as const);
+    });
+    Object.assign(emailTokenRepo, { tryClaimVerificationResendAttempt });
+
+    const results = await Promise.allSettled([
+      service.resendVerificationEmail(USER.id),
+      service.resendVerificationEmail(USER.id),
+      service.resendVerificationEmail(USER.id),
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(2);
+    expect(queue.enqueue).toHaveBeenCalledTimes(1);
+    expect(tryClaimVerificationResendAttempt).toHaveBeenCalledTimes(3);
   });
 });
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UserRole } from "@mentor/types";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { DomainError } from "../../../common/errors/domain-error";
+import { DomainError, ForbiddenError } from "../../../common/errors/domain-error";
 import { AdminUsersService } from "./admin-users.service";
 import type { AdminUserRow } from "../infrastructure/admin-users.repository";
 
@@ -47,9 +47,14 @@ function makeRepoFake(users: Map<string, AdminUserRow>) {
   return {
     search: async () => [...users.values()],
     findById: async (id: string) => users.get(id),
-    updateStatus: async (id: string, status: string) => {
+    updateStatus: async (
+      id: string,
+      status: string,
+      assertAllowed?: (targetRoles: readonly string[]) => void,
+    ) => {
       const row = users.get(id);
       if (!row) return undefined;
+      assertAllowed?.(row.roles);
       const before = row.status;
       users.set(id, { ...row, status });
       return { before, after: status };
@@ -140,6 +145,45 @@ describe("AdminUsersService", () => {
       code: ErrorCode.ADMIN_CANNOT_MODIFY_SELF,
     });
   });
+
+  it.each([UserRole.SUPER_ADMIN, UserRole.ADMIN])(
+    "setStatus and anonymize reject acting on root admin accounts (%s)",
+    async (rootRole) => {
+      users.set("root", makeUser("root", [UserRole.STUDENT, rootRole]));
+
+      await expect(
+        service.setStatus("other-admin", "root", "SUSPENDED", [UserRole.SUPER_ADMIN]),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      await expect(service.anonymize("other-admin", "root")).rejects.toBeInstanceOf(
+        ForbiddenError,
+      );
+      expect(users.get("root")!.status).toBe("ACTIVE");
+      expect(eraseAccount).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    UserRole.SUPPORT,
+    UserRole.FINANCE,
+    UserRole.EDITOR,
+    UserRole.MODERATOR,
+    UserRole.STAFF,
+  ])(
+    "setStatus rejects scoped SUPPORT actors modifying internal team/staff accounts (%s)",
+    async (teamRole) => {
+      users.set("team", makeUser("team", [UserRole.STUDENT, teamRole]));
+
+      await expect(
+        service.setStatus("support-actor", "team", "SUSPENDED", [UserRole.SUPPORT]),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+      expect(users.get("team")!.status).toBe("ACTIVE");
+
+      const bySuper = await service.setStatus("super-actor", "team", "SUSPENDED", [
+        UserRole.SUPER_ADMIN,
+      ]);
+      expect(bySuper.user.status).toBe("SUSPENDED");
+    },
+  );
 
   it.each([false, true])("maps an active-phone reactivation collision to a safe 409 (wrapped: %s)", async (wrapped) => {
     users.set("u1", { ...users.get("u1")!, status: "SUSPENDED" });

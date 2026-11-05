@@ -36,6 +36,7 @@ import { promptLocale } from "../domain/prompt-locale";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 import { PlanPreviewRepository } from "../infrastructure/plan-preview.repository";
 import { planPreviewHash } from "../domain/plan-coin-preview";
+import { withUserFeatureLock } from "./ai-generation-guard";
 
 import {
   coachPlanNote,
@@ -93,11 +94,13 @@ export class PlanAdaptationService {
     input: CoachPlanAdaptationInput,
     coinRequestId?: string,
   ): Promise<CoachPlanAdaptationDto> {
+    const lang = I18nContext.current()?.lang;
+    const locale = promptLocale(lang);
+
     if (coinRequestId) {
       if (!(await this.config.get(FeatureFlag.AI_ENABLED)))
         throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
       const row = await this.coinPreviews.find(user.id, coinRequestId);
-      const locale = promptLocale(I18nContext.current()?.lang);
       if (
         input.source !== "PLAN" ||
         row?.status !== "RUNNING" ||
@@ -107,201 +110,202 @@ export class PlanAdaptationService {
       }
     } else await this.assertAvailable(user);
 
-    const now = new Date();
-    const snapshot = await this.plans.getAdaptationSnapshot(user.id, now);
-    await assertPlanSourceApplicable(this.moods, this.sessions, user.id, input, now);
+    return withUserFeatureLock(user.id, AiUsageFeature.PLAN_DRAFT, async () => {
+      const now = new Date();
+      const snapshot = await this.plans.getAdaptationSnapshot(user.id, now);
+      await assertPlanSourceApplicable(this.moods, this.sessions, user.id, input, now);
 
-    const pendingTasks = snapshot.tasks
-      .filter((task) => task.status === "PENDING")
-      .sort(
-        (a, b) =>
-          a.taskDate.localeCompare(b.taskDate) ||
-          a.sortOrder - b.sortOrder ||
-          a.id.localeCompare(b.id),
+      const pendingTasks = snapshot.tasks
+        .filter((task) => task.status === "PENDING")
+        .sort(
+          (a, b) =>
+            a.taskDate.localeCompare(b.taskDate) ||
+            a.sortOrder - b.sortOrder ||
+            a.id.localeCompare(b.id),
+        );
+      if (
+        input.source === "MOOD" &&
+        !pendingTasks.some((task) => task.taskDate === snapshot.window.from)
+      ) {
+        // Nothing to lighten: no model call, but a true sentence and what it read, never a blank sheet.
+        const pool = await this.evidence.build(user.id, now);
+        return planAdaptationResponse(
+          this.i18n,
+          "NO_CHANGE",
+          snapshot,
+          [],
+          "rules",
+          groundingFact({
+            signal: "REST",
+            locale,
+            todayPlan: planAdaptationToday(snapshot),
+          }),
+          selectPlanEvidence("MOOD", pool.evidence),
+          // Same status for the API; the words match a day that is already done.
+          "REST",
+        );
+      }
+
+      const [dailyLimit, usedToday, pool] = await Promise.all([
+        this.config.get("ai.plan_draft.daily_limit"),
+        this.usage.countFeaturesSince(
+          user.id,
+          [AiUsageFeature.PLAN_DRAFT, AiUsageFeature.PLAN_ADAPTATION],
+          new Date(Date.now() - DAY_MS),
+        ),
+        this.evidence.build(user.id, now),
+      ]);
+      if (usedToday >= dailyLimit) {
+        throw new DomainError(
+          ErrorCode.AI_RATE_LIMITED,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
+      const referencedTasks: PromptPlanTask[] = pendingTasks
+        .slice(0, PLAN_ADAPTATION_MAX_PROMPT_TASKS)
+        .map((task, index) => ({
+          ...task,
+          ref: `T${index + 1}`,
+        }));
+      const promptTasks =
+        input.source === "MOOD"
+          ? referencedTasks.filter(
+              (task) => task.taskDate === snapshot.window.from,
+            )
+          : referencedTasks;
+      const selected = selectPlanEvidence(input.source, pool.evidence);
+      let topics: Awaited<ReturnType<ContentService["listExamTopicsByExamId"]>> =
+        [];
+      if (input.source === "PLAN" && pool.examType) {
+        try {
+          const exam = await this.content.getCurrentExamByFamily(
+            pool.examType,
+            pool.examVariant,
+          );
+          topics = await this.content.listExamTopicsByExamId(exam.id);
+        } catch (error) {
+          if (
+            !(error instanceof DomainError) ||
+            error.code !== ErrorCode.CONTENT_EXAM_NOT_FOUND
+          )
+            throw error;
+        }
+      }
+      const studyDates =
+        input.source === "PLAN" && input.studyWeekdays?.length
+          ? studyDatesFor(snapshot.window.from, input.studyWeekdays)
+          : undefined;
+      // Preferences and memory shape a whole week; a low-mood or hard-session fix stays narrow.
+      const personal =
+        input.source === "PLAN"
+          ? await planPersonalContext(this.profiles, user.id)
+          : {};
+      const { system, user: userMessage } = buildPlanAdaptationPrompt({
+        source: input.source,
+        todayIso: snapshot.window.from,
+        examType: pool.examType,
+        evidence: selected,
+        examPhase: input.source === "PLAN" ? pool.examPhase : null,
+        ...personal,
+        tasks: promptTasks,
+        note: input.source === "PLAN" ? input.note : undefined,
+        days: input.source === "PLAN" ? input.days : undefined,
+        studyDates,
+        minutesPerDay: input.source === "PLAN" ? input.minutesPerDay : undefined,
+        focusSubjects: input.source === "PLAN" ? input.focusSubjects : undefined,
+        topics,
+        locale,
+        moodLevel: pool.moodLevel,
+      });
+      const groundingLine =
+        input.source === "PLAN"
+          ? groundingFact({ signal: "COVERAGE", locale, coverage: pool.coverage })
+          : groundingFact({
+              signal: "PLAN",
+              locale,
+              pendingSubjects: promptTasks.flatMap((task) =>
+                task.subject ? [task.subject] : [],
+              ),
+              todayPlan: planAdaptationToday(snapshot),
+            });
+
+      await this.budget.assertWithinBudget();
+      const result = await this.llm.complete({ system, user: userMessage });
+      await this.usage.append({
+        ...(result.budgetReservationId
+          ? { budgetReservationId: result.budgetReservationId }
+          : {}),
+        userId: user.id,
+        model: result.model,
+        feature: AiUsageFeature.PLAN_ADAPTATION,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costMicros: estimateCostMicros(
+          result.model,
+          result.promptTokens,
+          result.completionTokens,
+        ),
+      });
+
+      const parsed = parsePlanAdaptation(
+        result.text,
+        snapshot.window.from,
+        input.source,
+        promptTasks,
+        pendingTasks,
+        input.source === "PLAN"
+          ? {
+              days: input.days,
+              studyDates,
+              minutesPerDay: input.minutesPerDay,
+              focusSubjects: input.focusSubjects,
+              topics,
+              locale,
+              strictOutput: coinRequestId !== undefined,
+            }
+          : undefined,
+        {
+          evidence: selected,
+          weakSubjects: pool.weakSubjects,
+          weakReason:
+            pool.evidence.find(
+              (item) => item.type === CoachEvidenceType.WEAK_SUBJECTS,
+            )?.summary ?? null,
+          chosenReason: this.i18n.translate(
+            "coaching.planAdaptation.reasonChosenSubject",
+            { lang },
+          ) as unknown as string,
+          notebookReason:
+            pool.evidence.find(
+              (item) => item.type === CoachEvidenceType.NOTEBOOK_TOPICS,
+            )?.summary ?? null,
+        },
       );
-    if (
-      input.source === "MOOD" &&
-      !pendingTasks.some((task) => task.taskDate === snapshot.window.from)
-    ) {
-      // Nothing to lighten: no model call, but a true sentence and what it read, never a blank sheet.
-      const pool = await this.evidence.build(user.id, now);
+      if (parsed.kind === "MALFORMED") {
+        throw new DomainError(
+          ErrorCode.AI_PROVIDER_ERROR,
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+      const coachNote =
+        input.source === "PLAN" &&
+        input.minutesPerDay &&
+        parsed.changes.some((change) => change.kind === "ADD")
+          ? coachPlanNote(this.i18n, pool, input.minutesPerDay, parsed.changes)
+          : null;
       return planAdaptationResponse(
         this.i18n,
-        "NO_CHANGE",
+        parsed.changes.length > 0 ? "READY" : "NO_CHANGE",
         snapshot,
-        [],
-        "rules",
-        groundingFact({
-          signal: "REST",
-          locale: promptLocale(I18nContext.current()?.lang),
-          todayPlan: planAdaptationToday(snapshot),
-        }),
-        selectPlanEvidence("MOOD", pool.evidence),
-        // Same status for the API; the words match a day that is already done.
-        "REST",
-      );
-    }
-
-    const [dailyLimit, usedToday, pool] = await Promise.all([
-      this.config.get("ai.plan_draft.daily_limit"),
-      this.usage.countFeaturesSince(
-        user.id,
-        [AiUsageFeature.PLAN_DRAFT, AiUsageFeature.PLAN_ADAPTATION],
-        new Date(Date.now() - DAY_MS),
-      ),
-      this.evidence.build(user.id, now),
-    ]);
-    if (usedToday >= dailyLimit) {
-      throw new DomainError(
-        ErrorCode.AI_RATE_LIMITED,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
-    const referencedTasks: PromptPlanTask[] = pendingTasks
-      .slice(0, PLAN_ADAPTATION_MAX_PROMPT_TASKS)
-      .map((task, index) => ({
-        ...task,
-        ref: `T${index + 1}`,
-      }));
-    const promptTasks =
-      input.source === "MOOD"
-        ? referencedTasks.filter(
-            (task) => task.taskDate === snapshot.window.from,
-          )
-        : referencedTasks;
-    const locale = promptLocale(I18nContext.current()?.lang);
-    const selected = selectPlanEvidence(input.source, pool.evidence);
-    let topics: Awaited<ReturnType<ContentService["listExamTopicsByExamId"]>> =
-      [];
-    if (input.source === "PLAN" && pool.examType) {
-      try {
-        const exam = await this.content.getCurrentExamByFamily(
-          pool.examType,
-          pool.examVariant,
-        );
-        topics = await this.content.listExamTopicsByExamId(exam.id);
-      } catch (error) {
-        if (
-          !(error instanceof DomainError) ||
-          error.code !== ErrorCode.CONTENT_EXAM_NOT_FOUND
-        )
-          throw error;
-      }
-    }
-    const studyDates =
-      input.source === "PLAN" && input.studyWeekdays?.length
-        ? studyDatesFor(snapshot.window.from, input.studyWeekdays)
-        : undefined;
-    // Preferences and memory shape a whole week; a low-mood or hard-session fix stays narrow.
-    const personal =
-      input.source === "PLAN"
-        ? await planPersonalContext(this.profiles, user.id)
-        : {};
-    const { system, user: userMessage } = buildPlanAdaptationPrompt({
-      source: input.source,
-      todayIso: snapshot.window.from,
-      examType: pool.examType,
-      evidence: selected,
-      examPhase: input.source === "PLAN" ? pool.examPhase : null,
-      ...personal,
-      tasks: promptTasks,
-      note: input.source === "PLAN" ? input.note : undefined,
-      days: input.source === "PLAN" ? input.days : undefined,
-      studyDates,
-      minutesPerDay: input.source === "PLAN" ? input.minutesPerDay : undefined,
-      focusSubjects: input.source === "PLAN" ? input.focusSubjects : undefined,
-      topics,
-      locale,
-      moodLevel: pool.moodLevel,
-    });
-    const groundingLine =
-      input.source === "PLAN"
-        ? groundingFact({ signal: "COVERAGE", locale, coverage: pool.coverage })
-        : groundingFact({
-            signal: "PLAN",
-            locale,
-            pendingSubjects: promptTasks.flatMap((task) =>
-              task.subject ? [task.subject] : [],
-            ),
-            todayPlan: planAdaptationToday(snapshot),
-          });
-
-    await this.budget.assertWithinBudget();
-    const result = await this.llm.complete({ system, user: userMessage });
-    await this.usage.append({
-      ...(result.budgetReservationId
-        ? { budgetReservationId: result.budgetReservationId }
-        : {}),
-      userId: user.id,
-      model: result.model,
-      feature: AiUsageFeature.PLAN_ADAPTATION,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(
+        parsed.changes,
         result.model,
-        result.promptTokens,
-        result.completionTokens,
-      ),
-    });
-
-    const parsed = parsePlanAdaptation(
-      result.text,
-      snapshot.window.from,
-      input.source,
-      promptTasks,
-      pendingTasks,
-      input.source === "PLAN"
-        ? {
-            days: input.days,
-            studyDates,
-            minutesPerDay: input.minutesPerDay,
-            focusSubjects: input.focusSubjects,
-            topics,
-            locale,
-            strictOutput: coinRequestId !== undefined,
-          }
-        : undefined,
-      {
-        evidence: selected,
-        weakSubjects: pool.weakSubjects,
-        weakReason:
-          pool.evidence.find(
-            (item) => item.type === CoachEvidenceType.WEAK_SUBJECTS,
-          )?.summary ?? null,
-        chosenReason: this.i18n.translate(
-          "coaching.planAdaptation.reasonChosenSubject",
-          { lang: I18nContext.current()?.lang },
-        ) as unknown as string,
-        notebookReason:
-          pool.evidence.find(
-            (item) => item.type === CoachEvidenceType.NOTEBOOK_TOPICS,
-          )?.summary ?? null,
-      },
-    );
-    if (parsed.kind === "MALFORMED") {
-      throw new DomainError(
-        ErrorCode.AI_PROVIDER_ERROR,
-        HttpStatus.SERVICE_UNAVAILABLE,
+        groundingLine,
+        selected,
+        undefined,
+        coachNote,
       );
-    }
-    const coachNote =
-      input.source === "PLAN" &&
-      input.minutesPerDay &&
-      parsed.changes.some((change) => change.kind === "ADD")
-        ? coachPlanNote(this.i18n, pool, input.minutesPerDay, parsed.changes)
-        : null;
-    return planAdaptationResponse(
-      this.i18n,
-      parsed.changes.length > 0 ? "READY" : "NO_CHANGE",
-      snapshot,
-      parsed.changes,
-      result.model,
-      groundingLine,
-      selected,
-      undefined,
-      coachNote,
-    );
+    });
   }
 
   private async assertAvailable(user: RequestUser): Promise<void> {

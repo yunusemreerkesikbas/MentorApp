@@ -15,6 +15,7 @@ import { DailyGreetingRepository } from "../infrastructure/daily-greeting.reposi
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { assertWithinFeatureDailyCap, withUserFeatureLock } from "./ai-generation-guard";
 
 /**
  * Premium proactive daily greeting on the dashboard rhythm card (W3 · §4 #5 premium-only — free tier keeps the
@@ -41,45 +42,50 @@ export class DailyGreetingService {
 
     const today = new Date().toISOString().slice(0, 10); // UTC day — same day math as streak
     const locale = promptLocale(I18nContext.current()?.lang);
-    const cached = await this.greetings.find(user.id, today, locale);
-    if (cached) {
-      return { greeting: cached.greeting, model: "cache" };
-    }
 
-    // The allowance funds generation. Rereading today's own note consumes no new AI usage.
-    await this.featureGate.assertAllowed(
-      user.id,
-      user.roles,
-      PremiumFeatureId.DAILY_GREETING,
-    );
+    return withUserFeatureLock(user.id, AiUsageFeature.DAILY_GREETING, async () => {
+      const cached = await this.greetings.find(user.id, today, locale);
+      if (cached) {
+        return { greeting: cached.greeting, model: "cache" };
+      }
 
-    const ctx = await this.context.build(user.id);
-    const { system, user: userMsg } = buildDailyGreetingPrompt(
-      ctx,
-      locale,
-    );
+      // The allowance funds generation. Rereading today's own note consumes no new AI usage.
+      await this.featureGate.assertAllowed(
+        user.id,
+        user.roles,
+        PremiumFeatureId.DAILY_GREETING,
+      );
 
-    await this.budget.assertWithinBudget();
-    const result = await this.llm.complete({ system, user: userMsg });
+      await assertWithinFeatureDailyCap(this.usage, user.id, AiUsageFeature.DAILY_GREETING);
 
-    await this.usage.append({
-      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
-      userId: user.id,
-      model: result.model,
-      feature: AiUsageFeature.DAILY_GREETING,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+      const ctx = await this.context.build(user.id);
+      const { system, user: userMsg } = buildDailyGreetingPrompt(
+        ctx,
+        locale,
+      );
+
+      await this.budget.assertWithinBudget();
+      const result = await this.llm.complete({ system, user: userMsg });
+
+      await this.usage.append({
+        ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
+        userId: user.id,
+        model: result.model,
+        feature: AiUsageFeature.DAILY_GREETING,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+      });
+
+      await this.greetings.insert({
+        userId: user.id,
+        greetingDate: today,
+        greeting: result.text,
+        model: result.model,
+        locale,
+      });
+
+      return { greeting: result.text, model: result.model };
     });
-
-    await this.greetings.insert({
-      userId: user.id,
-      greetingDate: today,
-      greeting: result.text,
-      model: result.model,
-      locale,
-    });
-
-    return { greeting: result.text, model: result.model };
   }
 }

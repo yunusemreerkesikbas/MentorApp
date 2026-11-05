@@ -15,6 +15,7 @@ import type { PromptLocale } from "../domain/prompt-locale";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
+import { assertWithinFeatureDailyCap, withUserFeatureLock } from "./ai-generation-guard";
 
 /**
  * Writes one coach's brief about their whole cohort (W8).
@@ -55,37 +56,48 @@ export class CohortBriefService {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
-    // Charged to the coach: Pro passes flat, everyone else gets the configured daily taste.
-    await this.featureGate.assertAllowed(
-      coach.id,
-      coach.roles,
-      PremiumFeatureId.MENTORSHIP_COHORT_BRIEF,
-      ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
-    );
 
-    const prompt = buildCohortBriefPrompt(evidence, locale);
-    await this.budget.assertWithinBudget();
-    const result = await this.llm.complete(prompt);
-    // The meter row is written even when the answer turns out unusable: the call was made, the
-    // tokens were spent, and a cost dashboard that only counts successes under-reports the bill.
-    await this.usage.append({
-      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
-      userId: coach.id,
-      model: result.model,
-      feature: AiUsageFeature.MENTORSHIP_COHORT_BRIEF,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(
-        result.model,
-        result.promptTokens,
-        result.completionTokens,
-      ),
+    return withUserFeatureLock(coach.id, AiUsageFeature.MENTORSHIP_COHORT_BRIEF, async () => {
+      // Charged to the coach: Pro passes flat, everyone else gets the configured daily taste.
+      await this.featureGate.assertAllowed(
+        coach.id,
+        coach.roles,
+        PremiumFeatureId.MENTORSHIP_COHORT_BRIEF,
+        ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+      );
+
+      await assertWithinFeatureDailyCap(
+        this.usage,
+        coach.id,
+        AiUsageFeature.MENTORSHIP_COHORT_BRIEF,
+        ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+        HttpStatus.FORBIDDEN,
+      );
+
+      const prompt = buildCohortBriefPrompt(evidence, locale);
+      await this.budget.assertWithinBudget();
+      const result = await this.llm.complete(prompt);
+      // The meter row is written even when the answer turns out unusable: the call was made, the
+      // tokens were spent, and a cost dashboard that only counts successes under-reports the bill.
+      await this.usage.append({
+        ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
+        userId: coach.id,
+        model: result.model,
+        feature: AiUsageFeature.MENTORSHIP_COHORT_BRIEF,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costMicros: estimateCostMicros(
+          result.model,
+          result.promptTokens,
+          result.completionTokens,
+        ),
+      });
+
+      const parsed = parseCohortBrief(result.text, evidence);
+      if (parsed.kind === "MALFORMED") {
+        throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      return { overall: parsed.overall, items: parsed.items, model: result.model };
     });
-
-    const parsed = parseCohortBrief(result.text, evidence);
-    if (parsed.kind === "MALFORMED") {
-      throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
-    }
-    return { overall: parsed.overall, items: parsed.items, model: result.model };
   }
 }

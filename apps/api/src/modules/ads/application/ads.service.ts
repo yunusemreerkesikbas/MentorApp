@@ -46,6 +46,13 @@ export class AdsService {
     private readonly announcementReviews: AdsAnnouncementReviewService,
   ) {}
 
+  private isProductionEnv(): boolean {
+    return (
+      this.env.get("NODE_ENV", { infer: true }) === "production" ||
+      this.env.get("APP_ENV", { infer: true }) === "production"
+    );
+  }
+
   private async adUnitPath(placementId: AdPlacementId): Promise<string | null> {
     const { unitConfigKey, envKey } = AD_PLACEMENTS[placementId];
     const configured = unitConfigKey ? await this.config.get(unitConfigKey) : "";
@@ -97,14 +104,13 @@ export class AdsService {
       displayAllowedCountries: allowedCountries.split(",").filter(Boolean),
     });
     const adUnitPath = localTest ? GOOGLE_DISPLAY_TEST_AD_UNIT : await this.adUnitPath(placementId);
-    const sampleBlocked = placement.format === "DISPLAY" && isGoogleTestAdUnit(adUnitPath) &&
-      (this.env.get("NODE_ENV", { infer: true }) === "production" || this.env.get("APP_ENV", { infer: true }) === "production");
+    const isProd = this.isProductionEnv();
+    const sampleBlocked =
+      placement.format === "DISPLAY" && isGoogleTestAdUnit(adUnitPath) && isProd;
     const contextUnverified = placement.format === "DISPLAY" && context.contextVerified === false;
     // Google Ad Manager does not provide server-side verification for Rewarded Web. A browser
     // event is forgeable, so production must stay closed until the provider/format can prove it.
-    const serverVerificationUnavailable =
-      placement.format === "REWARDED" &&
-      this.env.get("NODE_ENV", { infer: true }) === "production";
+    const serverVerificationUnavailable = placement.format === "REWARDED" && isProd;
     const reason: AdEligibilityReason = contextUnverified
       ? "CONTEXT_UNVERIFIED"
       : !decision.enabled
@@ -342,7 +348,7 @@ export class AdsService {
       || !(await this.config.get("economy.enabled"))) {
       throw new DomainError(ErrorCode.ADS_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY);
     }
-    if (this.env.get("NODE_ENV", { infer: true }) === "production") {
+    if (this.isProductionEnv()) {
       throw new DomainError(ErrorCode.ADS_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY, {
         reason: "SERVER_VERIFICATION_UNAVAILABLE",
       });

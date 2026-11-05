@@ -97,6 +97,18 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-05 — Pilot waitlist admission, KVKK erasure, email-resend lock & RLS force hardening
+
+- **What:** Closed six pre-production security and data-integrity gaps across pilot waitlist admission, email verification resend, KVKK erasure, and PostgreSQL RLS enforcement:
+  1. `WaitlistService.invite(id)` now verifies `users.findByEmailService(existing.email)` and throws `409 AUTH_EMAIL_IN_USE`, matching `inviteByEmail`.
+  2. `SignupInvitationRepository.findInvited` and `countInvited` enforce the 6-month `invited_at` retention window at read time, and `WaitlistService.resend` rejects expired invitations with 404 so unpurged expired invites neither admit signups nor hold capacity before the daily cron runs.
+  3. `SignupInvitationRepository.markInvited` and `upsertInvited` serialize capacity checks under `pg_advisory_xact_lock` inside the transaction, closing the TOCTOU capacity race across concurrent admin requests.
+  4. `UsersRepository.createService`, `updateSelf` (when `email` changes), and `anonymizeAccount` atomically delete matching `signup_invitations` rows in the same `withServiceContext` transaction so KVKK erasure and email changes leave no orphaned waitlist PII.
+  5. `EmailTokenRepository.tryClaimVerificationResendAttempt` atomically checks and records `email_verification_resend_attempts` under `lockUser(tx, userId)`, closing the parallel TOCTOU resend burst race on `POST /v1/users/me/verification-email` and email-change resends; `EmailTokenRepository.create`, `verify`, and `canDeliver` also supersede prior unused `VERIFY_EMAIL` tokens and suppress delivery once verified.
+  6. Added Drizzle `pgPolicy` + `.enableRLS()` declarations to `schema-signup-invitations.ts`, `schema-chat-quota.ts`, and `schema-ai-budget.ts`, and added migration `0142_rls_force_hardening.sql` enforcing `ENABLE` + `FORCE ROW LEVEL SECURITY` across all 16 Drizzle-managed RLS tables and all 13 behavioral/PII/queue tables in `schema.ts` previously missing RLS (29 tables total).
+- **Usage/gotchas:** Run `pnpm --filter @mentor/api db:migrate` before deploying the API. Waitlist browser e2e checks (`pnpm --filter @mentor/web test:e2e:waitlist`) now run in CI.
+- **Related:** `auth.service.ts`, `email-token.repository.ts`, `waitlist.service.ts`, `signup-invitation.repository.ts`, `users.repository.ts`, `schema-signup-invitations.ts`, `schema-chat-quota.ts`, `schema-ai-budget.ts`, `0142_rls_force_hardening.sql`, `test/signup-invitation-purge.e2e-spec.ts`, `.github/workflows/ci.yml`.
+
 - **2026-11-03: Shared exam selection and ALES/DGS onboarding.** Student and coach onboarding,
   the completion summary and account settings now consume the shared exam catalogue. Usage:
   select ALES or DGS at onboarding or under Settings > Target exam; neither asks for a KPSS level.

@@ -25,6 +25,15 @@ export function isValidPhotoStorageKey(userId: string, key: string): boolean {
   return pattern.test(key);
 }
 
+/** Validates notebook pre-label storage keys are user-scoped: notebook/{userId}/{uuid}.ext */
+export function isValidNotebookPhotoStorageKey(userId: string, key: string): boolean {
+  const pattern = new RegExp(
+    `^notebook/${userId.replace(/-/g, "\\-")}/[0-9a-f-]+\\.(jpg|jpeg|png)$`,
+    "i",
+  );
+  return pattern.test(key);
+}
+
 /**
  * Signed upload URL for mock-exam question photos (R2 or fake storage).
  */
