@@ -78,6 +78,22 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-04: Publish the ten ALES articles with covers locally.** Published through the
+  content service in one transaction on `localhost:5433/mentor`. Covers use the existing
+  development media bucket and were verified against the local WebP hashes. See
+  `/blog?family=ALES` and `docs/editorial/ales/publication-local.json`.
+
+- **2026-11-04: Expand the ALES editorial package to ten drafts.** Added guides on centre
+  changes, education records, answer sheet coding, accommodations and result review. See
+  `docs/editorial/ales/` for PDF page references and cover credits. The guides distinguish optional
+  education fields from eligibility, approved accommodations from application, and review deadlines
+  from question objection deadlines.
+
+- **2026-11-04: Prepare five ALES blog drafts with covers.** The package covers eligibility and
+  application, test length, scoring, score validity and admission documents. Review the Markdown,
+  SEO fields, PDF page references and representative Pexels covers under `docs/editorial/ales/`.
+  The drafts use the 2026 guide and refer candidates to the applicable session for deadlines.
+
 - **2026-11-04: Add covers to the ten local KPSS Lisans articles.** The distinct Pexels photos
   were cropped to 1200 × 630 WebP and uploaded to the existing development media bucket.
   Refresh the local KPSS blog to see the covers. Each article credits its representative photo

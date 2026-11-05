@@ -14,6 +14,7 @@ import { getForumCoachBridge } from "@/lib/forum";
 import { trackCoachEvent } from "@/lib/analytics";
 import {
   CoachStreamError,
+  fetchCoachAccess,
   removeCoachContextFromUrl,
   resolvePendingCoachContext,
   setCoachMessageFeedback,
@@ -29,6 +30,7 @@ import { CoachHistoryDrawer } from "./coach-history-drawer";
 import { CoachHistoryPanel } from "./coach-history-panel";
 import { CoachChatBackdrop } from "./coach-chat-backdrop";
 import { CoachStarterChips } from "./coach-starter-chips";
+import { CoachQuotaHint } from "./coach-quota-hint";
 import { CoachTranscript, type ChatMessage } from "./coach-transcript";
 
 const newId = () => globalThis.crypto.randomUUID();
@@ -36,9 +38,6 @@ const newId = () => globalThis.crypto.randomUUID();
 /** Desktop history rail widths — expanded `w-72`, collapsed icon strip. */
 const HISTORY_RAIL_EXPANDED_PX = 288;
 const HISTORY_RAIL_COLLAPSED_PX = 52;
-
-/** Show the calm remaining-messages hint only when the allowance is nearly spent. */
-const REMAINING_HINT_THRESHOLD = 5;
 
 /**
  * /coach/chat — history header, empty landing or transcript, sticky composer.
@@ -87,6 +86,22 @@ export function CoachChatShell() {
         ? (access.freeCoinMessagesRemainingToday ?? null)
         : null,
   );
+  const hasPremiumQuota = access.monthlyMessagesRemaining !== undefined;
+  const [quota, setQuota] = useState(access);
+  const premiumRemaining = Math.min(
+    quota.dailyMessagesRemaining ?? 0,
+    quota.monthlyMessagesRemaining ?? 0,
+  );
+
+  async function refreshPremiumQuota() {
+    if (!hasPremiumQuota) return;
+    try {
+      const fresh = await fetchCoachAccess();
+      if (fresh.monthlyMessagesRemaining !== undefined) setQuota(fresh);
+    } catch {
+      // A failed hint refresh must not hide a reply or discard a draft.
+    }
+  }
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
     null,
   );
@@ -316,7 +331,7 @@ export function CoachChatShell() {
         adoptConversation(conversationId);
       }
       void refreshConversations();
-      if (model !== "verified-content") {
+      if (!hasPremiumQuota && model !== "verified-content") {
         setRemaining((r) => (r === null ? null : Math.max(0, r - 1)));
       }
     } catch (err) {
@@ -334,6 +349,7 @@ export function CoachChatShell() {
       );
     } finally {
       notifyEconomyChanged();
+      await refreshPremiumQuota();
       setBusy(false);
       setStreamingMessageId(null);
       composerRef.current?.focus();
@@ -386,7 +402,7 @@ export function CoachChatShell() {
         feedback: null,
       });
       setFollowUps(nextFollowUps ?? []);
-      if (model !== "verified-content") {
+      if (!hasPremiumQuota && model !== "verified-content") {
         setRemaining((r) => (r === null ? null : Math.max(0, r - 1)));
       }
     } catch (err) {
@@ -411,6 +427,7 @@ export function CoachChatShell() {
       );
     } finally {
       notifyEconomyChanged();
+      await refreshPremiumQuota();
       setBusy(false);
       setStreamingMessageId(null);
     }
@@ -656,16 +673,11 @@ export function CoachChatShell() {
               <CoachFollowUpChips questions={followUps} onSeed={handleSeed} />
             </div>
           ) : null}
-          {remaining !== null && remaining <= REMAINING_HINT_THRESHOLD ? (
-            <p
-              className="px-5 pb-1 text-center text-xs"
-              style={{ color: "var(--color-secondary)" }}
-            >
-              {remaining === 0
-                ? tChat("remaining_hint_zero")
-                : tChat("remaining_hint", { count: remaining })}
-            </p>
-          ) : null}
+          <CoachQuotaHint
+            remaining={hasPremiumQuota ? premiumRemaining : remaining}
+            retryAt={hasPremiumQuota ? quota.retryAt : undefined}
+            premium={hasPremiumQuota}
+          />
           <CoachComposer
             ref={composerRef}
             value={input}

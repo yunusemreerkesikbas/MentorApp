@@ -20,6 +20,10 @@ export interface CoachAccessDto {
   freeCoinMessagesRemainingToday?: number;
   /** Remaining messages in the rolling-24h premium limit (PREMIUM only; a message count, never coins §4 #3). */
   dailyMessagesRemaining?: number;
+  /** Remaining generations in the rolling-30-day Premium chat limit. */
+  monthlyMessagesRemaining?: number;
+  /** First time both chat windows permit generation, or null when disabled by configuration. */
+  retryAt?: string | null;
 }
 
 export const CoachConversationOriginType = {

@@ -1,5 +1,16 @@
 # API Design & Versioning Standards + Service Catalog
 
+### Premium coach chat quota (2026-11-04)
+
+- `GET /v1/coach/access` returns `monthlyMessagesRemaining` alongside
+  `dailyMessagesRemaining` for Premium. On quota exhaustion, `canChat` is false,
+  `reason` is `AI_CHAT_QUOTA_EXCEEDED`, and `retryAt` is the earliest usable
+  UTC timestamp or null if generation is disabled through the daily setting.
+- `POST /v1/coach/chat`, `POST /v1/coach/chat/stream` and
+  `POST /v1/coach/conversations/:id/regenerate/stream` share the quota. Refusal is
+  HTTP 429 with localized `AI_CHAT_QUOTA_EXCEEDED` and `details.retryAt` before
+  SSE headers. Owned history can still be read.
+
 ### Weekly recommendation follow-up (2026-11-04)
 
 - `GET /v1/coach/weekly-recaps/:id/follow-up`: owned READY report's live task plus an optional

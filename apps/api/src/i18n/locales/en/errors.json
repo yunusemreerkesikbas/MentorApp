@@ -88,6 +88,7 @@
   "AI_PROVIDER_ERROR": "Couldn't reach the coach just now. Let's try again in a moment.",
   "AI_COACH_CONTEXT_STALE": "The source used for this reply is gone. Send a new message with current context.",
   "AI_RATE_LIMITED": "Today's coach right is used up. I'll be here tomorrow.",
+  "AI_CHAT_QUOTA_EXCEEDED": "You've used your coach chat allowance. You can still open past chats.",
   "AI_PLAN_ADAPTATION_NOT_APPLICABLE": "This signal is no longer eligible for plan adaptation. You can prepare a new preview from the plan screen.",
   "AI_BUDGET_EXCEEDED": "The coach took a short pause. Let's try again in a moment.",
   "AI_PHOTO_RATE_LIMITED": "This month's photo analysis right is used up. Later, or Premium.",

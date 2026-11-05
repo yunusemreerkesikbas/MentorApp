@@ -1149,7 +1149,9 @@
       "history_new_chat": "New chat",
       "load_older": "Load older messages",
       "remaining_hint": "Messages left today: {count}",
-      "remaining_hint_zero": "You're out of messages for today. See you tomorrow."
+      "remaining_hint_zero": "You're out of messages for today. See you tomorrow.",
+      "premium_quota_full": "You've used your coach chat allowance. You can still open past chats.",
+      "premium_quota_retry": "You've used your coach chat allowance. You can ask for a new reply from {time}."
     }
   },
   "profile": {

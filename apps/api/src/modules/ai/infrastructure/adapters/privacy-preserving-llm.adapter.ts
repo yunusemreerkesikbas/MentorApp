@@ -66,14 +66,17 @@ export class PrivacyPreservingLlmAdapter implements LlmPort {
     private readonly config: ConfigRegistryService,
   ) {}
 
-  async complete(input: LlmCompleteInput): Promise<LlmResult> {
+  async complete(input: LlmCompleteInput, admitChat?: () => Promise<string>): Promise<LlmResult> {
     await this.assertEnabled();
     const budgetReservationId = await this.budget.acquire();
     try {
-      const result = await this.delegate.complete(minimizeInput(input));
+      const minimized = minimizeInput(input);
+      const chatQuotaAttemptId = await admitChat?.();
+      const result = await this.delegate.complete(minimized);
       return {
         ...result,
         ...(budgetReservationId ? { budgetReservationId } : {}),
+        ...(chatQuotaAttemptId ? { chatQuotaAttemptId } : {}),
       };
     } catch (error) {
       await this.budget.release(budgetReservationId);
@@ -81,18 +84,21 @@ export class PrivacyPreservingLlmAdapter implements LlmPort {
     }
   }
 
-  async *completeStream(input: LlmCompleteInput): AsyncIterable<LlmStreamEvent> {
+  async *completeStream(input: LlmCompleteInput, admitChat?: () => Promise<string>): AsyncIterable<LlmStreamEvent> {
     await this.assertEnabled();
     const budgetReservationId = await this.budget.acquire();
     let handedOff = false;
     try {
-      for await (const event of this.delegate.completeStream(minimizeInput(input))) {
+      const minimized = minimizeInput(input);
+      const chatQuotaAttemptId = await admitChat?.();
+      for await (const event of this.delegate.completeStream(minimized)) {
         if (event.final) {
           handedOff = true;
           yield {
             final: {
               ...event.final,
               ...(budgetReservationId ? { budgetReservationId } : {}),
+              ...(chatQuotaAttemptId ? { chatQuotaAttemptId } : {}),
             },
           };
         } else {

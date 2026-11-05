@@ -85,6 +85,32 @@ describe("global AI provider kill-switch", () => {
     expect(fixture.budget.release).not.toHaveBeenCalled();
   });
 
+  it("rejects Premium quota before provider dispatch and releases the global reservation", async () => {
+    const fixture = setup(true);
+    const refusal = new Error("quota exhausted");
+    const admit = vi.fn(async () => { throw refusal; });
+    const stream = fixture.text.completeStream(textInput, admit)[Symbol.asyncIterator]();
+
+    await expect(stream.next()).rejects.toThrow(refusal);
+    expect(fixture.delegate.completeStream).not.toHaveBeenCalled();
+    expect(fixture.budget.release).toHaveBeenCalledWith("reservation");
+  });
+
+  it("reserves Premium quota only after the global budget and returns the settlement id", async () => {
+    const fixture = setup(true);
+    const admit = vi.fn(async () => "chat-attempt");
+    fixture.budget.acquire.mockRejectedValueOnce(new Error("global cap"));
+
+    await expect(fixture.text.complete(textInput, admit)).rejects.toThrow("global cap");
+    expect(admit).not.toHaveBeenCalled();
+    await expect(fixture.text.complete(textInput, admit)).resolves.toMatchObject({
+      chatQuotaAttemptId: "chat-attempt",
+    });
+    expect(admit.mock.invocationCallOrder[0]).toBeLessThan(
+      fixture.delegate.complete.mock.invocationCallOrder[0],
+    );
+  });
+
   it("releases a stream reservation when the caller stops before the final event", async () => {
     const fixture = setup(true);
     for await (const event of fixture.text.completeStream(textInput)) {

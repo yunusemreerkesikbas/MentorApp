@@ -7,7 +7,7 @@ describe("CoachAccessService", () => {
   let service: CoachAccessService;
   let configGet: ReturnType<typeof vi.fn>;
   let getEntitlement: ReturnType<typeof vi.fn>;
-  let countSince: ReturnType<typeof vi.fn>;
+  let readQuota: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     configGet = vi.fn(async (key: string) => {
@@ -16,36 +16,41 @@ describe("CoachAccessService", () => {
       return null;
     });
     getEntitlement = vi.fn(async () => ({ isPremium: true }));
-    countSince = vi.fn(async () => 0);
+    readQuota = vi.fn(async () => ({ dailyRemaining: 20, monthlyRemaining: 100, retryAt: null }));
 
     service = new CoachAccessService(
       { getEntitlement } as never,
       {} as never,
       { get: configGet } as never,
       { isWithinBudget: vi.fn(async () => true) } as never,
-      { countFeatureSince: countSince } as never,
+      {} as never,
       { isAllowed: vi.fn(async () => false) } as never,
+      { read: readQuota } as never,
     );
   });
 
-  it("premium access returns the remaining rolling-24h message count", async () => {
-    countSince.mockResolvedValue(12);
+  it("premium access returns both remaining counts", async () => {
+    readQuota.mockResolvedValue({ dailyRemaining: 18, monthlyRemaining: 90, retryAt: null });
 
     await expect(service.getAccess("user-1")).resolves.toEqual({
       canChat: true,
       mode: CoachAccessMode.PREMIUM,
       dailyMessagesRemaining: 18,
+      monthlyMessagesRemaining: 90,
     });
   });
 
-  it("closes premium chat with the same rolling limit used by enforcement", async () => {
-    countSince.mockResolvedValue(45);
+  it("blocks generation when only the monthly quota is exhausted", async () => {
+    const retryAt = "2026-11-12T08:00:00.000Z";
+    readQuota.mockResolvedValue({ dailyRemaining: 18, monthlyRemaining: 0, retryAt });
 
     await expect(service.getAccess("user-1")).resolves.toEqual({
       canChat: false,
       mode: CoachAccessMode.PREMIUM,
-      reason: "AI_RATE_LIMITED",
-      dailyMessagesRemaining: 0,
+      reason: "AI_CHAT_QUOTA_EXCEEDED",
+      dailyMessagesRemaining: 18,
+      monthlyMessagesRemaining: 0,
+      retryAt,
     });
   });
 });

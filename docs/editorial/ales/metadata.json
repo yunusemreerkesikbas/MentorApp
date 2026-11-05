@@ -1,0 +1,353 @@
+{
+  "status": "DRAFT",
+  "language": "tr",
+  "preparedOn": "2026-11-04",
+  "sourceYear": 2026,
+  "articles": [
+    {
+      "slug": "ales-kimler-basvurabilir",
+      "title": "ALES’e kimler başvurabilir?",
+      "category": "APPLICATION",
+      "family": "ALES",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ales-kimler-basvurabilir.md",
+      "metaTitle": "ALES’e kimler başvurabilir? | PuhuKoç",
+      "metaDescription": "Son sınıfta ALES’e başvuru koşulunu, yurt dışı diploma denkliğini ve AİS kaydı sonrası ödeme adımını öğren.",
+      "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 1,
+        "primaryKeyword": "ales kimler başvurabilir",
+        "sourceRefs": [
+          "§1.2, PDF s. 4 ve §2.3, PDF s. 17"
+        ],
+        "coverImageFile": "images/ales-kimler-basvurabilir-cover.webp",
+        "relatedArticles": [
+          {
+            "slug": "ales-puan-gecerlilik-suresi"
+          },
+          {
+            "slug": "ales-sinava-giris-belgesi-kimlik"
+          },
+          {
+            "slug": "ales-yoksis-egitim-bilgisi"
+          },
+          {
+            "slug": "ales-sinav-merkezi-degistirme"
+          }
+        ],
+        "coverImageAlt": "Mezuniyet kıyafetiyle diploma ve çiçek tutan bir kadın"
+      }
+    },
+    {
+      "slug": "ales-soru-sayisi-sure",
+      "title": "ALES kaç soru, kaç dakika?",
+      "category": "GENERAL",
+      "family": "ALES",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ales-soru-sayisi-sure.md",
+      "metaTitle": "ALES kaç soru, kaç dakika? | PuhuKoç",
+      "metaDescription": "ALES’in Sayısal ve Sözel testlerindeki soru sayılarını, toplam sınav süresini ve denemede süreyi nasıl takip edeceğini öğren.",
+      "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 2,
+        "primaryKeyword": "ales kaç soru kaç dakika",
+        "sourceRefs": [
+          "§1.3, PDF s. 4 ve §3.1, PDF s. 18"
+        ],
+        "coverImageFile": "images/ales-soru-sayisi-sure-cover.webp",
+        "relatedArticles": [
+          {
+            "slug": "ales-puan-net-hesaplama"
+          },
+          {
+            "slug": "ales-sinava-giris-belgesi-kimlik"
+          }
+        ],
+        "coverImageAlt": "Aydınlık bir odada kitap ve defterleriyle çalışan iki öğrenci"
+      }
+    },
+    {
+      "slug": "ales-puan-net-hesaplama",
+      "title": "ALES puanı nasıl hesaplanır? Sayısal, Sözel ve Eşit Ağırlık",
+      "category": "GENERAL",
+      "family": "ALES",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ales-puan-net-hesaplama.md",
+      "metaTitle": "ALES puanı nasıl hesaplanır? Sayısal, Sözel ve Eşit Ağırlık | PuhuKoç",
+      "metaDescription": "ALES netini test başına hesapla. Sayısal, Sözel ve Eşit Ağırlık puanlarının test ağırlıklarını örnekle incele.",
+      "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 3,
+        "primaryKeyword": "ales puanı nasıl hesaplanır",
+        "sourceRefs": [
+          "§3.9, PDF s. 26"
+        ],
+        "coverImageFile": "images/ales-puan-net-hesaplama-cover.webp",
+        "relatedArticles": [
+          {
+            "slug": "ales-soru-sayisi-sure"
+          },
+          {
+            "slug": "ales-puan-gecerlilik-suresi"
+          },
+          {
+            "slug": "ales-sonuc-inceleme-soru-itirazi"
+          }
+        ],
+        "coverImageAlt": "Hesap makinesi kullanırken kâğıda sayılar yazan eller"
+      }
+    },
+    {
+      "slug": "ales-puan-gecerlilik-suresi",
+      "title": "ALES puanı kaç yıl geçerli?",
+      "category": "GENERAL",
+      "family": "ALES",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ales-puan-gecerlilik-suresi.md",
+      "metaTitle": "ALES puanı kaç yıl geçerli? | PuhuKoç",
+      "metaDescription": "ALES puanının beş yıllık geçerlilik süresinin ne zaman başladığını ve başvuruda puan türü ile asgari puanı nasıl kontrol edeceğini öğren.",
+      "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 4,
+        "primaryKeyword": "ales puanı kaç yıl geçerli",
+        "sourceRefs": [
+          "§§1.1, 1.5–1.6, PDF s. 4 ve §1.7, PDF s. 5"
+        ],
+        "coverImageFile": "images/ales-puan-gecerlilik-suresi-cover.webp",
+        "relatedArticles": [
+          {
+            "slug": "ales-kimler-basvurabilir"
+          },
+          {
+            "slug": "ales-puan-net-hesaplama"
+          }
+        ],
+        "coverImageAlt": "Masada açık ajanda ve kalem"
+      }
+    },
+    {
+      "slug": "ales-sinava-giris-belgesi-kimlik",
+      "title": "ALES’e hangi belgelerle girilir?",
+      "category": "GENERAL",
+      "family": "ALES",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ales-sinava-giris-belgesi-kimlik.md",
+      "metaTitle": "ALES’e hangi belgelerle girilir? | PuhuKoç",
+      "metaDescription": "ALES sınava giriş belgesini nereden alacağını, siyah beyaz çıktının kabul edilip edilmediğini ve hangi kimlikleri kullanabileceğini öğren.",
+      "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 5,
+        "primaryKeyword": "ales sınava giriş belgesi kimlik",
+        "sourceRefs": [
+          "§§3.2–3.4, PDF s. 18–21"
+        ],
+        "coverImageFile": "images/ales-sinava-giris-belgesi-kimlik-cover.webp",
+        "relatedArticles": [
+          {
+            "slug": "ales-kimler-basvurabilir"
+          },
+          {
+            "slug": "ales-soru-sayisi-sure"
+          },
+          {
+            "slug": "ales-cevap-kagidi-kitapcik-kodlama"
+          },
+          {
+            "slug": "ales-engelli-aday-ek-sure"
+          }
+        ],
+        "coverImageAlt": "Kitapların yanında kâğıt takılı bir yazı altlığını tutan eller"
+      }
+    },
+    {
+      "slug": "ales-sinav-merkezi-degistirme",
+      "title": "ALES sınav merkezi tercihi nasıl değiştirilir?",
+      "category": "APPLICATION",
+      "family": "ALES",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ales-sinav-merkezi-degistirme.md",
+      "metaTitle": "ALES sınav merkezi tercihi nasıl değiştirilir? | PuhuKoç",
+      "metaDescription": "ALES’te birinci ve ikinci sınav merkezi tercihini, değişiklik süresini ve kesin sınav yerini nereden öğreneceğini incele.",
+      "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 6,
+        "primaryKeyword": "ales sınav merkezi değiştirme",
+        "sourceRefs": [
+          "§§1.4 ve 2.2 alan 15, PDF s. 4 ve 11–12, §3.2, PDF s. 18–19"
+        ],
+        "coverImageFile": "images/ales-sinav-merkezi-degistirme-cover.webp",
+        "coverImageAlt": "Masadaki belgeleri kalemle inceleyen bir kişi",
+        "relatedArticles": [
+          {
+            "slug": "ales-kimler-basvurabilir"
+          },
+          {
+            "slug": "ales-sinava-giris-belgesi-kimlik"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "ales-yoksis-egitim-bilgisi",
+      "title": "ALES başvurusunda eğitim bilgisi eksikse ne yapılır?",
+      "category": "APPLICATION",
+      "family": "ALES",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ales-yoksis-egitim-bilgisi.md",
+      "metaTitle": "ALES başvurusunda eğitim bilgisi eksikse ne yapılır? | PuhuKoç",
+      "metaDescription": "ALES başvurusunda lisans eğitim alanının zorunlu olup olmadığını ve YÖKSİS kaynaklı yanlış kaydın nerede düzeltileceğini öğren.",
+      "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 7,
+        "primaryKeyword": "ales yöksis eğitim bilgisi",
+        "sourceRefs": [
+          "§1.2, PDF s. 4 ve §2.2 alan 14, PDF s. 10–11"
+        ],
+        "coverImageFile": "images/ales-yoksis-egitim-bilgisi-cover.webp",
+        "coverImageAlt": "Kütüphanede masada kitaplarla çalışan bir kişi",
+        "relatedArticles": [
+          {
+            "slug": "ales-kimler-basvurabilir"
+          },
+          {
+            "slug": "ales-sinav-merkezi-degistirme"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "ales-cevap-kagidi-kitapcik-kodlama",
+      "title": "ALES cevap kâğıdı ve kitapçık numarası nasıl kodlanır?",
+      "category": "GENERAL",
+      "family": "ALES",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ales-cevap-kagidi-kitapcik-kodlama.md",
+      "metaTitle": "ALES cevap kâğıdı ve kitapçık numarası nasıl kodlanır? | PuhuKoç",
+      "metaDescription": "ALES kitapçık numarasını hangi alanlarda onaylayacağını, cevapları optik forma nasıl aktaracağını ve sınav sonunda neyi teslim edeceğini öğren.",
+      "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 8,
+        "primaryKeyword": "ales kitapçık numarası kodlama",
+        "sourceRefs": [
+          "§§3.4–3.7, PDF s. 22–24"
+        ],
+        "coverImageFile": "images/ales-cevap-kagidi-kitapcik-kodlama-cover.webp",
+        "coverImageAlt": "Ahşap masada defter, kâğıt ve kalemler",
+        "relatedArticles": [
+          {
+            "slug": "ales-sinava-giris-belgesi-kimlik"
+          },
+          {
+            "slug": "ales-puan-net-hesaplama"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "ales-engelli-aday-ek-sure",
+      "title": "ALES’te ek süre ve erişilebilir sınav düzenlemesi nasıl istenir?",
+      "category": "APPLICATION",
+      "family": "ALES",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ales-engelli-aday-ek-sure.md",
+      "metaTitle": "ALES’te ek süre ve erişilebilir sınav düzenlemesi nasıl istenir? | PuhuKoç",
+      "metaDescription": "ALES’te onaylanan ek sürenin kaç dakika olduğunu ve e-Rapor, okuyucu, işaretleyici veya erişilebilir salon taleplerini nasıl ileteceğini öğren.",
+      "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 9,
+        "primaryKeyword": "ales engelli aday ek süre",
+        "sourceRefs": [
+          "§§4.5–4.5.3, PDF s. 30–33"
+        ],
+        "coverImageFile": "images/ales-engelli-aday-ek-sure-cover.webp",
+        "coverImageAlt": "Dizüstü bilgisayar ve notlarla bir masa etrafında çalışan öğrenciler",
+        "relatedArticles": [
+          {
+            "slug": "ales-kimler-basvurabilir"
+          },
+          {
+            "slug": "ales-sinava-giris-belgesi-kimlik"
+          }
+        ]
+      }
+    },
+    {
+      "slug": "ales-sonuc-inceleme-soru-itirazi",
+      "title": "ALES sonuç incelemesi ve soru itirazı nasıl yapılır?",
+      "category": "GENERAL",
+      "family": "ALES",
+      "bodyFormat": "MARKDOWN",
+      "bodyFile": "ales-sonuc-inceleme-soru-itirazi.md",
+      "metaTitle": "ALES sonuç incelemesi ve soru itirazı nasıl yapılır? | PuhuKoç",
+      "metaDescription": "ALES sonuç inceleme talebiyle soru itirazının farklı sürelerini ve ÖSYM’ye iletilecek dilekçe için gereken bilgileri öğren.",
+      "source": "ÖSYM 2026 ALES Başvuru Kılavuzu",
+      "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/basvuru-kilavuzu-pijez5-06105839.pdf",
+      "authorName": null,
+      "verifiedAt": null,
+      "verifiedBy": null,
+      "publishedAt": null,
+      "editorial": {
+        "priority": 10,
+        "primaryKeyword": "ales sonuç inceleme soru itirazı",
+        "sourceRefs": [
+          "§3.10, PDF s. 26–27, §4.3, PDF s. 29 ve dilekçe açıklamaları, PDF s. 36–37"
+        ],
+        "coverImageFile": "images/ales-sonuc-inceleme-soru-itirazi-cover.webp",
+        "coverImageAlt": "Yazı altlığındaki kâğıda kalemle not alan bir kişi",
+        "relatedArticles": [
+          {
+            "slug": "ales-puan-net-hesaplama"
+          },
+          {
+            "slug": "ales-puan-gecerlilik-suresi"
+          }
+        ]
+      }
+    }
+  ]
+}

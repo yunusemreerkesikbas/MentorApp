@@ -25,6 +25,8 @@ import { LLM_PORT, RAW_LLM_PORT } from "./domain/llm.port";
 import { RAW_VISION_PORT, VISION_PORT } from "./domain/vision.port";
 import { ChatService } from "./application/chat.service";
 import { CoachAccessService } from "./application/coach-access.service";
+import { PremiumChatQuotaService } from "./application/premium-chat-quota.service";
+import { PremiumChatQuotaRepository } from "./infrastructure/premium-chat-quota.repository";
 import { EconomyAiUsesService } from "./application/economy-ai-uses.service";
 import { MoodReflectionService } from "./application/mood-reflection.service";
 import { DailyGreetingService } from "./application/daily-greeting.service";
@@ -131,6 +133,8 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     CoinPlanPreviewService,
     CommunityCoachPlanTaskService,
     CoachAccessService,
+    PremiumChatQuotaService,
+    PremiumChatQuotaRepository,
     EconomyAiUsesService,
     MoodReflectionService,
     DailyGreetingService,

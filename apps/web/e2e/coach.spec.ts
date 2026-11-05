@@ -16,6 +16,7 @@ import { IDLE_STREAK } from "./streak.fixture";
 
 const taskId = "33333333-3333-4333-8333-333333333333";
 const conversationId = "44444444-4444-4444-8444-444444444444";
+const coachApiBase = process.env.QA_STAGE2_API_URL ?? "http://localhost:3001/v1";
 
 const user: AuthUser = {
   id: "22222222-2222-4222-8222-222222222222",
@@ -105,7 +106,7 @@ test("coach accepted session uses its actual 80-minute duration", async ({ page 
     today: pendingToday, access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
     messages: [{ id: messageId, role: "COACH", content: "Bir adimla baslayabiliriz.", sources: [], feedback: null, createdAt: new Date().toISOString(), action, actionStatus: "PROPOSED" }],
   });
-  await page.route(`http://localhost:3001/v1/coach/messages/${messageId}/action`, route => json(route, {
+  await page.route(`${coachApiBase}/coach/messages/${messageId}/action`, route => json(route, {
     action, status: "ACCEPTED", resultRefId: "session-80",
     session: { id: "session-80", preset: "custom", plannedFocusMinutes: 80, subject: "Matematik", endedAt: null },
   }));
@@ -247,7 +248,7 @@ test("ilk ziyaret tercih kartı selamlamanın üstüne binmez", async ({ page })
     today: pendingToday,
     access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
   });
-  await page.route("http://localhost:3001/v1/coach/profile", (route) =>
+  await page.route(`${coachApiBase}/coach/profile`, (route) =>
     json(route, {
       calibrationStatus: "NOT_STARTED",
       memoryConsent: "PENDING",
@@ -326,6 +327,51 @@ test("chat hakkı olmayan kullanıcıyı yalnız chat rotasında gate ile karş�
   await expect(page.getByTestId("coach-next-action-chip")).toHaveCount(0);
   await expect(page.getByTestId("coach-empty-landing")).toHaveCount(0);
   expect(api.todayCalls).toBe(0);
+});
+
+test("Premium quota keeps history and restores a rejected draft", async ({ page }) => {
+  const retryAt = "2026-11-20T10:00:00.000Z";
+  await mockCoachApi(page, {
+    today: pendingToday,
+    access: {
+      canChat: false,
+      mode: "PREMIUM",
+      reason: "AI_CHAT_QUOTA_EXCEEDED",
+      dailyMessagesRemaining: 20,
+      monthlyMessagesRemaining: 0,
+      retryAt,
+    },
+    conversations: [{
+      id: conversationId,
+      title: "Eski çalışma planım",
+      lastMessageAt: "2026-11-01T10:00:00.000Z",
+      messageCount: 1,
+      origin: null,
+    }],
+    messages: [{
+      id: "66666666-6666-4666-8666-666666666666",
+      role: "COACH",
+      content: "Eski yanıt burada.",
+      sources: [],
+      feedback: null,
+      createdAt: "2026-11-01T10:00:00.000Z",
+    }],
+  });
+  const refusal = "Koç sohbeti hakkın doldu. Eski sohbetlerini açabilirsin.";
+  await page.route(`${coachApiBase}/coach/chat/stream`, (route) =>
+    route.request().method() === "OPTIONS"
+      ? json(route, null, 204)
+      : json(route, { code: "AI_CHAT_QUOTA_EXCEEDED", message: refusal, details: { retryAt } }, 429),
+  );
+  await page.goto(`/koc/sohbet?c=${conversationId}`);
+  await expect(page.getByText("Eski yanıt burada.")).toBeVisible();
+  await expect(page.getByText(/Koç sohbeti hakkın doldu.*20 Kas/)).toBeVisible();
+  const input = page.locator("#coach-input");
+  await input.fill("Yeni çalışma taslağım");
+  await input.press("Enter");
+  await expect(page.getByText(refusal, { exact: true })).toBeVisible();
+  await expect(input).toHaveValue("Yeni çalışma taslağım");
+  await expect(page.getByText("Eski yanıt burada.")).toBeVisible();
 });
 
 test("persisted resmî countdown kartını history yüklemesinden sonra yeniden gösterir", async ({
@@ -804,7 +850,7 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
   });
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${coachApiBase}/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname + url.search;

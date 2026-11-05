@@ -31,7 +31,8 @@ setArticleEmbedding`), retrieval via pgvector cosine similarity (≤0.6 threshol
   embedding (§3 — AI computes, content stores/searches). General coaching text is never embedded;
   official lookup embeds only `examType + fixed intent`, while article CTA chat uses its exact slug.
 - **Cost (§7):** `ai_usage` table (model + tokens + estimated `cost_micros`). Premium daily rate-limit
-  (`ai.chat.daily_limit`, default 30). Coin spend = separate free daily coin allowance.
+  (`ai.chat.daily_limit`, default 20 per rolling 24h) and monthly quota
+  (`ai.chat.monthly_limit`, default 100 per rolling 30 days). Coin spend uses a separate free allowance.
 - **Flags:** `ai.enabled` (global kill-switch → 404) + `economy.enabled` (coin path).
 
 ## Tutorials / Guides
@@ -102,6 +103,15 @@ pnpm --filter @mentor/api test -- --grep "ai"
 | `GET /v1/admin/metrics/coach-feedback`               | Coach 👍/👎 satisfaction + recent 👎 replies (SUPPORT+FINANCE)                |
 
 ## Geliştirmeler (timeline)
+
+- **2026-11-04 · Premium coach chat quota.** Normal, streaming and regenerated
+  model replies share rolling 24-hour and 30-day allowances. Set the two limits
+  under Admin `/config` using `ai.chat.daily_limit` and `ai.chat.monthly_limit`.
+  Existing overrides take precedence over catalog defaults. An interrupted
+  provider attempt still consumes a slot. The access probe reports renewal time
+  and chat history stays readable. Apply migration `0140_premium_chat_quota.sql`
+  before deploying the new API. Related files include `PremiumChatQuotaService`,
+  `PrivacyPreservingLlmAdapter`, `AiUsageRepository`, `CoachQuotaHint`.
 
 ### 2026-11-04 — Owned-report recommendation follow-up
 

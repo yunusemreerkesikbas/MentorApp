@@ -5,6 +5,7 @@ import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
 import { aiUsage, users } from "../../../database/schema";
 import { aiBudgetReservations } from "../../../database/schema-ai-budget";
+import { aiChatQuotaAttempts } from "../../../database/schema-chat-quota";
 import { aiBudgetLockName } from "./ai-budget-reservation.repository";
 
 /** Aggregate cost/usage over a time window (admin cost dashboard). */
@@ -67,9 +68,10 @@ export class AiUsageRepository {
     completionTokens: number;
     costMicros: number;
     budgetReservationId?: string;
+    chatQuotaAttemptId?: string;
   }): Promise<void> {
     await withServiceContext(this.db, async (tx) => {
-      const { budgetReservationId, ...usageRow } = row;
+      const { budgetReservationId, chatQuotaAttemptId, ...usageRow } = row;
       if (budgetReservationId) {
         const now = new Date();
         const windowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -80,6 +82,12 @@ export class AiUsageRepository {
         );
       }
       await tx.insert(aiUsage).values(usageRow);
+      if (chatQuotaAttemptId) {
+        await tx.delete(aiChatQuotaAttempts).where(and(
+          eq(aiChatQuotaAttempts.id, chatQuotaAttemptId),
+          eq(aiChatQuotaAttempts.userId, row.userId),
+        ));
+      }
       if (budgetReservationId) {
         await tx
           .delete(aiBudgetReservations)

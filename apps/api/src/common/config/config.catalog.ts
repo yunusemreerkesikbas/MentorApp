@@ -748,9 +748,14 @@ export const CONFIG_CATALOG = {
     "Small trending/top score bonus for a QA question that has no answers yet.",
   ),
   "ai.chat.daily_limit": aiCount(
-    30,
+    20,
     100000,
-    "Max AI coach chat messages a premium user may send per day (cost cap §7).",
+    "Max Premium AI coach generations in the last 24 hours (0 blocks generation).",
+  ),
+  "ai.chat.monthly_limit": aiPositiveCount(
+    100,
+    100000,
+    "Max Premium AI coach generations in the last 30 days.",
   ),
   "ai.plan_draft.daily_limit": aiCount(
     5,
