@@ -18,11 +18,19 @@ HttpOnly, SameSite=Lax cookies; do not add a shared cookie Domain attribute. Web
 URLs and sitemap use the apex; admin sends `X-Robots-Tag: noindex, nofollow, noarchive`.
 Noindex does not replace authentication or Cloudflare Access.
 
-## Operator access for the first release (2026-11-05)
+## Selected release: closed web cohort (2026-11-05)
 
-The owner selected an operator-only admin panel for the first release, subject to provider
-acceptance. Use the core-only Free trial settings below with the admin access changes in this
-section. Until these gates pass, keep `ADMIN_ACCESS_MODE=disabled` and the panel unpublished.
+Run the web trial with named tester accounts until the mobile app is ready. Keep public account
+creation closed (`signup.enabled=false`) and keep `ADMIN_ACCESS_MODE=disabled`. Leave Cloudflare
+Zero Trust unactivated because checkout asks for permission to bill usage above the Free limits.
+Use the dedicated trial database and verify that its sign-in-capable accounts belong to approved
+testers before admission. If testers need new accounts, first complete and verify a mailbox-proof
+invitation flow with a restricted operator procedure. Close signup again after enrollment.
+
+### Deferred operator panel
+
+When operator access is needed, review provider terms and verify these gates before publishing
+the panel.
 
 1. Verify the actual Cloudflare Free checkout and Render Hobby domain inventory. Include any
    automatically paired `www` hostname in the count. Get a separate decision before accepting
@@ -90,11 +98,10 @@ and `ads.enabled=false`. Keep checkout/billing channels off, `PAYMENTS_PROVIDER=
 and `SMS_PROVIDER=disabled`. Explicitly set `payments.web.enabled=false`,
 `payments.mobile.enabled=false`, `payments.web.redirect_to_mobile=false`,
 `mentorship.seats.billing_enabled=false` and `mentorship.seats.mobile_billing_enabled=false`.
-Keep `community.achievements.enabled=true` for personal progress, `signup.enabled=true`
-and `signup.pilot.enabled=true`. Launch is invite-only (2026-11-05): signup requires an
-`invited` row in `signup_invitations` (migration 0141 must run; admins invite from `/waitlist`);
-there is no `PILOT_INVITED_EMAILS` env any more. Public signup is not open: to open it later,
-set `signup.pilot.enabled=false` deliberately. Deploy the API before the web. Expected
+Keep `community.achievements.enabled=true` for personal progress, `signup.enabled=false`
+and `signup.pilot.enabled=true`. The closed web cohort uses approved existing accounts. Keep the
+pilot flag enabled as a safeguard for any later controlled enrollment. Migration 0141 adds the
+waitlist and invitation table. Deploy the API before the web. Expected
 trial users are not an account-count or invoice cap. Verify effective values, not only
 catalog defaults. The registry caches overrides per process: an attended offline change
 requires controlled restart and verification. No live flag was changed in source preparation.

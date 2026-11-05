@@ -9,6 +9,7 @@ import { Public } from "../../../common/auth/public.decorator";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { Env } from "../../../config/env.validation";
+import { MEDIA_SESSION_COOKIE, PRIVATE_MEDIA_PATH } from "../../../shared/storage/media-session-proof";
 import {
   ADMIN_REFRESH_COOKIE,
   ADMIN_REFRESH_COOKIE_PATH,
@@ -200,6 +201,7 @@ export class AuthController {
     const raw = (req.cookies as Record<string, string> | undefined)?.[REFRESH_COOKIE];
     await this.auth.logout(raw);
     res.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
+    res.clearCookie(MEDIA_SESSION_COOKIE, { path: PRIVATE_MEDIA_PATH });
   }
 
   @Post("admin/logout")
@@ -251,6 +253,15 @@ export class AuthController {
       expires: result.tokens.refreshExpiresAt,
     });
     res.clearCookie(LEGACY_REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
+    if (cookieName === REFRESH_COOKIE && result.tokens.mediaSessionProof) {
+      res.cookie(MEDIA_SESSION_COOKIE, result.tokens.mediaSessionProof, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: "lax",
+        path: PRIVATE_MEDIA_PATH,
+        expires: result.tokens.refreshExpiresAt,
+      });
+    }
     return {
       accessToken: result.tokens.accessToken,
       expiresIn: result.tokens.expiresIn,

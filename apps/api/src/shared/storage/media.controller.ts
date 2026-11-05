@@ -17,6 +17,7 @@ import {
   UnauthorizedError,
 } from "../../common/errors/domain-error";
 import { MediaReadService } from "./media-read.service";
+import { MEDIA_SESSION_COOKIE } from "./media-session-proof";
 
 @ApiExcludeController()
 @Public()
@@ -25,9 +26,9 @@ export class MediaController {
   constructor(private readonly media: MediaReadService) {}
 
   @Head("private")
-  async headPrivate(@Query("grant") grant: unknown, @Res() res: Response) {
+  async headPrivate(@Query("grant") grant: unknown, @Req() req: Request, @Res() res: Response) {
     privacy(res);
-    const metadata = await this.media.headPrivate(privateGrant(grant));
+    const metadata = await this.media.headPrivate(privateGrant(grant), req.cookies?.[MEDIA_SESSION_COOKIE]);
     res.type(metadata.contentType).setHeader("Content-Length", metadata.size);
     res.end();
   }
@@ -43,9 +44,9 @@ export class MediaController {
     res.end();
   }
   @Get("private")
-  async readPrivate(@Query("grant") grant: unknown, @Res() res: Response) {
+  async readPrivate(@Query("grant") grant: unknown, @Req() req: Request, @Res() res: Response) {
     privacy(res);
-    const result = await this.media.readPrivate(privateGrant(grant));
+    const result = await this.media.readPrivate(privateGrant(grant), req.cookies?.[MEDIA_SESSION_COOKIE]);
     res.type(result.contentType).send(result.bytes);
   }
   @Get("public/*key")
