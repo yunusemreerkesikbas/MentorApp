@@ -58,7 +58,8 @@ race before that PUT finishes. Tombstones prevent reusing keys. Copies require a
 
 Public prefixes use `/v1/storage/media/public/*key`; private links use the same API origin at
 `/v1/storage/media/private?grant=...`. Grants expire within 300 seconds and bind key, owner and
-the actual HTTP session. Session revocation is rechecked before R2. Minting URLs does not spend
+the actual HTTP session. Private GET and HEAD also require the matching HttpOnly browser cookie
+issued at web sign-in or refresh. A copied link alone is rejected. Session revocation is rechecked before R2. Minting URLs does not spend
 allowance. Both responses are no-store/no-referrer/nosniff. Private images bypass Next image
 optimization. Failed photos preserve DTO keys/text and block incomplete board exports.
 

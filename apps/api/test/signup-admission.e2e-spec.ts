@@ -108,6 +108,16 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     await expectNoAccount(email);
   });
 
+  it("does not create an account or session for an invited email without mailbox proof", async () => {
+    const result = await request(app.getHttpServer())
+      .post("/v1/auth/signup")
+      .send(body(passwordEmail));
+
+    expect(result.status).toBe(403);
+    expect(result.headers["set-cookie"]).toBeUndefined();
+    await expectNoAccount(passwordEmail);
+  });
+
   it("an address without an invited row admits nobody", async () => {
     await pool.query("DELETE FROM signup_invitations WHERE email = $1", [passwordEmail]);
     const result = await request(app.getHttpServer()).post("/v1/auth/signup").send(body(passwordEmail));

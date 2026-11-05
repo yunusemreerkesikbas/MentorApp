@@ -7,6 +7,7 @@ import type { RequestUser } from "../../../common/auth/current-user";
 import type { Env } from "../../../config/env.validation";
 import type { AccessTokenPayload } from "../domain/identity.constants";
 import { AuthSessionRepository } from "../infrastructure/auth-session.repository";
+import { signMediaSession } from "../../../shared/storage/media-session-proof";
 
 export interface IssuedTokens {
   accessToken: string;
@@ -14,6 +15,7 @@ export interface IssuedTokens {
   /** Raw refresh secret goes ONLY into the httpOnly cookie. */
   refreshToken: string;
   refreshExpiresAt: Date;
+  mediaSessionProof?: string;
 }
 
 export function hashToken(raw: string): string {
@@ -72,6 +74,9 @@ export class TokenService {
       sub: principal.id, sid: principal.sessionId, roles: principal.roles, orgId: principal.orgId,
     };
     const accessToken = await this.jwt.signAsync(payload, { expiresIn, algorithm: "HS256" });
-    return { accessToken, expiresIn, refreshToken: refresh.raw, refreshExpiresAt: refresh.record.expiresAt };
+    const mediaSessionProof = this.config.get("STORAGE_ACCESS_MODE", { infer: true }) === "bounded"
+      ? signMediaSession({ userId: principal.id, sessionId: principal.sessionId }, this.config.getOrThrow("MEDIA_READ_SECRET", { infer: true }))
+      : undefined;
+    return { accessToken, expiresIn, refreshToken: refresh.raw, refreshExpiresAt: refresh.record.expiresAt, ...(mediaSessionProof ? { mediaSessionProof } : {}) };
   }
 }

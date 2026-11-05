@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { VisionBoardDoc } from "@mentor/types";
 import { EMPTY_BOARD } from "./board-document";
+import { boardImageCorsMode } from "./board-export-layout";
 import {
   BoardExportMediaUnavailableError,
   renderBoardToBlob,
@@ -30,6 +31,17 @@ function rendererOf(bytesAtScale: Record<number, number>) {
  * rather than be refused by the upload.
  */
 afterEach(() => vi.unstubAllGlobals());
+it("sends image credentials only to the private media gateway on the API origin", () => {
+  vi.stubEnv("NEXT_PUBLIC_API_URL", "https://api.example.test/v1");
+  try {
+    const privatePath = "/v1/storage/media/private?grant=test";
+    expect(boardImageCorsMode(`https://api.example.test${privatePath}`)).toBe("use-credentials");
+    expect(boardImageCorsMode(`https://other.example.test${privatePath}`)).toBe("anonymous");
+    expect(boardImageCorsMode("blob:local")).toBeUndefined();
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
 describe("required board photos", () => {
   it.each([
     undefined,

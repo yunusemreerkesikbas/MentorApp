@@ -21,7 +21,7 @@ import {
   frameHasPlate,
   frameInsets,
   framedBoardLayout,
-  needsCrossOrigin,
+  boardImageCorsMode,
   textBlockTop,
   wallpaperLayout,
   wrapText,
@@ -53,12 +53,12 @@ function cssVar(name: string, fallback: string): string {
   return value || fallback;
 }
 
-function loadImage(src: string, crossOrigin: boolean): Promise<HTMLImageElement | null> {
+function loadImage(src: string, crossOrigin?: "anonymous" | "use-credentials"): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const image = new Image();
     // Same-origin assets must NOT set crossOrigin: it turns a plain load into a CORS request the
     // dev server has no reason to answer.
-    if (crossOrigin) image.crossOrigin = "anonymous";
+    if (crossOrigin) image.crossOrigin = crossOrigin;
     image.onload = () => resolve(image);
     image.referrerPolicy = "no-referrer";
     image.onerror = () => resolve(null);
@@ -285,7 +285,7 @@ async function drawItem(ctx: CanvasRenderingContext2D, item: VisionBoardItem): P
 
   if (item.kind === "image") {
     const image = item.url
-      ? await loadImage(boardImageSrc(item.url), needsCrossOrigin(item.url))
+      ? await loadImage(boardImageSrc(item.url), boardImageCorsMode(item.url))
       : null;
     if (!image) throw new BoardExportMediaUnavailableError();
     drawImageItem(ctx, item, image);
@@ -294,7 +294,7 @@ async function drawItem(ctx: CanvasRenderingContext2D, item: VisionBoardItem): P
   } else {
     const art = STICKER_ART[item.asset];
     if (art.kind === "image") {
-      const image = await loadImage(art.src, false);
+      const image = await loadImage(art.src);
       if (image) {
         const { sx, sy, sw, sh } = coverRect(
           image.naturalWidth,
