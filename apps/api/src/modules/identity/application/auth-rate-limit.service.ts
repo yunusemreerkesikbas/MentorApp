@@ -4,7 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { AuthRateLimitRepository } from "../infrastructure/auth-rate-limit.repository";
 
-export type AuthRateBucket = "login" | "signup" | "forgot" | "reset" | "verify" | "refresh" | "oauth" | "other";
+export type AuthRateBucket = "login" | "signup" | "forgot" | "reset" | "verify" | "refresh" | "oauth" | "waitlist" | "other";
 
 @Injectable()
 export class AuthRateLimitService {

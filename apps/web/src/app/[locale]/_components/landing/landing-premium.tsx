@@ -8,7 +8,7 @@ import { PlayCircleIcon } from "@solar-icons/react/bold/play-circle";
 import { Sun2Icon } from "@solar-icons/react/bold/sun-2";
 import { LEDGE } from "@/components/panel/panel-styles";
 import { PREMIUM_MASK_PATH } from "@/components/premium/premium-mask";
-import { Link } from "@/i18n/navigation";
+import { SignupCta } from "@/components/waitlist/signup-cta";
 import { landingAvailability } from "./landing-availability";
 import { PAGE_FRAME, PAPER_PILL, PAPER_TITLE } from "./landing-paper";
 import { PremiumFlightVideo } from "./premium-flight-video";
@@ -74,9 +74,9 @@ export async function LandingPremium() {
             ))}
           </ul>
 
-          <Link href="/welcome" className={`${LEDGE} lp-cta max-sm:w-full`}>
+          <SignupCta href="/welcome" role="student" className={`${LEDGE} lp-cta max-sm:w-full`}>
             {p("cta")}
-          </Link>
+          </SignupCta>
           <p className="lp-note">{p("cancel")}</p>
         </div>
       </div>

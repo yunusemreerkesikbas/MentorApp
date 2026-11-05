@@ -277,6 +277,15 @@
       "validity": "Bağlantı 1 saat geçerli",
       "note": "Bu isteği sen yapmadıysan şifren aynen kalır. Bu e-postayı silebilirsin."
     },
+    "identitySignupInvitation": {
+      "subject": "Pencerenin ışığı yandı, davetin geldi!",
+      "preheader": "PuhuKoç'taki yerin hazır.",
+      "heading": "Yerin hazır!",
+      "bubble": "Davetin geldi!",
+      "body": "Sıra sana geldi! PuhuKoç'taki yerin hazır. Davetin bu adrese özel, kayıt olurken bu e-postayı kullan.",
+      "cta": "Hesabımı aç",
+      "note": "Bu daveti sen istemediysen görmezden gelebilirsin."
+    },
     "paymentsDunning": {
       "subject": "Ödemen tamamlanamadı",
       "preheader": "Ödeme yöntemini güncellersen Premium'un kesintisiz devam eder.",

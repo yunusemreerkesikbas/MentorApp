@@ -1,4 +1,5 @@
 import {
+  paginationQuerySchema,
   adminListArticlesQuerySchema,
   adminListExamsQuerySchema,
   adminForumTagCreateSchema,
@@ -23,6 +24,7 @@ import {
   upsertExamEventSchema,
   upsertExamSchema,
 } from "@mentor/validation";
+import { z } from "zod";
 import { createZodDto } from "../../../common/validation/zod-dto";
 
 export class SearchUsersQueryDto extends createZodDto(searchUsersQuerySchema) {}
@@ -48,3 +50,16 @@ export class ReviewForumTagSuggestionDto extends createZodDto(reviewForumTagSugg
 export class SetFeaturedThreadDto extends createZodDto(setFeaturedThreadSchema) {}
 export class CreateAnnouncementDto extends createZodDto(createAnnouncementSchema) {}
 export class SendAnnouncementDto extends createZodDto(sendAnnouncementSchema) {}
+
+const waitlistListQuerySchema = paginationQuerySchema.extend({
+  status: z.enum(["waiting", "invited"]).optional(),
+  role: z.enum(["student", "coach"]).optional(),
+  q: z.string().trim().min(1).max(120).optional(),
+});
+const waitlistInviteEmailSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  role: z.enum(["student", "coach"]),
+  locale: z.enum(["tr", "en"]),
+});
+export class WaitlistListQueryDto extends createZodDto(waitlistListQuerySchema) {}
+export class WaitlistInviteEmailDto extends createZodDto(waitlistInviteEmailSchema) {}

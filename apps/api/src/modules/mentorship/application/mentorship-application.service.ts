@@ -67,13 +67,17 @@ export class MentorshipApplicationService {
    * The gate is `mentorship.applications.open`, deliberately NOT `mentorship.enabled`: coaches have
    * to be registerable before the coach surface opens, and the day it does open, this is the knob
    * that closes the intake.
+   *
+   * Somebody who already holds COACH passes the gate: that role was granted at signup by a coach
+   * invitation (or while the intake was open), and the onboarding `coachProfile` step that lands
+   * here has no skip. Refusing them would leave an invited coach with the role and no profile.
    */
   async register(
     userId: string,
     input: RegisterCoachInput,
     now = new Date(),
   ): Promise<MentorshipApplicationDto> {
-    if (!(await this.config.get("mentorship.applications.open"))) {
+    if (!(await this.intakeOpenFor(userId))) {
       throw new DomainError(ErrorCode.MENTORSHIP_APPLICATIONS_CLOSED, HttpStatus.FORBIDDEN);
     }
 
@@ -123,7 +127,7 @@ export class MentorshipApplicationService {
    */
   async getRegistrationState(userId: string): Promise<MentorshipCoachRegistrationStateDto> {
     const [open, row, emailVerified, phoneVerified, link, phoneRequired] = await Promise.all([
-      this.config.get("mentorship.applications.open"),
+      this.intakeOpenFor(userId),
       this.applications.findByUser(userId),
       this.users.isEmailVerified(userId),
       this.users.isPhoneVerified(userId),
@@ -138,6 +142,12 @@ export class MentorshipApplicationService {
       inviteBlockedReason: this.inviteBlockedReason(row, emailVerified, phoneVerified, Boolean(phoneRequired)),
       hasCoach: link !== undefined,
     };
+  }
+
+  /** `mentorship.applications.open`, or the user already holds COACH (see {@link register}). */
+  private async intakeOpenFor(userId: string): Promise<boolean> {
+    if (await this.config.get("mentorship.applications.open")) return true;
+    return this.users.hasRole(userId, UserRole.COACH);
   }
 
   /** The coach's own view. Null rather than 404: "you have not registered" is not an error. */

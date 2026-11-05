@@ -277,6 +277,15 @@
       "validity": "Link valid for 1 hour",
       "note": "If you didn't ask for this, your password stays the same. You can delete this email."
     },
+    "identitySignupInvitation": {
+      "subject": "Your window is lit, your invite is here!",
+      "preheader": "Your spot on PuhuKoç is ready.",
+      "heading": "Your spot is ready!",
+      "bubble": "Your invite is here!",
+      "body": "It's your turn! Your spot on PuhuKoç is ready. This invite is tied to this address, so use this email when you sign up.",
+      "cta": "Open my account",
+      "note": "If you didn't ask for this invite, you can ignore it."
+    },
     "paymentsDunning": {
       "subject": "Your payment didn't go through",
       "preheader": "Update your payment method and Premium keeps going.",

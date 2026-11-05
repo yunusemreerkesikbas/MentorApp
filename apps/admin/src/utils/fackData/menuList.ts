@@ -98,4 +98,12 @@ export const menuList: MenuItem[] = [
         dropdownMenu: false,
         roles: ["SUPER_ADMIN"],
     },
+    {
+        id: 13,
+        name: "Bekleme listesi",
+        path: "/waitlist",
+        icon: "feather-clock",
+        dropdownMenu: false,
+        roles: ["SUPER_ADMIN", "SUPPORT"],
+    },
 ];

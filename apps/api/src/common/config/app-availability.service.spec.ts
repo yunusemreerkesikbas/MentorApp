@@ -13,7 +13,7 @@ describe("public app availability", () => {
     const f = fixture();
     const result = await f.service.get();
     expect(Object.keys(result).sort()).toEqual([
-      "aiCoach", "coachPurchases", "coachRegistration", "coachSignup", "economy", "forum", "humanCoaching", "invites", "social",
+      "aiCoach", "coachPurchases", "coachRegistration", "coachSignup", "economy", "forum", "humanCoaching", "invites", "signupWaitlist", "social",
       "studentPurchases", "studentSignup", "studyRooms",
     ]);
     expect(Object.values(result).every(value => typeof value === "boolean")).toBe(true);
@@ -33,7 +33,7 @@ describe("public app availability", () => {
     expect(await f.service.get()).toEqual({
       aiCoach: false, social: false, forum: false, studyRooms: false, humanCoaching: false,
       studentPurchases: false, coachPurchases: false, studentSignup: true, coachRegistration: false, coachSignup: false,
-      economy: false, invites: false,
+      economy: false, invites: false, signupWaitlist: false,
     });
   });
 
@@ -61,6 +61,15 @@ describe("public app availability", () => {
   it("keeps existing-account coach registration independent of new-account signup", async () => {
     const f = fixture({ "signup.enabled": false, "mentorship.applications.open": true });
     expect(await f.service.get()).toMatchObject({ studentSignup: false, coachSignup: false, coachRegistration: true });
+  });
+
+  it("sends visitors to the waitlist unless signup is fully open", async () => {
+    const mode = async (enabled: boolean, pilot: boolean) =>
+      (await fixture({ "signup.enabled": enabled, "signup.pilot.enabled": pilot }).service.get()).signupWaitlist;
+    expect(await mode(true, false)).toBe(false);
+    expect(await mode(true, true)).toBe(true);
+    expect(await mode(false, false)).toBe(true);
+    expect(await mode(false, true)).toBe(true);
   });
 
   it("propagates configuration failure instead of enabling features with defaults", async () => {

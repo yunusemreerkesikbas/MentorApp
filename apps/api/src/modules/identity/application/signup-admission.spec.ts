@@ -1,53 +1,53 @@
 import { describe, expect, it, vi } from "vitest";
 import { assertSignupAdmission } from "./signup-admission";
 
-function settings(open = true, pilot = false, emails: string[] = [], capacity = 50) {
+function settings(open = true, pilot = false, invited: { role: "student" | "coach" } | null = null, capacity = 50) {
   const values: Record<string, boolean | number> = {
     "signup.enabled": open,
     "signup.pilot.enabled": pilot,
     "signup.pilot.max_invited_emails": capacity,
   };
-  const registry = {
-    get: vi.fn(async (key: string) => values[key]),
+  const registry = { get: vi.fn(async (key: string) => values[key]) };
+  const invitations = { findInvited: vi.fn(async () => invited) };
+  return {
+    registry,
+    invitations,
+    assert: (email: string) => assertSignupAdmission(registry as never, invitations as never, email),
   };
-  const env = { getOrThrow: vi.fn(() => emails) };
-  return { registry, env, assert: (email: string) => assertSignupAdmission(registry as never, env as never, email) };
 }
 
 describe("signup admission", () => {
-  it.each([false, true])("closed registration rejects new accounts when pilot=%s", async (pilot) => {
-    const config = settings(false, pilot, ["invited@example.com"]);
+  it("closed rejects even an invited address", async () => {
+    const config = settings(false, true, { role: "student" });
     await expect(config.assert("invited@example.com")).rejects.toMatchObject({ code: "AUTH_SIGNUP_CLOSED", httpStatus: 403 });
-    expect(config.env.getOrThrow).not.toHaveBeenCalled();
+    expect(config.invitations.findInvited).not.toHaveBeenCalled();
   });
 
-  it("public registration does not require an invitation list", async () => {
+  it("open mode needs no invitation", async () => {
     const config = settings();
-    await expect(config.assert("student@example.com")).resolves.toBeUndefined();
-    expect(config.env.getOrThrow).not.toHaveBeenCalled();
+    await expect(config.assert("student@example.com")).resolves.toEqual({ mode: "open" });
+    expect(config.invitations.findInvited).not.toHaveBeenCalled();
   });
 
-  it.each([[], ["someone-else@example.com"]])("pilot refuses addresses outside the exact list: %j", async (emails) => {
-    await expect(settings(true, true, emails).assert("student@example.com"))
+  it("invite mode without a row is refused", async () => {
+    await expect(settings(true, true, null).assert("student@example.com"))
       .rejects.toMatchObject({ code: "AUTH_PILOT_INVITATION_REQUIRED", httpStatus: 403 });
   });
 
-  it("allows the invited normalized address", async () => {
-    await expect(settings(true, true, ["student@example.com"]).assert("student@example.com")).resolves.toBeUndefined();
+  it("invite mode returns the row role", async () => {
+    const config = settings(true, true, { role: "coach" });
+    await expect(config.assert("coach@example.com")).resolves.toEqual({ mode: "invited", role: "coach" });
+    expect(config.invitations.findInvited).toHaveBeenCalledWith("coach@example.com");
   });
 
-  it.each(["student+other@example.com", "stu.dent@example.com", "student@other.example.com"])("does not broaden invitations to %s", async (email) => {
-    await expect(settings(true, true, ["student@example.com"]).assert(email))
-      .rejects.toMatchObject({ code: "AUTH_PILOT_INVITATION_REQUIRED" });
+  it("a lowered capacity never closes admission", async () => {
+    const config = settings(true, true, { role: "student" }, 1);
+    await expect(config.assert("student@example.com")).resolves.toEqual({ mode: "invited", role: "student" });
+    expect(config.registry.get).not.toHaveBeenCalledWith("signup.pilot.max_invited_emails");
   });
 
-  it("fails closed when the list exceeds the configured cohort size", async () => {
-    await expect(settings(true, true, ["student@example.com", "other@example.com"], 1).assert("student@example.com"))
-      .rejects.toMatchObject({ code: "AUTH_SIGNUP_CLOSED" });
-  });
-
-  it("does not expose invitation addresses in a rejection", async () => {
-    const error = await settings(true, true, ["private@example.com"]).assert("student@example.com").catch((reason: unknown) => reason);
+  it("rejection does not expose addresses", async () => {
+    const error = await settings(true, true, null).assert("private@example.com").catch((reason: unknown) => reason);
     expect(String(error)).not.toContain("private@example.com");
     expect(JSON.stringify(error)).not.toContain("private@example.com");
   });

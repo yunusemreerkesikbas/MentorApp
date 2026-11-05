@@ -5,12 +5,15 @@ import { useRouter } from "@/i18n/navigation";
 import { useEffect, useId, useState, useSyncExternalStore, type FormEvent } from "react";
 import { CheckBox, SectionHeading, Skeleton } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
+import { GoogleAuthFeedback } from "@/components/google-auth-feedback";
 import { LegalLink } from "@/components/legal-link";
+import { LazyWaitlistModal } from "@/components/waitlist/signup-cta";
 import { useAuth } from "@/lib/auth-context";
 import { useAppAvailability } from "@/lib/app-availability";
 import { trackProductEvent } from "@/lib/analytics";
 import { fetchCoachSignupOpen } from "@/lib/coach-signup";
 import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
+import { isInviteLink, isWaitlistOn } from "@/lib/signup-waitlist";
 import { useAnalyticsConsent } from "@/lib/analytics-consent";
 import {
   applyAuthAnalyticsChoice,
@@ -46,12 +49,38 @@ function useCoachIntent(): boolean {
   );
 }
 
+/**
+ * Whether this is the invite email's link (`?davet=1`). Null on the server, where the query string is
+ * unknown (same reason as `useCoachIntent`): while signup is invite-only the page cannot pick between
+ * the form and the waitlist card until it knows.
+ */
+function useInviteLink(): boolean | null {
+  return useSyncExternalStore(
+    NEVER_CHANGES,
+    () => isInviteLink(new URLSearchParams(window.location.search)),
+    () => null,
+  );
+}
+
+function SignupSkeleton() {
+  return (
+    <div className="flex flex-col gap-4" aria-busy="true">
+      <Skeleton className="mx-auto h-7 w-2/3" />
+      <Skeleton className="h-11 w-full" />
+      <Skeleton className="h-11 w-full" />
+      <Skeleton className="h-11 w-full" />
+    </div>
+  );
+}
+
 export default function SignupPage() {
   const translate = useTranslations("auth.register");
   const ui = useTranslations("common");
   const { signup } = useAuth();
   const availability = useAppAvailability();
   const isCoach = useCoachIntent();
+  const waitlist = isWaitlistOn(availability);
+  const invite = useInviteLink();
   const { accept, reject } = useAnalyticsConsent();
   const router = useRouter();
   const exitThen = useAuthSheetExit();
@@ -140,20 +169,29 @@ export default function SignupPage() {
     }
   }
 
-  // Coach intake unknown yet: a placeholder, never a form that may be closed.
-  if (isCoach && coachOpen === null) {
+  // Invite-only signup: the invite email's link opens the form, everyone else gets the waitlist card.
+  // Closed signup (`studentSignup` false) admits nobody, so the invite link gets the card too.
+  // Leaving the card (X, Escape, "Tamam") goes home; "Giriş yap" navigates on its own.
+  const closed = availability?.studentSignup === false;
+  if (waitlist && !closed && invite === null) return <SignupSkeleton />;
+  if (waitlist && (closed || !invite)) {
     return (
-      <div className="flex flex-col gap-4" aria-busy="true">
-        <Skeleton className="mx-auto h-7 w-2/3" />
-        <Skeleton className="h-11 w-full" />
-        <Skeleton className="h-11 w-full" />
-        <Skeleton className="h-11 w-full" />
-      </div>
+      <LazyWaitlistModal
+        role={isCoach ? "coach" : "student"}
+        onClose={() => router.push("/")}
+        onLogin={() => undefined}
+      />
     );
   }
 
+  // Coach intake unknown yet: a placeholder, never a form that may be closed. An invited coach was
+  // let in by the invite itself, so neither gate applies to the invite link while invite-only is on.
+  // In open mode an old `davet=1&rol=koc` link is just a coach signup and the intake gate holds.
+  const invitedCoach = waitlist && invite === true;
+  if (isCoach && !invitedCoach && coachOpen === null) return <SignupSkeleton />;
+
   // Coach intake shut: say so instead of offering a form the API would refuse on submit.
-  if (isCoach && coachOpen === false) {
+  if (isCoach && !invitedCoach && coachOpen === false) {
     return (
       <div className="flex flex-col gap-4">
         <SectionHeading as="h2" className="items-center text-center">
@@ -241,6 +279,8 @@ export default function SignupPage() {
       </div>
       <SignupTurnstile onToken={setTurnstileToken} resetKey={turnstileResetKey} />
       <FormError message={error} />
+      {/* A refused Google signup comes back here (`?davet=1&googleError=…`) with its reason. */}
+      <GoogleAuthFeedback />
       <SubmitButton busy={busy} disabled={Boolean(turnstileSiteKey && !turnstileToken)}>{translate("submit")}</SubmitButton>
       <GoogleAuthButton
         mode="signup"
@@ -256,8 +296,9 @@ export default function SignupPage() {
       </p>
       {/* Quiet, and below the fold of the form on purpose. Registration is open to anyone who wants
           it, but a loud second button would invite every new student to wonder if they should be a
-          coach — the intake is self-service, not something to upsell. Hidden while the intake is shut. */}
-      {!isCoach && coachOpen === true && (
+          coach — the intake is self-service, not something to upsell. Hidden while the intake is shut,
+          and while signup is invite-only: the invite, not this link, decides the role then. */}
+      {!isCoach && !waitlist && coachOpen === true && (
         <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
           {/* Object form, not a string: `@/i18n/navigation` types hrefs against the route map, so
               the query has to travel beside the pathname rather than glued onto it. */}

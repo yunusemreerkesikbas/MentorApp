@@ -240,6 +240,30 @@
         ]
       }
     },
+    "/v1/auth/waitlist": {
+      "post": {
+        "operationId": "AuthController_joinWaitlist",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinWaitlistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/v1/auth/login": {
       "post": {
         "operationId": "AuthController_login",
@@ -11193,6 +11217,138 @@
         ]
       }
     },
+    "/v1/admin/waitlist": {
+      "get": {
+        "operationId": "AdminWaitlistController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/waitlist/invite": {
+      "post": {
+        "operationId": "AdminWaitlistController_inviteEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitlistInviteEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/waitlist/{id}/invite": {
+      "post": {
+        "operationId": "AdminWaitlistController_invite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/waitlist/{id}/resend": {
+      "post": {
+        "operationId": "AdminWaitlistController_resend",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/waitlist/{id}": {
+      "delete": {
+        "operationId": "AdminWaitlistController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/community/summary": {
       "get": {
         "operationId": "CommunityController_getSummary",
@@ -11870,6 +12026,10 @@
     },
     "schemas": {
       "SignupDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "JoinWaitlistDto": {
         "type": "object",
         "properties": {}
       },
@@ -15209,6 +15369,10 @@
         "properties": {}
       },
       "VerifyCoachClaimsDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "WaitlistInviteEmailDto": {
         "type": "object",
         "properties": {}
       },

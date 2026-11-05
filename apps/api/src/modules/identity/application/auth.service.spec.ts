@@ -53,38 +53,126 @@ function makeService(count: number) {
     queue as never,
     storage as never,
     {} as never, { consumeAccount: vi.fn(async () => ({ allowed: true })) } as never,
+    {} as never,
   );
 
   return { emailTokenRepo, queue, service };
 }
 
 describe("AuthService coach signup gate", () => {
-  function makeSignupService(open: boolean) {
+  function makeSignupService(
+    open: boolean,
+    admission: { pilot: boolean; role?: "student" | "coach" } = { pilot: false },
+  ) {
     const usersRepo = {
       findByEmailService: vi.fn(async () => undefined),
-      createService: vi.fn(),
+      createService: vi.fn(async (input: Record<string, unknown>) => ({
+        id: "user-1",
+        email: input.email,
+        roles: input.roles ?? ["STUDENT"],
+        organizationId: null,
+        displayName: "Ayşe",
+        createdAt: new Date(),
+        emailVerifiedAt: null,
+      })),
+    };
+    const invitations = {
+      findInvited: vi.fn(async () => (admission.role ? { role: admission.role } : null)),
+      deleteByEmail: vi.fn(async () => undefined),
     };
     const configRegistry = {
       get: vi.fn(async (key: string) => {
         if (key === "signup.enabled") return true;
-        if (key === "signup.pilot.enabled") return false;
+        if (key === "signup.pilot.enabled") return admission.pilot;
         return key === "mentorship.applications.open" ? open : 0;
       }),
     };
     const service = new AuthService(
       usersRepo as never,
       {} as never,
-      {} as never,
+      { issue: vi.fn(async () => ({})) } as never,
       { assertValid: vi.fn(async () => undefined) } as never,
       {} as never,
       configRegistry as never,
       {} as never,
+      { getPublicUrl: vi.fn() } as never,
       {} as never,
       {} as never,
-      {} as never,
+      invitations as never,
     );
-    return { usersRepo, service };
+    (service as unknown as { sendEmailToken: unknown }).sendEmailToken = vi.fn(async () => undefined);
+    return { usersRepo, invitations, service };
   }
+
+  const signupInput = {
+    email: "ayse@ornek.com",
+    password: "Sifre1234",
+    displayName: "Ayşe",
+    kvkkAccepted: true as const,
+    termsAccepted: true as const,
+    ageEligibilityConfirmed: true as const,
+  };
+
+  it("invited coach becomes COACH while applications are closed", async () => {
+    const { usersRepo, service } = makeSignupService(false, { pilot: true, role: "coach" });
+
+    await service.signup(signupInput);
+
+    expect(usersRepo.createService).toHaveBeenCalledWith(
+      expect.objectContaining({ roles: ["STUDENT", "COACH"] }),
+    );
+  });
+
+  it("invited student asking for COACH stays a student", async () => {
+    const { usersRepo, service } = makeSignupService(true, { pilot: true, role: "student" });
+
+    await service.signup({ ...signupInput, intent: "COACH" });
+
+    expect(usersRepo.createService.mock.calls[0]![0]).not.toHaveProperty("roles");
+  });
+
+  it("open mode keeps the intent and applications rule", async () => {
+    const { usersRepo, service } = makeSignupService(false, { pilot: false });
+
+    await expect(service.signup({ ...signupInput, intent: "COACH" })).rejects.toMatchObject({
+      code: ErrorCode.MENTORSHIP_APPLICATIONS_CLOSED,
+    });
+    expect(usersRepo.createService).not.toHaveBeenCalled();
+  });
+
+  it("open mode with COACH intent and open applications makes a coach", async () => {
+    const { usersRepo, service } = makeSignupService(true, { pilot: false });
+
+    await service.signup({ ...signupInput, intent: "COACH" });
+
+    expect(usersRepo.createService).toHaveBeenCalledWith(
+      expect.objectContaining({ roles: ["STUDENT", "COACH"] }),
+    );
+  });
+
+  it("signup deletes the invitation", async () => {
+    const { invitations, service } = makeSignupService(true, { pilot: true, role: "student" });
+
+    await service.signup(signupInput);
+
+    expect(invitations.deleteByEmail).toHaveBeenCalledWith("ayse@ornek.com");
+  });
+
+  it("still completes signup when invitation cleanup rejects", async () => {
+    const { invitations, service } = makeSignupService(true, { pilot: true, role: "student" });
+    invitations.deleteByEmail.mockRejectedValue(new Error("db down"));
+
+    await expect(service.signup(signupInput)).resolves.toMatchObject({ user: { email: "ayse@ornek.com" } });
+    expect((service as unknown as { sendEmailToken: ReturnType<typeof vi.fn> }).sendEmailToken).toHaveBeenCalled();
+  });
+
+  it("open mode also clears a stale waiting row of the new account", async () => {
+    const { invitations, service } = makeSignupService(true, { pilot: false });
+
+    await service.signup(signupInput);
+
+    expect(invitations.deleteByEmail).toHaveBeenCalledWith("ayse@ornek.com");
+  });
 
   it("refuses a coach signup while the intake is shut, before any account exists", async () => {
     const { usersRepo, service } = makeSignupService(false);

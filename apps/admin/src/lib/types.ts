@@ -374,3 +374,14 @@ export interface AdminSponsorshipStats {
     truncated: boolean;
     generatedAt: string;
 }
+
+/** One row of the invite-only signup list (mirrors the API's AdminWaitlistEntry). */
+export interface AdminWaitlistEntry {
+    id: string;
+    email: string;
+    role: "student" | "coach";
+    status: "waiting" | "invited";
+    locale: "tr" | "en";
+    createdAt: string;
+    invitedAt: string | null;
+}

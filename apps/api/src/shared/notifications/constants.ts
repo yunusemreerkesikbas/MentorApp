@@ -23,6 +23,7 @@ export type JobName = (typeof JobName)[keyof typeof JobName];
 export const EmailTemplate = {
   VERIFY_EMAIL: "identity.verify-email",
   RESET_PASSWORD: "identity.reset-password",
+  SIGNUP_INVITATION: "identity.signup-invitation",
   PAYMENT_DUNNING: "payments.dunning",
   SUBSCRIPTION_WELCOME: "payments.subscription-welcome",
   DAILY_REMINDER: "coaching.daily-reminder",
@@ -35,6 +36,7 @@ export type EmailTemplate = (typeof EmailTemplate)[keyof typeof EmailTemplate];
 export const EMAIL_COPY_KEY: Record<string, string> = {
   "identity.verify-email": "identityVerifyEmail",
   "identity.reset-password": "identityResetPassword",
+  "identity.signup-invitation": "identitySignupInvitation",
   "payments.dunning": "paymentsDunning",
   "payments.subscription-welcome": "paymentsWelcome",
   "coaching.daily-reminder": "dailyReminder",

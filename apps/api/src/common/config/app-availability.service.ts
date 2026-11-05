@@ -14,11 +14,11 @@ export class AppAvailabilityService {
   ) {}
 
   async get(): Promise<AppAvailabilityDto> {
-    const [aiCoach, social, forum, studyRooms, humanCoaching, studentSignup, applications,
+    const [aiCoach, social, forum, studyRooms, humanCoaching, studentSignup, pilot, applications,
       economy, studentWeb, studentMobile, coachWeb, coachMobile, redirectToMobile] = await Promise.all([
       this.config.get("ai.enabled"), this.config.get("community.social.enabled"),
       this.config.get("forum.enabled"), this.config.get("coaching.study_rooms.enabled"),
-      this.config.get("mentorship.enabled"), this.config.get("signup.enabled"),
+      this.config.get("mentorship.enabled"), this.config.get("signup.enabled"), this.config.get("signup.pilot.enabled"),
       this.config.get("mentorship.applications.open"), this.config.get("economy.enabled"),
       this.config.get("payments.web.enabled"), this.config.get("payments.mobile.enabled"),
       this.config.get("mentorship.seats.billing_enabled"),
@@ -35,6 +35,8 @@ export class AppAvailabilityService {
       aiCoach, social, forum, studyRooms, humanCoaching, studentSignup,
       coachRegistration: applications,
       coachSignup: studentSignup && applications,
+      // Same two flags as signup admission: anything but fully open sends visitors to the waitlist.
+      signupWaitlist: !(studentSignup && !pilot),
       studentPurchases: student.purchaseEnabled || student.redirectToMobile,
       coachPurchases: coach.purchaseEnabled || coach.redirectToMobile,
       // Quests, XP and Coin. The public landing hides its "Gece Yolculuğu" section when it is off.

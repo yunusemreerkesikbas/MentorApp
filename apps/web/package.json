@@ -20,6 +20,7 @@
     "test:e2e:question-ads": "playwright test --config=playwright.question-ads.config.ts",
     "test:e2e:community-ads": "playwright test --config=playwright.community-ads.config.ts",
     "test:e2e:ads-readiness": "playwright test --config=playwright.ads-readiness.config.ts",
+    "test:e2e:waitlist": "playwright test --config=playwright.waitlist.config.ts",
     "clean": "rimraf .next .turbo tsconfig.tsbuildinfo"
   },
   "dependencies": {

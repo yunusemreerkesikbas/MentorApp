@@ -988,6 +988,13 @@
       "when": 1793799851174,
       "tag": "0140_premium_chat_quota",
       "breakpoints": true
+    },
+    {
+      "idx": 141,
+      "version": "7",
+      "when": 1793875056857,
+      "tag": "0141_sticky_ronan",
+      "breakpoints": true
     }
   ]
 }

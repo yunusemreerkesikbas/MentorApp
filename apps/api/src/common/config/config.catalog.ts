@@ -414,12 +414,12 @@ export const CONFIG_CATALOG = {
   ),
   "signup.pilot.enabled": flag(
     false,
-    "Require an exact invited-email match for new password and Google accounts. The private list lives in API environment settings.",
+    "Invite-only signup: only emails with an invited row in signup_invitations may create password or Google accounts.",
   ),
   "signup.pilot.max_invited_emails": identityCount(
     50,
-    50,
-    "Maximum invitation-list size for the pilot. Oversized lists close admission until corrected; this is not a lifetime account quota.",
+    1000,
+    "Maximum outstanding invitations (invited, not yet registered). Only blocks new invites; never closes signup for people already invited.",
     true,
   ),
   "coaching.preference_simulation.enabled": flag(
@@ -1046,6 +1046,7 @@ export const CONFIG_CATALOG = {
   "identity.auth_rate.verify_ip_limit": authCount(20, 1000, "Authentication verify IP limit."),
   "identity.auth_rate.refresh_ip_limit": authCount(30, 1000, "Authentication refresh IP limit."),
   "identity.auth_rate.oauth_ip_limit": authCount(20, 1000, "Authentication oauth IP limit."),
+  "identity.auth_rate.waitlist_ip_limit": authCount(5, 1000, "Waitlist joins per IP window."),
   "identity.auth_rate.other_ip_limit": authCount(300, 1000, "Authentication other IP limit."),
   "payments.trial.phone_verification_required": { ...flag(false,
     "Require a verified phone for new carded trials. Off uses account-only eligibility; existing claims retain their original requirement."), sensitive: true },

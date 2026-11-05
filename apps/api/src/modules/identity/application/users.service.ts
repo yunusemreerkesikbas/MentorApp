@@ -203,6 +203,12 @@ export class UsersService {
     return this.usersRepo.setRoles(userId, compute);
   }
 
+  /** Whether the account currently holds `role` (read from the row, not a session claim). */
+  async hasRole(userId: string, role: string): Promise<boolean> {
+    const user = await this.usersRepo.findByIdService(userId);
+    return user?.roles.includes(role) ?? false;
+  }
+
   /** Idempotent. Takes effect on the caller's very next request — the guard re-reads the DB. */
   async addRole(userId: string, role: string): Promise<void> {
     await this.setRoles(userId, (roles) => (roles.includes(role) ? roles : [...roles, role]));

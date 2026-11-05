@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { googleAdUnitPathSchema } from "@mentor/validation";
 import { validateProductionSecurity } from "./env-production-locks";
-import { pilotInvitedEmailsSchema } from "./pilot-invited-emails";
 import { isLocalDisplayTestAllowed } from "./local-display-test";
 import { validateStorageAccess } from "./env-storage-locks";
 
@@ -46,8 +45,6 @@ const envSchema = z.object({
   GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
   GOOGLE_OAUTH_REDIRECT_URI: z.string().url().optional(),
-  /** Exact invited addresses, private to the API; blank means no invitations. */
-  PILOT_INVITED_EMAILS: pilotInvitedEmailsSchema,
 
   // AI (§8): real providers need their keys; paired `disabled` requires none and rejects all calls.
   // `fake` is the dev/test default. Gotcha: switching AI_PROVIDER changes

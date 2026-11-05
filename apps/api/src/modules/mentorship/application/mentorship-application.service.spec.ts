@@ -47,6 +47,7 @@ function setup(
     phoneVerified?: boolean;
     phoneRequired?: boolean;
     hasCoach?: boolean;
+    holdsCoachRole?: boolean;
   } = {},
 ) {
   const applications = {
@@ -75,6 +76,7 @@ function setup(
     removeRole: vi.fn(async () => undefined),
     isEmailVerified: vi.fn(async () => options.emailVerified ?? true),
     isPhoneVerified: vi.fn(async () => options.phoneVerified ?? true),
+    hasRole: vi.fn(async (_id: string, role: string) => role === "COACH" && (options.holdsCoachRole ?? false)),
   };
   const links = {
     findActiveByStudent: vi.fn(async () => (options.hasCoach ? { id: "link-1" } : undefined)),
@@ -149,6 +151,23 @@ describe("MentorshipApplicationService.register", () => {
     );
     expect(applications.register).not.toHaveBeenCalled();
     expect(users.addRole).not.toHaveBeenCalled();
+  });
+
+  it("lets an invited coach (COACH already held) through a closed intake", async () => {
+    // Signup granted COACH off a coach invitation; the onboarding profile step that posts here has
+    // no skip, so refusing would leave the role with no registry row.
+    const { service, applications, users } = setup({ open: false, holdsCoachRole: true });
+    await expect(service.register(USER, INPUT, NOW)).resolves.toMatchObject({ status: "ACTIVE" });
+    expect(users.hasRole).toHaveBeenCalledWith(USER, "COACH");
+    expect(applications.register).toHaveBeenCalled();
+  });
+
+  it("still refuses a closed intake to somebody without COACH", async () => {
+    const { service, applications } = setup({ open: false, holdsCoachRole: false });
+    expect(await codeOf(() => service.register(USER, INPUT, NOW))).toBe(
+      ErrorCode.MENTORSHIP_APPLICATIONS_CLOSED,
+    );
+    expect(applications.register).not.toHaveBeenCalled();
   });
 
   /*
@@ -323,6 +342,16 @@ describe("MentorshipApplicationService.getRegistrationState", () => {
   it("says so when the person is somebody's student, so the screen can explain before the form", async () => {
     const { service } = setup({ hasCoach: true });
     await expect(service.getRegistrationState(USER)).resolves.toMatchObject({ hasCoach: true });
+  });
+
+  it("reports the intake open to somebody who already holds COACH while it is closed", async () => {
+    const { service } = setup({ open: false, holdsCoachRole: true });
+    await expect(service.getRegistrationState(USER)).resolves.toMatchObject({ registrationOpen: true });
+  });
+
+  it("reports the intake closed to everybody else while it is closed", async () => {
+    const { service } = setup({ open: false, holdsCoachRole: false });
+    await expect(service.getRegistrationState(USER)).resolves.toMatchObject({ registrationOpen: false });
   });
 });
 

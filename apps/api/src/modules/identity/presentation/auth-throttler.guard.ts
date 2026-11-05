@@ -26,6 +26,7 @@ export function authRateBucket(path: string): AuthRateBucket {
   if (route === "forgot-password") return "forgot";
   if (route === "reset-password") return "reset";
   if (route === "verify-email") return "verify";
+  if (route === "waitlist") return "waitlist";
   if (route === "google/start" || route === "google/callback") return "oauth";
   return "other";
 }

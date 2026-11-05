@@ -25,7 +25,8 @@ function fixture(open: boolean, pilot: boolean, emails: string[] = [], linked = 
   const registry = {
     get: vi.fn(async (key: string) => values[key]),
   };
-  const config = { get: vi.fn(() => "http://localhost:3000"), getOrThrow: vi.fn(() => emails) };
+  const config = { get: vi.fn(() => "http://localhost:3000"), getOrThrow: vi.fn() };
+  const invitations = { findInvited: vi.fn(async (email: string) => emails.includes(email) ? { role: "student" as const } : null), deleteByEmail: vi.fn(async () => undefined) };
   const repo = {
     findByEmailService: vi.fn(async () => undefined), findByIdService: vi.fn(async () => user),
     createService: vi.fn(async () => user),
@@ -39,9 +40,9 @@ function fixture(open: boolean, pilot: boolean, emails: string[] = [], linked = 
     create: vi.fn(async () => undefined),
   };
   const password = new AuthService(repo as never, emailTokens as never, tokens as never, captcha as never,
-    config as never, registry as never, {} as never, storage as never, {} as never, {} as never);
+    config as never, registry as never, {} as never, storage as never, {} as never, {} as never, invitations as never);
   const google = new GoogleAuthService(config as never, registry as never, repo as never,
-    accounts as never, tokens as never, storage as never, {} as never);
+    accounts as never, tokens as never, storage as never, {} as never, invitations as never);
   (google as unknown as { exchangeCode: () => Promise<GoogleOAuthProfile> }).exchangeCode = async () => ({
     sub: "google-sub", email: user.email, emailVerified: true, displayName: user.displayName,
   });

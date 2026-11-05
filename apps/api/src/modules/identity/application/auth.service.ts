@@ -34,6 +34,7 @@ import { hashToken, TokenService, type IssuedTokens } from "./token.service";
 import { TurnstileService } from "./turnstile.service";
 import { AuthRateLimitService } from "./auth-rate-limit.service";
 import { assertSignupAdmission } from "./signup-admission";
+import { SignupInvitationRepository } from "../infrastructure/signup-invitation.repository";
 import { authEmailVariables } from "./auth-email-variables";
 
 export interface AuthResult {
@@ -60,15 +61,19 @@ export class AuthService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly events: EventEmitter2,
     private readonly rates: AuthRateLimitService,
+    private readonly invitations: SignupInvitationRepository,
   ) {}
 
   async signup(input: SignupInput): Promise<AuthResult> {
     await this.turnstile.assertValid(input.turnstileToken);
-    await assertSignupAdmission(this.configRegistry, this.config, input.email);
+    const admission = await assertSignupAdmission(this.configRegistry, this.invitations, input.email);
+    // Invited mode: the invitation row decides the role, never the client (`intent` / `rol=koc`).
+    // An invited coach also bypasses `mentorship.applications.open` (the owner invited them).
+    const coach = admission.mode === "invited" ? admission.role === "coach" : input.intent === "COACH";
 
     // A shut intake must not mint half a coach: COACH without the registry row that
     // `POST /v1/mentorship/coach-registration` refuses to write, stuck on the last onboarding step.
-    if (input.intent === "COACH" && !(await this.coachSignupStatus()).open) {
+    if (admission.mode === "open" && coach && !(await this.coachSignupStatus()).open) {
       throw new DomainError(ErrorCode.MENTORSHIP_APPLICATIONS_CLOSED, HttpStatus.FORBIDDEN);
     }
 
@@ -96,9 +101,7 @@ export class AuthService {
         // `POST /v1/mentorship/coach-registration` writes. What this buys is the coach-shaped
         // onboarding and home surface, which is what a coach shoved through the student wizard
         // could not have. Omitting `roles` entirely keeps the column default for everyone else.
-        ...(input.intent === "COACH"
-          ? { roles: [UserRole.STUDENT, UserRole.COACH] }
-          : {}),
+        ...(coach ? { roles: [UserRole.STUDENT, UserRole.COACH] } : {}),
       });
     } catch (err) {
       // Check-then-insert race: a concurrent signup hit the unique index → same 409 code.
@@ -110,6 +113,11 @@ export class AuthService {
       }
       throw err;
     }
+
+    // ponytail: transaction dışı; silinemezse satır 6 ayda düşer
+    await this.invitations.deleteByEmail(input.email).catch((err: unknown) => {
+      this.logger.warn(`signup invitation cleanup failed: ${err instanceof Error ? err.message : String(err)}`);
+    });
 
     await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
     const tokens = await this.tokenService.issue({

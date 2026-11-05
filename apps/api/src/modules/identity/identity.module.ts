@@ -22,6 +22,8 @@ import { AuthSessionRepository } from "./infrastructure/auth-session.repository"
 import { UsersRepository } from "./infrastructure/users.repository";
 import { FollowRepository } from "./infrastructure/follow.repository";
 import { BuddyRepository } from "./infrastructure/buddy.repository";
+import { WaitlistService } from "./application/waitlist.service";
+import { SignupInvitationRepository } from "./infrastructure/signup-invitation.repository";
 import { AuthController } from "./presentation/auth.controller";
 import { UsersController } from "./presentation/users.controller";
 import { FollowController } from "./presentation/follow.controller";
@@ -62,6 +64,8 @@ import { NetgsmSmsAdapter } from "./infrastructure/netgsm-sms.adapter";
     UsersRepository,
     FollowRepository,
     BuddyRepository,
+    SignupInvitationRepository,
+    WaitlistService,
     AuthAccountRepository,
     RefreshTokenRepository,
     AuthSessionRepository,
@@ -70,6 +74,6 @@ import { NetgsmSmsAdapter } from "./infrastructure/netgsm-sms.adapter";
     PhoneVerificationRepository,
     NetgsmSmsAdapter,
   ],
-  exports: [AuthService, AuthRateLimitService, UsersRepository, UsersService, FollowService, BuddyService, TokenService, SocialErasureService, PhoneVerificationService],
+  exports: [SignupInvitationRepository, WaitlistService, AuthService, AuthRateLimitService, UsersRepository, UsersService, FollowService, BuddyService, TokenService, SocialErasureService, PhoneVerificationService],
 })
 export class IdentityModule {}

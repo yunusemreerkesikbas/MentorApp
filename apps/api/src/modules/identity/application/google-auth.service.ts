@@ -1,8 +1,9 @@
 import { randomBytes } from "node:crypto";
-import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
 import { OAuth2Client } from "google-auth-library";
+import { UserRole } from "@mentor/types";
 import type { AuthResult } from "./auth.service";
 import { toAuthUser } from "./auth.service";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
@@ -23,6 +24,7 @@ import { UsersRepository, type UserRow } from "../infrastructure/users.repositor
 import { TokenService } from "./token.service";
 import { GoogleLinkingService } from "./google-linking.service";
 import { assertSignupAdmission } from "./signup-admission";
+import { SignupInvitationRepository } from "../infrastructure/signup-invitation.repository";
 import { signGoogleOAuthState, verifyGoogleOAuthState, type GoogleOAuthState, type GoogleLinkState } from "./google-oauth-state";
 export { signGoogleOAuthState, verifyGoogleOAuthState, type GoogleOAuthState } from "./google-oauth-state";
 
@@ -41,6 +43,8 @@ export interface GoogleOAuthStatus {
 
 @Injectable()
 export class GoogleAuthService {
+  private readonly logger = new Logger(GoogleAuthService.name);
+
   constructor(
     private readonly config: ConfigService<Env, true>,
     private readonly configRegistry: ConfigRegistryService,
@@ -49,6 +53,7 @@ export class GoogleAuthService {
     private readonly tokenService: TokenService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly linking: GoogleLinkingService,
+    private readonly invitations: SignupInvitationRepository,
   ) {}
 
   async createStartFor(input: {
@@ -135,7 +140,7 @@ export class GoogleAuthService {
       throw new DomainError(ErrorCode.AUTH_GOOGLE_ACCOUNT_NOT_FOUND, HttpStatus.UNAUTHORIZED);
     }
 
-    await assertSignupAdmission(this.configRegistry, this.config, profile.email);
+    const admission = await assertSignupAdmission(this.configRegistry, this.invitations, profile.email);
     const passwordHash = await argon2.hash(randomBytes(32).toString("base64url"));
     let user: UserRow;
     try {
@@ -149,6 +154,10 @@ export class GoogleAuthService {
         termsAcceptedAt: acceptedAt,
         termsVersion: CURRENT_TERMS_VERSION,
         ageEligibilityConfirmedAt: acceptedAt,
+        // Google has no client intent: only an invited coach row makes a coach.
+        ...(admission.mode === "invited" && admission.role === "coach"
+          ? { roles: [UserRole.STUDENT, UserRole.COACH] }
+          : {}),
       });
     } catch (err) {
       if (!isUniqueViolation(err)) throw err;
@@ -156,6 +165,10 @@ export class GoogleAuthService {
       if (!raced) throw err;
       throw new DomainError(ErrorCode.AUTH_GOOGLE_LINK_REQUIRED, HttpStatus.CONFLICT);
     }
+    // ponytail: transaction dışı; silinemezse satır 6 ayda düşer
+    await this.invitations.deleteByEmail(profile.email).catch((err: unknown) => {
+      this.logger.warn(`signup invitation cleanup failed: ${err instanceof Error ? err.message : String(err)}`);
+    });
     await this.linkGoogle(user.id, profile);
     return this.issue(user);
   }
@@ -194,7 +207,7 @@ export class GoogleAuthService {
       }
       return {
         sub: payload.sub,
-        email: payload.email.toLowerCase(),
+        email: payload.email.trim().toLowerCase(),
         emailVerified: payload.email_verified === true,
         displayName: displayNameFromGoogle(payload.name, payload.email),
       };
