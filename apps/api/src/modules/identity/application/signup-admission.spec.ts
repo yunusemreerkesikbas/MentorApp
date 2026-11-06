@@ -12,7 +12,7 @@ function settings(open = true, pilot = false, invited: { role: "student" | "coac
   return {
     registry,
     invitations,
-    assert: (email: string) => assertSignupAdmission(registry as never, invitations as never, email),
+    assert: (email: string, emailVerified = true) => assertSignupAdmission(registry as never, invitations as never, email, emailVerified),
   };
 }
 
@@ -32,6 +32,13 @@ describe("signup admission", () => {
   it("invite mode without a row is refused", async () => {
     await expect(settings(true, true, null).assert("student@example.com"))
       .rejects.toMatchObject({ code: "AUTH_PILOT_INVITATION_REQUIRED", httpStatus: 403 });
+  });
+
+  it("rejects pilot signup without mailbox proof before querying the invitation list", async () => {
+    const config = settings(true, true, { role: "student" });
+    await expect(config.assert("student@example.com", false))
+      .rejects.toMatchObject({ code: "AUTH_SIGNUP_CLOSED", httpStatus: 403 });
+    expect(config.invitations.findInvited).not.toHaveBeenCalled();
   });
 
   it("invite mode returns the row role", async () => {

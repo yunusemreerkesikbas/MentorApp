@@ -1,6 +1,8 @@
+import { randomBytes } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
+import * as argon2 from "argon2";
 import type { Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
@@ -20,6 +22,7 @@ describe("invited signup boundary (real PostgreSQL)", () => {
   let pool: Pool;
   let actorId: string;
   let invitations: SignupInvitationRepository;
+  let users: UsersRepository;
   let exchange: ReturnType<typeof vi.fn>;
   const runId = Date.now();
   const passwordEmail = `pilot-password-${runId}@test.local`;
@@ -38,7 +41,8 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     pool = module.get(PG_POOL);
     registry = module.get(ConfigRegistryService);
     invitations = module.get(SignupInvitationRepository);
-    actorId = (await module.get(UsersRepository).createService({
+    users = module.get(UsersRepository);
+    actorId = (await users.createService({
       email: `pilot-operator-${runId}@test.local`, displayName: "Pilot Fixture",
       passwordHash: "unused-fixture-hash",
       kvkkAcceptedAt: new Date(), termsAcceptedAt: new Date(), termsVersion: CURRENT_TERMS_VERSION,
@@ -48,7 +52,7 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     const google = module.get(GoogleAuthService) as unknown as { exchangeCode: (code: string) => Promise<GoogleOAuthProfile> };
     google.exchangeCode = exchange;
     await app.init();
-  });
+  }, 90_000);
 
   beforeEach(async () => {
     await registry.set(actorId, "signup.enabled", true);
@@ -97,12 +101,12 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     await expectNoAccount(passwordEmail);
   });
 
-  it.each(["tr", "en"] as const)("uninvited password signup has a generic localized %s error", async (locale) => {
+  it.each(["tr", "en"] as const)("pilot password signup has a generic localized %s error", async (locale) => {
     const email = `outsider-${locale}-${runId}@test.local`;
     const result = await request(app.getHttpServer()).post("/v1/auth/signup").set("Accept-Language", locale).send(body(email));
     expect(result.status).toBe(403);
-    expect(result.body.code).toBe("AUTH_PILOT_INVITATION_REQUIRED");
-    expect(result.body.message).toContain(locale === "tr" ? "davet listesinde" : "invitation");
+    expect(result.body.code).toBe("AUTH_SIGNUP_CLOSED");
+    expect(result.body.message).toContain(locale === "tr" ? "Yeni kayıtlar" : "New registrations");
     expect(JSON.stringify(result.body)).not.toContain(passwordEmail);
     expect(result.headers["set-cookie"]).toBeUndefined();
     await expectNoAccount(email);
@@ -114,14 +118,16 @@ describe("invited signup boundary (real PostgreSQL)", () => {
       .send(body(passwordEmail));
 
     expect(result.status).toBe(403);
+    expect(result.body.code).toBe("AUTH_SIGNUP_CLOSED");
     expect(result.headers["set-cookie"]).toBeUndefined();
     await expectNoAccount(passwordEmail);
+    expect(await invitations.findInvited(passwordEmail)).toMatchObject({ role: "student" });
   });
 
   it("an address without an invited row admits nobody", async () => {
     await pool.query("DELETE FROM signup_invitations WHERE email = $1", [passwordEmail]);
     const result = await request(app.getHttpServer()).post("/v1/auth/signup").send(body(passwordEmail));
-    expect(result.body.code).toBe("AUTH_PILOT_INVITATION_REQUIRED");
+    expect(result.body.code).toBe("AUTH_SIGNUP_CLOSED");
     await expectNoAccount(passwordEmail);
   });
 
@@ -129,11 +135,12 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     await pool.query("DELETE FROM signup_invitations WHERE email = $1", [coachEmail]);
     await invitations.insertWaiting({ email: coachEmail, role: "student", locale: "tr" });
     const result = await request(app.getHttpServer()).post("/v1/auth/signup").send(body(coachEmail));
-    expect(result.body.code).toBe("AUTH_PILOT_INVITATION_REQUIRED");
+    expect(result.body.code).toBe("AUTH_SIGNUP_CLOSED");
     await expectNoAccount(coachEmail);
   });
 
-  it("normalizes invited password signup and retains email verification", async () => {
+  it("normalizes open password signup and retains email verification", async () => {
+    await registry.set(actorId, "signup.pilot.enabled", false);
     const result = await request(app.getHttpServer()).post("/v1/auth/signup").send(body(` ${passwordEmail.toUpperCase()} `));
     expect(result.status).toBe(201);
     expect(result.body.user).toMatchObject({ email: passwordEmail, emailVerified: false });
@@ -142,36 +149,37 @@ describe("invited signup boundary (real PostgreSQL)", () => {
     expect(left.rows).toEqual([]);
   });
 
-  it("an invited coach row makes a COACH account even while applications are closed", async () => {
+  it("an invited coach cannot claim a pilot account with just a password", async () => {
     await registry.set(actorId, "mentorship.applications.open", false);
     await invitations.upsertInvited({ email: coachEmail, role: "coach", locale: "tr", invitedBy: actorId });
     const result = await request(app.getHttpServer()).post("/v1/auth/signup").send(body(coachEmail));
-    expect(result.status).toBe(201);
-    expect(result.body.user.roles).toContain("COACH");
-
-    // ...and can finish the onboarding coachProfile step (no skip) with the intake still shut.
-    const auth = { Authorization: `Bearer ${result.body.accessToken}` };
-    const state = await request(app.getHttpServer()).get("/v1/mentorship/coach-registration/mine").set(auth);
-    expect(state.body.registrationOpen).toBe(true);
-    const registered = await request(app.getHttpServer()).post("/v1/mentorship/coach-registration").set(auth)
-      .send({ headline: "KPSS Türkçe koçu", bio: "On yıldır KPSS adaylarıyla çalışıyorum, paragraf ağırlıklı." });
-    expect(registered.status).toBe(201);
-    expect(registered.body.status).toBe("ACTIVE");
+    expect(result.status).toBe(403);
+    expect(result.body.code).toBe("AUTH_SIGNUP_CLOSED");
+    await expectNoAccount(coachEmail);
   });
 
-  it("an invited student keeps STUDENT even when the form asks for COACH", async () => {
-    const studentEmail = `pilot-student-${runId}@test.local`;
-    await invitations.upsertInvited({ email: studentEmail, role: "student", locale: "tr", invitedBy: actorId });
-    const result = await request(app.getHttpServer()).post("/v1/auth/signup").send({ ...body(studentEmail), intent: "COACH" });
-    expect(result.status).toBe(201);
-    expect(result.body.user.roles).not.toContain("COACH");
-  });
-
-  it("existing password login works after admission is closed and the list is cleared", async () => {
+  it("a prepared tester can set a password through email and sign in with registration closed", async () => {
     await registry.set(actorId, "signup.enabled", false);
-    const result = await request(app.getHttpServer()).post("/v1/auth/login").send({ email: passwordEmail, password });
+    const email = `pilot-prepared-${runId}@test.local`;
+    const acceptedAt = new Date();
+    await users.createService({
+      email, displayName: "Prepared Pilot Tester",
+      passwordHash: await argon2.hash(randomBytes(32).toString("base64url")),
+      kvkkAcceptedAt: acceptedAt, termsAcceptedAt: acceptedAt, termsVersion: CURRENT_TERMS_VERSION,
+      ageEligibilityConfirmedAt: acceptedAt,
+    });
+    expect(await invitations.findInvited(email)).toBeNull();
+    await request(app.getHttpServer()).post("/v1/auth/forgot-password").send({ email }).expect(200);
+    const { rows: [job] } = await pool.query<{ payload: { variables: { link: string } } }>(
+      "select payload from jobs where name = 'notifications.send-email' and payload->>'to' = $1 order by created_at desc limit 1",
+      [email],
+    );
+    const token = job && new URL(job.payload.variables.link).searchParams.get("token");
+    expect(token).toBeTruthy();
+    await request(app.getHttpServer()).post("/v1/auth/reset-password").send({ token, password }).expect(200);
+    const result = await request(app.getHttpServer()).post("/v1/auth/login").send({ email, password });
     expect(result.status).toBe(200);
-    expect(result.body.user.email).toBe(passwordEmail);
+    expect(result.body.user.email).toBe(email);
   });
 
   it.each(["tr", "en"] as const)("uninvited Google creation redirects with a safe localized %s message", async (locale) => {

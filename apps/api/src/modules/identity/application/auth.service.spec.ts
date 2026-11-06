@@ -113,22 +113,14 @@ describe("AuthService coach signup gate", () => {
     ageEligibilityConfirmed: true as const,
   };
 
-  it("invited coach becomes COACH while applications are closed", async () => {
-    const { usersRepo, service } = makeSignupService(false, { pilot: true, role: "coach" });
+  it.each(["coach", "student"] as const)("blocks password signup for an invited %s before checking the list", async (role) => {
+    const { invitations, usersRepo, service } = makeSignupService(true, { pilot: true, role });
 
-    await service.signup(signupInput);
-
-    expect(usersRepo.createService).toHaveBeenCalledWith(
-      expect.objectContaining({ roles: ["STUDENT", "COACH"] }),
-    );
-  });
-
-  it("invited student asking for COACH stays a student", async () => {
-    const { usersRepo, service } = makeSignupService(true, { pilot: true, role: "student" });
-
-    await service.signup({ ...signupInput, intent: "COACH" });
-
-    expect(usersRepo.createService.mock.calls[0]![0]).not.toHaveProperty("roles");
+    await expect(service.signup({ ...signupInput, intent: "COACH" })).rejects.toMatchObject({
+      code: ErrorCode.AUTH_SIGNUP_CLOSED,
+    });
+    expect(invitations.findInvited).not.toHaveBeenCalled();
+    expect(usersRepo.createService).not.toHaveBeenCalled();
   });
 
   it("open mode keeps the intent and applications rule", async () => {
@@ -150,16 +142,8 @@ describe("AuthService coach signup gate", () => {
     );
   });
 
-  it("signup deletes the invitation", async () => {
-    const { invitations, service } = makeSignupService(true, { pilot: true, role: "student" });
-
-    await service.signup(signupInput);
-
-    expect(invitations.deleteByEmail).toHaveBeenCalledWith("ayse@ornek.com");
-  });
-
   it("still completes signup when invitation cleanup rejects", async () => {
-    const { invitations, service } = makeSignupService(true, { pilot: true, role: "student" });
+    const { invitations, service } = makeSignupService(true);
     invitations.deleteByEmail.mockRejectedValue(new Error("db down"));
 
     await expect(service.signup(signupInput)).resolves.toMatchObject({ user: { email: "ayse@ornek.com" } });

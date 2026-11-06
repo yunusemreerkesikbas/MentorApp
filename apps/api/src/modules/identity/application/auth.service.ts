@@ -66,14 +66,12 @@ export class AuthService {
 
   async signup(input: SignupInput): Promise<AuthResult> {
     await this.turnstile.assertValid(input.turnstileToken);
-    const admission = await assertSignupAdmission(this.configRegistry, this.invitations, input.email);
-    // Invited mode: the invitation row decides the role, never the client (`intent` / `rol=koc`).
-    // An invited coach also bypasses `mentorship.applications.open` (the owner invited them).
-    const coach = admission.mode === "invited" ? admission.role === "coach" : input.intent === "COACH";
+    await assertSignupAdmission(this.configRegistry, this.invitations, input.email, false);
+    const coach = input.intent === "COACH";
 
     // A shut intake must not mint half a coach: COACH without the registry row that
     // `POST /v1/mentorship/coach-registration` refuses to write, stuck on the last onboarding step.
-    if (admission.mode === "open" && coach && !(await this.coachSignupStatus()).open) {
+    if (coach && !(await this.coachSignupStatus()).open) {
       throw new DomainError(ErrorCode.MENTORSHIP_APPLICATIONS_CLOSED, HttpStatus.FORBIDDEN);
     }
 

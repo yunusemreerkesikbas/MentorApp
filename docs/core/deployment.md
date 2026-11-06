@@ -24,8 +24,9 @@ Run the web trial with named tester accounts until the mobile app is ready. Keep
 creation closed (`signup.enabled=false`) and keep `ADMIN_ACCESS_MODE=disabled`. Leave Cloudflare
 Zero Trust unactivated because checkout asks for permission to bill usage above the Free limits.
 Use the dedicated trial database and verify that its sign-in-capable accounts belong to approved
-testers before admission. If testers need new accounts, first complete and verify a mailbox-proof
-invitation flow with a restricted operator procedure. Close signup again after enrollment.
+testers before admission. Prepare accounts through a restricted operator procedure after recording
+each tester's actual signup acknowledgements. Let testers set their own passwords through the existing
+email password-reset flow and keep self-service registration closed during enrollment.
 
 ### Deferred operator panel
 

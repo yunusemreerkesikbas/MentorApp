@@ -414,7 +414,7 @@ export const CONFIG_CATALOG = {
   ),
   "signup.pilot.enabled": flag(
     false,
-    "Invite-only signup: only emails with an invited row in signup_invitations may create password or Google accounts.",
+    "Invite-only signup: only verified Google emails with an invited row may register. Password signup stays closed.",
   ),
   "signup.pilot.max_invited_emails": identityCount(
     50,
