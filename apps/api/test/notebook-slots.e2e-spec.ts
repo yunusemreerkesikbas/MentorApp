@@ -188,8 +188,12 @@ describe("permanent notebook capacity purchased with Coin (HTTP + Postgres)", ()
     expect(purchases.filter((res) => res.status === 201)).toHaveLength(1);
     expect((await economy.getAdminBalance(buyer.id)).coinConfirmed).toBe(50);
     expect((await buy(randomUUID(), 2, 30)).status).toBe(422);
-    await config.set(admin.id, "economy.notebook_slots.max_per_user", 0);
-    expect(await limits()).toMatchObject({ maxCustomNotebooks: 3 });
+    const slotLimit = await config.set(admin.id, "economy.notebook_slots.max_per_user", 0);
+    try {
+      expect(await limits()).toMatchObject({ maxCustomNotebooks: 3 });
+    } finally {
+      await config.set(admin.id, "economy.notebook_slots.max_per_user", slotLimit.before);
+    }
     const ledger = await pool.query<{ count: number }>(
       "select count(*)::int as count from ledger_entries where user_id = $1 and reason = 'notebook.slot.purchase'",
       [buyer.id],

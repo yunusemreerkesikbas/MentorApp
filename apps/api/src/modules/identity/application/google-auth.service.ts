@@ -140,7 +140,7 @@ export class GoogleAuthService {
       throw new DomainError(ErrorCode.AUTH_GOOGLE_ACCOUNT_NOT_FOUND, HttpStatus.UNAUTHORIZED);
     }
 
-    const admission = await assertSignupAdmission(this.configRegistry, this.invitations, profile.email);
+    const admission = await assertSignupAdmission(this.configRegistry, this.invitations, profile.email, profile.emailVerified);
     const passwordHash = await argon2.hash(randomBytes(32).toString("base64url"));
     let user: UserRow;
     try {

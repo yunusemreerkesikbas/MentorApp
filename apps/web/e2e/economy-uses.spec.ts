@@ -16,7 +16,7 @@ test("güncel fiyat, kapasite ve günlük hak gösterilir; yalnız ilgili ekrana
     region.getByText("Coin ile alınan ek kapasite: 1 / 2"),
   ).toBeVisible();
   await expect(
-    region.getByText("Son 24 saatlik sınırda kalan mesaj: 3"),
+    region.getByText("Son 24 saatlik sınırda kalan kullanım hakkı: 3"),
   ).toBeVisible();
   await expect(
     region.getByText(
@@ -73,10 +73,10 @@ test("Premium ücretlenmez ve dolmuş günlük hak kullanıma açık gösterilme
     region.getByText("Premium'a dahil", { exact: true }),
   ).toHaveCount(3);
   await expect(
-    region.getByText("Günlük mesaj sınırına ulaştın.", { exact: false }),
+    region.getByText("Son 24 saatlik kullanım hakkın doldu. Yeni hak açıldığında kullanabilirsin."),
   ).toBeVisible();
   await expect(
-    region.getByRole("button", { name: "Koç ekranını aç" }),
+    region.getByRole("button", { name: "Puhu sohbetini aç" }),
   ).toHaveCount(0);
   await expect(region.getByText(/^\d+ Coin$/)).toHaveCount(0);
   await expect(
@@ -123,10 +123,10 @@ test("yetersiz Coin, kapalı AI ve alınmış haftalık hak ayrı gösterilir", 
     region.getByText("Bu seçenek şu an kullanılamıyor."),
   ).toBeVisible();
   await expect(
-    region.getByText("Bu haftanın hakkı zaten açık, yeniden Coin harcanmaz."),
+    region.getByText("Bu kullanım hakkı zaten açık, yeniden Coin harcanmaz."),
   ).toBeVisible();
   await expect(
-    region.getByRole("button", { name: "Koç ekranını aç" }),
+    region.getByRole("button", { name: "Puhu sohbetini aç" }),
   ).toHaveCount(0);
 });
 

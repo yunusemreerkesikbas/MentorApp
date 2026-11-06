@@ -195,11 +195,17 @@ describe("Economy earning audit (real HTTP/Postgres)", () => {
       .set(signed.headers)
       .send(JSON.parse(signed.body))
       .expect(200);
-    await h.app.get(JobRunnerService).processBatch(100);
-    // A background worker may own the job even when the explicit batch has returned.
+    const rewardJobs = await h.pool.query(
+      "select id from jobs where name='payments.deliver-reward-event' and payload->'event'->>'paymentId'=$1",
+      [paymentId],
+    );
+    expect(rewardJobs.rows).toHaveLength(1);
+    const runner = h.app.get(JobRunnerService);
+    // The shared test DB can have older jobs, and the background worker can claim this one.
     await expect
       .poll(
         async () => {
+          await runner.processBatch(100);
           const redemption = await h.pool.query(
             "select status,reward_outcome,source_payment_id from invite_redemptions where invited_user_id=$1",
             [invited.id],

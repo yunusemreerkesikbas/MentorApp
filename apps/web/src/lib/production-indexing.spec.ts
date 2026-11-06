@@ -1,3 +1,4 @@
+import { EXAM_TYPES } from "@mentor/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import robots from "../app/robots";
 import sitemap from "../app/sitemap";
@@ -26,6 +27,7 @@ describe("production indexing", () => {
     expect(entries.length).toBeGreaterThan(0);
     expect(entries.every(({ url }) => url.startsWith("https://puhukoc.com/"))).toBe(true);
     expect(fetchPublicQuestionRefs).toHaveBeenCalledOnce();
-    expect(fetchInfoArticlesByFamily).toHaveBeenCalledTimes(3);
+    const requestedFamilies = vi.mocked(fetchInfoArticlesByFamily).mock.calls.map(([family]) => family);
+    expect(requestedFamilies.sort()).toEqual([...EXAM_TYPES].sort());
   });
 });

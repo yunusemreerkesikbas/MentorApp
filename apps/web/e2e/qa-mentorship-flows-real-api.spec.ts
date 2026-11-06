@@ -703,7 +703,7 @@ test("M13 yeni öğrenci: davet linki → kayıt → başlangıç → davet kodu
     await page.getByLabel("E-posta").fill(email);
     await page.locator('input[name="password"]').fill(password);
     await page.getByRole("checkbox", { name: /KVKK aydınlatma/ }).click();
-    await page.getByRole("checkbox", { name: /Kullanım Koşulları/ }).click();
+    await page.getByRole("checkbox", { name: /Kullanım koşulları/i }).click();
     await page.getByRole("button", { name: "Kayıt ol" }).click();
     await expect(page).toHaveURL(/\/baslangic/, { timeout: 30_000 });
 

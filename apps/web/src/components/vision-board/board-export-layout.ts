@@ -31,6 +31,13 @@ export function needsCrossOrigin(url: string): boolean {
   return !url.startsWith("blob:") && !url.startsWith("data:");
 }
 
+export function boardImageCorsMode(url: string): "anonymous" | "use-credentials" | undefined {
+  if (!needsCrossOrigin(url)) return undefined;
+  const resolved = boardImageSrc(url);
+  const privateMedia = resolveApiUrl("/v1/storage/media/private");
+  return resolved.startsWith(`${privateMedia}?`) ? "use-credentials" : "anonymous";
+}
+
 /**
  * The board's own frame, as shares of the framed board's whole width: the moulding, the mat
  * inside it and the corner radius. One table for both renderers: `BoardFrame` writes a share as

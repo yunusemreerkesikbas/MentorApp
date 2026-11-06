@@ -57,10 +57,10 @@ describe.each(["password", "google"] as const)("%s account admission", (flow) =>
     { open: false, pilot: true, emails: [user.email], error: "AUTH_SIGNUP_CLOSED" },
     { open: true, pilot: true, emails: [], error: "AUTH_PILOT_INVITATION_REQUIRED" },
     { open: true, pilot: true, emails: ["other@example.com"], error: "AUTH_PILOT_INVITATION_REQUIRED" },
-  ])("refuses $error before account/token side effects", async ({ open, pilot, emails, error }) => {
+  ])("refuses new accounts before account/token side effects", async ({ open, pilot, emails, error }) => {
     const f = fixture(open, pilot, emails);
     await expect(flow === "password" ? f.passwordSignup() : f.google.callback("code", state))
-      .rejects.toMatchObject({ code: error, httpStatus: 403 });
+      .rejects.toMatchObject({ code: flow === "password" ? "AUTH_SIGNUP_CLOSED" : error, httpStatus: 403 });
     expect(f.repo.createService).not.toHaveBeenCalled();
     expect(f.tokens.issue).not.toHaveBeenCalled();
     expect(f.emailTokens.create).not.toHaveBeenCalled();
@@ -68,7 +68,7 @@ describe.each(["password", "google"] as const)("%s account admission", (flow) =>
     if (flow === "password") expect(f.captcha.assertValid).toHaveBeenCalledOnce();
   });
 
-  it.each([false, true])("accepts an eligible account when pilot=%s", async (pilot) => {
+  it.each(flow === "password" ? [false] : [false, true])("accepts an eligible account when pilot=%s", async (pilot) => {
     const f = fixture(true, pilot, pilot ? [user.email] : []);
     await expect(flow === "password" ? f.passwordSignup() : f.google.callback("code", state))
       .resolves.toMatchObject({ user: { email: user.email } });

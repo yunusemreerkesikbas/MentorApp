@@ -197,7 +197,7 @@ async function signUp(page: Page) {
   await page.getByRole("textbox", { name: "E-posta" }).fill("deniz@test.local");
   await page.locator('input[type="password"]').fill("MentorQa!2026");
   await page.getByRole("checkbox", { name: /KVKK aydınlatma/ }).click();
-  await page.getByRole("checkbox", { name: /Kullanım Koşulları/ }).click();
+  await page.getByRole("checkbox", { name: /Kullanım koşulları/i }).click();
   await page.getByRole("button", { name: "Kayıt ol" }).click();
 }
 

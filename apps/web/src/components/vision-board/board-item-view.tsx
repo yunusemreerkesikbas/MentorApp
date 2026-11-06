@@ -6,7 +6,7 @@ import {
   type VisionBoardTextItem,
   type VisionImageFrame,
 } from "@mentor/types";
-import { boardImageSrc, needsCrossOrigin } from "./board-export-layout";
+import { boardImageCorsMode, boardImageSrc } from "./board-export-layout";
 import { STICKER_ART } from "./board-stickers";
 import { MediaImage } from "@/components/media-image";
 
@@ -115,9 +115,7 @@ function ImageItemView({ item }: { item: VisionBoardImageItem }) {
         alt=""
         fill
           retryable
-        crossOrigin={
-          item.url && needsCrossOrigin(item.url) ? "anonymous" : undefined
-        }
+        crossOrigin={item.url ? boardImageCorsMode(item.url) : undefined}
         loading="lazy"
         draggable={false}
         className="object-cover"

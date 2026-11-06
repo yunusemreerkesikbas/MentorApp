@@ -1,8 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+
+const DotLottieReact = dynamic(
+  () => import("@lottiefiles/dotlottie-react").then((module) => module.DotLottieReact),
+  { ssr: false },
+);
 
 export interface CoinCelebrationVisualProps {
   size?: "sm" | "md" | "lg";

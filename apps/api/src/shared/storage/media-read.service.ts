@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
-import { DomainError, NotFoundError } from "../../common/errors/domain-error";
+import { DomainError, NotFoundError, UnauthorizedError } from "../../common/errors/domain-error";
 import { ErrorCode } from "../../common/errors/error-code";
 import { TokenService } from "../../modules/identity/application/token.service";
 import {
@@ -13,6 +13,7 @@ import { MediaReadGrantService } from "./media-read-grant.service";
 import { isPublicKey } from "./storage-prefixes";
 import { validateStorageOperation } from "./storage-budget.validation";
 import { uploadPolicy } from "./upload-policy";
+import { matchesMediaSession } from "./media-session-proof";
 
 interface MediaMetadata {
   key: string;
@@ -32,17 +33,20 @@ export class MediaReadService {
   async readPublic(key: string) {
     return this.read(await this.headPublic(key));
   }
-  async readPrivate(token: string) {
-    return this.read(await this.headPrivate(token));
+  async readPrivate(token: string, proof: unknown) {
+    return this.read(await this.headPrivate(token, proof));
   }
   async headPublic(key: string): Promise<MediaMetadata> {
     this.assertBounded();
     if (!isPublicKey(key)) throw new NotFoundError();
     return this.metadata(key);
   }
-  async headPrivate(token: string): Promise<MediaMetadata> {
+  async headPrivate(token: string, proof: unknown): Promise<MediaMetadata> {
     this.assertBounded();
     const grant = this.grants.verify(token);
+    if (!matchesMediaSession(proof, grant, this.config.getOrThrow("MEDIA_READ_SECRET", { infer: true }))) {
+      throw new UnauthorizedError();
+    }
     await this.tokens.validateSession(grant.sessionId, grant.userId);
     return this.metadata(grant.key);
   }
