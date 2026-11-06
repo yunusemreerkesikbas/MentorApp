@@ -137,6 +137,13 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-06 — Load the Coin player when the animation appears
+
+The shared Coin celebration loads its Lottie player when it displays the animated Coin.
+The SVG is visible while the player loads, including on the first reward. This applies to
+the reward dialog, the quest completion card and the chest scene.
+See [coin-celebration-visual.tsx](../../apps/web/src/components/coin-celebration-visual.tsx).
+
 ### 2026-11-04 — One weekly Coin acquisition opens both report views
 
 - **What:** Recap and deep analysis are two views of one exam/week report. No second Coin sink,
