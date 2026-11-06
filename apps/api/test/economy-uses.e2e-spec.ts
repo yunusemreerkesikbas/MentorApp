@@ -22,6 +22,7 @@ describe("Coin use catalog (real HTTP/Postgres)", () => {
   let users: UsersService;
   let usage: AiUsageRepository;
   let llm: ReturnType<typeof vi.spyOn>;
+  let recapAccessEnabled: boolean;
   let id = "";
   let token = "";
   const email = `coin-catalog-${randomUUID()}@example.test`;
@@ -63,8 +64,14 @@ describe("Coin use catalog (real HTTP/Postgres)", () => {
     token = signup.body.accessToken;
     await config.set(id, "economy.enabled", false);
     await config.set(id, "ai.budget.monthly_cap_usd_cents", 0);
+    await config.set(id, "ai.plan.coin_enabled", false);
+    recapAccessEnabled = await config.get("coaching.weekly_recap.access_enabled");
+    await config.set(id, "coaching.weekly_recap.access_enabled", false);
   }, 90_000);
   afterAll(async () => {
+    if (id && recapAccessEnabled !== undefined) {
+      await config.set(id, "coaching.weekly_recap.access_enabled", recapAccessEnabled);
+    }
     await app?.close();
     await pool?.end();
   });
@@ -103,6 +110,7 @@ describe("Coin use catalog (real HTTP/Postgres)", () => {
         },
         { id: "COACH_CHAT", status: "UNAVAILABLE", canOpen: false },
         { id: "DEEP_ANALYSIS", status: "UNAVAILABLE", canOpen: false },
+        { id: "PLAN_PREVIEW", status: "UNAVAILABLE", canOpen: false },
       ],
     });
     await view();
@@ -117,6 +125,7 @@ describe("Coin use catalog (real HTTP/Postgres)", () => {
       { cost: 37 },
       { cost: 7, dailyRemaining: 2, status: "AVAILABLE" },
       { status: "NEEDS_EXAM" },
+      { id: "PLAN_PREVIEW", status: "UNAVAILABLE", canOpen: false },
     ]);
     await users.updateMe(id, { examType: "KPSS", examVariant: "LISANS" });
     expect((await view()).items[2]).toMatchObject({
@@ -149,6 +158,7 @@ describe("Coin use catalog (real HTTP/Postgres)", () => {
       { premiumIncluded: true, status: "PREMIUM_INCLUDED", cost: null },
       { premiumIncluded: true, status: "PREMIUM_INCLUDED", cost: null },
       { premiumIncluded: true, status: "REVIEW_NOT_READY", cost: null },
+      { id: "PLAN_PREVIEW", premiumIncluded: true, status: "PREMIUM_INCLUDED", cost: null },
     ]);
     await usage.append({
       userId: id,
