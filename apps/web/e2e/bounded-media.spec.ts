@@ -17,6 +17,16 @@ test("photo refusal leaves the saved goal, plan and solo focus action usable", a
   page,
 }) => {
   const fixture = await prepareTrialUser(page);
+  // Saving the first goal earns a separate full-screen celebration, covered by its own suite.
+  await page.route(`${browserApiUrl}/community/achievements/unseen`, (route) =>
+    route.fulfill({
+      headers: {
+        "access-control-allow-origin": browserWebOrigin,
+        "access-control-allow-credentials": "true",
+      },
+      json: { celebrations: [] },
+    }),
+  );
   const headers = { Authorization: `Bearer ${fixture.token}` };
   expect(
     (
