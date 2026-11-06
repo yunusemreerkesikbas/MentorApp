@@ -148,7 +148,7 @@ test("sahne kendiliğinden oynar; CTA odağı alır ve tek istekle kapanır", as
 
   const proceed = dialog.getByRole("button", { name: "Devam edelim" });
   await expect(proceed).toBeFocused(REVEAL);
-  await expect(dialog.getByText("Yolculuğun başladı")).toBeVisible();
+  await expect(dialog.getByText("Başladın bile!", { exact: true })).toBeVisible();
 
   await page.keyboard.press("Enter");
   await expect(dialog).toHaveCount(0);

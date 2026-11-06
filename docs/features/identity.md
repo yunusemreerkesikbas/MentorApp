@@ -97,6 +97,14 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+### 2026-11-06 — Keep pilot password registration closed
+
+Pilot password registration returns the same closed response for all addresses before looking up
+invitations. Prepare approved tester accounts through a restricted operator procedure and use the
+existing email password reset to set the initial password. Existing sign-in works with signup off.
+Google signup still requires a verified mailbox and an active invitation when separately enabled.
+Related files are `signup-admission.ts`, `auth.service.ts`, and `signup-admission.e2e-spec.ts`.
+
 ### 2026-11-05 — Pilot waitlist admission, KVKK erasure, email-resend lock & RLS force hardening
 
 - **What:** Closed six pre-production security and data-integrity gaps across pilot waitlist admission, email verification resend, KVKK erasure, and PostgreSQL RLS enforcement:

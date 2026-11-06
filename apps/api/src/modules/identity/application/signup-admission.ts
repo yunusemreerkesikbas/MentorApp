@@ -13,13 +13,17 @@ export async function assertSignupAdmission(
   registry: Pick<ConfigRegistryService, "get">,
   invitations: Pick<SignupInvitationRepository, "findInvited">,
   email: string,
+  emailVerified: boolean,
 ): Promise<SignupAdmission> {
   if (await registry.get(FeatureFlag.SIGNUP_ENABLED) !== true) {
     throw new DomainError(ErrorCode.AUTH_SIGNUP_CLOSED, HttpStatus.FORBIDDEN);
   }
   const pilot = await registry.get(FeatureFlag.SIGNUP_PILOT_ENABLED);
   if (pilot === false) return { mode: "open" };
-  if (pilot !== true) throw new DomainError(ErrorCode.AUTH_SIGNUP_CLOSED, HttpStatus.FORBIDDEN);
+  // An invited address alone is not proof that the applicant controls its mailbox.
+  if (pilot !== true || !emailVerified) {
+    throw new DomainError(ErrorCode.AUTH_SIGNUP_CLOSED, HttpStatus.FORBIDDEN);
+  }
 
   // Capacity (signup.pilot.max_invited_emails) only limits issuing new invites, never admission.
   const invited = await invitations.findInvited(email);

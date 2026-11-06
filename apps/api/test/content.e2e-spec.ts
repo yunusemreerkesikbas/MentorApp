@@ -6,6 +6,15 @@ import cookieParser from "cookie-parser";
 import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ContentService } from "../src/modules/content/application/content.service";
+import examSeed from "../src/modules/content/seed/exams.seed.json";
+
+const currentKpss = examSeed.exams.find((exam) => exam.family === "KPSS" && exam.isCurrent);
+const currentKpssDate = currentKpss?.events.find((event) => event.type === "EXAM_DATE");
+if (!currentKpss || !currentKpssDate) throw new Error("Missing current KPSS exam date in the editorial seed");
+const currentKpssDateLabel = new Intl.DateTimeFormat("tr-TR", {
+  dateStyle: "long",
+  timeZone: "Europe/Istanbul",
+}).format(new Date(currentKpssDate.eventAt));
 
 /**
  * W1 content e2e — editorial exam calendar against real Postgres (RLS active).
@@ -87,16 +96,16 @@ describe("content (e2e)", () => {
   it("GET /v1/content/exams/by-type/KPSS/calendar returns examDateLabel + trust metadata", async () => {
     const res = await request(app.getHttpServer()).get("/v1/content/exams/by-type/KPSS/calendar");
     expect(res.status).toBe(200);
-    expect(res.body.exam.slug).toBe("kpss-lisans-2026");
-    expect(res.body.examDateLabel).toBe("12 Temmuz 2026");
+    expect(res.body.exam.slug).toBe(currentKpss.slug);
+    expect(res.body.examDateLabel).toBe(currentKpssDateLabel);
     expect(typeof res.body.daysRemaining).toBe("number");
     expect(res.body.daysRemaining).toBeGreaterThanOrEqual(0);
 
     const examDate = res.body.events.find((e: { type: string }) => e.type === "EXAM_DATE");
     expect(examDate).toBeTruthy();
-    expect(examDate.source).toBe("ÖSYM");
-    expect(examDate.sourceUrl).toBe("https://www.osym.gov.tr");
-    expect(examDate.verifiedBy).toBe("editorial-seed");
+    expect(examDate.source).toBe(currentKpssDate.source);
+    expect(examDate.sourceUrl).toBe(currentKpssDate.sourceUrl);
+    expect(examDate.verifiedBy).toBe(currentKpssDate.verifiedBy);
   });
 
   it("GET /v1/coaching/today uses countdown from editorial seed", async () => {
@@ -104,10 +113,10 @@ describe("content (e2e)", () => {
     expect(res.status).toBe(200);
     expect(res.body.countdown).not.toBeNull();
     expect(res.body.countdown.examType).toBe("KPSS");
-    expect(res.body.countdown.examName).toBe("KPSS Lisans 2026");
-    expect(res.body.countdown.examDateLabel).toBe("12 Temmuz 2026");
-    expect(res.body.countdown.source).toBe("ÖSYM");
-    expect(res.body.countdown.sourceUrl).toBe("https://www.osym.gov.tr");
+    expect(res.body.countdown.examName).toBe(currentKpss.name);
+    expect(res.body.countdown.examDateLabel).toBe(currentKpssDateLabel);
+    expect(res.body.countdown.source).toBe(currentKpssDate.source);
+    expect(res.body.countdown.sourceUrl).toBe(currentKpssDate.sourceUrl);
     expect(typeof res.body.countdown.daysRemaining).toBe("number");
   });
 

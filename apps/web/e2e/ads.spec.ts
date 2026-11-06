@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type { AuthUser, TodayPanelResponse } from "@mentor/types";
+import { EMPTY_ECONOMY_BALANCE } from "./economy.fixture";
 import { IDLE_STREAK } from "./streak.fixture";
 
 const sessionIds = [
@@ -321,8 +322,11 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
     if (method === "GET" && path === "/v1/economy/quests") {
       return json(route, dailyQuests);
     }
-    if (method === "GET" && path.startsWith("/v1/economy/")) {
-      return json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
+    if (method === "GET" && path === "/v1/economy/balance") {
+      return json(route, { ...EMPTY_ECONOMY_BALANCE, coinConfirmed: rewardedCount * 5 });
+    }
+    if (method === "GET" && url.pathname === "/v1/economy/rewards/unseen") {
+      return json(route, { items: [], total: 0, page: 1, pageSize: 20 });
     }
     if (method === "GET" && path === "/v1/ads/reward-offers/dashboard.rewarded.coin") {
       const ineligible = options.ineligibleReason;

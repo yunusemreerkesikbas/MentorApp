@@ -133,7 +133,7 @@ describe("admin exam-calendar editor (e2e)", () => {
     const res = await request(app.getHttpServer())
       .post("/v1/admin/content/exams")
       .set(asEditor())
-      .send(exam({ slug: `${SLUG}-bad2`, family: "ALES" }));
+      .send(exam({ slug: `${SLUG}-bad2`, family: "UNKNOWN_EXAM" }));
     expect(res.status).toBe(400);
   });
 

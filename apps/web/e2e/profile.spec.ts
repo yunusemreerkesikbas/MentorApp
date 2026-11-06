@@ -68,6 +68,8 @@ test("hesap silme satırı açıklamayı paylaşılan onay dialogunda gösterir"
   page,
 }) => {
   const api = await mockProfileApi(page);
+  const description =
+    "Hesabın ve verilerin kalıcı olarak silinir: Puhu sohbetlerin, notların, hedef panon ve yüklediğin fotoğraflar. Aktif aboneliğin varsa iptal edilir. Fatura kayıtları yasal saklama yükümlülüğü gereği korunur. Bu işlem geri alınamaz.";
   await page.addInitScript(() =>
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
   );
@@ -77,22 +79,14 @@ test("hesap silme satırı açıklamayı paylaşılan onay dialogunda gösterir"
   await expect(
     page.getByRole("heading", { name: "Hesabımı sil", exact: true }),
   ).toHaveCount(0);
-  await expect(
-    page.getByText(
-      "Hesabın ve verilerin kalıcı olarak silinir: koç sohbetlerin, notların, hedef panon ve yüklediğin fotoğraflar. Aktif aboneliğin varsa iptal edilir. Fatura kayıtları yasal saklama yükümlülüğü gereği korunur. Bu işlem geri alınamaz.",
-    ),
-  ).toHaveCount(0);
+  await expect(page.getByText(description)).toHaveCount(0);
 
   await page.getByRole("button", { name: "Hesabımı sil" }).click();
 
   const dialog = page.getByRole("dialog", { name: "Hesabımı sil" });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("Hesabımı sil", { exact: true })).toBeVisible();
-  await expect(
-    dialog.getByText(
-      "Hesabın ve verilerin kalıcı olarak silinir: koç sohbetlerin, notların, hedef panon ve yüklediğin fotoğraflar. Aktif aboneliğin varsa iptal edilir. Fatura kayıtları yasal saklama yükümlülüğü gereği korunur. Bu işlem geri alınamaz.",
-    ),
-  ).toBeVisible();
+  await expect(dialog.getByText(description)).toBeVisible();
   await expect(api.deleteAccountCalls).toBe(0);
 
   await page.getByRole("button", { name: "Vazgeç" }).click();
