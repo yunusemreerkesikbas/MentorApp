@@ -22,6 +22,8 @@ describe("Coin use catalog (real HTTP/Postgres)", () => {
   let users: UsersService;
   let usage: AiUsageRepository;
   let llm: ReturnType<typeof vi.spyOn>;
+  let monthlyBudget: number;
+  let notebookSlotLimit: number;
   let recapAccessEnabled: boolean;
   let id = "";
   let token = "";
@@ -63,12 +65,21 @@ describe("Coin use catalog (real HTTP/Postgres)", () => {
     id = signup.body.user.id;
     token = signup.body.accessToken;
     await config.set(id, "economy.enabled", false);
+    monthlyBudget = await config.get("ai.budget.monthly_cap_usd_cents");
     await config.set(id, "ai.budget.monthly_cap_usd_cents", 0);
     await config.set(id, "ai.plan.coin_enabled", false);
+    notebookSlotLimit = await config.get("economy.notebook_slots.max_per_user");
+    await config.set(id, "economy.notebook_slots.max_per_user", 2);
     recapAccessEnabled = await config.get("coaching.weekly_recap.access_enabled");
     await config.set(id, "coaching.weekly_recap.access_enabled", false);
   }, 90_000);
   afterAll(async () => {
+    if (id && monthlyBudget !== undefined) {
+      await config.set(id, "ai.budget.monthly_cap_usd_cents", monthlyBudget);
+    }
+    if (id && notebookSlotLimit !== undefined) {
+      await config.set(id, "economy.notebook_slots.max_per_user", notebookSlotLimit);
+    }
     if (id && recapAccessEnabled !== undefined) {
       await config.set(id, "coaching.weekly_recap.access_enabled", recapAccessEnabled);
     }

@@ -27,6 +27,8 @@ describe("Weekly analysis policy (HTTP + Postgres)", () => {
   let app: INestApplication;
   let pool: Pool;
   let config: ConfigRegistryService;
+  let monthlyBudget: number;
+  let analysisCost: number;
   let economy: EconomyService;
   let budget: AiBudgetGuard;
   let usage: AiUsageRepository;
@@ -61,6 +63,8 @@ describe("Weekly analysis policy (HTTP + Postgres)", () => {
     app = createTestApp(module, { authRateLimits: false });
     await app.init();
     config = module.get(ConfigRegistryService);
+    monthlyBudget = await config.get("ai.budget.monthly_cap_usd_cents");
+    analysisCost = await config.get("economy.coin.deep_analysis_cost");
     economy = module.get(EconomyService);
     budget = module.get(AiBudgetGuard);
     usage = module.get(AiUsageRepository);
@@ -80,6 +84,7 @@ describe("Weekly analysis policy (HTTP + Postgres)", () => {
     await config.set(user.id, "coaching.weekly_recap.access_enabled", false);
     await config.set(user.id, "ai.enabled", true);
     await config.set(user.id, "ai.budget.monthly_cap_usd_cents", 0);
+    await config.set(user.id, "economy.coin.deep_analysis_cost", 25);
     await config.set(user.id, "ai.budget.reservation_usd_cents", 5);
     await config.set(
       user.id,
@@ -95,6 +100,10 @@ describe("Weekly analysis policy (HTTP + Postgres)", () => {
   });
   afterAll(async () => {
     vi.restoreAllMocks();
+    if (user) {
+      await config.set(user.id, "ai.budget.monthly_cap_usd_cents", monthlyBudget);
+      await config.set(user.id, "economy.coin.deep_analysis_cost", analysisCost);
+    }
     await app?.close();
     await pool?.end();
   });
