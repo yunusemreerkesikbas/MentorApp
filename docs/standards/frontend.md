@@ -2,7 +2,7 @@
 
 > Canonical context: [`../../AGENTS.md`](../../AGENTS.md) · Design: [`../../DESIGN.md`](../../DESIGN.md).
 > Performance constitution: the **`vercel-react-best-practices`** skill (priority order below).
-> **Scope:** `apps/web` (B2C). **`apps/admin`** is a deliberate exception — see [`apps/admin/AGENTS.md`](../../apps/admin/AGENTS.md) (Bootstrap, axios, Next 14).
+> **Scope:** `apps/web` (B2C). **`apps/admin`** is a deliberate exception — see [`apps/admin/AGENTS.md`](../../apps/admin/AGENTS.md) (Bootstrap 5 + SCSS, axios, Duralux shell on Next 16 / React 19).
 
 ## Rendering & data
 - [ ] **Server Component by default**; `"use client"` only when interaction/browser API is needed.
@@ -29,7 +29,7 @@
   never `bg-white` / `#fff` / `dark:bg-black`. Tailwind `dark:` only when a value cannot be a token.
 - [ ] Uniform radius (10px token), single shadow token, 4px grid spacing — DESIGN.md §4-5.
 - [ ] Semantic HTML + WCAG AA (contrast, keyboard, focus ring, touch ≥44px). Turkish glyphs (Nunito latin-ext).
-- [ ] **Tone & copy (§0 & [`docs/copy/voice.md`](../copy/voice.md)):** encouraging, anti-shaming. Calm countdown (not alarm-red), no result ranking. Dual register (Puhu chrome / Companion coach & errors), sen address, no em dash (`—`), no AI slop, no "lütfen / kontrol et", non-monetary hak.
+- [ ] **Tone & copy (§0 & [`docs/copy/voice.md`](../copy/voice.md)):** encouraging, anti-shaming. Calm countdown (not alarm-red), no result ranking. Dual register (**Puhu** energetic/Duolingo-like for chrome, landing, quests, community, leagues, levels, invites, unlocks / **Companion** calm & steady for AI coach chat, low mood, broken streak, errors, payments, official facts), *sen* address, no em dash (`—`), no AI slop, no "lütfen", AI coach named **Puhu** (`yapay zekâ`, never `AI` in TR), non-monetary hak/Coin.
 - [ ] Every screen: loading / empty / error states.
 
 ## Loading skeletons (binding)

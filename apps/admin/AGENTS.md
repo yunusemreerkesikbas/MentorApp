@@ -1,64 +1,34 @@
-# apps/admin — Mentor Internal Admin Panel (Duralux / Bootstrap)
+# apps/admin — Agent Guide (Admin Panel)
 
-> **Canonical guide: [`../../AGENTS.md`](../../AGENTS.md)** (project-wide rules, guardrails §4, stack).
-> Product: [`../../sinav-kocluk-roadmap.md`](../../sinav-kocluk-roadmap.md) §9 (admin, Turkish).
+> Inherits root [`AGENTS.md`](../../AGENTS.md). Read this before touching `apps/admin`.
+> Feature doc: [`docs/features/admin.md`](../../docs/features/admin.md).
 
-## What this app is
-The W6 admin panel is the **Duralux CRM admin template**, adopted **as-is** (product decision —
-devnote 0018). It is **deliberately different** from the rest of the monorepo:
+## Context: Duralux template adaptation
 
-| Aspect | This app (admin) | Rest of monorepo (web/api) |
+`apps/admin` is an **internal back-office console** (RBAC-gated behind Cloudflare Access + `STAFF`
+JWT roles: `SUPER_ADMIN | CONTENT_EDITOR | MODERATOR | FINANCE | SUPPORT`). To ship MVP admin fast,
+it was built by adapting the **Duralux** admin template rather than from scratch on `@mentor/ui`.
+
+Because of that origin, `apps/admin` has **intentional, accepted deviations** from
+[`docs/standards/frontend.md`](../../docs/standards/frontend.md) (which governs the B2C `apps/web` app).
+**Do not "fix" these deviations into Tailwind/`@mentor/ui` rewrites** unless explicitly tasked.
+
+## Actual stack in `apps/admin`
+
+| Area | `apps/web` (standard) | `apps/admin` (Duralux — accepted) |
 |---|---|---|
-| Framework | **Next.js 14** (App Router) | Next.js 16 / NestJS, TypeScript |
-| Styling | **Bootstrap 5 + SCSS** (`src/assets/scss`) | Tailwind v4 + `@mentor/ui` tokens |
-| Language | **Hybrid**: our code is `.ts/.tsx`, the Duralux template stays `.js/.jsx` | TypeScript |
-| Deps install | pnpm workspace (no `package-lock.json`) | pnpm workspace |
-| Data | plain `axios` (`src/lib/apiClient.ts`), not `@mentor/api-client` | typed `@mentor/api-client` |
+| Framework | Next.js 16 · React 19 (App Router) | **Next.js 16 · React 19** (App Router, upgraded in APP-084) |
+| Styling | Tailwind v4 + `@mentor/ui` tokens (`DESIGN.md`) | **Bootstrap 5 + SCSS** (`src/assets/scss`) + Feather/React-Icons |
+| Language | Strict `.ts/.tsx` | **Hybrid:** Mentor pages/lib in `.ts/.tsx`; template shell/vendors in `.js/.jsx` (`allowJs: true`) |
+| `next.config` | Strict build | `typescript.ignoreBuildErrors: true` (template JSX compat — still run `typecheck` on `.ts/.tsx` you touch) |
+| API access | `@mentor/api-client` | `src/lib/admin-api.ts` (`axios` wrapper with Bearer token + 401 refresh + `{ data, meta }` unwrap) |
+| Tables/forms | `@mentor/ui` primitives | Shared `src/components/shared/admin/{DataTable,FilterBar,StatusBadge,ConfirmModal,FormSection}.tsx` |
 
-This is an accepted deviation from the usual "DESIGN.md tokens + api-client" rule because the
-admin is an **internal team-only tool** and reusing a ready Bootstrap template was chosen for speed.
-Keep the **styling** as Bootstrap/SCSS — don't convert it to Tailwind/`@mentor/ui` piecemeal.
-Dependencies are pnpm-managed (normal workspace member) — don't reintroduce npm here.
+## Rules when working in `apps/admin`
 
-**TypeScript (hybrid):** code WE write goes in `.ts/.tsx` with `strict` on; the Duralux template
-files stay `.js/.jsx` (untyped, `checkJs:false` → imported as `any`). Shared identity types come
-from `@mentor/types` (e.g. `AuthUser`, `UserRole`); admin-specific API shapes live in
-`src/lib/types.ts`. **Don't** mass-convert the template to TS.
-- `pnpm typecheck` uses `tsconfig.typecheck.json` (scoped to `.ts/.tsx` only) → enforces types on
-  our code. `next build` sets `typescript.ignoreBuildErrors: true` because the off-menu Duralux demo
-  pages don't satisfy Next's generated route types; our safety net is `pnpm typecheck`, not the build.
-
-## Working rules
-- **Team-only access:** behind **Cloudflare Access**, invite-based accounts, no self-signup (§9).
-- **Single API:** all data comes from NestJS `/v1` via `src/lib/apiClient.ts` (axios). Base URL =
-  `NEXT_PUBLIC_API_URL` (already includes `/v1`). Auth token in `src/lib/auth.ts`; session +
-  route guard in `contentApi/authProvider.tsx` (wrapped by `components/shared/AdminShell.tsx`).
-- **Audit from day one:** every admin mutation is audited **server-side** (the API's
-  `AdminAuditInterceptor`) — don't add a client-only "audit". Sensitive ops (money/coin/roles) →
-  bounds + audit; don't break the economy with bad input.
-- **Menu:** `src/utils/fackData/menuList.ts` is trimmed to the admin surface. The original Duralux
-  CRM/applications demo pages still exist as **UX reference** but are off-menu — reuse their
-  components/markup when building real admin screens.
-- **New screens** live under `src/app/(general)/<feature>/` (sidebar shell). Public/auth screens
-  (e.g. `/login`) live outside the `(general)` group.
-
-## Commands
-```bash
-pnpm dev                            # turbo: all apps (api :3001 · web :3000 · admin :3002)
-pnpm --filter @mentor/admin dev     # admin only — next dev on :3002 (needs the api on :3001)
-pnpm --filter @mentor/admin build
-pnpm --filter @mentor/admin typecheck   # tsc on our .ts/.tsx (tsconfig.typecheck.json)
-pnpm --filter @mentor/admin add <pkg>   # add a dependency (pnpm-managed, like every workspace app)
-```
-> Build scripts (e.g. `core-js`) are gated by pnpm; decisions live in `pnpm-workspace.yaml`
-> (`allowBuilds`). A new dep with an unapproved postinstall → add an entry there (true/false).
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+1. **New Mentor admin pages (`src/app/(general)/*` and `src/lib/*`) MUST be written in TypeScript (`.ts/.tsx`)** with proper types from `@mentor/types` and schemas from `@mentor/validation`.
+2. **Use the existing admin primitives:** `adminApi` (`src/lib/admin-api.ts`), `useAdminAuth` (`src/context/AdminAuthContext.tsx`), and `src/components/shared/admin/*` (`DataTable`, `FilterBar`, `StatusBadge`, `ConfirmModal`, `FormSection`).
+3. **Match Duralux visual conventions** inside admin (Bootstrap `card`, `table`, `badge`, `btn`, `form-control`, `form-select`) — **do NOT apply `DESIGN.md` B2C tokens here.** `DESIGN.md` is for `apps/web` and mobile.
+4. **Never touch `src/components/*` template vendor code** unless removing dead demo routes or fixing a concrete bug.
+5. **Security & RBAC still 100% apply:** backend guards (`@Roles(...)` + `StaffGuard`) are authoritative; frontend role checks (`hasRole`) are UX-only. Every mutating admin action is audit-logged on the backend.
+6. **Backend-localized errors:** display `getApiErrorMessage(err)` — never hardcode error interpretations.

@@ -1,69 +1,76 @@
-# Conventions
+# Conventions, Branching & Ticket Registry
 
-> Naming, code style, and per-stack rules live in [standards/](../standards/) (canonical). This file holds
-> only the cross-cutting basics not repeated there.
+> Single source of repository conventions, naming, commit discipline, and ticket history.
+> Detailed style rules: [`docs/standards/code-style.md`](../standards/code-style.md).
+> Engineering principles: [`docs/standards/engineering-principles.md`](../standards/engineering-principles.md).
 
-## Language
-- Code / identifiers / file names: **English**. Comments / engineering docs: **English**. User-facing text: **Turkish** (§0 tone).
-- Intentionally Turkish: `README.md` (product overview) + `sinav-kocluk-roadmap.md` (product decisions).
+---
 
-## Config & secrets
-- Tunables (coin/XP caps, rate-limit, price, thresholds) → central **config registry** (typed + Zod, §9);
-  no magic numbers. Sensitive (money) → bounds + audit.
-- Secrets in `.env` (git-ignored). Template `.env.example`. Steps in `docs/integrations.md`.
+## 1. Language & Copy Discipline
 
-## Git
-- **Conventional Commits** (`feat/fix/chore/docs/refactor/test`). `master` protected; PR → squash.
-- **Branch format:** `feature/APP-NNN-<short-slug>` (NNN = sequential ticket no; registry below).
-  One branch per workstream track — parallel agents must NOT share a branch (see workstreams.md).
-  Fixes: `fix/APP-NNN-<slug>`.
-- Commit/PR only when the user asks; `.env` is never committed.
+- **Code, identifiers, DB columns, routes (internal), comments, and engineering docs:** **English**.
+  - *Intentional Turkish exceptions:* `README.md`, `sinav-kocluk-roadmap.md`, Turkish copy examples in [`docs/copy/voice.md`](../copy/voice.md), and Turkish editorial content in [`docs/editorial/`](../editorial/).
+- **User-facing product copy:** **Turkish** (`tr`, default) and **English** (`en`), governed by [`docs/copy/voice.md`](../copy/voice.md).
+  - **Dual register:** **Puhu** (energetic, Duolingo-like cheering voice for chrome, landing, quests, community, leagues, levels, achievements, invites, unlocks, waitlist) + **Companion** (calm, steady voice for AI coach chat, low mood, broken streak, errors, payments, official facts).
+  - **AI vs. Human Coach naming:** The AI coach is named **Puhu** (`yapay zekâ`, never `AI` in Turkish); plain **"koç"** means the human coach (`mentorship`).
+  - **i18n:** All `apps/web` strings live in `apps/web/messages/{tr,en}.json` with mirrored keys; backend errors/notifications localize via `Accept-Language` (`tr` | `en`).
 
-### Ticket registry (APP-NNN)
-| No | Scope |
-|---|---|
-| APP-001 | Integration: design infra + W1/W2 slices + W4 payments (single PR — pre-branch-discipline batch) |
-| APP-002 | Admin foundation (STAFF + audit log + user management + UI shell) |
-| APP-003 | Config registry + feature flags (typed catalog + DB overrides + admin editor) |
-| APP-004 | Economy substrate: XP/Coin ledger + invite → conversion → coin |
-| APP-005 | Admin content/exam editors + refund/subscription view + metrics dashboard |
-| APP-006 | Economy quests + fine admin sub-roles (SUPPORT/FINANCE/MODERATOR/SUPER_ADMIN) |
-| APP-007 | W3 AI coach chat + RAG grounding + coin→AI spend + web koç/profil UI |
-| APP-008 | B2C web UI polish sweep (landing, auth, panel, plan, seans, analiz, bilgi, abonelik, app shell) |
-| APP-009 | W3 photo→subject categorize (VisionPort + StoragePort) |
-| APP-010 | W2/W3 mood AI-adaptive + ghost (geçmiş-ben) comparison + code review fixes |
-| APP-011 | Web i18n: next-intl TR/EN (URL-based, 14 namespaces, ~290 keys, static render) |
-| APP-012 | Forum slice 6: SEO (public QA pages, JSON-LD, sitemap, XSS fix) + mvp-status update |
-| APP-013 | Docs refactor: devnotes → features/ + core/ consolidation |
-| APP-014…APP-062 | Registry gap — recorded in the matching `docs/features/*.md` timelines and `core/mvp-status.md`, not here |
-| APP-063 | W8 mentorship slice 1: coach↔student link (invite code, double opt-in, roster, transparency view) + COACH role assignment |
-| APP-064 | W8 mentorship slice 2: roster + rule-based risk triage + student report + `(coach)` web surface |
-| APP-065 | W8 mentorship slice 3: coach-assigned homework via `plan_tasks` origin + notifications |
-| APP-066 | W8 mentorship: weekly assignment composer, `plan_tasks.topic` + `coach_note` |
-| APP-067 | W8 mentorship: daily coach risk digest (cron, new-pairs-only) |
-| APP-068 | W8 mentorship: feedback loop — student delete/complete reaches the coach |
-| APP-069 | W8 mentorship: invite flow reachable from the profile, "copy last week" in the composer |
-| APP-070 | W8 mentorship: append-only drop log so the report shows "assigned but deleted" |
-| APP-071 | W8 mentorship: the coach's standing note to a student (one-way, not a thread) |
-| APP-072 | W8 mentorship: Playwright coverage for the student invite path and the coach surface |
-| APP-073 | Test suite repair: two shell bugs the stale suites were hiding + provider pinning |
-| APP-074…APP-088 | Registry gap — recorded in the matching `docs/features/*.md` timelines |
-| APP-089 | W8 coach self-registration + coach onboarding branch; admin gains suspend/reinstate |
-| APP-090 | Coach home: role-aware routing, `(app)` block list, coach nav + notifications, two-column `/kocluk` |
-> Next number = last row + 1. Add a row when opening a branch.
+---
 
-## Standards (binding)
-Engineering principles · code-style (naming) · api · backend · frontend · mobile · code-review →
-[standards/](../standards/code-review.md). Full index: [docs/README.md](../README.md).
+## 2. Shared Packages & Contracts
 
-## Feature-doc (mandatory)
-After every meaningful development, add a short note to the relevant
-[features/<bucket>.md](../features/README.md). No doc update → no merge.
-See [AGENTS.md §10](../../AGENTS.md) for the full rule.
+| Package | Responsibility | Rule |
+|---|---|---|
+| `@mentor/types` | Shared DTOs, enums, API contracts, domain event payloads | Single source of truth for types; avoid `any`. |
+| `@mentor/validation` | Zod schemas shared across `apps/api`, `apps/web`, `apps/admin` | Validate at API boundaries and forms using the same schema. |
+| `@mentor/core` | Pure exam-agnostic domain calculators (net score, streak math, countdowns) | Zero framework or I/O dependencies. |
+| `@mentor/api-client` | Typed HTTP client for `/v1` endpoints with token refresh & locale header | Used by `apps/web` (and Phase 2 mobile). |
+| `@mentor/ui` | Design tokens (`theme.css`) and shared React primitives (`Button`, `Card`, `Chip`, `Field`, `Logo`, etc.) | Follows [`DESIGN.md`](../../DESIGN.md); no magic numbers. |
+| `@mentor/config` | Shared TS, ESLint, and Prettier configurations | Inherited by all apps and packages. |
 
-## Testing (later)
-Unit: domain/use-case. Integration: repository + adapter. E2E: critical flows (auth, payment webhook
-idempotency). The skeleton has no suite yet — update here once added.
+---
 
-## Quality gates (CI)
-`pnpm lint` · `pnpm typecheck` · `pnpm build` must be green to merge (`.github/workflows/ci.yml`).
+## 3. Git, Branches & Commits
+
+- **Protected main:** `main` is protected; all work lands via feature branches (`feat/<topic>` or `feature/APP-XXX`).
+- **Conventional Commits:**
+  - `feat(<scope>): ...` — new capability
+  - `fix(<scope>): ...` — bug fix
+  - `refactor(<scope>): ...` — structural improvement without behavior change
+  - `docs(<scope>): ...` — documentation & feature-doc timeline updates
+  - `test(<scope>): ...` — unit / integration / e2e tests
+  - `chore(<scope>): ...` — build, deps, config
+- **Iterative verification scope (binding):**
+  - During development, run the **smallest relevant test suite and targeted typecheck/lint** for the touched package/files.
+  - Run full workspace `pnpm build | lint | typecheck | test` only when touching cross-cutting contracts (`@mentor/types`, `@mentor/validation`, auth, payments, migrations) or before declaring a branch merge/release-ready.
+
+---
+
+## 4. Modularity & File Size Target
+
+- Keep files focused and under **~250–300 lines** (FE components and BE services alike).
+- Decompose **proactively during development**:
+  - **Frontend:** Extract subcomponents, view stages, custom hooks, and pure helper modules.
+  - **Backend:** Keep controllers thin (HTTP routing + guards + DTO mapping); split complex application services into focused sub-services, pure domain calculators (`domain/`), and repository query helpers (`infrastructure/`).
+
+---
+
+## 5. Feature Documentation Rule (Mandatory)
+
+Every meaningful change must update the corresponding feature doc under [`docs/features/`](../features/README.md) with a concise entry covering:
+1. **What changed** (architectural or product decision).
+2. **Usage** (flags, commands, or component APIs).
+3. **Gotchas** (non-obvious invariants or edge cases).
+4. **Related files**.
+
+---
+
+## 6. Milestone & Ticket Registry (`0001–0042` & `APP-001–APP-138`)
+
+- **Foundation & MVP Sprints (`0001–0042`):** Monorepo bootstrap (`0001`), Drizzle + RLS (`0002–0005`), W1 Identity (`0006–0008`), W2 Coaching (`0009–0011`), W3 AI (`0012–0014`), W4 Payments (`0015`), W5 Content & Notifications (`0016–0020`), W6 Admin (`0021–0026`), B2C Web Polish & i18n TR/EN (`0027–0042`).
+- **Phase 2 & Launch Tracks (`APP-001–APP-138`):**
+  - `APP-001–APP-035`: Economy (`XP`/`Coin` append-only ledger, quests, levels, friend invite rewards & refund clawback), Forum (exam-scoped Q&A, coach/editorial verification), Community (study rooms `LIBRARY`/`CAFE`/`HOME`, XP leagues, Weekly Recap stories).
+  - `APP-036–APP-069`: Study notebooks (photo-logged pages, shelf & review fan), Vision Board & YKS preference simulation prototype, AdSense & rewarded ads (`ads` module), Promotions & coupon engine (`promotions` module).
+  - `APP-070–APP-099`: W8 Mentorship (human coach link `/kocum`, coach directory `/koclar`, coach workspace, sponsored seats & billing channel flags, coach AI briefs & homework drafts).
+  - `APP-100–APP-129`: SMS OTP & phone-bound trial/invite security, closed-trial operator runbooks, AI provider kill-switches, bounded trial R2 storage.
+  - `APP-130–APP-138`: Landing "Işıklı şehir" + Sabah Masası + Odak Odası + Gece Yolculuğu + Premium flight sheet, "Puhu’yla planla" night stage, Weekly Chest opening desk, Puhu hero domino mask (`PremiumIdentityMark`), 5 exam families (`KPSS · YKS · LGS · ALES · DGS`), AI coach named **Puhu**, energetic Duolingo-like Puhu voice standard, and invite-only waitlist gate (`/bekleme-listesi`).

@@ -81,8 +81,7 @@ Closing mentorship alone does not close self-service coach registration; its sep
 applications flag must be checked too. Do not change live flags or concurrent notebook
 quota code as part of the admin-boundary implementation.
 
-Implementation plans: [closed admin](../superpowers/plans/2026-10-29-admin-closed-trial.md)
-and [AI kill-switch](../superpowers/plans/2026-10-29-ai-provider-kill-switch.md).
+See [`docs/core/deployment.md`](../core/deployment.md) for the closed-trial admin and AI kill-switch setup.
 
 Without the operator UI, content/config changes, role assignment, moderation and support
 actions are unavailable through admin HTTP. Prepare verified editorial content before

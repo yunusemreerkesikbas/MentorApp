@@ -1,37 +1,16 @@
 # CLAUDE.md
 
-> **Full engineering & agent guide → [`AGENTS.md`](./AGENTS.md)** (canonical).
-> Product decisions → [`sinav-kocluk-roadmap.md`](./sinav-kocluk-roadmap.md) (Turkish). Design → [`DESIGN.md`](./DESIGN.md).
+> **Canonical agent & engineering guide:** [`AGENTS.md`](./AGENTS.md) — read it first.
+> **Product source of truth:** [`sinav-kocluk-roadmap.md`](./sinav-kocluk-roadmap.md).
+> **Design system:** [`DESIGN.md`](./DESIGN.md).
+> **Voice & Copy constitution:** [`docs/copy/voice.md`](./docs/copy/voice.md).
 
-## Project in 30 seconds
-**Mentor** — an **AI coach + community "companionship platform"** for exam prep (not a knowledge
-platform). Exam-agnostic (KPSS first); exams differ only by content/config. MVP = responsive web
-B2C + lean admin. Stack: TypeScript monorepo · NestJS · Next.js · Neon/Postgres+Drizzle+pgvector (pg Pool)
-· Cron+jobs queue (`JobQueuePort`) · Cloudflare · Render · iyzico · OpenAI+Gemini · Postmark · Sentry.
+All rules, architecture decisions, module boundaries, guardrails, and conventions live in
+**`AGENTS.md`**. Keep a single source of truth — do not duplicate or diverge here.
 
-## Frequent commands
-```bash
-pnpm install
-pnpm dev                              # api:3001 · web:3000 · admin:3002
-pnpm --filter @mentor/api dev         # single app
-pnpm build | lint | typecheck
-```
-
-## Remember while working
-- First, **AGENTS.md §4 guardrails** (LLM never generates official info, photo categorizes-not-solves,
-  coin is non-monetary, no AI on free, AI→teacher trust line, KVKK, org-ready schema).
-- UI values come from **DESIGN.md tokens** (`@mentor/ui`), not magic numbers.
-- **Copy & voice:** follow **[`docs/copy/voice.md`](./docs/copy/voice.md)** (dual register Puhu/Companion, sen, no em dash `—`, no AI slop, no "lütfen/kontrol et", hak not ödül).
-- Per-task skill: `senior-architect` / `senior-backend` / `senior-frontend`.
-- Relevant **standard** before coding: `docs/standards/{backend,frontend,mobile,code-review}.md`.
-- Parallel work: your track's boundaries → `docs/core/workstreams.md` (don't touch other tracks' modules).
-- **After every meaningful development, append a timeline entry to the matching feature doc under `docs/features/`** (usage/gotchas) — mandatory.
-- **Testing scope:** during development run only the affected module's tests
-  (`pnpm --filter @mentor/api exec vitest run <spec-name>` — the `test -- <spec-name>` form does NOT filter,
-  it silently runs the full suite); full suite + lint + typecheck **once, right before opening the PR** — CI repeats it anyway.
-- Don't implement out-of-scope ideas inline → backlog (phase discipline, roadmap §10).
-- This repo is **its own git repository** (isolated from the home directory).
-
-## Environment note
-In the Bash tool, every command may print a `mixin.stripAnsi is not a function` error (a global Angular
-shim); the command still runs. For stability during scaffolding, prefer **PowerShell**.
+Quick pointers:
+- **Stack:** TypeScript monorepo (Turborepo + pnpm) · NestJS `/v1` · Next.js 16 + React 19 (web + admin) · Expo (Phase 2) · Drizzle + Neon Postgres (pg Pool + RLS) · Cloudflare + Render · OpenAI + Gemini Flash · Resend (email) · iyzico (payments).
+- **Supported exams:** `KPSS · YKS · LGS · ALES · DGS` (exam-agnostic engine; differ only by taxonomy/net rule/calendar config).
+- **Voice:** Dual register per [`docs/copy/voice.md`](./docs/copy/voice.md) — **Puhu** is energetic & Duolingo-like (chrome, landing, quests, community, leagues, levels, invites, unlocks); **Companion** is calm & steady (AI coach chat, low mood, errors, payments, official facts). AI coach is named **Puhu** (`yapay zekâ`, never `AI` in TR); plain `koç` = human coach.
+- **Standards (binding):** [`docs/standards/`](./docs/standards/) — [`engineering-principles.md`](./docs/standards/engineering-principles.md), [`code-style.md`](./docs/standards/code-style.md), [`api.md`](./docs/standards/api.md), [`backend.md`](./docs/standards/backend.md), [`frontend.md`](./docs/standards/frontend.md), [`mobile.md`](./docs/standards/mobile.md), [`code-review.md`](./docs/standards/code-review.md).
+- **Docs index:** [`docs/README.md`](./docs/README.md).

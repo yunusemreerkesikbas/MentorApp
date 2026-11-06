@@ -2,31 +2,33 @@
 
 > **Canonical guide.** `CLAUDE.md` and other agent tools point here.
 > Single source of product decisions: [`sinav-kocluk-roadmap.md`](./sinav-kocluk-roadmap.md) (Turkish).
-> Design system: [`DESIGN.md`](./DESIGN.md). Architecture detail: [`docs/`](./docs).
+> Design system: [`DESIGN.md`](./DESIGN.md). Voice constitution: [`docs/copy/voice.md`](./docs/copy/voice.md). Architecture detail: [`docs/`](./docs/README.md).
 
 ## 0. Product spirit (the compass for every decision)
 
 This is a **"companionship platform"** — not a knowledge platform. On the long, lonely,
-exhausting road of exam prep, it's an AI coach + community that **understands, keeps you
+exhausting road of exam prep, it's an AI coach (**Puhu**) + community that **understands, keeps you
 going, and never leaves you alone.** The deepest pain isn't lack of information; it's
 **loneliness, collapse of motivation, giving up.** For every feature, ask: does it soothe
 that pain?
 
 - **Exam-agnostic product:** the AI-coach / ritual / social / analysis logic is the **same**
-  across all exams (KPSS/YKS/LGS). Exams differ only by **content/config** (taxonomy, net
-  rule, calendar source). **Do not write a separate "vertical".** KPSS = first seed.
-- **Tone:** Turkish, encouraging, never shaming. Countdown is calm (not alarm-red), no result
-  ranking, no "bottom of the leaderboard". Canonical copy constitution: **[`docs/copy/voice.md`](./docs/copy/voice.md)** (dual register Puhu/Companion, sen address, no em dash `—`, no AI slop, no "lütfen", non-monetary hak).
+  across all 5 supported exam families (**`KPSS · YKS · LGS · ALES · DGS`**). Exams differ only by
+  **content/config** (taxonomy, net rule, calendar source). **Do not write a separate "vertical".**
+- **Tone & Dual Register ([`docs/copy/voice.md`](./docs/copy/voice.md)):** Turkish, encouraging, never shaming.
+  - **Puhu register (default for chrome, landing, quests, community, leagues, levels, achievements, invites, unlocks, waitlist):** Lively, energetic, Duolingo-like cheering voice (short sentences, max one `!` per sentence, zero guilt/FOMO).
+  - **Companion register (AI coach chat, low mood, broken streak, errors, payments, official facts):** Calm, steady, supportive (`"Ben buradayım"`, zero `!`, no jokes).
+  - **Naming:** The AI coach is named **Puhu** (`"Puhu, yapay zekâ koçun"`; Turkish writes `"yapay zekâ"`, never `"AI"`). Plain **"koç"** means the human coach (`mentorship`). Always *sen*, never "lütfen", no em dash `—`, non-monetary hak/Coin.
 
 ## 1. Architecture line (locked — §8)
 
 - **Single language: TypeScript.** Single API (`/v1`, versioned, backward-compatible).
 - **Backend: NestJS modular monolith.** Clear module boundaries; extract to services later if needed.
-- **Web/Admin: Next.js** (App Router). **Mobile: Expo** (Phase 2).
-- **i18n: `apps/web` is TR/EN** (URL-based, next-intl; `tr` default). All FE static copy via `useTranslations`/`getTranslations`, internal nav via `@/i18n/navigation`, keys mirrored in `messages/{tr,en}.json` — details in `docs/standards/frontend.md` §i18n + [`docs/features/i18n.md`](./docs/features/i18n.md).
+- **Web/Admin: Next.js 16 (App Router) + React 19.** **Mobile: Expo** (Phase 2).
+- **i18n: `apps/web` is TR/EN** (URL-based, `next-intl` v4; `tr` default). All FE static copy via `useTranslations`/`getTranslations`, internal nav via `@/i18n/navigation`, keys mirrored in `messages/{tr,en}.json` — details in [`docs/standards/frontend.md`](./docs/standards/frontend.md) §i18n + [`docs/features/i18n.md`](./docs/features/i18n.md).
 - **Monorepo: Turborepo + pnpm.** `apps/*` + `packages/*`.
 - **DB: Neon Postgres + pgvector · ORM: Drizzle.** RLS on the Postgres side.
-- **Queue: behind `JobQueuePort`** — MVP Cron+jobs table, Phase 2 BullMQ+Redis (rationale: docs/core/architecture.md).
+- **Queue: behind `JobQueuePort`** — MVP Cron+jobs table, Phase 2 BullMQ+Redis (rationale: [`docs/core/architecture.md`](./docs/core/architecture.md)).
 - **DB driver:** single `pg` Pool (`drizzle-orm/node-postgres`) — works local + Neon; tx-scoped RLS via `withUserContext` / `SET LOCAL` (§8).
 - **Edge: Cloudflare** (WAF/RateLimit/Turnstile/R2/Images/Access). **Hosting: Render.**
 - **AI: OpenAI (text, GPT-5) + Gemini Flash (vision)** + rule engine (hybrid) + pgvector RAG.
@@ -35,9 +37,9 @@ that pain?
 ## 2. Module map (bounded contexts — §8)
 
 ```
-identity · coaching · ai · content · payments · notifications · admin   (MVP)
-economy · forum · community · mentorship                               (Phase 2)
-marketplace                                                            (Phase 3)
+identity · coaching · ai · content · payments · promotions · ads · notifications · admin   (Live core)
+economy · forum · community · mentorship                                                   (Live social & coach)
+marketplace                                                                                (Phase 3)
 ```
 **Rule:** modules **never touch** each other's tables → public interface or **domain event**
 (NestJS `EventEmitter`; moves to a queue if modules split out).
@@ -46,11 +48,11 @@ Detail: [`apps/api/src/modules/README.md`](./apps/api/src/modules/README.md).
 ## 3. Patterns (§8)
 
 Repository+DI · Ports & Adapters (`shared/ports`) · Domain Events (loose coupling) · append-only **Ledger**
-(XP/coin, never delete) · Idempotency (webhook/jobs) · Outbox (economy/payments) · Strategy (AI routing/rewards/
-verification) · Policy/Guard + RLS (tenancy). Full table + where: [docs/core/architecture.md](./docs/core/architecture.md), [backend.md](./docs/standards/backend.md).
+(XP/coin/payments, never delete) · Idempotency (webhook/jobs) · Outbox (economy/payments) · Strategy (AI routing/rewards/
+verification) · Policy/Guard + RLS (tenancy). Full table + where: [`docs/core/architecture.md`](./docs/core/architecture.md), [`docs/standards/backend.md`](./docs/standards/backend.md).
 
 **Pragmatic Clean:** layer depth scales with the work. Simple CRUD → controller+service+repo. Critical domain
-(economy/payments/ai/forum-verification) → full layering.
+(economy/payments/promotions/ai/forum-verification) → full layering.
 
 ## 4. Absolute guardrails (do not violate)
 
@@ -61,26 +63,11 @@ verification) · Policy/Guard + RLS (tenancy). Full table + where: [docs/core/ar
 3. **Economy: coin is non-monetary, capped.** **Never put coin in the chat zone.** The ledger never
    stores a single number / never deletes. **Reward ≤ action value** (don't leak AI cost — §3).
 4. **No unconditional/ongoing AI on Free** (cost ~0). The **four** ways to taste AI: carded trial ·
-   earned right (invite/quest) · **a curated coach's sponsored seat**, bounded by
-   `mentorship.coach.free_seats` · **a coach's daily assistant taste** (below). No unconditional
+   earned right (invite/quest/coin unlock) · **a coach's sponsored seat**, bounded by
+   `mentorship.coach.free_seats` · **a coach's daily assistant taste**. No unconditional
    metered sampling (§7/§10).
-   *The coach taste was added 2026-09-26: a coach without a plan gets the coach AI (student and
-   cohort briefs, meeting preparation, homework drafts) for the students their free seats cover, on
-   `ai.features.mentorship.*.free_enabled` with a per-coach daily limit, charged to the coach and
-   under `ai.budget.monthly_cap_usd_cents`. It is conditional on the COACH role, an active link and
-   the flags, and it does not wait for SMS OTP: its exposure is per coach per day, not a student's
-   whole AI. The sponsored seat below still waits.*
-   *The seat was added 2026-09-05 (APP-076) and revises roadmap §7's "koçtan abonelik sıkma".*
-   *It is a widening, not a removal: the path is conditional on a coach account in good standing,
-   on a config'd seat count, and on `mentorship.seats.sponsorship_enabled`, and every call it
-   funds still sits under `ai.budget.monthly_cap_usd_cents`. `free_seats` is the single knob that
-   bounds the whole exposure — coaches x seats = giveaway premium. Raise it deliberately.*
-   ***REVISED 2026-09-08 (APP-089): "manually curated COACH role" is no longer what bounds the
-   coach count.*** *Registration is self-service, so the number of coaches is bounded by the number
-   of verified email addresses somebody can produce — which is not a bound. The seat exposure is
-   therefore gated on the SEQUENCE, not on curation: `mentorship.seats.sponsorship_enabled` must not
-   be switched on before SMS OTP ships. Until then `sponsorship_enabled = false` is the whole
-   defence, and it is off. See the flag runbook in `docs/features/mentorship.md`.*
+   - *Coach assistant taste:* A coach without a plan gets the coach AI (student and cohort briefs, meeting preparation, homework drafts) for the students their free seats cover, on `ai.features.mentorship.*.free_enabled` with a per-coach daily limit, charged to the coach and under `ai.budget.monthly_cap_usd_cents`.
+   - *Sponsored seat sequence gate:* Self-service registration means coach count is unbounded without phone verification. Therefore `mentorship.seats.sponsorship_enabled` must remain `false` until SMS OTP is active, and seat grants require verified active phones on both coach and student (`docs/features/mentorship.md`).
 5. **AI→teacher trust line:** a student's raw confessions to the AI never reach the teacher/coach —
    only signals/flags (§9). This is the foundation of AI-companion trust (§0).
 6. **KVKK:** PII-free summary to the LLM; no-training API; foreign-transfer disclosure. Behavioral data
@@ -122,8 +109,8 @@ Structure detail: [`docs/core/file-structure.md`](./docs/core/file-structure.md)
 - **Validation:** Zod is the single source (`@mentor/validation`), shared FE+BE.
 - **Types:** shared contracts in `@mentor/types`. Avoid `any`.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`).
-- **Branches:** `main` protected; work on `feat/<topic>`, merge via PR.
-- **Design:** UI values come from DESIGN.md tokens (`@mentor/ui`), no magic numbers.
+- **Branches:** `main` protected; work on `feat/<topic>` or `feature/APP-XXX`, merge via PR.
+- **Design:** UI values come from [`DESIGN.md`](./DESIGN.md) tokens (`@mentor/ui`), no magic numbers.
 - **Config:** tunable parameters in a central registry (§9) — not magic numbers.
 - **Modularity:** keep files manageable (<250–300 lines target). Decompose *proactively during development* (FE: subcomponents, view stages, params helpers; BE: sub-services, domain calculators, strategies, query helpers, DTO mappers; thin controllers).
 - Full list: [`docs/core/conventions.md`](./docs/core/conventions.md).
@@ -133,11 +120,11 @@ Structure detail: [`docs/core/file-structure.md`](./docs/core/file-structure.md)
 - **senior-architect** → module boundaries, event design, tech decisions, diagrams.
 - **senior-backend** → NestJS modules/endpoints, Drizzle schema/queries, auth, payments, queue.
 - **senior-frontend** → Next.js pages/components, state, applying DESIGN.md. **Read `apps/web/AGENTS.md` or `apps/admin/AGENTS.md`** depending on which app you're in (admin has accepted stack deviations).
-- **code-reviewer** → PR checklist, guardrails §4, merge readiness ([code-review.md](./docs/standards/code-review.md)).
+- **code-reviewer** → PR checklist, guardrails §4, merge readiness ([`docs/standards/code-review.md`](./docs/standards/code-review.md)).
 - **vercel-react-best-practices** → **performance constitution** for all React/Next.js code
   (priority: async-waterfall → bundle → server → client → re-render). New FE code follows it.
-- **ui-ux-pro-max / frontend-design** → screen design (stay faithful to DESIGN.md tokens).
-- **expo / building-native-ui / expo-tailwind-setup** → Phase 2 mobile (RN), port `@mentor/ui` tokens to RN.
+- **ui-ux-pro-max / impeccable** → screen design (stay faithful to DESIGN.md tokens).
+- **animate / transitions-polish** → web motion and scene choreography per `DESIGN.md` §9.
 - Invoke the relevant skill per task; ground decisions in the roadmap and this file.
 
 **Mobile (critical):** do NOT use Expo Router API routes — single API = NestJS `/v1` (a second backend breaks it).
@@ -145,11 +132,9 @@ Structure detail: [`docs/core/file-structure.md`](./docs/core/file-structure.md)
 
 ## 9. Phase discipline & parallel work
 
-- **Parallel development:** MVP work is split into tracks with exclusive ownership —
+- **Parallel development:** work is split into tracks with exclusive ownership —
   **read [`docs/core/workstreams.md`](./docs/core/workstreams.md) before picking up work.** Don't write inside
   another track's module; shared files are append-only per its touch rules.
-
-- **MVP:** responsive web B2C + lean admin. Social/forum/economy/coach/mobile = **Phase 2+**.
 - A feature's phase is set by roadmap §10. Don't do out-of-scope work "by the way" — push it to backlog.
 
 ## 10. Standards & documentation (binding)

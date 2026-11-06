@@ -67,5 +67,4 @@ support operation, hosted auth/mail/upload/queue acceptance and full CI remain o
 This completes the two local implementation plans, not publication readiness.
 
 Usage: [deployment profile](../core/deployment.md#closed-admin-core-only-free-trial).
-Plans: [admin](../superpowers/plans/2026-10-29-admin-closed-trial.md),
-[AI](../superpowers/plans/2026-10-29-ai-provider-kill-switch.md).
+See [`docs/core/deployment.md`](../core/deployment.md).

@@ -190,6 +190,6 @@ pnpm db:up && pnpm --filter @mentor/api test
 
 ## Related
 
-- [architecture.md](./architecture.md) · [repo-and-conventions.md](./repo-and-conventions.md)
+- [architecture.md](./architecture.md) · [conventions.md](./conventions.md)
 - Standards: [backend.md](../standards/backend.md) · [api.md](../standards/api.md) · [engineering-principles.md](../standards/engineering-principles.md)
 - Setup: [setup.md](./setup.md) · Integrations: [integrations.md](./integrations.md)

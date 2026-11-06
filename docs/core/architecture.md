@@ -10,9 +10,9 @@
 
 ## Module map (bounded contexts)
 ```
-identity · coaching · ai · content · payments · notifications · admin   (MVP)
-economy · forum · community · mentorship                               (Phase 2)
-marketplace                                                            (Phase 3)
+identity · coaching · ai · content · payments · promotions · ads · notifications · admin   (Live core)
+economy · forum · community · mentorship                                                   (Live social & coach)
+marketplace                                                                                (Phase 3)
 ```
 Modules never touch each other's tables → public interface / domain event.
 

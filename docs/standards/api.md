@@ -1,521 +1,83 @@
 # API Design & Versioning Standards + Service Catalog
 
-### Premium coach chat quota (2026-11-04)
-
-- `GET /v1/coach/access` returns `monthlyMessagesRemaining` alongside
-  `dailyMessagesRemaining` for Premium. On quota exhaustion, `canChat` is false,
-  `reason` is `AI_CHAT_QUOTA_EXCEEDED`, and `retryAt` is the earliest usable
-  UTC timestamp or null if generation is disabled through the daily setting.
-- `POST /v1/coach/chat`, `POST /v1/coach/chat/stream` and
-  `POST /v1/coach/conversations/:id/regenerate/stream` share the quota. Refusal is
-  HTTP 429 with localized `AI_CHAT_QUOTA_EXCEEDED` and `details.retryAt` before
-  SSE headers. Owned history can still be read.
-
-### Weekly recommendation follow-up (2026-11-04)
-
-- `GET /v1/coach/weekly-recaps/:id/follow-up`: owned READY report's live task plus an optional
-  immediately preceding owned report's task/baseline/first later measurement. Returns
-  `{ task: PlanTaskDto | null, previous: object | null }`. Localized evidence caveats are server-owned.
-- `POST /v1/coach/weekly-recaps/:id/plan-task`: strict plan fields without subject/topic/source;
-  server resolves provenance and subject from the saved report. Returns the created/existing
-  task (201). Serialized per user and idempotent per extant report-linked task, including DONE.
-- Foreign/unopened reports return 404; missing saved suggestion or a changed linked subject is
-  409; invalid/extra input fields are 400. Existing task edit/delete routes apply. Deletion permits
-  a new explicitly accepted task. No purchase, AI call or report content rewrite occurs.
-
-### Owned weekly Wrapped reports (2026-11-01)
-
-2026-11-04 addition: newly acquired `review` snapshots include optional `deepAnalysis` with
-backend-localized completed-week study comparisons, taxonomy-backed subject averages/sample
-counts and an evidence caveat. The recap and detailed view share the same report ID, acquisition,
-Coin debit and allowance. Saved older reports may omit this field; clients show the original
-summary without fetching mutable evidence or generating again. No new endpoint is introduced.
-
-- `GET /v1/coach/weekly-recaps/access?examId=UUID[&weekStart=YYYY-MM-DD]`: side-effect-free
-  offer with readiness, owned/earned/Premium/Coin mode, quoted cost, remaining rolling allowance,
-  next available time and a localized refusal. Historic weeks can be acquired only through an
-  existing ledger-backed right; new earned/Premium/Coin claims use the previous completed week.
-- `POST /v1/coach/weekly-recaps`: `{ examId, weekStart, source, expectedCost, clientRequestId }`,
-  matching UUID `Idempotency-Key`. Returns the owned immutable report and narration (201).
-  Conflicting/stale offers and in-progress work are 409; exhausted Coin allowance is 429; global
-  budget/provider unavailability is 503. Failed generation does not spend Coin. An accepted
-  generated result retains its confirmed price for later settlement.
-- `GET /v1/coach/weekly-recaps?page=1&pageSize=20`: authenticated self-scoped paginated archive
-  (maximum 100). Legacy ledger rights have `requiresOpening: true` until explicitly materialized.
-- `GET /v1/coach/weekly-recaps/:id`: immutable self-owned report (200), foreign/missing ID is 404.
-  Existing ownership remains readable over current quota, membership expiry and generation flags.
-- With `coaching.weekly_recap.access_enabled`, existing weekly story/narration/completion routes
-  require the owned exam/week; internal evidence and basic analysis remain available. Legacy Coin
-  purchase POSTs cannot create an uncapped right. With rollout off, legacy access stays available,
-  while already saved snapshots/narrations remain immutable. See [coaching](../features/coaching.md),
-  [AI](../features/ai.md) and [economy](../features/economy.md).
-
-### Mentorship weekly planning read (2026-09-19)
-
-`GET /v1/mentorship/students/:studentId/planning-tasks?from=YYYY-MM-DD&to=YYYY-MM-DD&page=1&pageSize=20`
-requires COACH and an active student link. Inclusive date ranges are limited to seven days;
-pagination follows the standard envelope (page size maximum 100). Items contain `id`, `taskDate`,
-`title`, `subject`, `topic`, `status`, `assignedByCoach`, and the current coach's `coachNote` only.
-No student description is exposed. Consumers must collect every page before showing complete
-weekly counts. Existing assignments remain unchanged; new drafts use the existing assignment POST.
-
-> Canonical context: [`../../AGENTS.md`](../../AGENTS.md) · Backend: [backend.md](./backend.md).
-> A single API (NestJS) serves web + (Phase 2) mobile + panel → **versioned & backward-compatible** (§8).
-
-## 1. Versioning
-
-- All routes under the **`/v1`** prefix. Base: `https://api.<domain>/v1`.
-- **Policy:** additive changes (new field/endpoint) **don't bump** the version. A breaking change (removing a
-  field/changing meaning) → new version `/v2`; `/v1` is **kept** for a while (mobile can't be force-updated).
-- Never remove a required field from a response; carry a "deprecated" field for one cycle, then drop it in `/v2`.
-- An OpenAPI spec is generated (`/v1/docs` Swagger) → `@mentor/api-client` orval codegen. No handwritten contract.
-
-## 2. URL & resource naming
-
-- **Plural, kebab-case nouns:** `/v1/study-sessions`, `/v1/info-articles`, `/v1/mock-exams`.
-- Resource-centric; shallow nesting: `/v1/study-sessions/{id}`, `/v1/users/{id}/subscription`.
-- If an action is needed, sub-resource/verb suffix: `POST /v1/mock-exams/{id}/analyze`.
-- ID = uuid. Path param `{id}`; filtering/pagination in the query.
-
-## 3. HTTP methods & status codes
-
-| Case                          | Code                          |
-| ----------------------------- | ----------------------------- |
-| GET success                   | `200`                         |
-| POST created                  | `201` (returns Location/`id`) |
-| Success, no body (DELETE/PUT) | `204`                         |
-| Validation error (Zod)        | `400`                         |
-| No/invalid credentials        | `401` · no permission `403`   |
-| Not found                     | `404`                         |
-| Conflict / idempotency replay | `409`                         |
-| Rate limit                    | `429`                         |
-| Server                        | `500`                         |
-
-## 4. Envelopes & contracts
-
-- **Error:** always `ApiError { code, message, details? }` (`@mentor/types`). `code` is machine-readable
-  (`VALIDATION_ERROR`, `INSUFFICIENT_COIN`).
-- **List:** `Paginated<T> { items, total, page, pageSize }`.
-- **Pagination:** `?page=1&pageSize=20` (`paginationQuerySchema`, max 100). **No unbounded list.**
-- **Sorting:** `?sort=field:asc|desc` (whitelisted fields). **Filtering:** explicit query params (`?examType=KPSS`).
-- **Dates:** ISO 8601 UTC (`2026-06-07T13:00:00Z`). **Money:** string + minor unit/`numeric` (no float).
-
-## 4b. Messages & localization
-
-- **All business logic & calculations are server-side**; responses are **computed and ready to render**
-  (FE/mobile never recompute — single brain for web+mobile, §engineering-principles).
-- User-facing messages are returned **already localized** (per `Accept-Language`) as a human `message` **+**
-  a stable machine `code` (in `ApiError` and in success payloads where relevant). Clients display `message`
-  directly; `code` is for client-side branching, not for client-built copy.
-- Validation errors (Zod) are mapped to localized `message` + `code` at the boundary.
-
-## 5. Security & reliability
-
-- **Auth:** `Authorization: Bearer <accessJWT>`; access includes `sid` and every protected request
-  reloads the active session/account/roles. Refresh rotation and family revocation are transactional.
-- **Idempotency:** `Idempotency-Key` header on money/coin POSTs; idempotent webhook (no double processing).
-- Input validated with Zod (at the boundary). Rate-limit at the Cloudflare edge + cost cap (§7).
-- AuthZ Guard/Policy + RLS (double belt); tenancy `user_id`/`org_id`.
-- **OAuth linking:** email equality never merges existing accounts. Google linking is explicitly started
-  at `POST /v1/users/me/auth-accounts/google/start` with password confirmation and session-bound state;
-  status is `GET /v1/users/me/auth-accounts/google`.
-- **Uploads:** feature endpoints issue an opaque, one-use `/v1/storage/uploads/:ticket` capability.
-  The API validates the bound session, owner, purpose, byte limit and actual file format before server-side
-  storage write; clients never choose a storage key or receive a direct PUT signature.
-- **Bounded trial media:** private DTO URLs bind the existing owner authorization to the current
-  HTTP session; backend evidence retains keys without URLs. `/v1/storage/media/private?grant=...`
-  revalidates that session, while `/v1/storage/media/public/*key` accepts public prefixes only.
-  Both use the guarded raw port, return no-store responses and keep photo refusal separate from
-  notebook/board text. HEAD authorizes metadata without a provider request. No direct R2 URL is
-  returned in bounded mode. Storage accounting remains SERVICE-only; no initialization HTTP API.
-- **Push:** subscription endpoints accept only allowlisted browser push providers over HTTPS/443.
-  DNS/private-network validation runs at registration and again immediately before outbound delivery.
-
-## 6. Service (module) catalog
-
-### Public application availability
-
-`GET /v1/app/availability` is anonymous and sends `Cache-Control: no-store`. It returns
-`AppAvailabilityDto` (`@mentor/types`): only effective booleans for AI coach, social, forum,
-study rooms, human coaching, student/coach purchases, student/coach new-account signup,
-existing-account coach registration, economy rewards (XP/Coin earning and spending) and invitations.
-Ritual progress remains available while economy rewards are closed. A new key must reach
-the API before the web: the web reads the snapshot only when every key it knows is a boolean, and treats
-anything else as unavailable. `coachRegistration` follows the applications
-switch independently of public new-account signup. Signup booleans describe global switches;
-email-specific pilot admission remains enforced by the identity policy on submission.
-Purchasing composes the existing provider/channel rules; invitations require economy and social.
-It exposes no registry values, secrets, roles or user data. It is presentation metadata, not an
-authorization decision. Each feature keeps its own server policy. The current web document uses
-an explicit nullable snapshot and refreshes it by document reload.
-
-Display launch diagnostics (2026-10-26): `GET /v1/admin/ads/readiness` requires SUPER_ADMIN, the
-same boundary as central settings. Returns current environment/site origin, global/display
-switches, allowed countries, local preview status, and eight DISPLAY rows with unit source/status,
-enabled flag, configuration issues and required content-check type. No raw unit paths, provider
-requests, user/content reads or writes; `externalVerification` is always `NOT_CHECKED`. An empty
-issue list is not Google/content approval or user eligibility. Production placement delivery
-additively reports `TEST_INVENTORY_NOT_ALLOWED` with no unit path for official sample DISPLAY
-network paths, including explicit legacy environment fallbacks. Rewarded guards are unchanged.
-
-Reviewed public QA advertising (2026-10-25): public/authenticated `forum.question.end` placement
-requests require UUID `questionId` and rendered SHA-256 `contentRevision`. The current public
-Forum snapshot, rendered revision and stored approval must match; unknown exam context fails
-closed. `GET /v1/admin/ads/questions/:questionId` previews the public question, all answers and
-approval; `PUT` accepts `{contentRevision}` and returns 409 for stale previews; `DELETE` revokes.
-All three require EDITOR/full admin; both mutations use the existing audit log. Public question
-responses add optional `contentRevision` and `examType` fields for backward compatibility.
-See [Ads](../features/ads.md) for default-off activation gates and limitations.
-
-Authenticated community QA advertising (2026-10-26): `community.question.end` uses the existing
-authenticated placement endpoint and the same UUID/revision query schema; the anonymous endpoint
-returns 404. `GET/PUT/DELETE /v1/admin/ads/questions/:questionId/community` preview/approve/revoke
-an independent community publisher snapshot (EDITOR/full admin, audited mutations, stale PUT 409).
-Approval requires current public text approval. Reapproving/revoking public text clears community
-approval; community-only revoke retains public approval. When the new flag is enabled,
-`GET /v1/forum/threads/:id` additively returns `pageContext` (public room, exact selected waiting
-questions, nullable `adContentRevision`); absent/failed context cannot authorize ads. Authenticated
-policy verifies rendered/current/approved hashes and the existing audience/country/entitlement rules.
-
-Discovery preparation (2026-10-26): authenticated `community.overview` accepts only the existing
-SHA-256 `contentRevision` query, without a question ID/article. Anonymous delivery is 404. The
-existing `GET /v1/forum/hub` optionally adds `adContext` containing `contentRevision`, exact
-`waitingQuestions`, `sidebarRooms` and `examType` after both default-off enable/operational-review
-gates. Ads rereads Forum's public page proof and compares it with the rendered revision; private,
-personalized, incomplete, stale or unknown-exam contexts remain disabled. Existing clients can
-ignore the additive field. No extra snapshot reads occur with either gate off.
-
-Reviewed announcements (2026-10-26): authenticated `community.announcement.end` uses UUID `threadId`
-and SHA-256 `contentRevision` on the existing placement endpoint; anonymous delivery is 404.
-`GET/PUT/DELETE /v1/admin/ads/announcements/:threadId` provide EDITOR/full-admin preview, approval
-(`{contentRevision}`, stale → 409) and revoke; audit stores approval metadata only. Only PUBLIC,
-active ANNOUNCEMENT publisher views qualify. The existing `GET /v1/forum/threads/:threadId/detail`
-optionally returns `adContext` (rendered revision, server room, expected `sidebarRooms`) while its
-independent flag is enabled. Context errors preserve ordinary reading without an ad. Existing
-clients can ignore the additive field. Approval store `content_type` isolates QUESTION and
-ANNOUNCEMENT records; no new review table or anonymous announcement endpoint is introduced.
-
-Identity phone addition (APP-114): protected `GET /v1/users/me/phone`,
-`POST /v1/users/me/phone/verifications` and
-`POST /v1/users/me/phone/verifications/:challengeId/confirm`. Status exposes only a masked number;
-requests require a session and Turnstile action `phone-verification`; confirmation never creates a
-login session. Shared contracts live in `@mentor/{types,validation}` and the generated API client.
-Payments checkout accepts additive `useTrial`; `false` purchases directly, `true` requires trial
-eligibility, and omission retains the previous automatic trial choice with the new phone gate.
-The owner-only subscription view reports trial eligibility and pending checkout recovery URLs;
-unknown outcomes block replacement until provider reconciliation.
-
-> Source: [`apps/api/src/modules/README.md`](../../apps/api/src/modules/README.md). Base paths are planned;
-> they appear in OpenAPI once a module is implemented.
-
-Identity also exposes `POST /v1/auth/admin/{login,refresh,logout}` for the admin panel's separate
-refresh cookie. The existing `/v1/auth/{login,refresh,logout}` routes remain the web contract.
-
-| Module          | Base path (planned)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Responsibility                                                                                                                                                                                                                                                                                                                                                                                             | Phase                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Status             |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | --- |
-| `identity`      | `/v1/auth/{signup,login,google/status,coach-signup/status,google/start,google/callback,refresh,logout,verify-email,forgot-password,reset-password}` _(`signup` with `intent: COACH` is refused 403 `MENTORSHIP_APPLICATIONS_CLOSED` while `mentorship.applications.open` is off; `coach-signup/status` → `{ open }`, public)_, `/v1/users/me`, `/v1/users/me/verification-email`, `/v1/users/me/avatar-upload-url`, `/v1/users/:username/follow` _(PUT/DELETE)_, `/v1/users/:username/{followers,following}` _(cursor lists; social follow graph, APP-022)_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | own JWT + refresh rotation (httpOnly cookie), Google OAuth, roles, org-ready, RLS, profile avatar upload, **one-way public follow graph** (`user_follows`; emits `identity.user.followed` → in-app notif)                                                                                                                                                                                                  | MVP                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | ✅                 |
-| `coaching`      | `/v1/coaching/today`, `/v1/coaching/public/pulse` _(public, anonymous, throttled: `{ studiedLast24h }` = distinct people with a completed or in-progress session started in the last 24h, `null` below `coaching.public_pulse.min_people`; the landing's live line)_, `/v1/coaching/analysis?examId=…` _(optional active-exam scope; normalized subject performance, latest-four evidence-aware nextFocus with focus trend/direction/localized message, latest-four photoSubjectSignals, ghost)_, `/v1/plan-tasks` _(list by `date` **or** inclusive `from`/`to` range — week view)_, `/v1/plan-tasks/calendar` _(distinct dates in range — datepicker dots)_, `/v1/study-sessions`, `/v1/mock-exams?examId=…` _(optional filter)_, `PUT /v1/mock-exams/:id` _(server-recomputed result)_, `DELETE /v1/mock-exams/:id` _(permanent owned-record delete)_, `/v1/coaching/mood-checkins`, `/v1/coaching/vision` _(hayal/hedef panosu — GET + upsert POST; the GET also carries the collage document)_, `PUT /v1/coaching/vision/board` _(collage document, replaced wholesale; deliberately NOT the goal upsert — it must never invalidate the cached premium AI note)_, `POST /v1/coaching/vision/board/image-upload-url` _(presigned direct-to-R2 board photo)_, `/v1/coaching/preference-simulation{,/access,/refresh}` _(YKS beta; GET/PUT/DELETE + refresh)_ | daily loop + deneme analysis (server-computed net, personal trend, rule-based ghost) + rule-based mood + vision/goal board + revisioned YKS preference draft and deterministic historical-rank comparison                                                                                                                                                                                                  | MVP + YKS beta                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | 🟡                 |
-| `ai`            | `/v1/coach/access` · `/v1/coach/chat{,/stream}` · `/v1/coach/conversations{,/:id/messages,/:id/regenerate/stream,/:id/plan-tasks}` · `/v1/coach/profile` · `/v1/coach/memories{,/:id}` · `/v1/coach/messages/:id/action` · `/v1/coach/memory` _(legacy read/delete)_ · `/v1/coach/mood-reflection` · `/v1/coach/daily-greeting` · `/v1/coach/plan-draft` · `/v1/coach/ghost-narration` · `/v1/coach/vision-note` · `/v1/coach/photo-access` · `/v1/mock-exams/photo-upload-url` · `/v1/mock-exams/{id}/categorize-photo` · `/v1/admin/ai/reembed`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Mentor V2: deterministic intent/tone/evidence/action planning, consent-based allowlisted cross-thread memory, traceable evidence snapshots, user-approved Coaching actions, verified official-info resolver/data cards, coin/premium access and model/provider eval gates. Legacy free-text memory is inactive.                                                                                            | MVP                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | 🟡                 |
-| `content`       | `/v1/content/exams`, `/v1/content/exams/by-type/:type` _(current exam, optional `?variant=`)_, `/v1/content/exams/by-type/:type/calendar`, `/v1/content/exams/:slug/calendar`, `/v1/content/exams/:slug/subjects`, `/v1/content/exams/:slug/topics`, `/v1/content/info-articles`, `/v1/content/info-articles/featured`, `/v1/content/info-articles/:slug`, `POST /v1/content/info-articles/:slug/views` _(planned: pgvector RAG index)_, `/v1/content/programs/search`, `/v1/content/universities/:id/campus-experience`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | editorial exam calendar + subject taxonomy + knowledge-center articles + versioned official YKS catalog and editorial campus tours                                                                                                                                                                                                                                                                         | MVP + YKS beta                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | 🟡                 |
-| `payments`      | `/v1/plans` _(public)_, `/v1/subscription/{,checkout,cancel}` _(GET embeds `features` policy map; no remaining quota)_ , `/v1/webhooks/payments` _(signed)_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | carded trial + auto-renew (PaymentsPort: fake/iyzico), entitlement (`PremiumGuard`), per-feature free-taste policy (`evaluateFeatureAccess`), idempotent webhook, e-archive stub                                                                                                                                                                                                                           | MVP                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | ✅                 |
-| `notifications` | `/v1/notifications/{push-subscriptions,preferences,session-return-reminder}`, `/v1/internal/cron/{process-jobs,dispatch-daily-reminders}` _(CRON_SECRET)_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Postgres job queue + cron runner, Postmark email, web push, payment dunning + rule-based daily reminders + opt-in session return (~24h)                                                                                                                                                                                                                                                                    | MVP                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | ✅                 |
-| `admin`         | `/v1/admin/{coaches{,/:userId/status,/:userId/verified-claims},users…?q&role,users/:id/roles/:role,audit-log,config…,metrics{,/ai,/economy,/coach-feedback,/sponsorship},users/:id/economy…,users/:id/subscription{,/refund,/cancel},plans{,/:id},content/articles…,content/exams…}` _(fine sub-roles §9: SUPPORT/FINANCE/EDITOR/SUPER_ADMIN; ADMIN/SUPER_ADMIN umbrella)_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | **coach registry** (no approval since APP-089: registration is self-service and writes ACTIVE; admin can move a coach to PENDING/SUSPENDED, which revokes COACH, reinstate, and mark verified claims; the list reports `hasCoachRole` so a crash between the role and row writes is visible rather than remembered) · user mgmt (free-text `q` **and** `role` filter — a role is not part of a name, so "who are my coaches" needs its own predicate) + KVKK, append-only audit log, config registry + feature flags, economy adjust, content editor (articles + exam-calendar), subscription view + record-only refund + cancel, **plan catalog PATCH (FINANCE)**, metrics KPI snapshot (incl. `/sponsorship`: live coach-sponsored seats + that cohort's LLM cost + cost per seat — the number `mentorship.coach.free_seats` is calibrated against, composed in admin because payments and the AI meter must not join each other's tables), **fine admin sub-roles (scoped @Roles + SUPER_ADMIN role assignment)**                                                                                       | MVP                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | ✅                 |
-| `economy`       | `/v1/economy/{balance,ledger,invite,invite/redeem,quests}` _(self; balance/ledger/invites flag-gated; quests always available, NONE/zero rewards while economy is off; ledger returns render-ready title/description)_ · `/v1/admin/users/:id/economy{,/adjust}` _(ADMIN; overview incl. quests)_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | append-only XP/Coin ledger (balance=sum), capped reward engine, **invite→conversion→coin**, **onboarding + daily ritual + streak/effort milestone quests (auto-grant)**, **coin spend→AI chat** (via EconomyService.spend); admin manual adjust; weekly ritual quests pending                                                                                                                              | MVP (light)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | 🟡                 |
-| `ads`           | `/v1/ads/public/placements/:placementId` · `/v1/ads/placements/:placementId` · `/v1/ads/reward-offers/:placementId` · `POST /v1/ads/reward-sessions{,/:id/complete,/:id/close}` _(optional UUID `Idempotency-Key`)_ · `POST /v1/internal/cron/expire-ad-reward-sessions` | Public article-end inventory requires published `contentSlug`; public/authenticated `knowledge.index` requires `family` plus optional `category`/`page` and published editorial descriptions on that page; authenticated `notebooks.overview` / `vision.overview` require verified profile context. Admin-configured Google units, strictest audience treatment, Premium/STAFF ad-free policy, gated limited display and idempotent rewarded Coin sessions/expiry | MVP (web v1; new inventory production gates pending) | 🟡 |
-| `forum`         | Existing zone/thread/post/moderation API + `/v1/forum/hub` · `/v1/forum/feed?scope=relevant\|following&sort=trending\|recent\|top&contentType=posts\|questions&unanswered=true` _(`unanswered` = others' QA with no answer and no accepted post; an empty first `trending` page falls back to `recent`, reported in additive `effectiveSort`)_ · `/v1/forum/trends?scope=relevant\|exam\|general&limit=` · `/v1/forum/tags` · `POST /v1/forum/tag-suggestions` · `/v1/forum/zones/:slug/feed` · `/v1/forum/search` _(threads/questions/zones/tags/public-safe people, max 5 each; legacy QA fields additive)_ · additive thread-create `poll` input · `POST /v1/forum/polls/:pollId/votes` _(single immutable anonymous vote)_ · `PATCH /v1/forum/{threads\|posts}/:id` · `PUT/DELETE /v1/forum/{threads\|posts}/:id/helpful-vote` · `GET /v1/forum/{threads\|posts}/:id/reactions?page=&pageSize=&emoji=` _(visibility-gated, paginated public reactor identities; optional emoji filter)_ · `/v1/forum/zones/:id/members` _(rows carry the member's `displayName`, `username`, `avatarUrl`)_ · `/v1/forum/zones/:id/reports` _(rows carry `excerpt`: the first 160 characters of what was reported)_ · `/v1/admin/forum/{tags,tag-suggestions,featured-thread}` _(EDITOR, audited; featured GET/PUT returns `ForumFeaturedAdminView` with selected `thread` summary)_ · legacy `/v1/forum/feed/following` remains compatible _(flag `forum.enabled`)_                                                   | Zone/membership/thread/post/moderation retained. Main-thread read models always include `poll: ForumPollView                                                                                                                                                                                                                                                                                               | null`; result counts stay hidden until the viewer votes or the poll closes. Discovery V2 adds curated max-3 tags plus moderated custom suggestions, positive QA helpful votes, time+interaction locked owner edits, featured fallback, N+1-free server ranking and versioned opaque cursors. Feed content filtering is additive: `posts`means CHAT+ANNOUNCEMENT and`questions` means QA; trending/top gives unanswered QA a small configurable bonus below one participant weight. Trends aggregate active tagged threads in the configured window and only return public, open zones relevant to the viewer's exam. Search returns only public/open zones, separates QA questions, and consumes identity public service without reading identity tables/PII. Reaction identity lists are resolved only after target visibility checks. Tier-1 verification/coin/C-layer/presence = later | MVP + Discovery V2 | 🟡  |
-| `community`     | `/v1/community/summary` _(self; streak + badges always, XP/level/leaderboard flag-gated on `economy.enabled`)_ · `/v1/community/leaderboard?window=today\|weekly\|all_time` _(self; windowed effort ranking for the full-page tabs; day/week = Europe/Istanbul)_ · `/v1/buddy` _(GET composed view)_ · `/v1/buddy/requests/:username` _(POST)_ · `/v1/buddy/requests/:id{,/accept}` _(POST accept / DELETE decline-cancel)_ · `/v1/buddy` _(DELETE end)_ · `/v1/buddy/nudge` _(POST, 4h cooldown → 429)_ · `/v1/buddy/study-invite` _(POST; birlikte çalışma daveti — nudge cooldown'unu paylaşır)_ · `/v1/buddy/suggestions` _(GET; aynı sınav-türü kohortundan eşleşmemiş aday listesi — /seans keşif)_ · GET `/v1/buddy` active view'a `partnerStudyingNow` (canlı presence) eklendi _(yol arkadaşı v1+keşif+presence, APP-022)_                                                                                                                                                                                                                                                                             | right-column **Emek Panosu** + full-page ranking: read-time XP effort leaderboard (exam-type cohort, effort-only — never net), derived positive badges + level. Pure aggregation — owns no tables, composes identity/coaching/forum/economy public services. rank-movement (▲▼) computed read-time (previous closed period, no snapshot/cron). Redis sorted-set + presence + mahalle + live room = Phase 2 | MVP (effort board) · Phase 2 (social)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | 🟡                 |
-| `mentorship`   | `GET /v1/mentorship/overview` _(COACH; invite code + seats taken out of `mentorship.coach.max_active_students` + the data-scope contract)_ · `POST /v1/mentorship/invite-code` _(COACH; rotate)_ · `/v1/mentorship/students{,?status=ACTIVE\|ENDED}` _(COACH; roster + rule-based risk flags, worst first)_ · `GET /v1/mentorship/students/:studentId` _(COACH; aggregate report + `droppedAssignments`)_ · `POST /v1/mentorship/students/:studentId/assignments` _(COACH; 1..21 tasks in one call — title, subject, `topic`, `coachNote` — written to `plan_tasks` via W2's seam)_ · `POST /v1/mentorship/students/:studentId/assignment-suggestions` _(COACH; a week of AI-drafted homework for the composer — POST because it spends an LLM call and the COACH's quota, throttled 10/min, uncached on purpose since re-asking for a different week is the feature. It WRITES NOTHING: the tasks come back as drafts and the coach still submits them through `POST .../assignments`, so `PlanService.createFromMentorship` stays the single writer of `plan_tasks` and `topic` is forced null because the composer's picker is the only thing that knows this student's exam taxonomy)_ · `POST /v1/mentorship/students/:studentId/brief` _(COACH; AI brief over the report — POST because it spends an LLM call and the COACH's quota, throttled 10/min, cached on the link by report fingerprint; the response carries `delta`, the rule-computed movement since the previous brief, `null` on the first one)_ · `GET /v1/mentorship/students/:studentId/brief-history` _(COACH; the briefs already written in this relationship period, newest first — free, because these rows were paid for once already; bounded by `mentorship.brief.history_limit` and empty after a re-link, which rotates the period)_ · `PUT /v1/mentorship/students/:studentId/note` _(COACH; the coach's standing note, `body: null` clears)_ · `PUT /v1/mentorship/students/:studentId/attention` _(COACH; the "I dealt with this" mark, `{ attended: false }` takes it back — the server evaluates the flags being marked, the body may not name them)_ · `DELETE /v1/mentorship/students/:studentId` _(COACH)_ · `GET|POST /v1/mentorship/templates` _(COACH; saved weekly programs, upsert on `(coach, name)`)_ · `DELETE /v1/mentorship/templates/:templateId` _(COACH)_ · `GET /v1/mentorship/brief` _(COACH; the stored cohort brief — free: no LLM call and no quota, which is why the panel may ask for it on load; empty body when none was ever written)_ · `POST /v1/mentorship/brief` _(COACH; writes one over the whole roster — POST for the same reason the per-student brief is, throttled 10/min, cached per coach by cohort fingerprint)_ · `POST /v1/mentorship/applications` _(any signed-in user, no role — an applicant is by definition not a coach yet; the body carries claims only, `status`/`verifiedClaims` are refused by `.strict()`)_ · `GET /v1/mentorship/applications/mine` _(the applicant's own verdict; empty body when they never applied)_ · `PUT /v1/mentorship/applications/mine` _(the APPROVED coach rewriting the two student-facing lines; 404 on any other status, and the verdict columns are refused by `.strict()`)_ · `POST /v1/mentorship/invitations/{preview,accept}` _(student; code in the BODY, throttled)_ · `GET|DELETE /v1/mentorship/my-coach` _(student)_ · `GET /v1/mentorship/my-coach/data` _(student; the scope contract with the actual figures in it — the snapshot is fetched WITHOUT a mentorship link id, so no coach-authored field can appear; empty body when there is no coach, because then nothing is being shared)_ | Human coach ↔ student link: invite code, double opt-in, roster, transparency view. `@Roles(COACH)` is not authorization on its own — `MentorshipLinkService.requireActiveLink` gates every student-scoped call and grants no admin bypass. Flag: `mentorship.enabled`. The quota is checked on the STUDENT's redemption, so `overview` exists to make it visible to the coach, who is the only one who can act on it. Templates are saved DRAFTS, not a second write path: loading one fills the composer client-side and the coach still submits through `POST .../assignments`, which is what keeps the composer's picker the only gate on a program built against another exam's taxonomy. A coach's own instruction rides on `plan_tasks.coach_note` and is read back only on rows their own live link authored; the student's `description` stays closed to them. Deleted assignments survive in the append-only `mentorship_dropped_assignments` log (FK cascade on the link), so the report shows "assigned but deleted" instead of silence. A coach may also leave one standing note per link, shown on the student's `/my-coach` screen and cleared when the link ends; it is a note, not a thread, and in-app chat stays Phase 3. Becoming a coach runs through `mentorship_coach_applications` — one row per person, where the APPROVED row IS the profile (no second table; what an admin approved is already recorded in the append-only admin audit log). Gated by `mentorship.applications.open`, deliberately independent of `mentorship.enabled` so applications can be collected before the coach surface opens. The approved profile travels to the student on `invitations/preview` and `my-coach` as `coachProfile` (headline + bio + only the claims an admin verified, each with the value that was checked; `null` for a coach granted the role by hand). Text a student will read is refused when it carries contact details (`MENTORSHIP_CONTACT_NOT_ALLOWED`) — Tier-1, on both submit and edit, and never on `note`, which is written for the reviewer. The attention mark closes the intervention loop: a marked student drops out of the roster's needs-attention count AND out of the daily digest's student list, until a flag the mark never covered appears or the mark ages past `mentorship.attention.ttl_days`. `needsAttention` is derived server-side on both the roster row and the report precisely so the panel and the morning email cannot disagree about who is still waiting. The cohort brief sits on top of that same triage rather than replacing it: each line carries the deterministic `riskFlags` beside the model's sentence, and its "new" badge is a set comparison of `studentId:FLAG` pairs against the previous brief — the digest's own rule, shared through `mentorship/domain/risk-pairs.ts` so the two surfaces cannot drift. The model never sees a name or an id (refs only), so an invented reference fails to resolve and is dropped instead of appearing under a real student. Since APP-093 the per-student brief has a memory: `mentorship_student_briefs` stores every brief a model actually wrote (a cache hit adds nothing), and the next one opens with what changed since. The movement is computed by `mentorship/domain/brief-delta.ts` and handed to the model as INPUT; the model never receives its own previous prose, for the reason the prompt already refuses `coachNote` — a model given a sentence agrees with it instead of reading the numbers, and its own last sentence would confirm a drifted reading every week. | Phase 2 |
-| `marketplace`   | `/v1/marketplace/*`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | coach discovery/commission/chat                                                                                                                                                                                                                                                                                                                                                                            | Phase 3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | ⛔                 |
-| (system)        | `/v1/health`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | liveness                                                                                                                                                                                                                                                                                                                                                                                                   | MVP                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | ✅                 |
-
-> APP-091 coach-plan catalog addition (2026-09-09): participant reads use `GET /v1/plan-events`
-> and the backward-compatible `GET /v1/plan-items` aggregate. Coach writes stay behind the W8 gate:
-> `GET /v1/mentorship/plan`, `POST /v1/mentorship/assignments`,
-> `PATCH|DELETE /v1/mentorship/students/:studentId/assignments/:assignmentId`,
-> `PATCH|DELETE /v1/mentorship/assignment-groups/:assignmentGroupId`,
-> `POST /v1/mentorship/events`, `PATCH /v1/mentorship/events/:eventId`, and
-> `POST /v1/mentorship/events/:eventId/cancel`. Every W8 route is COACH-only; student-scoped writes
-> recheck active mentorship links under row lock in the same transaction as the W2 write. Events
-> support single occurrences and bounded DAILY/WEEKLY/MONTHLY series. Timed occurrences schedule
-> the internal `notifications.plan-event-reminder` job; there is no public reminder endpoint.
-
-> Journey Level celebration catalog addition (2026-08-22): authenticated clients read the durable,
-> self-scoped queue with `GET /v1/community/journey-levels/unseen` and idempotently acknowledge one
-> item with `POST /v1/community/journey-levels/celebrated { celebrationId }` (`204`). Community owns
-> `user_journey_level_celebrations`; `economy.enabled=false` returns an empty collection. The
-> `journey_level_unlocked` notification-stream event is only a refresh hint and creates no bell item.
-
-> Content calendar responses add `nextEvent` and `daysUntilNextEvent` without changing existing
-> fields; both are `null` when no verified event remains today or later.
-
-> Content/admin catalog addition: `POST /v1/admin/content/articles/images/upload-url` is EDITOR+
-> and returns a presigned JPEG/PNG/WebP cover/body upload contract (5 MB client/fake-storage cap).
-
-> Adaptive planning catalog addition: `POST /v1/coach/plan-adaptation` returns a Premium,
-> non-mutating seven-day MOVE/ADD preview; `POST /v1/plan-tasks/adapt` applies the user's selected
-> changes atomically under an opaque `planRevision` guard. The AI endpoint never writes coaching
-> tables, and the coaching endpoint never invokes the model. `POST /v1/coach/plan-draft` and
-> `POST /v1/plan-tasks/bulk` remain available for backward compatibility; the current web flow uses
-> the adaptation pair.
-> Addition (2026-11-01): `GET /v1/coach/plan-previews/access` is the canonical read-only offer.
-> `GET .../brief` seeds the Coin wizard without spending. `POST /v1/coach/plan-previews` accepts
-> `{ input: { source: "PLAN", ... }, expectedCost, clientRequestId }` and saves a quoted, idempotent
-> Coin-funded preview. `GET .../:id` returns only the authenticated owner's request (unpaid results
-> stay hidden); `POST .../:id/confirm` settles an already-generated result with `{ expectedCost }`
-> without another model call. A ready request replays without a second debit; other input/locale
-> under the same ID is 409. Pending requests count toward the rolling limit. Provider/invalid
-> output does not debit. Ledger debit and READY publication share one service transaction through
-> Economy's public interface. Default rollout off; approved price 20, Coin limit one/rolling 24h,
-> both admin configurable. Paid rereads work with economy off; plan apply keeps the existing guard.
-> Both Coin POSTs require `Idempotency-Key` matching the body `clientRequestId` or saved path ID.
-> Addition (2026-09-23): `GET /v1/coach/plan-adaptation/brief` seeds the wizard behind the same
-> Premium gate with a coverage line, the verified evidence the coach will read and suggested
-> days/minutes/subjects. It makes no model call and spends no quota. The preview additively returns
-> `usedEvidence` and a backend-written `reason` per change; the apply schema ignores `reason`.
-> Change (2026-09-24): the PLAN body adds `studyWeekdays` (ISO weekdays, 1 = Monday, unique,
-> exclusive with `days`); `minutesPerDay` takes any integer 10-600 instead of the 15/30/60/90/120
-> enum; `focusSubjects` is capped at 30 names instead of 3. Additive for existing clients.
-> The brief's `suggestion` additively carries `weekdays` (ISO weekdays the student studied on most
-> in the last 28 days, `days` of them, or null).
-> Change (2026-10-02): task create/update and adaptation ADD accept optional nullable
-> `durationMinutes` (whole minutes 5–200). Omitted updates retain the value; null clears it.
-> Accepted coach session actions also return the actual `session` DTO, so retries keep its stored duration.
-> Task reads add `durationMinutes` and backend-resolved `sessionFocusMinutes` (explicit duration,
-> usable calendar range, otherwise null for a stopwatch). Custom study sessions accept 5–200 whole minutes.
-> `POST /v1/study-sessions` also accepts `preset: stopwatch` without `focusMinutes`; supplied
-> minutes are rejected for that preset. It retains null planned minutes and records actual seconds on
-> manual completion, with the existing 24-hour credit/resume ceiling and minimum-focus rules.
-> Personalized plan ADD titles omit minutes and return their allocated duration separately.
-
-> Change (2026-09-30): apply optionally accepts `source: PLAN`, limiting the new program to three
-> additions per date independently of existing tasks. Omitted source, MOOD and SESSION preserve
-> the previous capacity rule. Preview minute budgets apply to new tasks only; existing tasks are
-> additional workload. Date, revision and duplicate-title checks remain mandatory.
-
-> Community → coach bridge catalog addition (2026-07-31):
-> `GET /v1/forum/threads/:id/coach-bridge` returns only public-safe structural eligibility;
-> `POST /v1/coach/chat{,/stream}` additively accepts `contextCommunityThreadId`, mutually exclusive
-> with `conversationId`; `GET /v1/coach/conversations/:id/messages` additively returns nullable
-> Analysis improvement V1 adds `POST /v1/coaching/analysis/plan-task` with a verified baseline and expected focus. Stale baseline/focus returns `409 ANALYSIS_FOCUS_CHANGED`; a pending task with the same baseline/focus is reused. Analysis reads add `notebookStats`, signal `sharePercent`, and `improvementCycle`. Notebook entry listing accepts `examId`, `mockExamId`, and `topicRef` under the existing user scope. Plan task origins add `ANALYSIS` without changing existing origin variants.
->
-> `origin` and `communitySource`. Admin forum tag create/update additively accepts nullable
-> `coachIntent`. The feature is gated by `forum.coach_bridge.enabled` and sends no forum content or
-> identity data to the model.
-
-> Community → coach → plan return-loop addition (2026-08-01):
-> `POST /v1/coach/conversations/:id/plan-tasks` reuses the normal create-plan-task body and resolves
-> all provenance server-side; foreign/legacy conversations, disabled bridge and unavailable sources
-> return 404. `PlanTaskDto.origin` is nullable/additive (`COMMUNITY_COACH` for verified bridge tasks,
-> `null` for normal/legacy rows) and survives edits, moves and status changes. The endpoint never
-> invokes the LLM or spends quota/coin; no cross-module FK is introduced.
-
-> Personalized Mentor V2 catalog addition (2026-08-02):
-> `GET/PATCH /v1/coach/profile`; paginated `GET`, item `PATCH/DELETE`, and bulk `DELETE` under
-> `/v1/coach/memories`; and `POST /v1/coach/messages/:id/action` are additive self-only APIs.
-> Chat reply/history add `coachMessageId`, one optional `action/actionStatus`, and
-> `personalization.{strategyVersion,intent,tone,usedEvidence}` while preserving legacy fields.
-> Accepted/completed actions make regenerate return 409. Structured fact content never enters
-> analytics; expired transient facts are swept by CRON_SECRET-protected
-> `POST /v1/internal/cron/cleanup-coach-memory`.
-
-> Daily continuity catalog addition (2026-07-22): `GET /v1/coaching/today` remains the sole daily
-> action contract and `DailyNextActionDto` is unchanged. `GET /v1/coaching/weekly-review` additively
-> returns nullable `suggestedTask { title, subject }`; `GET /v1/admin/metrics` additively returns
-> `coaching { activeUsers7d, repeatUsers7d, repeatRate7d }`. No endpoint was added. Legacy
-> `POST /v1/coach/plan-draft` and `POST /v1/coach/ghost-narration` remain for backward compatibility;
-> current web surfaces do not add new consumers. (2026-09-22: `/analiz` consumes `ghost-narration`
-> again, one request per latest exam for premium students; contract unchanged.)
-
-> Weekly recap catalog addition (2026-07-26): no endpoint was added. `GET /v1/coaching/today`
-> additively returns backend-computed nullable `weeklyRecapPeriod` including `status`, so clients
-> can suppress `EMPTY` teasers without a second request; `GET /v1/coaching/weekly-review`
-> additively returns `recap`, qualifying-session/completed-task evidence and taxonomy-verified
-> aggregate `plan` data. Existing `status` and cached `POST /v1/coach/weekly-review` contracts
-> remain available; `READY` now also includes the configured completed-plan-task threshold.
-
-> Mentor Wrapped catalog addition (2026-07-27): no endpoint or migration was added.
-> `GET /v1/coaching/weekly-review` additively returns `recap.weeklyTitle`,
-> `rhythm.{longestSessionMinutes,longestActiveRun,days,subjectBreakdown}` and discriminated
-> `highlights[]`. All selection, tie-breaking and localization happen in the API; clients only
-> compose screens from these facts. Weekly titles are ephemeral recap labels, not badge inventory.
-> The cached `POST /v1/coach/weekly-review` now uses prompt v4 and remains gate-compatible.
-> `GET /v1/coaching/today.weeklyRecapPeriod` is resolved independently from the live countdown:
-> after an official exam date passes, `countdown` may be `null` while the completed-week recap
-> period remains available. The object also carries the backend-resolved `examId`; dashboard links
-> must reuse it instead of resolving the current countdown calendar again.
-
-> PARTIAL story unlock addition (2026-07-29): `GET /v1/coaching/weekly-review` additively returns
-> `recap.nextStorySignals[]`, containing every missing `FOCUS_SESSION`, `PLAN_TASK`, and `MOCK_EXAM`
-> channel in backend-selected display order with localized `title` and `message`. `READY` and `EMPTY`
-> return an empty array. Nullable `recap.nextStorySignal` remains backward-compatible and mirrors the
-> first item. Clients render the supplied copy and must not reproduce the selection policy.
-
-> Mentor Wrapped V1.3 addition (2026-07-29): no endpoint or migration was added.
-> `GET /v1/coaching/weekly-review` additively returns nullable
-> `rhythm.focusTimeBand { id, label, focusMinutes, qualifyingSessionCount, message }` and
-> `rhythm.peakFocusDay { date, focusMinutes, message }`. Both use qualifying sessions and
-> Europe/Istanbul; the peak day is independent of the two-highlight cap. The cached
-> `POST /v1/coach/weekly-review` keeps its response/gate contract but uses prompt v6 with an
-> explicit aggregate evidence object instead of serializing the full review DTO.
-
-> Status: ✅ live · 🟡 partially live (some slices shipped) · ⏳ coming in MVP · ⛔ later phase. A new endpoint → update this catalog + OpenAPI + the matching feature-doc timeline.
-
-> Notebook collection catalog addition (2026-08-25): coaching owns paginated
-> `GET/POST /v1/coaching/notebooks`, owned item `GET/PATCH/DELETE
-/v1/coaching/notebooks/:id`, and page `GET/PUT
-/v1/coaching/notebooks/:id/pages/:index`. The protected `MISTAKE` notebook is system-first;
-> `CUSTOM` notebooks are free-form note/ink/sticker books with an optional taxonomy-verified
-> subject. Legacy `/v1/coaching/notebook/**` remains backward-compatible and delegates to the
-> system notebook.
-
-> Notebook contents addition (2026-10-03): `GET /v1/coaching/notebooks/:id/contents` and the
-> system-notebook alias `GET /v1/coaching/notebook/contents` return `NotebookContentsDto`
-> `{ notebookId, pages[] }`: one line per page that has anything on it (`pageIndex`, `noteTitle`,
-> `topicName`, `subjectRef`, `subjectName`, `entryCount`, `dueCount`, `stickerCount`, `inkCount`).
-> It feeds the "İçindekiler" page a notebook opens on. Titles are the student's own first line or
-> their cards' filing, never generated. Two reads per call whatever the book's size; ink is only
-> counted. No migration.
-
-> Study-room catalog addition (2026-08-25): authenticated, feature-gated `GET/POST
-> /v1/study-rooms`, `POST /v1/study-rooms/join`, member detail `GET /v1/study-rooms/:id`,
-> owner update/close `PATCH/DELETE /v1/study-rooms/:id`, invite rotation `POST
-> /v1/study-rooms/:id/code`, self-leave `DELETE /v1/study-rooms/:id/members/me`, and owner member
-> removal `DELETE /v1/study-rooms/:id/members/:userId`. The room labels an existing personal
-> study session; it does not introduce a second timer or chat transport.
-
-> **Health probes** (`/v1/health`, `/v1/health/ready`) use the **terminus** response shape
-> (`{ status, info, error, details }`), not the `ApiError` envelope — they are infra for orchestrators,
-> outside the API contract. The global filter passes them through unchanged.
-
-- `GET /v1/coaching/today` also carries `focusGoal { goalMinutes, focusMinutesToday }` and `focusingNow` (anonymous aggregate count, null under the server-side visibility threshold) — APP-022.
-- `GET /v1/coaching/today.canLightenPlan` (2026-11-03) is server-computed: at least one pending
-  task on today's Europe/Istanbul date whose origin is not `MENTORSHIP`. The mood CTA consumes
-  this field. Plan defaults, past-date locks, mood and adaptation share Istanbul midnight;
-  existing session/activity/streak aggregates keep their UTC boundaries.
-- `GET /v1/coaching/weekly-review?examId={uuid}` — completed-week rule summary + recap status,
-  effort/rhythm aggregates, taxonomy-verified focus and plan breakdowns, backend-selected
-  highlights, nullable weekly title, focus-time band and peak-focus day (JWT, Free).
-- `POST /v1/coach/weekly-review` — cached Premium/coin-unlocked narration + deterministic
-  suggested task (JWT).
-
-### Notebook review progress (2026-09-08)
-
-Authenticated self-service, free-tier endpoints owned by coaching:
-- GET /v1/coaching/notebook/review-summary: examId/subjectRef/topicRef/errorType and days=7|30;
-  returns distinct reviewed, latest-missed active, newly completed and currently due counts.
-- GET /v1/coaching/notebook/review-history: same filters plus page/pageSize; newest answers first.
-- GET /v1/coaching/notebook/entries/:id: owned question for a history link.
-- GET /v1/coaching/notebook/entries additionally accepts due=true, sort=review, and revisit=true
-  with days=7|30. Filters run before pagination.
-- POST /v1/coaching/notebook/entries/:id/review accepts optional reviewId UUID alongside solved.
-  A retry with the same ID and answer replays the recorded outcome; a changed answer is rejected.
-  Legacy requests without reviewId remain accepted. This does not change the review ladder.
-
-### Mentorship follow-ups (2026-09-12)
-
-All routes require JWT and the mentorship/followups feature flags. Coach routes require COACH;
-student routes expose only shared decisions for the current active relationship period.
-
-| Method and route | Contract |
-| --- | --- |
-| GET `/v1/mentorship/followups/availability` | Feature availability; authenticated, usable while the followups flag is off. |
-| GET `/v1/mentorship/followups` | Paginated coach history or ACTIONABLE inbox; optional studentId, view, page, pageSize. Filtering/sorting precede pagination. |
-| POST `/v1/mentorship/students/:studentId/followups` | Create an immutable action/decision with operationId retry protection and optional closed predecessor. |
-| PATCH `/v1/mentorship/students/:studentId/followups/:followupId` | Version-checked reschedule, complete, or cancel of an open record. |
-| GET `/v1/mentorship/my-coach/followups` | Paginated shared decisions; private title/note are absent from the response schema. |
-| PUT `/v1/mentorship/my-coach/followups/:followupId/response` | Version-checked ACCEPTED or CHANGE_REQUESTED response on an open decision. |
-
-Missing/foreign/ended/previous-period resources return 404; stale mutations or changed operationId
-payloads return 409. Dates are Istanbul calendar dates. Existing mentorship endpoints are unchanged.
-
-### Mentorship weekly reports (2026-09-14)
-
-All routes require JWT, COACH, `mentorship.enabled`, `mentorship.weekly_reports.enabled`, and an
-active link in the current relationship period. `weekStart` is an optional completed Istanbul-week
-Monday on reads and required on mutations.
-
-| Method and route | Contract |
-| --- | --- |
-| GET `/v1/mentorship/students/:studentId/weekly-reports/preview` | Live current/previous snapshot, evidence catalog and brief state; never starts AI. |
-| GET `/v1/mentorship/students/:studentId/weekly-reports/brief` | Reads the current source/language/prompt brief status. |
-| POST `/v1/mentorship/students/:studentId/weekly-reports/brief` | Queues explicit generation with `weekStart` and `sourceFingerprint`; returns 202. |
-| POST `/v1/mentorship/students/:studentId/weekly-reports/finalize` | Freezes a snapshot with operation-id replay, stale-source conflict and serial correction versioning. |
-| GET `/v1/mentorship/students/:studentId/weekly-reports` | Paginated finalized archive for the current relationship period. |
-| GET `/v1/mentorship/students/:studentId/weekly-reports/:reportId` | Full immutable coach record, including a matching coach-only brief. |
-| GET `/v1/mentorship/students/:studentId/weekly-reports/:reportId/share` | Print-safe projection; omits evidence, brief, questions, private notes and mood. |
-
-Unknown AI evidence references invalidate the generated output. Finalized rows remain immutable;
-corrections insert a new version linked to the latest version. Source changes return 409 and require
-a fresh preview. Ended or renewed links do not reveal an earlier relationship period. OpenAPI and
-the generated `@mentor/api-client` operations use the `mentorship-weekly-reports` tag.
-
-### Economy reward receipts (2026-09-17)
-
-Pending quest rewards (2026-11-01): `GET /v1/economy/quests` returns `QuestProgressView[]` with an
-optional backend-localized `rewardPendingMessage`. A met step blocked by Coin earning conditions
-has `completed: false` and `action: null`, with no committed grant; the user can claim it after
-conditions allow, using the current configured reward. The field disappears after grant and while
-economy is disabled. Closed quests still complete with `NONE`/zero rewards and no later backpay.
-OpenAPI and the generated client expose the full typed quest response. Admin progress reads do not
-evaluate or grant rewards.
-
-Weekly analysis access (2026-10-31): authenticated `GET /v1/economy/deep-analysis?examId=<uuid>`
-returns `DeepAnalysisView`; `POST` accepts `{ examId }` and returns the view (201). Additive fields
-`purchased` and `generationAvailable` separate durable exam/week ownership from current generation
-capacity. New purchases reserve AI budget before the Coin debit, returning 503 `AI_BUDGET_EXCEEDED`
-without spending when capacity is unavailable. Repeated purchases never debit again. AI-off returns
-404 `AI_DISABLED`; economy-off returns 404 `ECONOMY_DISABLED`. Both offer and narration use the capped
-weekly narration policy; legacy `deep.analysis` feature ID mirrors it. A paid right survives generation
-failure and permits matching cached narration over budget. See [economy](../features/economy.md).
-
-Coin use catalog (2026-10-31): authenticated `GET /v1/economy/uses` returns `EconomyUsesView`
-(`coinConfirmed`, three `items`). Each item has a stable feature ID/status, nullable Coin cost,
-Premium inclusion, `canOpen` and optional daily allowance/owned-capacity data. States distinguish
-insufficient Coin, exhausted limits, unavailable AI, missing exam, unready review and already-owned
-rights. Economy-off returns 404 `ECONOMY_DISABLED`; reads never spend, reserve, grant or generate.
-This supplements the legacy balance usage estimates without changing their contract.
-
-Permanent notebook capacity (2026-10-31): authenticated `GET /v1/economy/notebook-slots` returns
-`NotebookSlotView` with the configured Coin price, purchased slot count, sale cap, balance and
-server-derived status. `POST` requires UUID `Idempotency-Key` and
-`{ expectedCost, expectedPurchasedSlots }`, returning the updated view (201). A stale quote is 409;
-insufficient confirmed Coin or the sale cap is 422; economy-off is 404. References are scoped to the
-authenticated user. Existing capacity remains available when sales close. Settings are managed
-through the existing audited `/v1/admin/config/:key` endpoint. See [economy](../features/economy.md).
-
-- GET /v1/economy/rewards/unseen?page=1&pageSize=20: authenticated self-scoped Paginated<EconomyLedgerEntryView>.
-- POST /v1/economy/rewards/seen: { ledgerIds: UUID[] }, 1–100 IDs, idempotent 204; IDs belonging to other users remain untouched.
-- GET /v1/economy/weekly-chest: self-scoped `WeeklyChestView` (state PROGRESS/READY/OPENED, periodKey, carriedOver, current/target, 7 days, reward or null, optional rewardPendingMessage, summary when READY/OPENED). Last week's unopened chest comes first. Available while economy is disabled (reward null).
-- POST /v1/economy/weekly-chest/open: { periodKey: "YYYY-Www" } → 200 `WeeklyChestView`; idempotent (stamps `revealed_at` once, acks the chest's reward receipt, never grants). 404 `WEEKLY_CHEST_NOT_FOUND` for another user's, an uncompleted, or an older week's chest; 400 for a malformed key.
-- Balance retains existing fields and adds optional usage (configured costs and alternative message/analysis counts). Ledger history remains immutable.
-
-
-### Weekly mentorship preparation (2026-09-21)
-
-`POST /v1/mentorship/students/:studentId/weekly-reports/brief` accepts optional
-`coachContext` (trimmed, at most 500 characters). The private brief adds optional
-`preparation` (version 1: focus/progress with evidence IDs, uncertainty, question,
-conditional nextStep) and `coachContext`, retaining `findings` for older clients.
-Preview exposes the bound context and generation identity. Identical evidence,
-context, language and prompt reuse ready/pending work; different pending input is
-409. Finalization does not accept context changes. Share/PDF responses exclude
-both preparation and context. Authorization and explicit quota-bound generation
-remain unchanged.
-
-
-### 2026-10-15: Additive phone-requirement responses
-
-`GET /v1/mentorship/coach-registration/mine` adds `inviteBlockedReason` (`EMAIL_UNVERIFIED`,
-`PHONE_UNVERIFIED`, `NOT_ACTIVE`, or null). Clients render this authoritative decision instead of
-inferring permission from contact ownership. `GET /v1/subscription` adds
-`trialEligibility.phoneVerificationRequired` for current trial disclosure. Existing routes, request
-bodies and machine error codes remain compatible; SMS availability never implies a requirement.
-
-### 2026-11-03: Shared exam catalogue, ALES and DGS
-
-Existing profile `examType`, content family queries, geo search and announcement audience inputs
-accept `ALES` and `DGS` alongside existing codes. Valid values derive from `@mentor/types`
-`EXAM_TYPES`; no new catalogue endpoint or admin management surface. Exam variants remain
-KPSS-only for the prepared group. `GET /v1/admin/metrics` adds `users.byExamType.ales` and `.dgs`
-while preserving existing keys. Families without target datasets return only cities from geo
-search, never another family's programs. OpenAPI and the generated client enums are refreshed.
+> Canonical context: [`AGENTS.md`](../../AGENTS.md) · Backend: [`backend.md`](./backend.md).
+> A single API (NestJS `/v1`) serves `apps/web`, `apps/admin`, and Phase 2 mobile → **versioned & backward-compatible** (§8).
+
+---
+
+## 1. Versioning & OpenAPI
+
+- All routes live under the **`/v1`** prefix (`https://api.<domain>/v1`).
+- **Additive policy:** Additive changes (new optional field or new endpoint) **never bump** the version. Breaking changes require `/v2` while keeping `/v1` alive for mobile compatibility.
+- **Contract codegen:** OpenAPI spec (`/v1/docs` in dev, `pnpm --filter @mentor/api openapi:export`) drives `@mentor/api-client` (`pnpm --filter @mentor/api-client generate`). Never hand-write client endpoint contracts.
+
+---
+
+## 2. URL & Resource Naming
+
+- **Plural, kebab-case nouns:** `/v1/study-sessions`, `/v1/info-articles`, `/v1/mock-exams`, `/v1/study-rooms`.
+- **Shallow nesting:** `/v1/study-sessions/{id}`, `/v1/users/{id}/subscription`.
+- **Sub-resource actions:** `POST /v1/mock-exams/{id}/analyze`, `POST /v1/plan-tasks/adapt`.
+- **IDs & Query Params:** UUID path parameters; pagination (`?page=1&pageSize=20`, max `100`) and filters (`?examType=KPSS`) in query string.
+
+---
+
+## 3. HTTP Methods & Status Codes
+
+| Case | Status Code |
+|---|---|
+| `GET` / `PATCH` / `POST` success | `200` |
+| `POST` resource created | `201` |
+| `DELETE` / `PUT` with no response body | `204` |
+| Validation error (Zod) or invalid input | `400` |
+| Unauthenticated / invalid token | `401` |
+| Forbidden (role, entitlement, or feature gate) | `403` |
+| Not found (or foreign/hidden resource) | `404` |
+| State conflict / stale revision / idempotency mismatch | `409` |
+| Business rule / unprocessable entity (e.g. invalid coupon) | `422` |
+| Rate limit or daily/monthly quota exceeded | `429` |
+| Feature/provider disabled or global budget cap reached | `503` |
+
+---
+
+## 4. Envelopes, Localization & Computation
+
+- **Error Envelope:** Always `ApiError { code, message, details? }` (`@mentor/types`).
+  - `code` is a stable machine identifier (`VALIDATION_ERROR`, `PAYMENT_PREMIUM_REQUIRED`, `AI_CHAT_QUOTA_EXCEEDED`).
+  - `message` is **already localized** by the backend (`Accept-Language: tr | en`) following [`docs/copy/voice.md`](../copy/voice.md). Clients display `message` directly.
+- **Paginated List Envelope:** `Paginated<T> { items, total, page, pageSize }`. No unbounded list endpoints.
+- **Backend-Only Logic:** All business calculations (net scores, streaks, promotion discounts, XP/Coin balances, trial eligibility, readiness flags) happen on the server. Responses are returned ready to render.
+- **Dates & Money:** UTC ISO-8601 strings (`2026-06-07T13:00:00Z`) and integer minor units (`priceMinor`, kuruş) — never floats.
+- **Health Probes:** `/v1/health` and `/v1/health/ready` use the `@nestjs/terminus` shape for orchestrators and bypass the `ApiError` filter.
+
+---
+
+## 5. Security & Reliability Contracts
+
+- **Auth:** `Authorization: Bearer <accessJWT>` (`sid`-bound; verified against active session/account state). Refresh tokens use `httpOnly` cookies (`/v1/auth/refresh` for web, `/v1/auth/admin/refresh` for admin) with transactional rotation and family revocation.
+- **Idempotency:** Required `Idempotency-Key` UUID header on Coin/money mutations and provider webhooks.
+- **Tenancy & RLS:** Guard/Policy + Postgres `FORCE ROW LEVEL SECURITY` (`withUserContext` / `withServiceContext`).
+- **Uploads & Bounded Trial Media:** Feature endpoints issue one-use `/v1/storage/uploads/:ticket` capabilities (validated for session, owner, byte cap, and magic bytes). In bounded trial mode, media serves through session-verified `/v1/storage/media/private?grant=...` and `/v1/storage/media/public/*key`.
+
+---
+
+## 6. Service Catalog (`/v1` Bounded Contexts)
+
+| Module | Key Route Prefixes | Core Responsibilities |
+|---|---|---|
+| **Public Availability** | `GET /v1/app/availability` | Anonymous `no-store` booleans (`aiCoach`, `social`, `forum`, `studyRooms`, `humanCoaching`, `studentPurchases`, `coachPurchases`, `studentSignup`, `coachSignup`, `coachRegistration`, `economy`, `invitations`). |
+| **`identity`** (`W1`) | `/v1/auth/*`, `/v1/auth/admin/*`, `/v1/users/me/*`, `/v1/users/:username/{follow,followers,following}`, `/v1/waitlist` | JWT + refresh rotation, Google OAuth + explicit account linking, SMS OTP phone verification (`/v1/users/me/phone/*`), profile & avatar upload, one-way follow graph, KVKK export/erasure, invite-only waitlist gate (`APP-138`). |
+| **`coaching`** (`W2`) | `/v1/coaching/{today,public/pulse,analysis,weekly-review,mood-checkins,vision}`, `/v1/coaching/weekly-recaps/*`, `/v1/plan-tasks/*`, `/v1/study-sessions/*`, `/v1/mock-exams/*`, `/v1/coaching/notebooks/*` | Daily ritual (`today` with `canLightenPlan`), weekly plan & atomic adaptation (`POST /v1/plan-tasks/adapt`), focus sessions (Pomodoro & `stopwatch`), mock exam net engine, photo-logged study notebooks (`MISTAKE` + `CUSTOM`, review ladder, `contents`), Weekly Recap (`Wrapped` + deep analysis + follow-up task), Vision Board & YKS preference simulation prototype. |
+| **`ai`** (`W3`) | `/v1/coach/{access,chat,chat/stream,conversations/*,profile,memories/*,messages/:id/action}`, `/v1/coach/{daily-greeting,mood-reflection,plan-adaptation,plan-previews/*,weekly-review,ghost-narration,vision-note}`, `/v1/mock-exams/:id/categorize-photo` | Puhu AI companion (daily + monthly quota on `/v1/coach/access`), consent-based structured memory, traceable evidence snapshots, `Puhu’yla planla` (`plan-adaptation` for Premium, `plan-previews` for Coin), vision topic classification (never solves), verified official-info data cards, global monthly USD cap & provider kill-switch. |
+| **`content`** (`W5a`) | `/v1/content/exams/*`, `/v1/content/info-articles/*`, `/v1/content/programs/search`, `/v1/content/universities/:id/campus-experience` | 5-exam catalog (`KPSS · YKS · LGS · ALES · DGS`, KPSS variants), subject/topic taxonomy, verified exam calendar, public SEO `/bilgi` articles, and official YKS program catalog. |
+| **`payments`** (`W4`) | `/v1/plans`, `/v1/subscription/{,checkout,cancel,offers}`, `/v1/webhooks/payments`, `/v1/internal/cron/expire-subscriptions` | Subscription billing (`fake` / `iyzico`), `EntitlementService` + `PremiumGuard`, serialized paid/trial checkout reservations, phone-optional or phone-verified carded trials, purchase channel flags (`web` / `mobile` / `redirectToMobile`), append-only transaction ledger, natural-expiry cron sweeper. |
+| **`promotions`** (`W4+`) | `POST /v1/subscription/offers`, `/v1/admin/promotions/*` | Single-winner discount engine (`ANYONE`, `NEW_USER`, `ACTIVE_DAYS`, `WIN_BACK`, `INVITED`), coded coupons & automatic offers, frozen redemption pricing (`charged + discount === list`), `previewByRule` for invite landings. |
+| **`ads`** (`W4+`) | `/v1/ads/public/placements/:id`, `/v1/ads/placements/:id`, `/v1/ads/reward-offers/:id`, `/v1/ads/reward-sessions/*`, `/v1/admin/ads/*` | Google AdSense display placements (content-revision verified for public/community QA, announcements, and blog) and idempotent rewarded Coin sessions. Ad-free for Premium/STAFF. |
+| **`notifications`** (`W5b`) | `/v1/notifications/*`, `/v1/internal/cron/{process-jobs,dispatch-daily-reminders}` | In-app notification center + SSE stream, `Resend` transactional emails, web push, admin announcements, payment dunning & win-back nudges. |
+| **`admin`** (`W6`) | `/v1/admin/{users,coaches,plans,promotions,ads,content,forum,config,metrics,audit-log,waitlist}/*` | RBAC back-office (`SUPER_ADMIN`, `FINANCE`, `CONTENT_EDITOR`, `MODERATOR`, `SUPPORT`), append-only audit log, runtime `config_overrides`, KPI & sponsorship cost metrics, user/coach/waitlist management. |
+| **`economy`** (`W7a`) | `/v1/economy/{balance,ledger,quests,uses,notebook-slots,deep-analysis,weekly-chest/*,rewards/*,invite,invite/redeem}` | Append-only `XP`/`Coin` ledger, daily/weekly/milestone quests, 12-level Night Journey, Weekly Chest (`PROGRESS`/`READY`/`OPENED`), Coin unlock catalog (`uses`, `notebook-slots`, `deep-analysis`), friend invite codes & conversion rewards with refund clawback. |
+| **`forum`** (`W7b`) | `/v1/forum/{hub,feed,trends,tags,tag-suggestions,search,zones/*,threads/*,posts/*,polls/*}` | Exam-scoped Q&A and discussion zones, max-3 curated tags, helpful votes, polls, reactions, community-to-Puhu coach bridge (`coach-bridge`), and moderator tools. |
+| **`community`** (`W7c`) | `/v1/community/{summary,leaderboard}`, `/v1/study-rooms/*`, `/v1/buddy/*` | Shared top-down study rooms (`LIBRARY`/`CAFE`/`HOME`, room codes `MASA-`), effort-only XP leagues (`today`/`weekly`/`all_time`), study buddy pairing & nudges. |
+| **`mentorship`** (`W8`) | `/v1/mentorship/{overview,invite-code,students/*,templates/*,brief,followups/*,applications/*,invitations/*,my-coach/*}` | Human coach workspace: student roster & risk flags, 1–21 task batch assignment (`plan_tasks.coach_note`), AI homework suggestions & cohort/student briefs, weekly reports (preview/finalize/share), follow-up decisions, self-service coach registration, and sponsored student seats. |
+
+> For detailed endpoint payloads, state machines, and edge cases, see the corresponding document in [`docs/features/`](../features/README.md).
