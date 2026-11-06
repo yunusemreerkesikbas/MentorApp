@@ -1,11 +1,11 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
-import { deriveLevel } from "@mentor/core";
 import type {
   AuthUser,
   PlanDto,
   PromotionOffersView,
   TodayPanelResponse,
 } from "@mentor/types";
+import { EMPTY_ECONOMY_BALANCE } from "./economy.fixture";
 import { IDLE_STREAK } from "./streak.fixture";
 
 /**
@@ -222,7 +222,7 @@ async function mockDashboard(page: Page, options: Options = {}) {
       });
     }
     if (method === "GET" && path === "/v1/economy/balance") {
-      return json(route, { xp: 0, coinConfirmed: 0, coinPending: 0, level: deriveLevel(0) });
+      return json(route, EMPTY_ECONOMY_BALANCE);
     }
     if (method === "GET" && path === "/v1/economy/rewards/unseen") {
       return json(route, { items: [], total: 0, page: 1, pageSize: 20 });

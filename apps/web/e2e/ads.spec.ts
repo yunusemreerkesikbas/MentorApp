@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
-import { deriveLevel } from "@mentor/core";
 import type { AuthUser, TodayPanelResponse } from "@mentor/types";
+import { EMPTY_ECONOMY_BALANCE } from "./economy.fixture";
 import { IDLE_STREAK } from "./streak.fixture";
 
 const sessionIds = [
@@ -323,7 +323,7 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
       return json(route, dailyQuests);
     }
     if (method === "GET" && path === "/v1/economy/balance") {
-      return json(route, { xp: 0, coinConfirmed: rewardedCount * 5, coinPending: 0, level: deriveLevel(0) });
+      return json(route, { ...EMPTY_ECONOMY_BALANCE, coinConfirmed: rewardedCount * 5 });
     }
     if (method === "GET" && url.pathname === "/v1/economy/rewards/unseen") {
       return json(route, { items: [], total: 0, page: 1, pageSize: 20 });
