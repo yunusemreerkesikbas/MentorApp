@@ -106,11 +106,10 @@ describe("account erasure (e2e)", () => {
       .expect(200);
 
     // --- Coaching traces (regression: existing erasure must keep working) ---
-    const today = new Date().toISOString().slice(0, 10);
     await request(app.getHttpServer())
       .post("/v1/plan-tasks")
       .set(asA)
-      .send({ title: "Erasure görevi", taskDate: today, description: "gizli plan notu" })
+      .send({ title: "Erasure görevi", description: "gizli plan notu" })
       .expect(201);
     await request(app.getHttpServer())
       .post("/v1/coaching/mood-checkins")

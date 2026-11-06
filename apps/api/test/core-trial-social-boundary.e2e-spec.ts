@@ -140,7 +140,7 @@ describe("core-trial social boundary (real HTTP and Postgres)", () => {
   it("preserves manual plan and notebook creation", async () => {
     const server = app.getHttpServer();
     const plan = await request(server).post("/v1/plan-tasks").set(auth())
-      .send({ title: "Kısa tekrar", taskDate: new Date().toISOString().slice(0, 10) });
+      .send({ title: "Kısa tekrar" });
     expect(plan.status).toBe(201);
     const notebook = await request(server).post("/v1/coaching/notebooks").set(auth()).send({ title: "Tekrar" });
     expect(notebook.status).toBe(201);
