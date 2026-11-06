@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UserRole } from "@mentor/types";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 import { PlanService } from "../src/modules/coaching/application/plan.service";
+import { addDays, todayInIstanbul } from "../src/modules/coaching/domain/date.util";
 
 /**
  * W8 mentorship e2e — the coach↔student link against real Postgres (RLS active).
@@ -26,9 +27,7 @@ describe("mentorship (e2e)", () => {
 
   const auth = (who: string) => ({ Authorization: `Bearer ${token[who]}` });
   const http = () => request(app.getHttpServer());
-  /** Today + n days as yyyy-mm-dd — the week grid never assigns into the past. */
-  const isoDaysFromNow = (n: number) =>
-    new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+  const isoDaysFromNow = (days: number) => addDays(todayInIstanbul(), days);
 
   /**
    * Poll one person's inbox for a notification matching `match`. The mentorship feedback listener
@@ -627,7 +626,7 @@ describe("mentorship (e2e)", () => {
         (
           await http()
             .get(url)
-            .query({ from, to: isoDaysFromNow(7) })
+            .query({ from, to: addDays(from, 7) })
             .set(auth("coach"))
         ).status,
       ).toBe(400);
@@ -743,9 +742,7 @@ describe("mentorship (e2e)", () => {
     });
 
     it("refuses an assignment beyond the horizon", async () => {
-      const farOff = new Date(Date.now() + 200 * 86_400_000)
-        .toISOString()
-        .slice(0, 10);
+      const farOff = isoDaysFromNow(200);
       const res = await http()
         .post(`/v1/mentorship/students/${userId.student}/assignments`)
         .set(auth("coach"))
