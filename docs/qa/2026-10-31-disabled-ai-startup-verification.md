@@ -2,7 +2,7 @@
 
 Implementation: 2026-10-30/31, Europe/Istanbul. The owner approved the written
 [design](../plans/2026-10-30-disabled-ai-startup-design.md) and
-[inline plan](../superpowers/plans/2026-10-30-disabled-ai-startup.md).
+disabled-AI startup plan (`docs/core/deployment.md`).
 This extends the core-trial candidate `035f92171b81d47fc7d93763eacdd0cfb773db27`.
 It is source/local verification, not hosted acceptance or publication.
 
@@ -122,5 +122,5 @@ DNS or billing write occurred during this follow-up.
 
 The owner declined extra staging cost/development, approved the
 [aggregate storage design](../plans/2026-10-31-bounded-trial-storage-design.md) section by section,
-and requested its [implementation plan](../superpowers/plans/2026-10-31-bounded-trial-storage.md).
+and requested its bounded-trial storage implementation (`docs/core/storage-r2.md`).
 That future storage code is not implemented or certified by this CI; plan review is still required.

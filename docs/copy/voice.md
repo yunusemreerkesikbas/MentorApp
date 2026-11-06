@@ -1,230 +1,140 @@
-# Voice & tone — Mentor
+# Voice & Copy Constitution — Puhu & Companion
 
-> Product personality: [`PRODUCT.md`](../../PRODUCT.md) (Warm · Encouraging · Steady).
-> This file is the **copy constitution** for student-facing copy: notifications, email, push,
-> ritual toasts, coach chrome, onboarding, paywall, empty states, and API errors. Agent and human
-> writers read it before adding a template. AI system prompts follow the same two narrators.
+> **Canonical voice guide** for every Turkish and English string in `apps/web`, `apps/api`
+> (`ERROR_MESSAGES`, AI system prompts, notification templates, transactional email copy), and
+> editorial microcopy.
+> Grounded in [`sinav-kocluk-roadmap.md`](../../sinav-kocluk-roadmap.md) §0 ("yalnız değilsin")
+> and [`DESIGN.md`](../../DESIGN.md).
 
-## Dual register
+---
 
-One product, two narrators. Pick **before** writing; never mix in the same message.
+## 0. Who is speaking
 
-| Register | Speaks when | Feels like | Emoji |
-|---|---|---|---|
-| **Puhu** | Celebration, empty inbox, first-visit empty (plan, community, analysis, notebook, session, study room, buddy, vision card, achievements, weekly league), daily invite, economy invite overlay (eyebrow, headline, subtitle, progress, redeemed state), `/davet` landing (title, discount, body, buttons, accepted), invite notifications (`inviteJoined`, `buddyRequestedViaInvite`), streak milestone, streak-rescue success overlay, “remind me tomorrow”, task-done toast, quest-complete toast (`quest_reward_*`), empty coach chat, FAB nudge, onboarding slides/greeting, paywall delight headlines, weekly recap host, achievement collection chrome (`how_to_earn`, `earned`, `earned_on`, showcase aria) | A lively companion nearby. First-person plural (“we”). The mascot is felt, not named on every line. | At most one |
-| **Companion** | Coach chat (LLM + rule fallbacks), mood check-in, low mood, streak broken, streak-rescue offer/insufficient (`streak_rescue_hint` … `insufficient`), notebook review, payment, official/admin broadcast, form/API errors, filter/search empty, rights ledger, quest cards (title/badge) and ledger quest lines, quest sheet intro (`quests_subtitle`), optional rewarded-ad offer (`ads.rewarded`), knowledge/calendar empty, invite disclosure line (`redeem_disclosure*`), invite errors (`INVITE_*` in `errors.json`, `redeem_failed`, the `/davet` dead-link and load-failure cards), coach access gate (`coach.gate` default/insufficient), deep-analysis insufficient (`analysis.deep.insufficient`) | Unnamed, calm, “I’m here.” Invitation, never a scold. | None in ritual copy; LLM: at most one, and only in a light moment |
+One soul, **two registers**. Puhu is the study companion owl, never a teacher, parent, boss, or
+cold corporate tool.
 
-Distress / crisis copy (`coaching.mood.SERIOUS_DISTRESS`, 112) is **untouchable** — do not rewrite for wit.
-
-## Topluluk: enerjik Puhu (2026-10-08)
-
-The community screens (web `community.*`: Keşfet, Akış, rooms, details, profile, saved, Haftalık lig)
-speak in a **Duolingo-like Puhu**: short, warm, cheering. Product decision after the Topluluk Tur 2 canvas.
-
-- Headings, empty states, CTAs, cheers and rank banners are Puhu. One `!` per sentence, at most one emoji
-  per line, never in an `aria-label`. “Harika gidiyorsun!”, “Sen de el uzat!”, “Bekleyen soru kalmadı! 🎉”.
-- The leaderboard is **Haftalık lig** (title follows the tab: Bugünün ligi, Tüm zamanların ligi). Placement
-  may be said (“Ligde 14. sıradasın”); the cheer is always about effort and never about others.
-- Still banned here: ranking shame, league demotion (“ligden düştün”), bottom-of-the-list or loss-aversion
-  lines, guilt. Errors, reports, moderation (“Şikâyetler”, “Oda yönetimi”) and payment stay companion.
-
-## Davet: enerjik Puhu (2026-10-25)
-
-The invite surfaces speak in the same **Duolingo-like Puhu**: the card in Ayarlar (`economy.invite_*`), the
-`/davet/PUHU-…` landing (`invite_landing.*`) and the two inviter notifications (“{name} davetinle geldi!”).
-Same rules as above: short, warm, one `!` per sentence, at most one emoji per line, none in an `aria-label`.
-
-- **Say what lands.** “20 Coin”, “%30 indirim”, never “hak düşer” or “ödül”. The numbers come from the API
-  (`economy.invite.reward_coin`, the live INVITED promotion), not from the string. If the discount is not live
-  the sentence drops it; never promise a discount the paywall will not show.
-- **Stay companion:** the disclosure line (“Davet eden kişi katıldığını görecek. Premium'a geçersen ona Coin
-  düşer.”), every error (`INVITE_*`, `redeem_failed`, “Bu davet bağlantısı çalışmıyor.”) and anything about
-  payment. Calm, no emoji, no “!”.
-- **Never name who paid.** Joined friends may be named (they typed the code); Premium conversions are a count
-  only (“1 kişi Premium'a geçti”). No FOMO (“kaçırma”), no guilt toward a friend who has not joined.
-
-## Landing: enerjik Puhu (2026-10-31)
-
-The public `/` (`landing.*`) is told by **Puhu** in the same **Duolingo-like** voice as Topluluk
-(user's call, 2026-10-31; it replaces the calm, no-`!` landing rule of 2026-10-28): the hero, the
-notes, the margin scribbles, the sections and the dawn. `/koclar` (`coaches.*`) speaks to
-professionals, so it stays plain and gets a single `!`, on the closing title.
-
-- **Short and concrete.** A title says one benefit in plain words, often a verb chain or a short
-  question and its answer: "Odanı seç, süreni kur, başla!", "Takıldın mı? Topluluğa sor!",
-  "Görevleri bitir, XP topla, seviye atla!". One `!` per sentence, not on every title. No emoji.
-- **The night city is the picture, not the copy.** The art keeps the windows; the words stop leaning
-  on "pencere / ışık / gece". One wink is allowed, the hero: "Işığın yanıyorsa, yalnız değilsin."
-  (every lit window is someone studying). The career stop says
-  "Bu oda boş. Senin olsun mu?" → "Hoş geldin, komşu!". Facts and buttons stay plain: "Son 24
-  saatte {n} kişi burada çalıştı.", "Bu alanla başla", door plates with bare names ("Masa").
-- **Scribbles are Puhu's own asides**, lowercase and concrete: "selam, ben Puhu!", "bugün 80
-  dakika", "sıradaki: geometri".
-- **Still banned:** promises we cannot back ("gerisi kolay", "garanti"), poetic filler ("Her emek bir
-  ışık yakar"), FOMO and guilt.
-- **Name the exams once, then say "sınav".** (2026-11-01, owner's call: a visitor must see at a
-  glance that their exam is covered.) The supported exams appear in three places only: the hero
-  label "KPSS · YKS · LGS · ALES · DGS", the FAQ "Hangi sınavlara…" answer, and the page title +
-  description (plus the blog's meta description, which lists the same families as its filter).
-  Everywhere else the copy says "sınav". Add an exam here only when onboarding offers it, in
-  `EXAM_CATALOG` order (ALES and DGS joined 2026-11-04, after APP-132 added them).
-- **Say what it is, first.** The hero lead names the product before anything else: "Sınava
-  hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı: …" (2026-10-28, user's call; it also
-  carries the search phrase). "Yapay zekâ destekli" describes the product, not a free AI coach.
-- **Premium is said where AI is shown.** The coach demo ends with "Bu bir örnek cevap. Yapay zekâ
-  koç Premium'da." and the FAQ answers "ücretsiz mi?". The Plan note (window 4, Puhu's magic loop) carries no
-  Premium line: the owner's call, 2026-11-03. Never promise a trial here: the web purchase
-  channel is flag-gated.
-- **The AI coach is Puhu.** (2026-11-04, owner's call, landing and app.) Call the AI coach "Puhu",
-  never a second name; say "yapay zekâ" once per block ("Puhu, yapay zekâ koçun") so nobody
-  mistakes it for a person. Plain "koç/koçun" means the human coach. Turkish writes "yapay zekâ",
-  never "AI", badges included; English keeps "AI". The feature button is "Puhu’yla planla".
-- **The Premium sheet is the one place that offers the trial.** (2026-11-03, owner's call.) It
-  renders only while the AI coach and student purchases are on, so "7 gün ücretsiz dene" is
-  backed whenever it shows. Puhu title ("Sınav yolunda süper gücün hazır!", the paywall's
-  headline), then short plain titles that name live Premium features (no sub-lines; never the
-  weekly chest, which everyone gets), a plain ledge and "İstediğin an
-  iptal edersin." No price (the plan prices are not final), no FOMO, no free-versus-Premium put-down.
-- **Coin on the landing: what lands, never AI.** (2026-11-03, owner's call.) The quests card says
-  how Coin comes in ("Bugün çalış" +10, five active days +100). The Gece Yolculuğu Coin tab
-  names three things it opens: "Seriyi dondur", "+1 defter", "Haftalık hikâye", with their prices as
-  fixed copy of the config defaults. Coach chat and "Puhu’yla planla" stay out of that list, so
-  "Yapay zekâ koç Premium'da" stays true. No line about Premium earning XP instead of Coin.
-- **Stay companion:**
-  - the coach demo's canned replies (they show the coach's voice);
-  - the FAQ answers about data, KVKK, payment and what the AI does not do;
-  - the cookie card.
-- **No numbers we cannot back.** The live count comes from the API and hides below its threshold.
-  Demo cards (seats, league, minutes) are illustrations, never claims.
-
-## Açma seçimi (Coin veya Premium): enerjik Puhu (2026-11-03)
-
-The shared unlock choice speaks in the same **Duolingo-like Puhu** as Topluluk (owner's call,
-2026-11-03). Pilot: the weekly recap access card (`analysis.recap.ownership.*`); the plan draft,
-notebook capacity and streak freeze sheets follow when they adopt the pattern. Coach chat stays out
-(no Coin amounts in the chat zone).
-
-- **Puhu:** the card intro, the choice heading, row titles and captions, the gift, the "Coin falls
-  short" cheer and the allowance-used line. One `!` per sentence, no emoji, never in an `aria-label`:
-  "Hangi yoldan açalım?", "170 Coin daha, hikâye senin!", "İki hikâyeyi de açtın, harika!".
-- **Stay plain (companion, no "!"):** price and balance ("Bakiyen 320 → 70 Coin"), the confirm and
-  cancel buttons, payment ledges ("7 gün ücretsiz dene", "Premium'u incele"), what was or was not
-  spent ("Coin ya da hak harcanmadı."), errors.
-- **Say what lands:** "250 Coin", "+10", "+100", from the API; never "ödül" or "hak kazan".
-- **Still banned:** FOMO ("kaçırma"), guilt about a short balance, pressure toward Premium.
-
-## Haftalık lakap: enerjik Puhu (2026-11-04)
-
-The weekly recap title is a **nickname** ("Bu haftaki lakabın"), not a codename. Two words, about 16
-letters at most, saying what the student did with a wink they would share: "Seri Canavarı", "Odak
-Makinesi", "Korkusuz Denemeci". No space or fantasy metaphors, no gendered words (Kral/Kraliçe),
-nothing violent, no score promises ("Net Avcısı"). The line under it is concrete and cheering.
-
-## Seviye adları: enerjik Puhu (2026-11-04)
-
-The 12 journey levels are mixed identity names whose tone climbs: humble and funny at the start
-(Civciv, Çaylak), momentum in the middle (Durdurulamaz), grand at the top (Şampiyon, Fenomen, Efsane).
-Every name fits "Sen bir ___sın"; no places or moments. A level never reuses a weekly nickname or
-community badge word (Seri, Avcı, Odak). Level-up is "Seviye atladın!"; the guide is "Seviye Yolu".
-
-## Bekleme listesi: enerjik Puhu (2026-11-05)
-
-The waitlist modal and CTAs speak in the energetic Puhu voice ("Çok yakında · Yerini şimdiden
-ayıralım!"). The modal never mentions invitation, restriction or retention, and (user decision
-2026-11-05) carries no "Aydınlatma metni" link. Those legal facts live only in the KVKK
-aydınlatma text (`LEGAL_COPY.kvkk`, "Bekleme Listesi" section).
-
-## Başarılar ve rozetler: enerjik Puhu (2026-11-04)
-
-Achievement titles say what you did, short and concrete, sometimes with one `!`: "İlk Seans Tamam!",
-"Bir Hafta Tam!", "Yanlışa Rövanş". The celebration eyebrow cheers ("Rövanş zamanı!"), the body is one
-or two sentences. Chrome: "Başarıların", "Nasıl açılır?", "Açıldı", "Yeni başarı açıldı!". No light
-metaphor ("ışık yandı", "uyanır", "seninle"). Unlock hints stay plain instructions. Community badges
-are identities: Maratoncu, Gece Kuşu, Moral Kaynağı, Yeni Komşu.
-
-## Coach chat vs chrome
-
-- **Coach chat (LLM + mood/motivation/nextAction/calibration fallbacks)** uses the **companion** register. First person: “Ben buradayım.” Address the student as **sen**. Short sentences. No guilt. Same mouth as a serious mood reply.
-- **Puhu stays in chrome only:** empty-chat prompt, first-visit empty states, FAB nudge, onboarding slides and “Merhaba {name}”, paywall delight headlines, weekly recap host, economy invite overlay and `/davet` landing (all Puhu except the disclosure line and the error cards), invite notifications, quest-complete toast, streak-rescue success overlay, achievement collection labels (`how_to_earn`, `earned`, `earned_on`). Achievements are “açıldı”, not light and not an economy prize: no Coin or “ödül” words (2026-11-04). Do not let the chat model invent a third character.
-- **Filter/search empty, the rights ledger, quest cards, quest sheet intro (`quests_subtitle`), streak-rescue offer and insufficient-coin copy, optional rewarded-ad offer (`ads.rewarded`), knowledge/calendar gaps, rank banners (effort, not place), coach access gate (`coach.gate` default/insufficient), deep-analysis insufficient (`analysis.deep.insufficient`), and API errors (`errors.json`) are companion.** Short, sen, no jokes. Payment and official facts stay companion. Admin operator UI is out of this constitution. Prize-verb FOMO (“hak kazan”, “earn a right”) stays out of these lines; coin is a non-monetary **hak**. Keep “kazanılmış hak” / “earned right” as the noun for a right already in hand.
-- **The LLM must not sign as Puhu.** No bird jokes, wings, mascot name, or “we’re Puhu” in generated chat, mood reflection, daily greeting, session reflection, ghost narration, vision notes, or plan-draft prose. Weekly recap narration is the exception (Puhu host, chrome).
-
-## Rules
-
-- Address the student as **sen**. Formal *siz* is banned (including forum “sorunuza”).
-- Title: one short line (~40 characters). Body: at most two sentences.
-- Concrete action or emotional company — never “işleminiz gerçekleştirildi”.
-- English is the same voice, not a SaaS calque of the Turkish.
-- Official exam facts, KVKK, and payment truth stay companion register. **No jokes.**
-
-## Banned
-
-- Ranking shame, loss-aversion (“serin gitti, herkes senden önde”)
-- Crying-mascot guilt, exclamation storms
-- Corporate “lütfen kontrol ediniz” and form-command “kontrol et” / “Check the format”
-- Ranking / bottom-of-the-list language
-- Paraphrasing official dates (guardrail §4)
-- Em dash (—) in student copy. Use a period, comma, or colon. Keep the en dash in numeric ranges (2–4).
-- AI slop: antithesis openers (“X değil, aslında Y”), stacked “buradayım” as rhythm, filler that sounds generated
-
-## Before → after
-
-| Before | After | Register |
+| Register | Where it speaks | Default voice |
 |---|---|---|
-| Seriniz sıfırlandı / …sona erdi. Bugün yeniden başlayabilirsin! | Yarın yine seninle / Seri durdu, yol durmadı. Bugün küçük bir adım yeter. | Companion |
-| Sorunuza cevap geldi / Sorduğun soruya yeni bir cevap yazıldı. | Cevabın geldi / Sorduğun şeye biri el uzattı. | Puhu |
-| Henüz bildirim yok / Planına başladığında burada görürsün | Puhu henüz fısıldamadı / Bugün bir adım atınca burası uyanır. | Puhu |
-| Bugüne henüz görev eklemedin. Küçük bir adım bile yeterli. | Bugün henüz bir iz yok. Küçük bir görevle burası uyanır. | Puhu |
-| Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin. | Bir şey ters gitti. Biraz sonra bir daha deneyelim. | Companion |
-| Ödeme işlemin tamamlanamadı. Lütfen abonelik ayarlarını kontrol et. | Ödeme tamamlanamadı / Premium’un durmasın diye ayarlardan bir bakman yeterli. | Companion |
-| Gönderinize yorum yapıldı | Yorumun var / Paylaşımına birinin sözü düştü. | Puhu |
-| Sizden bahsedildi | Adın geçti / Bir gönderide senden bahsedildi. | Puhu |
-| Yeni bir başarı kazandın / {title} artık başarı koleksiyonunda. | Yeni başarı açıldı! / {title} başarın açıldı! | Puhu |
-| Görev tamamlandı. | Bu da tamam. | Puhu |
-| Görev tamamlandı / {reward} kazandın | Bu da tamam / {reward} seninle. | Puhu |
-| Günlük ritüelini tamamla, XP kazan. | Ritüel bugün burada. Başlangıç adımları tamamlanınca hak düşer. | Companion |
-| Yarın seni nazikçe hatırlatacağız. | Yarın nazikçe yanına uğrarız. | Puhu |
-| Henüz seans yok. İlk seansını başlat. | Henüz bir seans izi yok. İlk odakla burası uyanır. | Puhu |
-| Henüz hareket yok. | Henüz bir hareket düşmedi. | Companion |
-| Bu sınav için makaleler yakında eklenecek. | Bu sınav için doğrulanmış makale henüz yok. | Companion |
-| Lütfen tekrar dene. / Kaydedilemedi. | Biraz sonra bir daha deneyelim. / Şimdi kaydolmadı. | Companion |
-| Henüz bir şey kaydetmedin. | Henüz bir iz yok. Kaydedince burada durur. | Puhu |
-| Arkadaşını davet et, ödül kazan! | Arkadaşını getir, birlikte çalışın! / %30 indirim arkadaşına, 20 Coin sana. Üstelik birlikte çalışırsınız! | Puhu |
-| Davetiniz kabul edildi, ödül hesabınıza yansıdı. | Ayşe davetinle geldi! / Premium'a geçerse sana Coin düşer. | Puhu |
-| Davete katılın, indirim kazanın! | Ayşe seni davet etti! / Premium'da %30 indirim seni bekliyor. PuhuKoç'ta birlikte çalışalım mı? | Puhu |
-| Kayıt olup aktif olunca ikinize de hak düşer. | Davet eden kişi katıldığını görecek. Premium'a geçersen ona Coin düşer. | Companion |
-| Geçersiz davet. Lütfen kontrol edin. | Bu davet bağlantısı çalışmıyor. / Gönderen kişiden yeni bir bağlantı isteyebilirsin. | Companion |
-| Davet ödülü / Görev ödülü | Davet hakkı / Görev hakkı | Companion |
-| Serini kurtaralım mı? / serini kısalttı, geri al | Günü dondur / Dün boş kaldı. Coin ile dondurursan seri yerinde durur. | Companion |
-| Serin kurtarıldı! 🔥 | Serin yerinde. / Kaçırılan gün donduruldu. Yol durmadı. | Puhu |
-| Reklamı tamamla, Coin kazan / Ödül doğrulanamadı. Lütfen… | Reklamı bitirince Coin hak düşer. / Hak doğrulanamadı. Tekrar deneme… | Companion |
-| Sıralamada yerini al / Podyumdasın | Lige katılmak için bu haftanın ilk XP'si yeter. / Bu hafta ligi sen sürüklüyorsun, harikasın! 🔥 | Puhu (Topluluk) |
-| Sıralama / Emek panosu (sayfa başlığı) | Haftalık lig / Weekly league (sekmeye göre: Bugünün ligi, Tüm zamanların ligi) | Puhu (Topluluk) |
-| Koç için hak kazan / Profilden … hakkı kazanabilirsin | Koç için hak / Profilden görev veya davet. Sohbet hakkı orada düşer. | Companion |
-| Görev tamamlayarak kazanabilirsin. / Complete quests to earn more. | Görevlerden hak düşebilir. / A right can land from quests. | Companion |
-| Nasıl kazanılır? / {title} kazanıldı | Nasıl açılır? / {title} açıldı | Puhu |
-| Formatını kontrol et. / Check your inbox. | Kullanıcı adı uymadı. / Gelen kutuna bir bak. | Companion |
-| İstikrar da bir kazanç; öne geç / Consistency is a win too | İstikrar yerinde; küçük bir adım yeter. / Consistency held; one small step is enough. | Companion |
-| Soru kökünü iki kez okumak burada net kazandırır. / pays off here | Soru kökünü iki kez okumak burada işe yarar. / helps here | Companion |
-| Hak kazanım sınırı doldu. / The rights-earning limit | Hak sınırı doldu. / The rights limit is used up. | Companion |
+| **Puhu (enerjik, Duolingo gibi)** | App chrome, landing (`/`), welcome (`/hosgeldin`), onboarding, empty states, CTAs, celebrations, level & achievement ceremonies, weekly nicknames, community (`Topluluk`, `Lig`, ` Çalışma Odası`), friend invite (`/davet`), coin unlock choice, waitlist (`/bekleme-listesi`), banners | **Lively, energetic, warm, cheering.** Short sentences, concrete verbs, playful momentum. Celebrates effort and presence without ever shaming absence. |
+| **Companion (sakin yoldaş)** | AI coach chat (`/koc/sohbet`), low-mood check-in (`LOW`/`EXHAUSTED`), broken streak / freeze / recovery, form & API errors, payment / checkout / trial consent, account / KVKK / deletion, official exam facts & countdown | **Calm, steady, grounded.** "Ben buradayım." No exclamation marks, no mascot jokes, no pressure when the student is stressed, paying, or reading legal/official facts. |
 
-## Where copy lives
+**Rule of thumb:** If the student is **building momentum, exploring, celebrating, or joining peers**
+→ **Puhu** (energetic, cheering, Duolingo-like). If the student is **struggling, configuring
+payments/privacy, hitting an error, or reading official exam data** → **Companion** (calm, clear,
+unhurried).
 
-- In-app / push templates: `apps/api/src/i18n/locales/{tr,en}/notifications.json`
-- Achievement inbox lines: `apps/api/src/i18n/locales/{tr,en}/achievements.json` (`notification.*`)
-- Email subjects/bodies: `notifications.json` → `email.*` (HTML skeleton stays in the Postmark adapter)
-- Coach fallbacks: `apps/api/src/i18n/locales/{tr,en}/coaching.json` (`mood.*` except `SERIOUS_DISTRESS`, `motivation.*`, `nextAction.*`, `mentorV2.calibration`)
-- AI chat persona: `mentor-prompt.ts`. `coachSystemBase` in `ai.constants.ts` still feeds the other coach prompts. Prompts that produce student text follow the same em-dash ban as chrome.
-- Web chrome: `apps/web/messages/{tr,en}.json` (coach, plan/community/analysis/notebook, session, study room, economy ledger empty + invite overlay + `/davet` landing (`invite_landing.*`) + quest sheet intro / quest-complete toast, streak-rescue offer + success, optional rewarded-ad offer, weekly league empty + rank banners, knowledge, vision, achievements empties + collection chrome, coach access gate, deep-analysis insufficient)
-- API errors: `apps/api/src/i18n/locales/{tr,en}/errors.json` (student keys; leave `ADMIN_*` for operators)
-- Ledger row labels: `apps/api/src/i18n/locales/{tr,en}/economy.json` (`ledger.*`; companion, hak not ödül)
-- Quest card titles, badges, and ledger quest lines: `economy.json` (`quests.*`; companion. `{target}` resolves on the card; ledger strips `{target}`. `{days}`/`{count}` come from the quest id.)
-- Admin broadcasts: free text; the announcements form offers companion-register examples
+---
 
-Do not hardcode student-facing sentences in listeners or ledger mappers. Resolve through `NotificationsCopyService`
-(or `NotificationsService.createFromTemplate`) and store `data.templateKey` + `data.args` so the
-inbox can re-localize on read. Ledger titles and quest card copy resolve through `economy.json` on read (`Accept-Language`).
+## 1. The 8 rules (binding on every string)
 
-## Out of this constitution’s product chrome
+1. **Always *sen*, never *siz*.** One-to-one companionship.
+   - Plural `-ler/-lar` appears only when addressing a room or group together (`Selam millet`).
+   - Legal/KVKK disclosures may quote statute names in third person (`KVKK kapsamında…`) while keeping instructions in *sen* (`Onayını istediğin zaman geri çekebilirsin`).
+2. **Never "lütfen".** It creates customer-service distance. Say directly what to do:
+   - ❌ `Lütfen geçerli bir e-posta girin.` → ✅ `E-posta adresini kontrol et.`
+3. **Never blame, shame, or induce FOMO.**
+   - Never imply the user failed (`Başarısız`, `Yetersiz`, `Hatalı giriş yaptınız`, `Serini bozdun!`).
+   - Never use loss-aversion or countdown pressure (`Son şans!`, `Kaçırma!`, `Arkadaşların seni geçiyor!`).
+   - When something breaks, the **system** owns the hiccup (`Kaydedemedik, tekrar dener misin?`, `Bağlantı koptu, tekrar bağlanıyoruz.`).
+4. **Celebrate effort and return, not rank.**
+   - Praise starting, showing up, finishing a block, or coming back after a break (`Bugün de buradasın!`, `İlk adım tamam!`).
+   - Never call a score "bad" or "low". Call it a baseline or starting point (`Başlangıç noktan hazır`).
+5. **Short, concrete Turkish (and natural English).**
+   - Headings: 2–6 words. Body/helper: 1–2 short sentences. Buttons: 1–3 words, infinitive or first-person action (`Seansa başla`, `Plana ekle`, `Haftanı Puhu’yla kur`), never imperative bark (`GÖNDER`, `KAYDET` in all-caps).
+   - No corporate/bureaucratic filler (`işleminiz gerçekleştirilmiştir`, `tarafımızca`, `mevcut değildir`, `bulunmamaktadır`).
+6. **Punctuation & emoji discipline.**
+   - **No em dash (`—`)** in user-facing copy. Use a period, comma, or colon.
+   - **No triple dots (`...`)** for drama; use `…` only on in-flight loading states (`Kaydediliyor…`).
+   - **Exclamation marks (`!`):** Natural in the **Puhu** register (max **one `!` per sentence**, never `!!`). **Zero `!`** in the **Companion** register (errors, low mood, broken streak, payments, official facts).
+   - **Emoji:** Optional in Puhu surfaces where defined (max one per line, never in `aria-label`, never replacing status words).
+7. **AI coach naming ("Puhu" vs "koç").**
+   - The AI coach is named **Puhu** across all surfaces (`Puhu, yapay zekâ koçun`, `Puhu’yla planla`, `Puhu’ya sor`, `Puhu’nun yapay zekâ notu`).
+   - Plain **"koç"** or **"koçun"** is reserved for the **human coach** (`mentorship`, `/kocum`, `/koclar`, `"Koçundan"` tasks).
+   - In **Turkish**, write **"yapay zekâ"** (with circumflex), **never `"AI"`** (including badges and labels). In **English**, keep `"AI"` (`Puhu, your AI coach`).
+   - Inside AI coach chat replies (`modules/ai/prompts`), Puhu speaks in the **Companion** register: warm, first-person (`Ben buradayım`, `Birlikte bakalım`), without third-person self-reference or bird/owl jokes.
+8. **Exam names & official facts.**
+   - When listing supported exams on public/marketing surfaces (landing hero, meta tags, FAQ, blog description), name all five in catalog order: **`KPSS · YKS · LGS · ALES · DGS`**.
+   - Official dates, application windows, and placement rules come **only** from verified data cards (`ContentModule`), never paraphrased into chatty approximations (`yaklaşık 3 ay kaldı` is forbidden; render the exact date + day count calmly).
 
-Admin operator UI. Same dual register; do not invent a third narrator.
+---
+
+## 2. Register guide by surface
+
+### 2.1 Puhu register (energetic, Duolingo-like standard)
+
+Puhu is upbeat, proud of the student, and full of life. Sentences are punchy; verbs invite action.
+
+- **Landing (`/`) & Welcome (`/hosgeldin`):**
+  - Hero: `"Işığın yanıyorsa, yalnız değilsin."` with exam eyebrow `"KPSS · YKS · LGS · ALES · DGS"`.
+  - Section titles and interactive notes speak with cheerful energy (`"Haftanı Puhu kursun!"`, `"Görevleri bitir, XP ve Coin topla!"`, `"Hoş geldin, komşu!"`).
+  - `/koclar` (for human coaches) stays warm and direct, with a single `!` on its closing invite.
+- **Daily Panel, Quests & Weekly Chest (`/panel`):**
+  - Greeting, quest completion, and the weekly chest (`"Hazır!"`, `"Sandığı aç"`) feel rewarding and tactile.
+  - "Puhu’yla planla" (`plan.*`) frames weekly planning as a shared ritual (`"Haftanı Puhu’yla kur"`).
+- **Community, Study Rooms & League (`/topluluk`, `/topluluk/oda/[id]`):**
+  - Cheerful peer energy (`"Selam millet! Bugün ne çalışıyoruz?"`, `"Masaya otur"`, `"Birlikte çalışınca zaman başka akıyor!"`).
+  - League (`Lig`) celebrates climbing and active days (`"Bu hafta ligde ter dökenler!"`) without shaming anyone at the bottom (no bottom rankings or demotion threats).
+- **Levels, Weekly Nicknames & Achievements (`/profil`, ceremonies):**
+  - **12 Level names:** Concrete objects and places on a night-to-dawn journey (`Kıvılcım`, `Mum`, `Fener`, `Masa Lambası`, `Pusula`, `Harita`, `Kamp Ateşi`, `Kule`, `Ufuk`, `Şafak`, `Güneş`, `Zirve`) with energetic one-line subtitles.
+  - **Weekly nicknames (`weekly-nickname.ts`):** Playful, earned titles based on the week's rhythm (`Gece Nöbetçisi`, `Sabah Kuşu`, `Maratoncu`, `Demir Seri`, `İlk Kıvılcım`, etc.).
+  - **Achievements & Badges:** "Işık Yandı" ceremony uses celebratory Puhu copy (`"Yeni rozet açıldı!"`, `"Emeğinin izi burada!"`).
+- **Friend Invite (`/davet`, `/davet/[code]`):**
+  - Warm, shared-table framing (`"Arkadaşını masaya çağır, birlikte çalışın!"`). Rewards are framed as earned study rights (`hak` / `Coin`), never cash.
+- **Coin Unlock Choice (AI & feature unlocks):**
+  - Energetic framing for spending earned Coin (`"Emeğinle açtın!"`, `"Coin ile aç"`). Coin is never called money/price (`ücret`, `satın al`, `bakiye` are forbidden; use `Coin`, `hak`, `aç`).
+- **Waitlist (`/bekleme-listesi`, invite-only gate):**
+  - Welcoming, club-door warmth (`"Sıranı ayırdık!"`, `"Davet kodun varsa hemen gir"`), never cold rejection.
+
+### 2.2 Companion register (calm, steady standard)
+
+When vulnerability, friction, money, or legal clarity is on screen, Puhu drops the exclamation marks and sits quietly beside the student.
+
+- **AI Coach Chat (`/koc/sohbet`) & Reflections:**
+  - Steady, attentive, non-judgmental. Validates feelings before suggesting small, doable steps (`"Bugün yorgun olman çok doğal. Sadece 15 dakikalık tek bir blokla başlayalım mı?"`).
+- **Low Mood (`LOW`, `EXHAUSTED`) & Broken Streak:**
+  - Zero guilt. If a streak resets or a freeze is used: `"Seri sıfırlandı ama çalıştığın günler seninle. Bugün yeni bir ilk gün."`
+- **Errors, Rate Limits & Empty Searches:**
+  - Plain, helpful, system-owned (`"Şu an bağlantı kuramadık, birazdan tekrar dene."`, `"Buna uyan bir sonuç yok."`, `"Şimdi kaydolmadı."`).
+- **Payments, Checkout & Trial Disclosures (`/abonelik`, Paywall footer):**
+  - Transparent and exact. Pre-contractual consent (`ön bilgilendirme`) states exact first charge, trial length, and renewal price without hype or fake strikethrough discounts.
+
+---
+
+## 3. Forbidden words & replacements
+
+| ❌ Never write | ✅ Write instead | Why |
+|---|---|---|
+| `Lütfen … girin / deneyin` | Direct *sen* verb (`… gir`, `… tekrar dene`) | Customer-service distance |
+| `İşleminiz başarısız oldu` | `Kaydedemedik, tekrar dener misin?` | Bureaucratic + blames user |
+| `Bulunmamaktadır / Mevcut değildir` | `Henüz yok` / concrete next step | Officialese |
+| `AI koç` / `AI notu` *(in Turkish)* | `Puhu, yapay zekâ koçun` / `Puhu’nun yapay zekâ notu` | TR uses "yapay zekâ" and names the AI coach Puhu |
+| `Koç` *(when meaning the AI)* | `Puhu` | Plain "koç" = human coach (`mentorship`) |
+| `Bakiye / Satın al / Ücret` *(for Coin)* | `Coin / Coin ile aç / Hak` | Guardrail §4 #3: Coin is non-monetary |
+| `Sınırsız sohbet` | Exact daily allowance or benefit description | Coach chat has a daily fair-use cap |
+| `Son şans! / Kaçırma!` | Plain validity date (`30 Eylül tarihine kadar geçerli`) | No FOMO or loss-aversion |
+| `—` *(em dash)* | `.` or `,` or `:` | AI-slop punctuation |
+
+---
+
+## 4. Before → After examples
+
+| Surface | ❌ Before (old / generic) | ✅ After (canonical) | Register |
+|---|---|---|---|
+| Landing hero | `Sınav hazırlık platformu` | `Işığın yanıyorsa, yalnız değilsin.` | Puhu |
+| Plan wizard CTA | `Koçla planla` | `Puhu’yla planla` | Puhu |
+| Quest section | `Günlük görevleriniz` | `Görevleri bitir, XP ve Coin topla!` | Puhu |
+| Community room | `Odaya katılmak için tıklayınız` | `Masaya otur, birlikte çalışalım!` | Puhu |
+| Broken streak | `Serini kaybettin! Baştan başla.` | `Seri sıfırlandı ama emeğin duruyor. Bugün yeniden başlıyoruz.` | Companion |
+| API / Save error | `Lütfen daha sonra tekrar deneyiniz.` | `Şimdi kaydolmadı. Birazdan tekrar dener misin?` | Companion |
+| Paywall consent missing | *(Disabled grey button)* | Live CTA → focus checkbox + `Devam etmek için ön bilgilendirme kutusunu işaretle.` | Companion |
+
+---
+
+## 5. Where copy lives
+
+- **Web (`apps/web`):** `apps/web/messages/tr.json` and `apps/web/messages/en.json` (mirrored keys, checked in CI). Always read via `useTranslations` / `getTranslations`.
+- **Backend (`apps/api`):**
+  - Error messages: `apps/api/src/common/errors/error-messages.ts` (`tr` + `en` per `ErrorCode`).
+  - AI prompts: `apps/api/src/modules/ai/prompts/` (system prompts enforce Companion register + KVKK summary rules).
+  - Notification & email templates: `apps/api/src/modules/notifications/` (`tr` + `en`).
+- **Editorial seeds:** `docs/editorial/` and `apps/api/src/modules/content/`.

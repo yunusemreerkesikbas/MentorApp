@@ -1,426 +1,81 @@
-# Production deployment
+# Deployment, Operations & Closed-Trial Runbook
 
-> Source preparation only. PR #156 does not provision services, change DNS, accept billing
-> terms, deploy production or merge itself. Domain ownership is confirmed. The selected email
-> provider is now Resend; production infrastructure, account setup and live acceptance remain outstanding.
+> Render (`api`, `web`, `admin` + cron jobs) · Neon Postgres (`pgvector` + RLS) · Cloudflare (DNS, WAF, R2, Turnstile, Access).
+> Related: [`docs/core/deferred-staging.md`](./deferred-staging.md), [`docs/core/security-release-checklist.md`](./security-release-checklist.md), [`docs/core/storage-r2.md`](./storage-r2.md).
 
-## Domains
+---
 
-| Surface | Production URL | Resource |
-|---|---|---|
-| Web | `https://puhukoc.com` | `mentor-web` |
-| Single API | `https://api.puhukoc.com/v1` | `mentor-api` |
-| Admin | `https://admin.puhukoc.com` | `mentor-admin` |
-| Trial media | `https://api.puhukoc.com/v1/storage/media/...` | Private EU buckets behind the API |
+## 1. Topology Overview
 
-Use first-level subdomains for Universal SSL coverage. Keep existing host-only Secure,
-HttpOnly, SameSite=Lax cookies; do not add a shared cookie Domain attribute. Web canonical
-URLs and sitemap use the apex; admin sends `X-Robots-Tag: noindex, nofollow, noarchive`.
-Noindex does not replace authentication or Cloudflare Access.
-
-## Selected release: closed web cohort (2026-11-05)
-
-Run the web trial with named tester accounts until the mobile app is ready. Keep public account
-creation closed (`signup.enabled=false`) and keep `ADMIN_ACCESS_MODE=disabled`. Leave Cloudflare
-Zero Trust unactivated because checkout asks for permission to bill usage above the Free limits.
-Use the dedicated trial database and verify that its sign-in-capable accounts belong to approved
-testers before admission. Prepare accounts through a restricted operator procedure after recording
-each tester's actual signup acknowledgements. Let testers set their own passwords through the existing
-email password-reset flow and keep self-service registration closed during enrollment.
-
-### Deferred operator panel
-
-When operator access is needed, review provider terms and verify these gates before publishing
-the panel.
-
-1. Verify the actual Cloudflare Free checkout and Render Hobby domain inventory. Include any
-   automatically paired `www` hostname in the count. Get a separate decision before accepting
-   payment or overage terms. Use a Free admin service and confirm headroom in the shared instance,
-   build and bandwidth allowances. The optional paid Blueprint is not the trial deployment.
-2. Configure one self-hosted Access application for `admin.puhukoc.com` and the two admin API
-   route families listed in section 4. Allow only the intended operator identity and require MFA.
-   Set `ADMIN_ACCESS_MODE=cloudflare`, the matching Access team origin and audience. Keep the
-   application role and matching email checks enabled. Disable the admin Render alias.
-3. Enable the Access eager cookie redirect for the concrete API hostname and configure Access to
-   answer credentialed CORS preflights for the exact admin origin. Allow the methods and headers
-   used by the admin client. Actual admin requests must still pass Access and API authentication.
-   Verify from a fresh browser session that the operator can sign in, refresh and list the waitlist.
-   Verify denial for a different identity, a missing or invalid assertion and direct-origin access.
-   Confirm that the student web and public API remain reachable without Access.
-4. On failure, take the admin frontend offline and return the API to `ADMIN_ACCESS_MODE=disabled`.
-   Verify public readiness and denial of admin calls from both new and existing sessions.
-
-Provider references: [Access MFA](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/mfa-requirements/),
-[Access cookies](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/),
-[Access CORS](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/cors/),
-and [Render domain allowances](https://render.com/docs/custom-domains).
-
-## Closed-admin core-only Free trial
-
-The owner selected this profile on 2026-10-29. Set `ADMIN_ACCESS_MODE=disabled` on the
-API and do not deploy `mentor-admin` or attach its public domain/Render alias. The API
-denies all `/v1/admin/**` and `/v1/auth/admin/**` requests before admin handlers, including
-old privileged sessions and supplied Access assertions. Omit/unset Access issuer/audience
-variables; empty values still fail schema validation. The default `cloudflare` mode keeps
-the existing production Access requirements and identity verification.
-
-Set **both** `AI_PROVIDER=disabled` and `VISION_PROVIDER=disabled`; omit OpenAI/Gemini keys.
-This explicit deployment mode rejects all text, streaming, embedding and image-classification
-operations and forces the effective `ai.enabled` value to false, even if its stored override
-is true. The config API cannot enable AI in this mode. Mixed disabled/real provider values
-fail startup. Reopening requires a reviewed deployment selecting real providers with keys,
-then the existing runtime flags, cost/privacy and provider acceptance gates.
-
-Keep `NODE_ENV=production` and all other production security/provider requirements.
-For this selected trial set `STORAGE_ACCESS_MODE=bounded`, an independent `MEDIA_READ_SECRET`,
-EU bucket scope and `R2_PUBLIC_BASE_URL=<actual HTTPS API origin>/v1/storage/media/public`.
-Both new buckets must have public/custom-domain access disabled. Do not attach
-`media.puhukoc.com`; the two selected Free service domains remain web/API. This application
-profile supersedes the optional legacy/direct Blueprint's media settings below.
-The durable total is 500 MiB stored plus unresolved writes, 10,000 Class A, 100,000 Class B
-and 1 GiB media payload transfer for the whole trial, without automatic refill. Deletion can
-release confirmed stored capacity but never operations/transfer. HTTP HEAD/URL minting does
-not download objects. Header/control/page/other-project traffic remains outside the payload
-counter, so monitor Render's shared bandwidth and Free hours. See the
-[bounded storage procedure](storage-r2.md#bounded-trial-profile-2026-10-31) and
-[attended acceptance package](../qa/2026-10-31-bounded-trial-storage-verification.md).
-
-`ADMIN_APP_URL` and its explicit CORS entry remain reserved values; they do not grant
-access to a denied route. Do not remove modules or supply invented credentials.
-
-Before the first start, use the attended operator procedure with the separate migration
-connection to prepare and verify the intended database, reviewed content and these
-persisted flags: `ai.enabled=false`, `ai.budget.monthly_cap_usd_cents=100`,
-`community.social.enabled=false`, `forum.enabled=false`, `coaching.study_rooms.enabled=false`,
-`community.leaderboard.enabled=false`, `economy.enabled=false`,
-`mentorship.enabled=false`, `mentorship.applications.open=false`,
-`mentorship.risk_digest.enabled=false`, `mentorship.seats.sponsorship_enabled=false`,
-and `ads.enabled=false`. Keep checkout/billing channels off, `PAYMENTS_PROVIDER=disabled`
-and `SMS_PROVIDER=disabled`. Explicitly set `payments.web.enabled=false`,
-`payments.mobile.enabled=false`, `payments.web.redirect_to_mobile=false`,
-`mentorship.seats.billing_enabled=false` and `mentorship.seats.mobile_billing_enabled=false`.
-Keep `community.achievements.enabled=true` for personal progress, `signup.enabled=false`
-and `signup.pilot.enabled=true`. The closed web cohort uses approved existing accounts. Keep the
-pilot flag enabled as a safeguard for any later controlled enrollment. Migration 0141 adds the
-waitlist and invitation table. Deploy the API before the web. Expected
-trial users are not an account-count or invoice cap. Verify effective values, not only
-catalog defaults. The registry caches overrides per process: an attended offline change
-requires controlled restart and verification. No live flag was changed in source preparation.
-
-Economy amounts (2026-11-01 ×10 rebalance): before `economy.enabled` is turned on, in the same
-attended operator session list the overrides with
-`select key, value from config_overrides where key like 'economy.%' or key like 'forum.xp.%' or key like 'ads.rewarded.%' order by key;`
-and, for every amount/cost/cap key in the "New defaults" table of
-[the rebalance design](../plans/2026-11-01-coin-economy-rebalance-design.md), delete its override
-(the new default applies) or set the ×10 value. Do all keys in one session: a partial change breaks
-the ratios (an old 5 Coin message price with new rewards makes Coin 10× cheaper). Leave every flag
-as it is, restart, and verify effective values. Two keys to watch: an old `economy.coin.daily_cap`
-override (e.g. 50) holds every 100 Coin onboarding and chest grant as pending until the cap is
-raised, and `economy.coin.min_xp_for_coin` is an XP threshold (default 0), so any override of it
-must be ×10 too or it becomes ten times easier to pass.
-
-The social boundary added on 2026-10-30 is independent of the forum switch. When closed,
-follow/buddy operations, invitation creation/redemption and other-user profiles/achievement
-collections return the existing localized not-found response before side effects. Own profile,
-own achievements, personal summary and cleanup remain available. Stale relation/invitation
-events and room activity do not deliver social notifications or write delivery markers.
-New room sessions check the room switch before opening a transaction; solo work and completion
-of an existing session remain usable. Source-level and local acceptance evidence still require
-complete CI and hosted acceptance before admission.
-
-`GET /v1/app/availability` is a public, uncached allowlist of effective presentation booleans.
-The web loads it once per document, alongside locale messages. Failure shows a closed/unavailable
-state for optional areas while personal tools remain reachable. Document reload retries it;
-server policies remain authoritative when an already-open document becomes stale. Existing coach
-accounts land on settings while human coaching is closed, avoiding redirect loops.
-
-Browser fixtures must use explicit profiles, not production defaults: after migration, run
-`NODE_ENV=test APP_ENV=development node apps/api/scripts/browser-fixture-profile.mjs enabled`
-against a matching loopback `TEST_DATABASE_URL` ending in `_test`, then start the API. The separate
-closed suite selects `core-trial`, restarts the API with admin/payments/SMS disabled and runs
-`playwright.core-trial.config.ts`. This guarded helper is test-only, raises only the fixture signup
-IP limit for repeated test users and is not an operator command for a live database.
-
-The operator UI is unavailable in this mode. Prepare scoped support/incident procedures
-before admitting users; if intervention cannot be performed safely, pause admission/the
-trial. Do not add a public bootstrap endpoint or generic SQL console. Reopening admin
-requires explicit cloudflare mode plus working Access/MFA before deploying its frontend.
-Retain a compatible closed-mode artifact for rollback; older code again requires Access.
-
-The provider boundary now rejects text, streaming, embedding and vision operations when
-AI is off. Already-started calls are not cancelled; queued embeddings fail through the
-existing retry/dead-letter policy. Enabling AI later still requires embedding cost-accounting
-and provider-spending acceptance; the positive app cap does not establish those controls.
-The source-level disabled mode was added after the original candidate passed CI; require a
-new exact-commit CI result before deploying it. Free cold starts/quotas, R2 spending, real mail, restricted DB role, recovery and full CI
-remain release gates. This profile does not apply the optional paid Blueprint below.
-
-### Owner decisions, 2026-10-31
-
-- **Release candidate:** `master` after PR #178 (APP-125). The coin-use catalog joins only if it
-  is finished first; `economy.enabled=false` keeps it hidden in the trial. PR #179 is superseded
-  (its docs already reached `master`) and should be closed, not merged.
-- **Daily maintenance:** `.github/workflows/trial-maintenance.yml` wakes the API and calls
-  `dispatch-daily-reminders` and `dispatch-notebook-reviews` once a day at 06:00 UTC through the
-  API's Render origin. It stays a no-op until the repository variable `TRIAL_API_ORIGIN` (the
-  actual `https://<service>.onrender.com`) and secret `CRON_SECRET` (the API's value) are set.
-  One attempt per call, no automatic retry, status codes only in the public log. Subscription
-  expiry, coach digest, AI, ads and forum triggers are not called while those features are closed.
-  GitHub can delay scheduled runs and disables them after 60 days without repository activity.
-- **Accepted:** Free web/API/Neon sleep; the first visit after idle waits about a minute. No
-  keep-alive pinger. Browser Sentry stays out of the trial (API Sentry only). Google OAuth stays
-  off: omit all three `GOOGLE_OAUTH_*` variables.
-- **Legal:** Render is now listed as the hosting provider in the KVKK notice and privacy policy.
-  The international-transfer mechanism (KVKK m.9) still needs the owner's legal decision.
-- **Content:** the seed's three KPSS dates (July 2026) are past. Official ÖSYM dates with source
-  and verification metadata are required before admission; they are never inferred.
-- **Recovery:** Neon Free keeps a short restore window. Create a Neon branch before every
-  migration and deploy. Never upload database dumps as Actions artifacts: the repository is public.
-
-## 1. Release prerequisites and budget
-
-**Current owner direction, 2026-10-28:** evaluate suitable free plans first. There is no fixed
-total monthly spending target. Consider the cheapest suitable paid alternative only after
-measurements establish the need and its fixed/variable charges and enforceable stop controls
-are understood. Keep auto-upgrades, paid overages and auto-recharge off. An alert is not a cap.
-The current `render.yaml` remains an **optional paid always-on alternative**, not the selected
-launch profile. Do not apply it just to perform the free-plan evaluation. See
-[the current plan](../plans/2026-10-28-free-first-launch.md) and
-[provider limits and evidence](../qa/2026-10-28-free-first-launch.md).
-
-Permanent staging is not a prerequisite. Local/CI tests use isolated test databases and fake
-providers. Full CI must pass on the exact reviewed commit before publication. An optional
-temporary rehearsal can validate provider integration before the first release or critical
-auth/payment/migration/storage changes; see [deferred-staging.md](./deferred-staging.md).
-
-Resolve these items before authorizing production provisioning:
-
-- Evaluate Render Free and Neon Free in a rehearsal first, including cold-start auth mail,
-  aggregate quotas and maintenance jobs. Only then consider the optional paid `render.yaml`,
-  with two single-instance paid web services, a Free admin and three daily cron jobs.
-  Agree fixed/variable charges and enforceable controls before selecting a paid profile.
-  Manual deploy settings do not prevent billing or an initial Blueprint deployment.
-- Obtain dedicated production runtime/migration DB URLs and JWT, rate-limit, edge, cron and
-  VAPID secrets. Supply production R2, Turnstile, Resend and Sentry settings. The selected
-  paired-disabled trial needs no OpenAI/Gemini keys; real AI activation requires dedicated
-  provider credentials and acceptance. Never promote `.env.staging` credentials to prod.
-- For an admin-enabled deployment, resolve Access activation: the observed Cloudflare Free checkout required permission
-  to charge a card for quota overage. The owner declined it. Do not accept those terms or
-  weaken existing Access guards. Admin publication remains blocked pending an acceptable setup.
-- Verify the Resend sending domain, Free/overage settings, DNS/TLS, storage permissions and actual provider flows.
-  Domain purchase alone does not enable hosting, mail delivery, payments or ads.
-- Verify support/legal receipt at `destek@puhukoc.com`, forwarded to
-  `erkesikbasyunusemre@gmail.com`. `noreply@puhukoc.com` is the separate sending identity.
-  Receiving DNS, the verified destination and this support-only forwarding rule passed a
-  real Gmail Inbox test on 2026-10-28. Catch-all remains off; see the current evidence above.
-
-## 2. Render and database
-
-1. Follow the existing [security release checklist](./security-release-checklist.md) and
-   [integration guide](./integrations.md). Connect only this repository to Render. The actual
-   release branch is `master`; changing the default/protected branch is a separate task.
-2. If free-plan acceptance fails and the paid alternative clears cost/release gates, apply
-   `render.yaml`. Every service has
-   `autoDeployTrigger: off`. Initial provisioning or Blueprint sync can still deploy; do not
-   treat this setting as a provisioning approval gate.
-3. Native Node services use Frankfurt/EU and Node 22.22.0. Frozen installs include dev build
-   tools; Turbo builds each app's workspace dependencies. Web/admin `start:prod` bind to
-   `0.0.0.0` and consume Render's `PORT`. Local starts retain their original ports.
-4. Create the production Neon EU database with pgvector. `DATABASE_URL` is the pooled restricted
-   runtime connection; `DATABASE_MIGRATION_URL` is the direct migration-owner connection used
-   by the migration command, not required by the API runtime. Free services use an attended
-   external migration step and omit that owner credential from the API environment; see
-   [the procedure and limits](../qa/2026-10-29-free-hosting-preparation.md). The retained optional
-   paid Blueprint still supplies it for pre-deploy. The runtime role must not own DB objects,
-   bypass RLS, inherit privileged roles or create roles/databases. Startup inspection rejects
-   unsafe roles. Keep both URLs out of Git and public environment variables.
-5. Create a restore point and run the existing forward-only migration chain with the owner
-   connection before starting the API. Never seed demo accounts or run local fixtures against
-   production. No new schema or endpoint is part of this preparation.
-6. Supply `sync: false` values in provider secret settings and maintain them there after setup.
-   Independently generated API secrets must not be shared with staging. Keep
-   `NODE_ENV=production` and `APP_ENV=production`; runtime production checks stay enabled.
-7. Verify `/v1/health/ready`, restricted-role startup and pool usage. The three daily cron
-   services reference `mentor-api` and its `CRON_SECRET`; preserve their UTC schedules.
-   The paid API's existing `JobRunnerService` handles the queue automatically; its secret-
-   protected `process-jobs` HTTP endpoint remains available for manual catch-up.
-
-### Optional paid always-on alternative and overage controls
-
-Earlier direction on 2026-10-13: keep the reader-facing web and API always on; accept cold
-starts only for admin. This is an alternative retained for comparison. The 2026-10-28 direction
-requires evaluating free plans first and does not approve the paid resources in this table.
-
-| Render item | Launch choice | Monthly base, USD |
-|---|---|---:|
-| Web | `0.5c-512mb`, one instance | 7 |
-| API | `0.5c-512mb`, one instance | 7 |
-| Admin | Free, single instance | 0 |
-| Daily reminders, coach digest, subscription expiry | Three daily cron services | At least 3 |
-| Compute + cron subtotal | Hobby workspace, no paid workspace upgrade | **At least 17** |
-| Custom domains | Two included; each additional billed hostname | +0.25 each |
-
-Prices checked on 2026-10-13: [Render pricing](https://render.com/pricing),
-[custom domains](https://render.com/docs/custom-domains),
-[cron billing](https://render.com/docs/cronjobs#compute-plans-and-billing).
-The three explicit hostnames imply 17.25/month before other usage; reserve 17.50 if the
-automatically added `www` alias also counts toward billed domains. Confirm the actual domain
-count in Billing after setup. Taxes, Neon, AI, email, storage and usage above allowances are
-separate. This is a minimum estimate, not a total spending cap.
-
-The queue catch-up cron was removed because the always-on API already polls pending jobs.
-The other schedules remain 06:00, 07:00 and 03:30 UTC. Their HTTP calls fail on error and use
-10-second connection / 60-second request limits to avoid a hung request accruing cron runtime.
-A timeout is a failed maintenance run: inspect the provider logs and queue, then retry through
-the protected endpoint after checking its result. It is not successful task completion.
-
-Render Free can sleep after 15 minutes idle and take about a minute to wake. Its 750 monthly
-Free instance hours are shared across the workspace. Evaluate the combined web/API/admin
-runtime rather than assuming one full month per service. Free web/API acceptance is pending:
-the existing paid Blueprint must not be relabeled Free without validating migrations, queue
-delivery and scheduled maintenance. Do not auto-upgrade. Admin-enabled publication requires
-Access and session checks after wake/restart; the selected trial instead denies all admin access.
-See [Free limitations](https://render.com/docs/free).
-
-**Observed account settings, 2026-10-13:** Puhukoc is on Hobby; no services, payment card,
-pending charges or usage. Included usage is 500 pipeline minutes, 5 GB bandwidth, two custom
-domains and 750 Free instance hours. The Starter build pipeline already has a **$0 additional
-monthly spend limit**. These observations are not settings guaranteed by the Blueprint.
-
-- Preserve the $0 pipeline limit in Workspace Settings → Build Pipeline. Once included
-  minutes run out, new builds/pre-deploy tasks stop; existing apps continue running. This
-  also prevents a recovery build until the next period unless a separately approved limit
-  increase is made. Keep automatic deploys off and complete CI before a manual release.
-- Render has no documented workspace-wide spending cap for compute, domains and bandwidth.
-  Its pipeline limit does **not** stop bandwidth charges after a card is linked. Hobby includes
-  5 GB/month, then public outbound traffic costs $0.15/GB. For example, 20 GB/month adds
-  `(20 - 5) * 0.15 = $2.25` for bandwidth alone. See
-  [bandwidth billing](https://render.com/docs/outbound-bandwidth) and
-  [pipeline limits](https://render.com/docs/build-pipeline#setting-a-spend-limit).
-- At launch, verify one paid instance per service, no autoscaling, the billed domain count
-  and the workspace notification address. During initial use, check Billing and per-service
-  Metrics daily. At 400 pipeline minutes or 4 GB bandwidth (80% of included usage), investigate
-  before more usage accumulates. Provider emails warn about approaching/exceeded usage;
-  notification is not automatic cost containment.
-- Use the existing selective Cloudflare caching for public static/media assets and R2 media
-  delivery. Keep API/admin/HTML/RSC caching bypasses; never cache private responses to save
-  money. Investigate large assets, abusive traffic, repeat builds or excessive service egress.
-- Keep separate Neon/provider usage budgets. Before enabling AI, set a positive
-  `ai.budget.monthly_cap_usd_cents`; the catalog's `0` default means **no cap**, not zero spend.
-  Provider safety and live acceptance gates remain required before opening paid resources.
-
-`pnpm check:deployment` validates the optional paid Blueprint: it rejects a paid admin,
-Free web/API in that particular profile, extra instances/autoscaling,
-the redundant queue cron, changed daily schedules or unbounded/unauthenticated cron HTTP.
-It checks source configuration, not live billing settings or a hard account budget.
-
-Web/admin Render subdomains are disabled to prevent duplicate public URLs and Access bypass.
-The API Render hostname remains enabled for secret-authenticated cron calls; ordinary direct
-traffic must be rejected by the origin middleware. Verify missing/forged-header denials.
-
-## 3. Cloudflare DNS and TLS
-
-Cloudflare is the confirmed registrar/DNS provider. Review existing records, mail routing,
-DNSSEC and CAA before changing anything. Preserve unrelated records and enable account MFA
-and renewal. Use each actual generated Render host, not an inferred name.
-
-| DNS name | Type | Target | Final proxy state |
+| Service | Host | URL / Port | Notes |
 |---|---|---|---|
-| `@`, `www` | CNAME | Actual web Render host | Proxied |
-| `api` | CNAME | Actual API Render host | Proxied |
-| `admin` | CNAME | Actual admin Render host | Proxied |
-| `media` | R2 managed | Public bucket custom domain | R2 managed |
-| Email records | Provider TXT/CNAME/MX | Exact provider values | DNS only |
+| `@mentor/api` | Render Web Service | `api.puhukoc.com` (`:3001` local) | NestJS `/v1` monolith; health check `GET /v1/health` |
+| `@mentor/web` | Render Web Service | `puhukoc.com` (`:3000` local) | Next.js 16 B2C app (TR default, `/en` secondary) |
+| `@mentor/admin` | Render Web Service | `admin.puhukoc.com` (`:3002` local) | Next.js 16 back-office; gated by Cloudflare Access + `STAFF` JWT |
+| Postgres | Neon | Pooled / Direct URL | Postgres 16 + `pgvector` + Row-Level Security (`FORCE ROW LEVEL SECURITY`) |
+| Object Storage | Cloudflare R2 | Private bucket | Presigned PUT/GET for avatars, notebook pages, and study assets |
+| Email | Resend | HTTPS API | Transactional emails (`RESEND_API_KEY`; `EMAIL_PROVIDER=resend\|disabled\|console`) |
 
-Begin Render records with DNS only, verify domain ownership and certificate issuance, then
-enable proxying and Full (strict), plus HTTPS redirects. Do not use Flexible SSL. Remove
-conflicting A/AAAA records only on those names. Render handles the `www` redirect for its
-apex custom domain; verify it after setup. The API rejects normal unproxied requests during
-bootstrap by design; health endpoints remain available. Do not weaken the origin check.
+Blueprint definition: [`render.yaml`](../../render.yaml).
 
-## 4. Production environment and edge security
+---
 
-`render.yaml` contains public settings, not actual credentials:
+## 2. Render Cron Jobs (`/v1/internal/cron/*`)
 
-| API setting | Value |
-|---|---|
-| `APP_URL` | `https://puhukoc.com` |
-| `ADMIN_APP_URL` | `https://admin.puhukoc.com` |
-| `CORS_ORIGINS` | `https://puhukoc.com,https://admin.puhukoc.com` |
-| `TURNSTILE_EXPECTED_HOSTNAME` | `puhukoc.com` |
-| `R2_PUBLIC_BASE_URL` | `https://media.puhukoc.com` |
-| R2 buckets / jurisdiction | `puhu-prod-public`, `puhu-prod-private` / `eu` |
-| Optional OAuth callback | `https://api.puhukoc.com/v1/auth/google/callback` |
-| `RESEND_FROM` / `VAPID_SUBJECT` | `noreply@puhukoc.com` / `https://puhukoc.com` |
+All cron endpoints require the `x-cron-secret: <CRON_SECRET>` header (`CronSecretGuard`).
 
-- Overwrite `x-mentor-origin-secret` in a Request Header Transform Rule scoped only to
-  `api.puhukoc.com`, using production `EDGE_ORIGIN_SECRET`. Preserve `CF-Connecting-IP`.
-  Never expose that secret in browsers, response headers, logs or docs.
-- Protect the admin hostname and API `/v1/admin/*` and `/v1/auth/admin/*` with the same Access
-  audience and an allowlist/MFA policy. Supply `CLOUDFLARE_ACCESS_TEAM_DOMAIN` and
-  `CLOUDFLARE_ACCESS_AUD`. Verify credentialed preflights without bypassing admin methods.
-  Do not put an interactive login on the entire API. The billing prerequisite above still applies.
-- Create a production Turnstile widget for the exact hostname; use the matching server secret
-  and web public key. Verify each operation's action, including login/recovery/phone checks.
-- Apply endpoint-specific WAF/rate limits preserving SSE and OAuth callbacks. Bypass CDN
-  caching for API/admin/web HTML and RSC; deliberately cache only public static/media assets.
-- Create scoped production EU R2 credentials and separate public/private buckets. Attach the
-  media domain only to the public bucket; keep private/public-development `r2.dev` access off.
-  Restrict upload/read CORS to production origins and run `storage:check`.
-- Set web `WEB_CSP_STORAGE_ORIGINS` to exact public-media and EU R2 origins used by signed URLs (note that S3 virtual-hosted presigned GET URLs use `https://<R2_PRIVATE_BUCKET>.<R2_ACCOUNT_ID>.eu.r2.cloudflarestorage.com`).
-  No wildcards or paths. Validate uploads, private downloads and CSP in browsers.
+| Endpoint | Schedule (UTC) | Purpose |
+|---|---|---|
+| `POST /v1/internal/cron/run-jobs` | Every 5 min | Drains the Postgres `jobs` queue (`JobQueuePort`) |
+| `POST /v1/internal/cron/streak-check` | Daily `00:05` | Evaluates daily streaks, consumes streak freezes, emits notifications |
+| `POST /v1/internal/cron/weekly-summary` | Mondays `05:00` | Generates weekly coaching summaries & XP league rollovers |
+| `POST /v1/internal/cron/expire-subscriptions` | Daily `03:30` | Sweeps naturally ended subscriptions to `EXPIRED` (`SUBSCRIPTION_EXPIRED`) |
+| `POST /v1/internal/cron/retention-cleanup` | Daily `04:00` | Purges expired unverified accounts, detached trial claims, and orphan R2 objects |
 
-Follow [storage-r2.md](./storage-r2.md) for storage permissions and release checks.
+---
 
-## 5. Email and other integrations
+## 3. Environment & Provider Modes (Zero-Cost / Closed-Trial Ready)
 
-- Use Resend Free with Transactional Overages disabled. Verify `puhukoc.com` using the exact
-  records supplied by Resend; the current Forge setup uses one DKIM TXT and two DNS-only
-  CNAMEs, not a legacy SES MX/SPF recipe. Keep one coherent root SPF/DMARC policy when adding
-  incoming mail separately. Domain verification and one owner-approved Sent/Delivered transport
-  test passed on 2026-10-28; see [the live evidence](../qa/2026-10-28-free-first-launch.md).
-  Set a domain-scoped sending key and verified sender. Disable open/click tracking for auth mail.
-  Sender verification does not create an inbox: Cloudflare support forwarding was separately
-  configured and its Gmail Inbox test passed on 2026-10-28. Forwarding does not configure Gmail
-  to send as the support address. Do not reuse staging secrets or enable a paid delivery fallback.
-  Root DMARC now has a single non-enforcing `v=DMARC1; p=none;` TXT record (published and public-DNS
-  verified on 2026-10-28). Keep one record; do not re-import it. Test new auth messages using
-  reachable production HTTPS links and inspect DMARC plus Inbox placement before enforcing
-  quarantine/reject. The earlier local reset message reached Spam; this acceptance remains open.
-- Configure Google OAuth's three variables together if enabled; register the exact callback
-  and check authorized domains/consent-screen status before public signup.
-- Payments remain disabled; SMS and sponsorship stay behind existing acceptance gates. Do not
-  select fake providers in production. The closed trial uses paired disabled AI providers;
-  real AI deployments retain central feature flags and the monthly cost cap. Configuration
-  does not grant unconditional Free AI.
-- Supply API Sentry DSN and verify scrubbed events, readiness alerts and retention. API Sentry
-  tags incidents by `APP_ENV`. The web DSN slot alone does not initialize a browser SDK;
-  browser reporting remains a separate launch item.
-- Configure analytics/ads only after provider and consent review. Domain ownership is not
-  Google approval; keep existing ad rollout gates and publish only a verified real seller ID.
+`apps/api` validates all environment variables at startup (`src/common/config/env.validation.ts`).
+Production boot **forbids** `fake` or `console` adapters (`PAYMENTS_PROVIDER=fake`, `SMS_PROVIDER=console`, `EMAIL_PROVIDER=console` fail fast in `NODE_ENV=production`), while supporting explicit **`disabled`** modes so a closed pilot can run with zero external paid provider keys:
 
-## 6. Verification, release and rollback
+| Capability | Env Var | Allowed Prod Values | Closed-Trial Safe Mode |
+|---|---|---|---|
+| AI (Text & Vision) | `AI_PROVIDER` | `hybrid` \| `disabled` | `AI_PROVIDER=disabled` + config `ai.enabled=false` (returns `503 AI_DISABLED`; startup skips provider key requirement) |
+| Payments | `PAYMENTS_PROVIDER` | `iyzico` \| `disabled` | `PAYMENTS_PROVIDER=disabled` + `payments.web.enabled=false` |
+| Email | `EMAIL_PROVIDER` | `resend` \| `disabled` | `EMAIL_PROVIDER=resend` (free tier) or `disabled` |
+| SMS OTP | `SMS_PROVIDER` | `netgsm` \| `disabled` | `SMS_PROVIDER=disabled` (while `payments.trial.phone_verification_required=false` and `mentorship.seats.sponsorship_enabled=false`) |
+| Storage | `STORAGE_PROVIDER` | `r2` \| `disabled` | `STORAGE_PROVIDER=r2` with bounded trial caps (`storage.r2.*` config keys) |
 
-1. Run `pnpm check:deployment`: production domains/CORS, exact dependency builds, port-aware
-   starts, migration configuration, cron references and Turbo cache inputs must pass. This
-   check does not certify credentials, provider permissions, live DNS or the full Render schema.
-2. Require full CI on the exact reviewed commit: lint, typecheck, builds, tests, browser checks,
-   dependency audit and secret scan. Keep the three approved historical false-positive
-   fingerprints only; do not disable or broaden scanning. Protect `master` with review/CI gates.
-3. Use an optional temporary isolated rehearsal when useful. Before authorizing production,
-   record provider evidence, restore/rollback procedure and budget. Before public traffic,
-   verify signup, verification/reset, login/refresh/logout, admin Access, uploads/downloads,
-   SSE, cron delivery, production canonical/sitemap, admin noindex and origin denials.
-4. An authorized release deploys the exact reviewed commit to API, web/admin, then cron.
-   Monitor readiness/errors/authentication, DB/pool use, queue backlog and AI spend. Keep
-   risky feature flags off until their acceptance evidence is recorded.
-5. Disable relevant flags or roll back apps to a known-good commit, then recheck critical flows.
-   Code rollback does not revert migrations. Use a reviewed forward fix or tested Neon recovery
-   for schema/data recovery; keep migrations backward-compatible.
+---
 
-Provider references: [Render Blueprint](https://render.com/docs/blueprint-spec),
-[deployments](https://render.com/docs/deploys),
-[Cloudflare DNS for Render](https://render.com/docs/configure-cloudflare-dns),
-[Universal SSL coverage](https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/),
-[Full (strict)](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/),
-[Resend verification](https://resend.com/docs/dashboard/domains/introduction).
+## 4. Database Migrations in Production
+
+1. Generate migrations locally: `pnpm --filter @mentor/api db:generate`.
+2. **Zero-downtime constraint rule:** Never add a blocking table-rewrite `CHECK` or `FOREIGN KEY` in a single lock step on populated tables. Use `ADD CONSTRAINT ... NOT VALID` followed by `VALIDATE CONSTRAINT ...`.
+3. Apply migrations before or during the API deploy step using `DIRECT_DATABASE_URL` (unpooled Neon connection):
+   ```bash
+   pnpm --filter @mentor/api db:migrate
+   ```
+4. Verify schema & RLS policies with `GET /v1/health`.
+
+---
+
+## 5. Closed-Trial & Launch Toggles (Admin Config)
+
+Key runtime flags managed in `/config` (`config_overrides` table, no redeploy required):
+
+- **Invite-only waitlist gate:** `identity.registration.invite_only` (`true` = new signups without a valid invite code join `/bekleme-listesi`; admin approves from `/waitlist`).
+- **AI kill switch & budget:** `ai.enabled` (`true`/`false`), `ai.budget.monthly_cap_usd_cents`.
+- **Social & Economy visibility:** `economy.enabled`, `community.study_rooms.enabled`, `ads.enabled`, `promotions.enabled`.
+- **Purchase channels:** `payments.web.enabled`, `payments.mobile.enabled`, `payments.web.redirect_to_mobile`, `mentorship.seats.billing_enabled`.
+
+---
+
+## 6. Operational Milestones (Condensed Timeline)
+
+- **2026-11-05 — Invite-only registration & waitlist gate (`APP-138`):** Added `identity.registration.invite_only` runtime flag, `/bekleme-listesi` public queue, and admin batch approval in `/waitlist`.
+- **2026-10-31 — Bounded trial R2 storage:** Added runtime storage quotas (`storage.r2.monthly_upload_cap_bytes`, per-user upload limits) and `STORAGE_PROVIDER=disabled` fallback so closed pilots never exceed Cloudflare R2 free-tier limits.
+- **2026-10-30 — Disabled-AI startup & core-trial social boundary:** Allowed `AI_PROVIDER=disabled` in production without dummy API keys (`GET /v1/content/availability` reports `aiCoach: false` so web hides AI entry points cleanly).
+- **2026-10-29 — Closed-pilot admin & free Render migration runbook:** Verified zero-cost Render + Neon + Cloudflare deployment topology and non-interactive migration execution.
+- **2026-07-20 — Render Blueprint & Security Hardening (`0026`):** Initial `render.yaml`, Helmet CSP, CORS strict origin list, `/v1/health` readiness probe, and `CronSecretGuard` jobs.

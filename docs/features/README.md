@@ -1,41 +1,36 @@
-# Features — Module Documentation
+# Feature Documentation (`docs/features/`)
 
-> Each bounded context (module) gets one short, clear, explanatory doc. What it does, how it's
-> architected, how to use it, its API surface, development timeline, gotchas, and cross-references.
-> Core/platform docs: [`../core/`](../core/README.md).
+Living documentation for every bounded context and cross-cutting user-facing capability.
 
-## Modules (MVP)
+## Mandatory Feature-Doc Rule (`AGENTS.md` §10)
 
-| Feature | Module | Status | Doc |
-|---|---|---|---|
-| Identity | `modules/identity` | ✅ | [identity.md](./identity.md) |
-| Content | `modules/content` | 🟡 | [content.md](./content.md) |
-| Coaching | `modules/coaching` | 🟡 | [coaching.md](./coaching.md) |
-| AI | `modules/ai` | 🟡 | [ai.md](./ai.md) |
-| Payments | `modules/payments` | ✅ | [payments.md](./payments.md) |
-| Notifications | `modules/notifications` | ✅ | [notifications.md](./notifications.md) |
-| Admin | `modules/admin` | ✅ | [admin.md](./admin.md) |
-| Economy | `modules/economy` | ✅ | [economy.md](./economy.md) |
-| Ads | `modules/ads` | 🟡 | [ads.md](./ads.md) |
-| Forum | `modules/forum` | ✅ | [forum.md](./forum.md) |
-| Mentorship (human coach) | `modules/mentorship` | 🟡 | [mentorship.md](./mentorship.md) |
+Every meaningful feature, architectural change, or user-visible refinement must update its matching document in this folder (under `## Geliştirmeler (timeline)` or by updating the canonical architecture/rules section when a rule changes):
+- **What changed** (concise decision summary)
+- **Usage** (flags, endpoints, commands, or component props)
+- **Gotchas** (non-obvious invariants or edge cases)
+- **Related files**
 
-## Cross-cutting
+---
 
-| Feature | Scope | Doc |
+## Feature Index
+
+| File | Workstream / Module | Scope |
 |---|---|---|
-| Web shell | app nav, landing, B2C sweep | [web-shell.md](./web-shell.md) |
-| Deployment | stage/prod domains, hosting and release gates | [deployment.md](./deployment.md) |
-| i18n | next-intl TR/EN | [i18n.md](./i18n.md) |
-| Motion | shared transitions / DESIGN §9 | [motion.md](./motion.md) |
-| YKS 3D campus + preference simulation | content + coaching + web | [preference-simulation.md](./preference-simulation.md) |
-
-## Phase 2/3 (not yet built)
-
-`marketplace` — no code coverage yet. Documented here when development starts.
-(`community` and `mentorship` have started; see the tables above.)
-
-## How to add entries
-
-After meaningful development, append a dated entry under "Geliştirmeler (timeline)" in the matching
-feature doc. Format: **what · how to use · gotchas · related files**. Short and clear.
+| [`identity.md`](./identity.md) | `W1` · `modules/identity` | Auth, JWT refresh rotation, Google OAuth, SMS OTP, profile, KVKK, invite-only waitlist |
+| [`coaching.md`](./coaching.md) | `W2` · `modules/coaching` | Onboarding, weekly plan (`Puhu’yla planla`), `/seans` focus timer, study notebooks, mocks, analytics |
+| [`ai.md`](./ai.md) | `W3` · `modules/ai` | Puhu AI chat, daily greeting, mood/session reflections, weekly deep analysis, vision, RAG, budget |
+| [`payments.md`](./payments.md) | `W4` · `modules/payments` | Subscriptions, entitlement, carded trials, `PremiumPaywallModal`, purchase channels |
+| [`promotions.md`](./promotions.md) | `W4+` · `modules/promotions` | Coupon & automatic discount engine (`ANYONE`, `NEW_USER`, `ACTIVE_DAYS`, `WIN_BACK`, `INVITED`) |
+| [`ads.md`](./ads.md) | `W4+` · `modules/ads` | Google AdSense placements & rewarded video ads |
+| [`content.md`](./content.md) | `W5a` · `modules/content` | Exam catalog (`KPSS · YKS · LGS · ALES · DGS`), taxonomy, verified dates, `/bilgi` blog |
+| [`notifications.md`](./notifications.md) | `W5b` · `modules/notifications` | In-app SSE notifications, `Resend` transactional emails, announcements, win-back |
+| [`admin.md`](./admin.md) | `W6` · `modules/admin` + `apps/admin` | Back-office console: users, metrics, content, config, moderation, promotions, waitlist |
+| [`economy.md`](./economy.md) | `W7a` · `modules/economy` | Append-only `XP`/`Coin` ledger, quests, 12-level Night Journey, Weekly Chest, friend invites |
+| [`forum.md`](./forum.md) | `W7b` · `modules/forum` | Exam-scoped Q&A forum, reactions, tags, moderation, verified answers |
+| [`community.md`](./community.md) | `W7c` · `modules/community` | Shared study rooms (`LIBRARY`/`CAFE`/`HOME`), weekly XP leagues (`Lig`), Weekly Recap |
+| [`mentorship.md`](./mentorship.md) | `W8` · `modules/mentorship` | Human coach workspace (`/kocum`, `/koclar`), student links, tasks, sponsored seats, coach AI |
+| [`web-shell.md`](./web-shell.md) | Cross-cutting · `apps/web` | Landing (`/` "Işıklı şehir"), `AppNav`, layout, Puhu hero mask, shared B2C shell |
+| [`i18n.md`](./i18n.md) | Cross-cutting · `apps/web` + `apps/api` | TR/EN URL routing (`next-intl`), localized backend messages & AI language routing |
+| [`motion.md`](./motion.md) | Cross-cutting · `apps/web` | Motion tokens, Lottie/WebP/MP4 assets, `HungBoard`, ceremony choreography |
+| [`preference-simulation.md`](./preference-simulation.md) | `W2/W5` · Prototype | YKS 3D Campus + Preference Simulation (disabled via `coaching.preference_simulation.enabled`) |
+| [`room-theme-visual-prompts.md`](./room-theme-visual-prompts.md) | Asset guide | Generation prompts and composition rules for top-down study room art |

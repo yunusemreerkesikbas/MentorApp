@@ -1,162 +1,43 @@
-# Design System (`@mentor/ui`)
+# Design System & `@mentor/ui` Package
 
-> The shared UI primitive library + DESIGN.md token implementation. Package: `packages/ui`.
-> Token source of truth: [`DESIGN.md`](../../DESIGN.md). Applied by all B2C web screens.
+> Architecture and usage guide for `@mentor/ui` and `apps/web` styling.
+> Full visual specification (tokens, colors, typography, scenes, motion): **[`DESIGN.md`](../../DESIGN.md)**.
 
-## Overview
+---
 
-`@mentor/ui` is the compiled React primitive library that implements the Nuton/DESIGN.md tokens
-(Tailwind v4 `@theme` + TS). Every feature's web UI imports from it — no magic hex/numbers in feature
-code, only CSS-var tokens. The package is consumed as **compiled `dist/`** (not source), so it must be
-rebuilt before `apps/web` typecheck sees new exports.
+## 1. Single Source of Tokens
 
-## Architecture (key decisions)
+All design tokens are defined as CSS custom properties in [`packages/ui/src/theme.css`](../../packages/ui/src/theme.css) and imported by `apps/web/src/app/globals.css` (Tailwind v4 `@theme` bridge).
 
-- **Tokens, not numbers:** colors/spacing/radius/typography come from `theme.css` (`@theme`) → CSS vars.
-  Thumb pastels are the only accepted hex outside the token file (DESIGN accents).
-- **Light/dark:** class `html.dark` (cookie `mentor-theme`, default light). Dark overrides the same
-  `--color-*` vars — do not fork utilities. `@custom-variant dark` lives in `theme.css`. Rebuild
-  `@mentor/ui` after token edits.
-- **Fonts:** Plus Jakarta Sans latin-ext (Turkish glyphs), loaded once in the root layout.
-- **Responsive shell:** mobile tab bar (63px + safe-area inset) ↔ desktop sidebar; the same primitives
-  adapt. Active nav = main-color indicator, not accent fill (anti-alarm per §0).
-- **Motion:** shared `stagger-motion.ts` (stagger + `useReducedMotion`) reused across hero/features/CTA
-  and card entrances — no per-screen motion code.
-- **Data cards (§4 #1):** official facts (dates) render in a **data card** (source + verification
-  metadata), never paraphrased — `DataCard` is the primitive that enforces this.
+- **Typography:** **Nunito** (`--font-sans`, variable `200–1000`, `latin-ext`) for UI and display; **Caveat** (`--font-hand`, `600/700`) for taped paper notes and handwritten plates.
+- **Themes:**
+  - **Light (default):** Warm paper canvas (`#FAF6F0`), solid white cards (`#FFFFFF`), border (`#E6DEC8`).
+  - **Dark (`html.dark`):** Deep slate canvas (`#0F141C`), card (`#171F2C`), border (`#2A364B`). Toggled via `ThemeLamp` (`mentor:theme` localStorage + `mentor_theme` SSR cookie).
+  - **Scoped Scene Themes:** `.landing-city-theme`, `.room-stage`, `.weekly-recap-theme`, `.premium-paywall-theme`, `.achievement-scene-theme`, `.plan-coach-night`, and `.weekly-chest-night` lock their own atmospheric palettes and ignore `html.dark`.
 
-## Tutorials / Guides
+---
 
-```bash
-pnpm --filter @mentor/ui build      # REQUIRED before web typecheck sees new/changed exports
-pnpm --filter @mentor/web dev       # http://localhost:3000
-```
+## 2. Shared Primitives (`@mentor/ui`)
 
-- **Add a primitive:** create `packages/ui/src/components/<name>.tsx`, export from `index.ts`, rebuild.
-  Cite its DESIGN.md/Nuton basis in the file. Broadly reusable widgets live here; only stateful
-  containers are page-local in `apps/web`.
-- **Consume:** `import { Card, Button, Chip, ChoiceChip, Modal, TextField, SectionHeading } from '@mentor/ui'`.
+Exported from [`packages/ui/src/index.ts`](../../packages/ui/src/index.ts):
 
-## Primitives (selection)
+| Primitive        | Description                                                                                                                                                                               |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`         | Tactile buttons (`primary` sky-blue play-ledge `#55ACEE` with `4px` `#3B8FD0` bottom edge and `#0F2233` navy ink; `secondary` / `outline` / `ghost` / `danger`). Min `44px` touch height. |
+| `Card`           | Solid `--color-surface` container (`20px` radius, `1px` `--color-border`, optional interactive hover lift).                                                                               |
+| `Chip`           | Pill badge (`rounded-full`, `12px` semibold) for statuses, exam families, and tags.                                                                                                       |
+| `Field`          | Label + input wrapper (`14px` inner radius, focus ring, `aria-describedby` error wiring).                                                                                                 |
+| `SubmitButton`   | Form submit button with loading spinner and disabled guard.                                                                                                                               |
+| `FormError`      | Accessible alert banner (`role="alert"`) for Companion-register form errors.                                                                                                              |
+| `SectionHeading` | Standardized section header (`17px–18px` bold) with optional subtitle and right-aligned action slot.                                                                                      |
+| `Logo`           | Typographic **`PuhuKoç`** mark in Nunito weight `1000` with Puhu's animated/blinking eye in the `o`.                                                                                      |
 
-| Primitive | Purpose |
-|---|---|
-| `Card` · `Button` · `Chip` · `ChoiceChip` · `TextField` · `SectionHeading` | core building blocks |
-| `DataCard` | §4 #1 data-card render (official facts, sourced) |
-| `CountdownCard` | calm countdown (blue accent — no alarm-red) |
-| `StreakBadge` | anti-shaming streak display |
-| `PlanListItem` | adapts Nuton list item (335×56) |
-| `MoodPicker` | 1–5 radiogroup |
-| `ProgressBar` | trend bars (no chart library — DESIGN has no chart primitive) |
-| `CircularTimerRing` | SVG progress ring + drag/touch dial (5–120 dk) for `/seans`; countdown ticks + progress |
-| `FormError` | shared inline error (no magic `--color-error` / hex) |
-| `ToastProvider` · `useToast` | Stitch overlay stack (max 3, portal `z-[100]`, auto-dismiss, mobile top-center / desktop top-right) |
-| `DialogProvider` · `useDialog` | Stitch modal (single dialog, portal backdrop `z-[60]` / panel `z-[70]`; presets `confirm` / `info` / `promo`) |
-| `Modal` | Native `<dialog>` form/content shell (title, close, body, footer). Not the confirm stack. |
-| `BottomSheetProvider` · `useBottomSheet` | Stitch bottom sheet (portal backdrop `z-[40]` / panel `z-[50]`; layouts `action` \| `filter`; presets `actionSheet()` / `filterSheet()`) |
-| `Skeleton` · `SkeletonGroup` | **Animation-only** loading shimmer (`mentor-skeleton-shimmer`) + enter fade (`mentor-skeleton-enter`); page composes layout in `*-content-skeleton.tsx` |
+---
 
-## Skeleton pattern (animation global · layout per page)
+## 3. Core Styling Rules
 
-**Rule:** From first paint until the data request resolves, the UI shows a **screen-specific skeleton**
-that mirrors the loaded layout. **Animation is global and identical project-wide**; only layout differs
-per page.
-
-- **Global (theme.css):** `.mentor-skeleton-shimmer`, `.mentor-skeleton-enter` — shimmer gradient +
-  mount fade; static fill under `prefers-reduced-motion`. **Do not reimplement these in app CSS.**
-- **Package helpers:** `Skeleton` (applies shimmer class only), `SkeletonGroup` (`role="status"`,
-  `aria-busy`), `skeletonStaggerStyle(index)` for row offset, exported class constants
-  `MENTOR_SKELETON_SHIMMER_CLASS`, `MENTOR_SKELETON_ENTER_CLASS`.
-- **Page-owned:** each feature builds its mirror layout in
-  `apps/web/src/app/[locale]/(app)/<feature>/_components/*-content-skeleton.tsx` — sizes, radii, row
-  count, card chrome stay local. Wire from shell/view when `loading === true`.
-- **Do not** bake screen-specific shapes into `@mentor/ui`; do not use centered spinners for content
-  loading (product register).
-
-```tsx
-// Page layout (plan-content-skeleton.tsx)
-<SkeletonGroup label={t("loading")} className="mt-3 flex flex-col">
-  <Skeleton className="h-4 w-[68%] rounded-[var(--radius-card)]" />
-</SkeletonGroup>
-
-// Shell (while fetch pending)
-if (loading) return <PlanListSkeleton />;
-```
-
-## API
-
-N/A (UI package, not REST).
-
-## Geliştirmeler (timeline)
-
-- **Design infrastructure** — `@mentor/ui` React primitives, fonts (latin-ext), responsive shell
-  (tab bar ↔ sidebar), DESIGN.md tokens implemented as Tailwind v4 `@theme` + TS. *(0012.)*
-- **Typography smoothing** — web now uses one Plus Jakarta Sans latin-ext family for both
-  `--font-heading` and `--font-body`; this replaces the League Spartan/Lato pair that looked rough
-  in dense Turkish UI. Related: `DESIGN.md`, `apps/web/src/app/[locale]/layout.tsx`,
-  `packages/ui/src/theme.css`, `packages/ui/src/tokens.ts`. *(2026-07-05.)*
-- **Toast overlay primitive** — `packages/ui/src/components/toast/` (`ToastProvider`, `useToast`,
-  `ToastItem`, `ToastViewport`); variants `success` | `error` | `info` | `coach`; max 3 stack;
-  auto-dismiss + progress bar; tokens `--color-error-container`, `--color-surface-translucent`.
-  Web: `ToastProviderShell` in `[locale]/layout.tsx`; feature code uses `useMentorToast()` from
-  `apps/web/src/lib/mentor-toast.ts` (i18n dismiss + Puhu/error leading). Supports `duration`,
-  `puhuVariant`, and `leading` overrides via `useMentorToast()`. *(0063.)*
-- **Dialog / modal primitive** — `packages/ui/src/components/dialog/` (`DialogProvider`, `useDialog`,
-  `DialogPanel`, `DialogViewport`); layouts `standard` | `promo`; promise presets `confirm()` →
-  `boolean`, `info()` → `void`, `promo()` → `"primary" | "link" | "dismiss"`. Web:
-  `DialogProviderShell` nested inside `ToastProviderShell` in `[locale]/layout.tsx`; feature code uses
-  `useMentorDialog()` from `apps/web/src/lib/mentor-dialog.ts` (i18n close + error icon / Puhu hero).
-  *(0064.)*
-- **Bottom sheet primitive** — `packages/ui/src/components/bottom-sheet/` (`BottomSheetProvider`,
-  `useBottomSheet`, `BottomSheetPanel`, `BottomSheetViewport`); layouts `action` | `filter`;
-  promise presets `actionSheet()` → `actionId | "cancel"`, `filterSheet()` → `"apply" | "cancel"`.
-  Mobile: slide-up ~60vh, drag handle, rounded top 16px. Desktop (`lg:`): centered max 480px, no
-  handle (DESIGN.md). Web: `BottomSheetProviderShell` inside `DialogProviderShell`; feature code uses
-  `useMentorBottomSheet()` from `apps/web/src/lib/mentor-bottom-sheet.ts`. *(0067.)*
-- **Skeleton animation primitives** — `packages/ui/src/components/skeleton/` + `theme.css`
-  (`.mentor-skeleton-shimmer`, `.mentor-skeleton-enter`). Animation/a11y global; each web screen
-  owns `*-content-skeleton.tsx` layout. *(0068.)*
-- **ChoiceChip + form Modal (2026-08-26)** — `Chip` stays a static violet tag. Selectable
-  options use `ChoiceChip` (`pill` | `default`, selected = `--color-accent-soft` + accent
-  border). Form surfaces use `Modal` (native `<dialog>` top layer, title/close/body/footer);
-  `DialogProvider` remains confirm/info/promo only. `TextField` accepts `ref` for initial
-  focus. Rebuild `@mentor/ui` after pulling. Related: `choice-chip.tsx`, `modal.tsx`,
-  `text-field.tsx`.
-
-- **Card follows theme (2026-08-15)** — `Card` uses `--color-surface` / `--color-border` /
-  `--color-surface-translucent` instead of `bg-white`. Panel is the first consumer pass.
-- **Light/dark theme tokens (2026-08-15)** — `html.dark` overrides `--color-*` / `--shadow-*` /
-  blob opacities. Soft charcoal (`#12141A` / `#1A1D24`), not `#000`. `colorsDark` + `blobs` /
-  `blobsDark` in `tokens.ts`. `BackgroundBlobs` reads blob tokens. Primary button label uses
-  `--color-btn-label` so the invert works. Usage: set cookie `mentor-theme=dark` or use the
-  sidebar toggle. Gotcha: notebook / weekly-recap / vision-board canvas stay light-locked.
-  Related: `theme.css`, `tokens.ts`, `background-blobs.tsx`, `button.tsx`.
-
-## Gotchas / Known issues
-
-- **`@mentor/ui` is consumed as compiled `dist/`** — after editing/adding a component you **must
-  rebuild** (`pnpm --filter @mentor/ui build`) before `apps/web` typecheck picks it up.
-- **No chart primitive** in DESIGN.md → trend/analysis UIs use `ProgressBar` bars, not a chart library.
-- **Overlay primitives:** `Toast`, `Dialog` (confirm stack), `Modal` (form/content `<dialog>`), and `BottomSheet` are implemented; notification `drawer`, `popover`, `coach-bubble` still pending or bespoke (Stitch designs in `.stitch/`).
-- **`TextField` is single-line** → multi-line input (forum composer) uses a token-styled `<textarea>`.
-- **Toast:** rebuild `@mentor/ui` after changes; mount `ToastProvider` once at root (not per layout);
-  viewport portals to `document.body` at `z-[100]`; `dismissLabel` is required on raw `useToast().show()`
-  — use `useMentorToast()` in web for i18n defaults, `puhuVariant`, and `duration`.
-- **Dialog:** single open dialog (no stack); toast stays above dialog (`z-[100]` vs `z-[60]`/`z-[70]`);
-  `confirm()` resolves `false` on cancel/ESC (backdrop disabled); use `useMentorDialog()` for i18n +
-  default error icon / Puhu hero; `@mentor/ui` requires `react-dom` peer for portal viewports.
-- **Modal:** native `<dialog>` via `showModal()`; do not use `method="dialog"` (callers
-  `preventDefault` on submit). Escape/backdrop are no-ops while `closeDisabled`. Distinct from
-  `DialogProvider` — do not put forms in `confirm()`/`show()`.
-- **ChoiceChip:** not a replacement for `Chip`. Unselected rim is `color-mix(main 12%)` because
-  light `--color-border` is white and would vanish on `--color-surface`.
-- **Bottom sheet:** single open sheet; z below dialog so delete confirm stacks correctly; scroll lock
-  via `html.mentor-sheet-open`; desktop uses centered panel (not bottom-anchored); drag handle is
-  visual-only in MVP (no swipe dismiss).
-
-## Related
-
-- [`DESIGN.md`](../../DESIGN.md) (token source of truth)
-- Standards: [frontend.md](../standards/frontend.md) · [vercel-react-best-practices](../../AGENTS.md)
-- Consumers: [web-shell.md](../features/web-shell.md) · all `docs/features/*.md` web sections
-- Stitch design bundle: `.stitch/` (overlay prompts)
+1. **No magic hex or pixel values:** Always use CSS variables (`var(--color-*)`, `var(--radius-*)`) or their mapped Tailwind classes.
+2. **100% Opaque Overlays:** Modals, bottom sheets, dropdowns, and popovers must use solid `var(--color-surface)` — never translucent backgrounds that bleed underlying text.
+3. **Solar Iconography:** Use Solar Linear at rest and Solar Bold for active/selected states. Keep glyphs bare (no unnecessary pastel tile boxes).
+4. **Zero-CLS Loading:** Pair every client-fetched view with a dimensionally matched skeleton (`animate-pulse` on `--color-surface-alt`).
+5. **Reduced Motion:** Always honor `prefers-reduced-motion: reduce` (`useReducedMotion()` in Framer Motion, or CSS `@media (prefers-reduced-motion: reduce)`).
