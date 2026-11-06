@@ -314,6 +314,9 @@ async function mockPanel(
       return json(route, saved);
     }
     if (method === "GET" && path === "/v1/economy/quests") return json(route, QUESTS);
+    if (method === "GET" && path === "/v1/economy/rewards/unseen") {
+      return json(route, { items: [], total: 0, page: 1, pageSize: 20 });
+    }
     if (method === "GET" && path.startsWith("/v1/economy/")) {
       return json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
     }
@@ -520,7 +523,7 @@ for (const scenario of [
     await expect(slots).toHaveCount(scenario.premium ? 2 : 0);
     for (const slot of await slots.all()) {
       await expect(slot).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-      await expect(slot.locator("svg")).toHaveClass(/\bsolar-.*-bold\b/);
+      await expect(slot.locator("svg")).toHaveClass(/\bsolar-.*-linear\b/);
       await expect(slot.locator("svg")).toHaveCSS("width", "20px");
     }
     const compact = page.locator("[data-journey-level-compact]");

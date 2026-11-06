@@ -5,6 +5,7 @@ import type {
   CoachPlanAdaptationBriefDto,
   CoachPlanAdaptationDto,
   PlanEventDto,
+  PlanPreviewAccessDto,
   PlanTaskDto,
   SubscriptionView,
 } from "@mentor/types";
@@ -456,10 +457,6 @@ test("Free kullanıcıya LLM isteği yapmadan paywall açar", async ({
 
   await page.getByRole("button", { name: "Puhu’yla planla" }).click();
 
-  // The paywall opens in place. It stopped being a redirect to /abonelik when the premium paywall
-  // modal shipped — `plan-coach-adaptation-action.tsx` calls `openPaywall({ sourceFeature:
-  // "plan.ai" })`. The load-bearing half of this test is unchanged: a free user's click must not
-  // reach the LLM.
   await expect(page.getByTestId("premium-paywall")).toBeVisible();
   expect(api.previewCalls).toBe(0);
 });
@@ -677,16 +674,16 @@ test("önizleme koçun baktıklarını ve her görevin nedenini gösterir", asyn
   await page.getByRole("button", { name: "Puhu’yla planla" }).click();
   await generateFromWizard(page);
 
-  await expect(page.getByText(coverageLine)).toBeVisible();
-  await expect(page.getByText("PREMIUM", { exact: true })).toBeVisible();
-  await expect(page.getByText(`Neden: ${weakLine}`)).toBeVisible();
-  await expect(page.getByText(`Neden: ${rhythmLine}`)).toBeVisible();
+  const preview = page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" });
+  await expect(preview.getByText(coverageLine)).toBeVisible();
+  await expect(preview.getByText(`Neden: ${weakLine}`)).toBeVisible();
+  await expect(preview.getByText(`Neden: ${rhythmLine}`)).toBeVisible();
 
   // The full list sits behind one tap; the rows already carry the line that matters for them.
-  await page.getByText("Puhu’nun baktıkları").click();
-  await expect(page.getByRole("listitem").filter({ hasText: weakLine })).toBeVisible();
+  await preview.getByText("Puhu’nun baktıkları").click();
+  await expect(preview.getByRole("listitem")).toHaveText([weakLine, rhythmLine]);
 
-  await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
+  await preview.getByRole("button", { name: "Seçilenleri uygula" }).click();
   await expect(page.getByText("Planın güncellendi")).toBeVisible();
   expect(api.applyBodies).toHaveLength(1);
   expect(api.applyBodies[0]).toMatchObject({ source: "PLAN" });
@@ -1160,10 +1157,15 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     // Premium is included; free has no Coin path here (economy is off), so it meets the paywall.
     if (method === "GET" && path === "/v1/coach/plan-previews/access") {
       const premium = options.premium !== false;
-      return json(route, {
+      const offer: PlanPreviewAccessDto = {
         mode: premium ? "INCLUDED" : "NONE", canGenerate: premium, cost: null, dailyLimit: 0,
         dailyRemaining: 0, coinConfirmed: 0, latestRequestId: null, nextAvailableAt: null,
-      });
+        ...(!premium && {
+          reason: "PAYMENT_PREMIUM_REQUIRED",
+          message: "Bu özellik Premium'a açık.",
+        }),
+      };
+      return json(route, offer);
     }
     if (method === "POST" && path === "/v1/coach/plan-adaptation") {
       previewCalls += 1;

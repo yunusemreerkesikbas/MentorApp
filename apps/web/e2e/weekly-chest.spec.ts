@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type { AuthUser, TodayPanelResponse, WeeklyChestView } from "@mentor/types";
+import { browserApiUrl, browserWebOrigin } from "./api.fixture";
 import { IDLE_STREAK } from "./streak.fixture";
 
 /**
@@ -9,9 +10,8 @@ import { IDLE_STREAK } from "./streak.fixture";
  * Run: `pnpm --filter @mentor/web exec playwright test -c playwright.weekly-chest.config.ts`.
  */
 
-const API = process.env.QA_STAGE2_API_URL?.trim() || "http://localhost:3502/v1";
 const cors = {
-  "access-control-allow-origin": process.env.PLAYWRIGHT_BASE_URL?.trim() || "http://localhost:3512",
+  "access-control-allow-origin": browserWebOrigin,
   "access-control-allow-credentials": "true",
 };
 
@@ -85,7 +85,7 @@ async function mockApp(page: Page, initial: WeeklyChestView) {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
     window.sessionStorage.setItem("mentor.desktop-coach-fab.nudge-dismissed", "1");
   });
-  await page.route(`${API}/**`, async (route) => {
+  await page.route(`${browserApiUrl}/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const method = request.method();

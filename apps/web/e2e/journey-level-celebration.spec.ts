@@ -244,6 +244,9 @@ test("panel rozeti sahneyi tıklayınca yükler ve odağı geri verir", async ({
   await page.route("http://localhost:3001/v1/economy/balance", (route) =>
     json(route, balance),
   );
+  await page.route("http://localhost:3001/v1/economy/rewards/unseen**", (route) =>
+    json(route, { items: [], total: 0, page: 1, pageSize: 20 }),
+  );
 
   await page.goto("/panel");
   const opener = page.getByRole("button", { name: "Yavru Baykuş rozetini sahne ışığında gör" });

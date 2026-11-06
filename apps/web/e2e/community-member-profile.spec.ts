@@ -319,7 +319,7 @@ test("profil sahibi Seviye Yolu kimliğini ve seviye içi ilerlemeyi görür", a
   const panel = page.locator(".profile-progress-panel:visible");
   await expect(panel.getByText("Seviye 3 · Meraklı", { exact: true })).toBeVisible();
   await expect(panel.getByText("I. Bölüm · Başlangıç", { exact: true })).toBeVisible();
-  await expect(panel.getByText("Kendi yönünü bulmaya başladın.", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Kurcalıyorsun, soruyorsun, öğreniyorsun!", { exact: true })).toBeVisible();
   await expect(panel.getByText("111 / 300 XP", { exact: true })).toBeVisible();
   await expect(
     panel.getByRole("progressbar", { name: "Meraklı seviye ilerlemesi" }),
@@ -345,7 +345,7 @@ test("ziyaretçi yolculuk kimliğini görür fakat sayısal XP ilerlemesini gör
   const panel = page.locator(".profile-progress-panel:visible");
   await expect(panel.getByText("Seviye 3 · Meraklı", { exact: true })).toBeVisible();
   // A visitor reads about the owner, not to themselves (Topluluk Tur 2).
-  await expect(panel.getByText("Kendi yönünü bulmaya başladı.", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Kurcalıyor, soruyor, öğreniyor!", { exact: true })).toBeVisible();
   await expect(panel.getByRole("progressbar")).toHaveCount(0);
   await expect(panel.getByText(/XP daha/)).toHaveCount(0);
 
@@ -769,7 +769,7 @@ test("showcase chrome'u İngilizce rota için yerelleştirilir", async ({ page }
 
   await page.goto("/en/community/member/showcase_user");
 
-  const showcase = page.getByRole("region", { name: "Traces of the Journey" });
+  const showcase = page.getByRole("region", { name: "Your achievements" });
   await expect(showcase).toBeVisible();
   await expect(
     showcase.getByRole("link", { name: "View all" }),

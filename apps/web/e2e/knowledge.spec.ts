@@ -210,7 +210,7 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
 
   await expect(page.getByRole("link", { name: "PuhuKoç" })).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Sign in to ask the Coach" }),
+    page.getByRole("link", { name: "Sign in to ask Puhu" }),
   ).toHaveAttribute("href", "/en/login");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     "content",
