@@ -79,7 +79,7 @@ test("signup's consent checkboxes are named by their sentences", async ({ page }
   await page.goto("/kayit");
   // A screen reader must hear what is being agreed to, the terms and the age line included.
   await expect(page.getByRole("checkbox", { name: /KVKK aydınlatma/ })).toBeVisible();
-  await expect(page.getByRole("checkbox", { name: /Kullanım Koşulları.*13 yaşında/ })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /Kullanım koşulları.*13 yaşında/i })).toBeVisible();
 });
 
 test("welcome remains immediately usable with reduced motion", async ({ page }) => {
@@ -298,7 +298,7 @@ test("a coach's invite link survives signup and onboarding", async ({ page }) =>
   await page.getByRole("textbox", { name: "E-posta" }).fill("deniz@test.local");
   await page.locator('input[type="password"]').fill("MentorQa!2026");
   await page.getByRole("checkbox", { name: /KVKK aydınlatma/ }).click();
-  await page.getByRole("checkbox", { name: /Kullanım Koşulları/ }).click();
+  await page.getByRole("checkbox", { name: /Kullanım koşulları/i }).click();
   await page.getByRole("button", { name: "Kayıt ol" }).click();
 
   await expect(page).toHaveURL(/\/baslangic/);
