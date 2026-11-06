@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { deriveLevel } from "@mentor/core";
 import type {
   AuthUser,
   PlanDto,
@@ -220,9 +221,13 @@ async function mockDashboard(page: Page, options: Options = {}) {
         cooldownEndsAt: null,
       });
     }
-    if (method === "GET" && path.startsWith("/v1/economy/")) {
-      return json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
+    if (method === "GET" && path === "/v1/economy/balance") {
+      return json(route, { xp: 0, coinConfirmed: 0, coinPending: 0, level: deriveLevel(0) });
     }
+    if (method === "GET" && path === "/v1/economy/rewards/unseen") {
+      return json(route, { items: [], total: 0, page: 1, pageSize: 20 });
+    }
+    if (method === "GET" && path === "/v1/economy/quests") return json(route, []);
     if (method === "GET" && path === "/v1/notifications") {
       return json(route, { items: [], unreadCount: 0, hasMore: false });
     }
