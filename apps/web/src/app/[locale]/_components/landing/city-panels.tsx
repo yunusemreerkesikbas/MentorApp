@@ -99,15 +99,6 @@ function Hero({ t }: { t: Translate }) {
       <Suspense fallback={null}>
         <LandingCounter />
       </Suspense>
-      <p className="lc-links">
-        <Link href="/login" className="lc-text-link">
-          {t("has_account")}
-        </Link>
-        <span aria-hidden="true">·</span>
-        <a href="#durak-7" className="lc-text-link">
-          {t("skip_story")}
-        </a>
-      </p>
     </div>
   );
 }
