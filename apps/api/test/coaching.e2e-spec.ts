@@ -6,6 +6,7 @@ import request from "./browser-request";
 import { eq } from "drizzle-orm";
 import { DRIZZLE } from "../src/database/database.constants";
 import type { Database } from "../src/database/drizzle";
+import { addDays, todayInIstanbul } from "../src/modules/coaching/domain/date.util";
 import { StudySessionRepository } from "../src/modules/coaching/infrastructure/study-session.repository";
 import { planTasks } from "../src/database/schema";
 import { withUserContext } from "../src/database/rls";
@@ -292,21 +293,21 @@ describe("coaching (e2e)", () => {
   });
 
   it("bulk create adds all tasks; a single past date rejects the whole batch (403)", async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const taskDate = addDays(todayInIstanbul(), 1);
     const ok = await request(app.getHttpServer())
       .post("/v1/plan-tasks/bulk")
       .set(authA())
       .send({
         tasks: [
-          { title: "Bulk 1", subject: "Matematik", taskDate: today },
-          { title: "Bulk 2", subject: "Türkçe", taskDate: today },
+          { title: "Bulk 1", subject: "Matematik", taskDate },
+          { title: "Bulk 2", subject: "Türkçe", taskDate },
         ],
       });
     expect(ok.status).toBe(201);
     expect(ok.body).toHaveLength(2);
 
     const list = await request(app.getHttpServer())
-      .get(`/v1/plan-tasks?date=${today}`)
+      .get(`/v1/plan-tasks?date=${taskDate}`)
       .set(authA());
     const titles = list.body.items.map((t: { title: string }) => t.title);
     expect(titles).toEqual(expect.arrayContaining(["Bulk 1", "Bulk 2"]));
@@ -316,13 +317,13 @@ describe("coaching (e2e)", () => {
       .set(authA())
       .send({
         tasks: [
-          { title: "Geçerli", taskDate: today },
+          { title: "Geçerli", taskDate },
           { title: "Geçmiş", taskDate: "2020-01-01" },
         ],
       });
     expect(rejected.status).toBe(403); // COACHING_TASK_DATE_READONLY — same as single create
     const after = await request(app.getHttpServer())
-      .get(`/v1/plan-tasks?date=${today}`)
+      .get(`/v1/plan-tasks?date=${taskDate}`)
       .set(authA());
     expect(
       after.body.items.some((t: { title: string }) => t.title === "Geçerli"),
@@ -669,9 +670,8 @@ describe("coaching (e2e)", () => {
     expect(done.status).toBe(200);
     expect(done.body.planTaskAutoCompleted).toBe(true);
 
-    const today = new Date().toISOString().slice(0, 10);
     const tasks = await request(app.getHttpServer())
-      .get(`/v1/plan-tasks?date=${today}`)
+      .get(`/v1/plan-tasks?date=${createTask.body.taskDate}`)
       .set(authA());
     expect(tasks.status).toBe(200);
     const linkedTask = tasks.body.items.find(

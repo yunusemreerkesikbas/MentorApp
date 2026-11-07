@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { PlanService } from "./plan.service";
+import { addDays, todayInIstanbul } from "../domain/date.util";
 import type { MentorshipTaskVisibleSignature } from "../infrastructure/plan-task-mentorship.repository";
 
 const STUDENT_A = "00000000-0000-4000-8000-000000000002";
@@ -7,7 +8,7 @@ const STUDENT_B = "00000000-0000-4000-8000-000000000003";
 const LINK_A = "00000000-0000-4000-8000-000000000012";
 const LINK_B = "00000000-0000-4000-8000-000000000013";
 const GROUP = "00000000-0000-4000-8000-000000000020";
-const TODAY = new Date().toISOString().slice(0, 10);
+const TASK_DATE = addDays(todayInIstanbul(), 1);
 
 type Row = {
   id: string;
@@ -35,7 +36,7 @@ function row(overrides: Partial<Row>): Row {
   return {
     id: crypto.randomUUID(),
     userId: STUDENT_A,
-    taskDate: TODAY,
+    taskDate: TASK_DATE,
     title: "Paragraf",
     subject: "Türkçe",
     topic: null,
@@ -57,7 +58,7 @@ function row(overrides: Partial<Row>): Row {
 }
 
 const expectedSignature: MentorshipTaskVisibleSignature = {
-  taskDate: TODAY,
+  taskDate: TASK_DATE,
   title: "Paragraf",
   subject: "Türkçe",
   topic: null,
@@ -319,7 +320,7 @@ describe("PlanService W8 assignment seams", () => {
     ];
 
     const changed = await service.updateMentorshipTaskGroup(scopes, GROUP, {
-      taskDate: TODAY,
+      taskDate: TASK_DATE,
       title: "Grup başlığı",
     }, expectedSignature);
     expect(changed.map((item) => item.id).sort()).toEqual(["a", "b"]);
@@ -397,7 +398,7 @@ describe("PlanService W8 assignment seams", () => {
     await service.createMentorshipBatchInTransaction(
       tx as never,
       scopes,
-      { title: "Yeni", taskDate: TODAY },
+      { title: "Yeni", taskDate: TASK_DATE },
     );
     await service.updateMentorshipTaskInTransaction(
       tx as never,

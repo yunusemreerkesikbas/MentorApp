@@ -12,6 +12,9 @@ import type {
 
 const taskId = "33333333-3333-4333-8333-333333333333";
 const revision = "a".repeat(64);
+// Istanbul has rolled over to the next calendar day while UTC is still on November 6.
+const calendarTime = new Date("2026-11-06T21:30:00Z");
+const calendarDay = "2026-11-07";
 const user: AuthUser = {
   id: "22222222-2222-4222-8222-222222222222",
   email: "plan@test.local",
@@ -195,7 +198,8 @@ test("görev süresi: tüm gün görevini 80 dakika ile oluşturur", async ({ pa
 });
 
 test("görev süresi: düzenlerken yükler, değiştirir ve temizler", async ({ page }) => {
-  const current = { ...task, taskDate: new Date().toISOString().slice(0, 10), durationMinutes: 80, sessionFocusMinutes: 80 };
+  await page.clock.setFixedTime(calendarTime);
+  const current = { ...task, taskDate: calendarDay, durationMinutes: 80, sessionFocusMinutes: 80 };
   await mockPlanApi(page, { preview: readyPreview, tasks: [current] });
   const patches: unknown[] = [];
   await page.route(`${browserApiUrl}/plan-tasks/${taskId}`, async (route) => {
@@ -697,16 +701,13 @@ test("eski özel günlük hedef serbest giriş kartında görünür", async ({ p
   await expect(page.getByRole("spinbutton", { name: "Ya da kendin yaz" })).toHaveValue("75");
 });
 
-/** Today in the browser's local calendar — the calendar view's "past is read-only" rule uses it. */
-const todayIso = new Date().toISOString().slice(0, 10);
-
 const timedTask: PlanTaskDto = {
   id: "55555555-5555-4555-8555-555555555555",
   title: "Matematik tekrar",
   subject: "Matematik",
   status: "PENDING",
   sortOrder: 0,
-  taskDate: todayIso,
+  taskDate: calendarDay,
   startTime: "13:00",
   endTime: "14:30",
   description: "Problemler + hız",
@@ -760,6 +761,7 @@ test.describe("Takvim", () => {
   test("Hafta ölçeği masaüstünde saat ızgarası, mobilde ajanda gösterir", async ({
     page,
   }) => {
+    await page.clock.setFixedTime(calendarTime);
     await mockPlanApi(page, {
       preview: readyPreview,
       tasks: [timedTask],
@@ -793,6 +795,7 @@ test.describe("Takvim", () => {
   test("Gün ızgarasında boş saate tıklayınca saatli etkinlik oluşturur", async ({
     page,
   }) => {
+    await page.clock.setFixedTime(calendarTime);
     const api = await mockPlanApi(page, {
       preview: readyPreview,
       tasks: [],
@@ -819,7 +822,7 @@ test.describe("Takvim", () => {
     await expect.poll(() => api.createBodies.length).toBe(1);
     expect(api.createBodies[0]).toMatchObject({
       title: "Deneme çöz",
-      taskDate: todayIso,
+      taskDate: calendarDay,
       startTime: "09:00",
       endTime: "10:30",
       description: "Sayısal bölüm",
