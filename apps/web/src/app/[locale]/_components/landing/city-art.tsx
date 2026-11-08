@@ -21,6 +21,8 @@ export function CityArt({ art, layer, priority }: { art: SceneArt; layer: number
     opening[`--lc-${layout}-ax`] = ax;
     opening[`--lc-${layout}-ay`] = ay;
   }
-  return <SceneImg className="lc-art" src={art.src} width={art.naturalWidth} height={art.naturalHeight}
+  // Keep the facade's full detail when the camera moves into its windows.
+  const mobileSrc = layer === 2 ? undefined : art.src.replace(".webp", "-mobile.webp");
+  return <SceneImg className="lc-art" src={art.src} mobileSrc={mobileSrc} width={art.naturalWidth} height={art.naturalHeight}
     fetchPriority={priority ? "high" : undefined} style={opening as CSSProperties} />;
 }
