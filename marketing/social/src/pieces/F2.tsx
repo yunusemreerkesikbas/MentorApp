@@ -50,9 +50,9 @@ export function F2({ safe }: PieceProps) {
         {T.note2}
       </p>
 
-      <Img src={staticFile(ART.p3)} alt={T.altPuhu} style={{ position: "absolute", left: 45, top: 1094, width: 320, height: 297, objectFit: "contain" }} />
+      <Img src={staticFile(ART.p3)} alt={T.altPuhu} style={{ position: "absolute", left: 45, top: 1099, width: 320, height: 297, objectFit: "contain" }} />
 
-      <div style={{ position: "absolute", left: 560, right: 40, bottom: 60, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ position: "absolute", left: 370, right: 40, bottom: 31, height: 114, display: "flex", flexDirection: "column", gap: 8 }}>
         <Logo size={64} color="#111111" style={{ lineHeight: 1 }} />
         <span style={{ fontSize: 24, fontWeight: 900, color: C.inkBlue }}>{T.footer}</span>
       </div>

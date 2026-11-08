@@ -1,3 +1,4 @@
+import { REEL_CENTRE } from "../brand";
 import { SIZES, type Format } from "../pieces";
 
 // Insets that platform UI covers (spec: "Brand and format constraints").
@@ -22,7 +23,8 @@ export function SafeZones({ format, show }: { format: Format; show: boolean }) {
       {band(0, 0, width, t)}
       {band(0, height - b, width, b)}
       {band(0, t, l, height - t - b)}
-      {band(width - r, t, r, height - t - b)}
+      {/* Reels: the right rail only covers the lower part of the frame. */}
+      {format === "reel" ? band(width - r, REEL_CENTRE.railFrom, r, height - REEL_CENTRE.railFrom - b) : band(width - r, t, r, height - t - b)}
     </>
   );
 }

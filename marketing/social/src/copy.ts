@@ -1,5 +1,30 @@
 import type { PieceId } from "./pieces";
 
+// Premium: flip this once Premium can be bought. Feed corners and the reel's closing tag become the
+// trial sticker, stories swap ÇOK YAKINDA for it. No price anywhere (owner, 2026-11-08).
+export const PREMIUM_SALE_OPEN = false;
+
+const PREMIUM_SHARED = { pill: "PREMIUM", site: "puhukoc.com", trial: "7 GÜN ÜCRETSİZ DENE" };
+// Direction 1 · Kahraman modu (canvas P-Isik).
+const KAHRAMAN = {
+  ...PREMIUM_SHARED,
+  head1: "KAHRAMAN",
+  // The second letter is drawn gold.
+  head2: "MODU",
+  toggle: "AÇIK",
+  line1: "Süper gücü yapay zekâ: AÇIK.",
+  line2: "Zor soruda çağır, Puhu saniyesinde yanında.",
+  altPuhu: "Maskeli ve pelerinli kahraman Puhu ellerini beline koymuş, kendinden emin gülümsüyor",
+};
+// Direction 2 · Gece uçuşu (canvas P-Gece).
+const PELERIN = {
+  ...PREMIUM_SHARED,
+  head1: "Puhu’ya",
+  head2: "pelerin geldi!",
+  body: "Süper gücü: yapay zekâ. Takıldığın an çağır, imdadına yetişsin.",
+  altPuhu: "Maskeli ve pelerinli Puhu yumruğu önde, arkasında parıltı iziyle uçuyor",
+};
+
 // Every visible string, per piece. Edit copy here and re-render.
 export const COPY: Partial<Record<PieceId, Record<string, string>>> = {
   F1: {
@@ -149,5 +174,29 @@ export const COPY: Partial<Record<PieceId, Record<string, string>>> = {
     body: "PuhuKoç; KPSS, YKS, LGS, ALES ve DGS'ye hazırlananlar için günlük plan, birlikte çalışma masası ve haftalık özet sunar. Çok yakında.",
     site: "puhukoc.com",
     altArt: "Puhu elinde fenerle pencerede sevinçle zıplıyor",
+  },
+  PF1: KAHRAMAN,
+  PS1: { ...KAHRAMAN, badge: "ÇOK YAKINDA" },
+  PF2: PELERIN,
+  PS2: { ...PELERIN, badge: "ÇOK YAKINDA" },
+  PR1: {
+    head1: KAHRAMAN.head1,
+    head2: KAHRAMAN.head2,
+    toggle: KAHRAMAN.toggle,
+    line1: KAHRAMAN.line1,
+    line2: KAHRAMAN.line2,
+    pill: PREMIUM_SHARED.pill,
+    trial: PREMIUM_SHARED.trial,
+    altPuhu: KAHRAMAN.altPuhu,
+  },
+  PR2: {
+    head1: PELERIN.head1,
+    head2: PELERIN.head2,
+    chip1: "Sorunu Puhu’ya sor",
+    chip2: "Her güne Puhu’dan not",
+    chip3: "Haftanı Puhu kursun",
+    pill: PREMIUM_SHARED.pill,
+    trial: PREMIUM_SHARED.trial,
+    altPuhu: PELERIN.altPuhu,
   },
 };

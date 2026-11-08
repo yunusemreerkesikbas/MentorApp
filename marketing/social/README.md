@@ -1,6 +1,6 @@
 # PuhuKoç social launch kit
 
-15 launch pieces (feed, story, reel, X, LinkedIn) rendered with Remotion.
+15 launch pieces (feed, story, reel, X, LinkedIn) and 6 Premium pieces (PF1, PF2, PS1, PS2, PR1, PR2) rendered with Remotion.
 Spec and posting order: [docs/plans/2026-11-07-social-launch-kit-design.md](../../docs/plans/2026-11-07-social-launch-kit-design.md#posting-order-no-dates).
 
 ## Run
@@ -9,7 +9,7 @@ Spec and posting order: [docs/plans/2026-11-07-social-launch-kit-design.md](../.
 - `npm run studio`: preview and tweak every piece in the browser.
 - `npm run render`: render everything to `out/<id>/` (PNG or MP4 + cover, plus `caption.txt`).
   Render a few with `npm run render -- --only F1,R2`. The copy check runs first and stops on a rule break.
-- `npm run compare`: check F1–F3 and S1–S3 against the approved canvas in `reference/`.
+- `npm run compare`: check F1–F3, S1–S3, PF1 and PF2 against the approved canvas in `reference/`.
 - `npm test` and `npm run typecheck` before you post.
 
 ## Edit
@@ -17,6 +17,8 @@ Spec and posting order: [docs/plans/2026-11-07-social-launch-kit-design.md](../.
 - On-image text: `src/copy.ts`. Post text, hashtags and alt text: `src/captions.ts`.
 - Art lives in `public/art/` and is listed in `src/art.ts`.
 - ChatGPT + Kling prompts for the same pieces: [PROMPTS.md](PROMPTS.md).
+- Premium: when Premium can be bought, set `PREMIUM_SALE_OPEN = true` in `src/copy.ts` and re-render
+  `--only PF1,PF2,PS1,PS2,PR1,PR2`. Feed posts and the reels never say ÇOK YAKINDA (they stay on the profile).
 
 ## P5 / P6 art
 

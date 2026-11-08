@@ -1,9 +1,10 @@
-// The 15 kit pieces as plain data. Root.tsx maps them to components.
+// The kit pieces as plain data (15 launch + 5 Premium). Root.tsx maps them to components.
 export type PieceId =
   | "F1" | "F2" | "F3" | "F4" | "F5" | "F6"
   | "S1" | "S2" | "S3" | "S4"
   | "R1" | "R2" | "R3"
-  | "X1" | "L1";
+  | "X1" | "L1"
+  | "PF1" | "PF2" | "PS1" | "PS2" | "PR1" | "PR2";
 
 export type Format = "feed" | "story" | "reel" | "landscape";
 
@@ -37,6 +38,13 @@ export const PIECES: Piece[] = [
   { id: "R3", format: "reel", title: "Rozet ritmi", video: { fps: 30, durationInFrames: 270, endCardFrom: 195, coverFrame: 120 } },
   { id: "X1", format: "landscape", title: "X kartı" },
   { id: "L1", format: "landscape", title: "LinkedIn kartı" },
+  // Premium (2026-11-08): 1 = Kahraman modu (cream), 2 = Gece uçuşu (night).
+  { id: "PF1", format: "feed", title: "Premium · Kahraman modu" },
+  { id: "PF2", format: "feed", title: "Premium · Puhu'ya pelerin geldi" },
+  { id: "PS1", format: "story", title: "Premium · Kahraman modu" },
+  { id: "PS2", format: "story", title: "Premium · Puhu'ya pelerin geldi" },
+  { id: "PR1", format: "reel", title: "Premium · Kahraman modu", video: { fps: 30, durationInFrames: 270, endCardFrom: 210, coverFrame: 180 } },
+  { id: "PR2", format: "reel", title: "Premium · Gece uçuşu", video: { fps: 30, durationInFrames: 270, endCardFrom: 210, coverFrame: 180 } },
 ];
 
 export const compositionIds = (p: Piece): string[] =>

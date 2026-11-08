@@ -71,6 +71,31 @@ export const CAPTIONS: Partial<Record<PieceId, Caption>> = {
     text: "KPSS, YKS, LGS, ALES, DGS. Hangisi senin? 📝\nYorumlara yaz, Puhu tek tek sayıyor. Hepsi aynı masada: puhukoc.com",
     alt: "Krem renkli noktalı zeminde KPSS, YKS, LGS, ALES ve DGS yazan beş yuvarlak damga ritimle basılıyor. Altlarında şaşkın, uykulu ve elini yüzüne kapatmış üç Puhu çıkartması beliriyor. Ardından \"Hangisi senin?\" sorusu ve el yazısıyla \"Yorumlara yaz.\" notu geliyor. Sonda PuhuKoç logosu, puhukoc.com ve \"ÇOK YAKINDA\" etiketi.",
   },
+  // Premium: the post says no date, the caption does (captions can be edited after launch).
+  PF1: {
+    text: "Kahraman modu: açık. 🦸\nPuhu artık yapay zekâ koçun: takıldığın an yaz, cevap hemen gelsin. Premium çok yakında: puhukoc.com",
+    alt: "Krem zeminde kocaman \"KAHRAMAN MODU\" yazısı; \"O\" harfi altın renginde ve ondan aşağı bir ışık iniyor. Işığın içinde maskeli, pelerinli kahraman Puhu elleri belinde duruyor, yanında \"AÇIK\" yazan sarı bir düğme var. Altta \"Süper gücü yapay zekâ: AÇIK.\" yazısı ve puhukoc.com.",
+  },
+  PF2: {
+    text: "Puhu’ya pelerin geldi! ✨\nYapay zekâ koçun Puhu Premium’la geliyor: takıldığın an yaz, cevap hemen gelsin. Çok yakında: puhukoc.com",
+    alt: "Gece mavisi zeminde \"Puhu’ya pelerin geldi!\" başlığı. Maskeli ve pelerinli Puhu yumruğu önde uçuyor, arkasında altın kenarlı mavi bir kuyruk ve parıltılar var. Köşede PREMIUM etiketi ve puhukoc.com.",
+  },
+  PS1: {
+    text: "Kahraman modu: açık. 🦸\nPremium çok yakında: puhukoc.com",
+    alt: "Krem zeminde kocaman \"KAHRAMAN MODU\" yazısı ve altın renkli \"O\" harfinden inen ışık. Işığın içinde maskeli, pelerinli kahraman Puhu elleri belinde duruyor; yanında \"AÇIK\" düğmesi ve \"ÇOK YAKINDA\" etiketi var. Altta \"Süper gücü yapay zekâ: AÇIK.\" yazısı.",
+  },
+  PS2: {
+    text: "Puhu’ya pelerin geldi! ✨\nPremium çok yakında: puhukoc.com",
+    alt: "Gece mavisi zeminde \"Puhu’ya pelerin geldi!\" başlığı. Maskeli ve pelerinli Puhu altın kenarlı mavi bir kuyrukla uçuyor. Altta \"ÇOK YAKINDA\" etiketi.",
+  },
+  PR1: {
+    text: "Kahraman modu: açık. 🦸\nSüper gücü yapay zekâ: zor soruda çağır, Puhu saniyesinde yanında. Premium çok yakında: puhukoc.com",
+    alt: "Krem zeminde bir ışık huzmesi. Maskeli, pelerinli Puhu çömeliyor, tavana fırlıyor ve \"KAHRAMAN MODU\" yazısı damgalanırken ışığın içine kahraman gibi iniyor. Yanında \"AÇIK\" düğmesi beliriyor, altta \"Süper gücü yapay zekâ: AÇIK.\" yazısı. Sonda kahraman Puhu, PuhuKoç logosu, puhukoc.com ve PREMIUM etiketi.",
+  },
+  PR2: {
+    text: "Puhu’ya pelerin geldi! 🦸\nSorunu Puhu’ya sor, her gün ondan bir not al, haftanı ona kurdur. Premium çok yakında: puhukoc.com",
+    alt: "Gece mavisi zeminde \"Puhu’ya pelerin geldi!\" yazısı damgalanıyor. Maskeli, pelerinli Puhu sol alttan altın kenarlı mavi bir kuyrukla uçarak giriyor. Sırayla \"Sorunu Puhu’ya sor\", \"Her güne Puhu’dan not\" ve \"Haftanı Puhu kursun\" etiketleri beliriyor. Sonda kahraman Puhu, PuhuKoç logosu, puhukoc.com ve PREMIUM etiketi.",
+  },
 };
 
 // caption.txt: post text, hashtags, then the alt text for Instagram's accessibility field.

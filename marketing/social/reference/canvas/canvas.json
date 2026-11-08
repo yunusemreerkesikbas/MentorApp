@@ -43,6 +43,20 @@
       "w": 1080,
       "x": 0,
       "y": 0
+    },
+    "P-Isik.dc.html": {
+      "h": 1350,
+      "title": "P1 · Kahraman modu 4:5",
+      "w": 1080,
+      "x": 0,
+      "y": 7020
+    },
+    "P-Gece.dc.html": {
+      "h": 1350,
+      "title": "P2 · Gece uçuşu 4:5",
+      "w": 1080,
+      "x": 1160,
+      "y": 7020
     }
   },
   "createdOnFiles": {
@@ -60,7 +74,10 @@
     "noteA",
     "noteSafe",
     "noteB",
-    "noteC"
+    "noteC",
+    "titleP",
+    "noteP",
+    "noteSale"
   ],
   "notes": {
     "noteA": {
@@ -118,6 +135,30 @@
       "w": 240,
       "x": 0,
       "y": 4380
+    },
+    "titleP": {
+      "kind": "title1",
+      "maxW": 2240,
+      "text": "Premium · iki yön",
+      "w": 240,
+      "x": 0,
+      "y": 6720
+    },
+    "noteP": {
+      "fill": "teal",
+      "size": 40,
+      "text": "P1 Kahraman modu: krem zemin, dev yazı, O harfinden inen ışık, ayakta kahraman Puhu. P2 Gece uçuşu: uygulamadaki uçuş loop’uyla aynı gece, pelerin mavisi kuyruk. İkisiyle de ilerliyoruz.",
+      "w": 600,
+      "x": 2320,
+      "y": 7020
+    },
+    "noteSale": {
+      "fill": "gray",
+      "size": 24,
+      "text": "Feed postu profilde kalıcı, eskimesin diye köşede puhukoc.com durur. Tweaks › satis: satın alma açılınca yerine 7 GÜN ÜCRETSİZ DENE etiketi gelir. Fiyat hiçbir yerde yazmaz.",
+      "w": 600,
+      "x": 2320,
+      "y": 7860
     }
   },
   "order": [
@@ -126,7 +167,9 @@
     "B-Post.dc.html",
     "B-Story.dc.html",
     "C-Post.dc.html",
-    "C-Story.dc.html"
+    "C-Story.dc.html",
+    "P-Isik.dc.html",
+    "P-Gece.dc.html"
   ],
   "pages": [],
   "title": "PuhuKoç Sosyal Medya Yönleri"

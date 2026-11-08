@@ -4,7 +4,7 @@ import { diffRatio } from "../src/diff";
 import { parseOnly } from "./only";
 
 // Pieces with an approved canvas render in reference/.
-const IDS = ["F1", "F2", "F3", "S1", "S2", "S3"];
+const IDS = ["F1", "F2", "F3", "S1", "S2", "S3", "PF1", "PF2"];
 const THRESHOLD = 0.03;
 const DELTA = 48;
 

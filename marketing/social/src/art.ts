@@ -18,9 +18,23 @@ export const ART = {
   night: "art/puhu-night.png",
   host: "art/puhu-host.png",
   wave: "art/puhu-wave.png",
+  // Premium: masked hero (transparent) and the flight loop's first frame on its own night ground #020B26.
+  premiumHero: "art/puhu-premium-hero.png",
+  premiumFlight: "art/puhu-premium-flight.webp",
 } as const;
 
 export type ArtKey = keyof typeof ART;
 
+// Video clips under public/, kept apart from ART because sharp can't read them.
+export const CLIPS = {
+  // 121 frames at 24 fps (5.04 s), seamless, KlingAI mark already cropped. Ground #020B26.
+  premiumFlight: "art/puhu-premium-flight-loop.mp4",
+  // Owner's Kling clip, 720x1280, 121 frames at 24 fps: crouch, jump out the top, hero landing (~2.2 s), pose.
+  // Cream #F8F1EA, beam #F9D58E. The KlingAI mark (bottom right) is not cropped: PR1's navy floor covers it.
+  premiumLanding: "art/puhu-premium-landing.mp4",
+} as const;
+
 // Poses a reel end card may use: whole body, transparent on every edge (p2/p3 are cropped peeks).
-export const END_CARD_PUHU = ["p1", "host", "wave"] as const satisfies readonly ArtKey[];
+export const END_CARD_PUHU = ["p1", "host", "wave", "premiumHero"] as const satisfies readonly ArtKey[];
+// Nudge (px) that puts each end-card Puhu's body axis on the frame centre (test/art.test.ts measures it).
+export const END_CARD_SHIFT: Partial<Record<(typeof END_CARD_PUHU)[number], number>> = { premiumHero: -35 }; // the cape fills the left of the PNG
