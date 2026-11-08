@@ -14,7 +14,7 @@ process.env.QA_WAITLIST_API = waitlistApi;
 
 export default defineConfig({
   ...base,
-  testMatch: "waitlist.spec.ts",
+  testMatch: ["waitlist.spec.ts", "auth-layout.spec.ts"],
   testIgnore: [],
   workers: 1,
   use: { ...base.use, baseURL: "http://localhost:3380" },

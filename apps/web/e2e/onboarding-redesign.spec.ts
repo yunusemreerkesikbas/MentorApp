@@ -45,7 +45,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("welcome skip opens the final account choice and desktop auth split", async ({ page }, testInfo) => {
+test("welcome skip opens the final account choice and centered desktop auth", async ({ page }, testInfo) => {
   await page.goto("/hosgeldin");
   await expect(page.getByRole("heading", { name: "Selam, ben Puhu." })).toBeVisible();
 
@@ -58,19 +58,18 @@ test("welcome skip opens the final account choice and desktop auth split", async
   await page.getByRole("button", { name: "Başlayalım" }).click();
   await expect(page).toHaveURL(/\/kayit$/);
   if (testInfo.project.name === "desktop-chromium") {
-    await expect(page.getByRole("heading", { name: "Yolculuğun burada başlıyor." })).toBeVisible();
-    await expect(page.locator("[data-auth-narrative-bubble]")).toBeVisible();
+    await expect(page.getByTestId("auth-hang-puhu")).toBeVisible();
 
     const desktopLayout = await page.locator(".auth-sheet").evaluate((sheet) => {
       const scrollArea = sheet.querySelector<HTMLElement>(".mentor-scrollarea");
       const bounds = sheet.getBoundingClientRect();
       return {
         innerOverflowY: scrollArea ? getComputedStyle(scrollArea).overflowY : null,
-        rightInset: window.innerWidth - bounds.right,
+        centerOffset: Math.abs(bounds.left + bounds.width / 2 - document.documentElement.getBoundingClientRect().width / 2),
       };
     });
     expect(desktopLayout.innerOverflowY).not.toBe("auto");
-    expect(desktopLayout.rightInset).toBeGreaterThanOrEqual(64);
+    expect(desktopLayout.centerOffset).toBeLessThan(1);
   }
   await expect(page.getByRole("heading", { name: "Hesap oluştur" })).toBeVisible();
 });

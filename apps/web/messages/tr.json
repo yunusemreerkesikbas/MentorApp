@@ -445,10 +445,7 @@
       "retry": "Doğrulamayı yenile"
     },
     "shell": {
-      "back_login": "Girişe dön",
-      "narrative_label": "Puhu ile sınav yolculuğu",
-      "narrative_title": "Yolculuğun burada başlıyor.",
-      "narrative_body": "Puhu, bugünün küçük adımını bulman ve yalnız kalmadan ilerlemen için yanında."
+      "back_login": "Girişe dön"
     },
     "login": {
       "title": "Giriş yap",

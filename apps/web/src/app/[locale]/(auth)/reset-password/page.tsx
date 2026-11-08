@@ -38,7 +38,7 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SectionHeading as="h2">{t("title")}</SectionHeading>
+      <SectionHeading as="h1">{t("title")}</SectionHeading>
       {done ? (
         <FormSuccess message={t("success")} />
       ) : (

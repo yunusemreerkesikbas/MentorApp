@@ -95,7 +95,7 @@ Atmospheric stages lock their own palette regardless of the user's light/dark to
 
 - **Primary UI & Display Font:** **Nunito** (`--font-sans`, `latin-ext` variable weight `200–1000`, `font-display: swap`). Rounded terminals match Puhu's friendly, energetic character while keeping dense tables and numbers crisp (`tabular-nums` on timers, net scores, and prices).
 - **Handwritten Accent Font:** **Caveat** (`--font-hand`, weights `600`, `700`). Used strictly on taped paper notes, notebook spine labels, and polaroid captions.
-- **Brand Wordmark (`Logo` in `@mentor/ui`):** Typographic **`PuhuKoç`** in Nunito weight `1000` (`-0.03em` tracking), with Puhu's blinking eye embedded inside the letter `o`.
+- **Brand Wordmark (`Logo` in `@mentor/ui`):** Lowercase **`puhukoc`** (no ç, no symbol, no full stop) in Outfit `700`, shipped as an outlined SVG path, so no logo font is loaded. It is `1em` tall and drawn in `currentColor`: the caller's text size and colour set it. Ink is `--color-main` (`#111827` light, `#F3F6FA` dark). The favicon and app icons keep the eye mark for now. The share images (`img/brand/puhukoc-og-{tr,en}.png`) and the admin wordmark PNGs are rendered from the same path; redraw them if the logo changes. In running text the brand name stays **PuhuKoç**.
 - **Turkish Casing Rule:** Never rely on bare CSS `uppercase` for dynamic Turkish strings containing `i` or `ı`. Use `toLocaleUpperCase('tr-TR')` or sentence case.
 
 ### Panel Type Scale

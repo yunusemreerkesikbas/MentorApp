@@ -25,7 +25,7 @@ export function AppNavSkeleton() {
     <aside className="mentor-app-sidebar fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] lg:flex"
       data-testid="app-nav-skeleton">
       <div className="mentor-app-sidebar-expanded p-5">
-      <div className="mb-4 flex min-h-11 items-center text-2xl"><Logo cut="large" /></div>
+      <div className="mb-4 flex min-h-11 items-center text-2xl"><Logo /></div>
       <AppNavIdentitySkeleton />
       <SkeletonGroup label={t("loading")} className="mt-2 grid gap-1">
         {[0, 1, 2, 3, 4, 5].map((row) => <div key={row} className="flex min-h-11 items-center gap-3 px-3">

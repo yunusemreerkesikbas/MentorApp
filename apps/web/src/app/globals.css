@@ -484,10 +484,6 @@ html.mentor-sheet-open {
 .auth-sheet[data-phase="exiting"] {
   animation: auth-sheet-out var(--auth-sheet-close-dur) cubic-bezier(0.55, 0, 1, 0.45) both;
 }
-.auth-narrative {
-  transition: opacity var(--auth-sheet-close-dur) ease-in;
-}
-.auth-shell[data-phase="exiting"] .auth-narrative { opacity: 0; }
 @keyframes auth-sheet-in {
   from { transform: translate3d(0, var(--auth-sheet-from-y), 0); opacity: var(--auth-sheet-from-opacity); }
   to { transform: translate3d(0, 0, 0); opacity: 1; }
@@ -501,7 +497,6 @@ html.mentor-sheet-open {
   .auth-sheet[data-phase="exiting"] {
     animation: none !important;
   }
-  .auth-narrative { transition: none; }
 }
 @media (min-width: 64rem) {
   .auth-shell {
@@ -509,7 +504,8 @@ html.mentor-sheet-open {
     --auth-sheet-to-y: -1rem;
     --auth-sheet-from-opacity: 0;
   }
-  .auth-shell[data-hang="true"] { padding-top: 2rem; }
+  .auth-shell,
+  .auth-shell[data-hang="true"] { padding-top: calc(2.5rem + var(--auth-hang-overhang)); }
   .auth-sheet::after { content: none; }
 }
 

@@ -7,7 +7,7 @@ export interface SectionHeadingProps {
   /** Optional supporting line under the title (Plus Jakarta Sans 14 secondary). */
   subtitle?: React.ReactNode;
   /** Heading level — keeps the document outline correct per screen. Default h2. */
-  as?: "h2" | "h3";
+  as?: "h1" | "h2" | "h3";
   className?: string;
 }
 
