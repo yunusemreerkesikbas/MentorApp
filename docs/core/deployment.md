@@ -51,6 +51,11 @@ Production boot **forbids** `fake` or `console` adapters (`PAYMENTS_PROVIDER=fak
 
 ## 4. Database Migrations in Production
 
+Before deployment, require successful **full CI** for the release code tree. In GitHub Actions, run
+**CI → Run workflow** on the release ref (`gh workflow run ci.yml --ref master`). A normal scoped PR
+check is not a release certification. A full run on a PR may be reused only when its Git tree is
+identical to the deployed merge commit. See [the CI policy](../features/ci.md).
+
 1. Generate migrations locally: `pnpm --filter @mentor/api db:generate`.
 2. **Zero-downtime constraint rule:** Never add a blocking table-rewrite `CHECK` or `FOREIGN KEY` in a single lock step on populated tables. Use `ADD CONSTRAINT ... NOT VALID` followed by `VALIDATE CONSTRAINT ...`.
 3. Apply migrations before or during the API deploy step using `DIRECT_DATABASE_URL` (unpooled Neon connection):

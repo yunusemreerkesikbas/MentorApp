@@ -29,8 +29,7 @@ export function R1({ safe }: PieceProps) {
   return (
     <Frame format="reel" background={C.blue} safe={safe}>
       <StoryBackdrop />
-      {/* Centred on the reel text box (x 60–900) instead of the frame. */}
-      <div style={{ position: "absolute", inset: 0, transform: "translateX(-60px) scale(0.9)", transformOrigin: "540px 360px" }}>
+      <div style={{ position: "absolute", inset: 0, transform: "scale(0.9)", transformOrigin: "540px 360px" }}>
         <PovHeadline popPov={pop(frame, fps, AT.pov)} slamHead={slam(frame, fps, AT.head)} stampDedin={slam(frame, fps, AT.dedin)} />
       </div>
       {frame >= AT.puhu ? <PeekPuhu y={slideUp(frame, fps, AT.puhu, 520)} /> : null}

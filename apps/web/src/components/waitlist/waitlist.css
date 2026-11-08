@@ -40,6 +40,35 @@
   padding: 32px 16px calc(28px + env(safe-area-inset-bottom));
 }
 
+/* Match the kit card's entrance/exit; keep the native scrim present until the card exits. */
+.waitlist-theme > dialog::backdrop {
+  opacity: 1;
+  transition: opacity 200ms var(--ease-smooth-out);
+}
+
+.waitlist-theme > dialog[data-state="closing"]::backdrop {
+  opacity: 0;
+  transition-duration: var(--duration-quick);
+}
+
+@starting-style {
+  .waitlist-theme > dialog::backdrop {
+    opacity: 0;
+  }
+}
+
+@media (width < 64rem) {
+  .waitlist-theme > dialog:not([data-state="closing"])::backdrop {
+    transition-duration: var(--duration-fast);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waitlist-theme > dialog[data-state]::backdrop {
+    transition: none;
+  }
+}
+
 .lw-card > header {
   margin-top: 10px;
   padding: 0;

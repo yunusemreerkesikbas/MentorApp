@@ -99,7 +99,9 @@ Structure detail: [`docs/core/file-structure.md`](./docs/core/file-structure.md)
 - Expand verification only when a targeted failure indicates wider impact, the change affects a high-risk or
   cross-cutting surface (auth, payments, migrations, shared contracts), the user explicitly requests it, or the
   branch is being declared PR/merge/release-ready.
-- Full CI remains mandatory before merge/release. Never claim the whole workspace is green from targeted checks.
+- PR verification follows [`docs/features/ci.md`](./docs/features/ci.md): normal PRs require affected-app lint,
+  typecheck, build and unit tests; sensitive/cross-cutting changes require full CI. Full CI remains mandatory
+  before production release of the exact code tree. Never claim the whole workspace is green from scoped checks.
 
 ## 7. Conventions
 

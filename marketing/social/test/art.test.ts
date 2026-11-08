@@ -2,10 +2,10 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import sharp from "sharp";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { ART, END_CARD_PUHU, type ArtKey } from "../src/art";
+import { ART, CLIPS, END_CARD_PUHU, END_CARD_SHIFT, type ArtKey } from "../src/art";
 
-it("finds every art file under public/", () => {
-  const missing = Object.values(ART).filter((p) => !existsSync(join("public", p)));
+it("finds every art file and clip under public/", () => {
+  const missing = [...Object.values(ART), ...Object.values(CLIPS)].filter((p) => !existsSync(join("public", p)));
   expect(missing).toEqual([]);
 });
 
@@ -36,4 +36,23 @@ it("keeps small (< 600 px) mascot art out of every piece", async () => {
     if (width! < 600 && new RegExp(`ART[.]${key}(?![A-Za-z0-9_])|["']${key}["']`).test(src)) used.push(key);
   }
   expect(used).toEqual([]);
+});
+
+// The end card draws Puhu in a 660 px box under the centred logo. His body axis (midway between the head
+// and the feet) must land on the frame's centre, whatever empty space or cape the PNG carries.
+it("puts each end-card Puhu's body on the logo's axis", async () => {
+  for (const key of END_CARD_PUHU) {
+    const { w, h, a } = await alphaOf(key);
+    let top = h, bottom = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x += 4) if (a(x, y) > 40) { top = Math.min(top, y); bottom = Math.max(bottom, y); }
+    const mid = (f0: number, f1: number) => {
+      let lo = w, hi = 0;
+      for (let y = Math.round(top + (bottom - top) * f0); y < top + (bottom - top) * f1; y++)
+        for (let x = 0; x < w; x++) if (a(x, y) > 40) { lo = Math.min(lo, x); hi = Math.max(hi, x); }
+      return (lo + hi) / 2 / w;
+    };
+    const axis = (mid(0.15, 0.35) + mid(0.92, 1)) / 2;
+    const shown = 660 * Math.min(1, w / h); // objectFit contain in a 660 x 660 box
+    expect(Math.abs((axis - 0.5) * shown + (END_CARD_SHIFT[key] ?? 0)), key).toBeLessThanOrEqual(12);
+  }
 });

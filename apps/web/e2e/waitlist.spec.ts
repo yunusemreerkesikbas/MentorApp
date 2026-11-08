@@ -9,6 +9,40 @@ const api = process.env.QA_WAITLIST_API ?? "http://localhost:3381";
 const TITLE = "Yerini şimdiden ayıralım!";
 const SUCCESS = "Harika, listedesin!";
 
+test("waitlist backdrop follows the card entrance and exit", async ({ page }) => {
+  await page.goto("/");
+  const trigger = page.getByRole("navigation", { name: "Ana menü" }).getByRole("button", { name: "Ücretsiz başla" });
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: TITLE });
+  await expect(dialog).toHaveAttribute("data-state", "open");
+  expect(await dialog.evaluate((node) => getComputedStyle(node, "::backdrop").transitionProperty)).toBe("opacity");
+  await expect.poll(() => dialog.evaluate((node) => getComputedStyle(node, "::backdrop").opacity)).toBe("1");
+
+  const exit = await dialog.evaluate((node) => new Promise<{ state: string | undefined; duration: string }>((resolve) => {
+    const observer = new MutationObserver(() => {
+      if ((node as HTMLElement).dataset.state !== "closing") return;
+      observer.disconnect();
+      resolve({ state: (node as HTMLElement).dataset.state, duration: getComputedStyle(node, "::backdrop").transitionDuration });
+    });
+    observer.observe(node, { attributes: true, attributeFilter: ["data-state"] });
+    (node.querySelector("header button") as HTMLButtonElement).click();
+  }));
+  expect(exit).toEqual({ state: "closing", duration: "0.15s" });
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
+test("waitlist backdrop skips animation for reduced motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await page.getByRole("navigation", { name: "Ana menü" }).getByRole("button", { name: "Ücretsiz başla" }).click();
+  const dialog = page.getByRole("dialog", { name: TITLE });
+  await expect(dialog).toBeVisible();
+  expect(await dialog.evaluate((node) => getComputedStyle(node, "::backdrop").transitionDuration)).toBe("0s");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});
+
 async function setWaitlist(request: APIRequestContext, signupWaitlist: boolean, studentSignup = true) {
   const response = await request.post(`${api}/__qa/availability`, { data: { signupWaitlist, studentSignup } });
   expect(response.ok()).toBe(true);
