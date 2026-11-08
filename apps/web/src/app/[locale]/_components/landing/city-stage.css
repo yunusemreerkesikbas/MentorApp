@@ -65,17 +65,13 @@
   background: var(--landing-night-top);
 }
 
-/* Hidden until the first frame is written: the layers have no position before the script runs. */
+/* The opening camera is CSS-rendered so mobile never waits for hydration to see the city. */
 .lc-scene {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.6s ease-out;
-}
-
-.lc-root[data-ready] .lc-scene {
-  opacity: 1;
+  container-type: size;
+  --lc-fit: max(calc(100cqw / 1600), calc(100cqh / 1000));
 }
 
 .lc-sky {
@@ -106,6 +102,7 @@
   height: var(--lc-moon-size);
   background: radial-gradient(circle at 38% 35%, #fffbea, #f2dfa8 70%);
   box-shadow: 0 0 40px 10px rgba(255, 236, 190, 0.35);
+  transform: translate3d(calc(46.5cqw - var(--lc-moon-size) / 2), calc(14cqh - var(--lc-moon-size) / 2), 0);
 }
 
 .lc-sun {
@@ -135,6 +132,34 @@
   display: block;
   max-width: none;
   height: auto;
+  left: var(--lc-art-left);
+  top: var(--lc-art-top);
+  width: var(--lc-art-width);
+  --lc-first-x: var(--lc-tall-x);
+  --lc-first-y: var(--lc-tall-y);
+  --lc-first-width: var(--lc-tall-width);
+  --lc-first-ax: var(--lc-tall-ax);
+  --lc-first-ay: var(--lc-tall-ay);
+}
+
+.lc-root:not([data-ready]) .lc-art {
+  left: calc(100cqw * var(--lc-first-ax) + var(--lc-fit) * var(--lc-first-x));
+  top: calc(100cqh * var(--lc-first-ay) + var(--lc-fit) * var(--lc-first-y));
+  width: calc(var(--lc-fit) * var(--lc-first-width));
+}
+
+.lc-root:not([data-ready]) .lc-win {
+  visibility: hidden;
+}
+
+@media (min-width: 1024px) {
+  .lc-art {
+    --lc-first-x: var(--lc-wide-x);
+    --lc-first-y: var(--lc-wide-y);
+    --lc-first-width: var(--lc-wide-width);
+    --lc-first-ax: var(--lc-wide-ax);
+    --lc-first-ay: var(--lc-wide-ay);
+  }
 }
 
 .lc-rooms {
@@ -346,25 +371,6 @@
   line-height: 1.55;
   color: var(--lc-ink-soft);
   text-wrap: pretty;
-}
-
-.lc-text-link {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--lc-blue);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-.lc-links {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 4px;
-  color: var(--lc-ink-quiet);
 }
 
 .lc-tape {
@@ -901,10 +907,6 @@ body:has(.lc-root) .cookie-consent-banner::before {
     margin: 0 0 28px;
     font-size: 19px;
     color: var(--landing-on-night-soft);
-  }
-
-  .lc-links {
-    display: none;
   }
 
   .lc-pulse {

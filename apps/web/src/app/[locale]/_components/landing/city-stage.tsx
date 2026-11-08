@@ -26,8 +26,8 @@ import {
   STOP_SCROLL_SVH,
   WINDOWS,
   YOURS_WINDOW,
-  type SceneArt,
 } from "./city-scene";
+import { CityArt } from "./city-art";
 import { useCookieCardFlutter, usePaperFlutter } from "./paper-flutter";
 import { PlanMagicVideo } from "./plan-magic-video";
 import { SceneImg, sceneBackground } from "./scene-img";
@@ -43,19 +43,6 @@ export interface CityBell {
   name: string;
   stop: number;
   label: string;
-}
-
-function Art({ art, priority }: { art: SceneArt; priority?: boolean }) {
-  return (
-    <SceneImg
-      className="lc-art"
-      src={art.src}
-      width={art.naturalWidth}
-      height={art.naturalHeight}
-      fetchPriority={priority ? "high" : undefined}
-      style={{ left: art.left, top: art.top, width: art.width }}
-    />
-  );
 }
 
 /**
@@ -206,7 +193,7 @@ export function CityStage({
       window.scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
     };
 
-    // "Nasıl çalışır", "Turu atla" and the doorbells: a smooth move to the stop instead of the jump.
+    // "Nasıl çalışır" and the doorbells move smoothly to the selected stop.
     const onClick = (event: MouseEvent) => {
       const link = event.target instanceof Element ? event.target.closest(STOP_LINK) : null;
       const index = Number(link?.getAttribute("href")?.slice("#durak-".length));
@@ -260,13 +247,13 @@ export function CityStage({
             <div className="lc-moon" />
             <div className="lc-sun" />
             <div className="lc-layer">
-              <Art art={FAR} />
+              <CityArt art={FAR} layer={0} />
             </div>
             <div className="lc-layer">
-              <Art art={MID} />
+              <CityArt art={MID} layer={1} />
             </div>
             <div className="lc-layer">
-              <Art art={FACADE} priority />
+              <CityArt art={FACADE} layer={2} priority />
               {WINDOWS.filter((w) => w.room === "puhu").map((w) => (
                 <div key={w.room} className="lc-win" data-stop={w.stop} style={{ left: w.left, top: w.top, width: w.width, height: w.height }}>
                   <SceneImg className="lc-room-art is-cover" src={`/visuals/landing/room-${w.room}.webp`} />
@@ -297,7 +284,7 @@ export function CityStage({
               </div>
             </div>
             <div className="lc-layer">
-              <Art art={FRONT} />
+              <CityArt art={FRONT} layer={3} />
             </div>
             <div className="lc-scrim" />
           </div>

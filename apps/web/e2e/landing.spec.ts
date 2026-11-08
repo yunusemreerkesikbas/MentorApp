@@ -15,6 +15,58 @@ async function asVisitor(page: Page) {
   );
 }
 
+test.describe("landing first paint", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("omits the removed hero shortcuts on every viewport", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".lc-root")).not.toHaveAttribute("data-ready");
+    await expect(page.locator(".lc-hero .lc-links")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Turu atla", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Ana menü" }).getByRole("link", { name: "Giriş yap", exact: true })).toBeVisible();
+  });
+
+  test("shows the city before hydration", async ({ page }, testInfo) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".lc-root")).not.toHaveAttribute("data-ready");
+    await expect(page.locator(".lc-scene")).toHaveCSS("opacity", "1");
+    await expect(page.locator('.lc-art[src$="city-facade.webp"]')).toBeInViewport();
+    await page.screenshot({ path: testInfo.outputPath("landing-first-paint.png") });
+  });
+});
+
+test("opening city geometry stays in place when hydration finishes", async ({ page }) => {
+  await asVisitor(page);
+  let releaseScripts = () => {};
+  const scriptsReady = new Promise<void>((resolve) => { releaseScripts = resolve; });
+  await page.route(/\/_next\/.*\.js(?:\?|$)/, async (route) => {
+    await scriptsReady;
+    await route.continue();
+  });
+  const positions = () => page.locator(".lc-art").evaluateAll((images) => images.map((image) => {
+    const { x, y, width, height } = image.getBoundingClientRect();
+    return { x, y, width, height };
+  }));
+  try {
+    await page.goto("/", { waitUntil: "commit" });
+    await expect(page.locator(".lc-stage")).toHaveCSS("position", "sticky");
+    await expect(page.locator(".lc-root")).not.toHaveAttribute("data-ready");
+    const before = await positions();
+    expect(before).toHaveLength(4);
+    releaseScripts();
+    await expect(page.locator(".lc-root")).toHaveAttribute("data-ready", "");
+    const after = await positions();
+    for (const [index, image] of before.entries()) {
+      for (const key of ["x", "y", "width", "height"] as const) {
+        expect(Math.abs(after[index][key] - image[key]), `image ${index} ${key}`).toBeLessThan(1);
+      }
+    }
+  } finally {
+    releaseScripts();
+  }
+});
+
 test("landing hero'yu gösterir, Ücretsiz başla tanıtıma götürür", async ({ page }) => {
   await asVisitor(page);
   await page.addInitScript(() => window.localStorage.removeItem("mentor_welcome_seen"));
