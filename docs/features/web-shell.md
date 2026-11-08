@@ -61,6 +61,7 @@ The landing page combines atmospheric night-to-dawn art with **energetic, Duolin
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-08 — Wordmark accessible name:** Restored the shared SVG logo's accessible name to `PuhuKoç` while retaining the lowercase outlined artwork. Links containing only the logo remain recognizable to assistive technology and existing public-header navigation checks. Related files: `packages/ui/src/components/logo.tsx`, `apps/web/e2e/knowledge.spec.ts`.
 - **2026-11-08 — Landing mobile parity and first paint:** Removed the obsolete secondary hero sign-in/tour-skip row from every viewport; navigation sign-in and the desktop primary action remain. The four existing city images now use the opening camera's CSS positions before hydration, then hand over to the scroll camera without waiting for JavaScript or a fade-in. No additional images or backend calls are introduced. No-JavaScript mobile/desktop browser coverage guards both fixes. Free hosting wake-up latency is a separate operational limitation. Related files: `city-art.tsx`, `city-stage.{tsx,css}`, `city-panels.tsx`, `e2e/landing.spec.ts`.
 
 - **2026-11-04 — AI Coach Named "Puhu" & 5 Exams Everywhere (`APP-132–APP-136`):** Renamed the AI coach to **Puhu** across ~80 TR/EN strings (`nav.coach`, `Puhu’yla planla`, paywall, panel, analysis, chat); standardized `"yapay zekâ"` (never `"AI"` in TR); added `ALES` and `DGS` to landing hero eyebrow (`KPSS · YKS · LGS · ALES · DGS`), meta tags, and FAQ.
