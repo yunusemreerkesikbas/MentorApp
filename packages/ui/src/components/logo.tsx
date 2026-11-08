@@ -15,7 +15,7 @@ export function Logo({ className }: LogoProps) {
     <svg
       viewBox="54 -726 3774 931"
       role="img"
-      aria-label="puhukoc"
+      aria-label="PuhuKoç"
       className={className}
       style={{ display: "inline-block", height: "1em", width: "4.054em", verticalAlign: "-0.22em", flexShrink: 0 }}
     >
