@@ -16,6 +16,7 @@ Every meaningful feature, architectural change, or user-visible refinement must 
 
 | File | Workstream / Module | Scope |
 |---|---|---|
+| [`ci.md`](./ci.md) | Cross-cutting · engineering | Scoped PR checks, sensitive-change validation, full release CI and usage |
 | [`identity.md`](./identity.md) | `W1` · `modules/identity` | Auth, JWT refresh rotation, Google OAuth, SMS OTP, profile, KVKK, invite-only waitlist |
 | [`coaching.md`](./coaching.md) | `W2` · `modules/coaching` | Onboarding, weekly plan (`Puhu’yla planla`), `/seans` focus timer, study notebooks, mocks, analytics |
 | [`ai.md`](./ai.md) | `W3` · `modules/ai` | Puhu AI chat, daily greeting, mood/session reflections, weekly deep analysis, vision, RAG, budget |
