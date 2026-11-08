@@ -122,7 +122,7 @@ export function LandingChest({
       <div className="lj-chest-stage">
         {/* The clip's own first and last frames; the closed one stays under the clip while it plays. */}
         {/* eslint-disable-next-line @next/next/no-img-element -- two fixed local stills that crossfade */}
-        <img src={media.closed} alt={isOpen ? "" : closedAlt} className={`wc-fade ${isOpen ? "opacity-0" : ""}`} />
+        <img src={media.closed} alt={isOpen ? "" : closedAlt} loading="lazy" className={`wc-fade ${isOpen ? "opacity-0" : ""}`} />
         {/* eslint-disable-next-line @next/next/no-img-element -- see above */}
         <img src={media.open} alt={isOpen ? openAlt : ""} loading="lazy" className={`wc-fade ${isOpen ? "" : "opacity-0"}`} />
         {showClip ? (

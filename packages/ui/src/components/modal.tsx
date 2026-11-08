@@ -120,6 +120,7 @@ export function Modal({
   return (
     <motion.dialog
       ref={dialogRef}
+      data-state={closing ? "closing" : "open"}
       aria-labelledby={titleId}
       onCancel={handleCancel}
       onPointerDown={(event) => {

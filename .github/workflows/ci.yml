@@ -1,19 +1,60 @@
 name: CI
 
 on:
-  push:
-    branches: [master, "feature/**", "feat/**", "codex/**"]
   pull_request:
     branches: [master]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
-  build:
-    name: lint · typecheck · build · test
+  scope:
+    name: Select verification scope
+    if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.scope.outputs.code }}
+      full: ${{ steps.scope.outputs.full }}
+      api: ${{ steps.scope.outputs.api }}
+      web: ${{ steps.scope.outputs.web }}
+      admin: ${{ steps.scope.outputs.admin }}
+      filters: ${{ steps.scope.outputs.filters }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test CI selection policy
+        run: node --experimental-strip-types --test scripts/ci-scope.spec.mts
+      - name: Select affected applications
+        id: scope
+        env:
+          CI_FULL: ${{ github.event_name == 'workflow_dispatch' }}
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node --experimental-strip-types scripts/ci-scope.mts
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  checks:
+    name: Scoped verification
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-latest
 
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        image: ${{ needs.scope.outputs.full == 'true' && 'pgvector/pgvector:pg16' || '' }}
         env:
           POSTGRES_USER: mentor
           POSTGRES_PASSWORD: mentor
@@ -36,16 +77,10 @@ jobs:
       NEXT_PUBLIC_GA_MEASUREMENT_ID: G-CI0000000
       # Not a real key: the settings e2e stubs the browser push API and only needs push to be live.
       NEXT_PUBLIC_VAPID_PUBLIC_KEY: BCI-e2e-placeholder-key
+      CI_FILTERS: ${{ needs.scope.outputs.filters }}
 
     steps:
-      # Full history, not the default shallow clone: gitleaks scans a COMMIT RANGE
-      # (`<base>^..<head>`), and on a depth-1 checkout the base's parent is not there. Git then
-      # answers "unknown revision", gitleaks reports "failed to scan Git repository" and exits 1 —
-      # so the step failed without ever scanning anything ("no leaks found in partial scan"), and
-      # lint, typecheck, build and test were all skipped behind it.
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -57,31 +92,36 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Test required CI result gate
+        run: node --experimental-strip-types --test scripts/ci-workflow.spec.mts
+
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level high
 
       - name: Check production deployment configuration
         run: pnpm check:deployment
 
-      - name: Scan repository for secrets
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Lint
-        run: pnpm lint
+        run: |
+          read -ra filters <<< "$CI_FILTERS"
+          pnpm exec turbo run lint "${filters[@]}"
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: |
+          read -ra filters <<< "$CI_FILTERS"
+          pnpm exec turbo run typecheck "${filters[@]}"
 
       - name: Build
-        run: pnpm build
+        run: |
+          read -ra filters <<< "$CI_FILTERS"
+          pnpm exec turbo run build "${filters[@]}"
 
       - name: Enforce web performance budgets
+        if: needs.scope.outputs.web == 'true'
         run: pnpm --filter @mentor/web check:budgets
 
       - name: Upload web performance budget report
-        if: always()
+        if: always() && needs.scope.outputs.web == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: web-performance-budget-report
@@ -89,10 +129,22 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Test
+      - name: Full unit and integration tests
+        if: needs.scope.outputs.full == 'true'
         run: pnpm test
 
+      - name: Scoped workspace unit tests
+        if: needs.scope.outputs.full != 'true'
+        run: |
+          read -ra filters <<< "$CI_FILTERS"
+          pnpm exec turbo run test "${filters[@]}" --filter='!@mentor/api'
+
+      - name: Scoped API unit tests
+        if: needs.scope.outputs.api == 'true' && needs.scope.outputs.full != 'true'
+        run: pnpm --filter @mentor/api test:unit
+
       - name: Start seeded API for browser tests
+        if: needs.scope.outputs.full == 'true'
         env:
           NODE_ENV: test
           APP_ENV: development
@@ -121,12 +173,15 @@ jobs:
           exit 1
 
       - name: Install Playwright Chromium
+        if: needs.scope.outputs.full == 'true'
         run: pnpm --filter @mentor/web exec playwright install --with-deps chromium
 
-      - name: Analiz browser smoke
+      - name: Full browser regression
+        if: needs.scope.outputs.full == 'true'
         run: pnpm --filter @mentor/web test:e2e
 
       - name: Account security CAPTCHA browser checks
+        if: needs.scope.outputs.full == 'true'
         env:
           # Provider calls are stubbed; a separate build keeps ordinary browser fixtures unchanged.
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: ci-account-security-placeholder-key
@@ -135,6 +190,7 @@ jobs:
           pnpm --filter @mentor/web test:e2e account-security.spec.ts account-security-regression.spec.ts browser-security.spec.ts --workers=1
 
       - name: Core trial browser checks
+        if: needs.scope.outputs.full == 'true'
         env:
           NODE_ENV: test
           APP_ENV: development
@@ -168,18 +224,44 @@ jobs:
           pnpm --filter @mentor/web exec playwright test --config=playwright.core-trial.config.ts
 
       - name: Bounded media browser checks
+        if: needs.scope.outputs.full == 'true'
         run: pnpm --filter @mentor/web exec playwright test --config=playwright.bounded-media.config.ts
 
       - name: Invite-only waitlist browser checks
+        if: needs.scope.outputs.full == 'true'
         run: pnpm --filter @mentor/web test:e2e:waitlist
 
       - name: Upload Playwright diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: analiz-playwright-report
+          name: playwright-diagnostics
           path: |
             apps/web/playwright-report/
             apps/web/test-results/
           if-no-files-found: ignore
           retention-days: 7
+
+  build:
+    # Preserve the required check name and fail if scope selection or selected checks fail.
+    name: lint · typecheck · build · test
+    needs: [scope, checks]
+    if: always() && (github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require the selected checks to pass
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          CHECKS_RESULT: ${{ needs.checks.result }}
+          CODE_CHANGED: ${{ needs.scope.outputs.code }}
+        run: |
+          echo "Scope: $SCOPE_RESULT; checks: $CHECKS_RESULT"
+          [[ "$SCOPE_RESULT" == "success" ]] || exit 1
+          if [[ "$CODE_CHANGED" == "true" ]]; then
+            [[ "$CHECKS_RESULT" == "success" ]] || exit 1
+          elif [[ "$CODE_CHANGED" == "false" ]]; then
+            [[ "$CHECKS_RESULT" == "skipped" ]] || exit 1
+          else
+            echo "Missing or invalid scope output" >&2
+            exit 1
+          fi

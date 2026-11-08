@@ -5,14 +5,15 @@
 
 ## PR rules
 - [ ] Small, focused PR; **Conventional Commits** (`feat/fix/chore/docs/refactor/test`).
-- [ ] CI green: `lint` + `typecheck` + `build`. No merge on red.
+- [ ] Applicable CI green: affected-app `lint` + `typecheck` + `build` + unit tests; full CI for sensitive changes. No merge on red. See [CI policy](../features/ci.md).
 - [ ] **Feature doc updated** — see [features](../features/README.md). Every meaningful development
   appends a dated entry to the matching feature doc's "Geliştirmeler (timeline)" section.
 - [ ] No out-of-scope work added "by the way" (phase discipline §10) → backlog.
 
 **Verification scope:** During iterative development, reviewers expect the smallest relevant tests and
-file/package-level checks—not a full monorepo pipeline after every change. Full CI is required only when the
-branch is presented as PR/merge/release-ready, or earlier when risk/cross-cutting impact justifies it.
+file/package-level checks—not a full monorepo pipeline after every change. Ordinary PRs may merge after
+their scoped CI checks pass. Sensitive/cross-cutting changes require full CI before merge; production
+release requires successful full CI for the exact code tree. A scoped green PR is not a full release certification.
 
 ## Reviewer checklist
 **Correctness**
