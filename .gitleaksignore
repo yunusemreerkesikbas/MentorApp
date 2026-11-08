@@ -3,3 +3,17 @@
 3a6c87d86117a7ba934b2358e8c2167c4aadf5b8:scripts/check-deployment.mts:generic-api-key:108
 3a6c87d86117a7ba934b2358e8c2167c4aadf5b8:render.staging-low-cost.yaml:generic-api-key:68
 3a6c87d86117a7ba934b2358e8c2167c4aadf5b8:render.staging.yaml:generic-api-key:69
+
+# Full manual runs also inspect old commits. Reviewed dummy unit/e2e test constants only.
+19794eb7ae936d5699fc8bc8aa4a0a7802de61b5:apps/api/src/modules/identity/domain/phone.spec.ts:generic-api-key:7
+0c682426c48e49a9f1a0b037426837386ff6b9f0:apps/api/src/config/env.validation.spec.ts:generic-api-key:16
+29f4cf4ce507a8ce184aacfbb8098a068c5def8f:apps/api/test/auth.e2e-spec.ts:generic-api-key:373
+# Browser storage identifier and environment variable NAME, neither is a credential.
+409e1d6b3f92ef12b4869b927263b8c289ed52ac:apps/web/src/lib/community-coach-bridge.ts:generic-api-key:3
+ebc494026a81dd0eaa58afd4b585510df9f2e16d:render.yaml:generic-api-key:49
+# Acknowledged Duralux vendor documentation examples, removed from the current release tree.
+# Exact old fingerprints only; no directory/rule exclusions and no allowance for new occurrences.
+ad8e7ce5b553d687afeca04c9d8d9acfe2a2a6f9:apps/admin/Documentation/assets/Youtube-Channels-Playlist/index.html:gcp-api-key:136
+ad8e7ce5b553d687afeca04c9d8d9acfe2a2a6f9:apps/admin/Documentation/assets/Youtube-Channels-Playlist/index.html:gcp-api-key:143
+ad8e7ce5b553d687afeca04c9d8d9acfe2a2a6f9:apps/admin/Documentation/assets/Youtube-Channels-Playlist/index.html:gcp-api-key:151
+ad8e7ce5b553d687afeca04c9d8d9acfe2a2a6f9:apps/admin/Documentation/js/main.js:gcp-api-key:756
