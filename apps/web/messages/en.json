@@ -444,10 +444,7 @@
       "retry": "Refresh verification"
     },
     "shell": {
-      "back_login": "Back to sign in",
-      "narrative_label": "Your exam journey with Puhu",
-      "narrative_title": "Your journey starts here.",
-      "narrative_body": "Puhu is beside you to find today's small step and help you move forward without feeling alone."
+      "back_login": "Back to sign in"
     },
     "login": {
       "title": "Sign in",

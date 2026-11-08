@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SectionHeading as="h2" subtitle={t("subtitle")}>
+      <SectionHeading as="h1" subtitle={t("subtitle")}>
         {t("title")}
       </SectionHeading>
       {done ? (

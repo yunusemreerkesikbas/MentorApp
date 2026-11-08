@@ -1,0 +1,133 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "A-Story.dc.html": {
+      "h": 1920,
+      "title": "A · Story 9:16",
+      "w": 1080,
+      "x": 1160,
+      "y": 0
+    },
+    "B-Post.dc.html": {
+      "h": 1350,
+      "title": "B · Instagram post 4:5",
+      "w": 1080,
+      "x": 0,
+      "y": 2340
+    },
+    "B-Story.dc.html": {
+      "h": 1920,
+      "title": "B · Story 9:16",
+      "w": 1080,
+      "x": 1160,
+      "y": 2340
+    },
+    "C-Post.dc.html": {
+      "h": 1350,
+      "title": "C · Instagram post 4:5",
+      "w": 1080,
+      "x": 0,
+      "y": 4680
+    },
+    "C-Story.dc.html": {
+      "h": 1920,
+      "title": "C · Story 9:16",
+      "w": 1080,
+      "x": 1160,
+      "y": 4680
+    },
+    "Main.dc.html": {
+      "h": 1350,
+      "title": "A · Instagram post 4:5",
+      "w": 1080,
+      "x": 0,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-07T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "noteOrder": [
+    "titleA",
+    "titleB",
+    "titleC",
+    "noteA",
+    "noteSafe",
+    "noteB",
+    "noteC"
+  ],
+  "notes": {
+    "noteA": {
+      "fill": "blue",
+      "size": 40,
+      "text": "Ana akış rengi. Düz mavi zemin, dev beyaz yazı, kadrajdan taşan Puhu ve telefonda uygulama. Kaydırırken durduran yön. Tweaks: zemin mavisi (3 ton).",
+      "w": 600,
+      "x": 2320,
+      "y": 0
+    },
+    "noteB": {
+      "fill": "purple",
+      "size": 40,
+      "text": "Bekleme listesi ve Story'ler için. Uygulamanın kendi gece dünyası: fener sahnesi, gece şehri, bantlı kâğıt notlar. Görseller hazır.",
+      "w": 600,
+      "x": 2320,
+      "y": 2340
+    },
+    "noteC": {
+      "fill": "orange",
+      "size": 40,
+      "text": "Carousel ve esprili posterler. Krem kâğıt, dev yuvarlak yazı, Puhu çıkartmalı sansür, el yazısı notlar. Tweaks: yazı mavisi.",
+      "w": 600,
+      "x": 2320,
+      "y": 4680
+    },
+    "noteSafe": {
+      "fill": "gray",
+      "size": 24,
+      "text": "Story'lerde üstteki ve alttaki 250 px Instagram arayüzünün altında kalır. Yazılar ve bağlantı çıkartması bu bandın içinde.",
+      "w": 600,
+      "x": 2320,
+      "y": 860
+    },
+    "titleA": {
+      "kind": "title1",
+      "maxW": 2240,
+      "text": "A · Pelerin mavisi pop",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "titleB": {
+      "kind": "title1",
+      "maxW": 2240,
+      "text": "B · Gece şehri",
+      "w": 240,
+      "x": 0,
+      "y": 2040
+    },
+    "titleC": {
+      "kind": "title1",
+      "maxW": 2240,
+      "text": "C · Krem defter",
+      "w": 240,
+      "x": 0,
+      "y": 4380
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "A-Story.dc.html",
+    "B-Post.dc.html",
+    "B-Story.dc.html",
+    "C-Post.dc.html",
+    "C-Story.dc.html"
+  ],
+  "pages": [],
+  "title": "PuhuKoç Sosyal Medya Yönleri"
+}

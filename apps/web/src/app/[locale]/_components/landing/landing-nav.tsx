@@ -60,9 +60,9 @@ export async function LandingNav({
         <a href="#sss" className={`${NAV_LINK} max-lg:hidden`}>
           {t("faq_nav")}
         </a>
-        <Link href="/login" className={`${NAV_LINK} ml-auto`}>
+        <SignupCta href="/login" role={coaches ? "coach" : "student"} className={`${NAV_LINK} ml-auto`}>
           {t("login")}
-        </Link>
+        </SignupCta>
         {coaches ? (
           coachSignupOpen ? (
             <SignupCta href={{ pathname: "/signup", query: { rol: "koc" } }} role="coach" className={NAV_CTA}>

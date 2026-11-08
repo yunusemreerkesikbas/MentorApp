@@ -365,7 +365,7 @@ function DesktopSidebar({
             className="inline-flex min-h-11 items-center text-2xl transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
             style={{ color: "var(--color-main)" }}
           >
-            <Logo cut="large" />
+            <Logo />
           </Link>
           <button
             type="button"

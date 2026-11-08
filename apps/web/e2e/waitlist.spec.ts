@@ -52,6 +52,23 @@ test("landing start opens the waitlist modal", async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
 });
 
+for (const path of ["/", "/koclar"]) {
+  test(`landing login opens the waitlist and preserves pilot login from ${path}`, async ({ page }) => {
+    await page.goto(path);
+    const login = page.getByRole("navigation", { name: "Ana menü" }).getByRole("button", { name: "Giriş yap", exact: true });
+    await login.click();
+    await expect(card(page)).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    await page.keyboard.press("Escape");
+    await expect(card(page)).toHaveCount(0);
+    await expect(login).toBeFocused();
+    await page.keyboard.press("Enter");
+    await card(page).getByRole("link", { name: "Giriş yap", exact: true }).click();
+    await expect(page).toHaveURL(/\/giris$/);
+    await expect(page.locator('input[name="password"]')).toBeVisible();
+  });
+}
+
 test("waitlist join shows success", async ({ page }) => {
   const { joins } = await stubWaitlist(page);
   await page.goto("/");
@@ -181,6 +198,12 @@ test("keyboard: open, fill, send, close returns focus; Escape closes", async ({ 
 
 test("open mode keeps the old links", async ({ page, request }) => {
   await setWaitlist(request, false);
+  await page.goto("/");
+  const login = page.getByRole("navigation", { name: "Ana menü" }).getByRole("link", { name: "Giriş yap", exact: true });
+  await expect(login).toHaveAttribute("href", /\/giris$/);
+  await login.click();
+  await expect(page).toHaveURL(/\/giris$/);
+  await expect(page.locator('input[name="password"]')).toBeVisible();
   await page.goto("/");
   const start = page.getByRole("main").getByRole("link", { name: "Ücretsiz başla" }).first();
   await expect(start).toHaveAttribute("href", /\/hosgeldin$/);

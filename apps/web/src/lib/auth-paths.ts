@@ -18,7 +18,7 @@ export function authShellShowsBack(pathname: string): boolean {
   return pathname !== "/login" && pathname !== "/signup";
 }
 
-/** Hang-Puhu sits on the login and signup sheets. */
+/** Mobile keeps Hang-Puhu on login/signup; desktop shows it on every auth card. */
 export function authShellShowsHang(pathname: string): boolean {
   return pathname === "/login" || pathname === "/signup";
 }

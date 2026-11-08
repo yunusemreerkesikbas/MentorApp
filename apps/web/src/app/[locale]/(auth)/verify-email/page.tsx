@@ -45,7 +45,7 @@ function VerifyEmail() {
 
   return (
     <div className="flex flex-col gap-4">
-      <SectionHeading as="h2">{t("title")}</SectionHeading>
+      <SectionHeading as="h1">{t("title")}</SectionHeading>
       {missingToken ? (
         <FormError message={t("invalid_link")} />
       ) : (

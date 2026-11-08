@@ -194,7 +194,7 @@ export default function SignupPage() {
   if (isCoach && !invitedCoach && coachOpen === false) {
     return (
       <div className="flex flex-col gap-4">
-        <SectionHeading as="h2" className="items-center text-center">
+        <SectionHeading as="h1" className="items-center text-center">
           {translate("coach_closed_title")}
         </SectionHeading>
         <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
@@ -210,7 +210,7 @@ export default function SignupPage() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SectionHeading as="h2" className="items-center text-center">
+      <SectionHeading as="h1" className="items-center text-center">
         {isCoach ? translate("title_coach") : translate("title")}
       </SectionHeading>
       {isCoach && (

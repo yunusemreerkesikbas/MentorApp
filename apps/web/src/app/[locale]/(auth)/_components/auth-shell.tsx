@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   createContext,
   useCallback,
@@ -15,7 +14,6 @@ import { useTranslations } from "next-intl";
 import { CircularBackLink } from "@/components/circular-back-link";
 import { usePathname } from "@/i18n/navigation";
 import { authShellShowsBack, authShellShowsHang } from "@/lib/auth-paths";
-import { PUHU_MOTION_FRAMES } from "@/lib/onboarding-assets";
 import { HANG_OVERHANG_PX } from "./auth-hang-choreography";
 import { useAuthHang } from "./auth-hang-puhu";
 
@@ -56,7 +54,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const showBack = authShellShowsBack(pathname);
   const showHang = authShellShowsHang(pathname);
-  const hang = useAuthHang(showHang);
+  const hang = useAuthHang(true);
   const panelRef = useRef<HTMLDivElement>(null);
   const closingRef = useRef(false);
   const lastTopRef = useRef<number | null>(null);
@@ -100,39 +98,11 @@ export function AuthShell({ children }: { children: ReactNode }) {
         // `overflow-clip`, not hidden: a hidden box is still scrollable from code, and on a client
         // navigation Next scrolled it by the sheet's under-extension (50dvh), cutting the form off
         // at the top. A clipped box has no scroll position to move.
-        className="auth-shell flex min-h-dvh w-full flex-col justify-end max-lg:overflow-clip lg:mx-auto lg:grid lg:max-w-[72rem] lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-center lg:gap-12 lg:overflow-visible lg:px-8 lg:py-10 xl:gap-16 xl:px-0"
+        className="auth-shell flex min-h-dvh w-full flex-col justify-end max-lg:overflow-clip lg:items-center lg:justify-center lg:overflow-visible lg:px-8 lg:py-10"
         data-hang={showHang ? "true" : "false"}
         data-phase={phase}
-        style={showHang ? { "--auth-hang-overhang": `${HANG_OVERHANG_PX}px` } as CSSProperties : undefined}
+        style={{ "--auth-hang-overhang": `${HANG_OVERHANG_PX}px` } as CSSProperties}
       >
-        <section
-          className="auth-narrative hidden min-w-0 flex-col items-center justify-center text-center lg:flex"
-          aria-label={t("narrative_label")}
-        >
-          <div
-            className="relative max-w-md rounded-[var(--play-radius)] border-2 border-[var(--play-line)] bg-[var(--color-surface)] px-6 py-5 shadow-[var(--shadow-card)]"
-            data-auth-narrative-bubble
-          >
-            <h1 className="text-balance text-3xl font-extrabold leading-tight text-[var(--color-main)]">
-              {t("narrative_title")}
-            </h1>
-            <p className="mt-2 text-pretty text-base font-medium leading-relaxed text-[var(--color-secondary)]">
-              {t("narrative_body")}
-            </p>
-            <span
-              aria-hidden
-              className="absolute -bottom-[9px] left-1/2 size-3.5 -translate-x-1/2 rotate-45 border-b-2 border-r-2 border-[var(--play-line)] bg-[var(--color-surface)]"
-            />
-          </div>
-          <Image
-            src={PUHU_MOTION_FRAMES.wave}
-            alt=""
-            width={240}
-            height={240}
-            priority
-            className="mt-5 size-60 object-contain"
-          />
-        </section>
         <div
           ref={panelRef}
           className="auth-sheet relative isolate max-h-[90dvh] w-full overflow-visible lg:max-h-none lg:max-w-[26rem]"
@@ -140,7 +110,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           onFocusCapture={hang.onFocusCapture}
           onBlurCapture={hang.onBlurCapture}
         >
-          <span className="contents lg:hidden">{hang.back}</span>
+          <span className={showHang ? "contents" : "hidden lg:contents"}>{hang.back}</span>
           <div
             className={`relative z-[1] flex max-h-[inherit] w-full flex-col overflow-hidden bg-[var(--color-surface)] max-lg:rounded-t-[16px] lg:rounded-[var(--radius-card)] lg:border lg:border-[var(--color-border)] ${showHang ? "shadow-[var(--shadow-card)]" : "max-lg:shadow-[0px_-4px_10px_rgba(37,73,150,0.10)] lg:shadow-[var(--shadow-card)]"}`}
           >
@@ -172,7 +142,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
               {children}
             </div>
           </div>
-          <span className="contents lg:hidden">{hang.front}</span>
+          <span className={showHang ? "contents" : "hidden lg:contents"}>{hang.front}</span>
         </div>
       </main>
     </AuthSheetExitContext.Provider>
