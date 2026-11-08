@@ -4,9 +4,10 @@ import { BEAT, compositionIds, EXPORT_PROPS, guideVisible, PIECES, SIZES, STUDIO
 
 const byId = (id: PieceId) => PIECES.find((p) => p.id === id)!;
 
-it("lists the 15 kit pieces in posting-plan order", () => {
+it("lists the 15 launch pieces in posting-plan order, then the 6 Premium pieces", () => {
   expect(PIECES.map((p) => p.id)).toEqual([
     "F1", "F2", "F3", "F4", "F5", "F6", "S1", "S2", "S3", "S4", "R1", "R2", "R3", "X1", "L1",
+    "PF1", "PF2", "PS1", "PS2", "PR1", "PR2",
   ]);
 });
 

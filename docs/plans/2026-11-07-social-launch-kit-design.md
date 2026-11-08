@@ -77,7 +77,7 @@ and one re-render.
 |---|---|---|
 | Feed post / carousel card | 1080×1350 | keep 56–64 px margins |
 | Story | 1080×1920 | top and bottom 250 px stay free of text and stickers |
-| Reels / TikTok | 1080×1920, 30 fps, H.264 MP4 | text inside x 60–900, y 250–1500 (TikTok right rail and caption area) |
+| Reels / TikTok | 1080×1920, 30 fps, H.264 MP4 | text inside x 60–900, y 250–1500 (TikTok right rail and caption area); the rail only starts at y 900, so centred blocks sit on the frame axis (x 540) and may span x 60–1020 above it (owner, 2026-11-08) |
 | X / LinkedIn | 1200×675 | 48 px margins |
 
 Story link zones: each Story has a dashed "Bağlantı çıkartması buraya" box, toggled by a

@@ -1,32 +1,32 @@
 import { Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { ART, type ArtKey } from "../art";
-import { C, REEL_TEXT } from "../brand";
+import { C } from "../brand";
 import { COPY } from "../copy";
 import { EndCard } from "../components/EndCard";
 import { Frame } from "../components/Frame";
 import { caveat } from "../fonts";
 import { pop, shake, slam } from "../motion";
-import { PIECES, type PieceProps } from "../pieces";
+import { PIECES, SIZES, type PieceProps } from "../pieces";
 import { DOT_PAPER } from "./F2";
 import { ExamBadge } from "./F5";
 
 const T = COPY.R3!;
 const VIDEO = PIECES.find((p) => p.id === "R3")!.video!;
 const AT = { question: 105, note: 150 } as const;
-const CX = (REEL_TEXT.left + REEL_TEXT.right) / 2;
+const CX = SIZES.reel.width / 2;
 const BADGE = 240;
-// 3 + 2 inside the reel text box, one stamp per beat.
+// 3 + 2 centred on the frame (top zone, no rail), one stamp per beat.
 const BADGES = [
-  { exam: "KPSS", at: 15, x: 80, y: 290, rotate: -6 },
-  { exam: "YKS", at: 30, x: 360, y: 274, rotate: 4 },
-  { exam: "LGS", at: 45, x: 640, y: 296, rotate: -3 },
-  { exam: "ALES", at: 60, x: 220, y: 572, rotate: 5 },
-  { exam: "DGS", at: 75, x: 500, y: 586, rotate: -5 },
+  { exam: "KPSS", at: 15, x: 140, y: 290, rotate: -6 },
+  { exam: "YKS", at: 30, x: 420, y: 274, rotate: 4 },
+  { exam: "LGS", at: 45, x: 700, y: 296, rotate: -3 },
+  { exam: "ALES", at: 60, x: 280, y: 572, rotate: 5 },
+  { exam: "DGS", at: 75, x: 560, y: 586, rotate: -5 },
 ];
 const STICKERS: { art: ArtKey; at: number; x: number; rotate: number }[] = [
-  { art: "mindBlown", at: 90, x: 60, rotate: -7 },
-  { art: "nightShift", at: 94, x: 350, rotate: 4 },
-  { art: "facepalm", at: 98, x: 640, rotate: -4 },
+  { art: "mindBlown", at: 90, x: 120, rotate: -7 },
+  { art: "nightShift", at: 94, x: 410, rotate: 4 },
+  { art: "facepalm", at: 98, x: 700, rotate: -4 },
 ];
 
 // Exam stamps on the beat, three moods, then the comment ask.
@@ -53,8 +53,8 @@ export function R3({ safe }: PieceProps) {
       <p
         style={{
           position: "absolute",
-          left: REEL_TEXT.left,
-          width: REEL_TEXT.right - REEL_TEXT.left,
+          left: CX - 420,
+          width: 840,
           top: 1172,
           margin: 0,
           textAlign: "center",

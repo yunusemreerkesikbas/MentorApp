@@ -480,3 +480,167 @@ shadow on the background. 1:1, 2048×2048.
 Avoid: green owl, other mascots, photorealism, people, hands, extra words, misspelled Turkish
 letters, logos, watermarks, drawn buttons or links, cluttered UI, calm or sleepy poses.
 ```
+
+---
+
+## 5. Premium
+
+Kitte hazır olanlar: PF1, PS1 ve PR1 (Kahraman modu), PF2, PS2 ve PR2 (Gece uçuşu). Altı parça da tamam.
+
+PR1 (2026-11-08) sahibinin Kling klibiyle kuruldu (`public/art/puhu-premium-landing.mp4`): Puhu ışıkta
+çömelir, kadrajın tepesinden çıkarken "KAHRAMAN" ve "MODU" damgalanır, kahraman gibi iner (kare sarsılır),
+"AÇIK" düğmesi patlar, lacivert zeminde iki satır kayar, kapanış kartında maskeli Puhu ve PREMIUM etiketi.
+Klibin sağ altındaki KlingAI yazısı lacivert zeminin altında kalıyor, kırpılmadı. "ÇOK YAKINDA" yazmaz,
+çünkü reel profilde kalıcı. Aşağıdaki promptlar klibi yeniden üretmek gerekirse diye duruyor.
+
+**Kilit eki (aynı sohbette, §1'den sonra ikinci mesaj).** Şu dosyayı ekle:
+`apps/web/public/mascot/puhu/puhu-premium-hero.png`.
+
+```
+From now on, Puhu is PREMIUM PUHU (see the attached hero image): the same Puhu, but instead of
+glasses he wears a night-blue #1E2A5A hero domino mask with a thin gold #F2B544 edge and gold
+rings around the eye holes. His eyes stay clearly visible through it, with round white glints. A
+cape-blue #2F55D4 cape with a starry deep-blue inside and a round gold clasp with a blue star at
+the neck. Confident closed-beak smile. No glasses, no crown, no star on the mask.
+Reply only "Hazır".
+```
+
+### PR1 · Kahraman modu reel (5 sn)
+
+Zemin afişle aynı düz krem `#FAF6F0`, böylece klip PF1'in ışığının içine dikişsiz oturur.
+
+Başlangıç karesi (ChatGPT):
+```
+Video start frame, 9:16 portrait, no text at all. Flat cream #FAF6F0 ground. A flat pale-gold
+#FFE29A light beam shaped like a tall trapezoid, cut from paper, falls from the upper middle of
+the frame and widens to the bottom edge: no glow, no gradient. At the bottom of the beam Premium
+Puhu crouches low in a big squash, about to launch, cape bunched up behind him, looking up with a
+determined grin. Puhu fills the lower 45% of the frame; the upper half is empty cream.
+```
+
+Bitiş karesi (ChatGPT):
+```
+Same frame, same ground and beam. Premium Puhu has just landed in a big hero pose at the bottom
+of the beam: chest out, both wings on his hips, feet planted, cape snapping out wide to the left,
+confident closed-beak smile at the camera, a few small gold 4-point sparkles at his feet. Same
+size and place as in the start frame, lower 45% of the frame. Upper half empty cream. No text.
+```
+
+Kling (başlangıç + bitiş karesi, 5 sn, 9:16):
+```
+Premium Puhu crouches, springs straight up fast and out of the top of the frame, drops back down
+and lands hard in a hero pose at the bottom of the light beam: wings on hips, chest out, cape
+snapping wide, a squash on landing, a burst of small gold 4-point sparkles at his feet. Snappy,
+exaggerated cartoon motion. Static camera. The cream ground and the paper light beam never move
+or change colour.
+```
+
+Negatif: §3'teki ortak listeye şunları ekle: `glasses, crown, star on the mask, glow, gradient`.
+
+---
+
+## 6. Tanıtım videosu · Ekrana dalış (T1, 48 sn, 9:16)
+
+Storyboard: sosyal tuvalde "Tanıtım videosu · Ekrana dalış" satırı (15 kare). Tasarım:
+[docs/plans/2026-11-08-promo-video-design.md](../../docs/plans/2026-11-08-promo-video-design.md).
+
+Hedef panosu, Yanlış Defterim ve haftalık sandık sahneleri yeni klip istemez. Pano, landing'in
+pano görsellerinden katman katman kurulur. Defter kodla çizilir. Sandık için uygulamanın hazır
+klibi kullanılır: `apps/web/public/visuals/chest/chest-open-tall.mp4` (filigranı zaten kırpılmış).
+
+Beş klip var. Klipler düz zeminde değil, kurgudaki **pencerelerin içinde** oynar. Çerçeve kenarları
+yaklaşık %5 keser, KlingAI yazısı da çerçevenin altında kalır.
+
+- **K1** için ChatGPT karesi gerekir (aynı sohbette, §1 kilit mesajından sonra).
+- **K2–K5** için başlangıç karelerini ben hazırladım. Bunlar landing'in oda görselleri, landing'in sıcak
+  duvarına oturtuldu: `art-source.local/social/promo/kling-start/`. Dosyayı doğrudan Kling'e ver.
+
+Ayarlar:
+- Image to Video, Professional, 5 sn, cfg yaklaşık 0.6.
+- En-boy: K1 9:16, K3 1:1, K2/K4/K5 16:9.
+- Her klipte 2–3 deneme yap.
+
+Negatif: §3'teki ortak liste, artı
+`camera move, zoom, pan, new objects, changing room, different owl, owl without glasses`.
+
+Klipleri `art-source.local/social/gen/promo-K1.mp4` … `promo-K5.mp4` diye kaydet.
+
+**Müzik (senden):** telifsiz, sosyal medyada kullanılabilir lisanslı, enerjik bir parça olsun.
+- Tempo yaklaşık 120 BPM, süre en az 48 sn.
+- İlk güçlü vuruş ("drop") 0:06 civarında olmalı; PLANLA o vuruşta damgalanır.
+- `art-source.local/social/gen/promo-music.mp3` diye kaydet.
+- Tempo farklıysa vuruş ızgarasını ben parçaya göre ayarlarım.
+
+### K1 · Puhu telefondan fırlar (5 sn, 9:16)
+
+Başlangıç karesi (ChatGPT, telefon referansı olarak `art-source.local/social/raw/phone-raw.png` ekle):
+```
+Video start frame, 9:16 portrait, no text at all. Flat deep night-navy #0D0E25 ground with a few
+small white 4-point sparkle stars. The same toy-like navy smartphone as in the attached reference
+stands upright in the lower middle of the frame, slightly tilted, cut off by the bottom edge,
+filling the bottom 55%. Its screen glows a flat pale blue #DCE6FF with no UI and no reflections.
+Puhu is not visible yet. The top 40% of the frame is empty night.
+```
+
+Bitiş karesi (ChatGPT, isteğe bağlı; Kling dağılırsa ver):
+```
+Same frame and camera. Puhu is diving head-first back into the glowing screen: only his tiny
+orange feet and his light-blue wing tips stick out of the screen, with a burst of small white
+sparkles around them. Nothing else changes. No text.
+```
+
+Kling:
+```
+Puhu bursts out of the glowing phone screen toward the camera like a cannonball with huge squash
+and stretch, flies up close to the lens, grins with his beak wide open and beckons twice with
+one wing, "come on!". Then he spins round in mid-air and dives head-first back into the screen,
+his feet kicking as he disappears. Snappy cartoon timing, anticipation and overshoot, short holds
+on the hit poses. Locked camera, the phone does not move, the night ground stays flat.
+```
+
+### K2 · Plan odası (5 sn, 16:9) · başlangıç: `kling-start/K2-plan-start.png`
+
+```
+Puhu in his blue cape spins from the cork board to face the camera and snaps a wing. A flurry of
+small colourful paper task cards and sticky notes shoots up from the desk and slaps onto the cork
+board and the calendar one after another, in a steady rhythm, each with a little bounce. Puhu
+points at the full board with a big proud grin, does a quick double hop and his cape flutters.
+He keeps his round glasses. Snappy, exaggerated cartoon motion. Locked camera; the room, the lamp
+light and the furniture stay exactly the same.
+```
+
+### K3 · Puhu'nun odası (5 sn, 1:1) · başlangıç: `kling-start/K3-puhu-start.png`
+
+Kitabın arasından fırlayıp deftere uçan soru kâğıdı kurguda eklenir; klipte olması gerekmez.
+
+```
+Puhu goes into turbo study mode: his eyes zip left and right as he flips the book's pages super
+fast in a blur, a pencil scribbles at lightning speed, two tiny puffs of steam pop from his head
+tufts. Then he slams the book shut, throws both wings up in triumph with his beak wide open and
+bounces in his seat. Snappy cartoon timing, big squash and stretch, short holds on the hit poses.
+Locked camera; the lamp, the shelves and the warm light stay exactly the same.
+```
+
+### K4 · Masa (5 sn, 16:9) · başlangıç: `kling-start/K4-masa-start.png`
+
+```
+All four Puhus look up from their books at the same moment with big grins. The two in the middle
+lean across the table for a loud high-five, the other two cheer with both wings up and bounce in
+their chairs. Then all four snap back to their books with focused, happy faces. Each Puhu keeps
+his own hat, scarf and glasses. Snappy, exaggerated cartoon motion, short holds. Locked camera;
+the table, the lamp and the books do not move.
+```
+
+Negatif ek: `more than four owls`.
+
+### K5 · Senin odan (5 sn, 16:9) · başlangıç: `kling-start/K5-senin-start.png`
+
+Lambanın yanma anı kurguda yapılır: klipten önce oda karanlıktan aydınlığa açılır.
+
+```
+The study room is empty. Puhu bounces into frame from the bottom edge, lands on the desk with a
+big squash, spins to face the camera and waves both wings hard. Then he pats the empty chair
+twice with one wing and points at the viewer with a wide grin, "this seat is yours". Snappy
+cartoon timing, anticipation and overshoot. Locked camera; the lamp light, the laptop and the
+plants stay exactly the same.
+```

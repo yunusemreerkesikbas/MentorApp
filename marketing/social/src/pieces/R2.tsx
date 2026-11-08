@@ -1,13 +1,13 @@
 import { Easing, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { ART, type ArtKey } from "../art";
-import { C, REEL_TEXT } from "../brand";
+import { C } from "../brand";
 import { COPY } from "../copy";
 import { EndCard } from "../components/EndCard";
 import { Frame } from "../components/Frame";
 import { MasaChip } from "../components/MasaChip";
 import { Sparkle } from "../components/Sparkle";
 import { countAt, pop, shake, slam } from "../motion";
-import { PIECES, type PieceProps } from "../pieces";
+import { PIECES, SIZES, type PieceProps } from "../pieces";
 
 const T = COPY.R2!;
 const VIDEO = PIECES.find((p) => p.id === "R2")!.video!;
@@ -20,7 +20,7 @@ const SEATS: { art: ArtKey; at: number; col: number; row: number }[] = [
   { art: "p1", at: 120, col: 1, row: 1 },
 ];
 const BEATS = SEATS.map((s) => s.at);
-const CX = (REEL_TEXT.left + REEL_TEXT.right) / 2;
+const CX = SIZES.reel.width / 2;
 const CELL = 400;
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -69,9 +69,9 @@ export function R2({ safe }: PieceProps) {
           alt={T.altMasa}
           style={{
             position: "absolute",
-            left: REEL_TEXT.left,
+            left: CX - 420,
             top: 430,
-            width: REEL_TEXT.right - REEL_TEXT.left,
+            width: 840,
             height: 472,
             objectFit: "cover",
             borderRadius: 40,
@@ -84,8 +84,8 @@ export function R2({ safe }: PieceProps) {
         <div
           style={{
             position: "absolute",
-            left: REEL_TEXT.left,
-            width: REEL_TEXT.right - REEL_TEXT.left,
+            left: CX - 420,
+            width: 840,
             top: 990,
             textAlign: "center",
             transform: `rotate(${-3 + shake(frame, AT.stamp)}deg) scale(${slam(frame, fps, AT.stamp)})`,
