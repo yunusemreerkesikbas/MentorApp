@@ -39,4 +39,6 @@ Normal PRs do not launch Postgres or browser servers. The admin package currentl
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-08 — Manual release history scan baseline:** Reviewed the nine additional findings exposed by a full-history manual secret scan: dummy test constants, a browser storage identifier, an environment variable name, and historical Duralux documentation examples absent from the release tree. Recorded only their exact historical fingerprints in `.gitleaksignore`. New occurrences, changed commits and all other files/rules remain scanned; the secret gate still fails closed. Run the manual full profile before deployment as usual. Related files: `.gitleaksignore`.
+
 - **2026-11-08 — Selective PR CI:** Replaced duplicate push/PR runs with scoped checks on ready PRs, cancellation of outdated PR runs and manual full release validation. Sensitive/unknown paths retain full coverage, and the existing required check name now aggregates selection and execution results. Policy tests and execution of the real result-gate shell guard missing, failed and cancelled outputs. Related files: `.github/workflows/ci.yml`, `scripts/ci-scope{,.spec}.mts`, `scripts/ci-workflow.spec.mts`, `AGENTS.md`, `docs/standards/code-review.md`.
