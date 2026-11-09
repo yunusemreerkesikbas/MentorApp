@@ -61,6 +61,24 @@ The landing page combines atmospheric night-to-dawn art with **energetic, Duolin
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-10 — Landing asset performance, package A:** Tab metadata now selects a 64x64 PNG of the
+  same favicon artwork (8,251 bytes instead of the 133,816-byte raster-backed SVG). The existing ICO
+  fallback and Apple icon remain. CI guards the selected PNG at 10 KiB; browser checks also verify its
+  actual dimensions. The fourteen existing city AVIF/WebP files now declare four-hour browser/shared
+  caching, preserving the browser lifetime observed on production while allowing fresh edge reuse.
+  HTML/RSC, feature availability, other media and missing city filenames keep their policies. When
+  replacing art, use a new URL for immediate updates; an edge purge cannot clear existing browser
+  caches. Original brand files remain as source artwork; reproduce the favicon with
+  `sharp("public/img/brand/puhukoc-icon.svg").resize(64, 64).png({compressionLevel: 9})` from `apps/web`.
+  Three matched mobile-throttled resource fetches reduced median icon transfer from 101,123 to 8,551
+  bytes and duration from 689 to 203.4 ms; these are icon-only lab measurements, not page LCP gains.
+  A repeated city fetch transferred zero network bytes. Production browser validation: 39 passed,
+  three intentional device skips; build, web typecheck, targeted lint and 33 focused unit/Node checks passed.
+  Production Cloudflare HIT verification remains a post-deployment check. Related: `next.config.ts`,
+  `[locale]/layout.tsx`, `public/img/brand/puhukoc-favicon-64.png`, `scripts/check-web-performance-budgets.mjs`,
+  `e2e/landing-performance.spec.ts`, `docs/plans/2026-11-09-landing-asset-cache-design.md`,
+  `docs/qa/evidence/2026-11-10-landing-asset-cache.json`.
+
 - **2026-11-08 — Mobile landing cold-load media:** Phones below 768px now select 1024px AVIF/WebP city background variants; desktop art and the detailed facade remain unchanged. The four AVIF city layers drop from 342,600 to 289,348 bytes on mobile (15.5%). Coin player/WASM loads only near its section and never for reduced motion; coin and closed-chest stills use native lazy loading. Rebuild variants with `node apps/web/scripts/build-landing-mobile-images.mjs`. Browser request tests use the standard enabled API fixture and cover both viewports, activation and reduced motion. Hosting wake-up time and request-scoped availability/security behavior are unaffected. Related files: `city-art.tsx`, `scene-img.tsx`, `journey-coin.tsx`, `landing-chest.tsx`, `e2e/landing-performance.spec.ts`.
 - **2026-11-08 — Wordmark accessible name:** Restored the shared SVG logo's accessible name to `PuhuKoç` while retaining the lowercase outlined artwork. Links containing only the logo remain recognizable to assistive technology and existing public-header navigation checks. Related files: `packages/ui/src/components/logo.tsx`, `apps/web/e2e/knowledge.spec.ts`.
 - **2026-11-08 — Landing mobile parity and first paint:** Removed the obsolete secondary hero sign-in/tour-skip row from every viewport; navigation sign-in and the desktop primary action remain. The four existing city images now use the opening camera's CSS positions before hydration, then hand over to the scroll camera without waiting for JavaScript or a fade-in. No additional images or backend calls are introduced. No-JavaScript mobile/desktop browser coverage guards both fixes. Free hosting wake-up latency is a separate operational limitation. Related files: `city-art.tsx`, `city-stage.{tsx,css}`, `city-panels.tsx`, `e2e/landing.spec.ts`.

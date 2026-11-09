@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
@@ -114,6 +114,13 @@ test("budget equality passes and a one-byte overage fails", () => {
     evaluateBudgets({ articleBytes: 1025 }, { articleBytes: 1024 }),
     [{ key: "articleBytes", actual: 1025, limit: 1024, overBy: 1 }],
   );
+});
+
+test("the tab icon stays within 10 KiB with accurate 64x64 dimensions", async () => {
+  const icon = await readFile(new URL("../public/img/brand/puhukoc-favicon-64.png", import.meta.url));
+  assert(icon.length <= 10 * 1024);
+  assert.equal(icon.readUInt32BE(16), 64);
+  assert.equal(icon.readUInt32BE(20), 64);
 });
 
 test("missing manifests and referenced chunks fail loudly", async (t) => {

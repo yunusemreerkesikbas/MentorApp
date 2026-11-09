@@ -82,11 +82,12 @@ spinners for content placeholders (button `LoaderCircle` for in-flight actions i
   localizes those canonicals to prefixes-free Turkish and `/en` English public URLs. Static links pass
   the canonical string; dynamic links pass `{pathname, params, query}`. Never hardcode `/tr`.
 - [ ] **Locale-aware formatting:** dates/numbers via the active `locale` (`useLocale()` / `getLocale()`), not a hardcoded `"tr-TR"`.
-- [ ] **Static rendering on** (pages `●`/ISR). Every server page/layout calls `setRequestLocale(locale)` (from awaited
-  `params`); `[locale]/layout.tsx` owns `<html>`/`<body>` + has `generateStaticParams`. Client `(app)` pages → call it
-  in the page; `(auth)` → in the layout. Public pages (landing, `knowledge/[slug]`) use ISR (`export const revalidate = 3600`).
-  Unknown locale → `notFound()`. Turbopack needs `turbopack.resolveAlias` for `next-intl/config` in `next.config.ts`
-  (next-intl 3.x writes it to the wrong key) — see [i18n feature doc](../features/i18n.md).
+- [ ] **Request-scoped documents:** Every server page/layout calls `setRequestLocale(locale)` from the awaited
+  params. `[locale]/layout.tsx` owns `<html>`/`<body>`, reads the trusted CSP nonce and sets `revalidate = 0`.
+  Localized HTML/RSC responses, including landing and blog, remain private/no-store; do not add static params
+  or override them with CDN Cache Everything. Explicit fetch revalidation (e.g. blog data) and static asset
+  caching are independent. Unknown locale → `notFound()`. next-intl v4 configures its plugin without the old
+  `next-intl/config` Turbopack alias — see [i18n feature doc](../features/i18n.md).
 
 ## Don't
 - ❌ off-DESIGN magic numbers/colors · ❌ `bg-white` / `#fff` / `dark:bg-black` instead of tokens · ❌ monolithic bloated components (>250–300 lines without subcomponent decomposition) · ❌ needless client components · ❌ barrel imports · ❌ derived state in

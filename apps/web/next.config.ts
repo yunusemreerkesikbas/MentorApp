@@ -9,7 +9,14 @@ const nextConfig: NextConfig = {
   distDir: process.env.WEB_QA_DIST_DIR ?? ".next",
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/:path*", headers: webSecurityHeaders(process.env.NODE_ENV === "production") }];
+    return [
+      { source: "/:path*", headers: webSecurityHeaders(process.env.NODE_ENV === "production") },
+      {
+        // Stable public art: version replacement URLs for immediate updates; no immutable caching.
+        source: "/visuals/landing/:file(city-far|city-mid|city-front|city-facade|city-far-mobile|city-mid-mobile|city-front-mobile).:format(avif|webp)",
+        headers: [{ key: "Cache-Control", value: "public, max-age=14400, s-maxage=14400" }],
+      },
+    ];
   },
   turbopack: {
     resolveAlias: {
