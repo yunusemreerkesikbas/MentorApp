@@ -69,8 +69,7 @@ export async function generateMetadata({
     icons: {
       icon: [
         { url: "/favicon.ico", sizes: "any" },
-        { url: "/img/brand/puhukoc-icon.png", type: "image/png", sizes: "32x32" },
-        { url: "/img/brand/puhukoc-icon.svg", type: "image/svg+xml" },
+        { url: "/img/brand/puhukoc-favicon-64.png", type: "image/png", sizes: "64x64" },
       ],
       apple: "/img/brand/puhukoc-apple-icon.png",
     },

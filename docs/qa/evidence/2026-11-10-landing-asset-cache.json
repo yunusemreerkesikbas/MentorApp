@@ -1,0 +1,105 @@
+{
+  "conditions": {
+    "cpuRate": 4,
+    "latencyMs": 150,
+    "downloadBytesPerSecond": 200000,
+    "uploadBytesPerSecond": 93750
+  },
+  "icons": [
+    {
+      "run": 1,
+      "before": {
+        "path": "/img/brand/puhukoc-icon.svg",
+        "status": 200,
+        "bodyBytes": 133816,
+        "transfer": 101123,
+        "durationMs": 691.5,
+        "cacheControl": "public, max-age=0"
+      },
+      "after": {
+        "path": "/img/brand/puhukoc-favicon-64.png",
+        "status": 200,
+        "bodyBytes": 8251,
+        "transfer": 8551,
+        "durationMs": 203.40000000037253,
+        "cacheControl": "public, max-age=0"
+      }
+    },
+    {
+      "run": 2,
+      "before": {
+        "path": "/img/brand/puhukoc-icon.svg",
+        "status": 200,
+        "bodyBytes": 133816,
+        "transfer": 101123,
+        "durationMs": 669.1000000014901,
+        "cacheControl": "public, max-age=0"
+      },
+      "after": {
+        "path": "/img/brand/puhukoc-favicon-64.png",
+        "status": 200,
+        "bodyBytes": 8251,
+        "transfer": 8551,
+        "durationMs": 202.2999999988824,
+        "cacheControl": "public, max-age=0"
+      }
+    },
+    {
+      "run": 3,
+      "before": {
+        "path": "/img/brand/puhukoc-icon.svg",
+        "status": 200,
+        "bodyBytes": 133816,
+        "transfer": 101123,
+        "durationMs": 689,
+        "cacheControl": "public, max-age=0"
+      },
+      "after": {
+        "path": "/img/brand/puhukoc-favicon-64.png",
+        "status": 200,
+        "bodyBytes": 8251,
+        "transfer": 8551,
+        "durationMs": 207.19999999925494,
+        "cacheControl": "public, max-age=0"
+      }
+    }
+  ],
+  "cache": {
+    "city": [
+      {
+        "path": "/visuals/landing/city-facade.avif",
+        "status": 200,
+        "bodyBytes": 114703,
+        "transfer": 115003,
+        "durationMs": 2.799999998882413,
+        "cacheControl": "public, max-age=14400, s-maxage=14400"
+      },
+      {
+        "path": "/visuals/landing/city-facade.avif",
+        "status": 200,
+        "bodyBytes": 114703,
+        "transfer": 0,
+        "durationMs": 1,
+        "cacheControl": "public, max-age=14400, s-maxage=14400"
+      }
+    ],
+    "control": [
+      {
+        "path": "/visuals/landing/room-puhu.webp",
+        "status": 200,
+        "bodyBytes": 27304,
+        "transfer": 27604,
+        "durationMs": 2.5,
+        "cacheControl": "public, max-age=0"
+      },
+      {
+        "path": "/visuals/landing/room-puhu.webp",
+        "status": 200,
+        "bodyBytes": 27304,
+        "transfer": 300,
+        "durationMs": 3.900000000372529,
+        "cacheControl": "public, max-age=0"
+      }
+    ]
+  }
+}

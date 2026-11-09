@@ -8,9 +8,9 @@ vi.mock("next-intl/plugin", () => ({ default: () => (config: unknown) => config 
 describe("web security headers", () => {
   it("wires the headers to every Next.js response without advertising the framework", async () => {
     expect(nextConfig.poweredByHeader).toBe(false);
-    expect(await nextConfig.headers?.()).toEqual([
+    expect(await nextConfig.headers?.()).toContainEqual(
       { source: "/:path*", headers: webSecurityHeaders(process.env.NODE_ENV === "production") },
-    ]);
+    );
   });
   it("blocks framing, content sniffing and unnecessary device access without blocking uploads or sharing", () => {
     const headers = Object.fromEntries(webSecurityHeaders(false).map(({ key, value }) => [key, value]));

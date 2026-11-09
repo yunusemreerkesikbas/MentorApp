@@ -1,4 +1,4 @@
-import { appendFile, writeFile } from "node:fs/promises";
+import { appendFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -40,6 +40,7 @@ const limits = {
   dashboardTotalBytes: 1295 * 1024,
   landingRouteAttributableBytes: 400 * 1024,
   landingTotalBytes: 985 * 1024,
+  faviconBytes: 10 * 1024,
   articleFontPreloadCount: 2,
   rootMessageBytes: 1024,
   welcomeMessageBytes: 2048,
@@ -59,6 +60,7 @@ function renderSummary(report) {
     ["Dashboard total JS", kib(report.metrics.dashboardTotalBytes), "1295 KiB"],
     ["Landing route-attributable JS", kib(report.metrics.landingRouteAttributableBytes), "400 KiB"],
     ["Landing total JS", kib(report.metrics.landingTotalBytes), "985 KiB"],
+    ["Tab icon", kib(report.metrics.faviconBytes), "10 KiB"],
     ["Article font preloads", String(report.metrics.articleFontPreloadCount), "2"],
     ["Root client messages", `${report.metrics.rootMessageBytes} B`, "1024 B"],
     ["Welcome client messages", `${report.metrics.welcomeMessageBytes} B`, "2048 B"],
@@ -75,7 +77,7 @@ function renderSummary(report) {
 }
 
 async function main() {
-  const [article, dashboard, landing, messages] = await Promise.all([
+  const [article, dashboard, landing, messages, favicon] = await Promise.all([
     measureRoute(nextDir, routeFiles.article),
     measureRoute(nextDir, routeFiles.dashboard),
     measureRoute(nextDir, routeFiles.landing),
@@ -83,6 +85,7 @@ async function main() {
       messagesDir: join(appDir, "messages"),
       scopesPath: join(appDir, "src", "i18n", "route-message-scopes.json"),
     }),
+    stat(join(appDir, "public", "img", "brand", "puhukoc-favicon-64.png")),
   ]);
 
   const metrics = {
@@ -92,6 +95,7 @@ async function main() {
     dashboardTotalBytes: dashboard.totalBytes,
     landingRouteAttributableBytes: landing.routeAttributableBytes,
     landingTotalBytes: landing.totalBytes,
+    faviconBytes: favicon.size,
     articleFontPreloadCount: article.fontPreloadCount,
     rootMessageBytes: messages.root.maxBytes,
     welcomeMessageBytes: messages.welcome.maxBytes,
