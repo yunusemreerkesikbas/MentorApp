@@ -132,6 +132,7 @@ for (const config of blueprints) {
   assert.equal(api.preDeployCommand, "pnpm --filter @mentor/api db:migrate");
   assert.equal(api.startCommand, "pnpm --filter @mentor/api start:prod");
   assert.equal(api.healthCheckPath, "/v1/health/ready");
+  assert.equal(web.healthCheckPath, "/healthz");
   assert.equal(value(web, "NEXT_PUBLIC_SITE_URL"), `https://${config.site}`);
   const frontends: Array<readonly [Service, "web" | "admin"]> = [[web, "web"], [admin, "admin"]];
   for (const [item, suffix] of frontends) {

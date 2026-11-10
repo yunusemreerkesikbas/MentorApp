@@ -1,10 +1,11 @@
+import { cache } from "react";
 import { APP_AVAILABILITY_KEYS, type AppAvailabilityDto } from "@mentor/types";
 import { apiBaseUrl } from "./api-base";
 
 const AVAILABILITY_FETCH_TIMEOUT_MS = 3_000;
 
-/** Fresh document snapshot. Null is an explicit unavailable state, never an enabled default. */
-export async function fetchAppAvailability(): Promise<AppAvailabilityDto | null> {
+/** One fresh snapshot per server render, shared by layout and sections; never cached across requests. */
+export const fetchAppAvailability = cache(async function fetchAppAvailability(): Promise<AppAvailabilityDto | null> {
   try {
     const response = await fetch(`${apiBaseUrl()}/v1/app/availability`, {
       cache: "no-store", signal: AbortSignal.timeout(AVAILABILITY_FETCH_TIMEOUT_MS),
@@ -19,4 +20,4 @@ export async function fetchAppAvailability(): Promise<AppAvailabilityDto | null>
     console.warn("App availability snapshot unavailable");
     return null;
   }
-}
+});

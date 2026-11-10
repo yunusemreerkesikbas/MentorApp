@@ -18,6 +18,14 @@
 
 Blueprint definition: [`render.yaml`](../../render.yaml).
 
+### Web liveness probe
+
+Set the web service's Health Check Path to `/healthz` only after deploying the endpoint and verifying
+HTTP 204 externally. It checks the web process without rendering a localized document or calling the
+API. Keep the API probe at `/v1/health/ready` for API/database readiness. An existing manually managed
+Render service does not automatically inherit Blueprint changes. Do not use `/` or `/tr` for web
+probes: each SSR document otherwise performs fresh availability and coach-status API reads.
+
 ---
 
 ## 2. Render Cron Jobs (`/v1/internal/cron/*`)

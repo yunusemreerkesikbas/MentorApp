@@ -17,6 +17,7 @@ describe("proxy matcher", () => {
   );
 
   it.each([
+    "/healthz",
     "/api/health",
     "/_next/static/chunk.js",
     "/_vercel/insights/script.js",
@@ -31,6 +32,9 @@ describe("proxy matcher", () => {
 
   // Only explicit static namespaces bypass the proxy; /images is not one, so it gets security headers.
   it("proxies paths outside the static allowlist, dotted or not", () => {
+    for (const url of ["/healthz/extra", "/en/healthz", "/healthz.txt"]) {
+      expect(unstable_doesMiddlewareMatch({ config, nextConfig: {}, url })).toBe(true);
+    }
     expect(
       unstable_doesMiddlewareMatch({ config, nextConfig: {}, url: "/images/logo.svg" }),
     ).toBe(true);
