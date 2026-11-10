@@ -38,6 +38,8 @@ export interface ProductAnalyticsParams {
    * would average two funnels that fail for unrelated reasons.
    */
   sign_up: { method: "email"; intent?: "student" | "coach" };
+  /** Waitlist join: the acquisition conversion while signup is invite-only. Never carries the address. */
+  generate_lead: { lead_source: "waitlist"; intent: "student" | "coach" };
   tutorial_begin: Record<string, never>;
   tutorial_complete: Record<string, never>;
   begin_checkout: {
