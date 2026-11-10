@@ -112,7 +112,7 @@ services:
     renderSubdomainPolicy: disabled
     buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@mentor/web
     startCommand: pnpm --filter @mentor/web start:prod
-    healthCheckPath: /tr
+    healthCheckPath: /healthz
     envVars:
       - key: NODE_VERSION
         value: 22.22.0

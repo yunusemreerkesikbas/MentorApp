@@ -61,6 +61,16 @@ The landing page combines atmospheric night-to-dawn art with **energetic, Duolin
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-10 — Lightweight web probes and shared availability snapshot:** Added infrastructure-only
+  `/healthz` (204, empty body, no-store) outside locale/document rendering. Web health probes must target
+  this path, not `/` or `/tr`; the Blueprint and deployment guard now require it. Existing Render services
+  need the path changed after deployment and an external 204 check. The API/database readiness probe
+  remains separate. Root layout and landing sections now share React's request-scoped availability
+  reader while each new document still fetches fresh flags and fails closed on errors. No TTL or UI
+  change. Related: `src/app/healthz/route{,.spec}.ts`, `src/proxy{,.spec}.ts`,
+  `src/lib/app-availability-server.ts`, `landing-availability.ts`, `render.yaml`, `scripts/check-deployment.mts`,
+  `docs/plans/2026-11-10-web-healthcheck-design.md`.
+
 - **2026-11-10 — Landing asset performance, package A:** Tab metadata now selects a 64x64 PNG of the
   same favicon artwork (8,251 bytes instead of the 133,816-byte raster-backed SVG). The existing ICO
   fallback and Apple icon remain. CI guards the selected PNG at 10 KiB; browser checks also verify its

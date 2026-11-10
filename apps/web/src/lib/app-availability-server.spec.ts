@@ -1,10 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { APP_AVAILABILITY_KEYS } from "@mentor/types";
 import { fetchAppAvailability } from "./app-availability-server";
+import { landingAvailability } from "../app/[locale]/_components/landing/landing-availability";
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("server-loaded public availability", () => {
+  it("shares one memoized reader between the root layout and landing sections", () => {
+    expect(landingAvailability).toBe(fetchAppAvailability);
+  });
+
   it("reads a fresh allowlisted snapshot and strips unexpected response fields", async () => {
     const values = Object.fromEntries(APP_AVAILABILITY_KEYS.map(key => [key, true]));
     const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ...values, secret: "not-for-client" })));
