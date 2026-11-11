@@ -41,6 +41,8 @@
 
 ## 3. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-09 — Phase 2.5..2.6 Mobile Notification Center, Deep-Link Router & Session Return Reminder (`apps/mobile` & `@mentor/core`):** Added `resolveNotificationMobileRoute(linkUrl)` in `@mentor/core` (`packages/core/src/notifications.ts`) to translate server/web notification links (`/tr/panel`, `/koc/sohbet`, `/topluluk/oda/...`, `/plan`, `/analiz`, `/kocum`, `/bilgi/...`) into mobile Expo Router paths while blocking external URLs. Shipped `apps/mobile/src/lib/notifications-api.ts`, `apps/mobile/src/app/(app)/notifications.tsx` (`FlatList` inbox with category filters, mark-read/mark-all-read/delete, and channel toggles), and 1-tap ~24h session return reminder (`scheduleSessionReturnReminder` in `session-done-card.tsx`).
+
 - **2026-11-01..05 — Branded `Resend` HTML Email Templates & Waitlist Invitation Mail (`APP-134`, `APP-138`):** Built `email-render.ts` responsive table templates with Puhu PNG headers, fixed multi-argument i18n interpolation on coach subjects, and added `identity.signup-invitation` waitlist emails + 6-month waitlist retention cleanup in `dispatch-daily-reminders`.
 - **2026-10-28..30 — `Resend` Migration, Interrupted-Job Quarantine & Closed-Social Suppression:** Replaced Postmark with `Resend` (`puhukoc.com` SPF/DKIM/DMARC + Cloudflare Email Routing for `destek@puhukoc.com`), added heartbeat/DEAD-quarantine fencing in `JobRunnerService`, and suppressed social/room notifications when social flags are off.
 - **2026-10-13..25 — Invite Notifications & Pilot Daily-Reminder Email Switch:** Added `InviteEventsListener` (`register: puhu`) and `notifications.daily_reminder.email_enabled` pilot cost switch.

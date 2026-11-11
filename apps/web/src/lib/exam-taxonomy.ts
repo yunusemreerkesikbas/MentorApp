@@ -1,3 +1,4 @@
+import { groupTopicsBySubjectName, type NamedTopicTaxonomy } from "@mentor/core";
 import type { ExamSubjectDto, ExamTopicDto } from "@mentor/types";
 import {
   contentControllerCurrentExamByFamily,
@@ -7,16 +8,13 @@ import {
 } from "@mentor/api-client";
 import type { AuthUser, ExamSummaryDto } from "@mentor/types";
 
+export { groupTopicsBySubjectName, type NamedTopicTaxonomy };
+
 export interface ExamTaxonomyBundle {
   exam: ExamSummaryDto | null;
   subjects: ExamSubjectDto[];
   topics: ExamTopicDto[];
   needsExamType: boolean;
-}
-
-export interface NamedTopicTaxonomy {
-  subjects: string[];
-  topicsBySubject: Map<string, string[]>;
 }
 
 const EMPTY_BUNDLE: ExamTaxonomyBundle = {
@@ -31,18 +29,6 @@ const inflight = new Map<string, Promise<ExamTaxonomyBundle>>();
 
 function trackKey(examType: string, examVariant?: string | null): string {
   return `${examType}:${examVariant ?? ""}`;
-}
-
-export function groupTopicsBySubjectName(
-  topics: ExamTopicDto[],
-): NamedTopicTaxonomy {
-  const bySubject = new Map<string, string[]>();
-  for (const row of [...topics].sort((a, b) => a.sortOrder - b.sortOrder)) {
-    const list = bySubject.get(row.subjectName);
-    if (list) list.push(row.name);
-    else bySubject.set(row.subjectName, [row.name]);
-  }
-  return { subjects: [...bySubject.keys()], topicsBySubject: bySubject };
 }
 
 export async function resolveCurrentExam(

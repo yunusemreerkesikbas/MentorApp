@@ -45,6 +45,7 @@
     "@lexical/selection": "^0.49.0",
     "@lottiefiles/dotlottie-react": "^0.19.15",
     "@mentor/api-client": "workspace:*",
+    "@mentor/core": "workspace:*",
     "@mentor/types": "workspace:*",
     "@mentor/ui": "workspace:*",
     "@mentor/validation": "workspace:*",

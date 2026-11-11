@@ -3,7 +3,13 @@ import type {
   StudyRoomDto,
   StudyRoomTheme,
 } from "@mentor/types";
+import {
+  classifyStudyRoomJoinErrorCode,
+  type StudyRoomJoinFailure,
+} from "@mentor/core";
 import { ApiClientError, http } from "@mentor/api-client";
+
+export type { StudyRoomJoinFailure };
 
 /**
  * Typed wrappers over the study-room surface (`/v1/study-rooms`) — persistent, themed,
@@ -32,14 +38,6 @@ export async function createStudyRoom(input: {
   })) as StudyRoomDetailDto;
 }
 
-export type StudyRoomJoinFailure =
-  | "already_member"
-  | "invalid"
-  | "malformed"
-  | "full"
-  | "quota"
-  | "error";
-
 /**
  * Why a join failed, in the words both join surfaces use (the join sheet and `/masaya-katil`).
  * An unknown code and a closed room read the same to the person holding the code: ask for a
@@ -48,12 +46,7 @@ export type StudyRoomJoinFailure =
  */
 export function studyRoomJoinFailure(err: unknown): StudyRoomJoinFailure {
   const code = err instanceof ApiClientError ? err.body.code : null;
-  if (code === "COACHING_ROOM_ALREADY_MEMBER") return "already_member";
-  if (code === "COACHING_ROOM_CODE_INVALID" || code === "COACHING_ROOM_NOT_FOUND") return "invalid";
-  if (code === "VALIDATION_ERROR") return "malformed";
-  if (code === "COACHING_ROOM_FULL") return "full";
-  if (code === "COACHING_ROOM_QUOTA_EXCEEDED") return "quota";
-  return "error";
+  return classifyStudyRoomJoinErrorCode(code);
 }
 
 /** Join by invite code. The API upper-cases and validates the `MASA-XXXXXX` shape. */

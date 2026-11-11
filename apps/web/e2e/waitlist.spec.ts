@@ -118,13 +118,15 @@ test("waitlist join shows success", async ({ page }) => {
   await expect(card(page, SUCCESS).locator(".lw-art > div")).toHaveCount(1);
 });
 
-test("/kayit shows the modal, /kayit?davet=1 shows the form", async ({ page }) => {
+test("/kayit shows the modal over the landing, /kayit?davet=1 shows the form", async ({ page }) => {
   await page.goto("/kayit");
   await expect(card(page)).toBeVisible();
+  await expect(page.locator("#landing-title")).toBeVisible();
+  await expect(page).toHaveURL(/\/\?waitlist=student$/);
   await expect(page.locator('input[name="displayName"]')).toHaveCount(0);
-  // Leaving the card leaves the page: there is no form behind it.
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/\/$/);
+  await expect(card(page)).toHaveCount(0);
 
   await page.goto("/kayit?davet=1");
   await expect(page.getByRole("heading", { name: "Hesap oluştur" })).toBeVisible();
@@ -140,6 +142,7 @@ test("closed mode: the invite link shows the modal, not a form that can only fai
   await expect(page.locator('input[name="displayName"]')).toHaveCount(0);
   await page.goto("/kayit?davet=1&rol=koc");
   await expect(card(page)).toBeVisible();
+  await expect(page).toHaveURL(/\/\?waitlist=coach$/);
   await expect(page.locator('input[name="displayName"]')).toHaveCount(0);
 });
 
@@ -203,6 +206,7 @@ test("coach CTAs open the waitlist as a coach while coach signup is closed", asy
 test("English signup shows the English card", async ({ page }) => {
   await page.goto("/en/signup");
   await expect(card(page, "Let's save your spot!")).toBeVisible();
+  await expect(page).toHaveURL(/\/en\?waitlist=student$/);
   await page.goto("/en/signup?davet=1");
   await expect(page.getByRole("heading", { name: "Create account" })).toBeVisible();
 });

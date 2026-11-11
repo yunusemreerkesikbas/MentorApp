@@ -95,6 +95,7 @@ PuhuKoç's core trust boundaries:
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-09 — Phase 2.4 Mobile Human Coach Workspace & Student `MyCoach` Flow (`apps/mobile`):** Implemented `apps/mobile/src/lib/mentorship-api.ts`, the Human Coach mobile screens (`apps/mobile/src/app/(app)/(tabs)/{students,coach-profile}.tsx` + `src/components/mentorship/{coach-overview-header,student-report-panel}.tsx` for seat usage, rotating invite code, cohort/student AI briefs, risk-sorted roster, attention marks, standing notes, homework task assignment, and profile editing), and the Student's `MyCoachCard` (`apps/mobile/src/components/settings/my-coach-card.tsx` for transparent KVKK `dataScope` preview, double opt-in invite acceptance, note exchange, and link termination).
 - **2026-10-15 — Phone-Optional Coach Rollout Controls:** Decoupled `mentorship.phone_verification_required` from `SMS_PROVIDER` and exposed authoritative `inviteBlockedReason` on coach registration views.
 - **2026-09-26..27 — Coach Seat Plans (`coach-plus-5/10/20`) & Free Coach AI Taste:** Added `SeatEventsListener` to reseat students on subscription lifecycle events, excluded self-paying students from consuming coach seats, and enabled per-coach daily free AI tastes for seated students.
 - **2026-09-14..21 — Weekly Reports, Meeting Preparation & Planning Read:** Shipped immutable versioned weekly reports (`preview`/`brief`/`finalize`/`share`), `coachContext` meeting preparation prompts, coach-student notifications, and `GET .../planning-tasks` 7-day read.
