@@ -6,11 +6,15 @@ export interface ApiClientConfig {
   getAccessToken?: () => string | null;
   /** Returns the current locale (e.g. "tr", "en"); used for Accept-Language header. */
   getLocale?: () => string;
+  /** Identifies client surface (`"mobile"` enables SecureStore refresh token header flow). */
+  clientPlatform?: "web" | "mobile";
+  /** Returns the SecureStore refresh token on mobile for `/v1/auth/refresh` and `/v1/auth/logout`. */
+  getRefreshToken?: () => string | null;
 }
 
 let config: ApiClientConfig = { baseUrl: "" };
 
-/** Configure once at app startup (e.g. in the web auth provider). */
+/** Configure once at app startup (e.g. in the web or mobile auth provider). */
 export function configureApiClient(next: ApiClientConfig): void {
   config = next;
 }
@@ -38,9 +42,12 @@ function getFallbackMessage(): string {
   return FALLBACK_MESSAGES[locale] ?? FALLBACK_MESSAGES["tr"]!;
 }
 
+const REFRESH_TOKEN_PATHS = new Set(["/v1/auth/refresh", "/v1/auth/logout"]);
+
 /**
  * Fetch wrapper used by every generated operation (orval mutator).
- * - `credentials: "include"` → the httpOnly refresh cookie flows to /v1/auth/*.
+ * - `credentials: "include"` on web → the httpOnly refresh cookie flows to /v1/auth/*.
+ * - `X-Client-Platform: mobile` + `X-Refresh-Token` on mobile → SecureStore rotation.
  * - Adds the Bearer access token when available.
  * - Sends Accept-Language so the backend returns localized messages.
  */
@@ -72,11 +79,18 @@ export async function httpRaw(url: string, init?: RequestInit): Promise<Response
   if (token) headers.set("authorization", `Bearer ${token}`);
   const locale = config.getLocale?.();
   if (locale) headers.set("accept-language", locale);
+  if (config.clientPlatform === "mobile") {
+    headers.set("x-client-platform", "mobile");
+    if (REFRESH_TOKEN_PATHS.has(url)) {
+      const refreshToken = config.getRefreshToken?.();
+      if (refreshToken) headers.set("x-refresh-token", refreshToken);
+    }
+  }
 
   return fetch(`${config.baseUrl}${url}`, {
     ...init,
     headers,
-    credentials: "include",
+    credentials: config.clientPlatform === "mobile" ? "omit" : "include",
   });
 }
 

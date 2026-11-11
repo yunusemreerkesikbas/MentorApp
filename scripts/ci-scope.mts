@@ -9,6 +9,7 @@ export interface CiScope {
   api: boolean;
   web: boolean;
   admin: boolean;
+  mobile: boolean;
   filters: string;
 }
 
@@ -20,7 +21,7 @@ const SENSITIVE = [
   /^apps\/web\/src\/app\/\[locale\]\/\(app\)\/subscription\//,
   /^apps\/web\/src\/(?:proxy\.ts|lib\/(?:auth|post-auth|account-security|security-headers|signup-waitlist))/,
   /^apps\/web\/e2e\/(?:account-security|browser-security|core-trial)/,
-  /^apps\/(?:api|web|admin)\/(?:package\.json|[^/]*config[^/]*)$/,
+  /^apps\/(?:api|web|admin|mobile)\/(?:package\.json|[^/]*config[^/]*)$/,
   /^packages\/(?!ui\/)/,
   /^packages\/ui\/package\.json$/,
 ];
@@ -31,21 +32,27 @@ export function selectCiScope(paths: string[], forceFull = false): CiScope {
   let api = false;
   let web = false;
   let admin = false;
+  let mobile = false;
   for (const path of paths) {
     if (DOCUMENTATION.test(path)) continue;
     if (SENSITIVE.some(pattern => pattern.test(path))) full = true;
     else if (path.startsWith("apps/api/")) api = true;
-    else if (path.startsWith("apps/web/") || path.startsWith("packages/ui/")) web = true;
-    else if (path.startsWith("apps/admin/")) admin = true;
+    else if (path.startsWith("apps/web/")) web = true;
+    else if (path.startsWith("packages/ui/")) {
+      web = true;
+      mobile = true;
+    } else if (path.startsWith("apps/admin/")) admin = true;
+    else if (path.startsWith("apps/mobile/")) mobile = true;
     else full = true;
   }
-  if (full) api = web = admin = true;
+  if (full) api = web = admin = mobile = true;
   const filters = full ? "" : [
     ...(api ? ["--filter=@mentor/api..."] : []),
     ...(web ? ["--filter=@mentor/web..."] : []),
     ...(admin ? ["--filter=@mentor/admin..."] : []),
+    ...(mobile ? ["--filter=@mentor/mobile..."] : []),
   ].join(" ");
-  return { code: api || web || admin, full, api, web, admin, filters };
+  return { code: api || web || admin || mobile, full, api, web, admin, mobile, filters };
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
@@ -68,7 +75,7 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, [
       "## CI scope",
       `Mode: **${scope.full ? "full" : scope.code ? "scoped PR" : "documentation / marketing only"}**`,
-      `Applications: ${[scope.api && "API", scope.web && "web", scope.admin && "admin"].filter(Boolean).join(", ") || "none"}`,
+      `Applications: ${[scope.api && "API", scope.web && "web", scope.admin && "admin", scope.mobile && "mobile"].filter(Boolean).join(", ") || "none"}`,
       scope.full ? "The full release profile is required." : "This result does not certify the full release profile.",
       "",
     ].join("\n\n"));

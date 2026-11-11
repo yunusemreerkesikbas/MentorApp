@@ -9,6 +9,7 @@
   ],
   "exports": {
     "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/expo.json": "./tsconfig/expo.json",
     "./tsconfig/nestjs.json": "./tsconfig/nestjs.json",
     "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
     "./tsconfig/react-library.json": "./tsconfig/react-library.json",

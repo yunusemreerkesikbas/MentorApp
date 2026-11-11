@@ -1,20 +1,31 @@
-# apps/mobile — B2C Student App (Phase 2)
+# `apps/mobile` — PuhuKoç Mobile App (Expo / React Native)
 
-> **Status:** Placeholder. MVP is responsive web-first; mobile = **#1 fast-follow / early Phase 2** (§10).
+> **Canonical context:** [`../../AGENTS.md`](../../AGENTS.md) · [`../../DESIGN.md`](../../DESIGN.md) · [`../../docs/standards/mobile.md`](../../docs/standards/mobile.md)
 
-## Planned stack
-- **Expo (React Native)** — the B2C student primary app (Pomodoro/push/realtime are mobile-native, §8).
-- Shared: `@mentor/types`, `@mentor/validation`, `@mentor/api-client` (orval), design tokens from
-  `@mentor/ui` (RN adaptation).
-- Native push (Phase 2), OCR input (auto C/W/B), widget — §6/§10 backlog.
+## Architecture & Shared Core
 
-## ⚠️ Do NOT use Expo Router API routes
-The single API = NestJS `/v1` (§8). Mobile gets all data via `@mentor/api-client` from NestJS.
-Expo's API-routes feature becomes a second backend → breaks the single-API decision. The `expo-api-routes`
-skill is only for EAS hosting/deploy.
+- **Framework:** Expo SDK 53 + React Native 0.79 + Expo Router (`src/app`, file-based routing).
+- **Single API (`/v1`):** **Never** add Expo Router API routes (`+api.ts`). All data flows from the NestJS monolith via `@mentor/api-client`.
+- **Shared Monorepo Packages:**
+  - `@mentor/types` — 5-exam catalog (`KPSS · YKS · LGS · ALES · DGS`), DTOs, enums.
+  - `@mentor/validation` — Shared Zod schemas (`loginSchema`, `signupSchema`, `updateMeSchema`, etc.).
+  - `@mentor/core` — Exam-agnostic net formulas (`NET_PENALTY_DIVISOR`), Night Journey XP curve (`deriveLevel`), role-aware navigation (`getMobileTabItemsForRole`, `isStudentOnlyPath`, `homePathForUser`), feature gates (`blockedAppFeature`), and Turkish formatting (`dativeOf`, `genitiveOf`, `greetingKeyForHour`).
+  - `@mentor/ui/tokens` — DOM-free `DESIGN.md` tokens (`lightThemeTokens`, `darkThemeTokens`, `sceneThemes`, `radii`, `touchTargets`, `ledgeTokens`, `typeScale`, `motionTokens`).
+  - `@mentor/api-client` — Orval-generated `/v1` client configured with `clientPlatform: "mobile"`, sending `Accept-Language: tr | en` and `X-Client-Platform: mobile`.
+- **Authentication & Security:**
+  - Access token lives **in-memory only** (`AuthProvider`).
+  - Refresh token is stored in hardware-backed **`expo-secure-store`** (iOS Keychain / Android EncryptedSharedPreferences) and rotated via `X-Refresh-Token` on `/v1/auth/refresh`.
+- **State Management:**
+  - Server state: **TanStack Query v5** (`QueryProvider` with `AppState` focus revalidation).
+  - Client UI preferences: **Zustand** (`usePreferencesStore`).
 
-## Why not now
-The web-push + email bridge covers the lack of push in MVP (§10). Mobile comes online once the social
-layer and user mass start to form.
+## Commands
 
-Setup is not done in this phase; the skeleton only reserves the monorepo slot.
+```bash
+pnpm --filter @mentor/mobile dev        # Start Expo dev server
+pnpm --filter @mentor/mobile ios        # Launch on iOS Simulator
+pnpm --filter @mentor/mobile android    # Launch on Android Emulator
+pnpm --filter @mentor/mobile typecheck  # TypeScript strict check
+pnpm --filter @mentor/mobile lint       # ESLint check
+pnpm --filter @mentor/mobile test       # Unit & voice parity tests
+```
