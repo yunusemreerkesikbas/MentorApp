@@ -45,6 +45,9 @@ export const trMessages = {
     login_cta: "Zaten hesabım var",
   },
   auth: {
+    coach_web_title: "Koç paneli şimdilik webde",
+    coach_web_body: "Öğrencilerini ve haftalık raporları puhukoc.com üzerinden takip edebilirsin.",
+    coach_web_open_cta: "Web'de aç",
     login_title: "Tekrar hoş geldin",
     login_subtitle: "Masana kaldığın yerden dönelim.",
     email_label: "E-posta",

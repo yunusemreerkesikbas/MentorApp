@@ -41,6 +41,9 @@ export const enMessages: TranslationCatalog = {
     login_cta: "I already have an account",
   },
   auth: {
+    coach_web_title: "The coach panel lives on the web for now",
+    coach_web_body: "Follow your students and weekly reports at puhukoc.com.",
+    coach_web_open_cta: "Open on the web",
     login_title: "Welcome back",
     login_subtitle: "Let's pick up right where you left your desk.",
     email_label: "Email",

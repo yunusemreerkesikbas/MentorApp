@@ -12,7 +12,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     orientation: "portrait",
     scheme: "puhukoc",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
     ios: {
       supportsTablet: false,
       bundleIdentifier: isProd ? "com.puhukoc.app" : `com.puhukoc.app.${appEnv}`,
@@ -22,7 +21,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       package: isProd ? "com.puhukoc.app" : `com.puhukoc.app.${appEnv}`,
-      edgeToEdgeEnabled: true,
     },
     plugins: [
       [
@@ -32,6 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       "expo-secure-store",
+      "expo-splash-screen",
     ],
     experiments: {
       typedRoutes: false,

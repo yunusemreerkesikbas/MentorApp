@@ -12,6 +12,7 @@ import { ApiClientError } from "@mentor/api-client";
 import { signupSchema } from "@mentor/validation";
 import { Button, Card, Chip, TextField, AppText } from "../../components/ui/index.js";
 import { haptics } from "../../lib/haptics.js";
+import { STUDENT_CORE_ONLY } from "../../lib/release-scope.js";
 import { useAppAvailability } from "../../providers/availability-provider.js";
 import { useAuth } from "../../providers/auth-provider.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
@@ -28,7 +29,7 @@ export default function SignupScreen() {
   const tCommon = useTranslations("common");
 
   const [intent, setIntent] = useState<"STUDENT" | "COACH">(
-    params.role === "coach" ? "COACH" : "STUDENT",
+    !STUDENT_CORE_ONLY && params.role === "coach" ? "COACH" : "STUDENT",
   );
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -118,18 +119,20 @@ export default function SignupScreen() {
       ]}
     >
       <View style={{ gap: space.xs }}>
-        <View style={styles.intentRow}>
-          <Chip
-            label={t("coach_switch_student")}
-            selected={!isCoachIntent}
-            onPress={() => setIntent("STUDENT")}
-          />
-          <Chip
-            label={t("signup_title_coach")}
-            selected={isCoachIntent}
-            onPress={() => setIntent("COACH")}
-          />
-        </View>
+        {STUDENT_CORE_ONLY ? null : (
+          <View style={styles.intentRow}>
+            <Chip
+              label={t("coach_switch_student")}
+              selected={!isCoachIntent}
+              onPress={() => setIntent("STUDENT")}
+            />
+            <Chip
+              label={t("signup_title_coach")}
+              selected={isCoachIntent}
+              onPress={() => setIntent("COACH")}
+            />
+          </View>
+        )}
         <AppText variant="title">
           {isCoachIntent ? t("signup_title_coach") : t("signup_title")}
         </AppText>

@@ -182,7 +182,7 @@ export default function KnowledgeScreen() {
         </View>
       }
       ListEmptyComponent={
-        selectedSlug ? null : articlesQuery.isLoading ? (
+        selectedSlug ? undefined : articlesQuery.isLoading ? (
           <ScreenLoadingSkeleton />
         ) : articlesQuery.isError ? (
           <StateView

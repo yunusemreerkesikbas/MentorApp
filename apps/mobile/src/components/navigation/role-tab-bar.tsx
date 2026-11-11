@@ -2,12 +2,14 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  APP_NAV_ITEMS,
   getMobileTabItemsForRole,
   isElevatedNavHref,
   isNavActive,
   type AppNavIconId,
 } from "@mentor/core";
 import { haptics } from "../../lib/haptics.js";
+import { STUDENT_CORE_ONLY } from "../../lib/release-scope.js";
 import { useAuth } from "../../providers/auth-provider.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
@@ -39,7 +41,15 @@ export function RoleTabBar() {
   const { palette, radii, space, touchTargets, ledge } = useThemeTokens();
   const tNav = useTranslations("nav");
 
-  const items = getMobileTabItemsForRole(user?.roles);
+  const roleItems = getMobileTabItemsForRole(user?.roles);
+  // Student core: Settings takes the hidden Community slot, so the pill stays at five.
+  const items = STUDENT_CORE_ONLY
+    ? roleItems.flatMap((item) =>
+        item.href === "/community"
+          ? APP_NAV_ITEMS.filter((nav) => nav.href === "/settings")
+          : [item],
+      )
+    : roleItems;
 
   return (
     <View

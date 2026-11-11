@@ -281,7 +281,7 @@ export default function NotificationsScreen() {
               />
             </View>
           </Card>
-        ) : null
+        ) : undefined
       }
     />
   );

@@ -6,6 +6,7 @@ import { isWaitlistOn } from "@mentor/core";
 import { EXAM_TYPES } from "@mentor/types";
 import { Button, Card, Chip, AppText } from "../../components/ui/index.js";
 import { haptics } from "../../lib/haptics.js";
+import { STUDENT_CORE_ONLY } from "../../lib/release-scope.js";
 import { useAppAvailability } from "../../providers/availability-provider.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
@@ -109,17 +110,19 @@ export default function WelcomeScreen() {
           }
           variant="primary"
         />
-        <Button
-          label={t("coach_cta")}
-          onPress={() =>
-            router.push(
-              (waitlistActive
-                ? "/(auth)/waitlist?role=coach"
-                : "/(auth)/signup?role=coach") as never,
-            )
-          }
-          variant="secondary"
-        />
+        {STUDENT_CORE_ONLY ? null : (
+          <Button
+            label={t("coach_cta")}
+            onPress={() =>
+              router.push(
+                (waitlistActive
+                  ? "/(auth)/waitlist?role=coach"
+                  : "/(auth)/signup?role=coach") as never,
+              )
+            }
+            variant="secondary"
+          />
+        )}
         <Button
           label={t("login_cta")}
           onPress={() => router.push("/(auth)/login" as never)}
