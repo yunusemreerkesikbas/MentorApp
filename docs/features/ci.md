@@ -9,7 +9,7 @@ CI checks changes automatically before they are merged. It does not deploy produ
 | Local development or branch/master push | No automatic CI run |
 | Draft PR targeting `master` | Wait until ready for review |
 | Documentation, marketing or design-only PR | Scope-policy tests and secret scan; no application build/tests |
-| Ordinary web or admin PR | Affected application/dependency lint, typecheck, build and unit tests |
+| Ordinary web, admin or mobile PR | Affected application/dependency lint, typecheck, build and unit tests |
 | Ordinary API PR | API/dependency static checks, dependency unit tests and `@mentor/api test:unit` |
 | Auth, payment, ledger, AI/mentorship trust, database, shared-contract, dependency or CI-policy changes | Full CI profile |
 | Unknown code/configuration path | Full CI profile |
@@ -29,7 +29,7 @@ Every code PR retains the production dependency audit and deployment-configurati
 
 Full mode retains the workspace checks, API database integration tests, ordinary mobile/desktop browser regression, CAPTCHA checks, core-trial checks, bounded-media checks and invite-only waitlist/auth-layout checks. Live-provider tests stay opt-in; this workflow does not call paid production providers.
 
-The manual **Run workflow** button becomes available after the updated workflow is on the default branch, as required by [GitHub's workflow-dispatch rules](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch).
+The manual **Run workflow** button becomes available after the updated workflow is on the default branch, as required by [GitHub's workflow-dispatch rules](https://docs.github.com/en/actions/reference/workflows-and-workflows/events-that-trigger-workflows#workflow_dispatch).
 
 Existing development branches should incorporate the updated `master` before their next push; otherwise they may still contain the old push-triggered workflow. New branches created from the updated `master` inherit the new policy.
 
@@ -38,6 +38,8 @@ The selector uses both sides of the PR diff, disables rename collapsing, and han
 Normal PRs do not launch Postgres or browser servers. The admin package currently has no unit-test task; its static/build checks and dependency unit tasks still run. Existing browser tests are retained unchanged rather than deleted or disabled. Full validation can still take about an hour; ordinary PR duration must be measured after rollout, not assumed.
 
 ## Geliştirmeler (timeline)
+
+- **2026-11-09 — Scoped Mobile PR Target (`@mentor/mobile`):** Added `apps/mobile/` path recognition (`--filter=@mentor/mobile...`) to `scripts/ci-scope.mts` so ordinary mobile PRs run scoped mobile lint, typecheck, and unit tests without triggering full-workspace database/browser suites unless shared contracts or sensitive paths are touched. Related files: `scripts/ci-scope{,.spec}.mts`, `packages/config/tsconfig/expo.json`.
 
 - **2026-11-08 — Manual release history scan baseline:** Reviewed the nine additional findings exposed by a full-history manual secret scan: dummy test constants, a browser storage identifier, an environment variable name, and historical Duralux documentation examples absent from the release tree. Recorded only their exact historical fingerprints in `.gitleaksignore`. New occurrences, changed commits and all other files/rules remain scanned; the secret gate still fails closed. Run the manual full profile before deployment as usual. Related files: `.gitleaksignore`.
 

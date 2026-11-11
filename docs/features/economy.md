@@ -68,6 +68,8 @@
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-09 — Phase 2.2..2.6 Mobile Economy Surfaces (`apps/mobile`):** Shipped mobile XP/Coin balance & daily ritual quests (`economy-quests-card.tsx`), Coin-based Streak Rescue (`streak-and-countdown-row.tsx` calling `/v1/economy/streak-rescue`), Weekly Effort Chest (`weekly-ritual-and-vision-card.tsx` calling `GET /v1/economy/weekly-chest` and `POST /v1/economy/weekly-chest/open`), permanent `+1` Custom Notebook Slot unlock (`GET/POST /v1/economy/notebook-slots`), and `PUHU-XXXXXXXX` Friend Invites (`friend-invite-card.tsx` calling `GET /v1/economy/invite` and `POST /v1/economy/invite/redeem`).
+
 - **2026-11-01..04 — `×10` Economy Rebalance, Weekly Chest ("Masa Lambası") & Unified Report Unlock (`APP-133–APP-135`):** Rebalanced all XP/Coin amounts and level thresholds by `×10`, switched Premium effort rewards from Coin to XP, shipped backend + web Weekly Chest opening scene (`0138`), and unified Weekly Recap + Deep Analysis under a single `250 Coin` acquisition.
 - **2026-10-31 — Coin Uses Catalog & Permanent Notebook Slots:** Added `GET /v1/economy/uses` and `GET/POST /v1/economy/notebook-slots` (`200 Coin` per extra custom notebook).
 - **2026-10-25..26 — `PUHU-` Friend Invites, `/davet/[code]` Landing & `INVITED` Promotion Seam:** Replaced `MENTOR-` codes with `PUHU-`, built the public invite landing and `InviteSignalRegistry` seam with `PaymentsModule`/`PromotionsModule`, and enforced coach exclusion on invite rewards/discounts.

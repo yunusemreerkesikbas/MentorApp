@@ -1,5 +1,6 @@
 import { setRequestLocale } from "@/i18n/locale";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
@@ -10,6 +11,7 @@ import { LandingAfter } from "./_components/landing/landing-after";
 import { LandingAuthRedirect } from "./_components/landing/landing-auth-redirect";
 import { LandingFooter } from "./_components/landing/landing-footer";
 import { LandingNav } from "./_components/landing/landing-nav";
+import { LandingWaitlist } from "./_components/landing/landing-waitlist";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
@@ -42,6 +44,9 @@ export default async function Home({ params }: PageProps) {
           <LandingAfter />
         </main>
         <LandingFooter />
+        <Suspense fallback={null}>
+          <LandingWaitlist />
+        </Suspense>
       </div>
     </NextIntlClientProvider>
   );

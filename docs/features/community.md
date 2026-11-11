@@ -61,6 +61,7 @@
 
 ## 4. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-09 — Phase 2.4 Mobile Study Tables, Forum & Effort League (`apps/mobile` & `@mentor/core`):** Extracted `classifyStudyRoomJoinErrorCode`, `normalizeStudyRoomCode`, `STUDY_ROOM_THEMES`, and `STUDY_ROOM_CAPACITIES` into `@mentor/core` (`packages/core/src/community.ts`). Built `apps/mobile/src/lib/community-api.ts` and the 3-tab mobile Community experience (`apps/mobile/src/app/(app)/(tabs)/community.tsx` + `src/components/community/{study-rooms-view,forum-zones-view,leaderboard-view}.tsx`) supporting `MASA-XXXXXX` study table join/create/seat status + session launch, Forum zone threads/comments/positive-only reactions, and the effort-only XP Weekly League (`weekly`/`today`/`all_time`).
 - **2026-11-04 — Energetic Puhu Voice for Levels & Achievements (`APP-136`):** Updated all 12 level names (`Civciv` → `Efsane`), 12 achievement titles/celebrations (`İlk Seans Tamam!`, etc.), and 4 community badges to the energetic Duolingo-like Puhu register.
 - **2026-10-30 — Own Progress Under Social Closure:** Allowed students to view their own achievements and level progression on `/profil` even when public social/community switches are off.
 - **2026-10-07..08 — Weekly League (`/topluluk/lig`) & Visitor Profile Cards:** Redesigned `/topluluk/lig` (`league-you-card.tsx`, `league-list.tsx`, Istanbul reset counter), added 3rd-person visitor copy on `/topluluk/uye/[username]`, and removed dead legacy effort-board components.

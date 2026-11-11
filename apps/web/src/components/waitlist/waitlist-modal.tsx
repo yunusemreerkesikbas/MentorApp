@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { ApiClientError, authControllerJoinWaitlist } from "@mentor/api-client";
 import { Modal } from "@mentor/ui";
 import { turnstileSiteKey } from "@/app/[locale]/(auth)/_components/signup-turnstile";
+import { trackProductEvent } from "@/lib/analytics";
 import { isWaitlistEmail } from "@/lib/signup-waitlist";
 import { WaitlistBanner } from "./waitlist-banner";
 import { WaitlistDone, WaitlistFields, WaitlistLede, type WaitlistStatus } from "./waitlist-steps";
@@ -80,6 +81,7 @@ export function WaitlistModal({ role, onClose, onLogin = onClose }: WaitlistModa
         ...(turnstileToken ? { turnstileToken } : {}),
       });
       setStatus("success");
+      trackProductEvent("generate_lead", { lead_source: "waitlist", intent: role });
     } catch (error) {
       // Only the server's own address check is the student's to fix; anything else is on us.
       const badAddress = error instanceof ApiClientError && error.body.code === "VALIDATION_ERROR";

@@ -1,29 +1,73 @@
 # Mobile Standards (Expo / React Native — Phase 2)
 
-> **Status:** Mobile is Phase 2 (placeholder). The standard is fixed now so we're aligned when we start.
-> Canonical context: [`../../AGENTS.md`](../../AGENTS.md) · Reference skills: `expo`, `building-native-ui`, `expo-tailwind-setup`.
+> **Status:** Phase 2.0–2.6 active (`apps/mobile`).
+> Canonical context: [`../../AGENTS.md`](../../AGENTS.md) · Reference skills: `mobile-design`, `appllama-app-design-skill`, `senior-architect`.
 
 ## Architecture
-- [ ] **Expo Router (file-based).** ⚠️ **Do NOT use API routes** — single API = NestJS `/v1` (§8). A second
+- [x] **Expo Router (file-based).** ⚠️ **Do NOT use API routes** (`+api.ts`) — single API = NestJS `/v1` (§8). A second
   backend breaks the single-API decision.
-- [ ] Data from the **single API**: `@mentor/api-client`. Types & validation: `@mentor/types` +
-  `@mentor/validation` (shared with web).
-- [ ] **No business logic/calculations on mobile** (§principles) — backend computes, mobile shapes/displays.
+- [x] Data from the **single API**: `@mentor/api-client`. Types & validation: `@mentor/types` +
+  `@mentor/validation` + pure presentation/navigation helpers in `@mentor/core` (shared with web).
+- [x] **No business logic/calculations on mobile** (§principles) — backend computes, mobile shapes/displays.
   **User-facing messages come localized from the backend** and are shown directly (same contract as web).
-- [ ] Design: an **RN adaptation** of `@mentor/ui` tokens (same color/spacing/radius source; no magic numbers).
+- [x] Design: an **RN adaptation** of `@mentor/ui/tokens` (same color/spacing/radius/ledge/typography source; no magic numbers).
 
 ## Platform & UX
-- [ ] Respect platform conventions (iOS/Android navigation, back behavior, safe-area).
-- [ ] Touch targets ≥44px; gestures/animations native-feeling (Reanimated); haptics in moderation.
-- [ ] Long lists virtualized (FlashList/FlatList); heavy work off the main thread.
-- [ ] **Latency tolerance:** optimistic UI for latency-tolerant work; queue while offline, send on reconnect.
+- [x] Respect platform conventions (iOS/Android navigation, one-way door `router.replace` on auth/onboarding, safe-area).
+- [x] Touch targets ≥44px (`touchTargets.min = 44`); gestures/animations native-feeling (Reanimated); haptics in moderation (`src/lib/haptics.ts`).
+- [x] Long lists virtualized (FlashList/FlatList); heavy work off the main thread.
+- [x] **Latency tolerance:** TanStack Query v5 with `AppState` focus revalidation + offline banner and cached query fallback.
 
 ## Versioning & release
-- [ ] Mobile **can't be force-updated** → API `/v1` must be backward-compatible; the client tolerates old versions.
+- [x] Mobile **can't be force-updated** → API `/v1` must be backward-compatible; the client tolerates old versions.
 - [ ] Native push in Phase 2 (web bridges with web-push + email). Fast patches via OTA/EAS Update; store
   release for breaking changes.
-- [ ] Build/release via **EAS**; pipeline with `expo-cicd-workflows`.
+- [x] Build/release via **EAS** (`apps/mobile/eas.json`); pipeline with `expo-cicd-workflows`.
 
 ## Don't
 - ❌ Expo Router API routes (backend) · ❌ copying types/schemas between web and mobile · ❌ off-DESIGN values ·
-  ❌ synchronous heavy work.
+  ❌ synchronous heavy work · ❌ importing `@mentor/ui` root in RN (always import `@mentor/ui/tokens`).
+
+## Geliştirmeler (timeline)
+
+- **2026-11-09 — Phase 2.6 Friend Invites (`PUHU-XXXXXXXX`), Coin Notebook Slot Unlocks, Puhu Memory Preferences, Weekly Rhythm Recap & EAS Build Profiles (`apps/mobile`):**
+  - **What was done:** Added mobile Friend Invite card (`apps/mobile/src/components/settings/friend-invite-card.tsx` in `settings.tsx` calling `GET /v1/economy/invite` and `POST /v1/economy/invite/redeem` with `normalizeInviteCode` from `@mentor/validation` and native `Share.share`), `+1` Custom Notebook Slot Coin unlock in `apps/mobile/src/components/dashboard/economy-quests-card.tsx` (`GET/POST /v1/economy/notebook-slots` with `Idempotency-Key`), Puhu communication style & consent memory card (`apps/mobile/src/components/coach/coach-profile-memory-card.tsx` in `coach.tsx` calling `GET/PATCH /v1/coach/profile` and `GET/DELETE /v1/coach/memories`), Weekly Rhythm Recap (`Mentor Wrapped` in `weekly-ritual-and-vision-card.tsx` calling `GET /v1/coaching/weekly-review`), virtualized `FlatList` in `notifications.tsx`, and EAS build/release profiles (`apps/mobile/eas.json` for `development`, `preview`, and `production`).
+  - **Usage:** `pnpm --filter @mentor/mobile dev | test | typecheck | lint`.
+  - **Gotchas:** Coach accounts are excluded from `FriendInviteCard` (`!isCoach(user)`), matching backend invite eligibility rules. Notebook slot purchases must include both `Idempotency-Key` header and `{ expectedCost, expectedPurchasedSlots }` body.
+  - **Related files:** `apps/mobile/eas.json`, `apps/mobile/src/lib/{coaching-api,coach-api}.ts`, `apps/mobile/src/components/settings/friend-invite-card.tsx`, `apps/mobile/src/components/coach/coach-profile-memory-card.tsx`, `apps/mobile/src/components/dashboard/{economy-quests-card,weekly-ritual-and-vision-card}.tsx`, `apps/mobile/src/app/(app)/notifications.tsx`.
+
+- **2026-11-09 — Phase 2.5 Notification Center (`linkUrl` Deep-Link Router), Weekly Effort Chest, Vision Board & `Puhu’yla Planla` (`apps/mobile`):**
+  - **What was done:** Extracted notification deep-link router (`resolveNotificationMobileRoute` in `packages/core/src/notifications.ts`) to map web/server notification `linkUrl`s (`/tr/panel`, `/koc/sohbet`, `/topluluk/oda/...`, `/plan`, `/analiz`, `/kocum`) to internal mobile routes while rejecting external URLs. Implemented `apps/mobile/src/lib/notifications-api.ts`, the mobile Notification Center & Channel Preferences screen (`apps/mobile/src/app/(app)/notifications.tsx`), the Dashboard Weekly Effort Chest & Goal/Vision Board card (`apps/mobile/src/components/dashboard/weekly-ritual-and-vision-card.tsx`), and the `Puhu’yla Haftalık Planı Uyarla` card (`apps/mobile/src/components/plan/puhu-plan-adapt-card.tsx` in `plan.tsx`).
+  - **Usage:** `pnpm --filter @mentor/mobile dev | test | typecheck | lint`. Open Notification Center from Dashboard header chip or Settings (`/(app)/notifications`).
+  - **Gotchas:** Always resolve notification `linkUrl`s through `resolveNotificationMobileRoute` (`@mentor/core`) so external URLs cannot hijack in-app routing. `applyCoachPlanAdaptation` requires strict `MOVE`/`ADD` payloads with `planRevision` hash.
+  - **Related files:** `packages/core/src/{notifications,core.spec}.ts`, `apps/mobile/src/lib/{notifications-api,coaching-api,coach-api}.ts`, `apps/mobile/src/app/(app)/notifications.tsx`, `apps/mobile/src/components/dashboard/weekly-ritual-and-vision-card.tsx`, `apps/mobile/src/components/plan/puhu-plan-adapt-card.tsx`, `apps/mobile/src/app/(app)/(tabs)/{dashboard,plan,settings}.tsx`.
+
+- **2026-11-09 — Phase 2.4 Community (Study Tables, Forum & Effort League) & Human Coach (`Mentorship`) Workspace (`apps/mobile`):**
+  - **What was done:** Extracted study-room error classification and invite code normalization helpers (`classifyStudyRoomJoinErrorCode`, `normalizeStudyRoomCode`, `STUDY_ROOM_THEMES`, `STUDY_ROOM_CAPACITIES`) into `@mentor/core` (`packages/core/src/community.ts`, re-exported in `apps/web/src/lib/study-rooms.ts`). Implemented `apps/mobile/src/lib/{community-api,mentorship-api}.ts`, the 3-tab mobile Community screen (`apps/mobile/src/app/(app)/(tabs)/community.tsx` + `src/components/community/{study-rooms-view,forum-zones-view,leaderboard-view}.tsx` covering `MASA-XXXXXX` study tables, exam-scoped Forum zones/threads/comments/positive emoji reactions, and effort-only XP Weekly League), the Human Coach mobile workspace (`apps/mobile/src/app/(app)/(tabs)/{students,coach-profile}.tsx` + `src/components/mentorship/{coach-overview-header,student-report-panel}.tsx` covering seat usage, rotating invite codes, cohort/student AI briefs, risk-sorted student roster, attention marks, standing notes, and homework assignment), and the Student's `"İnsan Koçum"` card (`apps/mobile/src/components/settings/my-coach-card.tsx` in `settings.tsx` with transparent KVKK data-scope preview & double opt-in accept).
+  - **Usage:** `pnpm --filter @mentor/mobile dev | test | typecheck | lint`.
+  - **Gotchas:** Effort League ranks strictly XP (`Guardrail §0`); Forum carries zero Coin UI (`Guardrail §4 #3`); Human Coach views never receive raw Puhu chat, mood struggle notes, or notebook text (`Guardrail §4 #5`).
+  - **Related files:** `packages/core/src/{community,core.spec}.ts`, `apps/mobile/src/lib/{community-api,mentorship-api}.ts`, `apps/mobile/src/components/{community,mentorship}/*`, `apps/mobile/src/components/settings/my-coach-card.tsx`, `apps/mobile/src/app/(app)/(tabs)/{community,students,coach-profile,settings}.tsx`.
+
+- **2026-11-09 — Phase 2.3 Mock Exam Analysis, Mistake Notebook (`2/7/21` Days) & Puhu AI Coach Chat (`apps/mobile`):**
+  - **What was done:** Extracted pure mock exam analysis & taxonomy helpers (`withScore`, `parseAnalysisTab`, `shouldNavigateAnalysisTab`, `paperSubjects`, `emptyScores`, `scoresFromMockExam`, `formatTrendDate`, `formatShortDate`, `trendForSparkline`, `subjectTotal`, `validateSubjectCounts`, `groupTopicsBySubjectName`) into `@mentor/core` (re-exported in `apps/web`). Implemented `apps/mobile/src/lib/{analysis-api,coach-api}.ts`, the 3-tab mobile Analysis & Mistake Notebook screen (`apps/mobile/src/app/(app)/(tabs)/analysis.tsx` + `src/components/analysis/{analysis-progress-view,mock-exam-entry-view,mistake-notebook-view}.tsx` covering Personal Record & Ghost comparison, Next Study Focus 1-click plan task, subject net averages, mock exam entry with auto-calculated blanks, and the `2/7/21`-day Mistake Notebook spaced review loop), and the mobile Puhu AI Coach Chat (`apps/mobile/src/app/(app)/(tabs)/coach.tsx` + `src/components/coach/coach-message-bubble.tsx` with conversation threads, starter & follow-up chips, verbatim `officialCountdown` data card, confirmable `ACCEPT`/`CANCEL` plan/session actions, RAG source badges, and `👍`/`👎` feedback).
+  - **Usage:** `pnpm --filter @mentor/mobile dev | test | typecheck | lint`. From recent mock exam cards in Analysis, tapping `"Puhu ile değerlendir"` navigates to `/(app)/(tabs)/coach` with a prefilled prompt.
+  - **Gotchas:** Zero Coin UI in the Puhu chat zone (`Guardrail §4 #3`). Official exam countdowns inside chat replies always render as verbatim data cards (`Guardrail §4 #1`). Net scores are computed exclusively by the backend (`POST /v1/mock-exams`); mobile only auto-calculates `blank = total - correct - wrong` on input rows via `withScore` from `@mentor/core`.
+  - **Related files:** `packages/core/src/{analysis,core.spec}.ts`, `apps/mobile/src/lib/{analysis-api,coach-api}.ts`, `apps/mobile/src/components/{analysis,coach}/*`, `apps/mobile/src/app/(app)/(tabs)/{analysis,coach}.tsx`.
+
+- **2026-11-09 — Phase 2.2 Daily Ritual (Dashboard), Weekly Plan, Study Session (Pomodoro) & Streak Rescue (`apps/mobile`):**
+  - **What was done:** Extracted pure `Europe/Istanbul` plan calendar helpers (`todayInIstanbul`, `todayIso`, `isPastDate`, `shiftDate`, `weekStart`, `weekDates`, `monthIsoBounds`, `formatDateLabel`, `formatWeekdayShort`, `formatDayNumber`, `formatMonthDayShort`, `formatWeekRangeLabel`, `monthStart`, `shiftMonth`, `stepMonth`, `formatMonthTitle`, `formatTimeRange`, `taskStats`, `weekCompletionStats`, `groupPlanTasksByDate`) and Pomodoro session helpers (`DEFAULT_SESSION_PRESETS`, `parseInitialMinutes`, `parseInitialBreakMinutes`, `parseInitialPreset`, `parseInitialSelectedPresetId`, `formatTimerDisplay`) into `@mentor/core` (re-exported in `apps/web`). Implemented `apps/mobile/src/lib/coaching-api.ts` and modular mobile screens for Dashboard (`mood-checkin-card.tsx`, `streak-and-countdown-row.tsx` with verbatim official countdown data card and Coin-based Streak Rescue, `today-tasks-card.tsx`, `economy-quests-card.tsx`), Weekly Plan (`week-strip.tsx`, `plan-task-composer.tsx`, `plan-task-list.tsx` with origin badges and past-date read-only guard), and Study Session (`use-mobile-session-timer.ts` with `AppState` foreground timestamp sync across `25_5`, `50_10`, `custom`, and `stopwatch` modes, `session-done-card.tsx` micro-reflection, and `study-session.tsx`).
+  - **Usage:** `pnpm --filter @mentor/mobile dev | test | typecheck | lint`. Tasks on Dashboard and Weekly Plan deep-link directly into `/(app)/study-session` with task ID, title, subject, and focus minutes pre-populated.
+  - **Gotchas:** Official exam countdown is strictly rendered from server `CountdownDto` (`Guardrail §4 #1`). Timer calculation uses wall-clock `Date.now()` deltas + `AppState` active listeners so backgrounding never causes countdown drift.
+  - **Related files:** `packages/core/src/{plan-dates,session,core.spec}.ts`, `apps/mobile/src/lib/coaching-api.ts`, `apps/mobile/src/components/{dashboard,plan,session}/*`, `apps/mobile/src/app/(app)/(tabs)/{dashboard,plan}.tsx`, `apps/mobile/src/app/(app)/study-session.tsx`.
+
+- **2026-11-09 — Phase 2.1 Auth, Pilot Waitlist, 5-Exam Onboarding & SMS OTP Phone Verification (`apps/mobile`):**
+  - **What was done:** Extracted onboarding step state machine (`nextOnboardingStep`, `previousOnboardingStep`, `onboardingProgress`, `ONBOARDING_MOTIVATION_KEYS`, `ONBOARDING_DAILY_GOALS`) and auth/waitlist flow helpers (`hasCompletedOnboarding`, `safeNextPath`, `postAuthDestination`, `isWaitlistOn`, `opensWaitlist`, `isWaitlistEmail`) into `@mentor/core` (re-exported in `apps/web`). Implemented full mobile `(auth)` screens (`welcome.tsx` 4-slide Puhu carousel, `login.tsx`, `signup.tsx` for Student & Coach with KVKK/terms consent, `forgot-password.tsx`, `waitlist.tsx`), the multi-step exam-agnostic Onboarding Wizard (`apps/mobile/src/app/(onboarding)/index.tsx` + `src/components/onboarding/*` across `KPSS · YKS · LGS · ALES · DGS`, KPSS variants, goal vision board upsert, daily focus goal, coach self-service registration, and `@username` setup), and Settings live 5-Exam switcher + Turkey SMS OTP verification (`src/components/settings/{exam-switcher-card,phone-verification-card}.tsx`).
+  - **Usage:** `pnpm --filter @mentor/mobile dev | test | typecheck | lint`. Both Student and Coach accounts without `username && examType` are automatically routed to `/(onboarding)` via `hasCompletedOnboarding`.
+  - **Gotchas:** Keep onboarding step files decomposed under `src/components/onboarding/*` (<250 lines per file). Never duplicate onboarding step order or waitlist admission checks outside `@mentor/core`.
+  - **Related files:** `packages/core/src/{onboarding,auth-flow,core.spec}.ts`, `apps/mobile/src/app/(auth)/*`, `apps/mobile/src/app/(onboarding)/index.tsx`, `apps/mobile/src/components/onboarding/*`, `apps/mobile/src/components/settings/*`.
+
+- **2026-11-09 — Phase 2.0 Shared Core & Mobile Foundation (`apps/mobile`):**
+  - **What was done:** Extracted pure platform-agnostic navigation (`APP_NAV_ITEMS`, `filterVisibleNavItems`, `getMobileTabItemsForRole`, `isNavActive`), role surface routing (`isCoach`, `homePathForUser`, `isStudentOnlyPath`), feature availability gating (`blockedAppFeature`, `availableAppDestination`), and Turkish formatting (`greetingKeyForHour`, `firstName`, `dativeOf`, `genitiveOf`, `toLocaleUpper`) into `@mentor/core` (re-exported in `apps/web`). Added DOM-free `@mentor/ui/tokens` subpath export with `DESIGN.md` light/dark/scene tokens, radii, 3D play-ledge tokens, touch targets, and typography scale. Scaffolded `apps/mobile` (Expo SDK 54 + React Native 0.81 + Expo Router v6) with hardware-backed `expo-secure-store` refresh token rotation (`X-Client-Platform: mobile`), TanStack Query v5 (`AppState` focus sync), Zustand preferences, TR/EN voice-checked i18n catalog, base UI primitives (`AppText`, `Button`, `Card`, `Chip`, `TextField`, `Skeleton`, `StateView`), and role-aware `STUDENT` + `COACH` tab shell (`RoleTabBar`).
+  - **Usage:** `pnpm --filter @mentor/mobile dev | typecheck | lint | test`. Configure `EXPO_PUBLIC_API_URL` for physical device testing.
+  - **Gotchas:** Never import `@mentor/ui` root in `apps/mobile` (it depends on `react-dom` and `framer-motion`); always import `@mentor/ui/tokens`. Never create `+api.ts` routes in `apps/mobile/src/app`.
+  - **Related files:** `packages/core/src/*`, `packages/ui/src/tokens.ts`, `packages/api-client/src/http.ts`, `apps/api/src/modules/identity/presentation/auth.controller.ts`, `apps/mobile/*`.

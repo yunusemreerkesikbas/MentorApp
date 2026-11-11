@@ -7,7 +7,6 @@ import { CheckBox, SectionHeading, Skeleton } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { GoogleAuthFeedback } from "@/components/google-auth-feedback";
 import { LegalLink } from "@/components/legal-link";
-import { LazyWaitlistModal } from "@/components/waitlist/signup-cta";
 import { useAuth } from "@/lib/auth-context";
 import { useAppAvailability } from "@/lib/app-availability";
 import { trackProductEvent } from "@/lib/analytics";
@@ -83,6 +82,7 @@ export default function SignupPage() {
   const invite = useInviteLink();
   const { accept, reject } = useAnalyticsConsent();
   const router = useRouter();
+  const showWaitlist = waitlist && invite !== null && (availability?.studentSignup === false || !invite);
   const exitThen = useAuthSheetExit();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -94,6 +94,12 @@ export default function SignupPage() {
   const termsLabelId = useId();
   /** `mentorship.applications.open`. Null while unknown: neither the link nor the closed notice shows. */
   const [coachOpen, setCoachOpen] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (showWaitlist) {
+      router.replace({ pathname: "/", query: { waitlist: isCoach ? "coach" : "student" } });
+    }
+  }, [showWaitlist, isCoach, router]);
 
   useEffect(() => {
     let active = true;
@@ -169,20 +175,7 @@ export default function SignupPage() {
     }
   }
 
-  // Invite-only signup: the invite email's link opens the form, everyone else gets the waitlist card.
-  // Closed signup (`studentSignup` false) admits nobody, so the invite link gets the card too.
-  // Leaving the card (X, Escape, "Tamam") goes home; "Giriş yap" navigates on its own.
-  const closed = availability?.studentSignup === false;
-  if (waitlist && !closed && invite === null) return <SignupSkeleton />;
-  if (waitlist && (closed || !invite)) {
-    return (
-      <LazyWaitlistModal
-        role={isCoach ? "coach" : "student"}
-        onClose={() => router.push("/")}
-        onLogin={() => undefined}
-      />
-    );
-  }
+  if (waitlist && (invite === null || showWaitlist)) return <SignupSkeleton />;
 
   // Coach intake unknown yet: a placeholder, never a form that may be closed. An invited coach was
   // let in by the invite itself, so neither gate applies to the invite link while invite-only is on.

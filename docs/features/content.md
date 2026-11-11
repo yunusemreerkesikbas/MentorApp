@@ -41,6 +41,8 @@ left to community/coach edits — they always come from `ContentModule` with man
 
 ## 3. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-09 — Phase 2.6 Mobile Knowledge Center & Official Exam Calendar (`apps/mobile`):** Shipped `apps/mobile/src/lib/content-api.ts` (`fetchExamCalendarByType`, `listInfoArticles`, `getInfoArticleBySlug`) and `apps/mobile/src/app/(app)/knowledge.tsx` (`FlatList`-virtualized verified editorial guide reader with verbatim official exam calendar events, provenance metadata `source`/`verifiedBy`, and 1-tap `"Bu rehberi Puhu ile konuş"` `contextArticleSlug` bridge into Puhu chat, plus RAG source chip deep-linking from `coach-message-bubble.tsx`).
+
 - **2026-11-03..04 — 5-Exam Catalog (`ALES` & `DGS`, `APP-132`) & 58 Verified Editorial Guides:** Added `ALES` and `DGS` to `EXAM_CATALOG` with 2026/2027 ÖSYM calendar seeds and numerical/verbal taxonomies; authored, illustrated (1200×630 WebP covers), and verified comprehensive editorial article packages under `docs/editorial/` for **YKS** (23 articles), **KPSS Lisans** (10), **KPSS Ön Lisans** (7), **KPSS Ortaöğretim** (8), and **ALES** (10); unified article provenance footers and shared `CountdownCard` on `/bilgi`.
 - **2026-08-02..08 — Official YKS Program Catalog & Campus POI Dataset:** Imported the 21,493-program official ÖSYM YKS dataset with source verification metadata (`preference-simulation.md`).
 - **2026-07-15..22 — W1 Content Foundation (`0016–0020`, `0035`):** Shipped `exams`, `exam_events`, `subjects`, `topics`, `info_articles`, pgvector `embedding` column, `SubjectSeedService`, and `/bilgi` SSR SEO pages.

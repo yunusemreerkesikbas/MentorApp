@@ -12,7 +12,7 @@ its global `JwtAuthGuard` and `RolesGuard`, and every tenant-scoped DB query run
 context helpers (`withUserContext` / `withServiceContext`).
 
 - **Own JWT + Session-Bound Opaque Refresh:**
-  - Short-lived access JWT (~15m, includes `sid`) + 256-bit SHA-256 refresh token in an `httpOnly` cookie (`/v1/auth/refresh` for B2C web, separate `mentor_admin_refresh` at `/v1/auth/admin/refresh` for `apps/admin`).
+  - Short-lived access JWT (~15m, includes `sid`) + 256-bit SHA-256 refresh token in an `httpOnly` cookie (`/v1/auth/refresh` for B2C web, separate `mentor_admin_refresh` at `/v1/auth/admin/refresh` for `apps/admin`), plus additive `X-Client-Platform: mobile` / `X-Refresh-Token` header rotation for native mobile (`expo-secure-store`).
   - Every protected request reloads the active account, session, and roles. Refresh rotation is transactional; replay of a rotated token revokes the entire token family.
   - Password hashing uses **argon2id** with dummy-hash timing equalization on login.
 - **Google OAuth (`/v1/auth/google/*`):**
@@ -33,7 +33,7 @@ context helpers (`withUserContext` / `withServiceContext`).
 
 | Method & Path | Purpose |
 |---|---|
-| `POST /v1/auth/{signup,login,refresh,logout,verify-email,forgot-password,reset-password}` | Student/coach auth lifecycle (Turnstile + enumeration-safe) |
+| `POST /v1/auth/{signup,login,refresh,logout,verify-email,forgot-password,reset-password}` | Student/coach auth lifecycle (Turnstile + enumeration-safe; supports `X-Client-Platform: mobile`) |
 | `POST /v1/auth/admin/{login,refresh,logout}` | Separate admin session & `mentor_admin_refresh` cookie |
 | `GET /v1/auth/google/{status,start,callback}` | Google OAuth sign-in / sign-up |
 | `GET\|POST /v1/users/me/auth-accounts/google{,/start}` | Inspect or initiate password-confirmed Google linking |
@@ -48,6 +48,12 @@ context helpers (`withUserContext` / `withServiceContext`).
 ---
 
 ## 3. Geliştirmeler (Condensed Milestone Timeline)
+
+- **2026-11-11 — Direct signup waitlist backdrop:** In pilot or closed mode, direct signup links that lead to the waitlist open the existing modal over the localized public landing. Visit /kayit (or /en/signup) to open the student modal and add rol=koc for the coach variant. Dismissing the modal clears the waitlist query. Pilot invitation links still open the signup form when signup is enabled. Related files: apps/web/src/app/[locale]/(auth)/signup/page.tsx, landing/landing-waitlist.tsx, apps/web/e2e/waitlist.spec.ts.
+
+- **2026-11-09 — Mobile Auth, Waitlist, 5-Exam Onboarding & SMS OTP (`apps/mobile`, Phase 2.1):** Extracted shared auth/waitlist helpers (`hasCompletedOnboarding`, `postAuthDestination`, `isWaitlistOn`, `opensWaitlist`, `isWaitlistEmail`) and the student/coach onboarding step machine (`nextOnboardingStep`, `previousOnboardingStep`, `onboardingProgress`) into `@mentor/core` (shared by `apps/web` and `apps/mobile`). Shipped mobile `welcome`, `login`, `signup` (`STUDENT` & `COACH` intent + KVKK/Terms), `forgot-password`, `waitlist` (`POST /v1/auth/waitlist`), multi-step 5-exam onboarding (`PATCH /v1/users/me`, `PUT /v1/coaching/vision`, `POST /v1/mentorship/coach-registration`), and Settings live exam switcher + Turkey SMS OTP phone verification (`/v1/users/me/phone/*`). Related files: `packages/core/src/{onboarding,auth-flow}.ts`, `apps/mobile/src/app/(auth)/*`, `apps/mobile/src/app/(onboarding)/index.tsx`, `apps/mobile/src/components/{onboarding,settings}/*`.
+
+- **2026-11-09 — Mobile Refresh Token Rotation (`X-Client-Platform: mobile`):** Added additive mobile client support on `POST /v1/auth/{login,signup,verify-email,refresh,logout}` and `GET /v1/auth/google/callback`. When `X-Client-Platform: mobile` is sent, `AuthController` includes `refreshToken` in the `AuthSession` JSON response so the Expo app can persist it in hardware-backed `expo-secure-store` (`Keychain` / `EncryptedSharedPreferences`), and `/v1/auth/refresh` + `/v1/auth/logout` accept `X-Refresh-Token` when the `httpOnly` cookie is absent. Web B2C and Admin `httpOnly` cookie flows remain unchanged. Related files: `apps/api/src/modules/identity/presentation/auth.controller{,.spec}.ts`, `packages/types/src/auth.ts`, `packages/api-client/src/http.ts`, `apps/mobile/src/lib/secure-token.ts`.
 
 - **2026-11-08 — Waitlist opening and closing motion:** The native backdrop now fades with the existing card motion: 250ms on mobile, 200ms on desktop, and 150ms on dismissal. The shared Modal exposes its existing open/closing state so waitlist-only styles can synchronize without timers or a second animation library. Reduced motion disables the backdrop transition; X, Escape, backdrop dismissal and success completion keep the existing close lifecycle and focus restoration. Modern browsers use `@starting-style` for the entry fade; older browsers retain the card motion and may show the scrim immediately. Related files: `packages/ui/src/components/modal.tsx`, `apps/web/src/components/waitlist/waitlist.css`, `apps/web/e2e/waitlist.spec.ts`.
 
