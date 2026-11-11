@@ -21,6 +21,9 @@ export const C = {
   gold: "#F2B544",
   flight: "#020B26",
   beam: "#FFE29A",
+  // T1 promo film: sticker-type outline and hard shadow, and the night ground.
+  t1Ink: "#1E2A5A",
+  t1Night: "#0D0E25",
 } as const;
 
 export const EXAMS = "KPSS · YKS · LGS · ALES · DGS";

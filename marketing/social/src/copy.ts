@@ -25,6 +25,23 @@ const PELERIN = {
   altPuhu: "Maskeli ve pelerinli Puhu yumruğu önde, arkasında parıltı iziyle uçuyor",
 };
 
+// Feature ads: what every "Puhu iş başında" feed and every POV story shares.
+const SERIES = { pill: "PUHU İŞ BAŞINDA", site: "puhukoc.com", handle: "@puhukoc" };
+const POV = { pov: "POV:", kanka1: "Kanka,", dedin: "dedin." };
+// The sample week Puhu builds (IF2's route card, IS2's plan card).
+const WEEK = {
+  row1Tag: "Pzt", row1: "Paragraf", row1Meta: "25 dk",
+  row2Tag: "Sal", row2: "Problemler", row2Meta: "40 dk",
+  row3Tag: "Çar", row3: "Geometri", row3Meta: "30 dk",
+};
+
+// The sample deneme reading (IF4's forecast board, IS4's card): the app's own words for a topic's state.
+const FORECAST = {
+  row1: "Geometri", row1Meta: "sıradaki",
+  row2: "Problemler", row2Meta: "tekrar ister",
+  row3: "Paragraf", row3Meta: "yerinde",
+};
+
 // Every visible string, per piece. Edit copy here and re-render.
 export const COPY: Partial<Record<PieceId, Record<string, string>>> = {
   F1: {
@@ -198,5 +215,242 @@ export const COPY: Partial<Record<PieceId, Record<string, string>>> = {
     pill: PREMIUM_SHARED.pill,
     trial: PREMIUM_SHARED.trial,
     altPuhu: PELERIN.altPuhu,
+  },
+  // Promo film "Ekrana dalış" (spec docs/plans/2026-11-08-promo-video-design.md). Lines marked app are
+  // the app's own copy (board, notebook, chest, story, nickname); the rest is ours.
+  T1: {
+    hookA: "“Son bir video”",
+    hookB: "dedin.",
+    clock: "01:47",
+    notifName: "Puhu",
+    notif: "Kanka, bu 7. son.",
+    come1: "Gel, sana bir şey",
+    come2: "göstereyim!",
+    exams1: "Sınavın hangisi olursa olsun,",
+    exams2: "Puhu yanında!",
+    exams: "KPSS · YKS · LGS · ALES · DGS",
+    albumQ1: "Doktor mu, mühendis mi?",
+    albumQ2: "Sen hangisisin?",
+    stSaglik: "Dr. Puhu",
+    stMuhendislik: "Müh. Puhu",
+    stHukuk: "Av. Puhu",
+    stYazilim: "Kodcu Puhu",
+    stEgitim: "Öğretmen Puhu",
+    stIsletme: "Patron Puhu",
+    stSosyal: "Sunucu Puhu",
+    stSanat: "Ressam Puhu",
+    stFen: "Prof. Puhu",
+    stMimarlik: "Mimar Puhu",
+    planla: "PLANLA",
+    board1: "Hedefini", // app
+    board2: "duvara as!", // app
+    pol1: "kampüs",
+    pol2: "kod",
+    pol3: "Konya",
+    pol4: "mezuniyet",
+    goalLabel: "HEDEFİM",
+    goal: "Bilgisayar Mühendisi", // app
+    city: "Konya", // app
+    note: "kampüste görüşürüz!",
+    magic1: "Haftanı",
+    magic2: "Puhu kursun!",
+    card1: "Türkçe 25 dk",
+    card2: "Matematik 40 dk",
+    card3: "Tekrar 15 dk",
+    screens1: "Denemeni gir,",
+    screens2: "sıradaki konunu gör.",
+    spell: "abrakadabra, hafta hazır",
+    next: "Sıradaki: Geometri",
+    odaklan: "ODAKLAN",
+    rooms: "Odanı seç, süreni kur, başla!",
+    roomEv: "Ev",
+    roomKafe: "Kafe",
+    roomKutuphane: "Kütüphane",
+    dial: "25:00",
+    finish1: "Bitir,",
+    finish2: "serini büyüt!",
+    timerEnd: "00:00",
+    xp: "+5 XP",
+    streak: "4 gün seri",
+    mola: "Mola hazır",
+    nb1: "Yanlış soruların", // app
+    nb2: "artık kaybolmaz!", // app
+    nbName: "Matematik Defteri", // app
+    nbTape: "Matematik", // app
+    q1: "3x − 5 = 2x + 4 ise x kaçtır?", // app
+    n1: "işlem hatası!",
+    q2: "%20'si 45 olan sayı kaçtır?",
+    n2: "oranı ters kurdum",
+    q3: "2⁵ · 2³ kaçtır?",
+    n3: "üsler toplanır!",
+    page1: "1 / 3",
+    page2: "2 / 3",
+    page3: "3 / 3",
+    review: "Bugün 2 tekrar",
+    solved: "ÇÖZDÜM",
+    birlikte: "BİRLİKTE",
+    masa1: "Arkadaşlarınla",
+    masa2: "aynı masada çalış.",
+    ask1: "Takıldın mı?",
+    ask2: "Topluluğa sor, Puhu’ya yaz.",
+    zeynepName: "Zeynep",
+    zeynep: "Paragrafta hep son soruda takılıyorum.",
+    canName: "Can",
+    can: "Önce soru kökünü oku, sonra metne dön.",
+    clap: "12 alkış",
+    puhuName: "Puhu",
+    puhu: "Seanslarına baktım: bugün 10 paragraf yeter.",
+    days: "5 gün masadaydın!", // app
+    devirdin: "Haftayı devirdin!",
+    chest: "Sandığın hazır!", // app
+    story1: "Hafta bitti mi?", // app
+    story2: "Hikâyen hazır!", // app
+    nickLabel: "BU HAFTAKİ LAKABIN", // app
+    nick1: "Seri Canavarı", // app
+    nick2: "Korkusuz Denemeci", // app
+    nick3: "Odak Makinesi", // app
+    nickMsg: "Tek oturuşta 50 dakika! Seni durdurmak imkânsız.", // app
+    light1: "Işığın yanıyorsa,",
+    light2: "yalnız değilsin.",
+    end1: "PLANLA.",
+    end2: "ODAKLAN.",
+    end3: "PUHU İLE.",
+  },
+  // Feature ads, wave 1 (spec docs/plans/2026-11-10-feature-ads-design.md). IF = "Puhu iş başında" feed,
+  // IS = POV story. Sample rows are topic names and short study times, never official exam facts.
+  IF1: {
+    ...SERIES,
+    head1: "ŞİMDİ OLMAZ,",
+    head2: "ÇALIŞIYOR!",
+    body1: "Seansı başlat.",
+    body2: "25 dakika",
+    body3: "kapıda Puhu var.",
+    timer: "25:00",
+    timerLabel: "odak seansı",
+    chip1: "12",
+    chip2: "99+",
+    chip3: "3",
+    altPuhu: "Takım elbiseli, kulaklıklı koruma Puhu kaşlarını çatmış, kanadıyla dur işareti yapıyor",
+  },
+  IF2: {
+    ...SERIES,
+    head1: "ROTAN HAZIR,",
+    head2: "YOLA ÇIK!",
+    body1: "Haftanı Puhu kursun.",
+    body2: "İlk durak:",
+    body3: "Paragraf, 25 dakika.",
+    cardTitle: "Bu hafta",
+    ...WEEK,
+    altPuhu: "Kaptan şapkalı Puhu bir kanadında harita tutuyor, diğeriyle ileriyi gösteriyor",
+  },
+  IF3: {
+    ...SERIES,
+    head1: "YANLIŞLARIN",
+    head2: "KAÇAMAZ!",
+    body1: "Yanlışın defterde.",
+    body2: "Tekrar günü gelince",
+    body3: "karşına çıkar.",
+    solved: "ÇÖZDÜM", // app
+    wanted: "ARANIYOR",
+    suspect: "işlem hatası",
+    seenLabel: "Son görülme:",
+    seen: "3x − 5 = 2x + 4", // app
+    altPuhu: "Dedektif şapkalı Puhu büyüteçle bakıyor, bir gözü mercekte kocaman görünüyor",
+  },
+  IF4: {
+    ...SERIES,
+    head1: "HAFTANIN",
+    head2: "NET DURUMU!",
+    body1: "Denemeni gir.", // app
+    body2: "Sıradaki konunu",
+    body3: "tek bakışta gör.",
+    cardTitle: "Net durumu",
+    ...FORECAST,
+    altPuhu: "Lacivert ceketli hava durumu spikeri Puhu çubuğuyla tabloyu gösteriyor",
+  },
+  // F1 with the series pill in place of ÇOK YAKINDA.
+  IF5: { pill: SERIES.pill },
+  IF6: {
+    ...SERIES,
+    head1: "VE BU HAFTAKİ",
+    head2: "LAKABIN…",
+    body1: "Hafta bitti mi?", // app
+    body2: "Puhu sana lakap takar.",
+    body3: "Seninki ne olur?",
+    nick: "Korkusuz Denemeci", // app
+    nickMsg: "3 deneme çözdün, hem de hiç çekinmeden!", // app
+    altPuhu: "Papyonlu sunucu Puhu kanatlarını açmış, lakap kartını takdim ediyor",
+  },
+  IS1: {
+    ...POV,
+    quote1: "“Bir bildirime",
+    quote2: "bakıp çıkacağım”",
+    kanka2: "40 dakika oldu.",
+    cardTitle: "Seans hazır!",
+    cardChip: "Puhu kapıda",
+    row1Tag: "25:00",
+    row1: "Odak seansı",
+    row2Tag: "Sonra",
+    row2: "Mola hazır", // app
+    altPuhu: "Puhu çıkartması elini yüzüne kapatmış",
+  },
+  IS2: {
+    ...POV,
+    quote1: "“Pazartesi",
+    quote2: "başlıyorum”",
+    kanka2: "bugün pazartesi.",
+    cardTitle: "Haftan hazır!",
+    cardChip: "Puhu kurdu",
+    ...WEEK,
+    altPuhu: "Puhu kartın üstünden, gözlüğünün üzerinden şüpheyle bakıyor",
+  },
+  IS3: {
+    ...POV,
+    quote1: "“Bu soruya",
+    quote2: "sonra bakarım”",
+    kanka2: "deftere yazdım.",
+    question: "3x − 5 = 2x + 4 ise x kaçtır?", // app
+    note: "işlem hatası!",
+    page: "1 / 3",
+    solved: "ÇÖZDÜM", // app
+    altPuhu: "Dedektif Puhu büyüteciyle defter sayfasına bakıyor",
+  },
+  IS4: {
+    ...POV,
+    quote1: "“Hangi konudan",
+    quote2: "başlasam?”",
+    kanka2: "sıradaki Geometri.",
+    cardTitle: "Deneme analizi",
+    cardChip: "Sıradaki: Geometri", // app
+    ...FORECAST,
+    altPuhu: "Hava durumu spikeri Puhu çubuğuyla kartı gösteriyor",
+  },
+  IS5: {
+    ...POV,
+    quote1: "“Kütüphaneye",
+    quote2: "gidince çalışırım”",
+    kanka2: "kütüphane cebinde.",
+    altPuhu: "Hakem Puhu düdük çalıp masayı gösteriyor",
+    altMasa: "Dört Puhu kütüphanede masa başında birlikte çalışıyor",
+  },
+  IS6: {
+    ...POV,
+    dedin: "sandın.",
+    quote1: "“Bu hafta hiçbir",
+    quote2: "şey yapmadım”",
+    kanka2: "5 gün masadaydın.",
+    nick: "Seri Canavarı", // app
+    nickMsg: "5 gün üst üste! Seriyi hiç bırakmadın.", // app
+    altPuhu: "Papyonlu Puhu kanatlarını açmış seviniyor",
+  },
+  IR1: {
+    hook1: "Tam",
+    hook2: "çalışacaktın…",
+    stop: "DUR!",
+    head1: "ŞİMDİ OLMAZ,",
+    head2: "ÇALIŞIYOR!",
+    timerLabel: "odak seansı",
+    end: "Kapıda Puhu var!",
+    altPuhu: "Koruma Puhu kanadını kameraya uzatmış, dur işareti yapıyor",
   },
 };
