@@ -61,6 +61,11 @@ export function MasaPopOut() {
 }
 
 export function F1({ safe }: PieceProps) {
+  return <F1Art badge={T.badge} safe={safe} />;
+}
+
+// The artboard with any pill text: IF5 reuses it with the feature-ad series pill.
+export function F1Art({ badge, safe }: { badge: string; safe: boolean }) {
   return (
     <Frame format="feed" background={C.blue} safe={safe}>
       <div aria-hidden="true" style={{ position: "absolute", left: -220, top: 620, width: 820, height: 820, borderRadius: "50%", background: "#FFFFFF", opacity: 0.08 }} />
@@ -79,7 +84,7 @@ export function F1({ safe }: PieceProps) {
       <div style={{ position: "absolute", left: 64, right: 64, top: 56, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Logo size={52} color="#FFFFFF" />
         <span style={{ display: "inline-block", background: C.yellow, color: C.navy, fontSize: 26, fontWeight: 900, letterSpacing: "0.08em", padding: "14px 28px", borderRadius: 999, transform: "rotate(-4deg)", boxShadow: `0 6px 0 ${C.navy}` }}>
-          {T.badge}
+          {badge}
         </span>
       </div>
 

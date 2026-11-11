@@ -13,6 +13,7 @@
     "@remotion/bundler": "4.0.541",
     "@remotion/cli": "4.0.541",
     "@remotion/google-fonts": "4.0.541",
+    "@remotion/media": "4.0.541",
     "@remotion/renderer": "4.0.541",
     "react": "19.3.1",
     "react-dom": "19.3.1",

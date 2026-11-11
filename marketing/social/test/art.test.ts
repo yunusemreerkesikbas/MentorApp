@@ -2,10 +2,10 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import sharp from "sharp";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { ART, CLIPS, END_CARD_PUHU, END_CARD_SHIFT, type ArtKey } from "../src/art";
+import { ART, CLIPS, END_CARD_PUHU, END_CARD_SHIFT, SOUND, type ArtKey } from "../src/art";
 
-it("finds every art file and clip under public/", () => {
-  const missing = [...Object.values(ART), ...Object.values(CLIPS)].filter((p) => !existsSync(join("public", p)));
+it("finds every art file, clip and sound under public/", () => {
+  const missing = [...Object.values(ART), ...Object.values(CLIPS), ...Object.values(SOUND)].filter((p) => !existsSync(join("public", p)));
   expect(missing).toEqual([]);
 });
 
@@ -24,11 +24,23 @@ it("gives end cards only free-standing Puhus (no hard crop on any edge)", async 
   }
 });
 
-// ponytail: readPuhu stays in S3 until the owner's P5 art replaces it.
-const SMALL_OK = new Set<ArtKey>(["readPuhu"]);
+// ponytail: readPuhu stays in S3 until the owner's P5 art replaces it. T1 shows the app's own small art at
+// its size: career Puhus (320 px, the white ground is the sticker card), desk Puhu (360 px), open chest (384 px).
+const SMALL_OK = new Set<ArtKey>([
+  "readPuhu",
+  "t1CareerSaglik", "t1CareerMuhendislik", "t1CareerHukuk", "t1CareerYazilim", "t1CareerEgitim",
+  "t1CareerIsletme", "t1CareerSosyal", "t1CareerSanat", "t1CareerFen", "t1CareerMimarlik",
+  "t1DeskPuhuLeft", "t1DeskPuhuRight", "t1DeskPuhuBlink", "t1DeskPuhuPeek",
+  "t1ChestOpen",
+]);
+
+const sources = (d: string): string[] =>
+  readdirSync(d, { recursive: true, withFileTypes: true })
+    .filter((e) => e.isFile())
+    .map((e) => readFileSync(join(e.parentPath, e.name), "utf8"));
 
 it("keeps small (< 600 px) mascot art out of every piece", async () => {
-  const src = ["src/pieces", "src/components"].flatMap((d) => readdirSync(d).map((f) => readFileSync(join(d, f), "utf8"))).join("\n");
+  const src = ["src/pieces", "src/components", "src/t1"].flatMap(sources).join("\n");
   const used: string[] = [];
   for (const key of Object.keys(ART) as ArtKey[]) {
     if (SMALL_OK.has(key)) continue;
