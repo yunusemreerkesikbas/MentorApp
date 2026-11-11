@@ -3,9 +3,13 @@ packages:
   - "packages/*"
 overrides:
   body-parser: 2.4.0
+  brace-expansion@1: 1.1.20
+  brace-expansion@2: 2.1.6
   browserslist: 4.28.9
+  fast-uri@3: 3.1.7
   follow-redirects: 1.16.2
   form-data: 4.0.6
+  metro@0.82.5>image-size: 2.0.3
   immutable: 5.1.9
   js-yaml: 4.3.2
   multer: 2.5.0
@@ -15,6 +19,9 @@ overrides:
   qs: 6.16.0
   sharp: 0.35.5
   source-map-js: 1.2.2
+patchedDependencies:
+  metro@0.82.5: patches/metro@0.82.5.patch
+
 auditConfig:
   ignoreGhsas:
     # braces <=3.0.3 stack-exhaustion DoS. No patched 3.0.4 is published on npm yet.
