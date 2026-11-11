@@ -20,12 +20,23 @@ test("web changes include their workspace dependencies without backend tests", (
   assert.equal(scope.web, true);
   assert.equal(scope.api, false);
   assert.equal(scope.admin, false);
+  assert.equal(scope.mobile, false);
   assert.equal(scope.full, false);
   assert.equal(scope.filters, "--filter=@mentor/web...");
 });
 
-test("the shared UI affects web, while admin stays independent", () => {
-  assert.equal(selectCiScope(["packages/ui/src/components/logo.tsx"]).filters, "--filter=@mentor/web...");
+test("mobile changes stay scoped to @mentor/mobile, and shared UI affects web + mobile", () => {
+  const mobileScope = selectCiScope(["apps/mobile/src/app/index.tsx"]);
+  assert.equal(mobileScope.mobile, true);
+  assert.equal(mobileScope.web, false);
+  assert.equal(mobileScope.api, false);
+  assert.equal(mobileScope.full, false);
+  assert.equal(mobileScope.filters, "--filter=@mentor/mobile...");
+
+  assert.equal(
+    selectCiScope(["packages/ui/src/components/logo.tsx"]).filters,
+    "--filter=@mentor/web... --filter=@mentor/mobile...",
+  );
   const admin = selectCiScope(["apps/admin/src/components/sidebar.tsx"]);
   assert.equal(admin.filters, "--filter=@mentor/admin...");
   assert.equal(admin.web, false);
@@ -36,6 +47,7 @@ test("ordinary backend changes stay in backend coverage", () => {
   assert.equal(scope.api, true);
   assert.equal(scope.web, false);
   assert.equal(scope.admin, false);
+  assert.equal(scope.mobile, false);
   assert.equal(scope.full, false);
 });
 
@@ -68,7 +80,7 @@ for (const path of [
     const scope = selectCiScope([path]);
     assert.equal(scope.full, true);
     assert.equal(scope.code, true);
-    assert.equal(scope.api && scope.web && scope.admin, true);
+    assert.equal(scope.api && scope.web && scope.admin && scope.mobile, true);
     assert.equal(scope.filters, "");
   });
 }
@@ -116,5 +128,5 @@ test("manual release selection needs no PR metadata and emits the full output co
   });
   assert.equal(result.status, 0, result.stderr);
   const values = Object.fromEntries(readFileSync(output, "utf8").trimEnd().split("\n").map(line => line.split("=")));
-  assert.deepEqual(values, { code: "true", full: "true", api: "true", web: "true", admin: "true", filters: "" });
+  assert.deepEqual(values, { code: "true", full: "true", api: "true", web: "true", admin: "true", mobile: "true", filters: "" });
 });

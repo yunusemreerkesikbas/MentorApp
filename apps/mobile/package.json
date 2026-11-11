@@ -1,0 +1,50 @@
+{
+  "name": "@mentor/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PuhuKoç Mobile App (Expo / React Native) — exam-agnostic companionship platform.",
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "build": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --experimental-strip-types --test src/lib/*.spec.ts src/stores/*.spec.ts src/i18n/*.spec.ts",
+    "clean": "rimraf .expo .turbo dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@mentor/api-client": "workspace:*",
+    "@mentor/core": "workspace:*",
+    "@mentor/types": "workspace:*",
+    "@mentor/ui": "workspace:*",
+    "@mentor/validation": "workspace:*",
+    "@tanstack/react-query": "^5.66.0",
+    "expo": "~53.0.0",
+    "expo-constants": "~17.1.0",
+    "expo-haptics": "~14.1.0",
+    "expo-image": "~2.1.0",
+    "expo-linking": "~7.1.0",
+    "expo-router": "~5.0.0",
+    "expo-secure-store": "~14.2.0",
+    "expo-splash-screen": "~0.30.0",
+    "expo-status-bar": "~2.2.0",
+    "react": "19.2.8",
+    "react-native": "0.79.2",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-reanimated": "~3.17.4",
+    "react-native-safe-area-context": "~5.3.0",
+    "react-native-screens": "~4.10.0",
+    "zod": "^4.6.7",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@mentor/config": "workspace:*",
+    "@types/node": "^22.19.20",
+    "@types/react": "^19",
+    "eslint": "^9.17.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.6.3"
+  }
+}

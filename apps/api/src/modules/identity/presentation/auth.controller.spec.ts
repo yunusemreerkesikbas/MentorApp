@@ -15,6 +15,7 @@ const result = {
 
 function setup(authResult = result, nodeEnv = "test") {
   const auth = {
+    signup: vi.fn(async () => authResult),
     login: vi.fn(async () => authResult),
     loginAdmin: vi.fn(async () => authResult),
     refresh: vi.fn(async () => authResult),
@@ -27,6 +28,7 @@ function setup(authResult = result, nodeEnv = "test") {
     {} as never,
     { get: vi.fn(() => nodeEnv) } as never,
     {} as never,
+    {} as never,
   );
   return { auth, controller, response };
 }
@@ -38,6 +40,7 @@ describe("separate web and admin refresh cookies", () => {
     const { controller, response } = setup(authResult, "production");
     const session = await controller.login({} as never, response as never);
     expect(JSON.stringify(session)).not.toContain(proof);
+    expect(session.refreshToken).toBeUndefined();
     expect(response.cookie).toHaveBeenCalledWith("mentor_media_session", proof,
       expect.objectContaining({ path: "/v1/storage/media/private", httpOnly: true, secure: true, sameSite: "lax" }));
     response.cookie.mockClear();
@@ -81,6 +84,35 @@ describe("separate web and admin refresh cookies", () => {
     expect(response.clearCookie).not.toHaveBeenCalledWith("mentor_web_refresh", expect.anything());
   });
 
+  it("supports mobile SecureStore refresh token rotation only when X-Client-Platform is mobile", async () => {
+    const { auth, controller, response } = setup();
+    const mobileReq = {
+      headers: {
+        "x-client-platform": "mobile",
+        "x-refresh-token": "mobile-refresh-1",
+      },
+      cookies: {},
+    };
+
+    const loginSession = await controller.login({} as never, response as never, mobileReq as never);
+    expect(loginSession.refreshToken).toBe("secret");
+
+    const refreshedSession = await controller.refresh(mobileReq as never, response as never);
+    expect(auth.refresh).toHaveBeenCalledWith("mobile-refresh-1");
+    expect(refreshedSession.refreshToken).toBe("secret");
+
+    await controller.logout(mobileReq as never, response as never);
+    expect(auth.logout).toHaveBeenCalledWith("mobile-refresh-1");
+
+    // Web requests without x-client-platform: mobile ignore x-refresh-token header
+    auth.refresh.mockClear();
+    await controller.refresh(
+      { headers: { "x-refresh-token": "spoofed" }, cookies: {} } as never,
+      response as never,
+    );
+    expect(auth.refresh).toHaveBeenCalledWith("");
+  });
+
   it("ignores the legacy shared cookie after migration", async () => {
     const { auth, controller, response } = setup();
     await controller.refresh({ cookies: { mentor_refresh: "old" } } as never, response as never);
@@ -111,6 +143,7 @@ describe("Google callback error redirects", () => {
       googleAuth as never,
       { get: vi.fn(() => "https://app.test/") } as never,
       { translate: vi.fn(() => "Davet gerekli") } as never,
+      {} as never,
     );
     const res = { clearCookie: vi.fn(), redirect: vi.fn() };
     await controller.googleCallback(

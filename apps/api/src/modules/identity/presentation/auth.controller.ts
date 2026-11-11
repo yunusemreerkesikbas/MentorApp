@@ -34,10 +34,29 @@ import {
   VerifyEmailDto,
 } from "./auth.dto";
 
+const MOBILE_PLATFORM_HEADER = "x-client-platform";
+const MOBILE_REFRESH_HEADER = "x-refresh-token";
+
+function isMobileClient(req?: Request): boolean {
+  return req?.headers?.[MOBILE_PLATFORM_HEADER] === "mobile";
+}
+
+function resolveRefreshToken(req: Request | undefined, cookieName: string): string | undefined {
+  const fromCookie = (req?.cookies as Record<string, string> | undefined)?.[cookieName];
+  if (fromCookie) return fromCookie;
+  if (cookieName === REFRESH_COOKIE && isMobileClient(req)) {
+    const fromHeader = req?.headers?.[MOBILE_REFRESH_HEADER];
+    if (typeof fromHeader === "string" && fromHeader.trim().length > 0) {
+      return fromHeader.trim();
+    }
+  }
+  return undefined;
+}
+
 /**
  * Auth endpoints — all @Public (they ARE the auth boundary).
- * Refresh token travels ONLY in an httpOnly cookie scoped to /v1/auth;
- * responses carry the short-lived access token + user snapshot (AuthSession).
+ * Web refresh token travels ONLY in an httpOnly cookie scoped to /v1/auth;
+ * mobile clients (`X-Client-Platform: mobile`) persist the rotated refresh token in SecureStore.
  * Throttled (brute-force brake; the real edge rate-limit is Cloudflare in prod).
  */
 @ApiTags("auth")
@@ -57,8 +76,9 @@ export class AuthController {
   async signup(
     @Body() dto: SignupDto,
     @Res({ passthrough: true }) res: Response,
+    @Req() req?: Request,
   ): Promise<AuthSession> {
-    return this.finish(await this.auth.signup(dto), res);
+    return this.finish(await this.auth.signup(dto), res, REFRESH_COOKIE, REFRESH_COOKIE_PATH, isMobileClient(req));
   }
 
   /** Public waitlist: the same 204 for new, duplicate, existing-user and open-mode requests. */
@@ -75,8 +95,9 @@ export class AuthController {
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
+    @Req() req?: Request,
   ): Promise<AuthSession> {
-    return this.finish(await this.auth.login(dto), res);
+    return this.finish(await this.auth.login(dto), res, REFRESH_COOKIE, REFRESH_COOKIE_PATH, isMobileClient(req));
   }
 
   @Post("admin/login")
@@ -176,9 +197,15 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthSession> {
-    const raw = (req.cookies as Record<string, string> | undefined)?.[REFRESH_COOKIE];
-    // Missing cookie → same 401 path as an invalid token (service throws).
-    return this.finish(await this.auth.refresh(raw ?? ""), res);
+    const raw = resolveRefreshToken(req, REFRESH_COOKIE);
+    // Missing cookie/header → same 401 path as an invalid token (service throws).
+    return this.finish(
+      await this.auth.refresh(raw ?? ""),
+      res,
+      REFRESH_COOKIE,
+      REFRESH_COOKIE_PATH,
+      isMobileClient(req),
+    );
   }
 
   @Post("admin/refresh")
@@ -198,7 +225,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    const raw = (req.cookies as Record<string, string> | undefined)?.[REFRESH_COOKIE];
+    const raw = resolveRefreshToken(req, REFRESH_COOKIE);
     await this.auth.logout(raw);
     res.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
     res.clearCookie(MEDIA_SESSION_COOKIE, { path: PRIVATE_MEDIA_PATH });
@@ -243,6 +270,7 @@ export class AuthController {
     res: Response,
     cookieName = REFRESH_COOKIE,
     cookiePath = REFRESH_COOKIE_PATH,
+    includeRefreshToken = false,
   ): AuthSession {
     const isProd = this.config.get("NODE_ENV", { infer: true }) === "production";
     res.cookie(cookieName, result.tokens.refreshToken, {
@@ -266,6 +294,7 @@ export class AuthController {
       accessToken: result.tokens.accessToken,
       expiresIn: result.tokens.expiresIn,
       user: result.user,
+      ...(includeRefreshToken ? { refreshToken: result.tokens.refreshToken } : {}),
     };
   }
 }

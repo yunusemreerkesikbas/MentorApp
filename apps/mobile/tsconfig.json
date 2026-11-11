@@ -1,0 +1,11 @@
+{
+  "extends": "@mentor/config/tsconfig/expo.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*", "app.config.ts"],
+  "exclude": ["node_modules", ".expo", "dist"]
+}

@@ -33,7 +33,9 @@ export type StreakMilestoneValue = (typeof STREAK_MILESTONES)[number];
  * // ponytail: static thresholds; move to config only if product wants to tune the curve live.
  */
 // 2026-11-01 rebalance: ×10 with every XP reward, so levels advance at the same pace.
-const TIER_THRESHOLDS = [0, 1000, 3000, 6000, 10000, 15000, 22000, 30000, 42000, 56000, 75000, 100000] as const;
+const TIER_THRESHOLDS = [
+  0, 1000, 3000, 6000, 10000, 15000, 22000, 30000, 42000, 56000, 75000, 100000,
+] as const;
 
 const JOURNEY_LEVELS = [
   { key: JourneyLevelKey.SPARK, chapter: JourneyLevelChapterId.AWAKENING },
@@ -47,7 +49,10 @@ const JOURNEY_LEVELS = [
   { key: JourneyLevelKey.HORIZON, chapter: JourneyLevelChapterId.DEEPENING },
   { key: JourneyLevelKey.LANTERN, chapter: JourneyLevelChapterId.SHARED_LIGHT },
   { key: JourneyLevelKey.STAR, chapter: JourneyLevelChapterId.SHARED_LIGHT },
-  { key: JourneyLevelKey.CONSTELLATION, chapter: JourneyLevelChapterId.SHARED_LIGHT },
+  {
+    key: JourneyLevelKey.CONSTELLATION,
+    chapter: JourneyLevelChapterId.SHARED_LIGHT,
+  },
 ] as const;
 
 export function getJourneyLevelByTier(tier: number): {
@@ -73,18 +78,22 @@ export function deriveLevel(xp: number): CommunityLevelView {
   const nextAt = TIER_THRESHOLDS[tier] ?? null;
   const level = JOURNEY_LEVELS[tier - 1]!;
   const nextLevel = JOURNEY_LEVELS[tier] ?? null;
-  const progress = nextAt === null
-    ? null
-    : (() => {
-        const target = nextAt - currentAt;
-        const current = Math.min(target, Math.max(0, effectiveXp - currentAt));
-        return {
-          current,
-          target,
-          remaining: target - current,
-          percent: Math.min(100, Math.max(0, Math.round((current / target) * 100))),
-        };
-      })();
+  const progress =
+    nextAt === null
+      ? null
+      : (() => {
+          const target = nextAt - currentAt;
+          const current = Math.min(target, Math.max(0, effectiveXp - currentAt));
+          return {
+            current,
+            target,
+            remaining: target - current,
+            percent: Math.min(
+              100,
+              Math.max(0, Math.round((current / target) * 100)),
+            ),
+          };
+        })();
 
   return {
     tier,
@@ -97,3 +106,15 @@ export function deriveLevel(xp: number): CommunityLevelView {
     progress,
   };
 }
+
+export * from "./coach-surface.js";
+export * from "./feature-routes.js";
+export * from "./navigation.js";
+export * from "./formatting.js";
+export * from "./onboarding.js";
+export * from "./auth-flow.js";
+export * from "./plan-dates.js";
+export * from "./session.js";
+export * from "./analysis.js";
+export * from "./community.js";
+export * from "./notifications.js";

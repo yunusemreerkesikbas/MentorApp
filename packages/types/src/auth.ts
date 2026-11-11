@@ -1,6 +1,7 @@
 /**
  * Auth API contracts — shared by api (producer) and web/mobile (consumers).
- * Refresh token travels ONLY in an httpOnly cookie; it never appears in these payloads.
+ * Web uses an httpOnly cookie for the refresh token; mobile clients (`X-Client-Platform: mobile`)
+ * receive `refreshToken` to persist in hardware-backed SecureStore.
  */
 import type { CareerGroup, ExamType, ExamVariant, UserRole } from "./index.js";
 
@@ -34,6 +35,8 @@ export interface AuthSession {
   /** Seconds until the access token expires (client schedules silent refresh). */
   expiresIn: number;
   user: AuthUser;
+  /** Present only when requested with `X-Client-Platform: mobile` (stored in SecureStore). */
+  refreshToken?: string;
 }
 
 /** POST /v1/users/me/avatar-upload-url response. */
