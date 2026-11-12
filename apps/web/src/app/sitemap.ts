@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { EXAM_TYPES } from "@mentor/types";
 import { getPathname } from "@/i18n/navigation";
-import { fetchPublicQuestionRefs, questionUrl, siteUrl } from "@/lib/forum-public";
+import { communityDiscoveryUrl, fetchDiscoveryQuestions, questionUrl, siteUrl } from "@/lib/forum-public";
 import { blogUrl } from "@/lib/blog-url";
 import { fetchInfoArticlesByFamily, infoArticleUrl } from "@/lib/content-api";
 import { publishedLegalDocs } from "@/lib/legal";
@@ -33,12 +33,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
   try {
     const [questions, ...articlePages] = await Promise.allSettled([
-      fetchPublicQuestionRefs(),
+      fetchDiscoveryQuestions(),
       ...EXAM_TYPES.map((family) =>
         fetchInfoArticlesByFamily(family, 1, 100, { revalidate: 3600 }),
       ),
     ]);
-    for (const r of questions.status === "fulfilled" ? questions.value : []) {
+    const selected = questions.status === "fulfilled" ? questions.value : [];
+    if (selected.length > 0) {
+      entries.push({ url: communityDiscoveryUrl(), changeFrequency: "weekly", priority: 0.7 });
+    }
+    for (const r of selected) {
       entries.push({
         url: questionUrl(r.id),
         lastModified: new Date(r.updatedAt),

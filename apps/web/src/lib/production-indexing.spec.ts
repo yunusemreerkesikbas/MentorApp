@@ -2,12 +2,12 @@ import { EXAM_TYPES } from "@mentor/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import robots from "../app/robots";
 import sitemap from "../app/sitemap";
-import { fetchPublicQuestionRefs } from "./forum-public";
+import { fetchDiscoveryQuestions } from "./forum-public";
 import { fetchInfoArticlesByFamily } from "./content-api";
 
 vi.mock("./forum-public", () => ({
   siteUrl: () => "https://puhukoc.com",
-  fetchPublicQuestionRefs: vi.fn().mockResolvedValue([]),
+  fetchDiscoveryQuestions: vi.fn().mockResolvedValue([]),
   questionUrl: vi.fn(),
 }));
 vi.mock("./content-api", () => ({
@@ -26,7 +26,7 @@ describe("production indexing", () => {
     const entries = await sitemap();
     expect(entries.length).toBeGreaterThan(0);
     expect(entries.every(({ url }) => url.startsWith("https://puhukoc.com/"))).toBe(true);
-    expect(fetchPublicQuestionRefs).toHaveBeenCalledOnce();
+    expect(fetchDiscoveryQuestions).toHaveBeenCalledOnce();
     const requestedFamilies = vi.mocked(fetchInfoArticlesByFamily).mock.calls.map(([family]) => family);
     expect(requestedFamilies.sort()).toEqual([...EXAM_TYPES].sort());
   });

@@ -56,10 +56,11 @@ test("opening avoids below-fold media and selects viewport city sources", async 
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
   await page.goto("/");
+  await expect(page.locator(".lc-stars")).toHaveAttribute("fetchpriority", "high");
   await expect(page.locator(".lc-root")).toHaveAttribute("data-ready", "");
   await expect(page.locator(".lj-coin")).toBeAttached();
   await page.waitForTimeout(700);
-  expect(requests.filter((url) => /coin\.json|dotlottie-player\.wasm|desk-chest-closed/.test(url))).toEqual([]);
+  expect(requests.filter((url) => /coin\.json|dotlottie-player\.wasm|desk-chest-closed|desk-recap-nebula/.test(url))).toEqual([]);
 
   const mobile = testInfo.project.name.startsWith("mobile");
   for (const layer of ["far", "mid", "front"]) {
@@ -70,6 +71,14 @@ test("opening avoids below-fold media and selects viewport city sources", async 
   // Close-up detail stays full resolution on both viewports.
   await expect.poll(() => page.locator('.lc-art[src$="city-facade.webp"]').evaluate((img: HTMLImageElement) => img.currentSrc))
     .toContain("city-facade.avif");
+});
+
+test("weekly story art loads as the visitor reaches the morning section", async ({ page }) => {
+  await page.goto("/");
+  const nebula = page.locator(".lm-phone img[src$='desk-recap-nebula.webp']");
+  await expect(nebula).toHaveAttribute("loading", "lazy");
+  await page.locator(".lm-phone").scrollIntoViewIfNeeded();
+  await expect.poll(() => nebula.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
 });
 
 test("coin animation starts near its section", async ({ page }) => {

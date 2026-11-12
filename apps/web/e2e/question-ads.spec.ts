@@ -10,6 +10,25 @@ const path = `/forum/soru/${questionId}`;
 const boundary = (page: Page) => page.locator('[data-ad-placement="forum.question.end"]');
 const ad = (page: Page) => page.getByRole("complementary", { name: "Reklam", exact: true });
 
+test("the public directory and sitemap expose only selected questions", async ({ request }) => {
+  const unlisted = "/forum/soru/44444444-4444-4444-8444-444444444444";
+  const directory = await request.get("/topluluk", { headers: { "user-agent": "Googlebot" } });
+  expect(directory.status()).toBe(200);
+  const html = await directory.text();
+  expect(html).toContain(`href="${path}"`);
+  expect(html).not.toContain(`href="${unlisted}"`);
+  expect(html).toMatch(/content="index, follow"/);
+  const selected = await request.get(path, { headers: { "user-agent": "Googlebot" } });
+  expect(selected.status()).toBe(200);
+  expect(await selected.text()).toMatch(/content="index, follow"/);
+  const existingLink = await request.get(unlisted, { headers: { "user-agent": "Googlebot" } });
+  expect(existingLink.status()).toBe(200);
+  expect(await existingLink.text()).toMatch(/content="noindex, follow"/);
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  expect(sitemap).toContain(`${path}</loc>`);
+  expect(sitemap).not.toContain(`${unlisted}</loc>`);
+});
+
 test("reklam tüm cevapların sonunda tek alan olarak gösterilir", async ({ page }, info) => {
   const api = await mockBlogAds(page);
   await page.goto(path);

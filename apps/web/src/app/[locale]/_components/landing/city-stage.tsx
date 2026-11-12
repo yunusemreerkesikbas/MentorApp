@@ -243,7 +243,7 @@ export function CityStage({
         <div className="lc-stage">
           <div className="lc-scene" aria-hidden="true">
             <div className="lc-sky" />
-            <img className="lc-stars" src="/visuals/landing/stars.svg" alt="" />
+            <img className="lc-stars" src="/visuals/landing/stars.svg" alt="" fetchPriority="high" />
             <div className="lc-moon" />
             <div className="lc-sun" />
             <div className="lc-layer">

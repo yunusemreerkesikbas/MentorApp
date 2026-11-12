@@ -182,6 +182,18 @@
       "body": "Kodunu paylaş, ilk 3 öğrencin ücretsiz."
     }
   },
+  "communityDiscovery": {
+    "title": "Topluluk",
+    "meta_title": "Sınav Topluluğu | PuhuKoç",
+    "description": "KPSS, YKS, LGS, ALES ve DGS’ye hazırlananların çalışma deneyimlerini, sorularını ve yanıtlarını keşfet.",
+    "preview": "Topluluk açıldığında seçili soruları ve yanıtları burada hesap açmadan okuyabileceksin.",
+    "empty": "Yayıma seçilen sorular burada görünecek.",
+    "unavailable": "Sorular şu anda yüklenemiyor. Biraz sonra yeniden bakabilirsin.",
+    "join": "Topluluğa katıl",
+    "join_question": "Soruya katkıda bulun",
+    "general": "Genel",
+    "blog": "Blog"
+  },
   "landing": {
     "nav_label": "Ana menü",
     "blog": "Blog",
@@ -191,7 +203,7 @@
     "tagline": "Sınav yoldaşın",
     "exams": "KPSS · YKS · LGS · ALES · DGS",
     "hero_title": "Işığın yanıyorsa, <glow>yalnız değilsin</glow>.",
-    "hero_lead": "Sınava hazırlananlar için yapay zekâ destekli bir çalışma yoldaşı. Bugünün planı hazır, sayacın kurulu, masada arkadaşların var.",
+    "hero_lead": "PuhuKoç, sınava hazırlık için yapay zekâ destekli bir çalışma uygulaması. Puhu’yla plan yap, odaklan ve arkadaşlarınla aynı masada çalış.",
     "how_it_works": "Nasıl çalışır",
     "faq_nav": "SSS",
     "counter": "Son 24 saatte {count, number} kişi burada çalıştı.",

@@ -182,6 +182,18 @@
       "body": "Share your code; your first 3 students are free."
     }
   },
+  "communityDiscovery": {
+    "title": "Community",
+    "meta_title": "Exam Prep Community | PuhuKoç",
+    "description": "Explore study experiences, questions and answers from people preparing for KPSS, YKS, LGS, ALES and DGS.",
+    "preview": "When the community opens, you can read selected questions and answers here without an account.",
+    "empty": "Questions selected for publication will appear here.",
+    "unavailable": "Questions are temporarily unavailable. You can check back in a bit.",
+    "join": "Join the community",
+    "join_question": "Join the discussion",
+    "general": "General",
+    "blog": "Blog"
+  },
   "landing": {
     "nav_label": "Main menu",
     "blog": "Blog",
@@ -191,7 +203,7 @@
     "tagline": "Your exam companion",
     "exams": "KPSS · YKS · LGS · ALES · DGS",
     "hero_title": "If your light is on, <glow>you're not alone</glow>.",
-    "hero_lead": "An AI-powered study companion for exam prep. Today's plan is ready, your timer is set, and your friends are at the table.",
+    "hero_lead": "PuhuKoç is an AI-powered study app for exam prep. Make a plan with Puhu, start a focus session and study at the same desk as your friends.",
     "how_it_works": "How it works",
     "faq_nav": "FAQ",
     "counter": "{count, number} people studied here in the last 24 hours.",

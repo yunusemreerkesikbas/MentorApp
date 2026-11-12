@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { PublicFooter } from "@/components/public-footer";
 import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 import { setRequestLocale } from "@/i18n/locale";
+import { Link } from "@/i18n/navigation";
 import { blogUrl, parseBlogQuery } from "@/lib/blog-url";
 import { BlogHeader } from "./_components/blog-header";
 import { BlogShell } from "./_components/blog-shell";
@@ -37,7 +38,9 @@ export default async function BlogPage({ params, searchParams }: PageProps) {
   const [{ locale }, raw] = await Promise.all([params, searchParams]);
   setRequestLocale(locale);
   const query = parseBlogQuery(raw);
-  const [chrome, requestHeaders] = await Promise.all([getTranslations("article"), headers()]);
+  const [chrome, discovery, requestHeaders] = await Promise.all([
+    getTranslations("article"), getTranslations("communityDiscovery"), headers(),
+  ]);
 
   return (
     <>
@@ -50,6 +53,9 @@ export default async function BlogPage({ params, searchParams }: PageProps) {
           <div className={PANEL_GRID_CLASS}>
             <div className="flex min-w-0 flex-col gap-5">
               <BlogHeader query={query} />
+              <Link href="/discover-community" className="inline-flex min-h-11 items-center self-start font-semibold underline">
+                {discovery("title")}
+              </Link>
               <Suspense
                 key={`${query.family}-${query.category}-${query.page}`}
                 fallback={<PostsSkeleton />}

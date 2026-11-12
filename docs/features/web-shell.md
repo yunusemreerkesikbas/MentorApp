@@ -14,7 +14,7 @@
 - **Route Groups under `src/app/[locale]/`:**
   - **Public / Marketing:** `/` ("Işıklı şehir" landing), `/hosgeldin` (4-slide Puhu intro), `/koclar` (human coach landing), `/bilgi/[slug]` (SEO articles), `/davet/[code]` (friend invite landing), `/masaya-katil` (study room invite), `/bekleme-listesi` (invite-only waitlist).
   - **`(auth)`:** `/giris`, `/kayit`, `/sifremi-unuttum`, `/sifre-yenile`, `/eposta-dogrula`.
-  - **`(app)` (Student Authenticated Shell):** `/panel`, `/plan`, `/seans`, `/defter`, `/analiz`, `/bilgi`, `/koc/sohbet`, `/topluluk`, `/kocum`, `/hedef`, `/profil`, `/abonelik`.
+  - **`(app)` (Student Authenticated Shell):** `/panel`, `/plan`, `/seans`, `/defter`, `/analiz`, `/bilgi`, `/koc/sohbet`, `/topluluk/uyeler/panel`, `/kocum`, `/hedef`, `/profil`, `/abonelik`.
   - **`(coach)` (Human Coach Shell):** `/koc-paneli` roster, student reports, weekly reports, templates, and follow-ups (`--coach-accent` teal theme).
 - **Server-First Availability (`GET /v1/app/availability`):** `landingAvailability` reads feature switches once per render (`aiCoach`, `economy`, `social`, `forum`, `studyRooms`, `humanCoaching`, `studentPurchases`, `studentSignup`, `invitations`) and hides disabled sections cleanly without client flicker.
 
@@ -60,6 +60,10 @@ The landing page combines atmospheric night-to-dawn art with **energetic, Duolin
 ---
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
+
+- **2026-11-12 Deferred weekly-story art.** The morning desk phone and its weekly recap note use the existing lazy AVIF/WebP picture for the nebula backdrop. The initial viewport can skip the artwork and the same crop loads as the visitor approaches the desk. Use the landing performance test to check both request timings. Related files include `morning-story.tsx`, `landing-morning.css`, and `landing-performance.spec.ts`.
+
+- **2026-11-12 Landing stability and discovery.** The mobile analytics consent card opens below the navigation without moving the hero sheet. The city gives the stars image early request priority. The Turkish homepage identifies PuhuKoç with linked `Organization` and `WebSite` JSON-LD and links to the public community preview. Verify the card on a fresh anonymous mobile visit with analytics enabled, then repeat the production PageSpeed run after deployment. Related files include `city-stage.css`, `city-stage.tsx`, `cookie-consent-banner.tsx`, `[locale]/page.tsx`, and `structured-data.ts`.
 
 - **2026-11-10 — Lightweight web probes and shared availability snapshot:** Added infrastructure-only
   `/healthz` (204, empty body, no-store) outside locale/document rendering. Web health probes must target

@@ -1,9 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import { createHash } from "node:crypto";
-import { ExamType, type PublicQuestionRef, type PublicQuestionView } from "@mentor/types";
+import { ExamType, type PublicDiscoveryQuestion, type PublicQuestionRef, type PublicQuestionView } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { ForumThreadRepository } from "../infrastructure/forum-thread.repository";
 import { ForumPostRepository } from "../infrastructure/forum-post.repository";
+
+function publicExamType(value: string | null): ExamType | null {
+  return Object.values(ExamType).find((type) => type === value) ?? null;
+}
 
 /**
  * Public (anonymous, SEO) reads — only INDEXABLE QA questions (QA + PUBLIC zone, not archived,
@@ -22,6 +26,11 @@ export class ForumPublicService {
     return Boolean(await this.config.get("forum.enabled"));
   }
 
+  private async discoveryIds(): Promise<string[]> {
+    const value = await this.config.get("forum.discovery_question_ids");
+    return [...new Set(value.split(",").map((id) => id.trim().toLowerCase()).filter(Boolean))];
+  }
+
   /** An indexable QA question with its answers, or null (→ 404 / noindex). */
   async getQuestion(threadId: string): Promise<PublicQuestionView | null> {
     if (!(await this.enabled())) return null;
@@ -36,8 +45,9 @@ export class ForumPublicService {
       answers: answers.map((a) => [a.id, a.body, a.isAccepted, a.updatedAt]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
     })).digest("hex");
     return {
+      discoverable: (await this.discoveryIds()).includes(thread.id),
       contentRevision,
-      examType: Object.values(ExamType).includes(thread.examType as ExamType) ? thread.examType as ExamType : null,
+      examType: publicExamType(thread.examType),
       id: thread.id,
       title: thread.title ?? "",
       body: thread.body,
@@ -56,5 +66,18 @@ export class ForumPublicService {
     if (!(await this.enabled())) return [];
     const refs = await this.threads.listPublicQuestionRefs(limit);
     return refs.map((r) => ({ id: r.id, updatedAt: r.updatedAt.toISOString() }));
+  }
+
+  async listDiscoveryQuestions(): Promise<PublicDiscoveryQuestion[]> {
+    if (!(await this.enabled())) return [];
+    const ids = await this.discoveryIds();
+    if (ids.length === 0) return [];
+    const rows = await this.threads.listDiscoveryQuestions(ids);
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title ?? "",
+      examType: publicExamType(row.examType),
+      updatedAt: row.updatedAt.toISOString(),
+    }));
   }
 }

@@ -118,7 +118,8 @@ export const routing = defineRouting({
       tr: "/hedef/simulasyon",
       en: "/vision-board/simulation",
     },
-    "/community": { tr: "/topluluk", en: "/community" },
+    "/discover-community": { tr: "/topluluk", en: "/discover-community" },
+    "/community": { tr: "/topluluk/uyeler/panel", en: "/community" },
     "/community/feed": { tr: "/topluluk/akis", en: "/community/feed" },
     "/community/saved": {
       tr: "/topluluk/kayitli",

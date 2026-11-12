@@ -27,8 +27,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title,
     description,
-    // Only the Turkish page is indexed; EN canonicalizes to TR (content is Turkish).
-    robots: { index: locale === "tr", follow: true },
+    // Only selected Turkish pages are indexed. EN canonicalizes to TR because the content is Turkish.
+    robots: { index: locale === "tr" && q.discoverable === true, follow: true },
     alternates: { canonical },
     openGraph: {
       title,
@@ -54,9 +54,10 @@ export default async function PublicQuestionPage({ params }: PageProps) {
   const q = await fetchPublicQuestion(id);
   if (!q) notFound();
 
-  const t = await getTranslations("community");
-  const tAuth = await getTranslations("article");
-  const tAds = await getTranslations("ads");
+  const [t, tAuth, tAds, tDiscovery] = await Promise.all([
+    getTranslations("community"), getTranslations("article"),
+    getTranslations("ads"), getTranslations("communityDiscovery"),
+  ]);
   const jsonLd = buildQuestionStructuredData({
     question: q,
     canonical: questionUrl(id),
@@ -92,6 +93,9 @@ export default async function PublicQuestionPage({ params }: PageProps) {
       </header>
 
       <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8 lg:py-10">
+        <Link href="/discover-community" className="mb-4 inline-flex min-h-11 items-center font-semibold text-[var(--color-main)] underline">
+          {tDiscovery("title")}
+        </Link>
         <article>
           <h1
             className="text-2xl font-bold lg:text-3xl"
@@ -129,6 +133,9 @@ export default async function PublicQuestionPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+        <Link href={{ pathname: "/community/question/[threadId]", params: { threadId: q.id } }} className="mt-5 inline-flex min-h-11 items-center font-extrabold text-[var(--color-main)] underline">
+          {tDiscovery("join_question")}
+        </Link>
         {q.contentRevision ? (
           <NextIntlClientProvider messages={{ ads: { label: tAds("label") } }}>
             <DeferredContextualAdSlot

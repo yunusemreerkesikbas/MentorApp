@@ -150,8 +150,8 @@ test("C01: real community hub loads in TR and EN", async ({ page, context, reque
     headers: { Authorization: `Bearer ${student.token}` },
   });
   expect(hub.status()).toBe(200);
-  await page.goto("/topluluk");
-  await expect(page).toHaveURL(/\/topluluk$/);
+  await page.goto("/topluluk/uyeler/panel");
+  await expect(page).toHaveURL(/\/topluluk\/uyeler\/panel$/);
   await expect(page.getByRole("region", { name: "Öne çıkan gönderi" })).toBeVisible();
   await page.screenshot({ path: `../../docs/qa/evidence/${evidenceDate}-stage4-community-${testInfo.project.name}.png` });
   await page.goto("/en/community");

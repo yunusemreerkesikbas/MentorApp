@@ -1,4 +1,5 @@
-import type { PublicQuestionRef, PublicQuestionView } from "@mentor/types";
+import type { PublicDiscoveryQuestion, PublicQuestionView } from "@mentor/types";
+import { cache } from "react";
 
 import { getPathname } from "../i18n/navigation";
 
@@ -45,6 +46,10 @@ export function questionUrl(id: string): string {
   })}`;
 }
 
+export function communityDiscoveryUrl(): string {
+  return `${siteUrl()}${getPathname({ locale: "tr", href: "/discover-community" })}`;
+}
+
 /** Public QA snapshot. Read fresh so moderation changes are honored on the next visit. */
 export async function fetchPublicQuestion(id: string): Promise<PublicQuestionView | null> {
   const res = await fetch(
@@ -56,11 +61,11 @@ export async function fetchPublicQuestion(id: string): Promise<PublicQuestionVie
   return (await res.json()) as PublicQuestionView;
 }
 
-/** Indexable QA question refs for the sitemap. */
-export async function fetchPublicQuestionRefs(): Promise<PublicQuestionRef[]> {
-  const res = await fetch(`${publicApiBase()}/v1/forum/public/questions`, {
-    next: { revalidate: 3600 },
+/** Fresh selected questions shared by the directory and sitemap. */
+export const fetchDiscoveryQuestions = cache(async (): Promise<PublicDiscoveryQuestion[]> => {
+  const res = await fetch(`${publicApiBase()}/v1/forum/public/discovery`, {
+    cache: "no-store", signal: AbortSignal.timeout(3000),
   });
-  if (!res.ok) throw new Error(`Public question refs fetch failed: ${res.status}`);
-  return (await res.json()) as PublicQuestionRef[];
-}
+  if (!res.ok) throw new Error(`Public question discovery failed: ${res.status}`);
+  return (await res.json()) as PublicDiscoveryQuestion[];
+});

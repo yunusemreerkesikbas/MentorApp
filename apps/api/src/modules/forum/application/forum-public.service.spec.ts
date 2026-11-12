@@ -6,12 +6,35 @@ function setup() {
   const thread = { id: "question", title: "Question", body: "Question body", examType: "LGS", updatedAt: now, zoneUpdatedAt: now, createdAt: now };
   const answer = { id: "answer", body: "Answer body", isAccepted: false, updatedAt: now, createdAt: now };
   const posts = { listPublicAnswers: vi.fn(async () => [answer]) };
-  const threads = { findPublicQuestion: vi.fn(async () => thread) };
-  const config = { get: vi.fn(async () => true) };
+  const threads = { findPublicQuestion: vi.fn(async () => thread), listDiscoveryQuestions: vi.fn(async (_ids: string[]) => [thread]) };
+  const config = { get: vi.fn(async (key: string): Promise<boolean | string> => key === "forum.enabled" ? true : "") };
   return { service: new ForumPublicService(threads as never, posts as never, config as never), thread, answer, posts, threads, config };
 }
 
 describe("public QA content revisions", () => {
+  it("lists only selected eligible questions and marks their detail indexable", async () => {
+    const { service, config, threads } = setup();
+    expect(await service.listDiscoveryQuestions()).toEqual([]);
+    expect((await service.getQuestion("question"))?.discoverable).toBe(false);
+    config.get.mockImplementation(async (key) => key === "forum.enabled" ? true : "question");
+    expect(await service.listDiscoveryQuestions()).toEqual([
+      { id: "question", title: "Question", examType: "LGS", updatedAt: "2026-10-01T00:00:00.000Z" },
+    ]);
+    expect((await service.getQuestion("question"))?.discoverable).toBe(true);
+    expect(threads.listDiscoveryQuestions).toHaveBeenCalledOnce();
+    expect(threads.listDiscoveryQuestions).toHaveBeenCalledWith(["question"]);
+  });
+
+  it("keeps the directory empty when moderation excludes the question or the forum is disabled", async () => {
+    const { service, threads, config } = setup();
+    config.get.mockImplementation(async (key) => key === "forum.enabled" ? true : "question");
+    threads.listDiscoveryQuestions.mockResolvedValue([]);
+    expect(await service.listDiscoveryQuestions()).toEqual([]);
+    config.get.mockImplementation(async (key) => key === "forum.enabled" ? false : "question");
+    threads.listDiscoveryQuestions.mockClear();
+    expect(await service.listDiscoveryQuestions()).toEqual([]);
+    expect(threads.listDiscoveryQuestions).not.toHaveBeenCalled();
+  });
   it("returns no author identity and a stable opaque snapshot", async () => {
     const { service } = setup();
     const first = await service.getQuestion("question");

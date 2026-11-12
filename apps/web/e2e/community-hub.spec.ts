@@ -51,7 +51,7 @@ test("Keşfet: tek ledge, cevap bekleyenler, kaldığın yerden, odalar ve yanı
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
   );
 
-  await page.goto("/topluluk");
+  await page.goto("/topluluk/uyeler/panel");
   const hero = page.getByRole("region", { name: "Bugün aklında ne var?" });
   await expect(hero).toBeVisible();
   // One filled ledge on the screen (DESIGN.md §1 rule 1); asking a question is the text link.
@@ -110,7 +110,7 @@ test("Keşfet: tek ledge, cevap bekleyenler, kaldığın yerden, odalar ve yanı
 
 test("Keşfet sessiz toplulukta söyleyecek sözü olmayan bölümleri göstermez", async ({ page }) => {
   await mockCommunityApi(page, { quiet: true });
-  await page.goto("/topluluk");
+  await page.goto("/topluluk/uyeler/panel");
 
   await expect(page.getByText("Burası yeni uyanıyor!", { exact: false })).toBeVisible();
   await expect(page.getByRole("region", { name: "Sana uygun odalar" })).toBeVisible();

@@ -1,5 +1,5 @@
 import { at } from "./desk-room";
-import { SceneImg, sceneBackground } from "./scene-img";
+import { SceneImg } from "./scene-img";
 
 /**
  * "Haftanın hikâyesi" as the app plays it: its own lines (`analysis.recap.*`), its coral, lavender
@@ -16,8 +16,6 @@ export interface StoryCopy {
   codenameLabel: string;
   codename: string;
 }
-
-const NEBULA = "/visuals/landing/desk-recap-nebula.webp";
 
 function Decor({ src, className }: { src: string; className: string }) {
   return <SceneImg src={`/visuals/landing/desk-recap-${src}.webp`} loading="lazy" className={className} />;
@@ -66,7 +64,8 @@ export function StoryPhone({ copy }: { copy: StoryCopy }) {
             <b>{copy.runTitle}</b>
             <Decor src="wiggle" className="lm-decor is-wiggle-low" />
           </div>
-          <div className="lm-slide is-code s4" style={sceneBackground(NEBULA)}>
+          <div className="lm-slide is-code s4">
+            <Decor src="nebula" className="lm-code-backdrop" />
             <small>{copy.codenameLabel}</small>
             <b>{copy.codename}</b>
           </div>
@@ -112,7 +111,8 @@ export function StoryFan({ copy }: { copy: StoryCopy }) {
         <small>{copy.focusMinutes}</small>
         <Decor src="world" className="lm-fan-globe" />
       </div>
-      <div className="lm-fan-card is-code" style={sceneBackground(NEBULA)}>
+      <div className="lm-fan-card is-code">
+        <Decor src="nebula" className="lm-code-backdrop" />
         <Bars on={3} />
         <em>{copy.codenameLabel}</em>
         <span>{copy.codename}</span>

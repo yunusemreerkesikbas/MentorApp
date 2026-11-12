@@ -35,6 +35,28 @@ test.describe("GA4 açık rıza sözleşmesi", () => {
     await mockConsentSession(page, false);
   });
 
+  test("the mobile landing hero stays put when the analytics card appears", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.startsWith("mobile"));
+    let resolveSession!: () => void;
+    const pending = new Promise<void>((resolve) => { resolveSession = resolve; });
+    await mockConsentSession(page, false, pending);
+    const hero = page.locator('.lc-panel[data-kind="hero"]');
+    const banner = page.locator(".cookie-consent-banner");
+    try {
+      await page.goto("/", { waitUntil: "domcontentloaded" });
+      await expect(hero).toBeVisible();
+      await expect(banner).toHaveCount(0);
+      const before = await hero.boundingBox();
+      resolveSession();
+      await expect(banner).toBeVisible();
+      await expect.poll(async () => (await hero.boundingBox())?.y).toBe(before?.y);
+      const card = await banner.boundingBox();
+      expect(card!.y + card!.height).toBeLessThanOrEqual(before!.y);
+    } finally {
+      resolveSession();
+    }
+  });
+
   test("oturum kontrolü sırasında ve giriş yapmış kullanıcıda banner açılmaz", async ({ page }) => {
     await page.addInitScript(() => {
       new MutationObserver(() => {

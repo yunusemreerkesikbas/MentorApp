@@ -1,5 +1,28 @@
 import type { InfoArticleDto, PublicQuestionView } from "@mentor/types";
 
+export function buildSiteStructuredData(origin: string) {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${origin}/#organization`,
+        name: "PuhuKoç",
+        url: `${origin}/`,
+        logo: { "@type": "ImageObject", url: `${origin}/img/brand/puhukoc-apple-icon.png` },
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${origin}/#website`,
+        name: "PuhuKoç",
+        url: `${origin}/`,
+        inLanguage: "tr-TR",
+        publisher: { "@id": `${origin}/#organization` },
+      },
+    ],
+  };
+}
+
 interface ArticleStructuredDataInput {
   article: InfoArticleDto;
   canonical: string;

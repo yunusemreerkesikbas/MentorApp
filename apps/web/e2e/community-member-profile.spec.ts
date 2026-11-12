@@ -213,7 +213,7 @@ test("üye profili kimlik kartı, aksiyonlar ve yolculuk panelini her genişlikt
       .locator(".community-header")
       .getByRole("link", { name: "Topluluk" });
     if (viewport.width < 1024) {
-      await expect(headerBack).toHaveAttribute("href", "/topluluk");
+      await expect(headerBack).toHaveAttribute("href", "/topluluk/uyeler/panel");
     } else {
       await expect(headerBack).toHaveCount(0);
     }

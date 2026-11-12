@@ -607,4 +607,13 @@ export class ForumThreadRepository {
         .limit(limit);
     });
   }
+
+  async listDiscoveryQuestions(ids: string[]) {
+    return withServiceContext(this.db, (tx) => tx
+      .select({ id: forumThreads.id, title: forumThreads.title, examType: forumZones.examType, updatedAt: forumThreads.updatedAt })
+      .from(forumThreads)
+      .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
+      .where(and(inArray(forumThreads.id, ids), this.indexableWhere()))
+      .orderBy(desc(forumThreads.updatedAt), desc(forumThreads.id)));
+  }
 }

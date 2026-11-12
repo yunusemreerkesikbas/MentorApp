@@ -19,7 +19,7 @@
 
 ## 2. Core Subsystems & Current Rules
 
-### 2.1 Discovery Hub, Feed & Search (`/topluluk`, `/v1/forum/{hub,feed,trends,search}`)
+### 2.1 Discovery Hub, Feed & Search (`/topluluk/uyeler/panel`, `/v1/forum/{hub,feed,trends,search}`)
 - **Hub (`GET /v1/forum/hub`):** Returns featured thread, activity blend, exam-scoped trending tags (`/v1/forum/trends`), top supporters, and open room suggestions.
 - **Unified Feed (`GET /v1/forum/feed`):** Supports `scope=relevant|following`, `sort=trending|recent|top` (empty first `trending` page falls back to `recent` via `effectiveSort`), `contentType=posts|questions`, and `unanswered=true` (others' unanswered Q&A).
 - **Grouped Search (`GET /v1/forum/search?q=`):** Turkish `to_tsvector` GIN search returning threads, Q&A questions, public zones, tags, and public-safe member profiles (max 5 each).
@@ -53,12 +53,15 @@
 | `POST /v1/forum/polls/:pollId/votes` | Cast single immutable poll vote |
 | `GET /v1/forum/tags`, `POST /v1/forum/tag-suggestions` | Active curated tags and student tag suggestions |
 | `POST\|GET /v1/forum/reports*`, `POST /v1/forum/reports/:id/resolve` | Submit and resolve content reports (`HIDE` / `DISMISS`) |
-| `GET /v1/forum/public/questions{,/:id}` | Public SEO Q&A index and detail (`@Public`) |
+| `GET /v1/forum/public/discovery` | Selected anonymous Q&A directory and sitemap source (`@Public`) |
+| `GET /v1/forum/public/questions{,/:id}` | Existing anonymous Q&A references and direct detail (`@Public`) |
 | `GET\|POST\|PATCH\|PUT\|DELETE /v1/admin/forum/{tags,tag-suggestions,featured-thread}` | Admin curated tags, tag suggestion review, and featured thread |
 
 ---
 
 ## 4. Geliştirmeler (Condensed Milestone Timeline)
+
+- **2026-11-12 Anonymous community directory.** `/topluluk` explains the upcoming forum while it is closed. With `forum.enabled` on, an admin can set up to 50 comma-separated, moderation-reviewed UUIDs in `forum.discovery_question_ids`. Selected, eligible questions appear by exam in the directory and in the Turkish sitemap. With no eligible questions, the directory returns `noindex`. Removing a selection removes the question from discovery and changes its existing detail to `noindex`. An archived or private area, a removed question, or a question without visible answers is excluded by the existing eligibility rules. The setting selects IDs, so review edited content before keeping it in the directory. The signed-in Turkish hub is `/topluluk/uyeler/panel`. Related files include `forum-public.service.ts`, `forum-thread.repository.ts`, `[locale]/discover-community/page.tsx`, and `sitemap.ts`.
 
 - **2026-10-25..26 — Content-Revision Verified Ad Snapshots:** Added deterministic SHA-256 `contentRevision` and `adContext` snapshot services for public Q&A, community Q&A, announcements, and discovery overview (`AdsModule` integration).
 - **2026-10-08..10 — RLS Author Cards (`withAuthorCards`), Room Management UI & A11y Pass:** Fixed non-superuser RLS author name resolution across all 13 read paths, redesigned `/topluluk/[slug]/yonetim` (`members-card.tsx`, `reports-card.tsx`), and hardened mobile/screen-reader accessibility.

@@ -4,7 +4,16 @@ import {
   buildArticleStructuredData,
   buildBreadcrumbStructuredData,
   buildQuestionStructuredData,
+  buildSiteStructuredData,
 } from "./structured-data";
+
+it("uses the same publisher identity for the homepage and its articles", () => {
+  const origin = "https://puhukoc.example";
+  const site = buildSiteStructuredData(origin);
+  const published = buildArticleStructuredData({ article, canonical: `${origin}/blog/kpss-basvuru`, siteOrigin: origin, publisherLogoUrl: `${origin}/logo.png` });
+  expect(site["@graph"][0]["@id"]).toBe(published.publisher["@id"]);
+  expect(site["@graph"][1].publisher).toEqual({ "@id": published.publisher["@id"] });
+});
 
 const article: InfoArticleDto = {
   slug: "kpss-basvuru",

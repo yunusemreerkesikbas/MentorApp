@@ -9,7 +9,7 @@ const ad = (page: Page) => page.getByRole("complementary", { name: "Reklam", exa
 
 test("mevcut Keşfet ekranında sağ sütunun sonunda tek reklam", async ({ page }, info) => {
   const api = await mockDiscoveryAds(page);
-  await page.goto("/topluluk");
+  await page.goto("/topluluk/uyeler/panel");
   await boundary(page).scrollIntoViewIfNeeded();
   await expect(ad(page)).toContainText("Test inventory");
   await expect(page.getByText("Toplulukta birlikte ilerliyoruz", { exact: true })).toBeVisible();
@@ -27,7 +27,7 @@ test("mevcut Keşfet ekranında sağ sütunun sonunda tek reklam", async ({ page
 for (const mode of ["closed", "history", "buddy", "buddyError", "hubError"] as const) {
   test(`${mode}: özel veya doğrulanamayan görünümde Google hazırlanmaz`, async ({ page }) => {
     const api = await mockDiscoveryAds(page, { [mode]: true });
-    await page.goto("/topluluk");
+    await page.goto("/topluluk/uyeler/panel");
     if (mode === "hubError") await expect(page.getByText("Topluluk şu anda yüklenemiyor.", { exact: true })).toBeVisible();
     else await expect(page.getByText("Toplulukta birlikte ilerliyoruz", { exact: true })).toBeVisible();
     if (mode === "buddy") await expect(page.getByText("Özel Yol Arkadaşım", { exact: true })).toBeVisible();
@@ -40,7 +40,7 @@ for (const mode of ["closed", "history", "buddy", "buddyError", "hubError"] as c
 test("yol arkadaşı kontrolü tamamlanmadan reklam hazırlanmaz", async ({ page }) => {
   const api = await mockDiscoveryAds(page); let release!: () => void;
   api.buddyHold = new Promise<void>((resolve) => { release = resolve; });
-  await page.goto("/topluluk");
+  await page.goto("/topluluk/uyeler/panel");
   await expect(page.getByText("Toplulukta birlikte ilerliyoruz", { exact: true })).toBeVisible();
   await expect.poll(() => api.buddyRequests).toBeGreaterThan(0);
   expect(api.state.ads.placementCalls).toHaveLength(0);
@@ -49,7 +49,7 @@ test("yol arkadaşı kontrolü tamamlanmadan reklam hazırlanmaz", async ({ page
 
 for (const mode of ["empty", "blocked", "denied"] as const) {
   test(`${mode}: reklam yokken Keşfet kullanılabilir`, async ({ page }) => {
-    const api = await mockDiscoveryAds(page, { [mode]: true }); await page.goto("/topluluk");
+    const api = await mockDiscoveryAds(page, { [mode]: true }); await page.goto("/topluluk/uyeler/panel");
     await boundary(page).scrollIntoViewIfNeeded();
     await expect.poll(() => api.state.ads.placementCalls.length).toBeGreaterThan(0);
     await expect(ad(page)).toBeHidden();
@@ -59,7 +59,7 @@ for (const mode of ["empty", "blocked", "denied"] as const) {
 
 test("dar ekranda tek DOM alanı ve yalnız sığan boyut", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
-  await mockDiscoveryAds(page); await page.goto("/topluluk");
+  await mockDiscoveryAds(page); await page.goto("/topluluk/uyeler/panel");
   await boundary(page).scrollIntoViewIfNeeded(); await expect(ad(page)).toContainText("Test inventory");
   expect(await page.evaluate(() => (window as unknown as { __displayDefinitions: { sizes: number[][] }[] }).__displayDefinitions[0]?.sizes)).toEqual([[250, 250]]);
   await expect(boundary(page)).toHaveCount(1);
@@ -67,7 +67,7 @@ test("dar ekranda tek DOM alanı ve yalnız sığan boyut", async ({ page }) => 
 });
 
 test("oda değişikliği reklamı kaldırır ve kendiliğinden dönmez", async ({ page }) => {
-  await mockDiscoveryAds(page); await page.goto("/topluluk");
+  await mockDiscoveryAds(page); await page.goto("/topluluk/uyeler/panel");
   await boundary(page).scrollIntoViewIfNeeded(); await expect(ad(page)).toContainText("Test inventory");
   await page.evaluate(() => window.dispatchEvent(new Event("community:zones-changed")));
   await expect(boundary(page)).toHaveCount(0);
@@ -75,7 +75,7 @@ test("oda değişikliği reklamı kaldırır ve kendiliğinden dönmez", async (
 });
 
 test("abonelik değişince eski reklam kaldırılır", async ({ page }) => {
-  const api = await mockDiscoveryAds(page); await page.goto("/topluluk");
+  const api = await mockDiscoveryAds(page); await page.goto("/topluluk/uyeler/panel");
   await boundary(page).scrollIntoViewIfNeeded(); await expect(ad(page)).toContainText("Test inventory");
   api.state.ads.premium = true; await page.evaluate(() => window.dispatchEvent(new Event("mentor:subscription-changed")));
   await expect(ad(page)).toBeHidden();
@@ -93,7 +93,7 @@ test("kalıcı yan menüdeki eski özel oda Keşfet reklamını engeller", async
   await page.goto(QUESTION_PATH);
   await expect(page.getByText("Eski özel oda", { exact: true }).first()).toBeAttached();
   privateMembership = false;
-  await page.locator('main a[href="/topluluk"]').first().click();
+  await page.locator('main a[href="/topluluk/uyeler/panel"]').first().click();
   await expect(page.getByText("Toplulukta birlikte ilerliyoruz", { exact: true })).toBeVisible();
   await expect(page.getByText("Eski özel oda", { exact: true }).first()).toBeAttached();
   await expect(boundary(page)).toHaveCount(0);
@@ -103,7 +103,7 @@ test("kalıcı yan menüdeki eski özel oda Keşfet reklamını engeller", async
 test("arama açılınca bekleyen reklam iptal edilir", async ({ page }) => {
   const api = await mockDiscoveryAds(page); let release!: () => void;
   api.state.ads.scriptHold = new Promise<void>((resolve) => { release = resolve; });
-  await page.goto("/topluluk"); await boundary(page).scrollIntoViewIfNeeded();
+  await page.goto("/topluluk/uyeler/panel"); await boundary(page).scrollIntoViewIfNeeded();
   await expect.poll(() => api.state.ads.scriptRequests).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Toplulukta ara", exact: true }).click();
   await expect(page.locator("dialog[open]")).toBeVisible();
