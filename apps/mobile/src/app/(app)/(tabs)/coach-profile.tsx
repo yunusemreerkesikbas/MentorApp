@@ -16,6 +16,7 @@ import {
 } from "../../../lib/mentorship-api.js";
 import { haptics } from "../../../lib/haptics.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
+import { tabBarClearance } from "../../../lib/layout.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
 
 export default function CoachProfileScreen() {
@@ -56,9 +57,9 @@ export default function CoachProfileScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: palette.bg }}
       contentContainerStyle={{
-        paddingTop: insets.top + space.lg,
+        paddingTop: space.lg,
         paddingHorizontal: space.lg,
-        paddingBottom: space.xl,
+        paddingBottom: tabBarClearance(insets.bottom),
         gap: space.md,
       }}
     >

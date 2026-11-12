@@ -22,6 +22,7 @@ import {
 } from "../../../lib/coach-api.js";
 import { haptics } from "../../../lib/haptics.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
+import { tabBarClearance } from "../../../lib/layout.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
 
 export default function CoachScreen() {
@@ -130,8 +131,8 @@ export default function CoachScreen() {
         contentInsetAdjustmentBehavior="automatic"
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingTop: insets.top + space.lg,
-          paddingBottom: space.xl,
+          paddingTop: space.lg,
+          paddingBottom: tabBarClearance(insets.bottom),
           paddingHorizontal: space.lg,
           gap: space.lg,
         }}

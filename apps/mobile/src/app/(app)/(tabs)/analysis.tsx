@@ -23,6 +23,7 @@ import {
 } from "../../../lib/analysis-api.js";
 import { useAuth } from "../../../providers/auth-provider.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
+import { tabBarClearance } from "../../../lib/layout.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
 
 const TABS: { id: AnalysisTab; labelKey: "tab_progress" | "tab_mistakes" | "tab_entry" }[] = [
@@ -116,8 +117,8 @@ export default function AnalysisScreen() {
         />
       }
       contentContainerStyle={{
-        paddingTop: insets.top + space.lg,
-        paddingBottom: space.xl,
+        paddingTop: space.lg,
+        paddingBottom: tabBarClearance(insets.bottom),
         paddingHorizontal: space.lg,
         gap: space.lg,
       }}

@@ -123,6 +123,17 @@ export interface ThemePalette {
   readonly ctaPlayEdge: string;
   readonly ctaPlayHover: string;
   readonly ctaPlayInk: string;
+  /** Selected nav/tab well and its ink (`--play-selected*`). */
+  readonly playSelected: string;
+  readonly playSelectedInk: string;
+  /** Progress bars and the Coin pill (`--color-progress*`). */
+  readonly progress: string;
+  readonly progressTrack: string;
+  /** Hairlines and empty tracks on play surfaces (`--play-line`, `--play-track`). */
+  readonly playLine: string;
+  readonly playTrack: string;
+  /** The streak flame's warm core, also the weekly chest's gold (`--color-streak-core`). */
+  readonly streakCore: string;
   readonly accent: string;
   readonly star: string;
   readonly streak: string;
@@ -169,6 +180,13 @@ export const lightThemeTokens: ThemePalette = {
   warningBg: "#FEF3C7",
   danger: "#B91C1C",
   dangerBg: "#FEE2E2",
+  playSelected: "#E4EEFE",
+  playSelectedInk: "#1A5FA3",
+  progress: "#55ACEE",
+  progressTrack: "#C3D9FD",
+  playLine: "#E7E7E7",
+  playTrack: "#F0EDEC",
+  streakCore: "#FFD15C",
   dangerEdge: "#8A1B12",
   dangerInk: "#FFFFFF",
   premiumMark: "#1E2A5A",
@@ -205,6 +223,13 @@ export const darkThemeTokens: ThemePalette = {
   warningBg: "#332611",
   danger: "#F87171",
   dangerBg: "#36181B",
+  playSelected: "#2C3D56",
+  playSelectedInk: "#7EB6E8",
+  progress: "#55ACEE",
+  progressTrack: "#2C3D56",
+  playLine: "#2E3541",
+  playTrack: "#242833",
+  streakCore: "#FFD15C",
   dangerEdge: "#B85A52",
   dangerInk: "#12141A",
   premiumMark: "#7E9BFF",

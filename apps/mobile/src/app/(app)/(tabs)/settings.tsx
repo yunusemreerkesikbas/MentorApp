@@ -9,6 +9,7 @@ import { PhoneVerificationCard } from "../../../components/settings/phone-verifi
 import { Button, Card, Chip, AppText } from "../../../components/ui/index.js";
 import { useAuth } from "../../../providers/auth-provider.js";
 import { useLocale, useTranslations } from "../../../providers/i18n-provider.js";
+import { tabBarClearance } from "../../../lib/layout.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
 
 export default function SettingsScreen() {
@@ -25,8 +26,8 @@ export default function SettingsScreen() {
       keyboardShouldPersistTaps="handled"
       style={{ flex: 1, backgroundColor: palette.bg }}
       contentContainerStyle={{
-        paddingTop: insets.top + space.lg,
-        paddingBottom: space.xl,
+        paddingTop: space.lg,
+        paddingBottom: tabBarClearance(insets.bottom),
         paddingHorizontal: space.lg,
         gap: space.lg,
       }}

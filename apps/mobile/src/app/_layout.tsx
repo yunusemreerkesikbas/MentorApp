@@ -1,10 +1,12 @@
 import { KeyboardAvoidingView, View } from "react-native";
+import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { isCoach } from "@mentor/core";
 import { CoachOnWebScreen } from "../components/coach-on-web-screen.js";
 import { StateView } from "../components/ui/index.js";
+import { APP_FONTS } from "../lib/fonts.js";
 import { STUDENT_CORE_ONLY } from "../lib/release-scope.js";
 import { AuthProvider, useAuth } from "../providers/auth-provider.js";
 import { AvailabilityProvider } from "../providers/availability-provider.js";
@@ -59,6 +61,10 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  // Text would otherwise paint once in the system font and jump to Nunito a frame later.
+  const [fontsLoaded] = useFonts(APP_FONTS);
+  if (!fontsLoaded) return null;
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>

@@ -28,7 +28,40 @@
 - ❌ Expo Router API routes (backend) · ❌ copying types/schemas between web and mobile · ❌ off-DESIGN values ·
   ❌ synchronous heavy work · ❌ importing `@mentor/ui` root in RN (always import `@mentor/ui/tokens`).
 
+## Design parity with the web
+- [x] **The web at phone width is the reference** for every screen: same layout, colours, Nunito, Puhu art
+  and copy. Diverge only where the platform demands it (bottom tab bar, bottom sheets instead of popovers,
+  keyboard handling, 44dp touch targets).
+- [x] **Art comes straight from `apps/web/public`** through `apps/mobile/src/lib/art.ts`; do not copy images
+  into the mobile app. Icons are Solar via `@solar-icons/react-native` (same import paths as the web).
+- [x] **No Premium upsell on mobile until in-app purchase exists** (PREMIUM badges, trial card, locked
+  nudges stay hidden). A user who subscribed on the web still gets the hero mask, masked Puhu and the daily note.
+
 ## Geliştirmeler (timeline)
+
+- **2026-11-12 — Expo SDK 58, device function tour, design foundation & the Panel ("Bugün") at web parity (`apps/mobile`):**
+  - **What was done:** Upgraded Expo SDK 53 → 58 (React Native 0.88, React 19.3, Reanimated 4) and taught Metro
+    to resolve the monorepo's `./x.js` imports; the app had never booted before. Added the `STUDENT_CORE_ONLY`
+    release flag (`src/lib/release-scope.ts`: community and the coach workspace hidden, coach accounts see
+    `coach-on-web-screen.tsx`). Walked the student core loop on the Android emulator and fixed the blockers
+    (signup payload, session restore on network errors, keyboard avoidance, reminder body, paginated memories,
+    persisted theme/language, query cache cleared on account switch). Built the design foundation (Nunito in
+    `src/lib/fonts.ts`, `AppHeader` + `ThemeLamp` + icon-only floating `RoleTabBar` in `src/components/navigation/`)
+    and rebuilt the Panel from the web's phone layout in `src/components/panel/` (mood row, "Bugünün yolu" path
+    card, week band, daily quests + weekly chest row, countdown, goal, journey, quest sheet, streak-rescue sheet,
+    card-shaped skeleton). The path model moved to `@mentor/core` (`today-path.ts`) and the web re-exports it.
+  - **Usage:** `pnpm --filter @mentor/mobile dev | test | typecheck | lint`. After editing `packages/ui/src/tokens.ts`
+    or `packages/core`, rebuild them (`pnpm --filter @mentor/ui build`, `pnpm --filter @mentor/core build`):
+    the mobile app consumes both from `dist`.
+  - **Gotchas:** The API's `AuthOriginGuard` lets the native app through only for non-admin paths with
+    `X-Client-Platform: mobile`, no `Origin` and no `Cookie`. Mobile copy has no ICU plurals (the formatter only
+    substitutes `{name}`). On Android, remount a rounded view whose fill changes from transparent to a colour
+    (`key`), or it stays square. Restart Expo with `--clear` after installing packages.
+  - **Not yet on mobile:** reward scenes (coin, achievement, streak, chest opening, weekly recap), notebooks,
+    vision board editor, push notifications, in-app purchase; iOS is untested.
+  - **Related files:** `apps/mobile/src/components/{navigation,panel}/*`, `apps/mobile/src/lib/{art,fonts,layout,premium,release-scope}.ts`,
+    `apps/mobile/src/app/(app)/(tabs)/dashboard.tsx`, `packages/core/src/today-path.ts`, `packages/ui/src/tokens.ts`,
+    `apps/api/src/common/auth/auth-origin.guard.ts`.
 
 - **2026-11-09 — Phase 2.6 Friend Invites (`PUHU-XXXXXXXX`), Coin Notebook Slot Unlocks, Puhu Memory Preferences, Weekly Rhythm Recap & EAS Build Profiles (`apps/mobile`):**
   - **What was done:** Added mobile Friend Invite card (`apps/mobile/src/components/settings/friend-invite-card.tsx` in `settings.tsx` calling `GET /v1/economy/invite` and `POST /v1/economy/invite/redeem` with `normalizeInviteCode` from `@mentor/validation` and native `Share.share`), `+1` Custom Notebook Slot Coin unlock in `apps/mobile/src/components/dashboard/economy-quests-card.tsx` (`GET/POST /v1/economy/notebook-slots` with `Idempotency-Key`), Puhu communication style & consent memory card (`apps/mobile/src/components/coach/coach-profile-memory-card.tsx` in `coach.tsx` calling `GET/PATCH /v1/coach/profile` and `GET/DELETE /v1/coach/memories`), Weekly Rhythm Recap (`Mentor Wrapped` in `weekly-ritual-and-vision-card.tsx` calling `GET /v1/coaching/weekly-review`), virtualized `FlatList` in `notifications.tsx`, and EAS build/release profiles (`apps/mobile/eas.json` for `development`, `preview`, and `production`).

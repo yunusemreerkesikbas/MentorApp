@@ -1,4 +1,5 @@
-import { Text, type TextProps, type TextStyle } from "react-native";
+import { StyleSheet, Text, type TextProps, type TextStyle } from "react-native";
+import { fontFamilyFor } from "../../lib/fonts.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 
 export type AppTextVariant =
@@ -50,16 +51,27 @@ export function AppText({
     ctaInk: palette.ctaPlayInk,
   };
 
+  // A caller may override the weight; either way it has to become a Nunito family, and the
+  // numeric weight must not reach the native text view or Android fakes a second bold on top.
+  const override = StyleSheet.flatten(style) as TextStyle | undefined;
+  const weight = override?.fontWeight ?? scale.fontWeight;
+
   const computedStyle: TextStyle = {
     fontSize: scale.fontSize,
     lineHeight: scale.lineHeight,
-    fontWeight: scale.fontWeight,
     color: colorMap[tone],
     ...(tabularNums ? { fontVariant: ["tabular-nums"] } : {}),
   };
 
   return (
-    <Text style={[computedStyle, style]} {...rest}>
+    <Text
+      style={[
+        computedStyle,
+        override,
+        { fontFamily: fontFamilyFor(weight), fontWeight: undefined },
+      ]}
+      {...rest}
+    >
       {children}
     </Text>
   );

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import * as SecureStore from "expo-secure-store";
+import { useQueryClient } from "@tanstack/react-query";
 import type { AuthSession, AuthUser } from "@mentor/types";
 import type { LoginInput, SignupInput } from "@mentor/validation";
 import {
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const silentRefreshRef = useRef<() => void>(() => {});
   const { locale } = useLocale();
+  const queryClient = useQueryClient();
   const localeRef = useRef(locale);
   localeRef.current = locale;
 
@@ -99,9 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     accessTokenRef.current = null;
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     await secureTokenStore.clearRefreshToken();
+    // Everything cached belongs to the account that just left; the next one must not see it.
+    queryClient.clear();
     setUser(null);
     setStatus("anonymous");
-  }, []);
+  }, [queryClient]);
 
   const applySession = useCallback(async (session: AuthSession) => {
     accessTokenRef.current = session.accessToken;
@@ -185,11 +189,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       login: async (input) => {
         const session = (await authControllerLogin(input)) as unknown as AuthSession;
+        queryClient.clear();
         await applySession(session);
         return session.user;
       },
       signup: async (input) => {
         const session = (await authControllerSignup(input)) as unknown as AuthSession;
+        queryClient.clear();
         await applySession(session);
         return session.user;
       },
@@ -202,7 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       setUserFromServer,
     }),
-    [status, user, applySession, clearSession, setUserFromServer],
+    [status, user, applySession, clearSession, queryClient, setUserFromServer],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

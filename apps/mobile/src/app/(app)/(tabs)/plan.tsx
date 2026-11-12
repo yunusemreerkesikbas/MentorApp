@@ -21,6 +21,7 @@ import {
 } from "../../../lib/coaching-api.js";
 import { haptics } from "../../../lib/haptics.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
+import { tabBarClearance } from "../../../lib/layout.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
 
 export default function PlanScreen() {
@@ -128,8 +129,8 @@ export default function PlanScreen() {
         />
       }
       contentContainerStyle={{
-        paddingTop: insets.top + space.lg,
-        paddingBottom: space.xl,
+        paddingTop: space.lg,
+        paddingBottom: tabBarClearance(insets.bottom),
         paddingHorizontal: space.lg,
         gap: space.lg,
       }}
