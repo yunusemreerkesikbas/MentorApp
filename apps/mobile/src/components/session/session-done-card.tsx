@@ -38,7 +38,7 @@ export function SessionDoneCard({
     if (reminderScheduled) return;
     haptics.selection();
     try {
-      await scheduleSessionReturnReminder();
+      await scheduleSessionReturnReminder(session?.subject);
       setReminderScheduled(true);
       haptics.success();
     } catch {

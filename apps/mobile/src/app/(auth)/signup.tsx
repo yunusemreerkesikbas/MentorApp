@@ -66,6 +66,8 @@ export default function SignupScreen() {
       displayName: displayName.trim(),
       kvkkAccepted: true,
       termsAccepted: true,
+      // The terms checkbox carries the age statement ("... ve en az 13 yaşındayım").
+      ageEligibilityConfirmed: true,
       ...(isCoachIntent ? { intent: "COACH" as const } : {}),
     });
 

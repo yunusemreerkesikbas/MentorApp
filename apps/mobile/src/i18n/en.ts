@@ -13,6 +13,7 @@ export const enMessages: TranslationCatalog = {
     error_title: "Something went wrong",
     error_body: "Something went sideways. Let's try again in a moment.",
     offline_banner: "You are offline. You can continue with your saved data.",
+    offline_restore_body: "We couldn't connect right now. Your session is safe; let's try again once you're back online.",
   },
   nav: {
     home: "Dashboard",

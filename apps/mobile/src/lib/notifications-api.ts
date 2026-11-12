@@ -55,9 +55,16 @@ export async function updateNotificationPreferences(
   )) as NotificationPreferencesDto;
 }
 
-export async function scheduleSessionReturnReminder(): Promise<SessionReturnReminderDto> {
+export async function scheduleSessionReturnReminder(
+  subject?: string | null,
+): Promise<SessionReturnReminderDto> {
+  // The endpoint validates a JSON object; a POST without a body is rejected with 400.
+  const trimmed = subject?.trim();
   return (await http<SessionReturnReminderDto>(
     "/v1/notifications/session-return-reminder",
-    { method: "POST" },
+    {
+      method: "POST",
+      body: JSON.stringify(trimmed ? { subject: trimmed.slice(0, 80) } : {}),
+    },
   )) as SessionReturnReminderDto;
 }

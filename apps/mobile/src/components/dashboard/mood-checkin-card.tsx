@@ -82,13 +82,16 @@ export function MoodCheckinCard({ initialMood, onSaved }: MoodCheckinCardProps) 
                   borderColor: isSelected ? palette.ctaPlayEdge : palette.border,
                   backgroundColor: isSelected ? palette.ctaPlayBg : palette.surfaceAlt,
                   paddingVertical: space.xs + 2,
-                  paddingHorizontal: space.xs,
+                  paddingHorizontal: 2,
                 },
               ]}
             >
               <AppText variant="cardTitle">{item.emoji}</AppText>
               <AppText
                 variant="micro"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
                 style={{
                   color: isSelected ? palette.ctaPlayInk : palette.secondary,
                   textAlign: "center",
@@ -143,7 +146,7 @@ const styles = StyleSheet.create({
   moodRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 6,
   },
   moodButton: {
     flex: 1,

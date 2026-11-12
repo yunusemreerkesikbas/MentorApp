@@ -92,7 +92,7 @@ export default function WelcomeScreen() {
           {SLIDE_KEYS.map((key, idx) => (
             <Chip
               key={key}
-              label={`${idx + 1}. ${t(`slide${key}_title`).split(" ")[0]}`}
+              label={String(idx + 1)}
               selected={idx === activeSlide}
               onPress={() => setActiveSlide(idx)}
             />

@@ -187,14 +187,11 @@ export function StreakAndCountdownRow({
 }
 
 const styles = StyleSheet.create({
+  // Stacked: two half-width cards cannot hold the freeze chip and seven day dots on a phone.
   splitRow: {
-    flexDirection: "row",
     gap: 12,
   },
-  halfCard: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
+  halfCard: {},
   topRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -203,8 +200,7 @@ const styles = StyleSheet.create({
   },
   weekRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 4,
+    gap: 8,
     marginTop: 4,
   },
   dayDot: {

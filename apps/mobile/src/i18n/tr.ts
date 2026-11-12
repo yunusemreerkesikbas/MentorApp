@@ -17,6 +17,7 @@ export const trMessages = {
     error_title: "Bir sorun oluştu",
     error_body: "Bir şey ters gitti. Biraz sonra yeniden deneyelim.",
     offline_banner: "Bağlantı koptu. Kayıtlı verilerinle devam edebilirsin.",
+    offline_restore_body: "Şu an bağlanamadık. Oturumun duruyor; bağlantın gelince yeniden deneyelim.",
   },
   nav: {
     home: "Panel",
