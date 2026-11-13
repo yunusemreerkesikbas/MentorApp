@@ -122,3 +122,4 @@ export * from "./today-path.js";
 export * from "./celebration-queue.js";
 export * from "./reward-sync.js";
 export * from "./streak-celebration.js";
+export * from "./weekly-recap.js";

@@ -19,6 +19,7 @@ import {
   contentControllerTopicsBySlug,
   http,
 } from "@mentor/api-client";
+import { newRequestId } from "./request-id.js";
 
 export interface ExamTaxonomyBundle {
   exam: ExamSummaryDto;
@@ -129,15 +130,7 @@ export async function reviewNotebookEntry(
   id: string,
   solved: boolean,
 ): Promise<NotebookEntryDto> {
-  // Generate a valid UUID v4 for idempotent review tracking
-  const reviewId =
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-          const r = (Math.random() * 16) | 0;
-          const v = c === "x" ? r : (r & 0x3) | 0x8;
-          return v.toString(16);
-        });
+  const reviewId = newRequestId();
   return (await http<NotebookEntryDto>(
     `/v1/coaching/notebook/entries/${id}/review`,
     {

@@ -168,9 +168,9 @@ function formatCompact(value: number): string {
 }
 
 // The web draws these two with lucide (`Coins`, `Gem`); two inline glyphs beat a second icon set.
-function CoinsGlyph({ color }: { color: string }) {
+export function CoinsGlyph({ color, size = 14 }: { color: string; size?: number }) {
   return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <Circle cx={8} cy={8} r={6} />
       <Path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
       <Path d="M7 6h1v4" />

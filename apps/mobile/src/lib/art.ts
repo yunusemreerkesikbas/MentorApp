@@ -6,6 +6,7 @@
  * ponytail: the mood faces are web-sized originals (up to ~0.9 MB for a 28dp glyph). Fine in
  * development; export phone-sized copies before the first store build.
  */
+import type { WeeklyRecapCharacterKey } from "@mentor/core";
 import type { AchievementId, CareerGroup, JourneyLevelKey } from "@mentor/types";
 import achDreamSpaceCreated from "../../../web/public/achievements/puhu/dream_space_created.webp";
 import achFirstHello from "../../../web/public/achievements/puhu/first_hello.webp";
@@ -67,6 +68,32 @@ import chestOpen from "../../../web/public/visuals/chest/chest-open.webp";
 import chestOpenClip from "../../../web/public/visuals/chest/chest-open-tall.mp4";
 import chestDeskClosed from "../../../web/public/visuals/chest/desk-chest-closed-tall.webp";
 import chestDeskOpen from "../../../web/public/visuals/chest/desk-chest-open-tall.webp";
+import charCosmicMaestro from "../../../web/public/img/character/cosmic-maestro.png";
+import charDimensionExplorer from "../../../web/public/img/character/dimension-explorer.png";
+import charNebulaDiver from "../../../web/public/img/character/nebula-diver.png";
+import charNovaTraveler from "../../../web/public/img/character/nova-traveler.png";
+import charPhoenixPilot from "../../../web/public/img/character/phoenix-pilot.png";
+import charRouteArchitect from "../../../web/public/img/character/route-architect.png";
+import charTimeBender from "../../../web/public/img/character/time-bender.png";
+import puhuHost from "../../../web/public/mascot/puhu/puhu-host.png";
+import puhuProud from "../../../web/public/mascot/puhu/puhu-proud.png";
+import clipCosmicMaestro from "../../../web/public/video/character/cosmic-maestro.mp4";
+import clipDimensionExplorer from "../../../web/public/video/character/dimension-explorer.mp4";
+import clipNebulaDiver from "../../../web/public/video/character/nebula-diver.mp4";
+import clipNovaTraveler from "../../../web/public/video/character/nova-traveler.mp4";
+import clipPhoenixPilot from "../../../web/public/video/character/phoenix-pilot.mp4";
+import clipRouteArchitect from "../../../web/public/video/character/route-architect.mp4";
+import clipTimeBender from "../../../web/public/video/character/time-bender.mp4";
+import clipPuhuFire from "../../../web/public/video/puhu-fire.mp4";
+import decorFloral from "../../../web/public/visuals/weekly-recap-2023/floral.png";
+import decorGraphics from "../../../web/public/visuals/weekly-recap-2023/graphics.png";
+import decorGreenShape from "../../../web/public/visuals/weekly-recap-2023/green-shape.png";
+import decorGreenWiggle from "../../../web/public/visuals/weekly-recap-2023/green-wiggle.png";
+import decorLavenderPixel from "../../../web/public/visuals/weekly-recap-2023/lavender-pixel.png";
+import decorLavenderShape from "../../../web/public/visuals/weekly-recap-2023/lavender-shape.png";
+import decorRedPixel from "../../../web/public/visuals/weekly-recap-2023/red-pixel.png";
+import decorSilverWiggle from "../../../web/public/visuals/weekly-recap-2023/silver-wiggle.png";
+import decorWorldMap from "../../../web/public/visuals/weekly-recap-2023/world-map.png";
 
 export const art = {
   lampShade,
@@ -89,6 +116,47 @@ export const chestSceneArt = {
   closed: chestDeskClosed,
   open: chestDeskOpen,
   clip: chestOpenClip,
+} as const;
+
+export type RecapDecorKey =
+  | "floral"
+  | "graphics"
+  | "greenShape"
+  | "greenWiggle"
+  | "lavenderPixel"
+  | "lavenderShape"
+  | "redPixel"
+  | "silverWiggle"
+  | "worldMap";
+
+/**
+ * The weekly recap story (the web's `WEEKLY_RECAP_*_ASSETS`): each weekly title's character clip
+ * with its still (poster and fallback), Puhu's fire clip on the week map, the decor cut-outs, and
+ * the Puhu poses the story uses. All bundled (owner, 2026-11-13: ~33 MB, plays offline).
+ */
+export const recapArt = {
+  characters: {
+    cosmicMaestro: { video: clipCosmicMaestro, still: charCosmicMaestro },
+    dimensionExplorer: { video: clipDimensionExplorer, still: charDimensionExplorer },
+    nebulaDiver: { video: clipNebulaDiver, still: charNebulaDiver },
+    novaTraveler: { video: clipNovaTraveler, still: charNovaTraveler },
+    phoenixPilot: { video: clipPhoenixPilot, still: charPhoenixPilot },
+    routeArchitect: { video: clipRouteArchitect, still: charRouteArchitect },
+    timeBender: { video: clipTimeBender, still: charTimeBender },
+  } satisfies Record<WeeklyRecapCharacterKey, { video: number; still: number }>,
+  fire: clipPuhuFire,
+  decor: {
+    floral: decorFloral,
+    graphics: decorGraphics,
+    greenShape: decorGreenShape,
+    greenWiggle: decorGreenWiggle,
+    lavenderPixel: decorLavenderPixel,
+    lavenderShape: decorLavenderShape,
+    redPixel: decorRedPixel,
+    silverWiggle: decorSilverWiggle,
+    worldMap: decorWorldMap,
+  } satisfies Record<RecapDecorKey, number>,
+  puhu: { host: puhuHost, proud: puhuProud, happy: puhuHappy, encouraging: puhuEncouraging },
 } as const;
 
 /**

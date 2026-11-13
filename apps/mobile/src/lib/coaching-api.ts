@@ -15,11 +15,15 @@ import type {
   TodayPanelResponse,
   VisionDto,
   WeeklyChestView,
+  WeeklyRecapOfferDto,
+  WeeklyRecapReportDto,
+  WeeklyReviewCompletionDto,
   WeeklyReviewDto,
 } from "@mentor/types";
 import type {
   CreateMoodCheckinInput,
   CreatePlanTaskInput,
+  OpenWeeklyRecapInput,
   SessionFeedbackInput,
   StartStudySessionInput,
   UpdatePlanTaskInput,
@@ -271,12 +275,46 @@ export async function purchaseNotebookSlot(input: {
   })) as NotebookSlotView;
 }
 
-export async function fetchWeeklyReview(): Promise<WeeklyReviewDto | null> {
-  try {
-    return (await http<WeeklyReviewDto>(
-      "/v1/coaching/weekly-review",
-    )) as WeeklyReviewDto;
-  } catch {
-    return null;
-  }
+/* ------------------------------ weekly recap ------------------------------ */
+
+/** Last completed week's review; the free path when recap access is off (`offer.enabled` false). */
+export async function fetchWeeklyReview(examId: string): Promise<WeeklyReviewDto> {
+  return (await http<WeeklyReviewDto>(
+    `/v1/coaching/weekly-review?examId=${encodeURIComponent(examId)}`,
+  )) as WeeklyReviewDto;
+}
+
+/** The story was watched to its end; feeds quests and rewards (one per week on the server). */
+export async function completeWeeklyReview(
+  examId: string,
+  weekStart: string,
+): Promise<WeeklyReviewCompletionDto> {
+  return (await http<WeeklyReviewCompletionDto>("/v1/coaching/weekly-review/completion", {
+    method: "PUT",
+    body: JSON.stringify({ examId, weekStart }),
+  })) as WeeklyReviewCompletionDto;
+}
+
+export async function fetchWeeklyRecapOffer(
+  examId: string,
+  weekStart?: string,
+): Promise<WeeklyRecapOfferDto> {
+  const query = new URLSearchParams({ examId, ...(weekStart ? { weekStart } : {}) });
+  return (await http<WeeklyRecapOfferDto>(
+    `/v1/coach/weekly-recaps/access?${query.toString()}`,
+  )) as WeeklyRecapOfferDto;
+}
+
+export async function openWeeklyRecap(input: OpenWeeklyRecapInput): Promise<WeeklyRecapReportDto> {
+  return (await http<WeeklyRecapReportDto>("/v1/coach/weekly-recaps", {
+    method: "POST",
+    headers: { "Idempotency-Key": input.clientRequestId },
+    body: JSON.stringify(input),
+  })) as WeeklyRecapReportDto;
+}
+
+export async function fetchOwnedWeeklyRecap(id: string): Promise<WeeklyRecapReportDto> {
+  return (await http<WeeklyRecapReportDto>(
+    `/v1/coach/weekly-recaps/${encodeURIComponent(id)}`,
+  )) as WeeklyRecapReportDto;
 }

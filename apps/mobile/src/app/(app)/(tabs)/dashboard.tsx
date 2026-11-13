@@ -13,6 +13,7 @@ import { QuestsCard } from "../../../components/panel/quests-card.js";
 import { QuestsSheet, type QuestDestination } from "../../../components/panel/quests-sheet.js";
 import { StreakRescueSheet } from "../../../components/panel/streak-rescue-sheet.js";
 import { TodayPathCard } from "../../../components/panel/today-path-card.js";
+import { RecapTeaserCard } from "../../../components/recap/recap-teaser-card.js";
 import { StateView } from "../../../components/ui/index.js";
 import {
   fetchDailyQuests,
@@ -170,6 +171,21 @@ export default function DashboardScreen() {
               <CountdownCard
                 countdown={panel.countdown}
                 onPress={() => router.push("/(app)/knowledge" as never)}
+              />
+            ) : null}
+            {/* Owner, 2026-11-13: only a READY week; the access policy refuses PARTIAL ones. */}
+            {panel.weeklyRecapPeriod?.status === "READY" ? (
+              <RecapTeaserCard
+                period={panel.weeklyRecapPeriod}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(app)/weekly-recap" as never,
+                    params: {
+                      examId: panel.weeklyRecapPeriod!.examId,
+                      weekStart: panel.weeklyRecapPeriod!.startDate,
+                    },
+                  })
+                }
               />
             ) : null}
             <GoalCard vision={visionQuery.data ?? null} />

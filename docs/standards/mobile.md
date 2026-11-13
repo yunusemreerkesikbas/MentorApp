@@ -43,6 +43,51 @@
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-13 — Weekly recap story ("Haftanın hikâyesi") at web parity, story only (`apps/mobile`):**
+  - **What was done:** A READY last week puts the coral `RecapTeaserCard` under the countdown on the panel
+    (a PARTIAL week shows nothing); once opened it turns to its "tekrar izle" face (a secure-store flag per
+    week). `/(app)/weekly-recap` shows the web's access card: gift, member, owned, the Coin choice (ready,
+    short with a progress line, limit) with the inline "Onaylarsan bakiyen" confirm, and retry/notice
+    states; the copy is the web's. A Coin open is one `POST /v1/coach/weekly-recaps` with an
+    Idempotency-Key and a success haptic. The story plays the web's eight slides with the same clock,
+    beats, colours, decor, Puhu art and bundled clips (`expo-video`, muted, following the story clock;
+    the still is the poster and the fallback): progress bars, play/pause/replay and close, tap halves, a
+    press held past 300 ms pauses, a sideways swipe, background pauses it, Android back closes it. The
+    last slide shows the share card and "Tekrar izle" / "Bitti"; when they show, the week is marked
+    reviewed once (`PUT /v1/coaching/weekly-review/completion`), then the app asks for unseen
+    celebrations so the "week_reflected" achievement is waiting. The lakap reveal gives one haptic. Reward
+    scenes wait while the story is open and play after it closes. Headlines shrink with the window below a
+    411 dp width, so a long Turkish word keeps its line (`headlineScale`). Story composition, playback, share
+    facts and the access view moved to `@mentor/core` (`weekly-recap.ts`); the web re-exports them.
+  - **Reduced motion:** the story starts paused, slides and beats fade in 120 ms, decor stands still; the
+    last slide's actions show as soon as it is reached.
+  - **Not yet:** sharing the card, Puhu's note, deep analysis, the archive and "Plana ekle" (next stop);
+    the Premium path stays hidden. The Coin limit, retry and notice states are checked by the web's
+    `weekly-recap-access-view.spec.ts` (it runs the core function), not on a device. Checked on Android
+    only, at 411×914 and 360×760 dp.
+  - **Gotchas:** `Pressable` holds `onPressOut` back for a tap shorter than 130 ms (`minPressDuration`), so
+    a tap that changes the slide never calls it: time a press with `event.nativeEvent.timestamp` and let go
+    in `onPress`. Keep the tap zones outside the keyed slide, or a tap queued on a busy JS thread lands on
+    the zone the last tap unmounted. `PanResponder` zeroes `dx` at the grant, and a busy JS thread grants
+    late: measure a swipe from the touch-down `pageX`. Read a player's status from `player.status` when
+    subscribing too (`useEvent` from `expo` is missing at runtime in Expo Go). expo-video's Android
+    `currentTime` getter blocks on the UI thread: never read it on every clock tick (the clips check drift
+    once a second, and only when `readyToPlay`).
+  - **QA gotchas:** a video URL the emulator cannot reach stays "loading" (ExoPlayer retries); test the
+    fallback with a URL that answers text, such as Metro's `/status`. `uiautomator dump` cannot finish
+    while the story or a scene animates and `qa.sh ui` then reads the previous dump: trust screenshots.
+    `useReducedMotion` is read once at app start: restart the app after changing the animation scale.
+    Expo Go's dev gear sits over the story's close button. The API only lets the last week be newly
+    opened; an older week opens to `NOT_FOUND`. On the local dev DB a READY week is three completed
+    `study_sessions` on two or more days (plus `daily_activity`), PARTIAL is one; the Coin choice needs the
+    earned allowance used (move the user's `EARNED` row in `ai_weekly_recaps` to another `week_start`);
+    Coin is a `ledger_entries` row (`unit = 'COIN'`).
+  - **Related files:** `apps/mobile/src/app/(app)/weekly-recap.tsx`,
+    `apps/mobile/src/components/recap/*` (the panel card is `recap-teaser-card.tsx`; the pure steps,
+    tested by `src/lib/recap-flow.spec.ts`, are `recap-flow.ts`),
+    `apps/mobile/src/app/(app)/(tabs)/dashboard.tsx`, `apps/mobile/src/lib/{coaching-api,recap-opened,request-id,art}.ts`,
+    `packages/core/src/weekly-recap.ts`, `docs/plans/2026-11-13-mobile-weekly-recap-{design,plan}.md`.
+
 - **2026-11-13 — Reward scenes, part 1: Coin, achievement and level (`apps/mobile`):**
   - **What was done:** `CelebrationProvider` (`src/providers/celebration-provider.tsx`) asks the server what
     is still unseen on entry, on every screen change and when the app returns to the front, then plays one
