@@ -37,7 +37,66 @@
 - [x] **No Premium upsell on mobile until in-app purchase exists** (PREMIUM badges, trial card, locked
   nudges stay hidden). A user who subscribed on the web still gets the hero mask, masked Puhu and the daily note.
 
+- [x] **Reward scenes keep the web's art, copy, order and rules; only the motion is simpler.** One
+  `SceneShell` stage (`src/components/celebrations/`) built on `Animated` with the native driver, a haptic
+  where the web plays a sound. The queue rules are shared code in `@mentor/core`, never re-implemented.
+
 ## Geliştirmeler (timeline)
+
+- **2026-11-13 — Reward scenes, part 1: Coin, achievement and level (`apps/mobile`):**
+  - **What was done:** `CelebrationProvider` (`src/providers/celebration-provider.tsx`) asks the server what
+    is still unseen on entry, on every screen change and when the app returns to the front, then plays one
+    scene at a time and acknowledges it: Coin first, achievements in the order earned, level-ups last. Everyday
+    XP and the daily Coin are a toast (`ToastProvider`), never a scene. Nothing plays over a running study
+    session. The queue and receipt rules moved to `@mentor/core` (`celebration-queue.ts`, `reward-sync.ts`);
+    the web files re-export them.
+  - **Gotchas:** A glow must be a radial gradient (`react-native-svg`); a flat tinted disc reads as a grey
+    plate on the night sky. Level art is square with a white ground: cut it round under the progress tint
+    like the web's `JourneyLevelMedallion`. Turkish upper-casing dots the I of "Coin" (`COİN`); the Coin
+    eyebrow restores `COIN`.
+  - **Part 2 (same day): streak celebration + Puhu's thought cloud.** `StreakScene` is the web's
+    `StreakCelebration` (peaked orange sheet, flame with the day count, seven-day row, "Devam ediyorum");
+    the provider reads it off the `["coaching","today"]` query: the first value after sign-in is the
+    baseline, any later growth (`didStreakCreditToday`, now in `@mentor/core`) plays it, so screens need
+    no wiring. It goes before Coin and the server queue, but never replaces a scene already on screen.
+    The web's animated `fire-anime.svg` cannot play in React Native, so the flame is drawn with
+    `react-native-svg`. The mood reply moved from an inline card into `PuhuSpeechModal`
+    (`components/panel/`): the web's cloud outline, the two-dot trail, Puhu's speaking frames (masked for
+    Premium), letter-by-letter words; Premium gets `POST /v1/coach/mood-reflection` with Puhu "writing"
+    until it lands, everyone else the rule-based line. The cloud waits while a reward scene is on screen
+    (`useCelebrations().active`). The Plan screen now asks for unseen rewards after every change.
+  - **Part 3 (same day): the weekly chest's opening scene.** `ChestScene` (`components/celebrations/`) is
+    the web's `ChestScene` upright set: the 9:16 desk covers the screen from the desk up, one lamp per
+    target day on the brass strip (lit ones twinkle), the title over the shelves and "Sandığı aç" /
+    "Sonra" on the desk. Opening: the lamps flow into the lock, `chest-open-tall.mp4` plays (`expo-video`,
+    muted, tap to skip, a clip that cannot play skips to the note), then the open still dims and blurs
+    under the taped note (Caveat handwriting, `@expo-google-fonts/caveat`, glasses or mask signature) and
+    the reward: Coin or XP, the cap-held message, or Puhu's "Pazartesi" bubble. One haptic where the
+    web plays the Coin chime. A ready or opened chest on the panel opens the scene (an opened one goes
+    straight to the note); a chest still filling does nothing yet. The chest's Coin receipt is held from
+    the reward queue again (`isHeldChestReceipt`); `POST /v1/economy/weekly-chest/open` acknowledges it.
+  - **Reduced motion:** every scene and the cloud read Reanimated's `useReducedMotion`: everything stands
+    in place, no loops, words appear at once; the haptic stays. The chest skips the clip and crossfades the
+    two stills.
+  - **Not yet:** the weekly recap story; the chest's info sheet for a chest still filling and the app's
+    "chest is ready" notice. Toasts replace each other instead of stacking. After a study session the
+    streak scene plays once the student leaves the session screen (the web shows it on the session's
+    done screen); not yet checked on a device. The chest scene is checked on Android only.
+  - **Gotchas (chest):** `VideoView` inside a `Modal` must be `surfaceType="textureView"` and stay at full
+    opacity: Android's default surface view, or a texture view set to opacity 0, punches a hole through
+    the Modal's window and the panel shows through. A player with no source (reduced motion, revisit)
+    reports `playToEnd` at once, so only the flow/clip phases react to it. Caveat leans right: the note's
+    text keeps 4dp of right padding or Android clips the last letter.
+  - **QA gotchas:** start Expo without `CI=1` (CI mode turns file watching off and the phone keeps an old
+    bundle). `uiautomator dump` hangs while the streak scene's loops run; take a screenshot instead. A ready
+    chest needs five active days: on the local dev DB, `daily_activity` rows (`has_session = true`) for the
+    week's earlier days do it, and clearing `user_quest_progress.revealed_at` for
+    `weekly.effort-allowance` puts an opened chest back to ready.
+  - **Related files:** `apps/mobile/src/components/celebrations/{scene-shell,scenes,streak-scene,chest-scene}.tsx`,
+    `apps/mobile/src/components/panel/{mood-row,puhu-speech-modal,chest}.tsx`,
+    `apps/mobile/src/providers/{celebration,toast}-provider.tsx`,
+    `apps/mobile/src/lib/{rewards-api,premium,art,fonts}.ts`, `apps/mobile/src/lib/chest-note.spec.ts`,
+    `packages/core/src/{celebration-queue,reward-sync,streak-celebration}.ts`.
 
 - **2026-11-12 — Expo SDK 58, device function tour, design foundation & the Panel ("Bugün") at web parity (`apps/mobile`):**
   - **What was done:** Upgraded Expo SDK 53 → 58 (React Native 0.88, React 19.3, Reanimated 4) and taught Metro

@@ -20,6 +20,7 @@ import {
   updatePlanTask,
 } from "../../../lib/coaching-api.js";
 import { haptics } from "../../../lib/haptics.js";
+import { useCelebrations } from "../../../providers/celebration-provider.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
 import { tabBarClearance } from "../../../lib/layout.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
@@ -31,6 +32,7 @@ export default function PlanScreen() {
   const { palette, space } = useThemeTokens();
   const t = useTranslations("plan");
   const tCommon = useTranslations("common");
+  const celebrations = useCelebrations();
 
   const [selectedDate, setSelectedDate] = useState<string>(() => todayIso());
   const [weekAnchor, setWeekAnchor] = useState<string>(() =>
@@ -44,6 +46,8 @@ export default function PlanScreen() {
   });
 
   const invalidatePlanAndToday = async () => {
+    // A new or finished task can earn something ("Plan Hazır", Coin): ask what is unseen.
+    celebrations.refresh();
     await Promise.all([
       queryClient.invalidateQueries({
         queryKey: ["plan-tasks", "week", weekAnchor],

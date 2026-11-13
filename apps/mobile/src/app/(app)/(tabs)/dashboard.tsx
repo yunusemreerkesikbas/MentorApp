@@ -1,20 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiClientError } from "@mentor/api-client";
 import type { PlanTaskDto, PlanTaskStatus, WeeklyChestView } from "@mentor/types";
+import { ChestScene } from "../../../components/celebrations/chest-scene.js";
 import { CountdownCard, GoalCard, JourneyCard } from "../../../components/panel/info-cards.js";
 import { MoodRow } from "../../../components/panel/mood-row.js";
 import { PanelSkeleton } from "../../../components/panel/panel-skeleton.js";
-import { PLAY_RADIUS } from "../../../components/panel/primitives.js";
 import { QuestsCard } from "../../../components/panel/quests-card.js";
 import { QuestsSheet, type QuestDestination } from "../../../components/panel/quests-sheet.js";
 import { StreakRescueSheet } from "../../../components/panel/streak-rescue-sheet.js";
-import { chestReward } from "../../../components/panel/today-path.js";
 import { TodayPathCard } from "../../../components/panel/today-path-card.js";
-import { AppText, StateView } from "../../../components/ui/index.js";
+import { StateView } from "../../../components/ui/index.js";
 import {
   fetchDailyQuests,
   fetchEconomyBalance,
@@ -22,15 +21,14 @@ import {
   fetchTodayPanel,
   fetchVision,
   fetchWeeklyChest,
-  openWeeklyChest,
   updatePlanTask,
 } from "../../../lib/coaching-api.js";
 import { haptics } from "../../../lib/haptics.js";
-import { cardShadow, tabBarClearance } from "../../../lib/layout.js";
+import { tabBarClearance } from "../../../lib/layout.js";
+import { useCelebrations } from "../../../providers/celebration-provider.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
+import { useToast } from "../../../providers/toast-provider.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
-
-const TOAST_MS = 2600;
 
 /**
  * Panel, the "Bugün" hub (the web's `PanelShell` at phone width): mood, today's path, daily
@@ -44,8 +42,11 @@ export default function DashboardScreen() {
   const t = useTranslations("panel");
   const tCommon = useTranslations("common");
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const toast = useToast();
+  const celebrations = useCelebrations();
+  const setToast = toast.show;
   const [questsOpen, setQuestsOpen] = useState(false);
+  const [chestScene, setChestScene] = useState<WeeklyChestView | null>(null);
 
   const todayQuery = useQuery({ queryKey: ["coaching", "today"], queryFn: fetchTodayPanel });
   const questsQuery = useQuery({ queryKey: ["economy", "quests"], queryFn: fetchDailyQuests });
@@ -57,13 +58,9 @@ export default function DashboardScreen() {
     queryFn: fetchStreakRescue,
   });
 
-  useEffect(() => {
-    if (toast === null) return;
-    const timer = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
   const refreshAll = async () => {
+    // Anything refreshed here may have earned something: ask for unseen rewards too.
+    celebrations.refresh();
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["coaching", "today"] }),
       queryClient.invalidateQueries({ queryKey: ["economy"] }),
@@ -111,18 +108,10 @@ export default function DashboardScreen() {
     else router.replace("/settings" as never);
   };
 
-  // The opening scene comes with the reward stop; until then a ready chest opens with a toast.
-  const openChest = async (chest: WeeklyChestView) => {
-    if (chest.state !== "READY") return;
-    try {
-      const opened = await openWeeklyChest(chest.periodKey);
-      haptics.success();
-      const reward = chestReward(opened, t);
-      setToast(reward ? t("chest_opened_toast", { reward }) : t("chest_card_opened_title"));
-      await refreshAll();
-    } catch (error) {
-      failToast(error);
-    }
+  // A ready chest opens in its scene; an opened one shows the week's note again.
+  // ponytail: a chest still filling does nothing yet; the web's info sheet comes with the recap stop.
+  const openChest = (chest: WeeklyChestView) => {
+    if (chest.state !== "PROGRESS") setChestScene(chest);
   };
 
   const panel = todayQuery.data;
@@ -168,13 +157,13 @@ export default function DashboardScreen() {
               busyTaskId={busyTaskId}
               onSetStatus={(task, status) => void setTaskStatus(task, status)}
               onStartSession={startSession}
-              onChestPress={(chest) => void openChest(chest)}
+              onChestPress={openChest}
               onOpenPlan={openPlan}
             />
             <QuestsCard
               quests={questsQuery.data ?? []}
               chest={chestQuery.data ?? null}
-              onChestPress={(chest) => void openChest(chest)}
+              onChestPress={openChest}
               onOpenAll={() => setQuestsOpen(true)}
             />
             {panel.countdown ? (
@@ -206,23 +195,14 @@ export default function DashboardScreen() {
         onOpenQuests={() => setQuestsOpen(true)}
         onError={(message) => setToast(message ?? tCommon("error_body"))}
       />
-
-      {toast ? (
-        <View
-          accessibilityLiveRegion="polite"
-          pointerEvents="none"
-          style={[
-            styles.toast,
-            cardShadow,
-            {
-              bottom: tabBarClearance(insets.bottom) - 4,
-              backgroundColor: palette.surface,
-              borderColor: palette.border,
-            },
-          ]}
-        >
-          <AppText style={styles.toastText}>{toast}</AppText>
-        </View>
+      {chestScene ? (
+        <ChestScene
+          chest={chestScene}
+          onClose={(opened) => {
+            setChestScene(null);
+            if (opened) void refreshAll();
+          }}
+        />
       ) : null}
     </View>
   );
@@ -236,19 +216,5 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 20,
     gap: 20,
-  },
-  toast: {
-    position: "absolute",
-    left: 20,
-    right: 20,
-    borderWidth: 1,
-    borderRadius: PLAY_RADIUS,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  toastText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: "700",
   },
 });

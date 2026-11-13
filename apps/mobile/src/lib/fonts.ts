@@ -3,6 +3,7 @@ import { Nunito_600SemiBold } from "@expo-google-fonts/nunito/600SemiBold";
 import { Nunito_700Bold } from "@expo-google-fonts/nunito/700Bold";
 import { Nunito_800ExtraBold } from "@expo-google-fonts/nunito/800ExtraBold";
 import { Nunito_900Black } from "@expo-google-fonts/nunito/900Black";
+import { Caveat_700Bold } from "@expo-google-fonts/caveat/700Bold";
 
 /**
  * Nunito, DESIGN.md §3. Per-weight imports keep the eleven unused font files out of the bundle.
@@ -15,6 +16,8 @@ export const APP_FONTS = {
   Nunito_700Bold,
   Nunito_800ExtraBold,
   Nunito_900Black,
+  /** Puhu's handwriting on the weekly chest note (the web's Caveat). */
+  Caveat_700Bold,
 } as const;
 
 export type AppFontFamily = keyof typeof APP_FONTS;

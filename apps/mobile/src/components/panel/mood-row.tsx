@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { AltArrowRightIcon } from "@solar-icons/react-native/linear/alt-arrow-right";
@@ -7,18 +7,21 @@ import { ApiClientError } from "@mentor/api-client";
 import { moodArt } from "../../lib/art.js";
 import { upsertMoodCheckin } from "../../lib/coaching-api.js";
 import { haptics } from "../../lib/haptics.js";
+import { requestMoodReflection, useIsPremium } from "../../lib/premium.js";
+import { useCelebrations } from "../../providers/celebration-provider.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 import { AppText } from "../ui/text.js";
 import { PLAY_RADIUS } from "./primitives.js";
+import { PuhuSpeechModal } from "./puhu-speech-modal.js";
 
 const MOODS = [1, 2, 3, 4, 5] as const;
 type MoodLabelKey = `mood_${(typeof MOODS)[number]}`;
 
 /**
- * "Bugün nasılsın?": today's mood in one tap (the web's phone `GreetingRow`). Puhu's answer to a
- * fresh pick shows under the row; the web opens it in a speech cloud, which arrives with the
- * reward scenes.
+ * "Bugün nasılsın?": today's mood in one tap (the web's phone `GreetingRow` + `useMoodCheckin`).
+ * Puhu answers a fresh pick in his thought cloud: Premium Puhu's own words, or the rule-based
+ * line for everyone else. A reward scene on screen goes first; the cloud waits for it.
  */
 export function MoodRow({
   initial,
@@ -35,9 +38,15 @@ export function MoodRow({
   const t = useTranslations("panel");
   const tCommon = useTranslations("common");
   const { palette } = useThemeTokens();
+  const premium = useIsPremium();
+  const celebrations = useCelebrations();
   const [saved, setSaved] = useState<MoodCheckinDto | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [speechOpen, setSpeechOpen] = useState(false);
+  const [reflection, setReflection] = useState<string | null>(null);
+  const [reflecting, setReflecting] = useState(false);
+  const request = useRef(0);
 
   const mood = saved?.mood ?? initial?.mood ?? null;
 
@@ -47,8 +56,25 @@ export function MoodRow({
     setBusy(true);
     setError(null);
     try {
-      setSaved(await upsertMoodCheckin({ mood: value }));
+      // The row has no note field; a re-pick resends the saved note so it is not wiped.
+      const result = await upsertMoodCheckin({
+        mood: value,
+        struggleNote: initial?.struggleNote?.trim() || undefined,
+      });
+      setSaved(result);
+      setReflection(null);
+      setSpeechOpen(true);
       onSaved();
+      if (premium) {
+        // Premium never sees the rule line first: Puhu "writes" until his own words arrive.
+        const id = ++request.current;
+        setReflecting(true);
+        const words = await requestMoodReflection();
+        if (id === request.current) {
+          setReflection(words);
+          setReflecting(false);
+        }
+      }
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : tCommon("error_body"));
     } finally {
@@ -93,13 +119,16 @@ export function MoodRow({
         </AppText>
       ) : null}
 
-      {saved?.message ? (
-        <View
-          style={[styles.reply, { backgroundColor: palette.surface, borderColor: palette.playLine }]}
-        >
-          <AppText style={styles.replyText}>{saved.message}</AppText>
-        </View>
-      ) : null}
+      <PuhuSpeechModal
+        visible={speechOpen && !celebrations.active}
+        loading={reflecting}
+        text={reflecting ? null : (reflection ?? saved?.message ?? null)}
+        onClose={() => {
+          request.current += 1;
+          setReflecting(false);
+          setSpeechOpen(false);
+        }}
+      />
 
       {canLighten && mood !== null && mood <= 2 ? (
         <Pressable
@@ -155,17 +184,6 @@ const styles = StyleSheet.create({
   face: {
     width: 28,
     height: 28,
-  },
-  reply: {
-    borderWidth: 1,
-    borderRadius: PLAY_RADIUS,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  replyText: {
-    fontSize: 14,
-    lineHeight: 21,
-    fontWeight: "600",
   },
   lighten: {
     minHeight: 44,

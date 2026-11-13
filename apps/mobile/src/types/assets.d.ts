@@ -8,3 +8,9 @@ declare module "*.webp" {
   const assetId: number;
   export default assetId;
 }
+
+/** A local clip: `expo-video` plays the asset id as its source. */
+declare module "*.mp4" {
+  const assetId: number;
+  export default assetId;
+}

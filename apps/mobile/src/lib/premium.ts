@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { http } from "@mentor/api-client";
 import { isCoach } from "@mentor/core";
-import type { DailyGreetingDto, SubscriptionView } from "@mentor/types";
+import type { DailyGreetingDto, MoodReflectionDto, SubscriptionView } from "@mentor/types";
 import { useAuth } from "../providers/auth-provider.js";
 
 /**
@@ -43,6 +43,21 @@ export function useDailyGreeting(): string | null {
     retry: false,
   });
   return data ?? null;
+}
+
+/**
+ * Premium Puhu's own words about today's mood. Null when the server has none to give (a free
+ * user, the AI coach switched off, a failure): the rule-based line is shown instead.
+ */
+export async function requestMoodReflection(): Promise<string | null> {
+  try {
+    const dto = (await http<MoodReflectionDto>("/v1/coach/mood-reflection", {
+      method: "POST",
+    })) as MoodReflectionDto;
+    return dto.reflection || null;
+  } catch {
+    return null;
+  }
 }
 
 /** Premium Puhu's hero mask on a 24 grid (the web's `premium-mask.ts`): outline, eye holes, rims. */
