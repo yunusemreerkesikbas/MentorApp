@@ -303,7 +303,7 @@ export const trMessages = {
     node_done: "bitti",
     node_minutes: "{minutes} dk",
     node_stopwatch: "Süresiz",
-    node_from_coach: "Puhu’dan",
+    node_from_coach: "Koçundan",
     node_start: "Seansla başla",
     node_mark_done: "Bitti olarak işaretle",
     node_undo: "Geri al",

@@ -299,7 +299,7 @@ export const enMessages: TranslationCatalog = {
     node_done: "done",
     node_minutes: "{minutes} min",
     node_stopwatch: "Stopwatch",
-    node_from_coach: "from Puhu",
+    node_from_coach: "from your coach",
     node_start: "Start a session",
     node_mark_done: "Mark as done",
     node_undo: "Undo",
