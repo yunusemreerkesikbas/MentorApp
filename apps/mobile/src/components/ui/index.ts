@@ -5,3 +5,4 @@ export * from "./chip.js";
 export * from "./text-field.js";
 export * from "./skeleton.js";
 export * from "./state-view.js";
+export * from "./confirm-dialog.js";

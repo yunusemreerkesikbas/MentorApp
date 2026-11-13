@@ -43,6 +43,30 @@
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-14 — Plan tab, Liste view at web parity (stop A) (`apps/mobile`, `@mentor/core`):**
+  - **What was done:** The Plan tab was rebuilt as the web's `PlanShell` Liste view at phone width: week
+    card (week arrows, "Tarih seç" month sheet, day circles with dots, progress), task card (rows with
+    checkbox, subject, duration, "Koçundan" badge, coach note, "Seans başlat →", "⋯" menu), coach meetings
+    as read-only rows with a details sheet, add/edit task sheet (all-day, start/end time sheet, taxonomy
+    chips, duration, description), delete through `ConfirmDialog`, past days read-only. The view switcher
+    and the Puhu planning button stay hidden until stops C and B. Grouping, time and form rules moved to
+    `@mentor/core` (`plan-items.ts`, `plan-task-form.ts`) and the web imports them from there
+    (`endTimeAfterStart`, `planTaskLockedFocus`, …). An analysis or weekly-report task keeps its subject
+    in the edit sheet (read-only box, as on the web). Failed writes show the API's message or the
+    Turkish fallback, never a raw `TypeError`.
+  - **Usage:** `pnpm --filter @mentor/core build` after touching the core files; specs in
+    `packages/core/src/plan-{items,task-form}.spec.ts` and `apps/mobile/src/lib/plan-view.spec.ts`.
+  - **Gotchas (Android, density 2.625):** fit-content text in a wrapping row measures a pixel short and
+    wraps or clips ("TYT Matematik" → "TYT"): give such labels `numberOfLines={1}`. A rounded view whose
+    background changes after mount draws a square: remount it with a `key` per colour. A 1/7-width
+    flex-wrap grid fits six cells: lay a month out as explicit week rows. Pull to refresh must invalidate
+    `["plan-events"]` as well, or a new coach meeting stays hidden while the tab stays mounted. A second
+    tap can land before the re-render: derive the next week from the previous state (`shiftPlanWeek`),
+    and guard writes with a ref, not state. Keep the week card up while a week loads or fails.
+  - **Related files:** `apps/mobile/src/app/(app)/(tabs)/plan.tsx`, `apps/mobile/src/components/plan/*`,
+    `apps/mobile/src/components/ui/confirm-dialog.tsx`, `apps/mobile/src/lib/plan-view.ts`,
+    `packages/core/src/plan-{items,task-form}.ts`, `docs/plans/2026-11-13-mobile-plan-list-{design,plan}.md`.
+
 - **2026-11-13 — Expired access token after the app sat in the background (`apps/mobile`, `@mentor/api-client`):**
   - **What was done:** Android stops JS timers while the app is in the background, so the refresh timer
     never ran and the first queries after return went out with an expired token: every one got

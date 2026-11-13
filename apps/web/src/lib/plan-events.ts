@@ -26,11 +26,7 @@ export async function listPlanEventsForRange(from: string, to: string): Promise<
   return [...first.items, ...rest.flatMap((page) => page.items)];
 }
 
-export function groupPlanEventsByDate(events: PlanEventDto[]): Record<string, PlanEventDto[]> {
-  const grouped: Record<string, PlanEventDto[]> = {};
-  for (const event of events) (grouped[event.eventDate] ??= []).push(event);
-  return grouped;
-}
+export { groupPlanEventsByDate } from "@mentor/core";
 
 export interface StudentEventLabels {
   /** Second line of a meeting somebody else (the coach) set up with the student. */

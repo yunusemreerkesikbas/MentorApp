@@ -1,7 +1,10 @@
 import { useState, type ReactNode } from "react";
+import { CloseCircleIcon } from "@solar-icons/react-native/linear/close-circle";
 import {
+  KeyboardAvoidingView,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   View,
   type StyleProp,
@@ -137,6 +140,8 @@ export function LedgeButton({
 export interface SheetAction {
   label: string;
   onPress: () => void;
+  /** "danger" draws the label in the danger colour (e.g. "Sil"). */
+  tone?: "danger";
 }
 
 /**
@@ -223,10 +228,104 @@ export function ActionSheet({
             { backgroundColor: pressed ? palette.surfaceHover : palette.surfaceAlt },
           ]}
         >
-          <AppText style={styles.sheetActionLabel}>{action.label}</AppText>
+          <AppText
+            tone={action.tone === "danger" ? "danger" : "main"}
+            style={styles.sheetActionLabel}
+          >
+            {action.label}
+          </AppText>
         </Pressable>
       ))}
     </BottomSheet>
+  );
+}
+
+/**
+ * The web's titled sheet frame: grab handle, centred title with a close button, a hairline, a
+ * scrolling body and an optional pinned footer. Sits on the same `Modal` as `BottomSheet`.
+ * The root `KeyboardAvoidingView` does not reach inside a `Modal`, so the sheet has its own.
+ */
+export function FormSheet({
+  visible,
+  title,
+  closeLabel,
+  onClose,
+  footer,
+  children,
+}: {
+  visible: boolean;
+  title: string;
+  /** The close button's and the scrim's screen-reader label. */
+  closeLabel: string;
+  onClose: () => void;
+  footer?: ReactNode;
+  children: ReactNode;
+}) {
+  const insets = useSafeAreaInsets();
+  const { palette, radii } = useThemeTokens();
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView behavior="padding" style={styles.formSheetRoot}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={closeLabel}
+          onPress={onClose}
+          style={[StyleSheet.absoluteFill, { backgroundColor: palette.scrim }]}
+        />
+        <View
+          style={[
+            styles.formSheet,
+            {
+              backgroundColor: palette.surface,
+              borderTopLeftRadius: radii.sheet,
+              borderTopRightRadius: radii.sheet,
+              paddingBottom: footer ? 0 : insets.bottom + 12,
+            },
+          ]}
+        >
+          <View style={[styles.grabHandle, { backgroundColor: palette.playLine }]} />
+          <View style={styles.formSheetHeader}>
+            <AppText accessibilityRole="header" numberOfLines={1} style={styles.formSheetTitle}>
+              {title}
+            </AppText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={closeLabel}
+              hitSlop={8}
+              onPress={onClose}
+              style={styles.formSheetClose}
+            >
+              <CloseCircleIcon size={26} color={palette.secondary} />
+            </Pressable>
+          </View>
+          <View style={[styles.hairline, { backgroundColor: palette.playLine }]} />
+          <ScrollView
+            style={styles.formSheetBody}
+            contentContainerStyle={styles.formSheetBodyContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+          {footer ? (
+            <View
+              style={[
+                styles.formSheetFooter,
+                { borderTopColor: palette.playLine, paddingBottom: insets.bottom + 12 },
+              ]}
+            >
+              {footer}
+            </View>
+          ) : null}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -287,6 +386,55 @@ const styles = StyleSheet.create({
     borderRadius: PLAY_RADIUS,
     paddingHorizontal: 16,
     justifyContent: "center",
+  },
+  formSheetRoot: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  formSheet: {
+    maxHeight: "90%",
+  },
+  grabHandle: {
+    alignSelf: "center",
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 8,
+  },
+  formSheetHeader: {
+    minHeight: 52,
+    justifyContent: "center",
+    paddingHorizontal: 52,
+  },
+  formSheetTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  formSheetClose: {
+    position: "absolute",
+    right: 12,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hairline: {
+    height: StyleSheet.hairlineWidth,
+  },
+  formSheetBody: {
+    flexGrow: 0,
+    flexShrink: 1,
+  },
+  formSheetBodyContent: {
+    padding: 16,
+    gap: 16,
+  },
+  formSheetFooter: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   sheetActionLabel: {
     fontSize: 15,

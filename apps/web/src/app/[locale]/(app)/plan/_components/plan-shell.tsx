@@ -17,6 +17,7 @@ import type {
   TodayPanelResponse,
 } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
+import { planTaskCreateInput, planTaskLockedFocus, planTaskUpdateInput } from "@mentor/core";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { FormError } from "@/components/form";
@@ -549,7 +550,7 @@ export function PlanShell() {
             ref={addFormRef}
             initialTitle={task.title}
             initialSubject={task.subject ?? ""}
-            lockedFocus={task.origin?.type === "ANALYSIS" || task.origin?.type === "WEEKLY_REPORT" ? { subjectName: task.subject ?? t("weekly_report_rhythm"), topicName: task.topic ?? undefined } : undefined}
+            lockedFocus={planTaskLockedFocus(task) ? { subjectName: task.subject ?? t("weekly_report_rhythm"), topicName: task.topic ?? undefined } : undefined}
             initialStartTime={task.startTime}
             initialEndTime={task.endTime}
             initialDescription={task.description}
@@ -560,15 +561,10 @@ export function PlanShell() {
           if (!addFormRef.current?.validate()) throw new Error("validation");
           const { title, subject, startTime, endTime, description, durationMinutes } =
             addFormRef.current.getValues();
-          const updated = await updatePlanTask(task.id, {
-            title: title.trim(),
-            subject: task.origin?.type === "WEEKLY_REPORT" ? task.subject : subject.trim() ? subject.trim() : null,
-            // Times are always sent as a pair — that's the contract updatePlanTaskSchema enforces.
-            startTime,
-            endTime,
-            description,
-            durationMinutes,
-          });
+          const updated = await updatePlanTask(
+            task.id,
+            planTaskUpdateInput({ title, subject, startTime, endTime, description, durationMinutes }, task),
+          );
           patchTaskLists(updated);
       notifyEconomyChanged();
           setError(null);
@@ -677,14 +673,10 @@ export function PlanShell() {
         if (!addFormRef.current?.validate()) throw new Error("validation");
         const { title, subject, startTime, endTime, description, durationMinutes, taskDate: editedDate } =
           addFormRef.current.getValues();
-        const input = {
-          title: title.trim(),
-          taskDate: targetDate,
-          ...(subject.trim() ? { subject: subject.trim() } : {}),
-          ...(startTime ? { startTime, endTime } : {}),
-          ...(description ? { description } : {}),
-          durationMinutes,
-        };
+        const input = planTaskCreateInput(
+          { title, subject, startTime, endTime, description, durationMinutes },
+          targetDate,
+        );
         let created: PlanTaskDto;
         try {
         created = taskPrefill?.weeklyReportId

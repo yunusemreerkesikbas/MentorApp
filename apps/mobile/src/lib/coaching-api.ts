@@ -7,6 +7,8 @@ import type {
   MoodCheckinDto,
   NotebookSlotView,
   Paginated,
+  PlanEventDto,
+  PlanTaskCalendarDto,
   PlanTaskDto,
   QuestProgressView,
   RedeemInviteResult,
@@ -34,6 +36,7 @@ import {
   coachingControllerGetToday,
   coachingControllerUpsertMood,
   economyControllerQuestsList,
+  getPlanEventControllerListEventsUrl,
   getPlanTaskControllerListUrl,
   getStudySessionControllerListUrl,
   http,
@@ -109,6 +112,30 @@ export async function listPlanTasksForRange(
   const rest = await Promise.all(
     Array.from({ length: pageCount - 1 }, (_, i) =>
       http<Paginated<PlanTaskDto>>(pageUrl(i + 2)) as Promise<Paginated<PlanTaskDto>>,
+    ),
+  );
+  return [...first.items, ...rest.flatMap((page) => page.items)];
+}
+
+/** Days in an inclusive range that hold at least one task (the date sheet's dots). */
+export async function listPlanTaskCalendarDates(from: string, to: string): Promise<string[]> {
+  const url = `${getPlanTaskControllerListUrl()}/calendar?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+  return ((await http<PlanTaskCalendarDto>(url)) as PlanTaskCalendarDto).dates;
+}
+
+/**
+ * The events a student takes part in over an inclusive range: meetings their coach set up with
+ * them. Same paging as the web's `lib/plan-events.ts`.
+ */
+export async function listPlanEventsForRange(from: string, to: string): Promise<PlanEventDto[]> {
+  const pageUrl = (page: number) =>
+    `${getPlanEventControllerListEventsUrl()}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&page=${page}&pageSize=${MAX_PAGE_SIZE}`;
+  const first = (await http<Paginated<PlanEventDto>>(pageUrl(1))) as Paginated<PlanEventDto>;
+  const pageCount = Math.ceil(first.total / MAX_PAGE_SIZE);
+  if (pageCount <= 1) return first.items;
+  const rest = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, i) =>
+      http<Paginated<PlanEventDto>>(pageUrl(i + 2)) as Promise<Paginated<PlanEventDto>>,
     ),
   );
   return [...first.items, ...rest.flatMap((page) => page.items)];
