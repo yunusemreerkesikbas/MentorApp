@@ -43,6 +43,21 @@
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-13 — Expired access token after the app sat in the background (`apps/mobile`, `@mentor/api-client`):**
+  - **What was done:** Android stops JS timers while the app is in the background, so the refresh timer
+    never ran and the first queries after return went out with an expired token: every one got
+    401 `AUTH_TOKEN_EXPIRED`, the late refresh then succeeded, but 4xx is not retried and the screen showed
+    an error until "Tekrar dene". `httpRaw` now takes an optional `refreshAccessToken` hook: on a 401
+    `AUTH_TOKEN_EXPIRED` for a request that carried a token, it renews the session once (or just resends
+    if another request already renewed it) and sends the request again. The mobile `AuthProvider` passes
+    its single-flight `silentRefresh`, so a burst of 401s costs one `/v1/auth/refresh`. The web passes no
+    hook and is unchanged.
+  - **Usage:** nothing to call; `pnpm --filter @mentor/api-client test` runs `src/http.spec.ts` against `dist`
+    (build first).
+  - **Gotchas:** to reproduce quickly, run the local API with `JWT_ACCESS_TTL=120`, send the app home for
+    over two minutes and bring it back from recents (not a fresh `am start`).
+  - **Related files:** `packages/api-client/src/{http,http.spec}.ts`, `apps/mobile/src/providers/auth-provider.tsx`.
+
 - **2026-11-13 — Weekly recap story ("Haftanın hikâyesi") at web parity, story only (`apps/mobile`):**
   - **What was done:** A READY last week puts the coral `RecapTeaserCard` under the countdown on the panel
     (a PARTIAL week shows nothing); once opened it turns to its "tekrar izle" face (a secure-store flag per

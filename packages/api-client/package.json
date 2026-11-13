@@ -16,6 +16,7 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --experimental-strip-types --test src/*.spec.ts",
     "generate": "orval --config ./orval.config.ts",
     "lint": "eslint .",
     "clean": "rimraf dist .turbo tsconfig.tsbuildinfo"

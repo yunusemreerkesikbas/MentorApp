@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const accessTokenRef = useRef<string | null>(null);
   const refreshInFlightRef = useRef<Promise<AuthSession | null> | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const silentRefreshRef = useRef<() => void>(() => {});
+  const silentRefreshRef = useRef<() => Promise<AuthSession | null>>(async () => null);
   const { locale } = useLocale();
   const queryClient = useQueryClient();
   const localeRef = useRef(locale);
@@ -94,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       getAccessToken: () => accessTokenRef.current,
       getRefreshToken: () => getCachedRefreshToken(),
       getLocale: () => localeRef.current,
+      // The refresh timer does not run in the background; this catches the requests on return.
+      refreshAccessToken: async () => (await silentRefreshRef.current()) !== null,
     });
   }, []);
 
@@ -116,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("authenticated");
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     refreshTimerRef.current = setTimeout(
-      () => silentRefreshRef.current(),
+      () => void silentRefreshRef.current(),
       Math.max((session.expiresIn - 60) * 1000, 30_000),
     );
   }, []);
@@ -146,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
         if (accessTokenRef.current) {
           refreshTimerRef.current = setTimeout(
-            () => silentRefreshRef.current(),
+            () => void silentRefreshRef.current(),
             RETRY_AFTER_NETWORK_ERROR_MS,
           );
         } else {
@@ -162,9 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applySession, clearSession]);
 
   useEffect(() => {
-    silentRefreshRef.current = () => {
-      void silentRefresh();
-    };
+    silentRefreshRef.current = silentRefresh;
   }, [silentRefresh]);
 
   useEffect(() => {
@@ -185,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       retryRestore: () => {
         setStatus("loading");
-        silentRefreshRef.current();
+        void silentRefreshRef.current();
       },
       login: async (input) => {
         const session = (await authControllerLogin(input)) as unknown as AuthSession;

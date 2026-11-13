@@ -10,6 +10,12 @@ export interface ApiClientConfig {
   clientPlatform?: "web" | "mobile";
   /** Returns the SecureStore refresh token on mobile for `/v1/auth/refresh` and `/v1/auth/logout`. */
   getRefreshToken?: () => string | null;
+  /**
+   * Renews the session after a 401 `AUTH_TOKEN_EXPIRED`; resolves true once a new access token is
+   * in place, and the request is sent once more. Mobile needs it: timers stop while the app is in
+   * the background, so the first requests after it returns can carry an expired token.
+   */
+  refreshAccessToken?: () => Promise<boolean>;
 }
 
 let config: ApiClientConfig = { baseUrl: "" };
@@ -72,10 +78,22 @@ export async function http<T>(url: string, init?: RequestInit): Promise<T> {
  * callers that need the localized ApiError can pass the response to `throwApiClientError`.
  */
 export async function httpRaw(url: string, init?: RequestInit): Promise<Response> {
+  const sentToken = config.getAccessToken?.() ?? null;
+  const res = await send(url, init, sentToken);
+  if (res.status !== 401 || !sentToken || !config.refreshAccessToken) return res;
+  const body: unknown = await res.clone().json().catch(() => undefined);
+  if ((body as Partial<ApiError> | undefined)?.code !== "AUTH_TOKEN_EXPIRED") return res;
+  // The auth guard rejected it before any handler ran, so resending (even a POST) is safe.
+  // Another request's refresh may have landed while this one was in flight: then just resend.
+  const current = config.getAccessToken?.() ?? null;
+  const renewed = (current !== null && current !== sentToken) || (await config.refreshAccessToken());
+  return renewed ? send(url, init, config.getAccessToken?.() ?? null) : res;
+}
+
+function send(url: string, init: RequestInit | undefined, token: string | null): Promise<Response> {
   const headers = new Headers(init?.headers);
   if (!headers.has("content-type") && init?.body)
     headers.set("content-type", "application/json");
-  const token = config.getAccessToken?.();
   if (token) headers.set("authorization", `Bearer ${token}`);
   const locale = config.getLocale?.();
   if (locale) headers.set("accept-language", locale);
