@@ -43,6 +43,44 @@
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-14 — Plan tab, view switcher and Timeline (stop B1) (`apps/mobile`):**
+  - **What was done:** The Plan tab gained the web's Liste / Timeline switcher (`SlidingTabs`, a reusable
+    sliding pill in `components/ui`) and the Timeline view at phone width. The week sits on a rail inside
+    its own scroller; the day nearest the top is active (springing date badge, rail fill) and drives the
+    week card's selection, and a day picked on the strip, a rail dot or the date sheet scrolls into place.
+    Each week opens pinned (today on entry, the week card's day after an arrow or the sheet) under a
+    skeleton; the card stays mounted while an uncached week loads, so it never blinks. Rows are the dense `PlanTaskRow` (tick, menu and "Seans başlat" kept); done rows go last.
+    In Timeline the week card hides its day progress and the past-day notice is not shown, so nothing above
+    the card moves while scrolling. The view is saved in SecureStore (`mentor.plan.view.v1`; `calendar`
+    and anything unknown open Liste). Tick and delete moved into `usePlanTaskActions`, shared by both views.
+    Coach meetings are not on the Timeline (as on the web). Takvim is stop B2.
+  - **Usage:** `pnpm --filter @mentor/mobile test | typecheck | lint`; the rules (pin target, active day,
+    order, rail fill, snap stops, scroll sync, end space) are in `src/lib/plan-timeline.ts` with specs.
+  - **Gotchas:** Snap stops are each day's top plus stops inside a day taller than the scroller, or its
+    last rows are unreachable; inner stops are half a screen apart so any row up to half the scroller
+    tall rests whole at one. RN treats the content's end as a snap stop (`snapToEnd={false}` instead
+    scrolls freely past the last stop), so the end space is sized to the last day: it rests at the top and
+    no further. Size that space from the scroller's set height, not its measured one: Fabric runs the pin's
+    `scrollTo` before a taller content lands and clamps it (on a Sunday the entry pin stopped short).
+    The timeline's own selection changes can render after the scroller has moved on, so never infer
+    "picked outside" from a selection change (a timing-based queue went stale under batched renders).
+    Picks from the strip, a dot, the date sheet or a saved task bump a `scrollRequest` counter; the
+    scroller's own changes go through `onActiveDayChange` and bump nothing (`timelineSync`). The pin
+    waits for the week's tasks and fresh measurements on every visit, and the badge only springs once the
+    cover has lifted (otherwise it travels from the previous day on reveal). During our own `scrollTo`, `onScroll` must not update the active day (passing
+    days flipped it). Active and idle day headers share one height (the web's idle one is 4px shorter),
+    otherwise every later day re-measures on each change. Animate the badge and fill with
+    `translateY`/`scaleY`: animated `top`/`height` lagged seconds behind on Fabric. Reanimated 4's spring
+    defaults to `mass: 4`; pass `mass: 1` for framer-motion's feel. The day sections are `memo`ised so the
+    first measurement pass does not redraw the week seven times. In Expo Go dev mode on the emulator a Plan
+    screen render takes ~0.5–1 s (Liste too), so taps feel slow there; judge timing in a release build.
+    A short `adb input swipe` that started on a row once opened its session; in QA, swipe in the card's
+    right gutter.
+  - **Related files:** `apps/mobile/src/components/plan/{plan-timeline,plan-timeline-day,plan-timeline-skeleton}.tsx`,
+    `apps/mobile/src/components/plan/use-plan-task-actions.ts`, `apps/mobile/src/components/plan/{plan-task-row,plan-week-card}.tsx`,
+    `apps/mobile/src/components/ui/sliding-tabs.tsx`, `apps/mobile/src/lib/{plan-timeline,plan-view-store}.ts`,
+    `apps/mobile/src/app/(app)/(tabs)/plan.tsx`.
+
 - **2026-11-14 — Plan tab, Puhu'yla planla at web parity (stop C) (`apps/mobile`, `@mentor/core`):**
   - **What was done:** "Puhu'yla planla" on the Plan tab follows the web's `PlanCoachAdaptationAction`:
     the Coin choice sheet (confirm block, allowance pips, "{n} Coin daha", retry clock, saved draft link),

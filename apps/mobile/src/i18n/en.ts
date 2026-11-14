@@ -456,6 +456,11 @@ export const enMessages: TranslationCatalog = {
     knowledge_cta: "Exam Guide",
   },
   plan: {
+    view_list: "List",
+    view_timeline: "Timeline",
+    view_switch_aria: "Plan view mode",
+    timeline_day_empty: "No tasks on this day.",
+    timeline_scroll_aria: "Weekly plan timeline",
     tasks_title: "Tasks",
     empty_desc: "No trace on this day yet. One small task and this wakes up.",
     add_task: "Add task",

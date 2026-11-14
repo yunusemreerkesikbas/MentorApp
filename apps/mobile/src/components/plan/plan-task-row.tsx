@@ -9,7 +9,7 @@ import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 import { AppText } from "../ui/text.js";
 
-/** The web's `PlanTaskRow` (non-dense): checkbox, title, meta line, coach note, "⋯" menu. */
+/** The web's `PlanTaskRow`: checkbox, title, meta line, coach note, "⋯" menu. `dense` is Timeline's. */
 export function PlanTaskRow({
   task,
   readOnly,
@@ -17,6 +17,7 @@ export function PlanTaskRow({
   onToggle,
   onOpenMenu,
   onStartSession,
+  dense = false,
 }: {
   task: PlanTaskDto;
   readOnly: boolean;
@@ -24,6 +25,8 @@ export function PlanTaskRow({
   onToggle: () => void;
   onOpenMenu: () => void;
   onStartSession: () => void;
+  /** Timeline's tighter row (web `dense` at phone width); the 44dp hit areas stay. */
+  dense?: boolean;
 }) {
   const { palette } = useThemeTokens();
   const t = useTranslations("plan");
@@ -32,7 +35,7 @@ export function PlanTaskRow({
   const locked = busy || readOnly;
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, dense && styles.rowDense]}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityLabel={task.title}
@@ -44,13 +47,14 @@ export function PlanTaskRow({
         <View
           style={[
             styles.checkBox,
+            dense && styles.checkBoxDense,
             {
               borderColor: done ? palette.progress : palette.secondary,
               backgroundColor: done ? palette.progress : "transparent",
             },
           ]}
         >
-          {done ? <CheckIcon size={16} color="#FFFFFF" /> : null}
+          {done ? <CheckIcon size={dense ? 12 : 16} color="#FFFFFF" /> : null}
         </View>
       </Pressable>
 
@@ -58,6 +62,7 @@ export function PlanTaskRow({
         <AppText
           style={[
             styles.title,
+            dense && styles.titleDense,
             done
               ? { color: palette.secondary, textDecorationLine: "line-through", opacity: 0.7 }
               : { color: palette.main },
@@ -65,30 +70,30 @@ export function PlanTaskRow({
         >
           {task.title}
         </AppText>
-        <View style={styles.meta}>
+        <View style={[styles.meta, dense && styles.metaDense]}>
           {task.subject ? (
             // One line, as with the form's chips: at 2.625 density the measured width rounds short and
             // "TYT MATEMATİK" showed as "TYT".
-            <AppText numberOfLines={1} style={[styles.subject, { color: chipText }]}>
+            <AppText numberOfLines={1} style={[styles.subject, dense && styles.tinyDense, { color: chipText }]}>
               {task.subject.toLocaleUpperCase("tr")}
             </AppText>
           ) : null}
           {task.durationMinutes != null ? (
-            <AppText tone="secondary" style={styles.metaText}>
+            <AppText tone="secondary" style={[styles.metaText, dense && styles.metaTextDense]}>
               {t("duration_minutes", { minutes: task.durationMinutes })}
             </AppText>
           ) : null}
           {isCoachAssigned(task) ? (
             <View style={styles.coachBadge}>
-              <UserRoundedIcon size={12} color={palette.progress} />
-              <AppText style={[styles.coachText, { color: palette.progress }]}>
+              <UserRoundedIcon size={dense ? 11 : 12} color={palette.progress} />
+              <AppText style={[styles.coachText, dense && styles.tinyDense, { color: palette.progress }]}>
                 {t("coach_assigned")}
               </AppText>
             </View>
           ) : null}
           {!done && !readOnly ? (
             <Pressable accessibilityRole="link" hitSlop={12} onPress={onStartSession}>
-              <AppText style={[styles.startSession, { color: palette.progress }]}>
+              <AppText style={[styles.startSession, dense && styles.startSessionDense, { color: palette.progress }]}>
                 {`${t("start_session")} →`}
               </AppText>
             </Pressable>
@@ -99,6 +104,7 @@ export function PlanTaskRow({
           <AppText
             style={[
               styles.note,
+              dense && styles.noteDense,
               { borderLeftColor: palette.progress, color: done ? palette.secondary : palette.main },
             ]}
           >
@@ -196,6 +202,40 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
     fontSize: 12,
     lineHeight: 17,
+  },
+  rowDense: {
+    minHeight: 44,
+    gap: 6,
+    paddingVertical: 6,
+  },
+  checkBoxDense: {
+    width: 20,
+    height: 20,
+  },
+  titleDense: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  metaDense: {
+    marginTop: 2,
+    columnGap: 6,
+  },
+  tinyDense: {
+    fontSize: 9,
+    lineHeight: 13,
+  },
+  metaTextDense: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  startSessionDense: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  noteDense: {
+    marginTop: 4,
+    fontSize: 10,
+    lineHeight: 14,
   },
   menu: {
     width: 44,

@@ -459,6 +459,11 @@ export const trMessages = {
     knowledge_cta: "Sınav Rehberi",
   },
   plan: {
+    view_list: "Liste",
+    view_timeline: "Timeline",
+    view_switch_aria: "Plan görünümü",
+    timeline_day_empty: "Bu günde görev yok.",
+    timeline_scroll_aria: "Haftalık plan zaman çizelgesi",
     tasks_title: "Görevler",
     empty_desc: "Bu günde henüz bir iz yok. Küçük bir görevle burası uyanır.",
     add_task: "Görev ekle",

@@ -35,6 +35,7 @@ export function PlanWeekCard({
   onSelectDate,
   onShiftWeek,
   onOpenDatePicker,
+  showDayProgress = true,
 }: {
   weekAnchor: string;
   selectedDate: string;
@@ -43,6 +44,8 @@ export function PlanWeekCard({
   /** Days to move the week by (±7); the screen applies it to its latest week. */
   onShiftWeek: (days: number) => void;
   onOpenDatePicker: () => void;
+  /** Timeline hides the day's progress so nothing above its card moves while it scrolls. */
+  showDayProgress?: boolean;
 }) {
   const { palette } = useThemeTokens();
   const { locale } = useLocale();
@@ -135,7 +138,7 @@ export function PlanWeekCard({
         })}
       </View>
 
-      {day.total > 0 ? (
+      {showDayProgress && day.total > 0 ? (
         <View style={[styles.progress, { borderTopColor: palette.playLine }]}>
           <View style={styles.progressRow}>
             <AppText tabularNums style={styles.progressText}>

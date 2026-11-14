@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   groupPlanEventsByDate,
@@ -20,26 +21,20 @@ import { PlanEventSheet } from "../../../components/plan/plan-event-row.js";
 import { PlanPuhuAction, type PlanPuhuActionHandle } from "../../../components/plan/puhu/plan-puhu-action.js";
 import { PlanSkeleton } from "../../../components/plan/plan-skeleton.js";
 import { PlanTaskCard } from "../../../components/plan/plan-task-card.js";
+import { PlanTimeline } from "../../../components/plan/plan-timeline.js";
+import { usePlanTaskActions } from "../../../components/plan/use-plan-task-actions.js";
 import {
   PlanTaskFormSheet,
   type PlanFormMode,
 } from "../../../components/plan/plan-task-form-sheet.js";
 import { PlanWeekCard } from "../../../components/plan/plan-week-card.js";
-import { AppText, ConfirmDialog, StateView } from "../../../components/ui/index.js";
-import {
-  deletePlanTask,
-  listPlanEventsForRange,
-  listPlanTasksForWeek,
-  updatePlanTask,
-} from "../../../lib/coaching-api.js";
+import { AppText, ConfirmDialog, SlidingTabs, StateView } from "../../../components/ui/index.js";
+import { listPlanEventsForRange, listPlanTasksForWeek } from "../../../lib/coaching-api.js";
 import { haptics } from "../../../lib/haptics.js";
 import { mixHex, tabBarClearance } from "../../../lib/layout.js";
-import {
-  errorText,
-  shiftPlanWeek,
-  withTaskStatus,
-  type PlanWeekView,
-} from "../../../lib/plan-view.js";
+import type { PlanViewMode } from "../../../lib/plan-timeline.js";
+import { errorText, shiftPlanWeek, type PlanWeekView } from "../../../lib/plan-view.js";
+import { loadPlanViewMode, savePlanViewMode } from "../../../lib/plan-view-store.js";
 import { useAppAvailability } from "../../../providers/availability-provider.js";
 import { useAuth } from "../../../providers/auth-provider.js";
 import { useCelebrations } from "../../../providers/celebration-provider.js";
@@ -47,7 +42,7 @@ import { useTranslations } from "../../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
 import { useToast } from "../../../providers/toast-provider.js";
 
-/** The Plan tab, Liste view: the web's `PlanShell` at phone width (switcher and Puhu hidden for now). */
+/** The Plan tab: the web's `PlanShell` at phone width, Liste and Timeline (Takvim not yet). */
 export default function PlanScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -62,6 +57,8 @@ export default function PlanScreen() {
   const consumed = useRef<string | null>(null);
   const params = useLocalSearchParams<{ coach?: string; source?: string; sessionId?: string }>();
   const { user } = useAuth();
+  const reduceMotion = useReducedMotion();
+  const [mode, setMode] = useState<PlanViewMode>(loadPlanViewMode);
 
   // One state, so an arrow tap that lands before the re-render still moves from the latest week.
   const [view, setView] = useState<PlanWeekView>(() => ({
@@ -69,15 +66,12 @@ export default function PlanScreen() {
     selected: todayIso(),
   }));
   const { anchor: weekAnchor, selected: selectedDate } = view;
-  const [busyId, setBusyId] = useState<string | null>(null);
-  // State re-renders the rows; the ref closes the gap before that render, so a second tap in the
-  // same frame cannot send a second PATCH.
-  const busyRef = useRef<string | null>(null);
   const [menuTask, setMenuTask] = useState<PlanTaskDto | null>(null);
   const [formMode, setFormMode] = useState<PlanFormMode | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PlanTaskDto | null>(null);
   const [openEvent, setOpenEvent] = useState<PlanEventDto | null>(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [scrollRequest, setScrollRequest] = useState(0);
 
   const weekKey = ["plan-tasks", "week", weekAnchor] as const;
   const weekQuery = useQuery({
@@ -98,7 +92,12 @@ export default function PlanScreen() {
   const dayTasks = weekTasks[selectedDate] ?? [];
   const dayEvents = eventsQuery.data?.[selectedDate] ?? [];
 
-  const selectDay = (iso: string) => setView({ anchor: weekStart(iso), selected: iso });
+  const followDay = (iso: string) => setView({ anchor: weekStart(iso), selected: iso });
+  /** A pick outside the Timeline's own scrolling also asks it to scroll there, even to the same day. */
+  const selectDay = (iso: string) => {
+    followDay(iso);
+    setScrollRequest((count) => count + 1);
+  };
 
   const shiftWeek = (days: number) => setView((current) => shiftPlanWeek(current, days, todayIso()));
 
@@ -130,51 +129,15 @@ export default function PlanScreen() {
     toast.show(errorText(error, tCommon("error_body")));
   };
 
-  const begin = (id: string) => {
-    busyRef.current = id;
-    setBusyId(id);
-  };
-  const end = () => {
-    busyRef.current = null;
-    setBusyId(null);
-  };
+  const { busyId, toggle, remove } = usePlanTaskActions({
+    weekKey,
+    onChanged: refreshAfterChange,
+    onError: reportError,
+  });
 
-  const toggle = async (task: PlanTaskDto) => {
-    if (busyRef.current || isPastDate(task.taskDate)) return;
-    begin(task.id);
-    const nextStatus = task.status === "DONE" ? "PENDING" : "DONE";
-    // A refetch already in flight (focus, pull) would land the old status over the tick.
-    await queryClient.cancelQueries({ queryKey: weekKey });
-    const previous = queryClient.getQueryData<Record<string, PlanTaskDto[]>>(weekKey);
-    if (previous) queryClient.setQueryData(weekKey, withTaskStatus(previous, task.id, nextStatus));
-    try {
-      await updatePlanTask(task.id, { status: nextStatus });
-    } catch (error) {
-      if (previous) queryClient.setQueryData(weekKey, previous);
-      reportError(error);
-      return;
-    } finally {
-      // Free the rows once the write lands: the refetches below need no lock, and a delete
-      // confirmed meanwhile must not be dropped.
-      end();
-    }
-    if (nextStatus === "DONE") haptics.lightImpact();
-    void refreshAfterChange();
-  };
-
-  const remove = async (task: PlanTaskDto) => {
-    setPendingDelete(null);
-    if (busyRef.current || isPastDate(task.taskDate)) return;
-    begin(task.id);
-    try {
-      await deletePlanTask(task.id);
-    } catch (error) {
-      reportError(error);
-      return;
-    } finally {
-      end();
-    }
-    void refreshAfterChange();
+  const changeMode = (next: PlanViewMode) => {
+    setMode(next);
+    savePlanViewMode(next);
   };
 
   const startSession = (task: PlanTaskDto) => {
@@ -233,6 +196,15 @@ export default function PlanScreen() {
             onPlanChanged={refreshAfterChange}
           />
         ) : null}
+        <SlidingTabs
+          items={[
+            { id: "list", label: t("view_list") },
+            { id: "timeline", label: t("view_timeline") },
+          ]}
+          value={mode}
+          onChange={changeMode}
+          accessibilityLabel={t("view_switch_aria")}
+        />
         <PlanWeekCard
           weekAnchor={weekAnchor}
           selectedDate={selectedDate}
@@ -240,19 +212,36 @@ export default function PlanScreen() {
           onSelectDate={selectDay}
           onShiftWeek={shiftWeek}
           onOpenDatePicker={() => setDatePickerOpen(true)}
+          showDayProgress={mode === "list"}
         />
-        {weekQuery.data === undefined ? (
-          weekQuery.isError ? (
-            <StateView
-              title={tCommon("error_title")}
-              body={tCommon("error_body")}
-              actionLabel={tCommon("retry")}
-              onAction={() => void weekQuery.refetch()}
-              tone="error"
+        {weekQuery.data === undefined && weekQuery.isError ? (
+          <StateView
+            title={tCommon("error_title")}
+            body={tCommon("error_body")}
+            actionLabel={tCommon("retry")}
+            onAction={() => void weekQuery.refetch()}
+            tone="error"
+          />
+        ) : mode === "timeline" ? (
+          // Mounted across weeks, so an uncached week loads under the card's own cover.
+          <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(180)}>
+            <PlanTimeline
+              weekAnchor={weekAnchor}
+              weekTasks={weekTasks}
+              loading={weekQuery.data === undefined}
+              selectedDate={selectedDate}
+              scrollRequest={scrollRequest}
+              busyId={busyId}
+              onSelectDate={selectDay}
+              onActiveDayChange={followDay}
+              onAdd={() => setFormMode({ kind: "add", date: selectedDate })}
+              onToggle={(task) => void toggle(task)}
+              onOpenMenu={setMenuTask}
+              onStartSession={startSession}
             />
-          ) : (
-            <PlanSkeleton />
-          )
+          </Animated.View>
+        ) : weekQuery.data === undefined ? (
+          <PlanSkeleton />
         ) : (
           <>
             {readOnly ? (
@@ -296,7 +285,10 @@ export default function PlanScreen() {
         confirmLabel={t("task_delete_confirm_yes")}
         cancelLabel={t("task_delete_confirm_no")}
         destructive
-        onConfirm={() => pendingDelete && void remove(pendingDelete)}
+        onConfirm={() => {
+          setPendingDelete(null);
+          if (pendingDelete) void remove(pendingDelete);
+        }}
         onCancel={() => setPendingDelete(null)}
       />
       <PlanTaskFormSheet
