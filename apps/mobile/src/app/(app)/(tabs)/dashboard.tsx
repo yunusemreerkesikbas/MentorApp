@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiClientError } from "@mentor/api-client";
+import { isPremiumFeatureAvailable } from "@mentor/core";
 import type { PlanTaskDto, PlanTaskStatus, WeeklyChestView } from "@mentor/types";
 import { ChestScene } from "../../../components/celebrations/chest-scene.js";
 import { CountdownCard, GoalCard, JourneyCard } from "../../../components/panel/info-cards.js";
@@ -26,6 +27,7 @@ import {
 } from "../../../lib/coaching-api.js";
 import { haptics } from "../../../lib/haptics.js";
 import { tabBarClearance } from "../../../lib/layout.js";
+import { useSubscriptionView } from "../../../lib/premium.js";
 import { useCelebrations } from "../../../providers/celebration-provider.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
 import { useToast } from "../../../providers/toast-provider.js";
@@ -102,6 +104,12 @@ export default function DashboardScreen() {
   };
 
   const openPlan = () => router.replace("/plan" as never);
+  const subscriptionView = useSubscriptionView();
+  // Puhu lightens the day for whoever has it; everyone else lands on the plan as before.
+  const lightenToday = () =>
+    isPremiumFeatureAvailable(subscriptionView, "plan.ai")
+      ? router.replace({ pathname: "/plan" as never, params: { coach: "adapt", source: "mood" } })
+      : openPlan();
 
   const goFromQuest = (destination: QuestDestination) => {
     if (destination === "plan") openPlan();
@@ -150,7 +158,7 @@ export default function DashboardScreen() {
               initial={panel.mood}
               canLighten={panel.canLightenPlan}
               onSaved={() => void refreshAll()}
-              onLighten={openPlan}
+              onLighten={lightenToday}
             />
             <TodayPathCard
               data={panel}

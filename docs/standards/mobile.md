@@ -43,6 +43,36 @@
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-14 — Plan tab, Puhu'yla planla at web parity (stop C) (`apps/mobile`, `@mentor/core`):**
+  - **What was done:** "Puhu'yla planla" on the Plan tab follows the web's `PlanCoachAdaptationAction`:
+    the Coin choice sheet (confirm block, allowance pips, "{n} Coin daha", retry clock, saved draft link),
+    the four-step wizard (days, minutes, subjects, note) seeded from Puhu's brief, the "Şehrin üstünde"
+    waiting scene (night sky, city layers, masked hero loop, dropping paper notes, progress bar, Vazgeç),
+    and the draft preview (evidence list, day headings, tick boxes, apply, 409 regenerate). The panel's
+    "Bugünü hafiflet" opens the MOOD flow through `/plan?coach=adapt&source=mood` for students who have
+    `plan.ai`; everyone else lands on the plan as before. Access, brief seeding, stage notes and change
+    selection come from `@mentor/core` (`planAccessView`, `seedBriefSubjects`, `stageNotes`,
+    `flattenPlanAdaptationChanges`, `parsePlanAdaptationQuery`, `isPremiumFeatureAvailable`).
+  - **Usage:** `pnpm --filter @mentor/mobile test | typecheck | lint`. The Coin path needs
+    `ai.plan.coin_enabled` and `economy.enabled`; with the Coin path off the sheet says "Puhu’yla planlama
+    şu an telefonda açık değil." and never shows the server's Premium line (purchases stay off on mobile).
+  - **Gotchas:** iOS drops a modal presented while another is closing, so every sheet → host → preview
+    hand-off goes through `createDismissQueue` (flushed by the closing modal's `onDismiss`; Android runs at
+    once). Inside a `Modal`, Android back reaches `onRequestClose`, not `BackHandler`: the host routes it to
+    the stage's Vazgeç or the wizard's Back (`backRef`). The host covers the app's toast, so errors while
+    the wizard is up are said in the wizard. `VideoView` in a Modal needs `surfaceType="textureView"`. A
+    rounded tick box whose fill changes in place stays square on Android: remount it with a `key`.
+    Edge-to-edge Android does not resize for the keyboard, so `KeyboardAvoidingView` uses `"padding"` on
+    both platforms. Touches follow the React tree, not the native one: a Modal rendered inside a
+    `ScrollView` with the default `keyboardShouldPersistTaps="never"` loses its first tap to closing the
+    keyboard, so the Plan `ScrollView` is `"handled"`. A video player started before its texture view has a
+    surface (the modal still opening, the keyboard still closing) moves to it mid-play, and the emulator's
+    `c2.goldfish.h264` decoder then draws black (logcat: "remote graphic buffer migration N/N"); the stage
+    loads its clip 600 ms after mount and keeps the clip's first frame on top until `onFirstFrameRender`.
+  - **Related files:** `apps/mobile/src/components/plan/puhu/*`, `apps/mobile/src/components/unlock/unlock-rows.tsx`,
+    `apps/mobile/src/lib/{plan-puhu,plan-previews-api}.ts`, `apps/mobile/src/app/(app)/(tabs)/{plan,dashboard}.tsx`,
+    `packages/core/src/{plan-access,plan-adaptation}.ts`.
+
 - **2026-11-14 — Plan tab, Liste view at web parity (stop A) (`apps/mobile`, `@mentor/core`):**
   - **What was done:** The Plan tab was rebuilt as the web's `PlanShell` Liste view at phone width: week
     card (week arrows, "Tarih seç" month sheet, day circles with dots, progress), task card (rows with

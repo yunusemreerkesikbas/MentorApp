@@ -250,6 +250,8 @@ export function FormSheet({
   title,
   closeLabel,
   onClose,
+  closeDisabled = false,
+  onDismiss,
   footer,
   children,
 }: {
@@ -258,11 +260,18 @@ export function FormSheet({
   /** The close button's and the scrim's screen-reader label. */
   closeLabel: string;
   onClose: () => void;
+  /** While a write is in flight the sheet stays open: close, scrim and back do nothing. */
+  closeDisabled?: boolean;
+  /** iOS only: the sheet has finished closing, so the next modal may open. */
+  onDismiss?: () => void;
   footer?: ReactNode;
   children: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
   const { palette, radii } = useThemeTokens();
+  const close = () => {
+    if (!closeDisabled) onClose();
+  };
 
   return (
     <Modal
@@ -270,13 +279,14 @@ export function FormSheet({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={close}
+      onDismiss={onDismiss}
     >
       <KeyboardAvoidingView behavior="padding" style={styles.formSheetRoot}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={closeLabel}
-          onPress={onClose}
+          onPress={close}
           style={[StyleSheet.absoluteFill, { backgroundColor: palette.scrim }]}
         />
         <View
@@ -298,9 +308,11 @@ export function FormSheet({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={closeLabel}
+              accessibilityState={{ disabled: closeDisabled }}
+              disabled={closeDisabled}
               hitSlop={8}
               onPress={onClose}
-              style={styles.formSheetClose}
+              style={[styles.formSheetClose, closeDisabled && { opacity: 0.4 }]}
             >
               <CloseCircleIcon size={26} color={palette.secondary} />
             </Pressable>

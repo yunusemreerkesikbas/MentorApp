@@ -685,6 +685,9 @@ importers:
       '@mentor/types':
         specifier: workspace:*
         version: link:../types
+      '@mentor/validation':
+        specifier: workspace:*
+        version: link:../validation
     devDependencies:
       '@mentor/config':
         specifier: workspace:*

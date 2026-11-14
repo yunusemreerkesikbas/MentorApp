@@ -64,3 +64,10 @@ export function shiftPlanWeek(view: PlanWeekView, days: number, today: string): 
   const anchor = shiftDate(view.anchor, days);
   return { anchor, selected: selectedDayForWeek(anchor, view.selected, today) };
 }
+
+/** The API's error code (`INSUFFICIENT_COIN`, …) for a failed write; null for anything else. */
+export function apiErrorCode(error: unknown): string | null {
+  if (!(error instanceof Error) || error.name !== "ApiClientError") return null;
+  const code = (error as Error & { body?: { code?: unknown } }).body?.code;
+  return typeof code === "string" ? code : null;
+}

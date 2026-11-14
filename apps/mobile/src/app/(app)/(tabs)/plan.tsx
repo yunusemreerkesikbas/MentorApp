@@ -1,13 +1,15 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   groupPlanEventsByDate,
   isCoachAssigned,
   isPastDate,
+  parsePlanAdaptationQuery,
   shiftDate,
+  summarizePendingWeek,
   todayIso,
   weekStart,
 } from "@mentor/core";
@@ -15,6 +17,7 @@ import type { PlanEventDto, PlanTaskDto } from "@mentor/types";
 import { ActionSheet } from "../../../components/panel/primitives.js";
 import { PlanDateSheet } from "../../../components/plan/plan-date-sheet.js";
 import { PlanEventSheet } from "../../../components/plan/plan-event-row.js";
+import { PlanPuhuAction, type PlanPuhuActionHandle } from "../../../components/plan/puhu/plan-puhu-action.js";
 import { PlanSkeleton } from "../../../components/plan/plan-skeleton.js";
 import { PlanTaskCard } from "../../../components/plan/plan-task-card.js";
 import {
@@ -37,6 +40,7 @@ import {
   withTaskStatus,
   type PlanWeekView,
 } from "../../../lib/plan-view.js";
+import { useAppAvailability } from "../../../providers/availability-provider.js";
 import { useAuth } from "../../../providers/auth-provider.js";
 import { useCelebrations } from "../../../providers/celebration-provider.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
@@ -53,6 +57,10 @@ export default function PlanScreen() {
   const tCommon = useTranslations("common");
   const celebrations = useCelebrations();
   const toast = useToast();
+  const { availability } = useAppAvailability();
+  const puhuRef = useRef<PlanPuhuActionHandle>(null);
+  const consumed = useRef<string | null>(null);
+  const params = useLocalSearchParams<{ coach?: string; source?: string; sessionId?: string }>();
   const { user } = useAuth();
 
   // One state, so an arrow tap that lands before the re-render still moves from the latest week.
@@ -93,6 +101,19 @@ export default function PlanScreen() {
   const selectDay = (iso: string) => setView({ anchor: weekStart(iso), selected: iso });
 
   const shiftWeek = (days: number) => setView((current) => shiftPlanWeek(current, days, todayIso()));
+
+  // The panel's "Bugünü hafiflet" lands here as ?coach=adapt&source=mood: open Puhu once, then
+  // clear the params so a later visit to the tab does not ask again.
+  const { coach, source, sessionId } = params;
+  useEffect(() => {
+    const request = parsePlanAdaptationQuery({ coach: coach ?? null, source: source ?? null, sessionId: sessionId ?? null });
+    const key = request ? `${coach}|${source}|${sessionId ?? ""}` : null;
+    const fresh = request !== null && consumed.current !== key;
+    consumed.current = key;
+    if (!fresh) return;
+    router.setParams({ coach: undefined, source: undefined, sessionId: undefined });
+    puhuRef.current?.open(request);
+  }, [coach, source, sessionId, router]);
 
   /** A new or finished task can earn something ("Plan Hazır", Coin): ask what is unseen. */
   const refreshAfterChange = async () => {
@@ -186,6 +207,9 @@ export default function PlanScreen() {
     <>
       <ScrollView
         style={{ flex: 1, backgroundColor: palette.bg }}
+        // Puhu's wizard is a Modal inside this list in the React tree, and the default "never" would
+        // swallow the first tap on its button to close the keyboard.
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={weekQuery.isRefetching}
@@ -201,6 +225,14 @@ export default function PlanScreen() {
       >
         {/* The week card needs no data, so it stays up while a week loads or fails: a second
             arrow tap is never lost, and a failed background refetch keeps the cached week. */}
+        {availability.aiCoach ? (
+          <PlanPuhuAction
+            ref={puhuRef}
+            knownWeek={summarizePendingWeek(weekTasks)}
+            onApplied={refreshAfterChange}
+            onPlanChanged={refreshAfterChange}
+          />
+        ) : null}
         <PlanWeekCard
           weekAnchor={weekAnchor}
           selectedDate={selectedDate}

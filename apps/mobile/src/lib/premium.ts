@@ -17,8 +17,8 @@ async function fetchSubscription(): Promise<SubscriptionView | null> {
   }
 }
 
-/** A student's Premium standing. A coach's plan is not shown as a student's Premium. */
-export function useIsPremium(): boolean {
+/** The signed-in user's subscription view; null while it loads, on failure and when signed out. */
+export function useSubscriptionView(): SubscriptionView | null {
   const { user } = useAuth();
   const { data } = useQuery({
     queryKey: ["subscription"],
@@ -26,7 +26,14 @@ export function useIsPremium(): boolean {
     staleTime: 60_000,
     enabled: Boolean(user),
   });
-  return Boolean(data?.entitlement.isPremium) && !isCoach(user);
+  return data ?? null;
+}
+
+/** A student's Premium standing. A coach's plan is not shown as a student's Premium. */
+export function useIsPremium(): boolean {
+  const { user } = useAuth();
+  const view = useSubscriptionView();
+  return Boolean(view?.entitlement.isPremium) && !isCoach(user);
 }
 
 /** The Premium daily note for the panel's bubble; null for free users and while it is written. */

@@ -21,7 +21,8 @@
     "clean": "rimraf dist .turbo tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@mentor/types": "workspace:*"
+    "@mentor/types": "workspace:*",
+    "@mentor/validation": "workspace:*"
   },
   "devDependencies": {
     "@mentor/config": "workspace:*",

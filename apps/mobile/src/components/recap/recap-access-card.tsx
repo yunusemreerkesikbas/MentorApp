@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { recapAccessView } from "@mentor/core";
 import type { WeeklyRecapOfferDto } from "@mentor/types";
@@ -9,9 +8,10 @@ import { useAuth } from "../../providers/auth-provider.js";
 import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 import { CoinsGlyph } from "../navigation/app-header.js";
-import { PLAY_RADIUS, ProgressLine } from "../panel/primitives.js";
+import { ProgressLine } from "../panel/primitives.js";
 import { Button } from "../ui/index.js";
 import { AppText } from "../ui/text.js";
+import { UnlockCaption, UnlockConfirm, UnlockPips, UnlockRow } from "../unlock/unlock-rows.js";
 import { RECAP } from "./recap-colors.js";
 import { formatRecapInstant, formatRecapRange } from "./recap-format.js";
 
@@ -56,27 +56,27 @@ export function RecapAccessCard({
     switch (view.kind) {
       case "gift":
         return (
-          <Row title={t("access_gift_title")} flush>
-            <Caption>{t("access_gift_detail")}</Caption>
+          <UnlockRow title={t("access_gift_title")} flush>
+            <UnlockCaption>{t("access_gift_detail")}</UnlockCaption>
             <Button label={opening ?? t("access_earned")} loading={busy} onPress={onOpen} />
-          </Row>
+          </UnlockRow>
         );
       case "member":
         return (
-          <Row title={t("access_member_title")} flush>
-            <Caption>{t("access_member_detail")}</Caption>
+          <UnlockRow title={t("access_member_title")} flush>
+            <UnlockCaption>{t("access_member_detail")}</UnlockCaption>
             <Button label={opening ?? t("access_open")} loading={busy} onPress={onOpen} />
-          </Row>
+          </UnlockRow>
         );
       case "owned":
         return <Button label={t("access_replay")} loading={busy} onPress={onOpen} />;
       case "retry":
         return (
           <View accessibilityRole="alert">
-            <Row title={t("access_unavailable_title")} flush>
-              <Caption>{t("access_unavailable_detail")}</Caption>
+            <UnlockRow title={t("access_unavailable_title")} flush>
+              <UnlockCaption>{t("access_unavailable_detail")}</UnlockCaption>
               <Button label={t("access_retry")} variant="secondary" loading={busy} onPress={onRetry} />
-            </Row>
+            </UnlockRow>
           </View>
         );
       case "notice":
@@ -88,42 +88,18 @@ export function RecapAccessCard({
       case "choice":
         if (confirming) {
           return (
-            <View style={[styles.row, { borderTopColor: palette.playLine }]}>
-              <View style={styles.rowHead}>
-                <CoinsGlyph color={palette.ctaPlayBg} size={22} />
-                <AppText style={[styles.rowTitle, { color: palette.main }]}>
-                  {t("access_coin_title", { cost })}
-                </AppText>
-              </View>
-              <View style={[styles.confirm, { backgroundColor: palette.playSelected }]}>
-                <AppText variant="caption" style={{ color: palette.playSelectedInk, fontWeight: "800" }}>
-                  {t("access_confirm_lead")}
-                </AppText>
-                <View style={styles.fromTo}>
-                  <AppText tabularNums tone="secondary" style={styles.from}>
-                    {String(balance)}
-                  </AppText>
-                  <AppText style={{ color: palette.playSelectedInk, fontSize: 18 }}>→</AppText>
-                  <AppText tabularNums style={styles.to}>
-                    {t("access_coin_amount", { amount: balance - cost })}
-                  </AppText>
-                </View>
-                <Caption tone="main">{t("access_confirm_note", { days, limit })}</Caption>
-                <View style={styles.confirmActions}>
-                  <Button label={opening ?? t("access_confirm")} loading={busy} onPress={onOpen} />
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={busy}
-                    onPress={onCancel}
-                    style={styles.quietLink}
-                  >
-                    <AppText variant="caption" tone="secondary" style={styles.bold}>
-                      {t("access_cancel")}
-                    </AppText>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
+            <UnlockConfirm
+              title={t("access_coin_title", { cost })}
+              lead={t("access_confirm_lead")}
+              from={String(balance)}
+              to={t("access_coin_amount", { amount: balance - cost })}
+              note={t("access_confirm_note", { days, limit })}
+              confirmLabel={opening ?? t("access_confirm")}
+              cancelLabel={t("access_cancel")}
+              busy={busy}
+              onConfirm={onOpen}
+              onCancel={onCancel}
+            />
           );
         }
         if (!view.coin) return null;
@@ -132,7 +108,7 @@ export function RecapAccessCard({
             <AppText style={[styles.choose, { color: palette.main }]} accessibilityRole="header">
               {t("access_choose")}
             </AppText>
-            <Row
+            <UnlockRow
               title={view.coin === "limit" ? t("access_limit_title") : t("access_coin_title", { cost })}
               icon={<CoinsGlyph color={palette.ctaPlayBg} size={22} />}
               aside={
@@ -146,7 +122,7 @@ export function RecapAccessCard({
               {view.coin === "short" ? (
                 <ProgressLine label={t("access_coin_progress")} value={balance} max={cost} />
               ) : (
-                <Pips
+                <UnlockPips
                   limit={limit}
                   remaining={remaining}
                   label={t("access_allowance_label", { days, limit, remaining })}
@@ -154,18 +130,18 @@ export function RecapAccessCard({
                 />
               )}
               {view.coin === "ready" ? (
-                <Caption>{t("access_coin_ready", { remaining })}</Caption>
+                <UnlockCaption>{t("access_coin_ready", { remaining })}</UnlockCaption>
               ) : view.coin === "short" ? (
-                <Caption>{t("access_coin_short", { missing: view.missing })}</Caption>
+                <UnlockCaption>{t("access_coin_short", { missing: view.missing })}</UnlockCaption>
               ) : offer.nextAvailableAt ? (
-                <Caption>
+                <UnlockCaption>
                   {t("access_next_available", { date: formatRecapInstant(offer.nextAvailableAt, locale) })}
-                </Caption>
+                </UnlockCaption>
               ) : null}
               {view.lead === "coin" ? (
                 <Button label={t("access_coin", { cost })} loading={busy} onPress={onOpen} />
               ) : null}
-            </Row>
+            </UnlockRow>
           </>
         );
     }
@@ -244,76 +220,6 @@ export function RecapAccessCard({
   );
 }
 
-/** One "açma" row (the web's `UnlockRow`): hairline above, icon, title, a count on the right. */
-function Row({
-  title,
-  icon,
-  aside,
-  flush = false,
-  children,
-}: {
-  title: string;
-  icon?: ReactNode;
-  aside?: string;
-  flush?: boolean;
-  children?: ReactNode;
-}) {
-  const { palette } = useThemeTokens();
-  return (
-    <View style={[flush ? styles.rowFlush : styles.row, !flush && { borderTopColor: palette.playLine }]}>
-      <View style={styles.rowHead}>
-        {icon}
-        <AppText accessibilityRole="header" style={[styles.rowTitle, { color: palette.main }]}>
-          {title}
-        </AppText>
-        {aside ? (
-          <AppText variant="caption" tone="secondary" tabularNums style={styles.bold}>
-            {aside}
-          </AppText>
-        ) : null}
-      </View>
-      {children}
-    </View>
-  );
-}
-
-function Caption({ children, tone = "secondary" }: { children: ReactNode; tone?: "secondary" | "main" }) {
-  return (
-    <AppText variant="caption" tone={tone}>
-      {children}
-    </AppText>
-  );
-}
-
-/** The rolling allowance: filled pips are uses still available. */
-function Pips({ limit, remaining, label, text }: { limit: number; remaining: number; label: string; text: string }) {
-  const { palette } = useThemeTokens();
-  return (
-    <View accessible accessibilityLabel={label} style={styles.pips}>
-      {Array.from({ length: limit }, (_, i) => (
-        <View
-          key={i}
-          style={[
-            styles.pip,
-            i < remaining
-              ? { backgroundColor: palette.ctaPlayBg }
-              : {
-                  backgroundColor: palette.playTrack,
-                  borderWidth: 1.5,
-                  borderStyle: "dashed",
-                  borderColor: palette.secondary,
-                  opacity: 0.6,
-                },
-          ]}
-        />
-      ))}
-      <AppText variant="caption" style={styles.bold}>
-        {text}
-      </AppText>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   cover: {
     height: 212,
@@ -383,68 +289,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     fontWeight: "800",
-  },
-  row: {
-    gap: 10,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-  },
-  rowFlush: {
-    gap: 10,
-    paddingBottom: 4,
-  },
-  rowHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  rowTitle: {
-    flex: 1,
-    minWidth: 0,
-    fontSize: 15,
-    lineHeight: 21,
-    fontWeight: "800",
-  },
-  pips: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  pip: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  confirm: {
-    marginTop: 12,
-    padding: 16,
-    borderRadius: PLAY_RADIUS,
-  },
-  fromTo: {
-    marginTop: 4,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  from: {
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: "800",
-  },
-  to: {
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: "900",
-  },
-  confirmActions: {
-    marginTop: 14,
-    gap: 4,
-  },
-  quietLink: {
-    minHeight: 44,
-    alignSelf: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
   },
   footer: {
     marginTop: 14,

@@ -125,3 +125,5 @@ export * from "./streak-celebration.js";
 export * from "./weekly-recap.js";
 export * from "./plan-items.js";
 export * from "./plan-task-form.js";
+export * from "./plan-access.js";
+export * from "./plan-adaptation.js";

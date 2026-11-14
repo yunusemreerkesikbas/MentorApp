@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { PlanTaskDto } from "@mentor/types";
 import {
+  apiErrorCode,
   errorText,
   monthGridDays,
   monthGridWeeks,
@@ -81,6 +82,14 @@ describe("errorText", () => {
   it("falls back for anything else, e.g. an offline fetch's English TypeError", () => {
     assert.equal(errorText(new TypeError("Network request failed"), "Bir şeyler ters gitti."), "Bir şeyler ters gitti.");
     assert.equal(errorText("boom", "Bir şeyler ters gitti."), "Bir şeyler ters gitti.");
+  });
+});
+
+describe("apiErrorCode", () => {
+  it("reads the API's error code and nothing from other errors", () => {
+    const error = Object.assign(new Error("x"), { name: "ApiClientError", body: { code: "INSUFFICIENT_COIN" } });
+    assert.equal(apiErrorCode(error), "INSUFFICIENT_COIN");
+    assert.equal(apiErrorCode(new Error("x")), null);
   });
 });
 

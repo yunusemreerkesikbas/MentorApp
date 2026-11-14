@@ -67,6 +67,11 @@ import chestClosed from "../../../web/public/visuals/chest/chest-closed.webp";
 import chestOpen from "../../../web/public/visuals/chest/chest-open.webp";
 import chestOpenClip from "../../../web/public/visuals/chest/chest-open-tall.mp4";
 import chestDeskClosed from "../../../web/public/visuals/chest/desk-chest-closed-tall.webp";
+import planStageLoop from "../../../web/public/mascot/puhu/motion/puhu-hero-magic-loop.mp4";
+import planStagePoster from "../../../web/public/mascot/puhu/motion/puhu-hero-magic.webp";
+import cityFarMobile from "../../../web/public/visuals/landing/city-far-mobile.webp";
+import cityMidMobile from "../../../web/public/visuals/landing/city-mid-mobile.webp";
+import cityFrontMobile from "../../../web/public/visuals/landing/city-front-mobile.webp";
 import chestDeskOpen from "../../../web/public/visuals/chest/desk-chest-open-tall.webp";
 import charCosmicMaestro from "../../../web/public/img/character/cosmic-maestro.png";
 import charDimensionExplorer from "../../../web/public/img/character/dimension-explorer.png";
@@ -116,6 +121,18 @@ export const chestSceneArt = {
   closed: chestDeskClosed,
   open: chestDeskOpen,
   clip: chestOpenClip,
+} as const;
+
+/**
+ * "Şehrin üstünde", the "Puhu'yla planla" waiting scene: Puhu's magic loop and its first frame
+ * (poster, reduced motion, player error), over the landing's night city in its 3:2 phone cuts.
+ */
+export const planStageArt = {
+  loop: planStageLoop,
+  poster: planStagePoster,
+  cityFar: cityFarMobile,
+  cityMid: cityMidMobile,
+  cityFront: cityFrontMobile,
 } as const;
 
 export type RecapDecorKey =
