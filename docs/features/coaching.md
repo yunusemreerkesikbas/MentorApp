@@ -94,6 +94,16 @@
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-16 — Partial mock exam results:** Enter the subjects you attempted in the mobile or web form. A section with recorded blanks still counts. Student analysis and weekly subject measurements skip legacy 0/0/0 placeholders at read time. Mobile uses the latest attempt for the recommended subject when adding a focus to Plan. See `packages/core/src/analysis.ts`, `apps/api/src/modules/coaching/infrastructure/mock-exam.repository.ts`, and the mobile and web Analysis components.
+
+- **2026-11-16 — Mobile study session return:** Use “Panele dön” on the session screen to open the student dashboard from any entry point. The session screen is dismissed from the navigation stack. See `apps/mobile/src/app/(app)/study-session.tsx`.
+
+- **2026-11-16. Mobile weekly recap archive.** Open *Geçmiş raporlarım* from Analysis or the recap access screen. The archive lists the student's saved reports by page and opens each report by its ID. An older purchase can use the original week and exam to recover its existing right at zero cost. Related files live under `apps/mobile/src/app/(app)/weekly-recap`.
+
+- **2026-11-16. Mobile weekly deep analysis.** Open an owned report from the Analysis tab or switch to Deep Analysis from the story. Both views use the saved report. Deep Analysis shows the week's study rhythm, prior-week comparison, subject averages and sample counts, and the live follow-up task. Use the existing Plan task sheet to edit and save the recommendation against its report. Older reports show their original summary. Related files live under `apps/mobile/src/components/recap/`.
+
+- **2026-11-16. Mobile Weekly Recap follow-up.** From the last slide, share the effort card as a PNG with the device share sheet, read the saved Puhu note or the week's closing message, or open a prefilled Plan task to review and save. The export captures the card view alone and uses the shared effort facts. Related files live in `apps/mobile/src/components/recap/` and the mobile Plan tab.
+
 - **2026-11-09 — Phase 2.5 Mobile Vision Board & `Puhu’yla Planla` Adaptation (`apps/mobile`):** Added mobile Goal & Vision Board (`weekly-ritual-and-vision-card.tsx` calling `GET/POST /v1/coaching/vision`) and `Puhu’yla Haftalık Planı Uyarla` (`puhu-plan-adapt-card.tsx` calling `GET /v1/coach/plan-adaptation/brief`, `POST /v1/coach/plan-adaptation`, and `POST /v1/plan-tasks/adapt` with `planRevision` concurrency token).
 
 - **2026-11-09 — Phase 2.3 Mobile Mock Exam Analysis & Mistake Notebook (`apps/mobile` & `@mentor/core`):** Extracted mock exam score row, validation, trend formatting, and taxonomy grouping helpers (`analysis.ts`) into `@mentor/core` (re-exported in `apps/web/src/app/[locale]/(app)/analysis/_components/analysis-types.ts` and `apps/web/src/lib/exam-taxonomy.ts`). Built the 3-tab mobile Analysis screen (`analysis.tsx` + `src/components/analysis/{analysis-progress-view,mock-exam-entry-view,mistake-notebook-view}.tsx`) supporting Ghost (`Geçmiş-Ben`) comparison, 1-click `POST /v1/coaching/analysis/plan-task` focus task creation, subject net averages, mock exam logging (`POST /v1/mock-exams`) with deep-link to Puhu evaluation, and the `2/7/21`-day Mistake Notebook card creation and spaced review loop (`POST /v1/coaching/notebook/entries/:id/review`).

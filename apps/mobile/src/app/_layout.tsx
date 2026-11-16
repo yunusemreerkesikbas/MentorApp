@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardAvoidingView, View } from "react-native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -66,18 +67,20 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <I18nProvider>
-          <QueryProvider>
-            <AuthProvider>
-              <AvailabilityProvider>
-                <RootNavigator />
-              </AvailabilityProvider>
-            </AuthProvider>
-          </QueryProvider>
-        </I18nProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <I18nProvider>
+            <QueryProvider>
+              <AuthProvider>
+                <AvailabilityProvider>
+                  <RootNavigator />
+                </AvailabilityProvider>
+              </AuthProvider>
+            </QueryProvider>
+          </I18nProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

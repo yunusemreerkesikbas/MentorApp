@@ -7,7 +7,7 @@ import { ApiClientError } from "@mentor/api-client";
 import { FormError } from "@/components/form";
 import { updateMockExam } from "@/lib/mock-exams";
 import { AnalysisMockExamForm } from "./analysis-mock-exam-form";
-import { paperSubjects, scoresFromMockExam, type SubjectScores } from "./analysis-types";
+import { paperSubjects, recordedMockExamRows, scoresFromMockExam, type SubjectScores } from "./analysis-types";
 
 interface AnalysisHistoryEditSheetProps {
   detail: MockExamDto;
@@ -43,18 +43,15 @@ export function AnalysisHistoryEditSheet({
   async function handleUpdate(event: React.FormEvent) {
     event.preventDefault();
     if (saving || !takenAtDate) return;
+    const rows = recordedMockExamRows(paperSubjects(subjects), scores);
+    if (rows.length === 0) return;
     setSaving(true);
     setError(null);
     try {
       const updated = await updateMockExam(detail.id, {
         takenAt: new Date(`${takenAtDate}T12:00:00`).toISOString(),
         publisherName: publisherName.trim() || null,
-        subjects: paperSubjects(subjects).map((subject) => ({
-          subjectRef: subject.slug,
-          correct: Number(scores[subject.slug]?.correct || 0),
-          wrong: Number(scores[subject.slug]?.wrong || 0),
-          blank: Number(scores[subject.slug]?.blank || 0),
-        })),
+        subjects: rows,
       });
       onSaved(updated);
     } catch (updateError) {

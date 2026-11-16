@@ -9,6 +9,7 @@ import {
   planTasks,
   studySessions,
 } from "../../../database/schema";
+import { mockExamSubjectHasCounts } from "./mock-exam.repository";
 
 @Injectable()
 export class WeeklyReviewRepository {
@@ -54,6 +55,7 @@ export class WeeklyReviewRepository {
             and(
               eq(mockExams.userId, userId),
               eq(mockExams.examId, examId),
+              mockExamSubjectHasCounts,
               gte(mockExams.takenAt, previousStart),
               lt(mockExams.takenAt, currentEnd),
             ),

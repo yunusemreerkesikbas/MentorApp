@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BackHandler, PanResponder, Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeInRight, FadeInUp, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,24 +17,33 @@ import { useTranslations } from "../../providers/i18n-provider.js";
 import { AppText } from "../ui/text.js";
 import { RECAP, STORY_COLORS } from "./recap-colors.js";
 import { createRecapCompletion } from "./recap-flow.js";
+import { RecapNoteSheet } from "./recap-note-sheet.js";
+import { RecapSharePreview } from "./recap-share-preview.js";
 import { RecapSlide } from "./recap-slides.js";
 import { useRecapPlayback } from "./use-recap-playback.js";
+import { useRecapShare } from "./use-recap-share.js";
 
 const SWIPE_THRESHOLD_PX = 56;
 
 /**
  * The weekly story (the web's `WeeklyRecapStory` at phone width): progress bars, play and close,
- * tap halves (a press held past 300 ms only pauses), a horizontal swipe, and on the last slide
- * "Bitti" and "Tekrar izle". The week counts as reviewed once those actions show.
+ * tap halves (a press held past 300 ms only pauses), a horizontal swipe, and final-slide actions.
+ * The week counts as reviewed once those actions show.
  */
 export function RecapStory({
   review,
   examId,
+  narration,
   onExit,
+  onAddPlan,
+  onOpenAnalysis,
 }: {
   review: WeeklyReviewDto;
   examId: string;
+  narration?: string;
   onExit: () => void;
+  onAddPlan: (task: NonNullable<WeeklyReviewDto["suggestedTask"]>) => void;
+  onOpenAnalysis?: () => void;
 }) {
   const t = useTranslations("recap");
   const insets = useSafeAreaInsets();
@@ -43,6 +52,13 @@ export function RecapStory({
   const slides = useMemo(() => composeWeeklyRecapStory(review), [review]);
   const playback = useRecapPlayback(slides, reducedMotion);
   const { state, goBack, goForward, setHeld, togglePlaying, replay } = playback;
+  const [noteOpen, setNoteOpen] = useState(false);
+  const { cardRef, onImageReady, share, sharing, ready } = useRecapShare();
+  const suggestion = review.suggestedTask;
+  const showNote = (open: boolean) => {
+    setNoteOpen(open);
+    setHeld(open);
+  };
   const slide = slides[state.index] ?? slides[0];
   const finalVisible = slide ? weeklyRecapFinalActionsVisible(slide, state) : false;
   // Only `refresh`: the context value also changes with `active`, and a new completion would PUT again.
@@ -108,7 +124,8 @@ export function RecapStory({
       <StatusBar style={darkGround ? "light" : "dark"} />
       <Animated.View
         key={`${slide.kind}-${state.index}`}
-        entering={reducedMotion ? FadeIn.duration(120) : FadeInRight.duration(420)}
+        // The cover can mount while the native screen is still entering from the archive.
+        entering={isFirst ? undefined : reducedMotion ? FadeIn.duration(120) : FadeInRight.duration(420)}
         style={[StyleSheet.absoluteFill, { backgroundColor: ground }]}
         accessibilityLiveRegion="polite"
       >
@@ -118,6 +135,9 @@ export function RecapStory({
           elapsedMs={state.elapsedMs}
           playing={mediaPlaying}
           reducedMotion={reducedMotion}
+          finalCard={finalVisible ? (
+            <RecapSharePreview review={review} cardRef={cardRef} onImageReady={onImageReady} />
+          ) : null}
         />
       </Animated.View>
 
@@ -161,10 +181,30 @@ export function RecapStory({
           style={[styles.dockWrap, { bottom: insets.bottom + 12 }]}
         >
           <View style={styles.dock}>
+            {suggestion?.title.trim() ? (
+              <DockAction label={t("final_add_plan")} onPress={() => onAddPlan(suggestion)} />
+            ) : null}
+            <DockAction
+              label={t("final_share")}
+              onPress={share}
+              disabled={!ready || sharing}
+              busy={sharing}
+            />
+            <DockAction label={t("final_puhu_note")} onPress={() => showNote(true)} />
+          </View>
+          <View style={styles.dock}>
+            {onOpenAnalysis ? <DockAction label={t("final_deep_analysis")} onPress={onOpenAnalysis} /> : null}
             <DockAction label={t("final_replay")} onPress={replay} />
             <DockAction label={t("final_done")} onPress={onExit} strong />
           </View>
         </Animated.View>
+      ) : null}
+      {noteOpen ? (
+        <RecapNoteSheet
+          closingMessage={review.recap.closingMessage}
+          narration={narration}
+          onClose={() => showNote(false)}
+        />
       ) : null}
     </View>
   );
@@ -221,12 +261,20 @@ function Control({ label, onPress, children }: { label: string; onPress: () => v
   );
 }
 
-function DockAction({ label, onPress, strong = false }: { label: string; onPress: () => void; strong?: boolean }) {
+function DockAction({ label, onPress, strong = false, disabled = false, busy = false }: {
+  label: string;
+  onPress: () => void;
+  strong?: boolean;
+  disabled?: boolean;
+  busy?: boolean;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled, busy }}
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.dockAction, strong && styles.dockStrong, pressed && styles.controlPressed]}
+      style={({ pressed }) => [styles.dockAction, strong && styles.dockStrong, (pressed || disabled) && styles.controlPressed]}
     >
       <AppText style={[styles.dockLabel, strong && styles.dockLabelStrong]}>{label}</AppText>
     </Pressable>
@@ -312,6 +360,7 @@ const styles = StyleSheet.create({
   },
   dockWrap: {
     position: "absolute",
+    gap: 6,
     left: 16,
     right: 16,
   },

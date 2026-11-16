@@ -20,6 +20,7 @@ import {
   ScreenLoadingSkeleton,
   StateView,
 } from "../../components/ui/index.js";
+import { formatDisplayDate } from "../../lib/display-date.js";
 import { haptics } from "../../lib/haptics.js";
 import {
   deleteNotification,
@@ -29,10 +30,11 @@ import {
   markNotificationRead,
   updateNotificationPreferences,
 } from "../../lib/notifications-api.js";
-import { useTranslations } from "../../providers/i18n-provider.js";
+import { STUDENT_CORE_ONLY } from "../../lib/release-scope.js";
+import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 
-const CATEGORIES: ("ALL" | NotificationCategory)[] = [
+const CATEGORIES = [
   "ALL",
   "COACH",
   "PLAN",
@@ -40,13 +42,18 @@ const CATEGORIES: ("ALL" | NotificationCategory)[] = [
   "ACHIEVEMENT",
   "MENTORSHIP",
   "SYSTEM",
-];
+] as const satisfies readonly ("ALL" | NotificationCategory)[];
+
+const FILTERS = STUDENT_CORE_ONLY
+  ? CATEGORIES.filter((category) => category !== "FORUM" && category !== "MENTORSHIP")
+  : CATEGORIES;
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { palette, radii, space } = useThemeTokens();
+  const { locale } = useLocale();
   const t = useTranslations("notifications");
   const tCommon = useTranslations("common");
 
@@ -153,10 +160,10 @@ export default function NotificationsScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: 8 }}
           >
-            {CATEGORIES.map((cat) => (
+            {FILTERS.map((cat) => (
               <Chip
                 key={cat}
-                label={t(`cat_${cat}` as never)}
+                label={t(`cat_${cat}`)}
                 selected={selectedCategory === cat}
                 onPress={() => {
                   haptics.selection();
@@ -214,9 +221,9 @@ export default function NotificationsScreen() {
             }}
           >
             <View style={styles.rowBetween}>
-              <Chip label={t(`cat_${item.category}` as never)} />
+              <Chip label={t(`cat_${item.category}`)} />
               <AppText variant="micro" tone="muted">
-                {item.createdAt.slice(0, 10)}
+                {formatDisplayDate(item.createdAt, locale)}
               </AppText>
             </View>
 

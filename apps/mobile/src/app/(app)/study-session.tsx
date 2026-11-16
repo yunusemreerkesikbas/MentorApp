@@ -101,7 +101,7 @@ export default function StudySessionScreen() {
           hitSlop={8}
           onPress={() => {
             haptics.selection();
-            router.back();
+            router.dismissTo("/(app)/(tabs)/dashboard");
           }}
           style={[
             styles.backBtn,

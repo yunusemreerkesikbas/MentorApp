@@ -10,7 +10,7 @@ import {
   AnalysisDatePickerSheet,
   type AnalysisDatePickerSheetHandle,
 } from "./analysis-date-picker-sheet";
-import { paperSubjects, subjectTotal, withScore } from "./analysis-types";
+import { paperSubjects, recordedMockExamRows, subjectTotal, withScore } from "./analysis-types";
 import type { SubjectScores } from "./analysis-types";
 
 const FIELDS = ["correct", "wrong", "blank"] as const;
@@ -71,6 +71,7 @@ export function AnalysisMockExamForm({
   const bottomSheet = useMentorBottomSheet();
   const datePickerRef = useRef<AnalysisDatePickerSheetHandle>(null);
   const scoredSubjects = useMemo(() => paperSubjects(subjects), [subjects]);
+  const hasRecordedScores = recordedMockExamRows(scoredSubjects, scores).length > 0;
   const overSubject = scoredSubjects.find((subject) => {
     const row = scores[subject.slug];
     return row && subject.questionCount != null && subjectTotal(row) > subject.questionCount;
@@ -227,7 +228,7 @@ export function AnalysisMockExamForm({
           busy={submitting}
           fullWidth
           className={onCancel ? undefined : "sm:w-auto sm:min-w-52"}
-          disabled={overSubject != null}
+          disabled={!hasRecordedScores || overSubject != null}
         >
           {submitLabel ?? t("save")}
         </Button>

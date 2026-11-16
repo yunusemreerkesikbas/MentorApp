@@ -21,18 +21,19 @@ export function isPastDate(iso: string): boolean {
   return iso < todayIso();
 }
 
+// Date-only arithmetic stays in UTC so device offsets cannot change the day.
 export function shiftDate(iso: string, days: number): string {
-  const d = new Date(`${iso}T12:00:00`);
-  d.setDate(d.getDate() + days);
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
 
 /** Monday-start week containing `iso`. */
 export function weekStart(iso: string): string {
-  const d = new Date(`${iso}T12:00:00`);
-  const day = d.getDay();
+  const d = new Date(`${iso}T12:00:00Z`);
+  const day = d.getUTCDay();
   const offset = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + offset);
+  d.setUTCDate(d.getUTCDate() + offset);
   return d.toISOString().slice(0, 10);
 }
 
@@ -139,11 +140,11 @@ export function shiftMonth(
   months: number,
   day = Number(iso.slice(8, 10)),
 ): string {
-  const d = new Date(`${iso}T12:00:00`);
-  d.setDate(1);
-  d.setMonth(d.getMonth() + months);
-  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-  d.setDate(Math.min(day, lastDay));
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(day, lastDay));
   return d.toISOString().slice(0, 10);
 }
 

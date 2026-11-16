@@ -16,10 +16,10 @@ import {
 } from "@mentor/core";
 import type { PlanTaskDto } from "@mentor/types";
 import { fetchExamTaxonomy } from "../../lib/analysis-api.js";
-import { createPlanTask, updatePlanTask } from "../../lib/coaching-api.js";
+import { createPlanTask, createWeeklyReportTask, updatePlanTask } from "../../lib/coaching-api.js";
 import { haptics } from "../../lib/haptics.js";
 import { mixHex } from "../../lib/layout.js";
-import { errorText } from "../../lib/plan-view.js";
+import { errorText, newPlanTaskDraft, weeklyReportTaskInput, type PlanTaskPrefill } from "../../lib/plan-view.js";
 import { useAuth } from "../../providers/auth-provider.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
@@ -29,7 +29,9 @@ import { AppText } from "../ui/text.js";
 import { TextField } from "../ui/text-field.js";
 import { PlanTimeSheet } from "./plan-time-sheet.js";
 
-export type PlanFormMode = { kind: "add"; date: string } | { kind: "edit"; task: PlanTaskDto };
+export type PlanFormMode =
+  | { kind: "add"; date: string; origin?: "calendar"; startTime?: string; prefill?: PlanTaskPrefill; weeklyReportId?: string }
+  | { kind: "edit"; task: PlanTaskDto };
 
 /** "Yeni görev" / "Görevi düzenle": the web's `PlanAddTaskForm` in the titled sheet. */
 export function PlanTaskFormSheet({
@@ -48,17 +50,7 @@ export function PlanTaskFormSheet({
 }
 
 function initialDraft(mode: PlanFormMode): PlanTaskDraft {
-  if (mode.kind === "add") {
-    return {
-      title: "",
-      subject: "",
-      allDay: true,
-      startTime: "09:00",
-      endTime: "10:00",
-      description: "",
-      duration: "",
-    };
-  }
+  if (mode.kind === "add") return newPlanTaskDraft(mode.startTime, mode.prefill);
   const { task } = mode;
   return {
     title: task.title,
@@ -91,7 +83,10 @@ function TaskForm({
   // "Görev ekle" cannot create the task twice.
   const savingRef = useRef(false);
   const [timeTarget, setTimeTarget] = useState<"start" | "end" | null>(null);
-  const locked = mode.kind === "edit" ? planTaskLockedFocus(mode.task) : null;
+  const weeklyReportId = mode.kind === "add" ? mode.weeklyReportId : undefined;
+  const locked = mode.kind === "edit"
+    ? planTaskLockedFocus(mode.task)
+    : weeklyReportId ? { subject: mode.prefill?.subject || null, topic: null } : null;
 
   const change = (patch: Partial<PlanTaskDraft>) => {
     setDraft((previous) => ({ ...previous, ...patch }));
@@ -112,9 +107,11 @@ function TaskForm({
     setSaving(true);
     try {
       const saved =
-        mode.kind === "add"
-          ? await createPlanTask(planTaskCreateInput(values, mode.date))
-          : await updatePlanTask(mode.task.id, planTaskUpdateInput(values, mode.task));
+        mode.kind === "edit"
+          ? await updatePlanTask(mode.task.id, planTaskUpdateInput(values, mode.task))
+          : weeklyReportId
+            ? await createWeeklyReportTask(weeklyReportId, weeklyReportTaskInput(values, mode.date))
+            : await createPlanTask(planTaskCreateInput(values, mode.date));
       onSaved(saved);
     } catch (failure) {
       setServerError(errorText(failure, tCommon("error_body")));
@@ -124,11 +121,12 @@ function TaskForm({
   };
 
   const message = serverError ?? (error ? t(error) : null);
+  const title = mode.kind === "edit" ? "edit_sheet_title" : mode.origin === "calendar" ? "new_event_title" : "add_sheet_title";
 
   return (
     <FormSheet
       visible
-      title={mode.kind === "add" ? t("add_sheet_title") : t("edit_sheet_title")}
+      title={t(title)}
       closeLabel={tCommon("close")}
       onClose={onClose}
       footer={
@@ -335,12 +333,15 @@ function SubjectField({ value, onChange }: { value: string; onChange: (next: str
   }
   const subjects = taxonomy.data?.subjects ?? [];
   if (subjects.length === 0) return freeText;
+  const choices = value && !subjects.some((subject) => subject.name === value)
+    ? [{ slug: "", name: value }, ...subjects]
+    : subjects;
 
   return (
     <View style={styles.subject}>
       <AppText style={styles.subjectLabel}>{t("subject_pick_label")}</AppText>
       <View style={styles.chips}>
-        {subjects.map((subject) => {
+        {choices.map((subject) => {
           const selected = value === subject.name;
           return (
             <Pressable

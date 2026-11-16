@@ -5,6 +5,7 @@ import type {
   InfoArticleDto,
   InfoArticleSummaryDto,
   Paginated,
+  PublicHolidayDto,
 } from "@mentor/types";
 
 export async function fetchExamCalendarByType(
@@ -38,4 +39,9 @@ export async function getInfoArticleBySlug(
   return (await http<InfoArticleDto>(
     `/v1/content/info-articles/${encodeURIComponent(slug)}`,
   )) as InfoArticleDto;
+}
+
+export async function listPublicHolidays(from: string, to: string): Promise<PublicHolidayDto[]> {
+  const query = new URLSearchParams({ from, to });
+  return (await http<PublicHolidayDto[]>(`/v1/content/holidays?${query.toString()}`)) as PublicHolidayDto[];
 }

@@ -1,9 +1,9 @@
-/** The Plan tab's views on the phone. Takvim (`calendar`) joins in stop B2. */
-export type PlanViewMode = "list" | "timeline";
+/** The Plan tab's views on the phone. */
+export type PlanViewMode = "list" | "timeline" | "calendar";
 
-/** The saved view, as the web's `readStoredViewMode`: anything but Timeline opens Liste. */
+/** Restore the saved view, defaulting to Liste. */
 export function readPlanViewMode(raw: string | null): PlanViewMode {
-  return raw === "timeline" ? "timeline" : "list";
+  return raw === "timeline" || raw === "calendar" ? raw : "list";
 }
 
 /** Where the rail's lines and markers are centred, from the scroller's content edge (web 22px). */
@@ -71,20 +71,20 @@ export function timelineSnapOffsets(
 }
 
 /**
- * What the timeline does on a render: wait until the week's tasks are in and every day is
- * measured, pin the week once, then scroll to each day picked outside its own scrolling (strip,
+ * Wait until the range's tasks are in and every day is
+ * measured, pin the range once, then scroll to each day picked outside its own scrolling (strip,
  * dot, date sheet, a saved task). `request` counts those picks; `handled` is the last one acted on,
  * so a day the scroller reached on its own never scrolls it, however late its render lands.
  */
-export function timelineSync(state: {
-  week: string;
-  pinnedWeek: string | null;
+export function scrollSync(state: {
+  range: string;
+  pinnedRange: string | null;
   loading: boolean;
   measured: boolean;
   request: number;
   handled: number;
 }): "wait" | "pin" | "scroll" | "none" {
-  if (state.pinnedWeek !== state.week) return state.loading || !state.measured ? "wait" : "pin";
+  if (state.pinnedRange !== state.range) return state.loading || !state.measured ? "wait" : "pin";
   return state.request === state.handled ? "none" : "scroll";
 }
 

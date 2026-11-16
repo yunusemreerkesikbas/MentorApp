@@ -1,4 +1,34 @@
-import type { WeeklyRecapOfferDto } from "@mentor/types";
+import type { WeeklyRecapArchiveItemDto, WeeklyRecapOfferDto } from "@mentor/types";
+
+export function recapArchiveParams(item: Pick<WeeklyRecapArchiveItemDto, "id" | "examId" | "weekStart" | "requiresOpening">) {
+  return item.requiresOpening
+    ? { examId: item.examId, weekStart: item.weekStart, archive: "1" }
+    : { reportId: item.id };
+}
+
+/** An archive lookup can recover an older right, but must never turn into a new purchase. */
+export function recapArchiveOfferAllowed(offer: Pick<WeeklyRecapOfferDto, "enabled" | "mode" | "cost" | "reportId">): boolean {
+  return Boolean(offer.reportId) || (offer.enabled && offer.mode === "OWNED" && offer.cost === 0);
+}
+
+export function recapPuhuNote(closingMessage: string, narration?: string): { text: string; personalized: boolean } {
+  const text = narration?.trim();
+  return text ? { text, personalized: true } : { text: closingMessage, personalized: false };
+}
+
+/** A native share sheet must settle before another one can open. */
+export function createRecapShareLock() {
+  let pending = false;
+  return async (share: () => Promise<void>) => {
+    if (pending) return;
+    pending = true;
+    try {
+      await share();
+    } finally {
+      pending = false;
+    }
+  };
+}
 
 /** What the access card's main button does: the web's `onOpen`, as a step. */
 export function recapOpenStep(

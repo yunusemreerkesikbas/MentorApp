@@ -127,6 +127,9 @@ export interface ThemePalette {
   readonly playSelected: string;
   readonly playSelectedInk: string;
   /** Progress bars and the Coin pill (`--color-progress*`). */
+  readonly chip: string;
+  readonly chipText: string;
+  readonly thumbViolet: string;
   readonly progress: string;
   readonly progressTrack: string;
   /** Hairlines and empty tracks on play surfaces (`--play-line`, `--play-track`). */
@@ -182,6 +185,9 @@ export const lightThemeTokens: ThemePalette = {
   dangerBg: "#FEE2E2",
   playSelected: "#E4EEFE",
   playSelectedInk: "#1A5FA3",
+  chip: "#BEA1FE",
+  chipText: "#7C6F97",
+  thumbViolet: "#DDACE5",
   progress: "#55ACEE",
   progressTrack: "#C3D9FD",
   playLine: "#E7E7E7",
@@ -225,6 +231,9 @@ export const darkThemeTokens: ThemePalette = {
   dangerBg: "#36181B",
   playSelected: "#2C3D56",
   playSelectedInk: "#7EB6E8",
+  chip: "#332C47",
+  chipText: "#C4B8E0",
+  thumbViolet: "#DDACE5",
   progress: "#55ACEE",
   progressTrack: "#2C3D56",
   playLine: "#2E3541",

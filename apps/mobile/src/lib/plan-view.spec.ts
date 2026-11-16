@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { planTaskCreateInput, planTaskFormValues } from "@mentor/core";
+
 import type { PlanTaskDto } from "@mentor/types";
 import {
   apiErrorCode,
   errorText,
-  monthGridDays,
+  dateSheetMonthDays,
   monthGridWeeks,
+  newPlanTaskDraft,
+  parsePlanDateLink,
+  parsePlanTaskPrefill,
+  weeklyReportTaskInput,
   selectedDayForWeek,
   shiftPlanWeek,
   withTaskStatus,
@@ -35,20 +41,20 @@ describe("monthGridWeeks", () => {
   });
 });
 
-describe("monthGridDays", () => {
+describe("dateSheetMonthDays", () => {
   it("covers the month in Monday-first whole weeks", () => {
-    const days = monthGridDays("2026-11-13");
+    const days = dateSheetMonthDays("2026-11-13");
     assert.equal(days.length, 42);
     assert.equal(days[0], "2026-10-26");
     assert.equal(days.at(-1), "2026-12-06");
   });
 
   it("starts the week before a month that begins on a Sunday", () => {
-    assert.equal(monthGridDays("2026-02-01")[0], "2026-01-26");
+    assert.equal(dateSheetMonthDays("2026-02-01")[0], "2026-01-26");
   });
 
   it("runs into the next year for December", () => {
-    const days = monthGridDays("2026-12-31");
+    const days = dateSheetMonthDays("2026-12-31");
     assert.equal(days.length % 7, 0);
     assert.equal(days.at(-1), "2027-01-03");
   });
@@ -107,5 +113,72 @@ describe("shiftPlanWeek", () => {
       anchor: "2026-12-28",
       selected: "2026-12-30",
     });
+  });
+});
+
+describe("newPlanTaskDraft", () => {
+  it("creates an all-day task when the add flow did not supply a slot", () => {
+    const draft = { ...newPlanTaskDraft(), title: "Tekrar" };
+    const input = planTaskCreateInput(planTaskFormValues(draft), "2026-11-25");
+    assert.equal(input.taskDate, "2026-11-25");
+    assert.equal(input.startTime, undefined);
+  });
+
+  it("prefills and serializes the selected hour, including the last hour of the day", () => {
+    for (const [start, end] of [["00:00", "01:00"], ["14:00", "15:00"], ["23:00", "23:59"]] as const) {
+      const draft = { ...newPlanTaskDraft(start), title: "Tekrar" };
+      const input = planTaskCreateInput(planTaskFormValues(draft), "2026-11-25");
+      assert.deepEqual([draft.allDay, input.startTime, input.endTime], [false, start, end]);
+    }
+  });
+});
+
+describe("Plan task prefill", () => {
+  it("builds an all-day editable draft from the recap suggestion", () => {
+    const prefill = parsePlanTaskPrefill({ add: "1", title: " Paragraf tekrarı ", subject: " Türkçe " });
+    assert.ok(prefill);
+    const draft = newPlanTaskDraft(undefined, prefill);
+    assert.deepEqual([draft.title, draft.subject, draft.allDay], ["Paragraf tekrarı", "Türkçe", true]);
+  });
+
+  it("only opens on an explicit request with a usable single title", () => {
+    assert.equal(parsePlanTaskPrefill({ add: "0", title: "Tekrar" }), null);
+    assert.equal(parsePlanTaskPrefill({ add: "1", title: "  " }), null);
+    assert.equal(parsePlanTaskPrefill({ add: "1", title: ["Tekrar", "Konu"] }), null);
+  });
+
+  it("limits the prefilled fields to what the task form accepts", () => {
+    const prefill = parsePlanTaskPrefill({ add: "1", title: "a".repeat(201), subject: "b".repeat(81) });
+    assert.deepEqual(prefill, { title: "a".repeat(200), subject: "b".repeat(80) });
+    assert.deepEqual(parsePlanTaskPrefill({ add: "1", title: "Tekrar", subject: ["A", "B"] }), {
+      title: "Tekrar", subject: "",
+    });
+  });
+});
+
+describe("weekly report task", () => {
+  it("keeps editable plan fields and leaves the report subject for the server", () => {
+    const values = planTaskFormValues({
+      ...newPlanTaskDraft("16:00", { title: " Review ", subject: "Mathematics" }),
+      description: " Review the notes ",
+      duration: "25",
+    });
+    assert.deepEqual(weeklyReportTaskInput(values, "2026-11-16"), {
+      title: "Review", taskDate: "2026-11-16", startTime: "16:00", endTime: "17:00",
+      description: "Review the notes", durationMinutes: 25,
+    });
+  });
+});
+
+describe("plan date links", () => {
+  it("accepts a real calendar day, including a leap day", () => {
+    assert.equal(parsePlanDateLink("2028-02-29"), "2028-02-29");
+    assert.equal(parsePlanDateLink("2026-11-01"), "2026-11-01");
+  });
+
+  it("rejects impossible days, timestamps and repeated route parameters", () => {
+    assert.equal(parsePlanDateLink("2027-02-29"), null);
+    assert.equal(parsePlanDateLink("2026-11-01T00:00:00Z"), null);
+    assert.equal(parsePlanDateLink(["2026-11-01"]), null);
   });
 });

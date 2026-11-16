@@ -5,11 +5,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { ApiClientError } from "@mentor/api-client";
-import type { WeeklyRecapOfferDto, WeeklyReviewDto } from "@mentor/types";
+import type { WeeklyRecapOfferDto, WeeklyRecapReportDto, WeeklyReviewDto } from "@mentor/types";
 import { RecapAccessCard } from "../../components/recap/recap-access-card.js";
-import { recapOpenStep } from "../../components/recap/recap-flow.js";
+import { RecapDeepAnalysis } from "../../components/recap/recap-deep-analysis.js";
+import { recapArchiveOfferAllowed, recapOpenStep } from "../../components/recap/recap-flow.js";
 import { RecapMessageState } from "../../components/recap/recap-message-state.js";
 import { RecapStory } from "../../components/recap/recap-story.js";
+import { Button } from "../../components/ui/button.js";
 import { Skeleton } from "../../components/ui/skeleton.js";
 import {
   fetchOwnedWeeklyRecap,
@@ -20,6 +22,7 @@ import {
 import { haptics } from "../../lib/haptics.js";
 import { markRecapOpened } from "../../lib/recap-opened.js";
 import { newRequestId } from "../../lib/request-id.js";
+import { useAuth } from "../../providers/auth-provider.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 
@@ -27,17 +30,20 @@ type State =
   | { kind: "loading" }
   | { kind: "error"; message: string }
   | { kind: "offer"; offer: WeeklyRecapOfferDto }
-  | { kind: "story"; review: WeeklyReviewDto; examId: string };
+  | { kind: "story"; review: WeeklyReviewDto; examId: string; report?: WeeklyRecapReportDto };
 
 /**
- * The weekly story (the web's `WeeklyRecapEntry`, story only): the access card while the week is
- * locked, then the story. With the access flag off the week is free and goes straight to it.
+ * The access card opens one report with two views. A free recap still has its usual story.
  */
 export default function WeeklyRecapScreen() {
-  const { examId, weekStart } = useLocalSearchParams<{ examId?: string; weekStart?: string }>();
+  const { examId, weekStart, view, reportId, archive } = useLocalSearchParams<{
+    examId?: string; weekStart?: string; view?: string; reportId?: string; archive?: string;
+  }>();
+  const recovering = archive === "1";
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { status } = useAuth();
   const t = useTranslations("recap");
   const { palette } = useThemeTokens();
   const [state, setState] = useState<State>({ kind: "loading" });
@@ -46,21 +52,39 @@ export default function WeeklyRecapScreen() {
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const message = useCallback(
-    (cause: unknown) => (cause instanceof ApiClientError ? cause.message : t("load_error")),
-    [t],
+    (cause: unknown) => (cause instanceof ApiClientError
+      ? cause.message
+      : t(recovering ? "archive_unavailable" : "load_error")),
+    [recovering, t],
   );
-  const exit = () => router.back();
+  const loadOffer = useCallback(async (exam: string, week?: string) => {
+    const offer = await fetchWeeklyRecapOffer(exam, week);
+    if (recovering && !recapArchiveOfferAllowed(offer)) throw new Error(t("archive_unavailable"));
+    return offer;
+  }, [recovering, t]);
+  const exit = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace("/analysis" as never);
+  };
 
   useEffect(() => {
-    if (!examId) {
-      setState({ kind: "error", message: t("load_error") });
-      return;
-    }
+    if (status !== "authenticated") return;
     let cancelled = false;
     setState({ kind: "loading" });
     void (async () => {
       try {
-        const offer = await fetchWeeklyRecapOffer(examId, weekStart);
+        if (typeof reportId === "string" && reportId) {
+          const report = await fetchOwnedWeeklyRecap(reportId);
+          if (!cancelled) setState({ kind: "story", review: report.review, examId: report.examId, report });
+          return;
+        }
+        if (typeof examId !== "string" || (recovering && typeof weekStart !== "string")) throw new Error(t("load_error"));
+        const offer = await loadOffer(examId, weekStart);
+        if (recovering && offer.reportId) {
+          const report = await fetchOwnedWeeklyRecap(offer.reportId);
+          if (!cancelled) setState({ kind: "story", review: report.review, examId: report.examId, report });
+          return;
+        }
         if (offer.enabled) {
           if (!cancelled) setState({ kind: "offer", offer });
           return;
@@ -74,7 +98,7 @@ export default function WeeklyRecapScreen() {
     return () => {
       cancelled = true;
     };
-  }, [examId, weekStart, attempt, message, t]);
+  }, [status, examId, weekStart, reportId, recovering, attempt, loadOffer, message, t]);
 
   // Coin earned elsewhere or a membership bought on the web: the offer catches up on return.
   const shown = state.kind === "offer" ? state.offer : null;
@@ -85,12 +109,12 @@ export default function WeeklyRecapScreen() {
     const subscription = AppState.addEventListener("change", (next) => {
       if (next !== "active") return;
       // ponytail: a failed background refetch keeps the shown offer; opening re-quotes on the server anyway.
-      fetchWeeklyRecapOffer(shownExam, shownWeek)
+      loadOffer(shownExam, shownWeek)
         .then((offer) => setState((now) => (now.kind === "offer" ? { kind: "offer", offer } : now)))
         .catch(() => undefined);
     });
     return () => subscription.remove();
-  }, [shownExam, shownWeek, busy]);
+  }, [shownExam, shownWeek, busy, loadOffer]);
 
   // The panel card turns into "watch again" once a READY story has loaded.
   const storyStart =
@@ -106,7 +130,7 @@ export default function WeeklyRecapScreen() {
     setError(null);
     try {
       const report = await fetchOwnedWeeklyRecap(id);
-      setState({ kind: "story", review: report.review, examId: report.examId });
+      setState({ kind: "story", review: report.review, examId: report.examId, report });
     } catch (cause) {
       setError(message(cause));
     } finally {
@@ -139,11 +163,12 @@ export default function WeeklyRecapScreen() {
       });
       haptics.success();
       void queryClient.invalidateQueries({ queryKey: ["economy"] });
-      setState({ kind: "story", review: report.review, examId: report.examId });
+      void queryClient.invalidateQueries({ queryKey: ["weekly-recap-archive"] });
+      setState({ kind: "story", review: report.review, examId: report.examId, report });
     } catch (cause) {
       setError(message(cause));
       try {
-        setState({ kind: "offer", offer: await fetchWeeklyRecapOffer(offer.examId, offer.weekStart) });
+        setState({ kind: "offer", offer: await loadOffer(offer.examId, offer.weekStart) });
       } catch (refreshError) {
         setState({ kind: "error", message: message(refreshError) });
       }
@@ -161,7 +186,7 @@ export default function WeeklyRecapScreen() {
     try {
       setState({
         kind: "offer",
-        offer: await fetchWeeklyRecapOffer(state.offer.examId, state.offer.weekStart),
+        offer: await loadOffer(state.offer.examId, state.offer.weekStart),
       });
     } catch (cause) {
       setError(message(cause));
@@ -199,7 +224,29 @@ export default function WeeklyRecapScreen() {
         />
       );
     }
-    return <RecapStory review={state.review} examId={state.examId} onExit={exit} />;
+    if (view === "analysis" && state.report) {
+      return (
+        <RecapDeepAnalysis
+          report={state.report}
+          onStory={() => router.setParams({ view: "story" })}
+          onExit={exit}
+          onPlan={(date) => router.push({ pathname: "/plan" as never, params: { date } })}
+        />
+      );
+    }
+    return (
+      <RecapStory
+        review={state.review}
+        examId={state.examId}
+        narration={state.report?.narration?.narration}
+        onOpenAnalysis={state.report ? () => router.setParams({ view: "analysis" }) : undefined}
+        onExit={exit}
+        onAddPlan={(task) => router.replace({
+          pathname: "/plan" as never,
+          params: { add: "1", title: task.title, ...(task.subject ? { subject: task.subject } : {}) },
+        })}
+      />
+    );
   }
 
   return (
@@ -239,6 +286,14 @@ export default function WeeklyRecapScreen() {
           onRetry={() => void reload()}
         />
       )}
+      {state.kind === "offer" && !recovering ? (
+        <Button
+          variant="secondary"
+          label={t("archive_title")}
+          disabled={busy}
+          onPress={() => router.push("/(app)/weekly-recap/archive" as never)}
+        />
+      ) : null}
     </ScrollView>
   );
 }

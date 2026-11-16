@@ -41,6 +41,8 @@ left to community/coach edits — they always come from `ContentModule` with man
 
 ## 3. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-16 — Mobile exam guide dates, labels and back navigation:** From a guide article, “Listeye dön” and Android Back reopen the guide list. Calendar and article labels use the app language. Calendar dates preserve the API's editorial day and official date label. Article update dates use the Istanbul calendar day. See `apps/mobile/src/app/(app)/knowledge.tsx`.
+
 - **2026-11-09 — Phase 2.6 Mobile Knowledge Center & Official Exam Calendar (`apps/mobile`):** Shipped `apps/mobile/src/lib/content-api.ts` (`fetchExamCalendarByType`, `listInfoArticles`, `getInfoArticleBySlug`) and `apps/mobile/src/app/(app)/knowledge.tsx` (`FlatList`-virtualized verified editorial guide reader with verbatim official exam calendar events, provenance metadata `source`/`verifiedBy`, and 1-tap `"Bu rehberi Puhu ile konuş"` `contextArticleSlug` bridge into Puhu chat, plus RAG source chip deep-linking from `coach-message-bubble.tsx`).
 
 - **2026-11-03..04 — 5-Exam Catalog (`ALES` & `DGS`, `APP-132`) & 58 Verified Editorial Guides:** Added `ALES` and `DGS` to `EXAM_CATALOG` with 2026/2027 ÖSYM calendar seeds and numerical/verbal taxonomies; authored, illustrated (1200×630 WebP covers), and verified comprehensive editorial article packages under `docs/editorial/` for **YKS** (23 articles), **KPSS Lisans** (10), **KPSS Ön Lisans** (7), **KPSS Ortaöğretim** (8), and **ALES** (10); unified article provenance footers and shared `CountdownCard` on `/bilgi`.

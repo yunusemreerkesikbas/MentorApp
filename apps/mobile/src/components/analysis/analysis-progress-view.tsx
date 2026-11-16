@@ -52,18 +52,17 @@ export function AnalysisProgressView({
     );
   }
 
-  const latestExamId =
-    analysis.ghost?.latest.id ?? mockExams[0]?.id ?? null;
+  const focusBaselineId = analysis.nextFocus?.recentTrend[0]?.mockExamId;
 
   const handleAddFocusToPlan = async () => {
     const focus = analysis.nextFocus;
-    if (!focus || !latestExamId || addingFocus) return;
+    if (!focus || !focusBaselineId || addingFocus) return;
     setAddingFocus(true);
     setFocusError(null);
     try {
       await createAnalysisFocusPlanTask({
         examId,
-        baselineMockExamId: latestExamId,
+        baselineMockExamId: focusBaselineId,
         expectedSubjectRef: focus.subjectRef,
         expectedTopicRef: focus.topicRef ?? null,
         title: focus.suggestedTaskTitle,
@@ -177,7 +176,7 @@ export function AnalysisProgressView({
             <AppText variant="caption" tone="success">
               {t("focus_added_plan")}
             </AppText>
-          ) : latestExamId ? (
+          ) : focusBaselineId ? (
             <Button
               label={t("focus_add_plan_cta")}
               onPress={() => void handleAddFocusToPlan()}

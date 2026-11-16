@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -13,9 +13,10 @@ import { signupSchema } from "@mentor/validation";
 import { Button, Card, Chip, TextField, AppText } from "../../components/ui/index.js";
 import { haptics } from "../../lib/haptics.js";
 import { STUDENT_CORE_ONLY } from "../../lib/release-scope.js";
+import { signupLegalUrl, type SignupLegalDocument } from "../../lib/signup-legal.js";
 import { useAppAvailability } from "../../providers/availability-provider.js";
 import { useAuth } from "../../providers/auth-provider.js";
-import { useTranslations } from "../../providers/i18n-provider.js";
+import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 
 export default function SignupScreen() {
@@ -24,7 +25,8 @@ export default function SignupScreen() {
   const insets = useSafeAreaInsets();
   const { signup } = useAuth();
   const { availability } = useAppAvailability();
-  const { palette, space, radii } = useThemeTokens();
+  const { palette, space } = useThemeTokens();
+  const { locale } = useLocale();
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
 
@@ -46,6 +48,15 @@ export default function SignupScreen() {
   }
 
   const isCoachIntent = intent === "COACH";
+
+  const openLegalDocument = async (document: SignupLegalDocument) => {
+    setErrorMessage(null);
+    try {
+      await Linking.openURL(signupLegalUrl(document, locale));
+    } catch {
+      setErrorMessage(t("legal_open_error"));
+    }
+  };
 
   const handleSubmit = async () => {
     setErrorMessage(null);
@@ -138,9 +149,9 @@ export default function SignupScreen() {
         <AppText variant="title">
           {isCoachIntent ? t("signup_title_coach") : t("signup_title")}
         </AppText>
-        <AppText variant="body" tone="secondary">
-          {isCoachIntent ? t("signup_coach_intro") : t("login_subtitle")}
-        </AppText>
+        {isCoachIntent ? (
+          <AppText variant="body" tone="secondary">{t("signup_coach_intro")}</AppText>
+        ) : null}
       </View>
 
       <Card style={{ gap: space.md }}>
@@ -169,74 +180,23 @@ export default function SignupScreen() {
           autoCapitalize="none"
         />
 
-        <Pressable
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: kvkkAccepted }}
-          onPress={() => {
-            haptics.selection();
-            setKvkkAccepted((prev) => !prev);
-          }}
-          style={styles.checkRow}
-        >
-          <View
-            style={[
-              styles.checkbox,
-              {
-                borderRadius: radii.inner,
-                borderColor: kvkkAccepted ? palette.ctaPlayBg : palette.border,
-                backgroundColor: kvkkAccepted
-                  ? palette.ctaPlayBg
-                  : palette.surface,
-              },
-            ]}
-          >
-            {kvkkAccepted ? (
-              <AppText variant="caption" tone="ctaInk">
-                ✓
-              </AppText>
-            ) : null}
-          </View>
-          <AppText variant="caption" style={{ flex: 1 }}>
-            {t("kvkk_label")}
-          </AppText>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: termsAccepted }}
-          onPress={() => {
-            haptics.selection();
-            setTermsAccepted((prev) => !prev);
-          }}
-          style={styles.checkRow}
-        >
-          <View
-            style={[
-              styles.checkbox,
-              {
-                borderRadius: radii.inner,
-                borderColor: termsAccepted
-                  ? palette.ctaPlayBg
-                  : palette.border,
-                backgroundColor: termsAccepted
-                  ? palette.ctaPlayBg
-                  : palette.surface,
-              },
-            ]}
-          >
-            {termsAccepted ? (
-              <AppText variant="caption" tone="ctaInk">
-                ✓
-              </AppText>
-            ) : null}
-          </View>
-          <AppText variant="caption" style={{ flex: 1 }}>
-            {t("terms_label")}
-          </AppText>
-        </Pressable>
+        <SignupConsent
+          checked={kvkkAccepted}
+          label={t("kvkk_label")}
+          linkLabel={t("kvkk_link")}
+          onToggle={() => setKvkkAccepted((prev) => !prev)}
+          onOpen={() => void openLegalDocument("kvkk")}
+        />
+        <SignupConsent
+          checked={termsAccepted}
+          label={t("terms_label")}
+          linkLabel={t("terms_link")}
+          onToggle={() => setTermsAccepted((prev) => !prev)}
+          onOpen={() => void openLegalDocument("terms")}
+        />
 
         {errorMessage ? (
-          <AppText variant="caption" tone="danger">
+          <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
             {errorMessage}
           </AppText>
         ) : null}
@@ -269,6 +229,55 @@ export default function SignupScreen() {
   );
 }
 
+type SignupConsentProps = {
+  checked: boolean;
+  label: string;
+  linkLabel: string;
+  onToggle: () => void;
+  onOpen: () => void;
+};
+
+function SignupConsent({ checked, label, linkLabel, onToggle, onOpen }: SignupConsentProps) {
+  const { palette, radii, touchTargets } = useThemeTokens();
+  return (
+    <View>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityLabel={label}
+        accessibilityState={{ checked }}
+        onPress={() => {
+          haptics.selection();
+          onToggle();
+        }}
+        style={[styles.checkRow, { minHeight: touchTargets.comfortable }]}
+      >
+        <View
+          style={[
+            styles.checkbox,
+            {
+              borderRadius: radii.inner,
+              borderColor: checked ? palette.ctaPlayBg : palette.border,
+              backgroundColor: checked ? palette.ctaPlayBg : palette.surface,
+            },
+          ]}
+        >
+          {checked ? <AppText variant="caption" tone="ctaInk">✓</AppText> : null}
+        </View>
+        <AppText variant="caption" style={styles.checkLabel}>{label}</AppText>
+      </Pressable>
+      <Pressable
+        accessibilityRole="link"
+        onPress={onOpen}
+        style={[styles.legalLink, { minHeight: touchTargets.comfortable }]}
+      >
+        <AppText variant="caption" style={[styles.legalLabel, { color: palette.playSelectedInk }]}>
+          {linkLabel}
+        </AppText>
+      </Pressable>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
@@ -283,7 +292,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    minHeight: 36,
+  },
+  checkLabel: {
+    flex: 1,
+  },
+  legalLink: {
+    alignSelf: "flex-start",
+    justifyContent: "center",
+    marginLeft: 32,
+  },
+  legalLabel: {
+    fontWeight: "800",
+    textDecorationLine: "underline",
   },
   checkbox: {
     width: 22,

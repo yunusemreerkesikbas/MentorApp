@@ -272,6 +272,7 @@ export function ProfileStep({
   const tCommon = useTranslations("common");
   const { setUserFromServer } = useAuth();
   const [username, setUsername] = useState(user.username ?? "");
+  const [usernameBlurred, setUsernameBlurred] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -324,10 +325,12 @@ export function ProfileStep({
           setUsername(val.toLowerCase());
           setErrorMessage(null);
         }}
+        onBlur={() => setUsernameBlurred(true)}
         autoCapitalize="none"
         autoCorrect={false}
         maxLength={24}
         hint={t("username_hint")}
+        errorMessage={usernameBlurred && !parsed.success ? t("username_invalid") : null}
       />
     </OnboardingStepShell>
   );

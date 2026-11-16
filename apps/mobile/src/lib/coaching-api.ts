@@ -17,14 +17,17 @@ import type {
   TodayPanelResponse,
   VisionDto,
   WeeklyChestView,
+  WeeklyRecapArchiveItemDto,
   WeeklyRecapOfferDto,
   WeeklyRecapReportDto,
+  WeeklyReportFollowUpDto,
   WeeklyReviewCompletionDto,
   WeeklyReviewDto,
 } from "@mentor/types";
 import type {
   CreateMoodCheckinInput,
   CreatePlanTaskInput,
+  CreateWeeklyReportTaskInput,
   OpenWeeklyRecapInput,
   SessionFeedbackInput,
   StartStudySessionInput,
@@ -46,6 +49,9 @@ import {
   studySessionControllerFinalize,
   studySessionControllerRecordFeedback,
   studySessionControllerStart,
+  weeklyRecapControllerArchive,
+  weeklyRecapControllerCreateTask,
+  weeklyRecapControllerTracking,
 } from "@mentor/api-client";
 
 const MAX_PAGE_SIZE = 100;
@@ -340,8 +346,20 @@ export async function openWeeklyRecap(input: OpenWeeklyRecapInput): Promise<Week
   })) as WeeklyRecapReportDto;
 }
 
+export async function fetchWeeklyRecapArchive(page: number): Promise<Paginated<WeeklyRecapArchiveItemDto>> {
+  return await weeklyRecapControllerArchive({ page, pageSize: 10 }) as Paginated<WeeklyRecapArchiveItemDto>;
+}
+
 export async function fetchOwnedWeeklyRecap(id: string): Promise<WeeklyRecapReportDto> {
   return (await http<WeeklyRecapReportDto>(
     `/v1/coach/weekly-recaps/${encodeURIComponent(id)}`,
   )) as WeeklyRecapReportDto;
+}
+
+export async function fetchWeeklyReportFollowUp(id: string): Promise<WeeklyReportFollowUpDto> {
+  return await weeklyRecapControllerTracking(id) as unknown as WeeklyReportFollowUpDto;
+}
+
+export async function createWeeklyReportTask(id: string, input: CreateWeeklyReportTaskInput): Promise<PlanTaskDto> {
+  return await weeklyRecapControllerCreateTask(id, input) as unknown as PlanTaskDto;
 }

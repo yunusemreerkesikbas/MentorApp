@@ -31,7 +31,7 @@ export default function AuthenticatedAppLayout() {
     return <Redirect href="/(onboarding)" />;
   }
 
-  if (isCoach(user) && isStudentOnlyPath(pathname)) {
+  if (isCoach(user) && (isStudentOnlyPath(pathname) || isNavActive(pathname, "/weekly-recap"))) {
     return <Redirect href={COACH_HOME as never} />;
   }
 

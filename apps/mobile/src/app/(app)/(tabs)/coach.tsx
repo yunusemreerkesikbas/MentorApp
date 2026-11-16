@@ -20,27 +20,30 @@ import {
   listCoachMessages,
   sendCoachMessage,
 } from "../../../lib/coach-api.js";
+import { openCoachChat, type CoachChatRoute } from "../../../lib/coach-chat-state.js";
 import { haptics } from "../../../lib/haptics.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
 import { tabBarClearance } from "../../../lib/layout.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
 
 export default function CoachScreen() {
+  const entry = useLocalSearchParams<CoachChatRoute>();
+  return (
+    <CoachChat
+      key={JSON.stringify([entry.seed, entry.contextMockExamId, entry.contextArticleSlug])}
+      entry={entry}
+    />
+  );
+}
+
+function CoachChat({ entry }: { entry: CoachChatRoute }) {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const params = useLocalSearchParams<{
-    seed?: string;
-    contextMockExamId?: string;
-    contextArticleSlug?: string;
-  }>();
   const { palette, space } = useThemeTokens();
   const t = useTranslations("coach");
   const tCommon = useTranslations("common");
 
-  const [activeConversationId, setActiveConversationId] = useState<
-    string | null
-  >(null);
-  const [draft, setDraft] = useState<string>(params.seed ?? "");
+  const [chat, setChat] = useState(() => openCoachChat(entry));
   const [sending, setSending] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [ephemeralFollowUps, setEphemeralFollowUps] = useState<string[]>([]);
@@ -55,9 +58,9 @@ export default function CoachScreen() {
     queryFn: () => listCoachConversations(10),
   });
 
-  const resolvedConversationId =
-    activeConversationId ??
-    (!params.seed ? (conversationsQuery.data?.[0]?.id ?? null) : null);
+  const resolvedConversationId = chat.conversationId === undefined
+    ? conversationsQuery.data?.[0]?.id ?? null
+    : chat.conversationId;
 
   const messagesQuery = useQuery({
     queryKey: ["coach", "messages", resolvedConversationId],
@@ -90,7 +93,7 @@ export default function CoachScreen() {
   };
 
   const handleSend = async (overrideText?: string) => {
-    const text = (overrideText ?? draft).trim();
+    const text = (overrideText ?? chat.draft).trim();
     if (!text || sending || !canChat) return;
     setSending(true);
     setErrorMessage(null);
@@ -99,28 +102,24 @@ export default function CoachScreen() {
       const reply = await sendCoachMessage({
         message: text,
         conversationId: resolvedConversationId ?? undefined,
-        contextMockExamId: params.contextMockExamId || undefined,
-        contextArticleSlug: params.contextArticleSlug || undefined,
+        ...chat.context,
       });
-      setDraft("");
-      setActiveConversationId(reply.conversationId);
+      setChat(openCoachChat({}, reply.conversationId));
       setEphemeralFollowUps(reply.followUps ?? []);
       haptics.success();
       await refreshCoach(reply.conversationId);
     } catch (err) {
       setErrorMessage(
-        err instanceof ApiClientError || err instanceof Error
-          ? err.message
-          : tCommon("error_body"),
+        err instanceof ApiClientError ? err.body.message : tCommon("error_body"),
       );
     } finally {
       setSending(false);
     }
   };
 
-  const handleNewChat = () => {
-    haptics.selection();
-    setActiveConversationId(null);
+  const selectConversation = (conversationId: string | null) => {
+    if (sending || (conversationId !== null && conversationId === resolvedConversationId)) return;
+    setChat(openCoachChat({}, conversationId));
     setEphemeralFollowUps([]);
     setErrorMessage(null);
   };
@@ -147,7 +146,7 @@ export default function CoachScreen() {
           </View>
           <Chip
             label={t("new_chat_cta")}
-            onPress={handleNewChat}
+            onPress={() => selectConversation(null)}
             tone="coach"
           />
         </View>
@@ -170,10 +169,7 @@ export default function CoachScreen() {
                   key={conv.id}
                   label={conv.title}
                   selected={resolvedConversationId === conv.id}
-                  onPress={() => {
-                    setActiveConversationId(conv.id);
-                    setEphemeralFollowUps([]);
-                  }}
+                  onPress={() => selectConversation(conv.id)}
                 />
               ))}
             </ScrollView>
@@ -241,8 +237,8 @@ export default function CoachScreen() {
           <TextField
             label={t("title")}
             placeholder={t("input_placeholder")}
-            value={draft}
-            onChangeText={setDraft}
+            value={chat.draft}
+            onChangeText={(draft) => setChat((current) => ({ ...current, draft }))}
             multiline
           />
 
@@ -255,7 +251,7 @@ export default function CoachScreen() {
           <Button
             label={sending ? t("sending_cta") : t("send_cta")}
             onPress={() => void handleSend()}
-            disabled={sending || !canChat || draft.trim().length === 0}
+            disabled={sending || !canChat || chat.draft.trim().length === 0}
             variant="primary"
           />
         </Card>

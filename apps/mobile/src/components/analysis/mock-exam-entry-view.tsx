@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import {
   emptyScores,
   paperSubjects,
+  recordedMockExamRows,
   validateSubjectCounts,
   withScore,
   type SubjectScores,
@@ -37,6 +38,7 @@ export function MockExamEntryView({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [savedNet, setSavedNet] = useState<string | null>(null);
+  const rows = recordedMockExamRows(sections, scores);
 
   const handleFieldChange = (
     slug: string,
@@ -60,7 +62,7 @@ export function MockExamEntryView({
   };
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submitting || rows.length === 0) return;
     setErrorMessage(null);
     setSavedNet(null);
 
@@ -69,13 +71,6 @@ export function MockExamEntryView({
       setErrorMessage(t("count_overflow_error"));
       return;
     }
-
-    const rows = sections.map((sub) => ({
-      subjectRef: sub.slug,
-      correct: Number(scores[sub.slug]?.correct || 0),
-      wrong: Number(scores[sub.slug]?.wrong || 0),
-      blank: Number(scores[sub.slug]?.blank || 0),
-    }));
 
     setSubmitting(true);
     try {
@@ -214,7 +209,7 @@ export function MockExamEntryView({
       <Button
         label={submitting ? t("saving_mock_cta") : t("save_mock_cta")}
         onPress={() => void handleSubmit()}
-        disabled={submitting || sections.length === 0}
+        disabled={submitting || rows.length === 0}
         variant="primary"
       />
     </Card>

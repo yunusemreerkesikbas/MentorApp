@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { StyleSheet, useWindowDimensions, View, type TextStyle } from "react-native";
 import { Image } from "expo-image";
 import Animated, {
@@ -30,7 +30,6 @@ import { RecapDecor } from "./recap-decor.js";
 import { headlineScale } from "./recap-flow.js";
 import { formatRecapDay } from "./recap-format.js";
 import { recapLocaleTag, riseIn, useRecapPuhu } from "./recap-kit.js";
-import { RecapSharePreview } from "./recap-share-preview.js";
 import { RecapWeekMap } from "./recap-week-map.js";
 
 type Translate = ReturnType<typeof useTranslations<"recap">>;
@@ -45,12 +44,14 @@ export function RecapSlide({
   elapsedMs,
   playing,
   reducedMotion,
+  finalCard,
 }: {
   slide: WeeklyRecapStorySlide;
   review: WeeklyReviewDto;
   elapsedMs: number;
   playing: boolean;
   reducedMotion: boolean;
+  finalCard?: ReactNode;
 }) {
   const revealed =
     slide.kind === "weekly_title" && (!slide.character || elapsedMs >= slide.character.headlineAtMs);
@@ -71,7 +72,13 @@ export function RecapSlide({
       ) : (
         <RecapDecor kind={slide.kind} reducedMotion={reducedMotion} />
       )}
-      <SlideContent slide={slide} review={review} elapsedMs={elapsedMs} reducedMotion={reducedMotion} />
+      <SlideContent
+        slide={slide}
+        review={review}
+        elapsedMs={elapsedMs}
+        reducedMotion={reducedMotion}
+        finalCard={finalCard}
+      />
     </View>
   );
 }
@@ -81,11 +88,13 @@ function SlideContent({
   review,
   elapsedMs,
   reducedMotion,
+  finalCard,
 }: {
   slide: WeeklyRecapStorySlide;
   review: WeeklyReviewDto;
   elapsedMs: number;
   reducedMotion: boolean;
+  finalCard?: ReactNode;
 }) {
   const t = useTranslations("recap");
   const { locale } = useLocale();
@@ -99,7 +108,7 @@ function SlideContent({
       return (
         <Center>
           {!secondBeat ? (
-            <Animated.View key="welcome" entering={riseIn(reducedMotion, 520)} style={styles.column}>
+            <View key="welcome" style={styles.column}>
               <Bob reducedMotion={reducedMotion}>
                 <Image source={host} style={styles.host} contentFit="contain" accessible={false} />
               </Bob>
@@ -112,7 +121,7 @@ function SlideContent({
                   endDate: formatRecapDay(review.period.endDate, locale),
                 })}
               </AppText>
-            </Animated.View>
+            </View>
           ) : (
             <Animated.View key="next" entering={riseIn(reducedMotion, 520)}>
               <AppText accessibilityRole="header" style={head.h0}>
@@ -265,16 +274,15 @@ function SlideContent({
     case "final":
       return (
         <Center tight>
-          <TextBeat
-            beat={beat}
-            reducedMotion={reducedMotion}
-            headline={
+          {finalCard ? (
+            <FinalCardFrame reducedMotion={reducedMotion}>{finalCard}</FinalCardFrame>
+          ) : (
+            <Animated.View entering={riseIn(reducedMotion)} style={styles.column}>
               <AppText accessibilityRole="header" style={[head.h0, { color: "#ffffff" }]}>
                 {t("final_title")}
               </AppText>
-            }
-            support={<RecapSharePreview review={review} />}
-          />
+            </Animated.View>
+          )}
         </Center>
       );
     default:
@@ -380,6 +388,29 @@ function TextBeat({
   );
 }
 
+/** Fit the preview above the dock while leaving the captured card at its own size. */
+function FinalCardFrame({ children, reducedMotion }: { children: ReactNode; reducedMotion: boolean }) {
+  const { width } = useWindowDimensions();
+  const [frameHeight, setFrameHeight] = useState(0);
+  const [cardHeight, setCardHeight] = useState(0);
+  const scale = cardHeight > 0 ? Math.min(1, frameHeight / cardHeight) : 0;
+
+  return (
+    <View
+      style={[styles.finalCardFrame, { width }]}
+      onLayout={({ nativeEvent }) => setFrameHeight(nativeEvent.layout.height)}
+    >
+      <Animated.View
+        entering={riseIn(reducedMotion)}
+        onLayout={({ nativeEvent }) => setCardHeight(nativeEvent.layout.height)}
+        style={styles.finalCardContent}
+      >
+        <View style={{ transform: [{ scale }], transformOrigin: "center top" }}>{children}</View>
+      </Animated.View>
+    </View>
+  );
+}
+
 /** The copy's column, clear of the progress bars above and the final dock below. */
 function Center({ children, top = false, tight = false }: { children: ReactNode; top?: boolean; tight?: boolean }) {
   const insets = useSafeAreaInsets();
@@ -390,7 +421,7 @@ function Center({ children, top = false, tight = false }: { children: ReactNode;
         {
           justifyContent: top ? "flex-start" : "center",
           paddingTop: insets.top + (tight ? 72 : top ? 160 : 112),
-          paddingBottom: insets.bottom + (tight ? 84 : 144),
+          paddingBottom: insets.bottom + 144,
         },
       ]}
     >
@@ -455,6 +486,15 @@ const styles = StyleSheet.create({
   },
   stretch: {
     alignSelf: "stretch",
+  },
+  finalCardFrame: {
+    flex: 1,
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  finalCardContent: {
+    position: "absolute",
+    top: 0,
   },
   lifted: {
     transform: [{ translateY: -200 }],

@@ -1,3 +1,4 @@
+import type { ComponentRef, Ref } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { Image } from "expo-image";
 import { buildWeeklyRecapShareCardFacts, buildWeeklyRecapShareCardRows } from "@mentor/core";
@@ -12,9 +13,13 @@ import { useRecapPuhu } from "./recap-kit.js";
 
 /**
  * The week's card on the last slide (the web's `WeeklyRecapShareCardPreview`): the lakap over its
- * character, then effort numbers only. Sharing it comes with the next stop.
+ * character, then effort numbers only. The share action captures this view alone.
  */
-export function RecapSharePreview({ review }: { review: WeeklyReviewDto }) {
+export function RecapSharePreview({ review, cardRef, onImageReady }: {
+  review: WeeklyReviewDto;
+  cardRef: Ref<ComponentRef<typeof View>>;
+  onImageReady: () => void;
+}) {
   const t = useTranslations("recap");
   const { width } = useWindowDimensions();
   const { radii } = useThemeTokens();
@@ -40,17 +45,29 @@ export function RecapSharePreview({ review }: { review: WeeklyReviewDto }) {
   const statRows = metricRows.slice(1, 6);
 
   return (
-    <View style={[styles.card, { width: Math.min(width - 16, 370), borderRadius: radii.card }]}>
+    <View
+      ref={cardRef}
+      collapsable={false}
+      style={[styles.card, { width: Math.min(width - 16, 370), borderRadius: radii.card }]}
+    >
       <View style={styles.hero}>
         {facts.characterKey ? (
           <Image
             source={recapArt.characters[facts.characterKey].still}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
+            onDisplay={onImageReady}
+            onError={onImageReady}
           />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.center]}>
-            <Image source={proud} style={styles.proud} contentFit="contain" />
+            <Image
+              source={proud}
+              style={styles.proud}
+              contentFit="contain"
+              onDisplay={onImageReady}
+              onError={onImageReady}
+            />
           </View>
         )}
         <Shade style={StyleSheet.absoluteFill} stops={[[0, 0.1], [0.5, 0], [1, 0.7]]} />

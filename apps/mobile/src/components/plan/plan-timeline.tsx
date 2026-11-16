@@ -29,7 +29,7 @@ import {
   TIMELINE_RAIL_X,
   timelinePinTarget,
   timelineSnapOffsets,
-  timelineSync,
+  scrollSync,
 } from "../../lib/plan-timeline.js";
 import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
@@ -74,7 +74,7 @@ export function PlanTimeline({
   weekTasks: Record<string, PlanTaskDto[]>;
   loading: boolean;
   selectedDate: string;
-  /** Bumped by every pick outside the scroller (strip, dot, date sheet); see `timelineSync`. */
+  /** Bumped by every pick outside the scroller (strip, dot, date sheet); see `scrollSync`. */
   scrollRequest: number;
   busyId: string | null;
   /** A dot tap, a pick like the strip's. */
@@ -138,9 +138,9 @@ export function PlanTimeline({
   const allMeasured = viewport > 0 && days.every((iso) => boxes[iso]);
 
   useEffect(() => {
-    const action = timelineSync({
-      week: weekAnchor,
-      pinnedWeek: readyWeek,
+    const action = scrollSync({
+      range: weekAnchor,
+      pinnedRange: readyWeek,
       loading,
       measured: allMeasured,
       request: scrollRequest,

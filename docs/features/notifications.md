@@ -41,6 +41,9 @@
 
 ## 3. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-16 — Mobile student inbox filters and dates:** Open Notification Center to see inbox dates in the app language using the Istanbul calendar day. The first store release omits the Community and Human Coach filter chips. All still includes existing notifications from both categories, with the existing safe routing and channel controls. See `apps/mobile/src/app/(app)/notifications.tsx` and `apps/mobile/src/lib/display-date.spec.ts` for the midnight boundary check.
+- **2026-11-16 — Mobile session reminder feedback:** Choose “Yarın bu saatte bana hatırlat” after finishing a session. The action displays its pending state and shows an inline retry message on failure. Already scheduled reminders still show confirmation. See `apps/mobile/src/components/session/session-done-card.tsx`.
+
 - **2026-11-09 — Phase 2.5..2.6 Mobile Notification Center, Deep-Link Router & Session Return Reminder (`apps/mobile` & `@mentor/core`):** Added `resolveNotificationMobileRoute(linkUrl)` in `@mentor/core` (`packages/core/src/notifications.ts`) to translate server/web notification links (`/tr/panel`, `/koc/sohbet`, `/topluluk/oda/...`, `/plan`, `/analiz`, `/kocum`, `/bilgi/...`) into mobile Expo Router paths while blocking external URLs. Shipped `apps/mobile/src/lib/notifications-api.ts`, `apps/mobile/src/app/(app)/notifications.tsx` (`FlatList` inbox with category filters, mark-read/mark-all-read/delete, and channel toggles), and 1-tap ~24h session return reminder (`scheduleSessionReturnReminder` in `session-done-card.tsx`).
 
 - **2026-11-01..05 — Branded `Resend` HTML Email Templates & Waitlist Invitation Mail (`APP-134`, `APP-138`):** Built `email-render.ts` responsive table templates with Puhu PNG headers, fixed multi-argument i18n interpolation on coach subjects, and added `identity.signup-invitation` waitlist emails + 6-month waitlist retention cleanup in `dispatch-daily-reminders`.

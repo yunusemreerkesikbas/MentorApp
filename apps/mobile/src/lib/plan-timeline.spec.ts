@@ -8,13 +8,14 @@ import {
   timelineEndSpace,
   timelinePinTarget,
   timelineSnapOffsets,
-  timelineSync,
+  scrollSync,
 } from "./plan-timeline.ts";
 
 describe("readPlanViewMode", () => {
-  it("opens Timeline only when Timeline was saved", () => {
+  it("reopens Timeline or Takvim when saved", () => {
     assert.equal(readPlanViewMode("timeline"), "timeline");
-    for (const raw of ["list", "calendar", "week", "garbage", "", null]) assert.equal(readPlanViewMode(raw), "list");
+    assert.equal(readPlanViewMode("calendar"), "calendar");
+    for (const raw of ["list", "week", "garbage", "", null]) assert.equal(readPlanViewMode(raw), "list");
   });
 });
 
@@ -97,10 +98,10 @@ describe("timelineSnapOffsets", () => {
   });
 });
 
-describe("timelineSync", () => {
-  const base: Parameters<typeof timelineSync>[0] = {
-    week: "2026-11-09",
-    pinnedWeek: null,
+describe("scrollSync", () => {
+  const base: Parameters<typeof scrollSync>[0] = {
+    range: "2026-11-09",
+    pinnedRange: null,
     loading: false,
     measured: true,
     request: 0,
@@ -108,20 +109,20 @@ describe("timelineSync", () => {
   };
 
   it("waits for the week's tasks and every day's size before the pin", () => {
-    assert.equal(timelineSync({ ...base, loading: true }), "wait");
-    assert.equal(timelineSync({ ...base, measured: false }), "wait");
-    assert.equal(timelineSync(base), "pin");
+    assert.equal(scrollSync({ ...base, loading: true }), "wait");
+    assert.equal(scrollSync({ ...base, measured: false }), "wait");
+    assert.equal(scrollSync(base), "pin");
   });
 
   it("pins a new week with a pick waiting, so the pin goes to the pick", () => {
-    assert.equal(timelineSync({ ...base, pinnedWeek: "2026-11-02", request: 3, handled: 2 }), "pin");
+    assert.equal(scrollSync({ ...base, pinnedRange: "2026-11-02", request: 3, handled: 2 }), "pin");
   });
 
   it("scrolls once per pick from outside the scroller, a re-tap of the selected day included", () => {
-    const pinned = { ...base, pinnedWeek: base.week };
-    assert.equal(timelineSync({ ...pinned, request: 4, handled: 3 }), "scroll");
+    const pinned = { ...base, pinnedRange: base.range };
+    assert.equal(scrollSync({ ...pinned, request: 4, handled: 3 }), "scroll");
     // A day the scroller reached on its own is no request, however late its render lands.
-    assert.equal(timelineSync({ ...pinned, request: 4, handled: 4 }), "none");
+    assert.equal(scrollSync({ ...pinned, request: 4, handled: 4 }), "none");
   });
 });
 

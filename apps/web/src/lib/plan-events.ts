@@ -1,5 +1,6 @@
 import type { Paginated, PlanEventDto } from "@mentor/types";
 import { getPlanEventControllerListEventsUrl, http } from "@mentor/api-client";
+import { studentEventCalendarItem as coreStudentEventItem, type StudentEventLabels } from "@mentor/core";
 import type { PlanCalendarItem } from "./plan-calendar-item";
 import { planEventNeutralColor } from "./plan-event-colors";
 
@@ -28,11 +29,7 @@ export async function listPlanEventsForRange(from: string, to: string): Promise<
 
 export { groupPlanEventsByDate } from "@mentor/core";
 
-export interface StudentEventLabels {
-  /** Second line of a meeting somebody else (the coach) set up with the student. */
-  withCoach: string;
-  cancelled: string;
-}
+export type { StudentEventLabels } from "@mentor/core";
 
 /** An event on the student's own calendar. Read-only: a student can open it, not change it. */
 export function studentEventCalendarItem(
@@ -40,20 +37,5 @@ export function studentEventCalendarItem(
   viewerId: string,
   labels: StudentEventLabels,
 ): PlanCalendarItem<PlanEventDto> {
-  const cancelled = event.status === "CANCELLED";
-  return {
-    id: event.id,
-    date: event.eventDate,
-    title: event.title,
-    startTime: event.startTime,
-    endTime: event.endTime,
-    color: planEventNeutralColor,
-    meta: event.organizerUserId === viewerId ? null : labels.withCoach,
-    groupKey: null,
-    glyph: "event",
-    muted: cancelled,
-    description: event.description,
-    hint: cancelled ? labels.cancelled : null,
-    source: event,
-  };
+  return coreStudentEventItem(event, viewerId, labels, planEventNeutralColor);
 }

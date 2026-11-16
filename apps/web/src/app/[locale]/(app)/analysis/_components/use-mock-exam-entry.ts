@@ -6,6 +6,7 @@ import { http } from "@mentor/api-client";
 import {
   emptyScores,
   paperSubjects,
+  recordedMockExamRows,
   scoresFromMockExam,
   type SubjectScores,
 } from "./analysis-types";
@@ -73,17 +74,13 @@ export function useMockExamEntry({
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!exam || submitting) return;
+    const rows = recordedMockExamRows(paperSubjects(subjects), scores);
+    if (rows.length === 0) return;
     setSubmitting(true);
     setError(null);
     try {
       const publisher = publisherName.trim() || null;
       const takenAt = new Date(`${takenAtDate}T12:00:00`).toISOString();
-      const rows = paperSubjects(subjects).map((subject) => ({
-        subjectRef: subject.slug,
-        correct: Number(scores[subject.slug]?.correct || 0),
-        wrong: Number(scores[subject.slug]?.wrong || 0),
-        blank: Number(scores[subject.slug]?.blank || 0),
-      }));
       const result = await http<MockExamDto>("/v1/mock-exams", {
         method: "POST",
         body: JSON.stringify({

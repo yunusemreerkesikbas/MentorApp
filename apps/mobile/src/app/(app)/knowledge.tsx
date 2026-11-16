@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
+  BackHandler,
   FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
   View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ExamType } from "@mentor/types";
@@ -23,9 +24,11 @@ import {
   getInfoArticleBySlug,
   listInfoArticles,
 } from "../../lib/content-api.js";
+import { getCatalog } from "../../i18n/index.js";
+import { formatDisplayDate } from "../../lib/display-date.js";
 import { haptics } from "../../lib/haptics.js";
 import { useAuth } from "../../providers/auth-provider.js";
-import { useTranslations } from "../../providers/i18n-provider.js";
+import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 
 export default function KnowledgeScreen() {
@@ -34,12 +37,27 @@ export default function KnowledgeScreen() {
   const params = useLocalSearchParams<{ slug?: string }>();
   const { user } = useAuth();
   const { palette, radii, space } = useThemeTokens();
+  const { locale } = useLocale();
   const t = useTranslations("knowledge");
   const tCommon = useTranslations("common");
+  const labels: Readonly<Partial<Record<string, string>>> = getCatalog(locale).knowledgeLabels;
+  const labelFor = (key: string, fallback: string) =>
+    Object.hasOwn(labels, key) ? (labels[key] ?? fallback) : fallback;
+  const verifierLabel = (name: string) => name === "ADMIN" ? t("admin_verifier") : name;
 
   const [selectedSlug, setSelectedSlug] = useState<string | null>(
     params.slug ?? null,
   );
+  const closeArticle = useCallback(() => setSelectedSlug(null), []);
+
+  useFocusEffect(useCallback(() => {
+    if (!selectedSlug) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      closeArticle();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [closeArticle, selectedSlug]));
 
   const examType = user?.examType ?? ExamType.YKS;
 
@@ -94,7 +112,10 @@ export default function KnowledgeScreen() {
                 {t("subtitle")}
               </AppText>
             </View>
-            <Chip label={t("back_cta")} onPress={() => router.back()} />
+            <Chip
+              label={t(selectedSlug ? "close_article_cta" : "back_cta")}
+              onPress={selectedSlug ? closeArticle : () => router.back()}
+            />
           </View>
 
           {/* Official Exam Calendar Data Card (Guardrail §4 #1 — verbatim) */}
@@ -120,15 +141,15 @@ export default function KnowledgeScreen() {
                   }}
                 >
                   <View style={styles.rowBetween}>
-                    <AppText variant="caption">{ev.type}</AppText>
+                    <AppText variant="caption">{labelFor(ev.type, t("calendar_event"))}</AppText>
                     <AppText variant="caption" tabularNums>
-                      {ev.eventAt.slice(0, 10)}
+                      {formatDisplayDate(ev.eventAt, locale, "UTC")}
                     </AppText>
                   </View>
                   <AppText variant="micro" tone="muted">
                     {t("verified_by", {
                       source: ev.source,
-                      verifier: ev.verifiedBy,
+                      verifier: verifierLabel(ev.verifiedBy),
                     })}
                   </AppText>
                 </View>
@@ -143,11 +164,10 @@ export default function KnowledgeScreen() {
             ) : articleDetail ? (
               <Card style={{ gap: space.md }}>
                 <View style={styles.rowBetween}>
-                  <Chip label={articleDetail.category} selected />
-                  <Chip
-                    label={t("close_article_cta")}
-                    onPress={() => setSelectedSlug(null)}
-                  />
+                  <Chip label={labelFor(articleDetail.category, t("article_category"))} selected />
+                  <AppText variant="micro" tone="muted">
+                    {formatDisplayDate(articleDetail.updatedAt, locale)}
+                  </AppText>
                 </View>
                 <AppText variant="sectionHeading">
                   {articleDetail.title}
@@ -155,7 +175,7 @@ export default function KnowledgeScreen() {
                 <AppText variant="micro" tone="muted">
                   {t("verified_by", {
                     source: articleDetail.source,
-                    verifier: articleDetail.verifiedBy,
+                    verifier: verifierLabel(articleDetail.verifiedBy),
                   })}
                 </AppText>
                 <AppText variant="body" tone="secondary">
@@ -216,9 +236,9 @@ export default function KnowledgeScreen() {
           }}
         >
           <View style={styles.rowBetween}>
-            <Chip label={item.category} />
+            <Chip label={labelFor(item.category, t("article_category"))} />
             <AppText variant="micro" tone="muted">
-              {item.updatedAt.slice(0, 10)}
+              {formatDisplayDate(item.updatedAt, locale)}
             </AppText>
           </View>
           <AppText variant="cardTitle">{item.title}</AppText>
@@ -230,7 +250,7 @@ export default function KnowledgeScreen() {
           <AppText variant="micro" tone="muted">
             {t("verified_by", {
               source: item.source,
-              verifier: item.verifiedBy,
+              verifier: verifierLabel(item.verifiedBy),
             })}
           </AppText>
         </Pressable>

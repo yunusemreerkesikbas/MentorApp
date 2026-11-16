@@ -8,8 +8,10 @@ import { ExamType, type MockExamDto } from "@mentor/types";
 import { AnalysisProgressView } from "../../../components/analysis/analysis-progress-view.js";
 import { MistakeNotebookView } from "../../../components/analysis/mistake-notebook-view.js";
 import { MockExamEntryView } from "../../../components/analysis/mock-exam-entry-view.js";
+import { PanelCard, PanelCardTitle } from "../../../components/panel/primitives.js";
 import {
   AppText,
+  Button,
   Chip,
   ScreenLoadingSkeleton,
   StateView,
@@ -21,6 +23,7 @@ import {
   fetchMockExamsList,
   fetchNotebookEntries,
 } from "../../../lib/analysis-api.js";
+import { fetchTodayPanel } from "../../../lib/coaching-api.js";
 import { useAuth } from "../../../providers/auth-provider.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
 import { tabBarClearance } from "../../../lib/layout.js";
@@ -40,6 +43,8 @@ export default function AnalysisScreen() {
   const { user } = useAuth();
   const { palette, space } = useThemeTokens();
   const t = useTranslations("analysis");
+  const tReport = useTranslations("recapReport");
+  const tRecap = useTranslations("recap");
   const tCommon = useTranslations("common");
 
   const [activeTab, setActiveTab] = useState<AnalysisTab>(() =>
@@ -79,6 +84,13 @@ export default function AnalysisScreen() {
     queryFn: () => fetchNotebookEntries(examId, 15),
     enabled: Boolean(examId),
   });
+
+  const todayQuery = useQuery({
+    queryKey: ["coaching", "today"],
+    queryFn: fetchTodayPanel,
+    enabled: activeTab === "progress",
+  });
+  const recapPeriod = todayQuery.data?.weeklyRecapPeriod;
 
   const refreshAll = async () => {
     await Promise.all([
@@ -141,6 +153,25 @@ export default function AnalysisScreen() {
           />
         ))}
       </View>
+
+      {activeTab === "progress" && recapPeriod?.status === "READY" ? (
+        <PanelCard style={{ gap: space.sm }}>
+          <PanelCardTitle>{tReport("entry_title")}</PanelCardTitle>
+          <AppText tone="secondary">{tReport("entry_detail")}</AppText>
+          <Button label={tReport("entry_cta")} onPress={() => router.push({
+            pathname: "/(app)/weekly-recap" as never,
+            params: { examId: recapPeriod.examId, weekStart: recapPeriod.startDate, view: "analysis" },
+          })} />
+        </PanelCard>
+      ) : null}
+
+      {activeTab === "progress" ? (
+        <Button
+          variant="secondary"
+          label={tRecap("archive_title")}
+          onPress={() => router.push("/(app)/weekly-recap/archive" as never)}
+        />
+      ) : null}
 
       {isLoading ? (
         <ScreenLoadingSkeleton />

@@ -43,6 +43,28 @@
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-15 — Plan tab, Takvim (stop B2a) (`apps/mobile`, `@mentor/core`, `@mentor/ui`)**
+  - **What was done** Takvim adds Ajanda and Ay, a shared 42-day board, a subject legend, public
+    holidays and the event details sheet. The screen persists the view and scale in SecureStore.
+    Ajanda follows its visible date while keeping the board month stable across spill days. Direct
+    picks and the navigation buttons update the month according to their own rules. In Ay, the
+    arrows step from the visible board month and retain the selected day-of-month across short months.
+  - **Implementation** The app-root `GestureHandlerRootView` wraps `src/app/_layout.tsx`. A root
+    around the board alone never started the pan on Android, reporting `didn't get starting ACTION_DOWN`.
+    PanResponder stalled for 1.3 s in the spike. The gesture-handler pan and Reanimated worklets
+    update the board height and row shift together on the UI thread.
+  - **Gotchas** Remount the agenda on month changes so Fabric layout measurements belong to one
+    visit. Wait for the end spacer to enter the native scroll range before pinning the last date.
+    Preserve the native visible day when a late meeting changes earlier row heights. Disable task
+    deletion in Takvim during another shared write so the second confirmation cannot be dropped.
+    Use UTC for date-only week and month arithmetic so the device timezone cannot shift a date.
+    At 360 dp, the day cell needs compact line heights to fit a holiday, two chips and the overflow
+    count inside 84 dp. Scroll the outer page to reach the handle and legend when the tab bar covers
+    the bottom of the expanded board. After a density change or force-stop, Expo Go may need the
+    local deep link reopened before the Plan tab is available.
+  - **Related files** `apps/mobile/src/components/plan/calendar/`, `apps/mobile/src/lib/plan-calendar.ts`,
+    `apps/mobile/src/app/(app)/(tabs)/plan.tsx`, `packages/core/src/plan-calendar.ts`.
+
 - **2026-11-14 — Plan tab, view switcher and Timeline (stop B1) (`apps/mobile`):**
   - **What was done:** The Plan tab gained the web's Liste / Timeline switcher (`SlidingTabs`, a reusable
     sliding pill in `components/ui`) and the Timeline view at phone width. The week sits on a rail inside
@@ -168,8 +190,9 @@
     facts and the access view moved to `@mentor/core` (`weekly-recap.ts`); the web re-exports them.
   - **Reduced motion:** the story starts paused, slides and beats fade in 120 ms, decor stands still; the
     last slide's actions show as soon as it is reached.
-  - **Not yet:** sharing the card, Puhu's note, deep analysis, the archive and "Plana ekle" (next stop);
-    the Premium path stays hidden. The Coin limit, retry and notice states are checked by the web's
+  - **Follow-up:** the mobile story now supports sharing the PNG card, viewing Puhu's note and deep
+    analysis, adding a suggested task to Plan and opening past reports from the archive. The Coin
+    limit, retry and notice states are checked by the web's
     `weekly-recap-access-view.spec.ts` (it runs the core function), not on a device. Checked on Android
     only, at 411×914 and 360×760 dp.
   - **Gotchas:** `Pressable` holds `onPressOut` back for a tap shorter than 130 ms (`minPressDuration`), so
