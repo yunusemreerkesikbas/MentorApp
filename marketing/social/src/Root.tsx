@@ -10,6 +10,7 @@ import { F6 } from "./pieces/F6";
 import { IF1, IF2, IF3, IF4, IF5, IF6 } from "./pieces/IF";
 import { IR1 } from "./pieces/IR1";
 import { IS1, IS2, IS3, IS4, IS5, IS6 } from "./pieces/IS";
+import { K1, K2 } from "./pieces/K";
 import { L1 } from "./pieces/L1";
 import { PF1 } from "./pieces/PF1";
 import { PF2 } from "./pieces/PF2";
@@ -24,11 +25,13 @@ import { S1 } from "./pieces/S1";
 import { S2 } from "./pieces/S2";
 import { S3 } from "./pieces/S3";
 import { S4 } from "./pieces/S4";
+import { WR1 } from "./pieces/WR1";
+import { WS1, WS2, WS3 } from "./pieces/WS";
 import { X1 } from "./pieces/X1";
-import { T1 } from "./t1/T1";
+import { T1, T1P } from "./t1/T1";
 
 // Pieces that have a component so far. Missing ids are skipped by Studio and the render script.
-export const COMPONENTS: Partial<Record<PieceId, FC<PieceProps>>> = { F1, F2, F3, F4, F5, F6, S1, S2, S3, S4, R1, R2, R3, X1, L1, PF1, PF2, PS1, PS2, PR1, PR2, T1, IF1, IF2, IF3, IF4, IF5, IF6, IS1, IS2, IS3, IS4, IS5, IS6, IR1 };
+export const COMPONENTS: Partial<Record<PieceId, FC<PieceProps>>> = { F1, F2, F3, F4, F5, F6, S1, S2, S3, S4, R1, R2, R3, X1, L1, PF1, PF2, PS1, PS2, PR1, PR2, T1, T1P, IF1, IF2, IF3, IF4, IF5, IF6, IS1, IS2, IS3, IS4, IS5, IS6, IR1, K1, K2, WS1, WS2, WS3, WR1 };
 
 export function Root() {
   return (
