@@ -5,10 +5,12 @@ export type PieceId =
   | "R1" | "R2" | "R3"
   | "X1" | "L1"
   | "PF1" | "PF2" | "PS1" | "PS2" | "PR1" | "PR2"
-  | "T1"
+  | "T1" | "T1P"
   | "IF1" | "IF2" | "IF3" | "IF4" | "IF5" | "IF6"
   | "IS1" | "IS2" | "IS3" | "IS4" | "IS5" | "IS6"
-  | "IR1";
+  | "IR1"
+  | "K1" | "K2"
+  | "WS1" | "WS2" | "WS3" | "WR1";
 
 export type Format = "feed" | "story" | "reel" | "landscape";
 
@@ -49,8 +51,9 @@ export const PIECES: Piece[] = [
   { id: "PS2", format: "story", title: "Premium · Puhu'ya pelerin geldi" },
   { id: "PR1", format: "reel", title: "Premium · Kahraman modu", video: { fps: 30, durationInFrames: 270, endCardFrom: 210, coverFrame: 180 } },
   { id: "PR2", format: "reel", title: "Premium · Gece uçuşu", video: { fps: 30, durationInFrames: 270, endCardFrom: 210, coverFrame: 180 } },
-  // Promo film (spec docs/plans/2026-11-08-promo-video-design.md): 62 s = 31 bars at 120 BPM.
-  { id: "T1", format: "reel", title: "Tanıtım · Ekrana dalış", video: { fps: 30, durationInFrames: 1860, endCardFrom: 1800, coverFrame: 475 } },
+  // Promo film (spec docs/plans/2026-11-08-promo-video-design.md): 62,5 s at 120 BPM (31 bars and one extra intro beat).
+  { id: "T1", format: "reel", title: "Tanıtım · Ekrana dalış", video: { fps: 30, durationInFrames: 1875, endCardFrom: 1815, coverFrame: 490 } },
+  { id: "T1P", format: "feed", title: "Tanıtım · Ekrana dalış (post 4:5)", video: { fps: 30, durationInFrames: 1875, endCardFrom: 1815, coverFrame: 490 } },
   // Feature ads, wave 1 (spec docs/plans/2026-11-10-feature-ads-design.md). The number is the feature:
   // 1 odak seansı, 2 haftalık plan, 3 Yanlış Defterim, 4 deneme analizi, 5 masa, 6 haftalık lakap. IF = "Puhu iş başında" feed,
   // IS = POV story, IR = 8 s reel (16 beats).
@@ -67,6 +70,14 @@ export const PIECES: Piece[] = [
   { id: "IS5", format: "story", title: "POV · kütüphaneye gidince çalışırım" },
   { id: "IS6", format: "story", title: "POV · bu hafta hiçbir şey yapmadım" },
   { id: "IR1", format: "reel", title: "İş başında · Koruma reel", video: { fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 } },
+  // "İşe yarar" carousels (spec docs/plans/2026-11-15-social-growth-strategy-design.md): saveable study tips, direction C.
+  { id: "K1", format: "feed", title: "İşe yarar · Denemeden sonraki 20 dakika", cards: 5 },
+  { id: "K2", format: "feed", title: "İşe yarar · Tutan bir haftalık plan", cards: 5 },
+  // Waitlist series "Yerini kap" (same spec, Phase 1): three stories (B gece, A mavi, C krem) and an 8 s reel.
+  { id: "WS1", format: "story", title: "Yerini kap · Işık yandı" },
+  { id: "WS2", format: "story", title: "Yerini kap · Açılınca ilk işin ne (anket)" },
+  { id: "WS3", format: "story", title: "Yerini kap · Hepsi aynı masada" },
+  { id: "WR1", format: "reel", title: "Yerini kap · Işığı yak", video: { fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 } },
 ];
 
 export const compositionIds = (p: Piece): string[] =>
@@ -78,7 +89,7 @@ export type GuideProps = { guides: boolean; safe: boolean };
 export const EXPORT_PROPS: GuideProps = { guides: false, safe: false };
 export const STUDIO_PROPS: GuideProps = { guides: true, safe: false };
 
-// What every piece component receives. F4 cards also get `card` (1-based).
+// What every piece component receives. Carousel cards (F4, K1, K2) also get `card` (1-based).
 export type PieceProps = GuideProps & { card?: number };
 
 // Sticker guides are a Studio preview aid; a render never shows them.

@@ -1,34 +1,51 @@
+import type { CSSProperties } from "react";
 import { Img, staticFile } from "remotion";
+import { Phone } from "../components/Phone";
 import { ART } from "../art";
 import { C } from "../brand";
 import { COPY } from "../copy";
-import { MasaChip } from "../components/MasaChip";
-import { CardRow, PovStory } from "../components/Pov";
+import { PovStory } from "../components/Pov";
 import type { PieceProps } from "../pieces";
 import { NotebookPage, PAGE, STAMP_GREEN } from "../t1/parts/Notebook";
+import { Ring } from "../t1/parts/Ring";
+import { StickerWords } from "../t1/parts/StickerWords";
 import { TradingCard } from "../t1/parts/TradingCard";
 
 // Feature ads, POV stories. Each is PovStory + one Puhu + the feature card's rows.
 
-// 1 · Odak seansı.
+// 1 · Odak seansı: no card. The app's seans table in the yellow timer ring, set to 25:00 (as in T1 scene 09).
+const IS1_RING = { cy: 1450, r: 260 };
 export function IS1({ guides, safe }: PieceProps) {
   const T = COPY.IS1!;
+  const table = IS1_RING.r * 1.76;
   return (
-    <PovStory copy={T} guides={guides} safe={safe} puhu={{ art: "facepalm", alt: T.altPuhu, left: 520, top: 760, width: 500, height: 531 }}>
-      <CardRow tag={T.row1Tag} text={T.row1} />
-      <CardRow tag={T.row2Tag} text={T.row2} />
+    <PovStory bare copy={T} guides={guides} safe={safe} puhu={{ art: "facepalm", alt: T.altPuhu, left: 610, top: 760, width: 420, height: 446 }}>
+      <div aria-hidden="true" style={{ position: "absolute", left: 540 - 420, top: IS1_RING.cy - 300, width: 840, height: 600, borderRadius: "50%", background: "radial-gradient(ellipse at 50% 50%, rgba(255, 224, 130, 0.45) 0%, rgba(255, 224, 130, 0) 70%)" }} />
+      <Img src={staticFile(ART.t1RoomHomeTable)} alt={T.altMasa} style={{ position: "absolute", left: 540 - table / 2, top: IS1_RING.cy - table / 2, width: table, height: table, filter: "drop-shadow(0 22px 22px rgba(6, 14, 40, 0.45))" }} />
+      <Ring cy={IS1_RING.cy} r={IS1_RING.r} stroke={26} />
+      <StickerWords lines={[T.dial]} top={IS1_RING.cy - 80} at={[-90]} size={140} />
     </PovStory>
   );
 }
 
-// 2 · Haftalık plan (canvas board F-POV-Story).
+// The real app capture on the 3D phone, scrolled by `scroll` (screen px) so the part that matters sits at the top.
+function AppPhone({ art, alt, scroll, style }: { art: "t1ScreenPlan" | "t1ScreenDeneme"; alt: string; scroll: number; style: CSSProperties }) {
+  return (
+    <Phone
+      width={style.width as number}
+      screenBg="#F5F7FB"
+      style={{ filter: "drop-shadow(0 30px 40px rgba(6, 14, 40, 0.5))", ...style }}
+      screen={<Img src={staticFile(ART[art])} alt={alt} style={{ position: "absolute", left: 0, top: -scroll, width: 378, height: 822 }} />}
+    />
+  );
+}
+
+// 2 · Haftalık plan: no card. Puhu peeks over the phone; the real /plan screen shows Monday picked and the first tasks.
 export function IS2({ guides, safe }: PieceProps) {
   const T = COPY.IS2!;
   return (
-    <PovStory copy={T} guides={guides} safe={safe} puhu={{ art: "p2", alt: T.altPuhu, left: 360, top: 640, width: 760, height: 760 }}>
-      {[1, 2, 3].map((i) => (
-        <CardRow key={i} tag={T[`row${i}Tag`]} text={T[`row${i}`]} meta={T[`row${i}Meta`]} />
-      ))}
+    <PovStory bare copy={T} guides={guides} safe={safe} puhu={{ art: "p2", alt: T.altPuhu, left: 360, top: 640, width: 760, height: 760 }}>
+      <AppPhone art="t1ScreenPlan" alt={T.altScreen} scroll={110} style={{ left: 290, top: 1150, width: 820, rotate: "5deg" }} />
     </PovStory>
   );
 }
@@ -47,14 +64,13 @@ export function IS3({ guides, safe }: PieceProps) {
   );
 }
 
-// 4 · Deneme analizi.
+// 4 · Deneme analizi: no card. The real deneme result on the phone, the next-topic chip from T1 stuck beside it.
 export function IS4({ guides, safe }: PieceProps) {
   const T = COPY.IS4!;
   return (
-    <PovStory copy={T} guides={guides} safe={safe} bubbleSize={44} puhu={{ art: "hava", alt: T.altPuhu, left: 470, top: 770, width: 600, height: 588 }}>
-      {[1, 2, 3].map((i) => (
-        <CardRow key={i} tag={String(i)} text={T[`row${i}`]} meta={T[`row${i}Meta`]} />
-      ))}
+    <PovStory bare copy={T} guides={guides} safe={safe} bubbleSize={44} puhu={{ art: "hava", alt: T.altPuhu, left: 470, top: 770, width: 600, height: 588 }}>
+      <AppPhone art="t1ScreenDeneme" alt={T.altScreen} scroll={140} style={{ left: 20, top: 1150, width: 700, rotate: "-5deg" }} />
+      <div style={{ position: "absolute", left: 560, top: 1470, padding: "18px 32px", borderRadius: 999, background: C.yellow, color: C.navy, fontSize: 46, fontWeight: 1000, lineHeight: 1, whiteSpace: "nowrap", boxShadow: `0 8px 0 ${C.navy}`, rotate: "-4deg" }}>{T.next}</div>
     </PovStory>
   );
 }
@@ -65,9 +81,7 @@ export function IS5({ guides, safe }: PieceProps) {
   return (
     <PovStory bare copy={T} guides={guides} safe={safe} quoteSize={88} bubbleSize={44} puhu={{ art: "p1", alt: T.altPuhu, left: 610, top: 770, width: 430, height: 431 }}>
       <div aria-hidden="true" style={{ position: "absolute", left: -60, top: 1210, width: 1200, height: 560, borderRadius: "50%", background: "radial-gradient(ellipse at 50% 50%, rgba(255, 224, 130, 0.5) 0%, rgba(255, 224, 130, 0.16) 45%, rgba(255, 224, 130, 0) 70%)" }} />
-      <Img src={staticFile(ART.masa)} alt={T.altMasa} style={{ position: "absolute", left: 30, top: 1150, width: 1020, height: 573, filter: "drop-shadow(0 26px 24px rgba(6, 14, 40, 0.5))" }} />
-      <MasaChip count={4} fontSize={34} background="#FFFFFF" style={{ position: "absolute", left: 392, top: 1596, boxShadow: `0 8px 0 ${C.navy}`, transform: "rotate(-4deg)" }} />
-    </PovStory>
+      <Img src={staticFile(ART.masa)} alt={T.altMasa} style={{ position: "absolute", left: 30, top: 1150, width: 1020, height: 573, filter: "drop-shadow(0 26px 24px rgba(6, 14, 40, 0.5))" }} />    </PovStory>
   );
 }
 
