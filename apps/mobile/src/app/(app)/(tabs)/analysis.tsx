@@ -1,18 +1,18 @@
-import { useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import { BackHandler, RefreshControl, ScrollView, type ScrollViewInstance } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { parseAnalysisTab, type AnalysisTab } from "@mentor/core";
+import { parseAnalysisTab, type AnalysisTab, type AnalysisViewTab } from "@mentor/core";
 import { ExamType, type MockExamDto } from "@mentor/types";
 import { AnalysisProgressView } from "../../../components/analysis/analysis-progress-view.js";
+import { AnalysisHeader } from "../../../components/analysis/analysis-header.js";
 import { MistakeNotebookView } from "../../../components/analysis/mistake-notebook-view.js";
 import { MockExamEntryView } from "../../../components/analysis/mock-exam-entry-view.js";
 import { PanelCard, PanelCardTitle } from "../../../components/panel/primitives.js";
 import {
   AppText,
   Button,
-  Chip,
   ScreenLoadingSkeleton,
   StateView,
 } from "../../../components/ui/index.js";
@@ -29,12 +29,6 @@ import { useTranslations } from "../../../providers/i18n-provider.js";
 import { tabBarClearance } from "../../../lib/layout.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
 
-const TABS: { id: AnalysisTab; labelKey: "tab_progress" | "tab_mistakes" | "tab_entry" }[] = [
-  { id: "progress", labelKey: "tab_progress" },
-  { id: "mistakes", labelKey: "tab_mistakes" },
-  { id: "entry", labelKey: "tab_entry" },
-];
-
 export default function AnalysisScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -42,7 +36,6 @@ export default function AnalysisScreen() {
   const params = useLocalSearchParams<{ tab?: string }>();
   const { user } = useAuth();
   const { palette, space } = useThemeTokens();
-  const t = useTranslations("analysis");
   const tReport = useTranslations("recapReport");
   const tRecap = useTranslations("recap");
   const tCommon = useTranslations("common");
@@ -50,6 +43,24 @@ export default function AnalysisScreen() {
   const [activeTab, setActiveTab] = useState<AnalysisTab>(() =>
     parseAnalysisTab(params.tab),
   );
+  const returnTab = useRef<AnalysisViewTab>(activeTab === "mistakes" ? "mistakes" : "progress");
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const changeTab = (next: AnalysisTab) => {
+    if (next === activeTab) return;
+    if (next === "entry" && activeTab !== "entry") returnTab.current = activeTab;
+    setActiveTab(next);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  };
+
+  useFocusEffect(useCallback(() => {
+    if (activeTab !== "entry") return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      setActiveTab(returnTab.current);
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      return true;
+    });
+    return () => subscription.remove();
+  }, [activeTab]));
 
   const examType = user?.examType ?? ExamType.YKS;
   const examVariant = user?.examVariant ?? null;
@@ -119,6 +130,8 @@ export default function AnalysisScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
+      keyboardShouldPersistTaps="handled"
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1, backgroundColor: palette.bg }}
       refreshControl={
@@ -135,24 +148,9 @@ export default function AnalysisScreen() {
         gap: space.lg,
       }}
     >
-      <View style={{ gap: space.xs }}>
-        <AppText variant="title">{t("title")}</AppText>
-        <AppText variant="body" tone="secondary">
-          {t("subtitle")}
-        </AppText>
-      </View>
-
-      {/* Tab Bar */}
-      <View style={styles.tabRow}>
-        {TABS.map((item) => (
-          <Chip
-            key={item.id}
-            label={t(item.labelKey)}
-            selected={activeTab === item.id}
-            onPress={() => setActiveTab(item.id)}
-          />
-        ))}
-      </View>
+      <AnalysisHeader tab={activeTab} examName={taxonomyQuery.data?.exam.name ?? null}
+        loading={taxonomyQuery.isLoading} onTab={changeTab} onAddExam={() => changeTab("entry")}
+        onBack={() => changeTab(returnTab.current)} />
 
       {activeTab === "progress" && recapPeriod?.status === "READY" ? (
         <PanelCard style={{ gap: space.sm }}>
@@ -189,7 +187,7 @@ export default function AnalysisScreen() {
           subjects={taxonomyQuery.data.subjects}
           onSaved={() => {
             void refreshAll();
-            setActiveTab("progress");
+            changeTab("progress");
           }}
         />
       ) : activeTab === "mistakes" ? (
@@ -206,7 +204,7 @@ export default function AnalysisScreen() {
           examId={taxonomyQuery.data.exam.id}
           analysis={analysisQuery.data ?? null}
           mockExams={mockExamsQuery.data ?? []}
-          onOpenEntryTab={() => setActiveTab("entry")}
+          onOpenEntryTab={() => changeTab("entry")}
           onOpenCoachForExam={handleOpenCoachForExam}
           onRefresh={() => void refreshAll()}
         />
@@ -214,11 +212,3 @@ export default function AnalysisScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  tabRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-});

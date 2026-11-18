@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
+import { LikeIcon } from "@solar-icons/react-native/linear/like";
+import { DislikeIcon } from "@solar-icons/react-native/linear/dislike";
 import type { CoachActionStatus, CoachMessageDto } from "@mentor/types";
 import { decideCoachAction, setCoachMessageFeedback } from "../../lib/coach-api.js";
 import { createPlanTask } from "../../lib/coaching-api.js";
 import { haptics } from "../../lib/haptics.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
-import { AppText, Button, Card, Chip } from "../ui/index.js";
+import { AppText, Button, Chip } from "../ui/index.js";
 
 export interface CoachMessageBubbleProps {
   message: CoachMessageDto;
@@ -21,7 +23,7 @@ export function CoachMessageBubble({
   const router = useRouter();
   const t = useTranslations("coach");
   const tDash = useTranslations("dashboard");
-  const { palette, radii, space } = useThemeTokens();
+  const { palette, radii, space, touchTargets } = useThemeTokens();
 
   const [actionStatus, setActionStatus] = useState<CoachActionStatus | undefined>(
     message.actionStatus,
@@ -79,7 +81,6 @@ export function CoachMessageBubble({
           styles.userBubble,
           {
             backgroundColor: palette.ctaPlayBg,
-            borderColor: palette.ctaPlayEdge,
             borderRadius: radii.card,
             padding: space.md,
           },
@@ -93,11 +94,7 @@ export function CoachMessageBubble({
   }
 
   return (
-    <Card variant="coach" style={{ gap: space.md }}>
-      <AppText variant="caption" tone="coach">
-        Puhu
-      </AppText>
-
+    <View style={{ gap: space.md }}>
       <AppText variant="body" tone="main">
         {message.content}
       </AppText>
@@ -231,30 +228,38 @@ export function CoachMessageBubble({
       <View style={styles.feedbackRow}>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={t("helpful_yes")}
+          accessibilityState={{ selected: feedback === 1 }}
+          style={{ minHeight: touchTargets.min, flexDirection: "row", alignItems: "center", gap: space.xs }}
           hitSlop={6}
           onPress={() => void handleFeedback(1)}
         >
+          <LikeIcon size={16} color={feedback === 1 ? palette.success : palette.muted} />
           <AppText
             variant="micro"
             tone={feedback === 1 ? "success" : "muted"}
           >
-            👍 {t("helpful_yes")}
+            {t("helpful_yes")}
           </AppText>
         </Pressable>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={t("helpful_no")}
+          accessibilityState={{ selected: feedback === -1 }}
+          style={{ minHeight: touchTargets.min, flexDirection: "row", alignItems: "center", gap: space.xs }}
           hitSlop={6}
           onPress={() => void handleFeedback(-1)}
         >
+          <DislikeIcon size={16} color={feedback === -1 ? palette.warning : palette.muted} />
           <AppText
             variant="micro"
             tone={feedback === -1 ? "warning" : "muted"}
           >
-            👎 {t("helpful_no")}
+            {t("helpful_no")}
           </AppText>
         </Pressable>
       </View>
-    </Card>
+    </View>
   );
 }
 
@@ -262,7 +267,6 @@ const styles = StyleSheet.create({
   userBubble: {
     alignSelf: "flex-end",
     maxWidth: "85%",
-    borderWidth: 1,
   },
   subBox: {
     borderWidth: 1,

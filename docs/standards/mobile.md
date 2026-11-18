@@ -43,6 +43,52 @@
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-18 — Analysis header and entry navigation (`apps/mobile`):** Matched the phone-web header's title/exam caption, two-view sliding control and separate entry action. Entry returns to its source view through Analize dön or Android Back; both were verified on the isolated student account. This is a header/navigation slice; the progress and mistake cards still await visual parity. Related files: `src/app/(app)/(tabs)/analysis.tsx`, `src/components/analysis/analysis-header.tsx`, `src/i18n/{tr,en}.ts`.
+
+- **2026-11-18 — Puhu chat layout at the web reference (`apps/mobile`):**
+  - **What changed:** Same-account, Turkish/light, 411 dp web/Android comparison replaced stacked
+    chat cards with the web's greeting, pastel scene, open calibration, history sheet and fixed
+    composer. Replies use the plain transcript treatment; feedback has accessible Solar buttons.
+    Existing preferences, consent, message/context handling and action APIs remain in use.
+  - **Usage:** Open Puhu, answer or skip the first-chat card, or open history for New chat and
+    memory controls. Suggested starters populate the input without sending. Privacy details open
+    the existing policy in the app language; returning retains the draft.
+  - **Android verification:** Offline preference save retains all three selections; reconnecting
+    saves the exact values. Skip preserves saved preferences and memory decline. History, New chat,
+    offline draft retention and one persisted real-provider reply were checked. At 360 dp in dark
+    mode the send control clears the open keyboard and tabs hide; notices return after Back.
+  - **Limits:** The real-provider check used the configured `gpt-4o-mini` model and one reply.
+    Broader response-quality checks, the remaining screen comparisons, native push and iOS remain
+    open. No provider setting or account role was changed.
+  - **Related files:** `src/components/coach/coach-{chat-chrome,calibration-card,message-bubble}.tsx`,
+    `src/app/(app)/(tabs)/coach.tsx`, `src/lib/signup-legal{,.spec}.ts`.
+
+- **2026-11-17 — Android password recovery and Metro QA (`apps/mobile`):**
+  - **Verified:** Empty/invalid email, enumeration-safe success for known/unknown addresses, offline
+    error with the email retained, reconnect/retry, TR/EN email paths and password changes in Android
+    Chrome, old-password rejection and new-password native login. Reuse of each link returns 400;
+    both prior access/refresh session pairs return 401. A previously signed-in native session
+    returns to Welcome on cold start. At 360 dp both buttons clear the keyboard; Android back
+    closes the keyboard first, then returns to login. Only a dedicated local student was reset.
+    Its current credentials and QA helpers stay gitignored under `.expo/qa-reset-*`.
+  - **Development setup:** Removed pre-SDK-52 manual Metro workspace overrides. SDK 58's
+    `getDefaultConfig` watches the imported workspaces without crawling the whole repository root.
+    Keep the relative `.js` → TypeScript resolver. Restart Metro with `--clear` once after the change.
+    The web reset page uses the existing browser flow; return to Expo Go manually.
+  - **Related files:** `metro.config.js`, `src/app/(auth)/{login,forgot-password}.tsx`;
+    see `docs/features/identity.md` for the session and password checks.
+
+- **2026-11-17 — Android network recovery QA (`apps/mobile`)**
+  - **Verified** With Wi-Fi and mobile data disabled on Puhu_Pixel, saving first-chat preferences
+    shows the Turkish error, retains all three choices and re-enables Save. Reconnecting and saving
+    again persists the exact support, tone and memory choices through the shared API.
+  - **Session recovery** A cold app start and another retry while disconnected show the recoverable
+    session screen. After reconnecting, the same student returns without entering credentials and
+    both saved conversation pairs remain readable. The isolated QA profile and network settings
+    were restored after the test.
+  - **Related files** `src/components/coach/coach-profile-memory-card.tsx`,
+    `src/providers/auth-provider.tsx`, `src/app/_layout.tsx`. Verified on the Android emulator.
+
 - **2026-11-15 — Plan tab, Takvim (stop B2a) (`apps/mobile`, `@mentor/core`, `@mentor/ui`)**
   - **What was done** Takvim adds Ajanda and Ay, a shared 42-day board, a subject legend, public
     holidays and the event details sheet. The screen persists the view and scale in SecureStore.

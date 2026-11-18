@@ -94,6 +94,10 @@
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-19 — Analysis Back listener lifecycle:** The mock-entry hardware Back handler subscribes only while Analysis is focused and removes its subscription on blur. Related file: `apps/mobile/src/app/(app)/(tabs)/analysis.tsx`.
+
+- **2026-11-18 — Mobile Analysis navigation parity, first slice:** The header now shows the exam caption, two sliding views (Gelişim / Yanlışlarım) and a separate Deneme ekle action. Entry remembers its originating view; Analize dön and Android Back return there. Same-account 411 dp Turkish/light Android checks passed for both views, entry and both return actions. Inner Analysis cards still need the phone-web visual pass. Related files: `apps/mobile/src/app/(app)/(tabs)/analysis.tsx`, `src/components/analysis/analysis-header.tsx`, `src/i18n/{tr,en}.ts`.
+
 - **2026-11-16 — Partial mock exam results:** Enter the subjects you attempted in the mobile or web form. A section with recorded blanks still counts. Student analysis and weekly subject measurements skip legacy 0/0/0 placeholders at read time. Mobile uses the latest attempt for the recommended subject when adding a focus to Plan. See `packages/core/src/analysis.ts`, `apps/api/src/modules/coaching/infrastructure/mock-exam.repository.ts`, and the mobile and web Analysis components.
 
 - **2026-11-16 — Mobile study session return:** Use “Panele dön” on the session screen to open the student dashboard from any entry point. The session screen is dismissed from the navigation stack. See `apps/mobile/src/app/(app)/study-session.tsx`.

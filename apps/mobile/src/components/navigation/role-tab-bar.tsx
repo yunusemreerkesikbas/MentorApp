@@ -122,7 +122,7 @@ export function RoleTabBar() {
   );
 }
 
-function useKeyboardOpen(): boolean {
+export function useKeyboardOpen(): boolean {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", () => setOpen(true));

@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ApiClientError } from "@mentor/api-client";
 import type {
   CoachDirectnessPreference,
   CoachSupportPreference,
 } from "@mentor/types";
+import type { CoachProfilePatchInput } from "@mentor/validation";
 import {
   deleteCoachMemory,
   fetchCoachProfile,
@@ -14,7 +16,8 @@ import {
 import { haptics } from "../../lib/haptics.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
-import { AppText, Card, Chip } from "../ui/index.js";
+import { AppText, Button, Card, Chip } from "../ui/index.js";
+import { CoachCalibrationCard, type PreferenceChoices } from "./coach-calibration-card.js";
 
 const SUPPORT_MODES: CoachSupportPreference[] = [
   "EMOTIONAL",
@@ -28,16 +31,19 @@ const DIRECTNESS_MODES: CoachDirectnessPreference[] = [
   "DIRECT",
 ];
 
-export function CoachProfileMemoryCard() {
+export function CoachProfileMemoryCard({ calibrationOnly = false, children }: {
+  calibrationOnly?: boolean;
+  children?: ReactNode;
+}) {
   const queryClient = useQueryClient();
   const { palette, radii, space } = useThemeTokens();
   const t = useTranslations("coach");
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<PreferenceChoices>({});
 
   const profileQuery = useQuery({
     queryKey: ["coach", "profile"],
     queryFn: fetchCoachProfile,
-    enabled: open,
   });
 
   const memoriesQuery = useQuery({
@@ -48,9 +54,10 @@ export function CoachProfileMemoryCard() {
 
   const patchProfileMutation = useMutation({
     mutationFn: updateCoachProfilePreferences,
-    onSuccess: async () => {
+    onSuccess: async (_updated, patch) => {
       haptics.selection();
       await queryClient.invalidateQueries({ queryKey: ["coach", "profile"] });
+      if (patch.calibrationStatus) setDraft({});
     },
   });
 
@@ -64,6 +71,34 @@ export function CoachProfileMemoryCard() {
 
   const profile = profileQuery.data;
   const memories = memoriesQuery.data ?? [];
+  const needsCalibration =
+    profile?.calibrationStatus === "NOT_STARTED" ||
+    profile?.calibrationStatus === "IN_PROGRESS";
+  const preferences = profile && needsCalibration ? { ...profile, ...draft } : profile;
+  const patchProfile = (patch: CoachProfilePatchInput) => {
+    if (!patchProfileMutation.isPending) patchProfileMutation.mutate(patch);
+  };
+  const choosePreference = (choice: PreferenceChoices) => {
+    if (patchProfileMutation.isPending) return;
+    if (needsCalibration) setDraft((current) => ({ ...current, ...choice }));
+    else patchProfileMutation.mutate(choice);
+  };
+
+  if (calibrationOnly) {
+    if (!needsCalibration || !preferences) return children ?? null;
+    return <CoachCalibrationCard
+      preferences={preferences}
+      busy={patchProfileMutation.isPending}
+      error={patchProfileMutation.error
+        ? patchProfileMutation.error instanceof ApiClientError
+          ? patchProfileMutation.error.body.message
+          : t("calibration_error")
+        : null}
+      onChoose={choosePreference}
+      onSave={() => patchProfile({ ...draft, calibrationStatus: "COMPLETED" })}
+      onSkip={() => patchProfile({ calibrationStatus: "SKIPPED" })}
+    />;
+  }
 
   return (
     <Card style={{ gap: space.sm }}>
@@ -74,12 +109,35 @@ export function CoachProfileMemoryCard() {
           selected={open}
           onPress={() => {
             haptics.selection();
+            if (!open && !profile && !profileQuery.isFetching) {
+              void profileQuery.refetch();
+            }
             setOpen((prev) => !prev);
           }}
         />
       </View>
 
-      {open && profile ? (
+      {needsCalibration ? (
+        <>
+          <AppText tone="secondary">{t("calibration_title")}</AppText>
+          <Button
+            label={t("calibration_skip")}
+            variant="secondary"
+            disabled={patchProfileMutation.isPending}
+            onPress={() => patchProfile({ calibrationStatus: "SKIPPED" })}
+          />
+        </>
+      ) : null}
+
+      {patchProfileMutation.error ? (
+        <AppText tone="danger" accessibilityLiveRegion="polite">
+          {patchProfileMutation.error instanceof ApiClientError
+            ? patchProfileMutation.error.body.message
+            : t("calibration_error")}
+        </AppText>
+      ) : null}
+
+      {open && preferences ? (
         <View style={{ gap: space.md }}>
           <View style={{ gap: 6 }}>
             <AppText variant="caption" tone="secondary">
@@ -90,10 +148,8 @@ export function CoachProfileMemoryCard() {
                 <Chip
                   key={mode}
                   label={t(`support_${mode}` as never)}
-                  selected={profile.supportPreference === mode}
-                  onPress={() =>
-                    patchProfileMutation.mutate({ supportPreference: mode })
-                  }
+                  selected={preferences.supportPreference === mode}
+                  onPress={() => choosePreference({ supportPreference: mode })}
                 />
               ))}
             </View>
@@ -108,36 +164,58 @@ export function CoachProfileMemoryCard() {
                 <Chip
                   key={mode}
                   label={t(`directness_${mode}` as never)}
-                  selected={profile.directnessPreference === mode}
-                  onPress={() =>
-                    patchProfileMutation.mutate({ directnessPreference: mode })
-                  }
+                  selected={preferences.directnessPreference === mode}
+                  onPress={() => choosePreference({ directnessPreference: mode })}
                 />
               ))}
             </View>
           </View>
 
           <View style={styles.rowBetween}>
-            <AppText variant="caption" tone="secondary">
+            <AppText variant="caption" tone="secondary" style={{ flexShrink: 1 }}>
               {t("memory_consent_label")}
             </AppText>
-            <Chip
-              label={
-                profile.memoryConsent === "GRANTED"
-                  ? t("memory_consent_GRANTED")
-                  : t("memory_consent_DECLINED")
-              }
-              selected={profile.memoryConsent === "GRANTED"}
-              onPress={() =>
-                patchProfileMutation.mutate({
-                  memoryConsent:
-                    profile.memoryConsent === "GRANTED"
-                      ? "DECLINED"
-                      : "GRANTED",
-                })
-              }
-            />
+            {needsCalibration ? (
+              <View style={styles.chipRow}>
+                {(["GRANTED", "DECLINED"] as const).map((consent) => (
+                  <Chip
+                    key={consent}
+                    label={t(`memory_consent_${consent}`)}
+                    selected={preferences.memoryConsent === consent}
+                    onPress={() => choosePreference({ memoryConsent: consent })}
+                  />
+                ))}
+              </View>
+            ) : (
+              <Chip
+                label={
+                  preferences.memoryConsent === "GRANTED"
+                    ? t("memory_consent_GRANTED")
+                    : t("memory_consent_DECLINED")
+                }
+                selected={preferences.memoryConsent === "GRANTED"}
+                onPress={() =>
+                  choosePreference({
+                    memoryConsent:
+                      preferences.memoryConsent === "GRANTED" ? "DECLINED" : "GRANTED",
+                  })
+                }
+              />
+            )}
           </View>
+
+          {needsCalibration ? (
+            <Button
+              label={t("calibration_save")}
+              disabled={
+                patchProfileMutation.isPending ||
+                !preferences.supportPreference ||
+                !preferences.directnessPreference ||
+                preferences.memoryConsent === "PENDING"
+              }
+              onPress={() => patchProfile({ ...draft, calibrationStatus: "COMPLETED" })}
+            />
+          ) : null}
 
           <View style={{ gap: 6 }}>
             <AppText variant="caption" tone="secondary">
@@ -184,6 +262,7 @@ export function CoachProfileMemoryCard() {
 const styles = StyleSheet.create({
   rowBetween: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
