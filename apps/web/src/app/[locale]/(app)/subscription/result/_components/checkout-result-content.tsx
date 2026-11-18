@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { trackProductEvent } from "@/lib/analytics";
 import { notifyEconomyChanged } from "@/lib/economy";
 
 const ConfettiBurst = dynamic(
@@ -30,7 +31,7 @@ export function CheckoutResultContent() {
   useEffect(() => {
     if (!ok) return;
     notifyEconomyChanged();
-
+    trackProductEvent("purchase", { currency: "TRY", surface: "checkout_result" });
   }, [ok]);
 
   useEffect(() => {

@@ -20,11 +20,12 @@ export async function LandingNav({
   variant = "home",
   coachSignupOpen = false,
 }: {
-  variant?: "home" | "coaches";
+  variant?: "home" | "coaches" | "seo";
   coachSignupOpen?: boolean;
 }) {
   const [t, c] = await Promise.all([getTranslations("landing"), getTranslations("coaches")]);
   const coaches = variant === "coaches";
+  const howAnchor = coaches ? "#tur" : variant === "seo" ? "#nasil" : "#durak-1";
   return (
     <header className="landing-nav fixed inset-x-0 top-0 z-30 px-3 pt-3 sm:px-4 sm:pt-4">
       <nav
@@ -35,7 +36,7 @@ export async function LandingNav({
           <Logo />
         </Link>
         {/* In-page anchors; on the landing the stage turns `#durak-N` into a camera move. */}
-        <a href={coaches ? "#tur" : "#durak-1"} className={`${NAV_LINK} max-lg:hidden`}>
+        <a href={howAnchor} className={`${NAV_LINK} max-lg:hidden`}>
           {coaches ? c("nav_round") : t("how_it_works")}
         </a>
         {coaches ? (

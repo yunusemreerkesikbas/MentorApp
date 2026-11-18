@@ -142,7 +142,7 @@ test.describe("GA4 açık rıza sözleşmesi", () => {
       .poll(() =>
         page.evaluate(() =>
           (window.dataLayer ?? []).map((entry) =>
-            Array.isArray(entry) ? String(entry[0]) : "",
+            Object.prototype.toString.call(entry) === "[object Arguments]" ? String((entry as IArguments)[0]) : "",
           ).filter((command) => command === "js" || command === "config"),
         ),
       )
@@ -152,8 +152,8 @@ test.describe("GA4 açık rıza sözleşmesi", () => {
         page.evaluate(() =>
           (window.dataLayer ?? [])
             .filter(
-              (entry): entry is unknown[] =>
-                Array.isArray(entry) && entry[0] === "event",
+              (entry): entry is IArguments =>
+                Object.prototype.toString.call(entry) === "[object Arguments]" && (entry as IArguments)[0] === "event",
             )
             .map((entry) => String(entry[1])),
         ),

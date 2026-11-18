@@ -21,11 +21,13 @@ export function SignupCta({
   href,
   role,
   className,
+  onClick,
   children,
 }: {
   href: Href;
   role: "student" | "coach";
   className: string;
+  onClick?: () => void;
   children: ReactNode;
 }) {
   const waitlist = isWaitlistOn(useAppAvailability());
@@ -41,7 +43,7 @@ export function SignupCta({
 
   if (!waitlist) {
     return (
-      <Link href={href} className={className}>
+      <Link href={href} className={className} onClick={onClick}>
         {children}
       </Link>
     );
@@ -54,7 +56,10 @@ export function SignupCta({
         type="button"
         aria-haspopup="dialog"
         className={`${className} cursor-pointer`}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          onClick?.();
+          setOpen(true);
+        }}
         onPointerEnter={() => void loadWaitlistModal()}
         onFocus={() => void loadWaitlistModal()}
       >

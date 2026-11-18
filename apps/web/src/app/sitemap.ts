@@ -9,10 +9,40 @@ import { publishedLegalDocs } from "@/lib/legal";
 /** Sitemap: canonical public content only. Best-effort if the API is down. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
-    // The landing and the coach page, Turkish only: their English copies are noindex.
+    // The landing, the coach page, and product-led SEO landing pages, Turkish only: their English copies are noindex.
     { url: `${siteUrl()}/`, changeFrequency: "weekly", priority: 1 },
     {
       url: `${siteUrl()}${getPathname({ locale: "tr", href: "/for-coaches" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/pomodoro-timer" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/yks-study-program" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/tyt-study-program" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/lgs-study-program" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/mistake-notebook" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/study-app" })}`,
       changeFrequency: "monthly",
       priority: 0.8,
     },

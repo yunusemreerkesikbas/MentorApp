@@ -570,7 +570,8 @@ export class ForumThreadRepository {
   }
 
   // --- Public (SEO) reads: service-context, hard-filtered to INDEXABLE QA questions ---
-  // Indexable = QA zone, PUBLIC, not archived, thread not deleted, AND has ≥1 non-deleted answer.
+  // Indexable = QA zone, PUBLIC, not archived, thread not deleted, AND either has ≥1 non-deleted
+  // answer OR is a substantive question (title ≥10 chars and body ≥20 chars).
 
   private indexableWhere() {
     return and(
@@ -578,7 +579,13 @@ export class ForumThreadRepository {
       eq(forumZones.visibility, "PUBLIC"),
       eq(forumZones.isArchived, false),
       isNull(forumThreads.deletedAt),
-      sql`EXISTS (SELECT 1 FROM forum_posts fp WHERE fp.thread_id = ${forumThreads.id} AND fp.deleted_at IS NULL)`,
+      sql`(
+        EXISTS (SELECT 1 FROM forum_posts fp WHERE fp.thread_id = ${forumThreads.id} AND fp.deleted_at IS NULL)
+        OR (
+          char_length(btrim(coalesce(${forumThreads.title}, ''))) >= 10
+          AND char_length(btrim(${forumThreads.body})) >= 20
+        )
+      )`,
     );
   }
 
@@ -608,12 +615,17 @@ export class ForumThreadRepository {
     });
   }
 
-  async listDiscoveryQuestions(ids: string[]) {
+  async listDiscoveryQuestions(ids?: string[], limit = 50) {
     return withServiceContext(this.db, (tx) => tx
       .select({ id: forumThreads.id, title: forumThreads.title, examType: forumZones.examType, updatedAt: forumThreads.updatedAt })
       .from(forumThreads)
       .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
-      .where(and(inArray(forumThreads.id, ids), this.indexableWhere()))
-      .orderBy(desc(forumThreads.updatedAt), desc(forumThreads.id)));
+      .where(
+        ids && ids.length > 0
+          ? and(inArray(forumThreads.id, ids), this.indexableWhere())
+          : this.indexableWhere(),
+      )
+      .orderBy(desc(forumThreads.updatedAt), desc(forumThreads.id))
+      .limit(limit));
   }
 }

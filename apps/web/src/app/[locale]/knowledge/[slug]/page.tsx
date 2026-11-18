@@ -79,7 +79,12 @@ export async function generateMetadata({
 export default async function PublicArticlePage({ params }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
-  const article = await fetchInfoArticleBySlug(slug);
+  const [article, translate, messages, requestHeaders] = await Promise.all([
+    fetchInfoArticleBySlug(slug),
+    getTranslations("article"),
+    getMessages(),
+    headers(),
+  ]);
   if (!article) notFound();
 
   const verifiedLabel = new Date(article.verifiedAt).toLocaleDateString(
@@ -103,14 +108,10 @@ export default async function PublicArticlePage({ params }: PageProps) {
     year: "numeric",
   });
   // The exam card fetches its own calendar inside a Suspense boundary, so the post never waits on it.
-  const [translate, messages, relatedPage] = await Promise.all([
-    getTranslations("article"),
-    getMessages(),
-    fetchInfoArticlesByFamily(article.family, 1, 4, {
-      excludeSlug: article.slug,
-      revalidate: 3600,
-    }),
-  ]);
+  const relatedPage = await fetchInfoArticlesByFamily(article.family, 1, 4, {
+    excludeSlug: article.slug,
+    revalidate: 3600,
+  });
   const sameCategory = relatedPage.items.filter(
     (item) => item.category === article.category,
   );
@@ -119,7 +120,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
     3,
   );
   const canonical = infoArticleUrl(article.slug);
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
 
   const origin = siteUrl();
   const articleJsonLd = buildArticleStructuredData({

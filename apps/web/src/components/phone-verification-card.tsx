@@ -167,7 +167,7 @@ export function PhoneVerificationCard({ allowNumberChange = false, compactHeadin
           {challenge ? (
             <>
               <p role="status" className="text-sm text-[var(--color-body)]">{t(challenge.sendStatus === "SENT" ? "sent" : "send_unknown", { number: challenge.maskedPhoneNumber })}</p>
-              <form onSubmit={(event) => void confirmCode(event)} className="flex flex-col gap-3">
+              <form method="post" onSubmit={(event) => void confirmCode(event)} className="flex flex-col gap-3">
                 <TextField label={t("code")} name="phoneCode" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value)} pattern="[0-9]{6}" maxLength={6} required disabled={busy || expired} autoFocus />
                 <p role="status" className="text-caption text-[var(--color-secondary)]">{expired ? t("expired") : t("expires", { time: time(challenge.expiresAt) })}</p>
                 <Button type="submit" busy={busy} disabled={expired}>{t("confirm")}</Button>
@@ -178,7 +178,7 @@ export function PhoneVerificationCard({ allowNumberChange = false, compactHeadin
               <Button variant="ghost" disabled={busy} onClick={() => { setChallenge(null); setCode(""); setError(null); }}>{t("edit_number")}</Button>
             </>
           ) : (
-            <form onSubmit={(event) => void requestCode(event)} className="flex flex-col gap-3">
+            <form method="post" onSubmit={(event) => void requestCode(event)} className="flex flex-col gap-3">
               <TextField label={t("number")} name="phoneNumber" type="tel" autoComplete="tel" placeholder={t("placeholder")} value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} maxLength={32} required disabled={busy} />
               <SignupTurnstile action="phone-verification" onToken={setToken} resetKey={resetKey} />
               <Button type="submit" busy={busy} disabled={tokenMissing}>{t("send")}</Button>

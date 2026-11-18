@@ -50,8 +50,8 @@ export function communityDiscoveryUrl(): string {
   return `${siteUrl()}${getPathname({ locale: "tr", href: "/discover-community" })}`;
 }
 
-/** Public QA snapshot. Read fresh so moderation changes are honored on the next visit. */
-export async function fetchPublicQuestion(id: string): Promise<PublicQuestionView | null> {
+/** Public QA snapshot. Read fresh so moderation changes are honored on the next visit, deduplicated per request. */
+export const fetchPublicQuestion = cache(async (id: string): Promise<PublicQuestionView | null> => {
   const res = await fetch(
     `${publicApiBase()}/v1/forum/public/questions/${encodeURIComponent(id)}`,
     { cache: "no-store" },
@@ -59,7 +59,7 @@ export async function fetchPublicQuestion(id: string): Promise<PublicQuestionVie
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Public question fetch failed: ${res.status}`);
   return (await res.json()) as PublicQuestionView;
-}
+});
 
 /** Fresh selected questions shared by the directory and sitemap. */
 export const fetchDiscoveryQuestions = cache(async (): Promise<PublicDiscoveryQuestion[]> => {

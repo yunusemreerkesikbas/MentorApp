@@ -12,17 +12,42 @@ function setup() {
 }
 
 describe("public QA content revisions", () => {
-  it("lists only selected eligible questions and marks their detail indexable", async () => {
+  it("automatically discovers and indexes eligible questions when discovery_question_ids is empty, and respects explicit admin IDs when set", async () => {
     const { service, config, threads } = setup();
-    expect(await service.listDiscoveryQuestions()).toEqual([]);
-    expect((await service.getQuestion("question"))?.discoverable).toBe(false);
-    config.get.mockImplementation(async (key) => key === "forum.enabled" ? true : "question");
     expect(await service.listDiscoveryQuestions()).toEqual([
       { id: "question", title: "Question", examType: "LGS", updatedAt: "2026-10-01T00:00:00.000Z" },
     ]);
     expect((await service.getQuestion("question"))?.discoverable).toBe(true);
-    expect(threads.listDiscoveryQuestions).toHaveBeenCalledOnce();
-    expect(threads.listDiscoveryQuestions).toHaveBeenCalledWith(["question"]);
+    expect(threads.listDiscoveryQuestions).toHaveBeenCalledWith(undefined);
+
+    config.get.mockImplementation(async (key) => key === "forum.enabled" ? true : "other-id");
+    expect((await service.getQuestion("question"))?.discoverable).toBe(false);
+
+    config.get.mockImplementation(async (key) => key === "forum.enabled" ? true : "question");
+    expect((await service.getQuestion("question"))?.discoverable).toBe(true);
+    expect(await service.listDiscoveryQuestions()).toEqual([
+      { id: "question", title: "Question", examType: "LGS", updatedAt: "2026-10-01T00:00:00.000Z" },
+    ]);
+    expect(threads.listDiscoveryQuestions).toHaveBeenLastCalledWith(["question"]);
+  });
+
+  it("allows substantive unanswered questions without generating an ad contentRevision, while rejecting short unanswered stubs", async () => {
+    const { service, thread, posts } = setup();
+    posts.listPublicAnswers.mockResolvedValue([]);
+
+    // Short stub ("Question" / "Question body") with 0 answers is rejected
+    expect(await service.getQuestion("question")).toBeNull();
+
+    // Substantive question (title >= 10 chars, body >= 20 chars) with 0 answers is public & indexable
+    thread.title = "KPSS Tarih tekrar düzeni nasıl kurulmalı?";
+    thread.body = "Tarih konularını çalıştıktan iki hafta sonra unutuyorum, nasıl bir tekrar planı önerirsiniz?";
+    const unanswered = await service.getQuestion("question");
+    expect(unanswered).toMatchObject({
+      id: "question",
+      discoverable: true,
+      answers: [],
+    });
+    expect(unanswered?.contentRevision).toBeUndefined();
   });
 
   it("keeps the directory empty when moderation excludes the question or the forum is disabled", async () => {

@@ -205,7 +205,7 @@ function GoogleAccountModalContent({
           </Button>
         </div>
       ) : state.canLink ? (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form method="post" onSubmit={handleSubmit} className="flex flex-col gap-4">
           <p className="text-sm text-[var(--color-secondary)]">
             {t("description")}
           </p>

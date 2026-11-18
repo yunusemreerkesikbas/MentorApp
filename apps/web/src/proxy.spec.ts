@@ -24,6 +24,7 @@ describe("proxy matcher", () => {
     "/favicon.ico",
     "/img/logo.svg",
     "/ads.txt",
+    "/llms.txt",
   ])("excludes infrastructure or static route %s", (url) => {
     expect(
       unstable_doesMiddlewareMatch({ config, nextConfig: {}, url }),
