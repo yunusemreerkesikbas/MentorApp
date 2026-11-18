@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { STUDY_ROOM_BACKDROP_SRC, STUDY_ROOM_TABLE_SRC, STUDY_ROOM_THEME_IDS } from "@/lib/study-room-theme";
 import { FocusRoom, type FocusRoomTheme } from "./focus-room";
 import { landingAvailability } from "./landing-availability";
@@ -148,6 +149,14 @@ export async function LandingFocus() {
           {f("title")}
         </h2>
         <p className="mt-3 text-lg leading-relaxed text-[var(--landing-ink-soft)]">{rooms ? f("lead_rooms") : f("lead")}</p>
+        <p className="mt-3">
+          <Link
+            href="/pomodoro-timer"
+            className="inline-flex min-h-11 items-center text-base font-extrabold text-[var(--landing-ink)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            {f("try_timer")} →
+          </Link>
+        </p>
       </div>
       <FocusRoom
         themes={themes}

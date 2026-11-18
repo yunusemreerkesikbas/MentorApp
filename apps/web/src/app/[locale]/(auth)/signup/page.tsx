@@ -10,6 +10,7 @@ import { LegalLink } from "@/components/legal-link";
 import { useAuth } from "@/lib/auth-context";
 import { useAppAvailability } from "@/lib/app-availability";
 import { trackProductEvent } from "@/lib/analytics";
+import { readSeoLpSource } from "@/lib/lp-attribution";
 import { fetchCoachSignupOpen } from "@/lib/coach-signup";
 import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
 import { isInviteLink, isWaitlistOn } from "@/lib/signup-waitlist";
@@ -158,7 +159,12 @@ export default function SignupPage() {
         // have yet. See `signupSchema.intent`.
         ...(isCoach ? { intent: "COACH" as const } : {}),
       });
-      trackProductEvent("sign_up", { method: "email", intent: isCoach ? "coach" : "student" });
+      const lpSource = readSeoLpSource();
+      trackProductEvent("sign_up", {
+        method: "email",
+        intent: isCoach ? "coach" : "student",
+        ...(lpSource ? { lp_source: lpSource } : {}),
+      });
       const destination = postAuthDestination(user, readAuthNextParam(), availability);
       // Fetched while the sheet leaves, so the handover has nothing left to wait for.
       // @ts-expect-error -- a validated internal path, transported as a plain string.
@@ -202,7 +208,7 @@ export default function SignupPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <form method="post" onSubmit={onSubmit} className="flex flex-col gap-4">
       <SectionHeading as="h1" className="items-center text-center">
         {isCoach ? translate("title_coach") : translate("title")}
       </SectionHeading>

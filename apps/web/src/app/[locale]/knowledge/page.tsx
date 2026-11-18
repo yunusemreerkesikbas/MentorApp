@@ -7,6 +7,7 @@ import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-sty
 import { setRequestLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { blogUrl, parseBlogQuery } from "@/lib/blog-url";
+import { siteUrl } from "@/lib/forum-public";
 import { BlogHeader } from "./_components/blog-header";
 import { BlogShell } from "./_components/blog-shell";
 import { BLOG_MEMBER_BOOTSTRAP_SCRIPT } from "./_components/blog-ui";
@@ -25,11 +26,30 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   setRequestLocale(locale);
   const t = await getTranslations("knowledge");
   const { family } = parseBlogQuery(raw);
+  const title = family === "KPSS" ? t("meta_title") : t("meta_title_family", { family });
+  const description = t("meta_description");
+  const canonical = blogUrl(family);
+  const ogImage = `${siteUrl()}/img/brand/puhukoc-og-${locale === "en" ? "en" : "tr"}.png`;
   return {
-    title: family === "KPSS" ? t("meta_title") : t("meta_title_family", { family }),
-    description: t("meta_description"),
-    alternates: { canonical: blogUrl(family) },
+    title,
+    description,
+    alternates: { canonical },
     robots: locale === "en" ? { index: false, follow: true } : undefined,
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      siteName: "PuhuKoç",
+      locale: locale === "en" ? "en_US" : "tr_TR",
+      type: "website",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: "PuhuKoç" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
   };
 }
 

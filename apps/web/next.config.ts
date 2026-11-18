@@ -39,13 +39,17 @@ const nextConfig: NextConfig = {
       // Emek panosu → Haftalık lig (Topluluk Tur 2, 2026-10-08): the address follows the new name.
       { source: "/topluluk/siralama", destination: "/topluluk/lig", permanent: true },
       { source: "/en/community/leaderboard", destination: "/en/community/league", permanent: true },
+      // 8. sınıf çalışma programı → LGS hub (Sprint 3 SEO consolidation).
+      { source: "/8-sinif-ders-calisma-programi", destination: "/lgs-calisma-programi", permanent: true },
     ];
   },
-  // Tree-shake lucide named imports (Next + lucide guidance).
+  // Tree-shake barrel named imports (Next + lucide + workspace package guidance).
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    agentUpgrade: "security",
+    optimizePackageImports: ["lucide-react", "@mentor/core", "@mentor/ui", "@mentor/validation"],
   },  // Transpile workspace packages (§8 monorepo).
   transpilePackages: [
+    "@mentor/core",
     "@mentor/ui",
     "@mentor/api-client",
     "@mentor/types",

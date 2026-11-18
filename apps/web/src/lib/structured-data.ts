@@ -23,6 +23,46 @@ export function buildSiteStructuredData(origin: string) {
   };
 }
 
+export interface WebApplicationStructuredDataInput {
+  name: string;
+  url: string;
+  description: string;
+  siteOrigin?: string;
+}
+
+export function buildWebApplicationStructuredData({
+  name,
+  url,
+  description,
+  siteOrigin,
+}: WebApplicationStructuredDataInput) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name,
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "Web",
+    inLanguage: "tr-TR",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "TRY",
+    },
+    url,
+    description,
+    ...(siteOrigin
+      ? {
+          publisher: {
+            "@type": "Organization",
+            "@id": `${siteOrigin}/#organization`,
+            name: "PuhuKoç",
+            url: `${siteOrigin}/`,
+          },
+        }
+      : {}),
+  };
+}
+
 interface ArticleStructuredDataInput {
   article: InfoArticleDto;
   canonical: string;

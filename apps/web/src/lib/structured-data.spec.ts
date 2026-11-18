@@ -5,6 +5,7 @@ import {
   buildBreadcrumbStructuredData,
   buildQuestionStructuredData,
   buildSiteStructuredData,
+  buildWebApplicationStructuredData,
 } from "./structured-data";
 
 it("uses the same publisher identity for the homepage and its articles", () => {
@@ -147,5 +148,36 @@ describe("structured data", () => {
       },
     });
     expect(JSON.stringify(result)).not.toMatch(/author/i);
+  });
+
+  it("builds a free EducationalApplication WebApplication schema for product-led SEO pages", () => {
+    const schema = buildWebApplicationStructuredData({
+      name: "PuhuKoç Pomodoro Sayaç",
+      url: "https://puhukoc.com/pomodoro-sayac",
+      description: "Ücretsiz online pomodoro sayaç: 25/5, 50/10, ortam sesi ve odak seansları.",
+      siteOrigin: "https://puhukoc.com",
+    });
+
+    expect(schema).toEqual({
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: "PuhuKoç Pomodoro Sayaç",
+      applicationCategory: "EducationalApplication",
+      operatingSystem: "Web",
+      inLanguage: "tr-TR",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "TRY",
+      },
+      url: "https://puhukoc.com/pomodoro-sayac",
+      description: "Ücretsiz online pomodoro sayaç: 25/5, 50/10, ortam sesi ve odak seansları.",
+      publisher: {
+        "@type": "Organization",
+        "@id": "https://puhukoc.com/#organization",
+        name: "PuhuKoç",
+        url: "https://puhukoc.com/",
+      },
+    });
   });
 });

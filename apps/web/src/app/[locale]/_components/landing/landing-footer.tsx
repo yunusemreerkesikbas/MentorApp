@@ -32,6 +32,36 @@ export async function LandingFooter() {
         </div>
         <ul className="flex flex-wrap gap-x-6">
           <li>
+            <Link href="/pomodoro-timer" className={FOOTER_LINK}>
+              Pomodoro
+            </Link>
+          </li>
+          <li>
+            <Link href="/yks-study-program" className={FOOTER_LINK}>
+              {t("plan.explore_yks")}
+            </Link>
+          </li>
+          <li>
+            <Link href="/tyt-study-program" className={FOOTER_LINK}>
+              {t("plan.explore_tyt")}
+            </Link>
+          </li>
+          <li>
+            <Link href="/lgs-study-program" className={FOOTER_LINK}>
+              {t("plan.explore_lgs")}
+            </Link>
+          </li>
+          <li>
+            <Link href="/mistake-notebook" className={FOOTER_LINK}>
+              {t("morning.notebook.name")}
+            </Link>
+          </li>
+          <li>
+            <Link href="/study-app" className={FOOTER_LINK}>
+              {t("morning.explore_study_app")}
+            </Link>
+          </li>
+          <li>
             <Link href="/discover-community" className={FOOTER_LINK}>{discovery("title")}</Link>
           </li>
           <li>
