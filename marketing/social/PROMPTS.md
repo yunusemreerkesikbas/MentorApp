@@ -774,3 +774,78 @@ colours and Puhu's glasses and outfit. Only change: <SON POZ>. No text anywhere.
 
 ChatGPT düzenlerken renkleri ya da ışığı kaydırırsa bitiş karesini kullanma. Kling iki kare
 arasında renk geçişi yapar ve oda kayar.
+
+## 7. Puhu oynuyor · kısa yerli videolar (5 sn, 9:16)
+
+Akışta reklam gibi değil, Puhu'nun kendi videosu gibi duran dört kısa klip. Strateji:
+`docs/plans/2026-11-15-social-growth-strategy-design.md` ("Puhu oynuyor" hattı). Yazıyı kitte ben
+eklerim; görüntü modelinden yazı isteme. Kurallar 6. bölümdekiyle aynı: tek espri, net bir son
+poz, sabit kamera, parıltı ve toz yok, üstteki %30 düz duvar (yazı oraya gelir).
+
+Sıra: önce ChatGPT'de başlangıç karesi, sonra Kling'de klip. Referans olarak kitteki iki 3D Puhu'yu
+ekle: `public/art/puhu-host.png` ve `public/art/p1-referee-whistle.png`.
+
+### Başlangıç karesi (ChatGPT, dört klip için ortak kalıp)
+
+```
+Use the two attached images as the character reference: the same white fluffy plush owl with
+round blue glasses, light blue ear tufts and a small blue heart on the chest. No whistle, no bow
+tie. Vertical 9:16 image, 3D plush toy look, soft studio light. <SAHNE>. The top 30% of the frame
+is a plain flat wall in cape blue #2F55D4 with nothing on it. No text, no logos, no other
+characters.
+```
+
+`<SAHNE>` yerine klibin satırını koy:
+- **A:** `Puhu stands on a wooden desk next to a big round ringing alarm clock, one wing raised above it, looking at the camera with a determined grin`
+- **B:** `Puhu stands at the left edge of the frame on a wooden desk; a smartphone lies face down at the right edge of the desk`
+- **C:** `Puhu stands next to an empty wooden chair pulled slightly away from a round study table with open books on it`
+- **D:** `Puhu stands on a wooden desk holding a white sheet of paper with both wings, the paper facing the camera and completely blank`
+
+### A · Alarm (kanca: "Alarm çaldı. Erteleme yok!")
+
+```
+0-1 s: The alarm clock shakes hard, ringing. Puhu winds his wing far back, big anticipation.
+1-2 s: He slaps the top of the clock; it squashes flat and pops back, silent. Puhu bounces from the hit.
+2-3.5 s: He hops forward to the front edge of the desk in two quick hops, leaning toward the camera.
+3.5-5 s: He points one wing straight at the viewer, eyebrows down, beak in a cheeky grin. Hold.
+Cartoon timing, snappy, anticipation and overshoot, short holds. Locked camera. The desk and the
+wall stay exactly the same; the top third stays empty.
+```
+
+### B · Telefon bende (kanca: "Telefon bende. Sen çalış.")
+
+```
+0-1 s: Puhu notices the phone, eyes go wide, body leans toward it.
+1-2 s: He dashes across the desk in a blur of small steps and grabs the phone with both wings.
+2-3.5 s: He spins around and hides the phone behind his back, standing tall, chest out.
+3.5-5 s: He shakes his head "no" twice, quick, then gives a wide innocent smile at the camera. Hold.
+Cartoon timing, snappy, squash and stretch. Locked camera. The phone screen is never shown. The
+desk and the wall stay exactly the same; the top third stays empty.
+```
+
+### C · Bu sandalye boş (kanca: "Bu sandalye boş. Gel.")
+
+```
+0-1 s: Puhu looks at the empty chair, then at the camera, then at the chair again, fast.
+1-2.5 s: He grabs the chair back with both wings and drags it out with a big pull, leaning far back.
+2.5-3.5 s: He pats the seat twice with one wing, dust-free, quick and bouncy.
+3.5-5 s: He waves the viewer over with a big sweeping wing and an open-beak smile. Hold.
+Cartoon timing, snappy, anticipation and overshoot. Locked camera. The table, the books and the
+wall stay exactly the same; the top third stays empty.
+```
+
+### D · Kutlama (kanca: "Denemede 3 net arttı. Kutlama serbest!")
+
+```
+0-1 s: Puhu stares at the sheet, eyes scanning left to right, body frozen.
+1-2 s: His eyes pop wide, he jumps straight up with the sheet over his head.
+2-3.5 s: He lands and does one fast full spin on one foot, the sheet trailing behind him.
+3.5-5 s: He holds the sheet up toward the camera with both wings, beak wide open, cheering. Hold.
+Cartoon timing, snappy, squash on the landing. Locked camera. The sheet stays blank the whole
+time (the number is added later). The desk and the wall stay exactly the same; the top third stays empty.
+```
+
+Negatif ek (hepsi için): `text, letters, numbers, logos, watermark, extra owls, green owl, glow, particles, camera movement, slow floaty motion`.
+
+Çekim kontrolü: Puhu modelde mi (gözlük, kalp, mavi kulak tüyleri)? Son poz net mi? Üstteki duvar
+boş mu? Hareket hızlı ve abartılı mı? Biri tutmuyorsa yeniden üret; düzeltmeye çalışma.

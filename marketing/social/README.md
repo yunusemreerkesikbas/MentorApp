@@ -1,7 +1,8 @@
 # PuhuKoç social launch kit
 
 15 launch pieces (feed, story, reel, X, LinkedIn), 6 Premium pieces (PF1, PF2, PS1, PS2, PR1, PR2), the promo film T1
-and the feature ads (wave 1: IF1–IF6, IS1–IS6, IR1), rendered with Remotion.
+the feature ads (wave 1: IF1–IF6, IS1–IS6, IR1), the "İşe yarar" carousels (K1, K2) and the waitlist series
+"Yerini kap" (WS1–WS3 stories, WR1 reel), rendered with Remotion.
 Feature ads spec: [docs/plans/2026-11-10-feature-ads-design.md](../../docs/plans/2026-11-10-feature-ads-design.md). T1's spec: [docs/plans/2026-11-08-promo-video-design.md](../../docs/plans/2026-11-08-promo-video-design.md).
 Spec and posting order: [docs/plans/2026-11-07-social-launch-kit-design.md](../../docs/plans/2026-11-07-social-launch-kit-design.md#posting-order-no-dates).
 
@@ -21,6 +22,8 @@ Spec and posting order: [docs/plans/2026-11-07-social-launch-kit-design.md](../.
 
 - On-image text: `src/copy.ts`. Post text, hashtags and alt text: `src/captions.ts`.
 - Art lives in `public/art/` and is listed in `src/art.ts`.
+- "İşe yarar" carousels (K1, K2) are `TipCard` (`src/components/Tip.tsx`) plus `COPY.K<n>`: card 1 is the cover,
+  cards 2–5 are steps. Headline and body lengths are capped by `TIP_LIMITS` (`test/tip.test.ts`).
 - ChatGPT + Kling prompts for the same pieces: [PROMPTS.md](PROMPTS.md).
 - Premium: when Premium can be bought, set `PREMIUM_SALE_OPEN = true` in `src/copy.ts` and re-render
   `--only PF1,PF2,PS1,PS2,PR1,PR2`. Feed posts and the reels never say ÇOK YAKINDA (they stay on the profile).

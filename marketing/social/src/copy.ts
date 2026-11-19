@@ -139,6 +139,7 @@ export const COPY: Partial<Record<PieceId, Record<string, string>>> = {
     s3TotalLabel: "toplam odak",
     s3NickLabel: "Bu haftaki lakabın",
     s3Nick: "Gizli Kahraman",
+    s3NickMsg: "Sessiz çalıştın ama her adımın sayıldı!", // app: TITLE_FOCUS_TRAVELER_MESSAGE
     s4Title: "Koçum",
     s4From: "Koçun",
     s4Message: "Bu hafta harika gidiyorsun.",
