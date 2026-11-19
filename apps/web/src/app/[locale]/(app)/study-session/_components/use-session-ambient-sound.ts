@@ -32,9 +32,13 @@ function pauseAll(audio: LayerAudio): void {
   for (const el of Object.values(audio)) el.pause();
 }
 
-interface AmbientSoundPreference {
+export interface AmbientSoundPreference {
   trackId: AmbientTrackId;
   muted: boolean;
+}
+
+export interface AmbientSoundPreferenceState extends AmbientSoundPreference {
+  hasOwnPreference: boolean;
 }
 
 interface LegacyAmbientSoundPreference {
@@ -44,14 +48,13 @@ interface LegacyAmbientSoundPreference {
   muted?: boolean;
 }
 
-function readPreference(): AmbientSoundPreference {
-  if (typeof window === "undefined") {
-    return { trackId: "off", muted: false };
+export function parseStoredAmbientPreference(
+  raw: string | null,
+): AmbientSoundPreferenceState {
+  if (!raw) {
+    return { trackId: "off", muted: false, hasOwnPreference: false };
   }
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { trackId: "off", muted: false };
-
     const parsed = JSON.parse(raw) as Partial<AmbientSoundPreference> &
       LegacyAmbientSoundPreference;
 
@@ -60,6 +63,7 @@ function readPreference(): AmbientSoundPreference {
       return {
         trackId: stored,
         muted: parsed.muted === true,
+        hasOwnPreference: true,
       };
     }
 
@@ -67,12 +71,24 @@ function readPreference(): AmbientSoundPreference {
       return {
         trackId: parsed.enabled ? "scene" : "off",
         muted: false,
+        hasOwnPreference: true,
       };
     }
 
-    return { trackId: "off", muted: false };
+    return { trackId: "off", muted: false, hasOwnPreference: false };
   } catch {
-    return { trackId: "off", muted: false };
+    return { trackId: "off", muted: false, hasOwnPreference: false };
+  }
+}
+
+function readPreference(): AmbientSoundPreferenceState {
+  if (typeof window === "undefined") {
+    return { trackId: "off", muted: false, hasOwnPreference: false };
+  }
+  try {
+    return parseStoredAmbientPreference(window.localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return { trackId: "off", muted: false, hasOwnPreference: false };
   }
 }
 
@@ -84,7 +100,27 @@ function writePreference(preference: AmbientSoundPreference): void {
   }
 }
 
-function shouldPlayAudio(
+export function resolveEffectiveAmbientTrackId(
+  state: AmbientSoundPreferenceState,
+  suggestedTrackId: AmbientTrackId | null = null,
+): AmbientTrackId {
+  return suggestedTrackId && !state.hasOwnPreference && state.trackId === "off"
+    ? suggestedTrackId
+    : state.trackId;
+}
+
+export function applyAmbientTrackSelection(
+  prev: AmbientSoundPreferenceState,
+  nextTrackId: AmbientTrackId,
+): AmbientSoundPreferenceState {
+  return {
+    trackId: nextTrackId,
+    muted: nextTrackId === "off" ? false : prev.muted,
+    hasOwnPreference: true,
+  };
+}
+
+export function shouldPlayAudio(
   phase: SessionPhase,
   isPaused: boolean,
   trackId: AmbientTrackId,
@@ -96,16 +132,6 @@ function shouldPlayAudio(
     (phase === "focus" || phase === "break") &&
     !isPaused
   );
-}
-
-/** Whether the user has ever expressed an ambient preference on this device. */
-function hasStoredPreference(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) !== null;
-  } catch {
-    return false;
-  }
 }
 
 export interface UseSessionAmbientSoundOptions {
@@ -140,21 +166,19 @@ export function useSessionAmbientSound({
   const previewActiveRef = useRef(false);
   const phaseRef = useRef(phase);
 
-  const [preference, setPreference] = useState<AmbientSoundPreference>(() =>
+  const [preference, setPreference] = useState<AmbientSoundPreferenceState>(() =>
     readPreference(),
   );
-  /** Captured once, next to the preference it qualifies: has the user ever chosen a track? */
-  const [hasOwnPreference] = useState(hasStoredPreference);
 
   /**
    * The track actually playing. A room's theme only fills a genuinely blank preference — an
    * explicit "Sessiz" is a real choice and survives walking into a room. Derived rather than
    * written into state, so the suggestion never becomes a stored preference on its own.
    */
-  const trackId: AmbientTrackId =
-    suggestedTrackId && !hasOwnPreference && preference.trackId === "off"
-      ? suggestedTrackId
-      : preference.trackId;
+  const trackId: AmbientTrackId = resolveEffectiveAmbientTrackId(
+    preference,
+    suggestedTrackId,
+  );
 
   /** Changes when the scene does (for `scene`), so the effects below swap the loops. */
   const layersKey = ambientLayers(trackId, sceneTheme)?.ambience ?? null;
@@ -243,14 +267,26 @@ export function useSessionAmbientSound({
   }, [phase, clearPreview]);
 
   useEffect(() => {
+    if (trackId === "off") {
+      syncAudioSrc("off");
+      return;
+    }
+    // Avoid preloading ambient audio files on idle mount before the user starts a session or preview.
+    if (phase === "idle" && !previewActiveRef.current) {
+      return;
+    }
     syncAudioSrc(trackId);
-  }, [trackId, layersKey, syncAudioSrc]);
+  }, [phase, trackId, layersKey, syncAudioSrc]);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!layersKey) return;
+    if (!layersKey) {
+      pauseAll(audio);
+      return;
+    }
 
     if (shouldPlayAudio(phase, isPaused, trackId, preference.muted)) {
+      syncAudioSrc(trackId);
       void playAll(audio).catch(() => {
         // Autoplay blocked without gesture — Başla click should unlock
       });
@@ -260,30 +296,28 @@ export function useSessionAmbientSound({
     if (previewActiveRef.current) return;
 
     pauseAll(audio);
-  }, [phase, isPaused, trackId, layersKey, preference.muted]);
+  }, [phase, isPaused, trackId, layersKey, preference.muted, syncAudioSrc]);
 
   const setTrackId = useCallback(
-    (trackId: AmbientTrackId) => {
+    (nextTrackId: AmbientTrackId) => {
       setPreference((prev) => {
-        const next: AmbientSoundPreference = {
-          trackId,
-          muted: trackId === "off" ? false : prev.muted,
-        };
-        writePreference(next);
+        const next = applyAmbientTrackSelection(prev, nextTrackId);
+        writePreference({ trackId: next.trackId, muted: next.muted });
 
         if (phaseRef.current === "idle") {
-          if (trackId === "off") {
+          if (nextTrackId === "off") {
             clearPreview();
             pauseAll(audioRef.current);
+            syncAudioSrc("off");
           } else {
-            queueMicrotask(() => startIdlePreview(trackId));
+            queueMicrotask(() => startIdlePreview(nextTrackId));
           }
         }
 
         return next;
       });
     },
-    [clearPreview, startIdlePreview],
+    [clearPreview, startIdlePreview, syncAudioSrc],
   );
 
   const toggleMute = useCallback(() => {
@@ -291,10 +325,15 @@ export function useSessionAmbientSound({
       // Acts on the track that is actually playing, so muting works on a room-suggested one
       // too — and that mute is the moment the suggestion becomes the user's own preference.
       if (trackId === "off") return prev;
-      const next = { trackId, muted: !prev.muted };
-      writePreference(next);
+      const next: AmbientSoundPreferenceState = {
+        trackId,
+        muted: !prev.muted,
+        hasOwnPreference: true,
+      };
+      writePreference({ trackId: next.trackId, muted: next.muted });
 
       if (!next.muted && shouldPlayAudio(phase, isPaused, next.trackId, next.muted)) {
+        syncAudioSrc(next.trackId);
         void playAll(audioRef.current).catch(() => {
           // Ignore
         });
@@ -302,7 +341,7 @@ export function useSessionAmbientSound({
 
       return next;
     });
-  }, [phase, isPaused, trackId]);
+  }, [phase, isPaused, trackId, syncAudioSrc]);
 
 
   return {

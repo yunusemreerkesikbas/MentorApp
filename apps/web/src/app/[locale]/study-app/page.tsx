@@ -8,6 +8,8 @@ import { setRequestLocale } from "@/i18n/locale";
 import { getPathname, Link } from "@/i18n/navigation";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { siteUrl } from "@/lib/forum-public";
+import { jsonLdHtml } from "@/lib/json-ld";
+import { buildWebApplicationStructuredData } from "@/lib/structured-data";
 import { LandingFooter } from "../_components/landing/landing-footer";
 import { LandingNav } from "../_components/landing/landing-nav";
 import {
@@ -64,9 +66,25 @@ export default async function StudyAppLpPage({ params }: PageProps) {
     getMessages(),
   ]);
 
+  const origin = siteUrl();
+  const canonical = `${origin}${getPathname({ locale: "tr", href: "/study-app" })}`;
+  const webAppJsonLd = buildWebApplicationStructuredData({
+    name: t("schema_name"),
+    url: canonical,
+    description: t("schema_description"),
+    siteOrigin: origin,
+  });
+
   return (
     <NextIntlClientProvider messages={pickMessages(messages, ROUTE_MESSAGE_SCOPES.landing)}>
       <div className="landing-city-theme landing-day min-h-screen">
+        {locale === "tr" ? (
+          <script
+            nonce={nonce}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: jsonLdHtml(webAppJsonLd) }}
+          />
+        ) : null}
         <LandingNav variant="seo" />
 
         <main className="landing-paper pt-24 lg:pt-28">

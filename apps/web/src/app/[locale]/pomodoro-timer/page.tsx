@@ -304,6 +304,9 @@ export default async function PomodoroTimerPage({ params }: PageProps) {
               >
                 {t("cta_signup")}
               </SeoSignupCta>
+              <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
+                {t("cta_login")}
+              </Link>
             </div>
           </section>
         </main>

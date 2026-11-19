@@ -1,6 +1,11 @@
-import { type SeoLpSlug, trackSeoLpEvent } from "./analytics";
+import {
+  type SeoLpSlug,
+  type WaitlistCtaLocation,
+  trackProductEvent,
+} from "./analytics";
 
 export const SEO_LP_SOURCE_KEY = "mentor.seo-lp-source.v1";
+export const WAITLIST_CONVERSION_GUARD_KEY = "mentor.waitlist-converted.v1";
 
 const VALID_SOURCES = new Set<SeoLpSlug>([
   "pomodoro",
@@ -33,76 +38,64 @@ export function readSeoLpSource(): SeoLpSlug | undefined {
   return undefined;
 }
 
+/**
+ * Non-reversible 32-bit FNV-1a fingerprint so duplicate submissions in the same browser session
+ * do not double-fire `waitlist_signup` while never persisting raw email addresses in web storage.
+ */
+function fingerprintWaitlistEntry(
+  email: string,
+  intent: "student" | "coach",
+): string {
+  const normalized = `${intent}:${email.trim().toLowerCase()}`;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < normalized.length; i += 1) {
+    hash ^= normalized.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+/**
+ * Claims a waitlist conversion once per normalized address + intent in the current session.
+ * Returns `true` only on the first server-confirmed join; returns `false` on duplicate retries.
+ */
+export function claimWaitlistSignupConversion(
+  email: string,
+  intent: "student" | "coach",
+): boolean {
+  const token = fingerprintWaitlistEntry(email, intent);
+  if (typeof window === "undefined") return true;
+  try {
+    const raw = window.sessionStorage.getItem(WAITLIST_CONVERSION_GUARD_KEY);
+    const seen = new Set(
+      (raw ?? "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    );
+    if (seen.has(token)) {
+      return false;
+    }
+    seen.add(token);
+    window.sessionStorage.setItem(
+      WAITLIST_CONVERSION_GUARD_KEY,
+      [...seen].slice(-20).join(","),
+    );
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 export function trackSeoLpSignupClick(
   source: SeoLpSlug,
-  location:
-    | "hero"
-    | "demo"
-    | "table"
-    | "timer_done"
-    | "closing"
-    | "parent"
-    | "how"
-    | "features",
+  location: WaitlistCtaLocation,
+  intent: "student" | "coach" = "student",
 ): void {
   recordSeoLpSource(source);
-  if (source === "pomodoro") {
-    const pomodoroLoc =
-      location === "hero" ||
-      location === "table" ||
-      location === "timer_done" ||
-      location === "closing"
-        ? location
-        : "hero";
-    trackSeoLpEvent("signup_from_pomodoro_lp", { location: pomodoroLoc });
-    return;
-  }
-  if (source === "notebook") {
-    const placement =
-      location === "hero" ||
-      location === "demo" ||
-      location === "how" ||
-      location === "closing"
-        ? location
-        : "hero";
-    trackSeoLpEvent("notebook_cta_click", {
-      placement,
-      page_type: "mistake_notebook",
-    });
-    return;
-  }
-  if (source === "study_app") {
-    const placement =
-      location === "hero" || location === "features" || location === "closing"
-        ? location
-        : "hero";
-    trackSeoLpEvent("category_cta_click", {
-      placement,
-      page_type: "study_app",
-    });
-    return;
-  }
-  const planClickLoc =
-    location === "hero" ||
-    location === "demo" ||
-    location === "table" ||
-    location === "closing" ||
-    location === "parent"
-      ? location
-      : "demo";
-  trackSeoLpEvent("plan_cta_click", {
-    lp: source,
-    location: planClickLoc,
+  trackProductEvent("waitlist_cta_click", {
+    intent,
+    lp_source: source,
+    location,
   });
-  const planLoc =
-    planClickLoc === "parent" ? "closing" : planClickLoc;
-  if (source === "yks") {
-    trackSeoLpEvent("signup_from_yks_lp", { location: planLoc });
-  } else if (source === "tyt") {
-    trackSeoLpEvent("signup_from_tyt_lp", { location: planLoc });
-  } else {
-    trackSeoLpEvent("signup_from_lgs_lp", {
-      location: planClickLoc,
-    });
-  }
 }

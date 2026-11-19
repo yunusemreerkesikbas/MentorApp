@@ -8,6 +8,8 @@ import { setRequestLocale } from "@/i18n/locale";
 import { getPathname, Link } from "@/i18n/navigation";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { siteUrl } from "@/lib/forum-public";
+import { jsonLdHtml } from "@/lib/json-ld";
+import { buildWebApplicationStructuredData } from "@/lib/structured-data";
 import { LandingFooter } from "../_components/landing/landing-footer";
 import { LandingNav } from "../_components/landing/landing-nav";
 import {
@@ -63,9 +65,25 @@ export default async function MistakeNotebookLpPage({ params }: PageProps) {
     getMessages(),
   ]);
 
+  const origin = siteUrl();
+  const canonical = `${origin}${getPathname({ locale: "tr", href: "/mistake-notebook" })}`;
+  const webAppJsonLd = buildWebApplicationStructuredData({
+    name: t("schema_name"),
+    url: canonical,
+    description: t("schema_description"),
+    siteOrigin: origin,
+  });
+
   return (
     <NextIntlClientProvider messages={pickMessages(messages, ROUTE_MESSAGE_SCOPES.landing)}>
       <div className="landing-city-theme landing-day min-h-screen">
+        {locale === "tr" ? (
+          <script
+            nonce={nonce}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: jsonLdHtml(webAppJsonLd) }}
+          />
+        ) : null}
         <LandingNav variant="seo" />
 
         <main className="landing-paper pt-24 lg:pt-28">
@@ -79,6 +97,9 @@ export default async function MistakeNotebookLpPage({ params }: PageProps) {
               </h1>
               <p className="mt-4 text-lg leading-relaxed text-[var(--landing-ink-soft)]">
                 {t("subhead")}
+              </p>
+              <p className="mt-3 text-sm font-extrabold text-[var(--landing-ink-soft)]">
+                {t("proof")}
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <SeoSignupCta
@@ -242,6 +263,9 @@ export default async function MistakeNotebookLpPage({ params }: PageProps) {
               >
                 {t("cta_primary")}
               </SeoSignupCta>
+              <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
+                {t("cta_login")}
+              </Link>
             </div>
           </section>
         </main>
