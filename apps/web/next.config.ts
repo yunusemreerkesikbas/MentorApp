@@ -41,6 +41,9 @@ const nextConfig: NextConfig = {
       { source: "/en/community/leaderboard", destination: "/en/community/league", permanent: true },
       // 8. sınıf çalışma programı → LGS hub (Sprint 3 SEO consolidation).
       { source: "/8-sinif-ders-calisma-programi", destination: "/lgs-calisma-programi", permanent: true },
+      // Kısa KVKK adresi → kanonik KVKK aydınlatma metni (Sprint 7 QA).
+      { source: "/yasal/kvkk", destination: "/yasal/kvkk-aydinlatma", permanent: true },
+      { source: "/en/legal/kvkk", destination: "/en/legal/kvkk-aydinlatma", permanent: true },
     ];
   },
   // Tree-shake barrel named imports (Next + lucide + workspace package guidance).

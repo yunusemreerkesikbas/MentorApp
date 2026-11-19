@@ -2,7 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { trackProductEvent } from "@/lib/analytics";
 import { useAppAvailability } from "@/lib/app-availability";
+import { readSeoLpSource } from "@/lib/lp-attribution";
 import { isWaitlistOn } from "@/lib/signup-waitlist";
 import { Link } from "@/i18n/navigation";
 
@@ -41,9 +43,21 @@ export function SignupCta({
     wasOpen.current = open;
   }, [open]);
 
+  function handleCtaClick() {
+    if (onClick) {
+      onClick();
+      return;
+    }
+    const lpSource = readSeoLpSource();
+    trackProductEvent("waitlist_cta_click", {
+      intent: role,
+      ...(lpSource ? { lp_source: lpSource } : {}),
+    });
+  }
+
   if (!waitlist) {
     return (
-      <Link href={href} className={className} onClick={onClick}>
+      <Link href={href} className={className} onClick={handleCtaClick}>
         {children}
       </Link>
     );
@@ -57,7 +71,7 @@ export function SignupCta({
         aria-haspopup="dialog"
         className={`${className} cursor-pointer`}
         onClick={() => {
-          onClick?.();
+          handleCtaClick();
           setOpen(true);
         }}
         onPointerEnter={() => void loadWaitlistModal()}

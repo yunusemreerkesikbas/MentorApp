@@ -210,40 +210,49 @@ describe("product analytics", () => {
     });
 
     trackSeoLpEvent("pomodoro_start", { preset: "25_5", room: "LIBRARY" });
-    trackSeoLpEvent("signup_from_pomodoro_lp", { location: "timer_done" });
+    trackSeoLpEvent("pomodoro_complete", { preset: "25_5", room: "LIBRARY" });
     trackSeoLpEvent("plan_demo_view", { lp: "yks" });
-    trackSeoLpEvent("plan_cta_click", { lp: "lgs", location: "hero" });
     trackSeoLpEvent("notebook_demo_view", { page_type: "mistake_notebook" });
-    trackSeoLpEvent("notebook_cta_click", {
-      placement: "how",
-      page_type: "mistake_notebook",
+    trackProductEvent("waitlist_cta_click", {
+      intent: "student",
+      lp_source: "pomodoro",
+      location: "timer_done",
     });
-    trackSeoLpEvent("category_cta_click", {
-      placement: "features",
-      page_type: "study_app",
+    trackProductEvent("waitlist_signup", {
+      intent: "student",
+      lp_source: "pomodoro",
+    });
+    trackProductEvent("sign_up", {
+      method: "email",
+      intent: "student",
+      lp_source: "yks",
     });
     trackProductEvent("purchase", { currency: "TRY", surface: "checkout_result" });
 
     expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
       ["event", "pomodoro_start", { preset: "25_5", room: "LIBRARY" }],
-      ["event", "signup_from_pomodoro_lp", { location: "timer_done" }],
+      ["event", "pomodoro_complete", { preset: "25_5", room: "LIBRARY" }],
       ["event", "plan_demo_view", { lp: "yks" }],
-      ["event", "plan_cta_click", { lp: "lgs", location: "hero" }],
       ["event", "notebook_demo_view", { page_type: "mistake_notebook" }],
       [
         "event",
-        "notebook_cta_click",
-        { placement: "how", page_type: "mistake_notebook" },
+        "waitlist_cta_click",
+        { intent: "student", lp_source: "pomodoro", location: "timer_done" },
       ],
       [
         "event",
-        "category_cta_click",
-        { placement: "features", page_type: "study_app" },
+        "waitlist_signup",
+        { intent: "student", lp_source: "pomodoro" },
+      ],
+      [
+        "event",
+        "sign_up",
+        { method: "email", intent: "student", lp_source: "yks" },
       ],
       ["event", "purchase", { currency: "TRY", surface: "checkout_result" }],
     ]);
     expect(JSON.stringify(dataLayer)).not.toMatch(
-      /email|userId|name|question|photo|image|body|content/i,
+      /userId|name|question|photo|image|body|content|@/i,
     );
   });
 });

@@ -226,7 +226,7 @@ export function PublicPomodoroWidget({
             <i />
             <span>{activeTheme.label}</span>
             <i />
-            <span>♪ {copy.sounds[trackId]}</span>
+            <span>{trackId === "off" ? copy.sounds[trackId] : `♪ ${copy.sounds[trackId]}`}</span>
           </div>
 
           {state === "done" ? (
