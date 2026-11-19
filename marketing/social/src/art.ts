@@ -1,3 +1,11 @@
+// Real app screens (F4 phones), captured 2026-11-17 from a demo account.
+export const SCREENS = {
+  today: "screens/F4-1.png",
+  masa: "screens/F4-2.png",
+  recap: "screens/F4-3.png",
+  koc: "screens/F4-4.png",
+};
+
 // Art paths under public/, used with staticFile().
 export const ART = {
   p1: "art/p1-referee-whistle.png",
@@ -66,6 +74,8 @@ export const ART = {
   t1CharFocus: "art/t1/char-nebula-diver.png",
   t1CharStreak: "art/t1/char-time-bender.png",
   t1CharBrave: "art/t1/char-phoenix-pilot.png",
+  // Gizli Kahraman (FOCUS_TRAVELER) art, copied from apps/web/public/img/character/nova-traveler.png.
+  t1CharHidden: "art/t1/char-nova-traveler.png",
   // Real app screens for frame 08 (1134x2466, 378x822 @3x): /plan and the deneme result on /analiz, local web
   // app with mocked demo data ("Deniz", no real user). Raw captures in art-source.local/social/promo/screens.
   t1ScreenPlan: "art/t1/screen-plan.png",

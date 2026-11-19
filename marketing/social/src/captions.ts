@@ -37,10 +37,10 @@ export const CAPTIONS: Partial<Record<PieceId, Caption>> = {
   F4: {
     text: "Puhu'yla bir gün nasıl geçer? Kaydır, gör. 👉\nSabah plan hazır, öğlen masa dolu, akşam haftalık özetin seni bekliyor. Çok yakında puhukoc.com'da.",
     alt: [
-      "Mavi zeminde \"Puhu'yla bir gün\" etiketi ve kocaman \"Sabah\" yazısı. \"Puhu günün planını hazırlar. Sen sadece başla.\" Yanında eğik duran telefonda \"Bugün\" listesi ve üç görev, köşede gülen bir Puhu.",
-      "Kocaman \"Öğlen\" yazısı. \"Masada 4 kişi. Kimse yalnız çalışmıyor.\" Telefonun ekranından dört Puhu'nun birlikte çalıştığı masa taşıyor, altında odak sayacı.",
-      "Kocaman \"Akşam\" yazısı. \"Haftalık özetin hazır. Bu haftaki lakabın: Gizli Kahraman.\" Telefonda haftalık toplam odak süresi, günlük çubuklar ve sarı \"Gizli Kahraman\" kartı; köşede şaşkınlıkla gözlerini açmış bir Puhu.",
-      "Kocaman \"İstersen\" yazısı. \"Gerçek bir koç da masana katılır.\" Telefonda koçtan gelen \"Bu hafta harika gidiyorsun.\" mesajı ve \"Teşekkürler!\" cevabı; alt köşeden göz kırpan bir Puhu.",
+      "Mavi zeminde \"Puhu'yla bir gün\" etiketi ve kocaman \"Sabah\" yazısı. \"Puhu günün planını hazırlar. Sen sadece başla.\" Yanında eğik duran telefonda uygulamanın ana ekranı: \"Bugün 3 adım var\" yazısı, biri bitmiş üç adımlık yol ve \"40 paragraf çöz\" düğmesi; köşede gülen bir Puhu.",
+      "Kocaman \"Öğlen\" yazısı. \"Masada 4 kişi. Kimse yalnız çalışmıyor.\" Telefonda \"YKS masası\": ahşap masanın çevresinde dört öğrenci, her birinin dersi ve süresi yazıyor.",
+      "Kocaman \"Akşam\" yazısı. \"Haftalık özetin hazır. Bu haftaki lakabın: Gizli Kahraman.\" Yanında eğik duran altın çerçeveli lakap kartı: uzay temalı Puhu, altında \"Bu haftaki lakabın: Gizli Kahraman\" ve \"Sessiz çalıştın ama her adımın sayıldı!\"; köşede şaşkınlıkla gözlerini açmış bir Puhu.",
+      "Kocaman \"İstersen\" yazısı. \"Gerçek bir koç da masana katılır.\" Telefonda \"Koçum\" ekranı: koç Ayşe Demir'in \"Bu hafta harika gidiyorsun.\" notu ve öğrencinin koçuna yazdığı not; alt köşeden göz kırpan bir Puhu.",
       "Kocaman sarı \"Yerini kap!\" yazısı, altında puhukoc.com ve @puhukoc. Hakem Puhu yandan fırlayıp düdük çalarak adresi gösteriyor. Köşede \"ÇOK YAKINDA\" etiketi.",
     ],
   },
