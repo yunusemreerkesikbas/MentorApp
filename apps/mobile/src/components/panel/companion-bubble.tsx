@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { art, careerArt } from "../../lib/art.js";
+import { art, careerArt, puhuSpeakingArt } from "../../lib/art.js";
 import { mixHex } from "../../lib/layout.js";
 import { useIsPremium } from "../../lib/premium.js";
 import { useAuth } from "../../providers/auth-provider.js";
@@ -23,7 +23,7 @@ export function CompanionBubble({
   aiLabel = null,
 }: {
   text: string;
-  mood?: "default" | "happy";
+  mood?: "default" | "happy" | "encouraging" | "winking";
   /** Set when the line was written by the AI; a rule-based line passes none and never pretends. */
   aiLabel?: string | null;
 }) {
@@ -35,9 +35,13 @@ export function CompanionBubble({
     ? art.puhuPremiumHero
     : user?.careerGroup
       ? careerArt[user.careerGroup]
-      : mood === "happy"
-        ? art.puhuHappy
-        : art.puhuDefault;
+      : mood === "encouraging"
+        ? art.puhuEncouraging
+        : mood === "winking"
+          ? puhuSpeakingArt.free.blink
+          : mood === "happy"
+            ? art.puhuHappy
+            : art.puhuDefault;
 
   return (
     <View style={styles.row}>

@@ -116,6 +116,7 @@ export * from "./auth-flow.js";
 export * from "./plan-dates.js";
 export * from "./session.js";
 export * from "./analysis.js";
+export * from "./analysis-focus-path.js";
 export * from "./community.js";
 export * from "./notifications.js";
 export * from "./today-path.js";

@@ -94,6 +94,8 @@
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-19 — Mobile Analysis cards and mock exam entry.** Open Analysis for the weekly report, Puhu’s improvement path, net trend, subject averages and expandable exam history. Mistakes opens the notebook filtered by the selected reason, subject, topic or attempt. The exam form accepts a calendar date and shows the saved result before returning to Progress or opening its mistakes. Edit and delete are available from the history row menu. Only subject rows with recorded counts are sent to the API. Web and mobile share the focus presentation model in `packages/core/src/analysis-focus-path.ts`. See `apps/mobile/src/components/analysis/` and `apps/mobile/src/lib/analysis-api.ts`.
+
 - **2026-11-19 — Analysis Back listener lifecycle:** The mock-entry hardware Back handler subscribes only while Analysis is focused and removes its subscription on blur. Related file: `apps/mobile/src/app/(app)/(tabs)/analysis.tsx`.
 
 - **2026-11-18 — Mobile Analysis navigation parity, first slice:** The header now shows the exam caption, two sliding views (Gelişim / Yanlışlarım) and a separate Deneme ekle action. Entry remembers its originating view; Analize dön and Android Back return there. Same-account 411 dp Turkish/light Android checks passed for both views, entry and both return actions. Inner Analysis cards still need the phone-web visual pass. Related files: `apps/mobile/src/app/(app)/(tabs)/analysis.tsx`, `src/components/analysis/analysis-header.tsx`, `src/i18n/{tr,en}.ts`.

@@ -55,6 +55,9 @@ import puhuDefault from "../../../web/public/mascot/puhu/puhu-default.png";
 import puhuEncouraging from "../../../web/public/mascot/puhu/puhu-encouraging.png";
 import puhuHappy from "../../../web/public/mascot/puhu/puhu-happy.png";
 import puhuPremiumHero from "../../../web/public/mascot/puhu/puhu-premium-hero.png";
+import hangRest from "../../../web/public/mascot/puhu/auth/hang-rest.png";
+import hangLookDown from "../../../web/public/mascot/puhu/auth/hang-look-down.png";
+import hangCover from "../../../web/public/mascot/puhu/auth/hang-cover.png";
 import puhuTalkBlink from "../../../web/public/mascot/puhu/motion/blink.png";
 import puhuTalkLookDown from "../../../web/public/mascot/puhu/motion/look-down.png";
 import puhuTalkRest from "../../../web/public/mascot/puhu/motion/rest.png";
@@ -99,6 +102,8 @@ import decorLavenderShape from "../../../web/public/visuals/weekly-recap-2023/la
 import decorRedPixel from "../../../web/public/visuals/weekly-recap-2023/red-pixel.png";
 import decorSilverWiggle from "../../../web/public/visuals/weekly-recap-2023/silver-wiggle.png";
 import decorWorldMap from "../../../web/public/visuals/weekly-recap-2023/world-map.png";
+
+export const authHangArt = { rest: hangRest, lookDown: hangLookDown, cover: hangCover };
 
 export const art = {
   lampShade,

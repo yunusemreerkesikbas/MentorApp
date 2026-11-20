@@ -1,16 +1,24 @@
-import { ScrollView, StyleSheet, View } from "react-native";
+import { useState } from "react";
+import { ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BellIcon } from "@solar-icons/react-native/linear/bell";
 import { isCoach } from "@mentor/core";
+import { FormSheet, PanelCard, PanelCardTitle } from "../../../components/panel/primitives.js";
 import { ExamSwitcherCard } from "../../../components/settings/exam-switcher-card.js";
 import { FriendInviteCard } from "../../../components/settings/friend-invite-card.js";
 import { MyCoachCard } from "../../../components/settings/my-coach-card.js";
 import { PhoneVerificationCard } from "../../../components/settings/phone-verification-card.js";
-import { Button, Card, Chip, AppText } from "../../../components/ui/index.js";
+import { SettingsIdentity } from "../../../components/settings/settings-identity.js";
+import { SettingsRow } from "../../../components/settings/settings-row.js";
+import { AppText, Chip } from "../../../components/ui/index.js";
 import { useAuth } from "../../../providers/auth-provider.js";
 import { useLocale, useTranslations } from "../../../providers/i18n-provider.js";
 import { tabBarClearance } from "../../../lib/layout.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
+
+const themes = ["light", "dark", "system"] as const;
+const languages = [{ value: "tr", label: "Türkçe (TR)" }, { value: "en", label: "English (EN)" }] as const;
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -19,6 +27,8 @@ export default function SettingsScreen() {
   const { palette, space, preference, setThemePreference } = useThemeTokens();
   const { locale, setLocale } = useLocale();
   const t = useTranslations("settings");
+  const tCommon = useTranslations("common");
+  const [sheet, setSheet] = useState<"theme" | "language" | null>(null);
 
   return (
     <ScrollView
@@ -29,90 +39,54 @@ export default function SettingsScreen() {
         paddingTop: space.lg,
         paddingBottom: tabBarClearance(insets.bottom),
         paddingHorizontal: space.lg,
-        gap: space.lg,
+        gap: space.xl,
       }}
     >
-      <View style={{ gap: 2 }}>
-        <AppText variant="title">{t("title")}</AppText>
-        {user ? (
-          <AppText variant="caption" tone="secondary">
-            {user.displayName} {user.username ? `· @${user.username}` : ""}
-          </AppText>
-        ) : null}
-      </View>
+      {user ? <SettingsIdentity user={user} /> : <AppText accessibilityRole="header" variant="title">{t("title")}</AppText>}
+      <PanelCard style={{ padding: space.sm }}>
+        <View style={{ paddingHorizontal: space.sm, paddingTop: space.xs }}>
+          <PanelCardTitle>{t("appearance_section")}</PanelCardTitle>
+        </View>
+        <SettingsRow label={t("theme_label")} detail={t(`theme_${preference}`)} onPress={() => setSheet("theme")} />
+        <SettingsRow label={t("language_label")} detail={languages.find((choice) => choice.value === locale)?.label}
+          onPress={() => setSheet("language")} />
+      </PanelCard>
 
       {user ? <ExamSwitcherCard user={user} /> : null}
-
+      {user ? <PhoneVerificationCard /> : null}
       {user && !isCoach(user) ? <MyCoachCard /> : null}
-
       {user && !isCoach(user) ? <FriendInviteCard /> : null}
 
-      {user ? <PhoneVerificationCard /> : null}
-
       {user ? (
-        <Button
-          label={t("notifications_cta")}
-          variant="secondary"
-          onPress={() => router.push("/(app)/notifications" as never)}
-        />
+        <PanelCard style={{ padding: space.sm }}>
+          <View style={{ paddingHorizontal: space.sm, paddingTop: space.xs }}>
+            <PanelCardTitle>{t("account_section")}</PanelCardTitle>
+          </View>
+          <SettingsRow label={t("notifications_cta")} icon={<BellIcon size={21} color={palette.secondary} />}
+            onPress={() => router.push("/(app)/notifications" as never)} />
+          <SettingsRow label={t("logout_cta")} danger onPress={() => {
+            void logout().then(() => router.replace("/(auth)/welcome" as never));
+          }} />
+        </PanelCard>
       ) : null}
 
-      <Card style={{ gap: space.md }}>
-        <AppText variant="sectionHeading">{t("theme_label")}</AppText>
-        <View style={styles.chipRow}>
-          <Chip
-            label={t("theme_light")}
-            selected={preference === "light"}
-            onPress={() => setThemePreference("light")}
-          />
-          <Chip
-            label={t("theme_dark")}
-            selected={preference === "dark"}
-            onPress={() => setThemePreference("dark")}
-          />
-          <Chip
-            label={t("theme_system")}
-            selected={preference === "system"}
-            onPress={() => setThemePreference("system")}
-          />
-        </View>
-      </Card>
-
-      <Card style={{ gap: space.md }}>
-        <AppText variant="sectionHeading">{t("language_label")}</AppText>
-        <View style={styles.chipRow}>
-          <Chip
-            label="Türkçe (TR)"
-            selected={locale === "tr"}
-            onPress={() => setLocale("tr")}
-          />
-          <Chip
-            label="English (EN)"
-            selected={locale === "en"}
-            onPress={() => setLocale("en")}
-          />
-        </View>
-      </Card>
-
-      {user ? (
-        <Button
-          label={t("logout_cta")}
-          variant="danger"
-          onPress={() => {
-            void logout().then(() => {
-              router.replace("/(auth)/welcome" as never);
-            });
-          }}
-        />
+      {sheet ? (
+        <FormSheet visible title={t(`${sheet}_label`)} closeLabel={tCommon("close")} onClose={() => setSheet(null)}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+            {sheet === "theme" ? themes.map((choice) => (
+              <Chip key={choice} label={t(`theme_${choice}`)} selected={preference === choice} onPress={() => {
+                setThemePreference(choice);
+                setSheet(null);
+              }} />
+            )) : languages.map(({ value, label }) => (
+              <Chip key={value} label={label} selected={locale === value} onPress={() => {
+                setLocale(value);
+                setSheet(null);
+              }} />
+            ))}
+          </View>
+        </FormSheet>
       ) : null}
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-});

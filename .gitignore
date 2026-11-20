@@ -6,6 +6,7 @@ node_modules/
 dist/
 build/
 .next/
+.next-*/
 out/
 *.tsbuildinfo
 .fake-storage/
@@ -20,6 +21,7 @@ next-env.d.ts
 !.env.example
 *.local
 *.pem
+artifacts/service-accounts/
 
 # Drizzle generated (keep migrations, ignore temp)
 apps/api/drizzle/meta/_journal.tmp

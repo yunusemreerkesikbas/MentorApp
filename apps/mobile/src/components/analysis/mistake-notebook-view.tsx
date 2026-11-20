@@ -1,331 +1,190 @@
-import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { useRef, useState } from "react";
+import { View } from "react-native";
+import { Image } from "expo-image";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import { NOTEBOOK_ERROR_TYPES, type ExamSubjectDto, type NotebookEntryDto, type NotebookErrorType } from "@mentor/types";
 import {
-  NOTEBOOK_ERROR_TYPES,
-  type CoachingAnalysisDto,
-  type ExamSubjectDto,
-  type NotebookEntryDto,
-  type NotebookErrorType,
-} from "@mentor/types";
-import { ApiClientError } from "@mentor/api-client";
-import {
-  createNotebookEntry,
-  reviewNotebookEntry,
+  createNotebookEntry, fetchNotebookEntries, fetchNotebookEntry, reviewNotebookEntry, type MistakeScope,
 } from "../../lib/analysis-api.js";
 import { haptics } from "../../lib/haptics.js";
+import { newRequestId } from "../../lib/request-id.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
-import { AppText, Button, Card, Chip, TextField } from "../ui/index.js";
+import { FormSheet, PanelCard, PanelCardTitle } from "../panel/primitives.js";
+import { AppText, Button, Chip, Skeleton, TextField } from "../ui/index.js";
+import { AnalysisLink } from "./analysis-link.js";
 
-export interface MistakeNotebookViewProps {
-  examId: string;
-  subjects: ExamSubjectDto[];
-  analysis: CoachingAnalysisDto | null;
-  dueEntries: NotebookEntryDto[];
-  recentEntries: NotebookEntryDto[];
-  onRefresh: () => void;
-}
-
-const ERROR_LABEL_KEYS: Record<
-  NotebookErrorType,
-  | "error_UNKNOWN_TOPIC"
-  | "error_CARELESS"
-  | "error_MISREAD"
-  | "error_DISTRACTOR"
-  | "error_TIME"
-  | "error_CHANGED_ANSWER"
-> = {
-  UNKNOWN_TOPIC: "error_UNKNOWN_TOPIC",
-  CARELESS: "error_CARELESS",
-  MISREAD: "error_MISREAD",
-  DISTRACTOR: "error_DISTRACTOR",
-  TIME: "error_TIME",
-  CHANGED_ANSWER: "error_CHANGED_ANSWER",
+export type NotebookSheetState = {
+  scope: MistakeScope;
+  reviewing: boolean;
+  entryId?: string;
 };
 
-export function MistakeNotebookView({
-  examId,
-  subjects,
-  analysis,
-  dueEntries,
-  recentEntries,
-  onRefresh,
-}: MistakeNotebookViewProps) {
+export function MistakeNotebookView({ examId, subjects, initial, onClose, onRefresh }: {
+  examId: string;
+  subjects: ExamSubjectDto[];
+  initial: NotebookSheetState;
+  onClose: () => void;
+  onRefresh: () => Promise<void>;
+}) {
   const t = useTranslations("analysis");
+  const tMistakes = useTranslations("analysisMistakes");
+  const tHistory = useTranslations("analysisHistory");
+  const tReview = useTranslations("analysisReview");
   const tCommon = useTranslations("common");
-  const { palette, radii, space } = useThemeTokens();
+  const { space } = useThemeTokens();
+  const [reviewing, setReviewing] = useState(initial.reviewing);
+  const [adding, setAdding] = useState(false);
+  const [selected, setSelected] = useState(initial.entryId ?? null);
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const request = useRef<{ id: string; solved: boolean; reviewId: string } | null>(null);
 
-  const [selectedSubjectSlug, setSelectedSubjectSlug] = useState<string | null>(
-    subjects[0]?.slug ?? null,
-  );
-  const [errorType, setErrorType] = useState<NotebookErrorType>("UNKNOWN_TOPIC");
-  const [note, setNote] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [reviewingId, setReviewingId] = useState<string | null>(null);
-
-  const handleSaveEntry = async () => {
-    if (saving) return;
-    setSaving(true);
-    setErrorMsg(null);
-    try {
-      await createNotebookEntry({
-        examId,
-        source: "OWN",
-        subjectRef: selectedSubjectSlug,
-        errorType,
-        note: note.trim() || null,
-      });
+  const entries = useInfiniteQuery({
+    queryKey: ["notebook", "entries", examId, initial.scope, reviewing],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => fetchNotebookEntries(examId, initial.scope, pageParam, reviewing),
+    getNextPageParam: ({ page, pageSize, total }) => page * pageSize < total ? page + 1 : undefined,
+    enabled: !selected && !adding,
+  });
+  const details = useQuery({
+    queryKey: ["notebook", "detail", selected],
+    queryFn: () => fetchNotebookEntry(selected!),
+    enabled: Boolean(selected),
+  });
+  const items = entries.data?.pages.flatMap((page) => page.items) ?? [];
+  const review = useMutation({
+    mutationFn: ({ id, solved, reviewId }: NonNullable<typeof request.current>) => reviewNotebookEntry(id, solved, reviewId),
+    onSuccess: async () => {
       haptics.success();
-      setNote("");
-      onRefresh();
-    } catch (err) {
-      setErrorMsg(
-        err instanceof ApiClientError || err instanceof Error
-          ? err.message
-          : tCommon("error_body"),
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
+      request.current = null;
+      await onRefresh();
+      setRevealed(null);
+      if (selected) setReviewing(false);
+    },
+  });
 
-  const handleReview = async (id: string, solved: boolean) => {
-    if (reviewingId) return;
-    setReviewingId(id);
-    try {
-      await reviewNotebookEntry(id, solved);
-      haptics.success();
-      onRefresh();
-    } finally {
-      setReviewingId(null);
+  const active = selected ? details.data : reviewing ? items[0] : null;
+  const shownTitle = reviewing ? tMistakes("cta_review")
+    : selected ? tReview("entry_title") : adding ? t("add_mistake_title") : tMistakes("open_notebook");
+  const showIndex = () => { setSelected(null); setReviewing(false); setAdding(false); };
+  const answer = (entry: NotebookEntryDto, solved: boolean) => {
+    if (review.isPending) return;
+    if (request.current?.id !== entry.id || request.current?.solved !== solved) {
+      request.current = { id: entry.id, solved, reviewId: newRequestId() };
     }
+    review.mutate(request.current);
   };
-
-  const stats = analysis?.notebookStats;
+  const state = selected ? details : entries;
 
   return (
-    <View style={{ gap: space.lg }}>
-      {/* Stats & Error Pattern Summary */}
-      <Card style={{ gap: space.sm }}>
-        <AppText variant="cardTitle">{t("notebook_stats_title")}</AppText>
-        {stats ? (
-          <AppText variant="body" tone="secondary" tabularNums>
-            {t("notebook_stats_summary", {
-              due: stats.dueCount,
-              healed: stats.healedCount,
-              saved: stats.savedCount,
-            })}
-          </AppText>
-        ) : null}
-        {analysis?.notebookErrorMessage ? (
-          <AppText variant="caption" tone="coach">
-            {analysis.notebookErrorMessage}
-          </AppText>
-        ) : null}
-      </Card>
+    <FormSheet visible title={shownTitle} closeLabel={tCommon("close")} onClose={onClose} closeDisabled={review.isPending}>
+      {adding ? (
+        <NotebookAddForm examId={examId} subjects={subjects} scope={initial.scope}
+          onSaved={async () => { await onRefresh(); showIndex(); }} />
+      ) : state.isPending ? <Skeleton height={84} /> : state.isError ? (
+        <>
+          <AppText tone="secondary">{tCommon("error_body")}</AppText>
+          <AnalysisLink label={tCommon("retry")} onPress={() => void state.refetch()} />
+        </>
+      ) : active ? (
+        <>
+          <NotebookEntryBody entry={active} />
+          {active.solutionUrl || active.solutionNote ? revealed === active.id || !reviewing ? (
+            <View style={{ gap: space.sm }}>
+              {active.solutionUrl ? <Image source={active.solutionUrl} contentFit="contain" style={{ height: 180 }} /> : null}
+              {active.solutionNote ? <AppText tone="secondary">{active.solutionNote}</AppText> : null}
+            </View>
+          ) : <AnalysisLink label={tReview("show_solution")} onPress={() => setRevealed(active.id)} /> : null}
+          {reviewing ? (
+            <View style={{ gap: space.sm }}>
+              <Button label={t("review_solved_cta")} disabled={review.isPending} onPress={() => answer(active, true)} />
+              <Button label={t("review_unsolved_cta")} variant="secondary" disabled={review.isPending} onPress={() => answer(active, false)} />
+              {review.isError ? <AppText tone="danger">{review.error instanceof Error ? review.error.message : tCommon("error_body")}</AppText> : null}
+            </View>
+          ) : (
+            <View style={{ gap: space.sm }}>
+              {active.status === "ACTIVE" ? <Button label={tMistakes("cta_review")} onPress={() => setReviewing(true)} /> : null}
+              <AnalysisLink label={tReview("back_index")} onPress={showIndex} />
+            </View>
+          )}
+        </>
+      ) : reviewing ? (
+        <>
+          <AppText tone="secondary">{t("due_empty")}</AppText>
+          <AnalysisLink label={tMistakes("open_notebook")} onPress={showIndex} />
+        </>
+      ) : (
+        <>
+          <Button label={t("add_mistake_title")} onPress={() => setAdding(true)} />
+          {!items.length ? <AppText tone="secondary">{tReview("index_empty")}</AppText> : null}
+          {items.map((entry) => (
+            <PanelCard key={entry.id}>
+              <AnalysisLink label={[entry.subjectName, entry.topicName].filter(Boolean).join(" · ") || t(`error_${entry.errorType}`)}
+                onPress={() => setSelected(entry.id)} />
+              {entry.note ? <AppText variant="caption" tone="secondary" numberOfLines={2}>{entry.note}</AppText> : null}
+              <AppText variant="micro" tone="muted">{t(`status_${entry.status}`)}</AppText>
+            </PanelCard>
+          ))}
+          {entries.hasNextPage && !entries.isFetchingNextPage ? (
+            <AnalysisLink label={tHistory("load_more")} onPress={() => void entries.fetchNextPage()} />
+          ) : null}
+        </>
+      )}
+    </FormSheet>
+  );
+}
 
-      {/* Due Today (2/7/21d Spaced Review Ladder) */}
-      <Card style={{ gap: space.md }}>
-        <View style={styles.headerRow}>
-          <AppText variant="cardTitle">{t("due_reviews_title")}</AppText>
-          <Chip label={String(dueEntries.length)} tone="warning" />
-        </View>
+function NotebookEntryBody({ entry }: { entry: NotebookEntryDto }) {
+  const t = useTranslations("analysis");
+  const { space } = useThemeTokens();
+  return (
+    <PanelCard style={{ gap: space.sm }}>
+      <PanelCardTitle>{[entry.subjectName, entry.topicName].filter(Boolean).join(" · ") || t("mistake_subject_label")}</PanelCardTitle>
+      <AppText variant="caption" tone="secondary">{t(`error_${entry.errorType}`)}</AppText>
+      {entry.url ? <Image source={entry.url} contentFit="contain" style={{ height: 220 }} /> : null}
+      {entry.note ? <AppText>{entry.note}</AppText> : null}
+    </PanelCard>
+  );
+}
 
-        {dueEntries.length === 0 ? (
-          <AppText variant="body" tone="secondary">
-            {t("due_empty")}
-          </AppText>
-        ) : (
-          <View style={{ gap: space.sm }}>
-            {dueEntries.map((entry) => {
-              const isBusy = reviewingId === entry.id;
-              return (
-                <View
-                  key={entry.id}
-                  style={[
-                    styles.entryCard,
-                    {
-                      backgroundColor: palette.surfaceAlt,
-                      borderColor: palette.border,
-                      borderRadius: radii.inner,
-                      padding: space.md,
-                      gap: space.sm,
-                    },
-                  ]}
-                >
-                  <View style={styles.headerRow}>
-                    <AppText variant="body">
-                      {entry.subjectName ?? t("mistake_subject_label")}
-                      {entry.topicName ? ` · ${entry.topicName}` : ""}
-                    </AppText>
-                    <Chip
-                      label={t(ERROR_LABEL_KEYS[entry.errorType])}
-                      tone="warning"
-                    />
-                  </View>
+function NotebookAddForm({ examId, subjects, scope, onSaved }: {
+  examId: string;
+  subjects: ExamSubjectDto[];
+  scope: MistakeScope;
+  onSaved: () => Promise<void>;
+}) {
+  const t = useTranslations("analysis");
+  const tCommon = useTranslations("common");
+  const { space } = useThemeTokens();
+  const [subject, setSubject] = useState(scope.subjectRef ?? subjects[0]?.slug ?? null);
+  const [reason, setReason] = useState<NotebookErrorType>(scope.errorType ?? "UNKNOWN_TOPIC");
+  const [note, setNote] = useState("");
+  const save = useMutation({
+    mutationFn: () => createNotebookEntry({
+      examId, mockExamId: scope.mockExamId, source: "OWN", subjectRef: subject,
+      topicRef: subject === scope.subjectRef ? scope.topicRef : undefined,
+      errorType: reason, note: note.trim() || null,
+    }),
+    onSuccess: async () => { haptics.success(); await onSaved(); },
+  });
 
-                  {entry.note ? (
-                    <AppText variant="caption" tone="secondary">
-                      {entry.note}
-                    </AppText>
-                  ) : null}
-
-                  <View style={styles.reviewButtonsRow}>
-                    <View style={{ flex: 1 }}>
-                      <Button
-                        label={t("review_solved_cta")}
-                        onPress={() => void handleReview(entry.id, true)}
-                        disabled={isBusy}
-                        variant="primary"
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Button
-                        label={t("review_unsolved_cta")}
-                        onPress={() => void handleReview(entry.id, false)}
-                        disabled={isBusy}
-                        variant="secondary"
-                      />
-                    </View>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
-      </Card>
-
-      {/* Add Mistake to Notebook */}
-      <Card style={{ gap: space.md }}>
-        <AppText variant="cardTitle">{t("add_mistake_title")}</AppText>
-
-        <View style={{ gap: space.xs }}>
-          <AppText variant="caption" tone="secondary">
-            {t("mistake_subject_label")}
-          </AppText>
-          <View style={styles.chipWrap}>
-            {subjects.map((sub) => (
-              <Chip
-                key={sub.slug}
-                label={sub.name}
-                selected={selectedSubjectSlug === sub.slug}
-                onPress={() => setSelectedSubjectSlug(sub.slug)}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={{ gap: space.xs }}>
-          <AppText variant="caption" tone="secondary">
-            {t("mistake_error_type_label")}
-          </AppText>
-          <View style={styles.chipWrap}>
-            {NOTEBOOK_ERROR_TYPES.map((type) => (
-              <Chip
-                key={type}
-                label={t(ERROR_LABEL_KEYS[type])}
-                selected={errorType === type}
-                onPress={() => setErrorType(type)}
-              />
-            ))}
-          </View>
-        </View>
-
-        <TextField
-          label={t("mistake_note_label")}
-          placeholder={t("mistake_note_placeholder")}
-          value={note}
-          onChangeText={setNote}
-        />
-
-        {errorMsg ? (
-          <AppText variant="caption" tone="danger">
-            {errorMsg}
-          </AppText>
-        ) : null}
-
-        <Button
-          label={saving ? tCommon("loading") : t("save_mistake_cta")}
-          onPress={() => void handleSaveEntry()}
-          disabled={saving}
-          variant="primary"
-        />
-      </Card>
-
-      {/* Recent Mistake Entries */}
-      {recentEntries.length > 0 ? (
-        <Card style={{ gap: space.md }}>
-          <AppText variant="cardTitle">{t("recent_mistakes_title")}</AppText>
-          <View style={{ gap: space.sm }}>
-            {recentEntries.map((entry) => {
-              const statusKey =
-                entry.status === "HEALED"
-                  ? "status_HEALED"
-                  : entry.status === "ARCHIVED"
-                    ? "status_ARCHIVED"
-                    : "status_ACTIVE";
-              return (
-                <View
-                  key={entry.id}
-                  style={[
-                    styles.entryCard,
-                    {
-                      backgroundColor: palette.surfaceAlt,
-                      borderColor: palette.border,
-                      borderRadius: radii.inner,
-                      padding: space.md,
-                      gap: 4,
-                    },
-                  ]}
-                >
-                  <View style={styles.headerRow}>
-                    <AppText variant="body">
-                      {entry.subjectName ?? t("mistake_subject_label")}
-                    </AppText>
-                    <View style={styles.chipWrap}>
-                      <Chip
-                        label={t(ERROR_LABEL_KEYS[entry.errorType])}
-                        tone="default"
-                      />
-                      <Chip
-                        label={t(statusKey)}
-                        tone={entry.status === "HEALED" ? "success" : "coach"}
-                      />
-                    </View>
-                  </View>
-                  {entry.note ? (
-                    <AppText variant="caption" tone="secondary">
-                      {entry.note}
-                    </AppText>
-                  ) : null}
-                </View>
-              );
-            })}
-          </View>
-        </Card>
-      ) : null}
+  return (
+    <View style={{ gap: space.md }}>
+      <AppText variant="caption" tone="secondary">{t("mistake_subject_label")}</AppText>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+        {subjects.map((item) => (
+          <Chip label={item.name} key={item.slug} selected={subject === item.slug} onPress={() => setSubject(item.slug)} />
+        ))}
+      </View>
+      <AppText variant="caption" tone="secondary">{t("mistake_error_type_label")}</AppText>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+        {NOTEBOOK_ERROR_TYPES.map((key) => (
+          <Chip label={t(`error_${key}`)} key={key} selected={reason === key} onPress={() => setReason(key)} />
+        ))}
+      </View>
+      <TextField label={t("mistake_note_label")} placeholder={t("mistake_note_placeholder")} value={note} onChangeText={setNote} />
+      {save.isError ? <AppText tone="danger">{save.error instanceof Error ? save.error.message : tCommon("error_body")}</AppText> : null}
+      <Button label={t("save_mistake_cta")} loading={save.isPending} onPress={() => { if (!save.isPending) save.mutate(); }} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  entryCard: {
-    borderWidth: 1,
-  },
-  reviewButtonsRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  chipWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-});

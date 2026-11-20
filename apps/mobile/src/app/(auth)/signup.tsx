@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Linking, Pressable, StyleSheet, View } from "react-native";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   hasCompletedOnboarding,
   isWaitlistOn,
@@ -10,7 +9,8 @@ import {
 } from "@mentor/core";
 import { ApiClientError } from "@mentor/api-client";
 import { signupSchema } from "@mentor/validation";
-import { Button, Card, Chip, TextField, AppText } from "../../components/ui/index.js";
+import { AuthFormLink, AuthFormScreen, type AuthFormPose } from "../../components/auth/auth-form-screen.js";
+import { Button, Chip, TextField, AppText } from "../../components/ui/index.js";
 import { haptics } from "../../lib/haptics.js";
 import { STUDENT_CORE_ONLY } from "../../lib/release-scope.js";
 import { signupLegalUrl, type SignupLegalDocument } from "../../lib/signup-legal.js";
@@ -22,10 +22,9 @@ import { useThemeTokens } from "../../providers/theme-provider.js";
 export default function SignupScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ role?: string }>();
-  const insets = useSafeAreaInsets();
   const { signup } = useAuth();
   const { availability } = useAppAvailability();
-  const { palette, space } = useThemeTokens();
+  const { space } = useThemeTokens();
   const { locale } = useLocale();
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
@@ -33,6 +32,7 @@ export default function SignupScreen() {
   const [intent, setIntent] = useState<"STUDENT" | "COACH">(
     !STUDENT_CORE_ONLY && params.role === "coach" ? "COACH" : "STUDENT",
   );
+  const [pose, setPose] = useState<AuthFormPose>("rest");
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -117,115 +117,82 @@ export default function SignupScreen() {
   };
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      style={{ flex: 1, backgroundColor: palette.bg }}
-      contentContainerStyle={[
-        styles.container,
-        {
-          paddingTop: insets.top + space.xl,
-          paddingBottom: insets.bottom + space.xl,
-          paddingHorizontal: space.lg,
-          gap: space.lg,
-        },
-      ]}
-    >
-      <View style={{ gap: space.xs }}>
-        {STUDENT_CORE_ONLY ? null : (
-          <View style={styles.intentRow}>
-            <Chip
-              label={t("coach_switch_student")}
-              selected={!isCoachIntent}
-              onPress={() => setIntent("STUDENT")}
-            />
-            <Chip
-              label={t("signup_title_coach")}
-              selected={isCoachIntent}
-              onPress={() => setIntent("COACH")}
-            />
-          </View>
-        )}
-        <AppText variant="title">
-          {isCoachIntent ? t("signup_title_coach") : t("signup_title")}
+    <AuthFormScreen title={t(isCoachIntent ? "signup_title_coach" : "signup_title")}
+      subtitle={isCoachIntent ? t("signup_coach_intro") : undefined} pose={pose}>
+      {STUDENT_CORE_ONLY ? null : (
+        <View style={styles.intentRow}>
+          <Chip label={t("coach_switch_student")} selected={!isCoachIntent} onPress={() => setIntent("STUDENT")} />
+          <Chip label={t("signup_title_coach")} selected={isCoachIntent} onPress={() => setIntent("COACH")} />
+        </View>
+      )}
+      <TextField
+        label={t("name_label")}
+        placeholder={t("name_placeholder")}
+        value={displayName}
+        onChangeText={setDisplayName}
+        autoCapitalize="words"
+        onFocus={() => setPose("lookDown")}
+        onBlur={() => setPose("rest")}
+        autoComplete="name"
+      />
+      <TextField
+        label={t("email_label")}
+        placeholder={t("email_placeholder")}
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        onFocus={() => setPose("lookDown")}
+        onBlur={() => setPose("rest")}
+        autoComplete="email"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      <TextField
+        label={t("password_label")}
+        placeholder={t("password_placeholder")}
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        onFocus={() => setPose("cover")}
+        onBlur={() => setPose("rest")}
+        autoComplete="new-password"
+        autoCapitalize="none"
+      />
+
+      <SignupConsent
+        checked={kvkkAccepted}
+        label={t("kvkk_label")}
+        linkLabel={t("kvkk_link")}
+        onToggle={() => setKvkkAccepted((prev) => !prev)}
+        onOpen={() => void openLegalDocument("kvkk")}
+      />
+      <SignupConsent
+        checked={termsAccepted}
+        label={t("terms_label")}
+        linkLabel={t("terms_link")}
+        onToggle={() => setTermsAccepted((prev) => !prev)}
+        onOpen={() => void openLegalDocument("terms")}
+      />
+
+      {errorMessage ? (
+        <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
+          {errorMessage}
         </AppText>
-        {isCoachIntent ? (
-          <AppText variant="body" tone="secondary">{t("signup_coach_intro")}</AppText>
-        ) : null}
+      ) : null}
+
+      <Button
+        label={t("signup_submit")}
+        loading={submitting}
+        onPress={() => {
+          void handleSubmit();
+        }}
+        variant="primary"
+      />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", columnGap: space.xs }}>
+        <AppText tone="secondary">{t("login_prompt")}</AppText>
+        <AuthFormLink label={t("login_link")} onPress={() => router.push("/(auth)/login")} />
       </View>
-
-      <Card style={{ gap: space.md }}>
-        <TextField
-          label={t("name_label")}
-          placeholder={t("name_placeholder")}
-          value={displayName}
-          onChangeText={setDisplayName}
-          autoCapitalize="words"
-        />
-        <TextField
-          label={t("email_label")}
-          placeholder={t("email_placeholder")}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <TextField
-          label={t("password_label")}
-          placeholder={t("password_placeholder")}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-
-        <SignupConsent
-          checked={kvkkAccepted}
-          label={t("kvkk_label")}
-          linkLabel={t("kvkk_link")}
-          onToggle={() => setKvkkAccepted((prev) => !prev)}
-          onOpen={() => void openLegalDocument("kvkk")}
-        />
-        <SignupConsent
-          checked={termsAccepted}
-          label={t("terms_label")}
-          linkLabel={t("terms_link")}
-          onToggle={() => setTermsAccepted((prev) => !prev)}
-          onOpen={() => void openLegalDocument("terms")}
-        />
-
-        {errorMessage ? (
-          <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
-            {errorMessage}
-          </AppText>
-        ) : null}
-
-        <Button
-          label={t("signup_submit")}
-          loading={submitting}
-          onPress={() => {
-            void handleSubmit();
-          }}
-          variant="primary"
-        />
-      </Card>
-
-      <View style={styles.footerRow}>
-        <AppText variant="caption" tone="secondary">
-          {t("login_prompt")}{" "}
-        </AppText>
-        <Pressable
-          accessibilityRole="link"
-          hitSlop={8}
-          onPress={() => router.push("/(auth)/login" as never)}
-        >
-          <AppText variant="caption" tone="accent">
-            {t("login_link")}
-          </AppText>
-        </Pressable>
-      </View>
-    </ScrollView>
+    </AuthFormScreen>
   );
 }
 
@@ -279,9 +246,6 @@ function SignupConsent({ checked, label, linkLabel, onToggle, onOpen }: SignupCo
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-  },
   intentRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -311,11 +275,5 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
-  },
-  footerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
   },
 });
