@@ -102,3 +102,23 @@ test("reduced motion keeps the coin still without downloading its player", async
   expect(requests.filter((url) => /coin\.json|dotlottie-player\.wasm/.test(url))).toEqual([]);
   await expect(page.locator(".lj-coin canvas")).toHaveCount(0);
 });
+
+// Spec: H1 and lead paint without images; mobile LCP stays under 2.5 s. Run on a production build.
+for (const path of ["/pomodoro-sayac", "/ders-calisma-uygulamasi"]) {
+  test(`${path} paints its largest content within 2.5 s on a phone`, async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.startsWith("mobile"), "mobile LCP budget");
+    await page.addInitScript(() => {
+      (window as unknown as { __lcp: number }).__lcp = 0;
+      new PerformanceObserver((list) => {
+        const last = list.getEntries().at(-1);
+        if (last) (window as unknown as { __lcp: number }).__lcp = last.startTime;
+      }).observe({ type: "largest-contentful-paint", buffered: true });
+    });
+    await page.goto(path, { waitUntil: "load" });
+    await page.waitForTimeout(1000);
+    const lcp = await page.evaluate(() => (window as unknown as { __lcp: number }).__lcp);
+    console.log(`LCP ${path}: ${Math.round(lcp)} ms`);
+    expect(lcp).toBeGreaterThan(0);
+    expect(lcp).toBeLessThan(2500);
+  });
+}

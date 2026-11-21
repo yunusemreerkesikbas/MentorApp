@@ -35,7 +35,7 @@ export function SeoSignupCta({
       href={href}
       role={role}
       className={className}
-      onClick={() => trackSeoLpSignupClick(source, location)}
+      onClick={() => trackSeoLpSignupClick(source, location, role)}
     >
       {children}
     </SignupCta>

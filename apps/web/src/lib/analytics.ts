@@ -33,6 +33,19 @@ type WebVitalRating = "good" | "needs-improvement" | "poor";
 
 export type SeoLpSlug = "pomodoro" | "yks" | "tyt" | "lgs" | "notebook" | "study_app";
 
+export type WaitlistCtaLocation =
+  | "nav"
+  | "hero"
+  | "demo"
+  | "table"
+  | "timer_done"
+  | "closing"
+  | "parent"
+  | "how"
+  | "features"
+  | "dawn"
+  | "coach_band";
+
 export interface ProductAnalyticsParams {
   login: { method: "email" | "google" };
   /**
@@ -41,8 +54,17 @@ export interface ProductAnalyticsParams {
    * would average two funnels that fail for unrelated reasons.
    */
   sign_up: { method: "email" | "google"; intent?: "student" | "coach"; lp_source?: SeoLpSlug };
-  /** Waitlist join: the acquisition conversion while signup is invite-only. Never carries the address. */
-  generate_lead: { lead_source: "waitlist"; intent: "student" | "coach"; lp_source?: SeoLpSlug };
+  /** Waitlist CTA click before form submission while signup is invite-only. Never carries PII. */
+  waitlist_cta_click: {
+    intent: "student" | "coach";
+    lp_source?: SeoLpSlug;
+    location?: WaitlistCtaLocation;
+  };
+  /** Server-verified waitlist join while signup is invite-only. Never carries the address. */
+  waitlist_signup: {
+    intent: "student" | "coach";
+    lp_source?: SeoLpSlug;
+  };
   tutorial_begin: Record<string, never>;
   tutorial_complete: Record<string, never>;
   begin_checkout: {
@@ -78,35 +100,11 @@ export interface SeoLpAnalyticsParams {
     preset: "25_5" | "50_10" | "custom" | "stopwatch";
     room: StudyRoomTheme;
   };
-  signup_from_pomodoro_lp: {
-    location: "hero" | "table" | "timer_done" | "closing";
-  };
   plan_demo_view: {
     lp: "yks" | "tyt" | "lgs";
   };
-  plan_cta_click: {
-    lp: "yks" | "tyt" | "lgs";
-    location: "hero" | "demo" | "table" | "closing" | "parent";
-  };
-  signup_from_yks_lp: {
-    location: "hero" | "demo" | "table" | "closing";
-  };
-  signup_from_tyt_lp: {
-    location: "hero" | "demo" | "table" | "closing";
-  };
-  signup_from_lgs_lp: {
-    location: "hero" | "demo" | "table" | "closing" | "parent";
-  };
   notebook_demo_view: {
     page_type: "mistake_notebook";
-  };
-  notebook_cta_click: {
-    placement: "hero" | "demo" | "how" | "closing";
-    page_type: "mistake_notebook";
-  };
-  category_cta_click: {
-    placement: "hero" | "features" | "closing";
-    page_type: "study_app";
   };
 }
 export type SeoLpAnalyticsEvent = keyof SeoLpAnalyticsParams;

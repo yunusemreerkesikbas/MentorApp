@@ -16,9 +16,11 @@ vi.mock("next-intl/server", () => ({
   },
 }));
 
+import { generateMetadata as generateLegalMetadata } from "@/app/[locale]/legal/[slug]/page";
 import { generateMetadata as generateMistakeNotebookMetadata } from "@/app/[locale]/mistake-notebook/page";
 import { generateMetadata as generatePomodoroMetadata } from "@/app/[locale]/pomodoro-timer/page";
 import { generateMetadata as generateStudyAppMetadata } from "@/app/[locale]/study-app/page";
+import { buildWebApplicationStructuredData } from "@/lib/structured-data";
 import { generateStudyProgramMetadata } from "./study-program-lp-template";
 
 describe("product-led SEO LP metadata", () => {
@@ -61,5 +63,49 @@ describe("product-led SEO LP metadata", () => {
     expect(appTr.robots).toEqual({ index: true, follow: true });
     expect(appEn.robots).toEqual({ index: false, follow: true });
     expect(appEn.alternates?.canonical).toBe("https://puhukoc.com/ders-calisma-uygulamasi");
+  });
+
+  it("includes page-specific OG description for /yasal/kvkk-aydinlatma", async () => {
+    const kvkkTr = await generateLegalMetadata({
+      params: Promise.resolve({ locale: "tr", slug: "kvkk-aydinlatma" }),
+    });
+    expect(kvkkTr.title).toBe("KVKK Aydınlatma Metni | PuhuKoç");
+    expect(kvkkTr.description).toContain("6698 sayılı KVKK aydınlatma metni");
+    expect(kvkkTr.openGraph?.description).toBe(kvkkTr.description);
+    expect(kvkkTr.twitter?.description).toBe(kvkkTr.description);
+    expect(kvkkTr.alternates?.canonical).toBe("https://puhukoc.com/yasal/kvkk-aydinlatma");
+  });
+
+  it("aligns SEO LP copy, sample block titles and WebApplication schemas with invite-only pilot behavior", () => {
+    expect(trMessages.studyProgramLp.common.cta_save_plan).toBe("Bekleme listesine katıl");
+    expect(trMessages.studyProgramLp.common.demo_note).toContain("hesaba aktarılmaz");
+    expect(trMessages.studyProgramLp.yks.sample_title).toBe(
+      "Örnek çalışma blokları · Sayısal · dengeli TYT ve AYT",
+    );
+    expect(trMessages.studyProgramLp.tyt.sample_title).toBe(
+      "Örnek çalışma blokları · TYT odaklı",
+    );
+    expect(trMessages.studyProgramLp.lgs.sample_title).toBe(
+      "Örnek çalışma blokları · 8. sınıf okul haftası · dengeli",
+    );
+    expect(trMessages.studyProgramLp.lgs.meta_description).not.toContain("veli ritmi görür");
+
+    const nbSchema = buildWebApplicationStructuredData({
+      name: trMessages.mistakeNotebookLp.schema_name,
+      url: "https://puhukoc.com/yanlis-defteri-uygulamasi",
+      description: trMessages.mistakeNotebookLp.schema_description,
+      siteOrigin: "https://puhukoc.com",
+    });
+    expect(nbSchema["@type"]).toBe("WebApplication");
+    expect(nbSchema.description).toContain("başlangıç kotasıyla");
+
+    const appSchema = buildWebApplicationStructuredData({
+      name: trMessages.studyAppLp.schema_name,
+      url: "https://puhukoc.com/ders-calisma-uygulamasi",
+      description: trMessages.studyAppLp.schema_description,
+      siteOrigin: "https://puhukoc.com",
+    });
+    expect(appSchema["@type"]).toBe("WebApplication");
+    expect(appSchema.description).toContain("davetli pilot");
   });
 });

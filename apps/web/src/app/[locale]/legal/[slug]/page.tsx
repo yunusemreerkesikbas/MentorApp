@@ -23,13 +23,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // out of the index too (same rule the knowledge pages already apply).
   const noindex = doc.status !== "FINAL" || locale === "en";
   const title = `${content.title} | PuhuKoç`;
+  const description = content.description;
   const ogImage = `${siteUrl()}/img/brand/puhukoc-og-${locale === "en" ? "en" : "tr"}.png`;
   return {
     title,
+    description,
     alternates: { canonical },
     robots: noindex ? { index: false, follow: true } : undefined,
     openGraph: {
       title,
+      description,
       url: canonical,
       siteName: "PuhuKoç",
       locale: locale === "en" ? "en_US" : "tr_TR",
@@ -39,6 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     twitter: {
       card: "summary_large_image",
       title,
+      description,
       images: [ogImage],
     },
   };

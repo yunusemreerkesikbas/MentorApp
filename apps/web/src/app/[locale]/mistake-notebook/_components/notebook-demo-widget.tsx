@@ -7,7 +7,6 @@ import { trackSeoLpEvent } from "@/lib/analytics";
 import { recordSeoLpSource } from "@/lib/lp-attribution";
 
 export interface NotebookDemoCopy {
-  pill: string;
   badge: string;
   subject: string;
   question: string;
@@ -29,16 +28,12 @@ export function NotebookDemoWidget({ copy }: { copy: NotebookDemoCopy }) {
     trackSeoLpEvent("notebook_demo_view", { page_type: "mistake_notebook" });
   }, []);
 
+  // Lives inside a taped PaperNote (the page names the note with the demo pill), so no card of its own.
   return (
-    <div className="mt-8 rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-5 shadow-sm sm:p-7">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex min-h-7 items-center rounded-full bg-[var(--landing-pill)] px-3 text-xs font-extrabold text-[var(--landing-pill-ink)]">
-          {copy.pill}
-        </span>
-        <span className="text-xs font-bold text-[var(--landing-ink-soft)]">{copy.badge}</span>
-      </div>
+    <div>
+      <p className="text-xs font-bold text-[var(--landing-ink-soft)]">{copy.badge}</p>
 
-      <div className="mt-4 rounded-xl border border-[var(--landing-paper-line)] bg-[var(--landing-paper)] p-5">
+      <div className="mt-3 rounded-xl border border-[var(--landing-paper-line)] bg-[var(--landing-paper)] p-4">
         <span className="inline-flex rounded-md bg-[var(--color-surface)] px-2.5 py-1 text-xs font-extrabold text-[var(--landing-ink)]">
           {copy.subject}
         </span>
