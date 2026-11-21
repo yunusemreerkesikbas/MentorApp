@@ -4867,7 +4867,7 @@
     "schema_description": "Free online Pomodoro timer working without login: 25/5, 50/10, ambient room audio and focus sessions. Full plan and table features are in invite-only pilot.",
     "eyebrow": "KPSS · YKS · LGS · ALES · DGS",
     "h1": "Free online Pomodoro timer",
-    "subhead": "Set your time, pick your room, start. You can use the 25/5 and 50/10 focus timer on this page right away without an account. PuhuKoç web app is currently in invite-only pilot; join the waitlist for the full workspace.",
+    "subhead": "Pick your room, set your time, go! No sign-up, no waiting: 25 minutes of focus, 5 minutes of break, all on this page.",
     "proof": "Online timer works free without login · Full app is in invite-only pilot (plan, sessions and table in the free tier; Puhu, your AI coach, in Premium)",
     "cta_start_timer": "Start the timer",
     "cta_signup": "Join the waitlist",
@@ -4969,6 +4969,11 @@
     "closing": {
       "title": "Start with one Pomodoro today!",
       "body": "25 minutes is enough. Set the time, pick your room, and reserve your spot on the invite-only pilot waitlist."
+    },
+    "scribble": "your room, your time!",
+    "hero_note": {
+      "name": "ambient sound",
+      "body": "Stage, library, cafe, home or silent. Want it clean? Switch to the minimal view: just the dial."
     }
   },
   "studyProgramLp": {
@@ -5025,7 +5030,8 @@
       "link_notebook": "Mistake notebook",
       "link_study_app": "Study app",
       "link_coaches": "Morning round workspace for coaches",
-      "link_blog": "Verified exam guides"
+      "link_blog": "Verified exam guides",
+      "scribble": "pick your field, blocks appear!"
     },
     "yks": {
       "meta_title": "Build a YKS Study Program | Free Weekly Plan · PuhuKoç",
@@ -5034,7 +5040,7 @@
       "schema_description": "Sample study blocks preview for YKS (TYT and AYT). Full weekly study program, focus sessions and study table are offered in invited pilot accounts.",
       "eyebrow": "YKS · TYT · AYT",
       "h1": "YKS study program: build your week around your goal",
-      "subhead": "Tell us how much time you have a day and where you are headed; tasks land across the week. Explore the sample study blocks below and join the invite-only pilot waitlist for the full workspace.",
+      "subhead": "How many hours do you have a day, and where are you headed? Tell us and the tasks land across your week. Sample blocks are right next to it, give them a tap!",
       "answer_first": "A YKS study program is a personal schedule that splits TYT and AYT topics into weekly blocks. A good schedule respects your real daily hours, practice test days and review blocks. In an invited PuhuKoç pilot account, once you set your goal and daily time, tasks land on your days and connect straight to a focus session.",
       "step1": "Pick your track (science, equal weight, verbal, language) and your real daily hours.",
       "step2": "Tasks are laid out across the week by subject and minutes.",
@@ -5072,7 +5078,7 @@
       "schema_description": "Sample study blocks preview for TYT. Full weekly study schedule, focus timer and mistake notebook with initial free quota are available in invited pilot accounts.",
       "eyebrow": "TYT · YKS",
       "h1": "TYT study program: spread the foundation across the week",
-      "subhead": "Slice reading comprehension, maths and other TYT subjects into the hours you actually have. Explore the sample blocks below and join the invite-only pilot waitlist.",
+      "subhead": "How many hours do you have a day? Tell us and reading comprehension, maths and the other TYT subjects land across your week. Sample blocks are right next to it, give them a tap!",
       "answer_first": "A TYT study program schedules the shared foundation subjects of YKS with steady review and practice tests. In an invited PuhuKoç pilot account, you enter your daily hours to place TYT blocks across the week while due mistakes return from your notebook.",
       "step1": "Pick your daily TYT time and the subjects you want to emphasize.",
       "step2": "Reading, maths, science and social blocks spread evenly across the week.",
@@ -5110,7 +5116,7 @@
       "schema_description": "Sample study blocks preview for 8th grade and LGS. Weekly study program, focus sessions and study table are offered in invited pilot accounts.",
       "eyebrow": "LGS · 8th grade",
       "h1": "LGS study program: build your 8th grade week calmly",
-      "subhead": "School, courses and homework already fill the day. Tell us the time you genuinely have left; Turkish, maths, science and social blocks land across your week. Explore the sample blocks below and join the invite-only pilot waitlist.",
+      "subhead": "Grade 8 days are packed, we know! Tell us your term and your daily time and the subjects land across your week. Sample blocks are right next to it, give them a tap!",
       "answer_first": "An LGS study program divides the 8th grade curriculum into a weekly review and practice rhythm. A good schedule respects school homework and uses the real time left at home. In an invited PuhuKoç pilot account, selecting your LGS goal and daily time places tasks across the week, each linked to a Pomodoro session.",
       "step1": "Select LGS / 8th grade and enter the honest daily time left after school.",
       "step2": "Turkish, maths, science and social tasks are laid out across the week in minutes.",
@@ -5153,7 +5159,7 @@
     "schema_description": "Web app feature for saving missed exam questions by subject and topic with 2-7-21 day spaced review. Available in invited pilot accounts with an initial free quota.",
     "eyebrow": "KPSS · YKS · LGS · ALES · DGS",
     "h1": "Mistake notebook: save your questions, return on review day",
-    "subhead": "Stuck on a question? Snap a photo or write it down, file it under its subject and topic. When review day comes, PuhuKoç brings the card back to your desk.",
+    "subhead": "Don't lose the question that stumped you! Snap a photo or write it down and put it in your notebook. When review day comes, the question is right back in front of you.",
     "proof": "PuhuKoç is currently in invite-only pilot · Mistake notebook includes an initial free question and photo allowance; unlimited use is in Premium",
     "cta_primary": "Join the waitlist",
     "cta_secondary": "How it works",
@@ -5206,7 +5212,8 @@
       "link_yks": "YKS study program",
       "link_tyt": "TYT study program",
       "link_lgs": "LGS study program",
-      "link_blog": "Verified exam guides"
+      "link_blog": "Verified exam guides",
+      "who_name": "who is it for?"
     },
     "faq": {
       "pill": "FAQ",
@@ -5227,7 +5234,9 @@
     "closing": {
       "title": "Start with one question!",
       "body": "Try the sample review card above, join the invite-only pilot waitlist, or sign in if you have a pilot account."
-    }
+    },
+    "scribble": "you'll crack it this time!",
+    "scene_aria": "My Mistake Notebook on a desk, with Puhu reading a book"
   },
   "studyAppLp": {
     "meta_title": "Study App | Weekly Plan and Focus · PuhuKoç",
@@ -5236,7 +5245,7 @@
     "schema_description": "Invite-only pilot web application for KPSS, YKS, LGS, ALES and DGS prep offering a weekly study plan, focus timer, mistake notebook with initial free quota, and shared study tables.",
     "eyebrow": "KPSS · YKS · LGS · ALES · DGS",
     "h1": "Study app: your weekly plan and study table in one place",
-    "subhead": "Plan your week, start a focus session and keep the questions you want to review. If you want to study at the same table as your friends, your seat is ready in PuhuKoç.",
+    "subhead": "Your plan, focus sessions, mistake notebook and study desk in one place. Your friends are right next door!",
     "proof": "PuhuKoç is currently in invite-only pilot · Plan, sessions, study table and community are in the free tier; Puhu, your AI coach, and deep analysis are in Premium",
     "definition": "PuhuKoç is a web-based study companion app currently in invite-only pilot, offering a weekly study plan, focus timer, mistake notebook with initial free quota, and shared study tables for exam candidates. Puhu, the AI coach, is available in Premium.",
     "cta_primary": "Join the waitlist",
@@ -5254,7 +5263,12 @@
       "f4_title": "Study at the same table as your friends",
       "f4_body": "Set up a study table and invite your friends. Everyone opens their own session and studies quietly side by side.",
       "f5_title": "Talk with Puhu",
-      "f5_body": "On a tough day, message Puhu. It talks with you knowing your plan and past sessions. Puhu, your AI coach, is in Premium and does not solve exam questions."
+      "f5_body": "On a tough day, message Puhu. It talks with you knowing your plan and past sessions. Puhu, your AI coach, is in Premium and does not solve exam questions.",
+      "f1_name": "weekly plan",
+      "f2_name": "focus session",
+      "f3_name": "mistake notebook",
+      "f4_name": "study desk",
+      "f5_name": "AI coach"
     },
     "steps": {
       "pill": "Getting started",
@@ -5299,6 +5313,17 @@
     "closing": {
       "title": "Start today with one small step!",
       "body": "Join the invite-only pilot waitlist or sign in if you have a pilot account. If your light is on, you are not alone."
+    },
+    "scribble": "tap a room!",
+    "definition_pill": "PuhuKoç in short",
+    "scene": {
+      "aria": "The PuhuKoç building: one feature in every room",
+      "plate": "NO {n}",
+      "tag_plan": "Plan",
+      "tag_odak": "Focus",
+      "tag_defter": "Notebook",
+      "tag_masa": "Desk",
+      "tag_puhu": "Puhu"
     }
   }
 }

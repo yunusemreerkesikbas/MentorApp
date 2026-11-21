@@ -4867,7 +4867,7 @@
     "schema_description": "Kayıt olmadan çalışan ücretsiz online pomodoro sayaç: 25/5, 50/10, ortam sesi ve odak seansları. Hesap gerektiren plan ve masa özellikleri davetli pilottadır.",
     "eyebrow": "KPSS · YKS · LGS · ALES · DGS",
     "h1": "Ücretsiz online pomodoro sayaç",
-    "subhead": "Süreyi kur, odayı seç, başla. Bu sayfadaki 25/5 ve 50/10 odak sayacını kayıt olmadan hemen kullanabilirsin. PuhuKoç web uygulaması şu an davetli pilotta; tam çalışma alanı için bekleme listesine katıl.",
+    "subhead": "Odanı seç, süreni kur, başla! Kayıt yok, bekleme yok: 25 dakika odak, 5 dakika mola, hepsi bu sayfada.",
     "proof": "Online sayaç girişsiz ve ücretsiz · Tam uygulama davetli pilotta (plan, seans ve masa ücretsiz katmanda, yapay zekâ koçun Puhu Premium’da)",
     "cta_start_timer": "Sayacı başlat",
     "cta_signup": "Bekleme listesine katıl",
@@ -4969,6 +4969,11 @@
     "closing": {
       "title": "Bugün bir pomodoro ile başla!",
       "body": "25 dakika yeter. Süreyi kur, odayı seç; tam çalışma alanı için davetli pilot bekleme listesinde yerini ayır."
+    },
+    "scribble": "oda senin, süre senin!",
+    "hero_note": {
+      "name": "ortam sesi",
+      "body": "Sahne, kütüphane, kafe, ev ya da sessiz. İstersen sade görünüm: sadece kadran."
     }
   },
   "studyProgramLp": {
@@ -5025,7 +5030,8 @@
       "link_notebook": "Yanlış defteri",
       "link_study_app": "Ders çalışma uygulaması",
       "link_coaches": "Koçlar için sabah turu paneli",
-      "link_blog": "Doğrulanmış sınav rehberleri"
+      "link_blog": "Doğrulanmış sınav rehberleri",
+      "scribble": "alanını seç, bloklar gelsin!"
     },
     "yks": {
       "meta_title": "YKS Çalışma Programı Hazırla | Ücretsiz Haftalık Plan · PuhuKoç",
@@ -5034,7 +5040,7 @@
       "schema_description": "YKS (TYT ve AYT) için örnek çalışma blokları önizlemesi. Haftalık ders çalışma programı, odak seansı ve çalışma masası davetli pilot hesaplarında sunulur.",
       "eyebrow": "YKS · TYT · AYT",
       "h1": "YKS çalışma programı: hedefine göre haftanı kur",
-      "subhead": "Günde ne kadar vaktin var ve nereye gideceğini söyle; görevler günlere yerleşsin. Örnek çalışma bloklarını hemen aşağıda incele, tam çalışma alanı için davetli pilot bekleme listesine katıl.",
+      "subhead": "Günde kaç saatin var, hedefin ne? Söyle, görevler günlere yerleşsin. Örnek bloklar hemen yanında, bir dokun!",
       "answer_first": "YKS çalışma programı, TYT ve AYT konularını haftalık dilimlere bölen kişisel plandır. İyi bir program günlük gerçek süreyi, deneme günlerini ve tekrar bloklarını hesaba katar. PuhuKoç’ta davetli pilot hesabınla hedefini ve günlük vaktini seçtiğinde görevler günlere yerleşir; her görev odak seansına bağlanabilir.",
       "step1": "Alanını (sayısal, eşit ağırlık, sözel, dil) ve günlük gerçek süreni seç.",
       "step2": "Görevler ders ve dakika olarak haftanın günlerine dizilir.",
@@ -5072,7 +5078,7 @@
       "schema_description": "TYT için örnek çalışma blokları önizlemesi. Haftalık ders çalışma programı, odak seansı ve başlangıç kotalı yanlış defteri davetli pilot hesaplarında sunulur.",
       "eyebrow": "TYT · YKS",
       "h1": "TYT çalışma programı: temeli haftaya yay",
-      "subhead": "Paragraf, matematik ve diğer TYT derslerini günlük süren kadar dilimle. Örnek çalışma bloklarını incele; tam çalışma alanı için davetli pilot bekleme listesine katıl.",
+      "subhead": "Günde kaç saatin var? Söyle, paragraf, matematik ve diğer TYT dersleri günlere yerleşsin. Örnek bloklar hemen yanında, bir dokun!",
       "answer_first": "TYT çalışma programı, YKS’nin ortak temelini oluşturan dersleri düzenli tekrar ve deneme ritmiyle planlamaktır. PuhuKoç davetli pilot hesabında günlük süreni verince TYT görevleri haftaya yerleşir; yanlış sorularının tekrar günü defterden gelir.",
       "step1": "Günlük TYT süreni ve ağırlık vermek istediğin dersleri seç.",
       "step2": "Paragraf, matematik, fen ve sosyal blokları haftaya dengeli yerleşir.",
@@ -5110,7 +5116,7 @@
       "schema_description": "8. sınıf ve LGS için örnek çalışma blokları önizlemesi. Haftalık çalışma programı, odak seansı ve çalışma masası davetli pilot hesaplarında sunulur.",
       "eyebrow": "LGS · 8. sınıf",
       "h1": "LGS çalışma programı: 8. sınıf haftanı sakin kur",
-      "subhead": "Okul, kurs ve ev ödevi zaten dolu. Günde gerçekten ayırabildiğin süreyi söyle; Türkçe, matematik, fen ve sosyal dilimleri günlere yerleşsin. Örnek çalışma bloklarını incele, davetli pilot bekleme listesine katıl.",
+      "subhead": "8. sınıfta günler dolu, biliyoruz! Dönemini ve günlük süreni söyle, dersler haftana yerleşsin. Örnek bloklar hemen yanında, bir dokun!",
       "answer_first": "LGS çalışma programı, 8. sınıf müfredatını haftalık tekrar ve deneme ritmine bölen plandır. İyi program okul ödevini yok saymaz; eve kalan gerçek süreyi kullanır. PuhuKoç davetli pilot hesabında LGS hedefini ve günlük vaktini seçince görevler günlere yerleşir; her blok pomodoro seansına bağlanabilir.",
       "step1": "Sınavı LGS / 8. sınıf olarak seç, okul sonrası gerçek günlük süreni yaz.",
       "step2": "Türkçe, matematik, fen ve sosyal görevleri dakika dakika haftaya dizilir.",
@@ -5153,7 +5159,7 @@
     "schema_description": "Sınav hazırlığında yanlış veya tekrar sorularını ders ve konuya göre saklayan, 2-7-21 gün aralıklı tekrar sunan web uygulaması özelliği. Davetli pilot hesaplarında ücretsiz başlangıç kotasıyla sunulur.",
     "eyebrow": "KPSS · YKS · LGS · ALES · DGS",
     "h1": "Yanlış defteri: sorularını kaydet, tekrar zamanı dön",
-    "subhead": "Bir soruda takıldın mı? Fotoğrafını çek veya soruyu yaz, dersine ve konusuna ekle. Tekrar günü geldiğinde PuhuKoç soruyu yeniden önüne getirsin.",
+    "subhead": "Takıldığın soru kaybolmasın! Fotoğrafını çek ya da yaz, defterine koy. Tekrar günü gelince soru yeniden önünde.",
     "proof": "PuhuKoç şu an davetli pilotta · Yanlış defteri ücretsiz hesapta başlangıç soru ve fotoğraf kotasıyla sunulur; sınırsız kullanım Premium’dadır",
     "cta_primary": "Bekleme listesine katıl",
     "cta_secondary": "Nasıl çalışır?",
@@ -5206,7 +5212,8 @@
       "link_yks": "YKS çalışma programı",
       "link_tyt": "TYT çalışma programı",
       "link_lgs": "LGS çalışma programı",
-      "link_blog": "Doğrulanmış sınav rehberleri"
+      "link_blog": "Doğrulanmış sınav rehberleri",
+      "who_name": "kimler için?"
     },
     "faq": {
       "pill": "SSS",
@@ -5227,7 +5234,9 @@
     "closing": {
       "title": "Bir soruyla başla!",
       "body": "Örnek tekrar kartını incele, davetli pilot bekleme listesine katıl veya pilot hesabın varsa giriş yap."
-    }
+    },
+    "scribble": "bu sefer çözersin!",
+    "scene_aria": "Masada Yanlış Defterim ve kitap okuyan Puhu"
   },
   "studyAppLp": {
     "meta_title": "Ders Çalışma Uygulaması | Plan ve Odak · PuhuKoç",
@@ -5236,7 +5245,7 @@
     "schema_description": "KPSS, YKS, LGS, ALES ve DGS hazırlığı için haftalık çalışma planı, odak sayacı, başlangıç kotalı yanlış defteri ve sanal çalışma masası sunan davetli pilot web uygulaması.",
     "eyebrow": "KPSS · YKS · LGS · ALES · DGS",
     "h1": "Ders çalışma uygulaması: planın ve çalışma masan bir arada",
-    "subhead": "Sınava hazırlanırken haftanı planla, odak seansı aç ve tekrar etmek istediğin soruları sakla. Arkadaşlarınla aynı masada çalışmak istersen PuhuKoç’ta yerin hazır.",
+    "subhead": "Planın, odak seansın, yanlış defterin ve çalışma masan tek yerde. Arkadaşların da hemen yanında!",
     "proof": "PuhuKoç şu an davetli pilotta · Plan, seans, masa ve topluluk ücretsiz katmanda; yapay zekâ koçun Puhu ve derin analiz Premium’dadır",
     "definition": "PuhuKoç, sınava hazırlananlar için çalışma planı, odak seansı, başlangıç kotalı yanlış defteri ve arkadaşlarla çalışma masası sunan, şu an davetli pilotta olan web tabanlı bir uygulamadır. Yapay zekâ koç Puhu, Premium’da yer alır.",
     "cta_primary": "Bekleme listesine katıl",
@@ -5254,7 +5263,12 @@
       "f4_title": "Arkadaşlarınla aynı masada çalış",
       "f4_body": "Bir masa kur, arkadaşlarını çağır. Herkes kendi seansını açsın; siz de yan yana, sessizce çalışın.",
       "f5_title": "Puhu’yla konuş",
-      "f5_body": "Zorlandığın bir günde Puhu’ya yaz. Planını ve geçmiş seanslarını bilerek seninle konuşur. Yapay zekâ koç Puhu Premium’dadır ve sınav sorusu çözmez."
+      "f5_body": "Zorlandığın bir günde Puhu’ya yaz. Planını ve geçmiş seanslarını bilerek seninle konuşur. Yapay zekâ koç Puhu Premium’dadır ve sınav sorusu çözmez.",
+      "f1_name": "haftalık plan",
+      "f2_name": "odak seansı",
+      "f3_name": "yanlış defteri",
+      "f4_name": "çalışma masası",
+      "f5_name": "yapay zekâ koç"
     },
     "steps": {
       "pill": "Başlangıç",
@@ -5299,6 +5313,17 @@
     "closing": {
       "title": "Bugün küçük bir adımla başla!",
       "body": "Davetli pilot bekleme listesine katıl veya pilot hesabın varsa giriş yap. Işığın yanıyorsa, yalnız değilsin."
+    },
+    "scribble": "bir odaya dokun!",
+    "definition_pill": "Kısaca PuhuKoç",
+    "scene": {
+      "aria": "PuhuKoç apartmanı: her odada bir özellik",
+      "plate": "NO {n}",
+      "tag_plan": "Plan",
+      "tag_odak": "Odak",
+      "tag_defter": "Defter",
+      "tag_masa": "Masa",
+      "tag_puhu": "Puhu"
     }
   }
 }
