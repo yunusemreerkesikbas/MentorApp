@@ -80,7 +80,7 @@ export function MistakeNotebookView({ examId, subjects, initial, onClose, onRefr
     <FormSheet visible title={shownTitle} closeLabel={tCommon("close")} onClose={onClose} closeDisabled={review.isPending}>
       {adding ? (
         <NotebookAddForm examId={examId} subjects={subjects} scope={initial.scope}
-          onSaved={async () => { await onRefresh(); showIndex(); }} />
+          onBack={showIndex} onSaved={async () => { await onRefresh(); showIndex(); }} />
       ) : state.isPending ? <Skeleton height={84} /> : state.isError ? (
         <>
           <AppText tone="secondary">{tCommon("error_body")}</AppText>
@@ -147,13 +147,15 @@ function NotebookEntryBody({ entry }: { entry: NotebookEntryDto }) {
   );
 }
 
-function NotebookAddForm({ examId, subjects, scope, onSaved }: {
+function NotebookAddForm({ examId, subjects, scope, onBack, onSaved }: {
   examId: string;
   subjects: ExamSubjectDto[];
   scope: MistakeScope;
+  onBack: () => void;
   onSaved: () => Promise<void>;
 }) {
   const t = useTranslations("analysis");
+  const tReview = useTranslations("analysisReview");
   const tCommon = useTranslations("common");
   const { space } = useThemeTokens();
   const [subject, setSubject] = useState(scope.subjectRef ?? subjects[0]?.slug ?? null);
@@ -185,6 +187,7 @@ function NotebookAddForm({ examId, subjects, scope, onSaved }: {
       <TextField label={t("mistake_note_label")} placeholder={t("mistake_note_placeholder")} value={note} onChangeText={setNote} />
       {save.isError ? <AppText tone="danger">{save.error instanceof Error ? save.error.message : tCommon("error_body")}</AppText> : null}
       <Button label={t("save_mistake_cta")} loading={save.isPending} onPress={() => { if (!save.isPending) save.mutate(); }} />
+      <AnalysisLink label={tReview("back_index")} onPress={onBack} />
     </View>
   );
 }

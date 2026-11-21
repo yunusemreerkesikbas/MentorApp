@@ -57,7 +57,7 @@ export function Chip({
         style,
       ]}
     >
-      <AppText variant="caption" style={{ color: ink }}>
+      <AppText variant="caption" numberOfLines={1} style={{ color: ink }}>
         {label}
       </AppText>
     </View>

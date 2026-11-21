@@ -13,6 +13,8 @@ import { NotificationsService } from "../application/notifications.service";
 import { SessionReturnReminderService } from "../application/session-return-reminder.service";
 import {
   ListNotificationsDto,
+  MobilePushRegisterDto,
+  MobilePushUnregisterDto,
   PushSubscribeDto,
   PushUnsubscribeDto,
   ScheduleSessionReturnReminderDto,
@@ -41,6 +43,22 @@ export class NotificationsController {
     @Body() body: PushUnsubscribeDto,
   ): Promise<void> {
     return this.notifications.unsubscribePush(user.id, body.endpoint);
+  }
+
+  @Post("mobile-push-tokens")
+  registerMobilePushToken(
+    @CurrentUser() user: RequestUser,
+    @Body() body: MobilePushRegisterDto,
+  ): Promise<void> {
+    return this.notifications.registerMobilePushToken(user.id, body);
+  }
+
+  @Delete("mobile-push-tokens")
+  unregisterMobilePushToken(
+    @CurrentUser() user: RequestUser,
+    @Body() body: MobilePushUnregisterDto,
+  ): Promise<void> {
+    return this.notifications.unregisterMobilePushToken(user.id, body.token);
   }
 
   @Get("preferences")

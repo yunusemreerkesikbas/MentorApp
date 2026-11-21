@@ -110,6 +110,9 @@ const envSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().optional(),
 
+  // Mobile Native Push (Expo Push Service — optional access token for Enhanced Push Security)
+  EXPO_ACCESS_TOKEN: z.string().trim().optional(),
+
   // Error monitoring — Sentry (§8)
   SENTRY_DSN: z.string().url().optional(),
 

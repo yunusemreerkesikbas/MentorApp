@@ -518,7 +518,7 @@ export class ContentService {
     if (!exam) return null;
 
     const eventRows = await this.events.listByExamId(this.db, exam.id);
-    return toExamCalendarDto(exam, eventRows);
+    return toExamCalendarDto(exam, eventRows, asOf);
   }
 
   /** Coaching ContentPort seam — compact shape for countdown. */

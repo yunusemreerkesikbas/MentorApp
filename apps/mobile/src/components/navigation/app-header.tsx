@@ -58,7 +58,12 @@ export function AppHeader() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("profile_link")}
-          onPress={() => router.replace("/settings" as never)}
+          onPress={() => {
+            if (router.canDismiss()) {
+              router.dismissAll();
+            }
+            router.replace("/settings" as never);
+          }}
           style={[styles.avatar, { backgroundColor: palette.surfaceAlt, borderColor: palette.border }]}
         >
           {user?.avatarUrl ? (

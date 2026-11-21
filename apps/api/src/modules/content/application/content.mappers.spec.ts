@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ExamEventRow, ExamRow } from "../infrastructure/exam.repository";
+import { todayIso } from "../domain/date.util";
 import { toExamCalendarDto } from "./content.mappers";
 
 describe("toExamCalendarDto", () => {
@@ -28,6 +29,27 @@ describe("toExamCalendarDto", () => {
 
     expect(calendar.nextEvent?.type).toBe("APPLICATION_END");
     expect(calendar.daysUntilNextEvent).toBe(2);
+  });
+
+  it("uses the Europe/Istanbul calendar day by default after midnight in Türkiye", () => {
+    const now = new Date("2026-11-20T22:05:00.000Z"); // 2026-11-21 01:05 in Europe/Istanbul
+    const exam = {
+      id: "exam-ales",
+      slug: "ales-2026-3",
+      name: "ALES 2026/3",
+      family: "ALES",
+      variant: null,
+      netRule: { kind: "PENALTY", divisor: 4 },
+      isCurrent: true,
+      orgId: null,
+      createdAt: now,
+      updatedAt: now,
+    } as ExamRow;
+    const events = [event("EXAM_DATE", "2026-11-29T07:15:00.000Z", now)];
+
+    const calendar = toExamCalendarDto(exam, events, todayIso(now));
+
+    expect(calendar.daysRemaining).toBe(8);
   });
 });
 

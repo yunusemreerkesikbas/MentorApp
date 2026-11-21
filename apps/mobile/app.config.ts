@@ -32,6 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "expo-secure-store",
       "expo-splash-screen",
       "expo-font",
+      "expo-notifications",
     ],
     experiments: {
       typedRoutes: false,
@@ -39,6 +40,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       appEnv,
       apiUrl: process.env["EXPO_PUBLIC_API_URL"] ?? "http://localhost:3001",
+      ...(process.env["EXPO_PUBLIC_EAS_PROJECT_ID"]
+        ? { eas: { projectId: process.env["EXPO_PUBLIC_EAS_PROJECT_ID"] } }
+        : {}),
     },
   };
 };

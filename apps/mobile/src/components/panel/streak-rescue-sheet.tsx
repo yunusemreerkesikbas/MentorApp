@@ -87,13 +87,13 @@ export function StreakRescueSheet({
               }}
             >
               {(ink) => (
-                <AppText style={[styles.ledgeLabel, { color: ink }]}>
+                <AppText numberOfLines={1} style={[styles.ledgeLabel, { color: ink }]}>
                   {short ? t("rescue_short_cta") : t("rescue_cta")}
                 </AppText>
               )}
             </LedgeButton>
             <Pressable accessibilityRole="button" onPress={close} style={styles.later}>
-              <AppText style={[styles.laterLabel, { color: palette.secondary }]}>
+              <AppText numberOfLines={1} style={[styles.laterLabel, { color: palette.secondary }]}>
                 {short ? t("rescue_short_ok") : t("rescue_later")}
               </AppText>
             </Pressable>

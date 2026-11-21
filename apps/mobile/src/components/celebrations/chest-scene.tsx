@@ -567,7 +567,7 @@ function SceneButton({
         gold && { borderBottomWidth: pressed ? 2 : 5, transform: [{ translateY: pressed ? 3 : 0 }] },
       ]}
     >
-      <AppText style={[styles.buttonLabel, { color: gold ? C.goldInk : C.body }]}>{label}</AppText>
+      <AppText numberOfLines={1} style={[styles.buttonLabel, { color: gold ? C.goldInk : C.body }]}>{label}</AppText>
     </Pressable>
   );
 }

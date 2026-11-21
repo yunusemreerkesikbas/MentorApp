@@ -11,7 +11,7 @@ export function AnalysisLink({ label, onPress, style }: {
   return (
     <Pressable accessibilityRole="button" onPress={onPress}
       style={[{ alignSelf: "flex-start", minHeight: touchTargets.min, justifyContent: "center" }, style]}>
-      <AppText variant="caption" style={{ color: palette.playSelectedInk, fontWeight: "800" }}>{label}</AppText>
+      <AppText variant="caption" numberOfLines={1} style={{ color: palette.playSelectedInk, fontWeight: "800" }}>{label}</AppText>
     </Pressable>
   );
 }

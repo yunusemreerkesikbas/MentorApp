@@ -17,16 +17,31 @@ const TURKISH_MONTHS = [
 
 export type IsoDate = string;
 
+const ISTANBUL_DATE_FORMATTER = new Intl.DateTimeFormat("en", {
+  timeZone: "Europe/Istanbul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 export function toIsoDate(date: Date): IsoDate {
   return date.toISOString().slice(0, 10);
 }
 
+/** Calendar day in the product's canonical timezone (`Europe/Istanbul`), matching `TodayService`. */
+export function todayInIstanbul(now: Date = new Date()): IsoDate {
+  const parts = ISTANBUL_DATE_FORMATTER.formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
 export function todayIso(now: Date = new Date()): IsoDate {
-  return toIsoDate(now);
+  return todayInIstanbul(now);
 }
 
 export function isoDaysAgo(days: number, now: Date = new Date()): IsoDate {
-  const date = new Date(now);
+  const date = new Date(`${todayIso(now)}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() - days);
   return toIsoDate(date);
 }

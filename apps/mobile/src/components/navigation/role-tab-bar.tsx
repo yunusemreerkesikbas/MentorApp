@@ -93,6 +93,9 @@ export function RoleTabBar() {
               onPress={() => {
                 if (active) return;
                 haptics.selection();
+                if (router.canDismiss()) {
+                  router.dismissAll();
+                }
                 router.replace(item.href as never);
               }}
               style={styles.tab}

@@ -10,6 +10,7 @@ import { useKeyboardOpen } from "../../../components/navigation/role-tab-bar.js"
 import {
   Chip,
   ScreenLoadingSkeleton,
+  StateView,
 } from "../../../components/ui/index.js";
 import {
   fetchCoachAccess,
@@ -81,6 +82,13 @@ function CoachChat({ entry }: { entry: CoachChatRoute }) {
     : [];
 
   const canChat = accessQuery.data?.canChat ?? true;
+  const remainingMessages =
+    accessQuery.data?.freeCoinMessagesRemainingToday ??
+    accessQuery.data?.dailyMessagesRemaining;
+  const isInitialLoading =
+    profileQuery.isPending ||
+    (chat.conversationId === undefined && conversationsQuery.isPending) ||
+    messagesQuery.isLoading;
 
   const refreshCoach = async (convId?: string | null) => {
     const targetId = convId ?? resolvedConversationId;
@@ -95,6 +103,7 @@ function CoachChat({ entry }: { entry: CoachChatRoute }) {
           ]
         : []),
       queryClient.invalidateQueries({ queryKey: ["coaching", "today"] }),
+      queryClient.invalidateQueries({ queryKey: ["economy", "balance"] }),
       queryClient.invalidateQueries({ queryKey: ["plan-tasks"] }),
     ]);
   };
@@ -137,8 +146,20 @@ function CoachChat({ entry }: { entry: CoachChatRoute }) {
       <View style={{ paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.xs }}>
         <CoachHistoryButton onPress={() => setHistoryOpen(true)} />
       </View>
-      {messagesQuery.isLoading || profileQuery.isPending ? (
-        <ScreenLoadingSkeleton />
+      {isInitialLoading ? (
+        <View style={{ flex: 1, overflow: "hidden" }}>
+          <ScreenLoadingSkeleton />
+        </View>
+      ) : messagesQuery.isError ? (
+        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: space.lg }}>
+          <StateView
+            title={tCommon("error_title")}
+            body={tCommon("error_body")}
+            actionLabel={tCommon("retry")}
+            onAction={() => void messagesQuery.refetch()}
+            tone="error"
+          />
+        </View>
       ) : chronologicalMessages.length === 0 ? (
         <CoachWelcome />
       ) : (
@@ -166,9 +187,12 @@ function CoachChat({ entry }: { entry: CoachChatRoute }) {
       )}
       <View style={{ paddingBottom: keyboardOpen ? space.xs : tabBarClearance(insets.bottom) - space.md }}>
         <CoachComposer value={chat.draft} busy={sending} canChat={canChat} error={errorMessage} keyboardOpen={keyboardOpen}
-          remaining={accessQuery.data?.freeCoinMessagesRemainingToday}
+          remaining={remainingMessages}
           onChange={(draft) => setChat((current) => ({ ...current, draft }))} onSend={() => void handleSend()}>
-          {profileQuery.data?.calibrationStatus === "COMPLETED" || profileQuery.data?.calibrationStatus === "SKIPPED" ? (
+          {!isInitialLoading &&
+          !messagesQuery.isError &&
+          (profileQuery.data?.calibrationStatus === "COMPLETED" ||
+            profileQuery.data?.calibrationStatus === "SKIPPED") ? (
             <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space.sm, paddingBottom: space.sm }}>
               {(chronologicalMessages.length === 0
                 ? [t("starter_plan"), t("starter_focus"), t("starter_exam")]

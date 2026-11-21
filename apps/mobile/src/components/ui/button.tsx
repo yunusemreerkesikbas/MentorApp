@@ -102,6 +102,7 @@ export function Button({
         ) : (
           <AppText
             variant="cardTitle"
+            numberOfLines={1}
             style={{ color: colors.ink }}
           >
             {label}

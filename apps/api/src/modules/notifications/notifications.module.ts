@@ -2,10 +2,12 @@ import { Global, Module } from "@nestjs/common";
 import { LoggerEmailAdapter } from "../../shared/adapters/email/logger-email.adapter";
 import { ResendEmailAdapter } from "../../shared/adapters/email/resend-email.adapter";
 import { RoutingEmailAdapter } from "../../shared/adapters/email/routing-email.adapter";
+import { ExpoPushAdapter } from "../../shared/adapters/push/expo-push.adapter";
 import { PushEndpointPolicy } from "../../shared/adapters/push/push-endpoint-policy";
 import { WebPushAdapter } from "../../shared/adapters/push/web-push.adapter";
 import { EMAIL_PORT } from "../../shared/ports/email.port";
 import { JOB_QUEUE_PORT } from "../../shared/ports/job-queue.port";
+import { MOBILE_PUSH_PORT } from "../../shared/ports/mobile-push.port";
 import { PUSH_PORT } from "../../shared/ports/push.port";
 import { CoachingModule } from "../coaching/coaching.module";
 import { PaymentsModule } from "../payments/payments.module";
@@ -44,6 +46,7 @@ import { AnnouncementRepository } from "./infrastructure/announcement.repository
 import { JobRepository } from "./infrastructure/job.repository";
 import { NotificationDeliveryRepository } from "./infrastructure/notification-delivery.repository";
 import { NotificationPreferencesRepository } from "./infrastructure/notification-preferences.repository";
+import { MobilePushTokenRepository } from "./infrastructure/mobile-push-token.repository";
 import { PostgresJobQueueAdapter } from "./infrastructure/postgres-job-queue.adapter";
 import { PushSubscriptionRepository } from "./infrastructure/push-subscription.repository";
 import { PushDeliveryRepository } from "./infrastructure/push-delivery.repository";
@@ -95,6 +98,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     JourneyLevelEventsListener,
     AchievementEventsListener,
     NotificationPreferencesRepository,
+    MobilePushTokenRepository,
     PushSubscriptionRepository,
     PushDeliveryRepository,
     PushEndpointPolicy,
@@ -105,6 +109,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     LoggerEmailAdapter,
     ResendEmailAdapter,
     RoutingEmailAdapter,
+    ExpoPushAdapter,
     WebPushAdapter,
     {
       provide: JOB_QUEUE_PORT,
@@ -113,6 +118,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     // Per-message choice between console and Resend (admin switch dev.email.console_enabled).
     { provide: EMAIL_PORT, useExisting: RoutingEmailAdapter },
     { provide: PUSH_PORT, useExisting: WebPushAdapter },
+    { provide: MOBILE_PUSH_PORT, useExisting: ExpoPushAdapter },
   ],
   exports: [
     JOB_QUEUE_PORT,

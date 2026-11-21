@@ -40,7 +40,7 @@ export function CoachWelcome() {
       </AppText>
       <AppText variant="title" style={{ textAlign: "center" }}>{t("welcome_help")}</AppText>
     </View>
-    <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingVertical: space.sm }}>
+    <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingTop: space.sm, paddingBottom: space.xl }}>
       <CoachProfileMemoryCard calibrationOnly>
         <Image source={premium ? art.puhuPremiumHero : art.puhuEncouraging} contentFit="contain"
           style={{ alignSelf: "center", width: premium ? 168 : 120, height: premium ? 168 : 120 }} />
@@ -63,8 +63,12 @@ export function CoachHistorySheet({ open, conversations, selectedId, onClose, on
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: space.lg, gap: space.md }}>
       <AppText variant="sectionHeading">{t("threads_title")}</AppText>
       <Button label={t("new_chat_cta")} onPress={() => { onSelect(null); onClose(); }} />
-      {conversations.map((conversation) => <Chip key={conversation.id} label={conversation.title}
-        selected={conversation.id === selectedId} onPress={() => { onSelect(conversation.id); onClose(); }} />)}
+      {conversations.length === 0 ? (
+        <AppText variant="caption" tone="secondary">{t("threads_empty")}</AppText>
+      ) : (
+        conversations.map((conversation) => <Chip key={conversation.id} label={conversation.title}
+          selected={conversation.id === selectedId} onPress={() => { onSelect(conversation.id); onClose(); }} />)
+      )}
       <CoachProfileMemoryCard />
       <Button label={common("close")} variant="secondary" onPress={onClose} />
     </ScrollView>
@@ -91,13 +95,13 @@ export function CoachComposer({ value, busy, canChat, error, remaining, keyboard
   return <View style={{ gap: space.xs, paddingHorizontal: space.lg, paddingBottom: space.sm }}>
     {!keyboardOpen ? children : null}
     {remaining !== undefined ? <AppText variant="micro" tone="muted" style={{ textAlign: "center" }}>{t("remaining_messages", { count: remaining })}</AppText> : null}
-    {!canChat ? <AppText variant="caption" tone="secondary">{t("access_unavailable")}</AppText> : null}
-    {error ? <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">{error}</AppText> : null}
+    {!canChat ? <AppText variant="caption" tone="secondary" style={{ textAlign: "center" }}>{t("access_unavailable")}</AppText> : null}
+    {error ? <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite" style={{ textAlign: "center" }}>{error}</AppText> : null}
     <View style={[cardShadow, { backgroundColor: palette.surface, borderRadius: radii.card, padding: space.sm, gap: space.xs }]}>
       <View style={{ flexDirection: "row", alignItems: "flex-start", gap: space.sm }}>
         <Image source={art.puhuDefault} contentFit="contain" style={{ width: 28, height: 28, marginTop: space.sm }} />
         <TextInput accessibilityLabel={t("input_label")} value={value} onChangeText={onChange} multiline
-          placeholder={t("input_placeholder")} placeholderTextColor={palette.secondary} editable={!busy}
+          placeholder={t("input_placeholder")} placeholderTextColor={palette.secondary} editable={!busy && canChat}
           style={{ flex: 1, minHeight: touchTargets.min, maxHeight: 222, paddingVertical: space.sm, paddingHorizontal: 0, color: palette.main, fontSize: typeScale.body.fontSize, fontFamily: fontFamilyFor(typeScale.body.fontWeight) }} />
       </View>
       <Pressable accessibilityRole="button" accessibilityLabel={busy ? t("sending_cta") : t("send_cta")}

@@ -31,6 +31,28 @@ const DIRECTNESS_MODES: CoachDirectnessPreference[] = [
   "DIRECT",
 ];
 
+const KNOWN_MEMORY_KEYS = new Set([
+  "STUDY_TIME",
+  "RESPONSE_PREFERENCE",
+  "CHALLENGE_CATEGORY",
+  "PRIORITY_SUBJECT",
+]);
+
+const KNOWN_MEMORY_VALUES = new Set([
+  "MORNING",
+  "AFTERNOON",
+  "EVENING",
+  "LATE_NIGHT",
+  "SHORT",
+  "BALANCED",
+  "DETAILED",
+  "FOCUS",
+  "PROCRASTINATION",
+  "ANXIETY",
+  "CONSISTENCY",
+  "PLANNING",
+]);
+
 export function CoachProfileMemoryCard({ calibrationOnly = false, children }: {
   calibrationOnly?: boolean;
   children?: ReactNode;
@@ -129,10 +151,10 @@ export function CoachProfileMemoryCard({ calibrationOnly = false, children }: {
         </>
       ) : null}
 
-      {patchProfileMutation.error ? (
+      {patchProfileMutation.error || deleteMemoryMutation.error ? (
         <AppText tone="danger" accessibilityLiveRegion="polite">
-          {patchProfileMutation.error instanceof ApiClientError
-            ? patchProfileMutation.error.body.message
+          {(patchProfileMutation.error ?? deleteMemoryMutation.error) instanceof ApiClientError
+            ? ((patchProfileMutation.error ?? deleteMemoryMutation.error) as ApiClientError).body.message
             : t("calibration_error")}
         </AppText>
       ) : null}
@@ -241,9 +263,15 @@ export function CoachProfileMemoryCard({ calibrationOnly = false, children }: {
                 >
                   <View style={{ flex: 1 }}>
                     <AppText variant="micro" tone="muted">
-                      {fact.key}
+                      {KNOWN_MEMORY_KEYS.has(fact.key)
+                        ? t(`memory_key_${fact.key}` as never)
+                        : fact.key}
                     </AppText>
-                    <AppText variant="caption">{fact.value}</AppText>
+                    <AppText variant="caption">
+                      {KNOWN_MEMORY_VALUES.has(fact.value)
+                        ? t(`memory_val_${fact.value}` as never)
+                        : fact.value}
+                    </AppText>
                   </View>
                   <Chip
                     label={t("memory_delete_cta")}

@@ -55,7 +55,7 @@ export function QuestsCard({
 
       {quests.length > 0 ? (
         <Pressable accessibilityRole="button" onPress={onOpenAll} style={styles.openAll}>
-          <AppText style={[styles.openAllLabel, { color: palette.playSelectedInk }]}>
+          <AppText numberOfLines={1} style={[styles.openAllLabel, { color: palette.playSelectedInk }]}>
             {t("quests_open_all")}
           </AppText>
           <AltArrowRightIcon size={16} color={palette.playSelectedInk} />

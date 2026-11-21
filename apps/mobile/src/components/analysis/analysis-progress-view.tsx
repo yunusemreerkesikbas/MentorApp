@@ -30,7 +30,7 @@ export function AnalysisSubjectsCard({ analysis }: { analysis: CoachingAnalysisD
         <Pressable accessibilityRole="button" accessibilityLabel={t("caption")}
           onPress={() => Alert.alert(t("caption"), t("info"), [{ text: tCommon("close") }])}
           style={[styles.inline, { minHeight: touchTargets.min, gap: space.xs }]}>
-          <AppText variant="caption" tone="secondary">{t("caption")}</AppText>
+          <AppText variant="caption" tone="secondary" numberOfLines={1}>{t("caption")}</AppText>
           <InfoCircleIcon size={15} color={palette.secondary} />
         </Pressable>
       </View>

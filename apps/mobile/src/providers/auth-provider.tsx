@@ -21,6 +21,7 @@ import {
   configureApiClient,
 } from "@mentor/api-client";
 import { getApiBaseUrl } from "../lib/env.js";
+import { unregisterCachedPushToken } from "../lib/push-notifications.js";
 import {
   createSecureTokenStore,
   getCachedRefreshToken,
@@ -201,6 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       logout: async () => {
         try {
+          await unregisterCachedPushToken().catch(() => {});
           await authControllerLogout();
         } finally {
           await clearSession();

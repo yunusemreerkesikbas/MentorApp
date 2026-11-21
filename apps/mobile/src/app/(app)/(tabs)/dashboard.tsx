@@ -211,7 +211,7 @@ export default function DashboardScreen() {
         onGo={goFromQuest}
       />
       <StreakRescueSheet
-        offer={rescueQuery.data ?? null}
+        offer={celebrations.active ? null : (rescueQuery.data ?? null)}
         onRescued={() => {
           setToast(t("rescue_done_toast"));
           void refreshAll();

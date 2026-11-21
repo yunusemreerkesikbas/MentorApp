@@ -16,6 +16,17 @@ export interface PushSubscriptionInput {
   keys: PushSubscriptionKeysDto;
 }
 
+export type MobilePushPlatform = "ios" | "android";
+
+export interface MobilePushTokenInput {
+  token: string;
+  platform: MobilePushPlatform;
+}
+
+export interface MobilePushTokenDeleteInput {
+  token: string;
+}
+
 // --- In-app notification inbox (W5 extension) ---
 
 export type NotificationCategory =
