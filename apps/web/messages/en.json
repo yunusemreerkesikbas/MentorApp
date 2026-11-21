@@ -4878,9 +4878,9 @@
     "subhead": "Pick your room, set your time, go! No sign-up, no waiting: 25 minutes of focus, 5 minutes of break, all on this page.",
     "proof": "Online timer works free without login · Full app is in invite-only pilot (plan, sessions and table in the free tier; Puhu, your AI coach, in Premium)",
     "cta_start_timer": "Start the timer",
-    "cta_signup": "Join the waitlist",
-    "cta_free_start": "Join the waitlist",
-    "cta_join_room": "Join the waitlist",
+    "cta_signup": "Start free",
+    "cta_free_start": "Start free",
+    "cta_join_room": "Start free",
     "widget": {
       "room_label": "Choose study room",
       "sound_label": "Ambient sound",
@@ -4902,7 +4902,7 @@
       "reset": "Reset",
       "done_title": "First step done!",
       "done_body": "Your session is complete. PuhuKoç is currently in invite-only pilot; join the waitlist to use your focus sessions together with your weekly plan and streak.",
-      "done_cta": "Join the waitlist",
+      "done_cta": "Start free",
       "done_again": "Start another session"
     },
     "how": {
@@ -4975,7 +4975,7 @@
     },
     "closing": {
       "title": "Start with one Pomodoro today!",
-      "body": "25 minutes is enough. Set the time, pick your room, and reserve your spot on the invite-only pilot waitlist."
+      "body": "25 minutes is enough. Set the time, pick your room, and go."
     },
     "scribble": "your room, your time!",
     "hero_note": {
@@ -4986,10 +4986,10 @@
   "studyProgramLp": {
     "common": {
       "proof": "PuhuKoç is currently in invite-only pilot · Weekly plan, focus sessions and study table in the free tier; Puhu, your AI coach, in Premium",
-      "cta_build": "Join the waitlist",
+      "cta_build": "Start free",
       "cta_sample": "See sample blocks",
-      "cta_free_start": "Join the waitlist",
-      "cta_save_plan": "Join the waitlist",
+      "cta_free_start": "Start free",
+      "cta_save_plan": "Start free",
       "demo_pill": "Sample block preview",
       "demo_scribble": "abracadabra, sample blocks ready!",
       "demo_field_label": "Track",
@@ -5075,7 +5075,7 @@
       "q6": "Can I set it up on my phone?",
       "a6": "Yes. PuhuKoç runs in the browser on your phone and computer.",
       "closing_title": "Reserve your spot for this week's program!",
-      "closing_body": "Explore the sample blocks, join the invite-only pilot waitlist, or sign in if you already have a pilot account."
+      "closing_body": "Explore the sample blocks, then build your own week."
     },
     "tyt": {
       "meta_title": "TYT Study Program | Daily Plan and Review · PuhuKoç",
@@ -5113,7 +5113,7 @@
       "q6": "Does it work on mobile?",
       "a6": "Yes. Continue from your phone or computer browser anytime.",
       "closing_title": "Reserve your spot for your TYT plan!",
-      "closing_body": "Explore the sample blocks, join the invite-only pilot waitlist, or sign in if you have a pilot account."
+      "closing_body": "Explore the sample blocks, then build your own week."
     },
     "lgs": {
       "meta_title": "LGS Study Program | 8th Grade Weekly Plan · PuhuKoç",
@@ -5155,7 +5155,7 @@
       "q6": "Is there a school break schedule too?",
       "a6": "You simply raise your daily time in the same tool during breaks; no exaggerated holiday package promises.",
       "closing_title": "Reserve your spot for your LGS weekly plan!",
-      "closing_body": "Explore the sample blocks, join the invite-only pilot waitlist, or sign in if you have a pilot account. If your light is on, you are not alone."
+      "closing_body": "Explore the sample blocks, then build your own week. If your light is on, you are not alone."
     }
   },
   "mistakeNotebookLp": {
@@ -5167,9 +5167,9 @@
     "h1": "Mistake notebook: save your questions, return on review day",
     "subhead": "Don't lose the question that stumped you! Snap a photo or write it down and put it in your notebook. When review day comes, the question is right back in front of you.",
     "proof": "PuhuKoç is currently in invite-only pilot · Mistake notebook includes an initial free question and photo allowance; unlimited use is in Premium",
-    "cta_primary": "Join the waitlist",
+    "cta_primary": "Start free",
     "cta_secondary": "How it works",
-    "cta_discover": "Join the waitlist",
+    "cta_discover": "Start free",
     "what_pill": "What is a mistake notebook?",
     "what_title": "Keep the questions that tripped you up",
     "what_body": "A mistake notebook is a study tool where you keep questions you missed or want to revisit in one place. Organizing questions by subject and topic lets you solve them again later and see which topics need another look.",
@@ -5185,7 +5185,7 @@
       "btn_solved": "Got it",
       "feedback_missed": "No worries! The card stays in your review deck and returns in 2 days.",
       "feedback_solved": "Nice! The card advances to the next rung (2 → 7 → 21 days). After three consecutive passes, the card is marked healed.",
-      "cta": "Join the waitlist"
+      "cta": "Start free"
     },
     "how": {
       "pill": "How it works",
@@ -5238,7 +5238,7 @@
     },
     "closing": {
       "title": "Start with one question!",
-      "body": "Try the sample review card above, join the invite-only pilot waitlist, or sign in if you have a pilot account."
+      "body": "Try the sample review card above, then start your own notebook."
     },
     "scribble": "you'll crack it this time!",
     "scene_aria": "My Mistake Notebook on a desk, with Puhu reading a book"
@@ -5253,7 +5253,7 @@
     "subhead": "Your plan, focus sessions, mistake notebook and study desk in one place. Your friends are right next door!",
     "proof": "PuhuKoç is currently in invite-only pilot · Plan, sessions, study table and community are in the free tier; Puhu, your AI coach, and deep analysis are in Premium",
     "definition": "PuhuKoç is a web-based study companion app currently in invite-only pilot, offering a weekly study plan, focus timer, mistake notebook with initial free quota, and shared study tables for exam candidates. Puhu, the AI coach, is available in Premium.",
-    "cta_primary": "Join the waitlist",
+    "cta_primary": "Start free",
     "cta_secondary": "What can I do?",
     "features": {
       "pill": "Features",
@@ -5316,7 +5316,7 @@
     },
     "closing": {
       "title": "Start today with one small step!",
-      "body": "Join the invite-only pilot waitlist or sign in if you have a pilot account. If your light is on, you are not alone."
+      "body": "Plan your week, focus, and come back to your mistakes. If your light is on, you are not alone."
     },
     "scribble": "tap a room!",
     "definition_pill": "PuhuKoç in short",
