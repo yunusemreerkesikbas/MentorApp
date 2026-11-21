@@ -1,5 +1,5 @@
 import { Logo } from "@mentor/ui";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { SignupCta } from "@/components/waitlist/signup-cta";
 import { Link } from "@/i18n/navigation";
 
@@ -23,8 +23,13 @@ export async function LandingNav({
   variant?: "home" | "coaches";
   coachSignupOpen?: boolean;
 }) {
-  const [t, c] = await Promise.all([getTranslations("landing"), getTranslations("coaches")]);
+  const [t, c, locale] = await Promise.all([getTranslations("landing"), getTranslations("coaches"), getLocale()]);
   const coaches = variant === "coaches";
+  // Same switch as the footer: a plain link to this page in the other language (labels stay in their own language).
+  const other =
+    locale === "en"
+      ? ({ locale: "tr", code: "TR", label: "Türkçe" } as const)
+      : ({ locale: "en", code: "EN", label: "English" } as const);
   return (
     <header className="landing-nav fixed inset-x-0 top-0 z-30 px-3 pt-3 sm:px-4 sm:pt-4">
       <nav
@@ -60,7 +65,17 @@ export async function LandingNav({
         <a href="#sss" className={`${NAV_LINK} max-lg:hidden`}>
           {t("faq_nav")}
         </a>
-        <SignupCta href="/login" role={coaches ? "coach" : "student"} className={`${NAV_LINK} ml-auto`}>
+        <Link
+          href={coaches ? "/for-coaches" : "/"}
+          locale={other.locale}
+          lang={other.locale}
+          aria-label={other.label}
+          title={other.label}
+          className={`${NAV_LINK} ml-auto`}
+        >
+          {other.code}
+        </Link>
+        <SignupCta href="/login" role={coaches ? "coach" : "student"} className={NAV_LINK}>
           {t("login")}
         </SignupCta>
         {coaches ? (
