@@ -1,7 +1,7 @@
 /*
  * The study app hero (facade-tags.tsx): the landing's apartment facade at dawn, with paper tags
  * hung on its windows. Tag positions are percentages of the facade box (canvas Uygulama board).
- * Scoped under `.seo-dawn`, the scene frame. No animation here: the only motion is a hover lift.
+ * Rules are namespaced by the `.seo-` prefix (the tags under `.seo-dawn`, the scene frame). No animation here: the only motion is a hover lift.
  */
 .seo-scene.seo-dawn {
   aspect-ratio: 4 / 5;

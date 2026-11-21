@@ -216,7 +216,7 @@ export default async function StudyAppLpPage({ params }: PageProps) {
         />
       </section>
 
-      <section aria-labelledby="study-app-exams-title" className={`${PAGE_FRAME} seo-sec`}>
+      <section aria-label={t("exams.title")} className={`${PAGE_FRAME} seo-sec`}>
         <div className="seo-answer">
           <PaperNote name={t("exams.pill")} title={t("exams.title")} heading="h2" tape="#a8d8b0" tilt="-0.5deg">
             <p>{t("exams.body")}</p>

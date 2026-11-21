@@ -6,8 +6,8 @@ import { Link } from "@/i18n/navigation";
  * The paper kit the six SEO pages share ("Landing'in odası", spec
  * docs/superpowers/specs/2026-11-21-seo-lp-landing-rooms-design.md): the hero with its scene, taped
  * notes, post-it steps, a notebook-page table, luggage-tag links and the Caveat scribble. Styles
- * are in `seo-paper.css`, scoped under `.seo-lp` (SeoLpShell's `<main>`). Server components only;
- * the breeze on the notes comes from SeoFlutterRoot around them.
+ * are in `seo-paper.css`, scoped under `.seo-lp` (SeoLpShell's `<main>`). Hook-free, so it is safe
+ * in both server and client trees; the breeze on the notes comes from SeoFlutterRoot around them.
  */
 
 type Href = ComponentProps<typeof Link>["href"];
@@ -106,7 +106,8 @@ export function SceneFrame({ className, label, children }: { className?: string;
 /**
  * A taped paper note: plain, lined or grid paper, a tape colour and a tilt. `pin` holds it with a
  * red pin instead of tape. `name` is the Caveat label on top (`plate` adds the enamel door plate beside it); `heading` sets the title's level
- * where the note itself is a section (the default `h3` sits under a section's `h2`).
+ * where the note itself is a section (the default `h3` sits under a section's `h2`). `still` keeps
+ * the breeze off a note that holds live controls, so they never drift from where they are hit.
  */
 export function PaperNote({
   name,
@@ -116,6 +117,7 @@ export function PaperNote({
   tape = "#9cc7f0",
   tilt = "-0.6deg",
   pin = false,
+  still = false,
   heading: Heading = "h3",
   children,
 }: {
@@ -126,10 +128,11 @@ export function PaperNote({
   tape?: string;
   tilt?: string;
   pin?: boolean;
+  still?: boolean;
   heading?: "h2" | "h3";
   children: ReactNode;
 }) {
-  const style: PaperStyle = { "--tilt": tilt, "--tape": tape };
+  const style: PaperStyle = { "--tilt": tilt, "--tape": tape, ...(still ? { "--flutter-amp": 0 } : {}) };
   return (
     <article data-flutter="" className={paper ? `seo-note is-${paper}` : "seo-note"} style={style}>
       {pin ? <i className="seo-pin" aria-hidden="true" /> : <i className="seo-tape" aria-hidden="true" />}

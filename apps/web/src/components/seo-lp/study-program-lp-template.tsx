@@ -151,7 +151,7 @@ export async function StudyProgramLpTemplate({ variant, locale }: { variant: Stu
           </SceneFrame>
         }
         pinned={
-          <PaperNote name={c("demo_scribble")} paper="grid" tape="#ffd15c" tilt="1.6deg" pin>
+          <PaperNote name={c("demo_scribble")} paper="grid" tape="#ffd15c" tilt="1.6deg" pin still>
             <PlanDemoWidget
               variant={variant}
               config={demoConfig}

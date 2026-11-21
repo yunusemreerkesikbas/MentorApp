@@ -219,6 +219,10 @@ test.describe("mistake notebook", () => {
     test("keeps the how-it-works anchor", async ({ page }) => {
       await expect(page.locator("#nasil-calisir")).toHaveCount(1);
     });
+
+    test("names the ecosystem section for assistive tech", async ({ page }) => {
+      await expect(page.getByRole("region", { name: "Planın ve odak seansların da yanında" })).toBeVisible();
+    });
   });
 });
 
@@ -295,6 +299,29 @@ test.describe("study app", () => {
       await expect(page.locator("#nasil")).toHaveCount(1);
       await expect(page.locator("#sss")).toHaveCount(1);
     });
+
+    test("names the exams section for assistive tech", async ({ page }) => {
+      await expect(page.getByRole("region", { name: "Hangi sınavlara hazırlanabilirsin?" })).toBeVisible();
+    });
+
+    test("breezes a plain note under a mouse, and keeps the live note still", async ({ page }, testInfo) => {
+      test.skip(!testInfo.project.name.startsWith("desktop"), "a mouse starts it; touch screens run it on arrival");
+      const note = page.locator("#ozellikler .seo-note").first();
+      await note.scrollIntoViewIfNeeded();
+      await expect(note).toHaveAttribute("data-flutter", "");
+      // The hook binds after hydration, so hover again until the breeze starts.
+      await expect(async () => {
+        await page.mouse.move(0, 0);
+        await note.hover();
+        await expect(note).toHaveAttribute("data-flutter", "on", { timeout: 500 });
+      }).toPass();
+      await expect(note).toHaveAttribute("data-flutter", "", { timeout: 3000 });
+      // The pinned note holds live controls: amplitude 0, so it never starts.
+      const live = page.locator(".seo-hero-pinned .seo-note");
+      await live.hover();
+      await page.waitForTimeout(300);
+      await expect(live).toHaveAttribute("data-flutter", "");
+    });
   });
 });
 
@@ -314,7 +341,10 @@ test.describe("en", () => {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       const text = await page.locator("body").innerText();
-      expect(text).not.toMatch(/(pomodoroLp|studyProgramLp|mistakeNotebookLp|studyAppLp)\./);
+      // Raw keys read `namespace.key`: the four page namespaces and the root ones the pages borrow.
+      expect(text).not.toMatch(
+        /\b(pomodoroLp|studyProgramLp|mistakeNotebookLp|studyAppLp|notebook|notebooks|session_room|session_ambient|landing)\.[a-z_]+/,
+      );
       expect(text).not.toContain("MISSING_MESSAGE");
     });
   }

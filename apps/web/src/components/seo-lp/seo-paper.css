@@ -1,7 +1,7 @@
 /*
  * The SEO pages' paper kit (seo-paper.tsx), ported from the approved canvas `kit.css`: the
- * landing's day paper (theme.css `.landing-paper`) with the Odak odası notes. Everything is scoped
- * under `.seo-lp`, SeoLpShell's `<main>`. Phones are below 768px, where the hero is one column.
+ * landing's day paper (theme.css `.landing-paper`) with the Odak odası notes. Rules are namespaced by
+ * the `.seo-` prefix (and `.seo-lp`, SeoLpShell's `<main>`, where they need it). Phones are below 768px, where the hero is one column.
  */
 .seo-lp {
   --seo-note: var(--color-surface);
@@ -47,11 +47,6 @@
   line-height: 1.5;
   font-weight: 700;
   color: var(--landing-ink-soft);
-}
-
-.seo-lead strong {
-  font-weight: 900;
-  color: var(--landing-ink);
 }
 
 .seo-proof {

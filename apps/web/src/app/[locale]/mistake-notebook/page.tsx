@@ -130,7 +130,7 @@ export default async function MistakeNotebookLpPage({ params }: PageProps) {
           />
         }
         pinned={
-          <PaperNote name={t("demo.pill")} paper="lined" tape="#f7b3a0" tilt="-2deg">
+          <PaperNote name={t("demo.pill")} paper="lined" tape="#f7b3a0" tilt="-2deg" still>
             <NotebookDemoWidget
               copy={{
                 badge: t("demo.badge"),
@@ -198,7 +198,7 @@ export default async function MistakeNotebookLpPage({ params }: PageProps) {
         <p className="seo-sec-summary">{t("guide.outro")}</p>
       </section>
 
-      <section aria-labelledby="notebook-ecosystem-title" className={`${PAGE_FRAME} seo-sec`}>
+      <section aria-label={t("ecosystem.title")} className={`${PAGE_FRAME} seo-sec`}>
         <div className="seo-notes" style={{ "--n": 2 } as CSSProperties}>
           <PaperNote name={t("ecosystem.pill")} title={t("ecosystem.title")} heading="h2" tape="#a8d8b0" tilt="-0.5deg">
             <p>{t("ecosystem.body")}</p>

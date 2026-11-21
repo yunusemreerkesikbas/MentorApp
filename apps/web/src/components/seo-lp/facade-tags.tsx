@@ -60,7 +60,7 @@ export function FacadeTags({ items, facadeAlt, children }: { items: FacadeItem[]
         </div>
       </SceneFrame>
       <div className="seo-hero-pinned" aria-live="polite">
-        <PaperNote name={current.name} plate={current.plate} title={current.title} heading="h2" paper="grid" tape="#ffd15c" tilt="1.4deg">
+        <PaperNote name={current.name} plate={current.plate} title={current.title} heading="h2" paper="grid" tape="#ffd15c" tilt="1.4deg" still>
           <p>{current.body}</p>
           {current.link ? <TagLinks links={[current.link]} /> : null}
         </PaperNote>
