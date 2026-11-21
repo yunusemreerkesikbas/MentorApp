@@ -216,7 +216,7 @@ export function PublicPomodoroWidget({
               alt=""
               fill
               priority={item.id === "LIBRARY"}
-              sizes="(min-width: 1152px) 1072px, 100vw"
+              sizes="(min-width: 768px) 528px, 100vw"
               className={`lf-backdrop${item.id === room ? " is-on" : ""}`}
             />
           ))}

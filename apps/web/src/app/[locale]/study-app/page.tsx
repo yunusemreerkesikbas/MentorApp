@@ -164,7 +164,7 @@ export default async function StudyAppLpPage({ params }: PageProps) {
           <FacadeTags items={TAG_ORDER.map(item)} facadeAlt={t("scene.aria")}>
             <span className="seo-dawn-sun" aria-hidden="true" />
             <div className="seo-dawn-far" aria-hidden="true">
-              <SceneImg src="/visuals/landing/city-mid.webp" mobileSrc="/visuals/landing/city-mid-mobile.webp" loading="eager" />
+              <SceneImg src="/visuals/landing/city-mid.webp" mobileSrc="/visuals/landing/city-mid-mobile.webp" loading="lazy" fetchPriority="low" />
             </div>
           </FacadeTags>
         }

@@ -297,3 +297,25 @@ test.describe("study app", () => {
     });
   });
 });
+
+test.describe("en", () => {
+  const routes = [
+    "/en/pomodoro-timer",
+    "/en/yks-study-program",
+    "/en/tyt-study-program",
+    "/en/lgs-study-program",
+    "/en/mistake-notebook",
+    "/en/study-app",
+  ];
+
+  for (const path of routes) {
+    test(`${path} renders translated copy`, async ({ page }) => {
+      await asVisitor(page);
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      const text = await page.locator("body").innerText();
+      expect(text).not.toMatch(/(pomodoroLp|studyProgramLp|mistakeNotebookLp|studyAppLp)\./);
+      expect(text).not.toContain("MISSING_MESSAGE");
+    });
+  }
+});
