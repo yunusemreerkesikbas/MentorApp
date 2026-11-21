@@ -131,13 +131,18 @@
     justify-content: space-between;
   }
 
+  /* 4 + 3: four days on the first row, the last three centred below. */
   .seo-lp .plan-week {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 6px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
   }
 
   .seo-lp .plan-day {
+    flex: 0 0 calc((100% - 3 * 8px) / 4);
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -151,8 +156,8 @@
   }
 
   .seo-lp .plan-task {
-    font-size: 11px;
-    overflow-wrap: anywhere;
+    font-size: 12px;
+    overflow-wrap: break-word;
     hyphens: auto;
   }
 }
