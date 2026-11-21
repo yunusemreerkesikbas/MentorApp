@@ -1,0 +1,161 @@
+/*
+ * The plan demo (plan-demo-widget.tsx) inside its pinned paper note on the study-program pages.
+ * Scoped under `.seo-lp`. Chips are paper pills, `on` in ink; the seven-day preview is a stack of
+ * rows on a phone and a seven-column grid from 768px.
+ */
+.seo-lp .plan-demo {
+  display: block;
+}
+
+.seo-lp .plan-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--landing-pill);
+  color: var(--landing-pill-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.seo-lp .plan-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.seo-lp .plan-label {
+  margin: 0 0 7px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--seo-quiet);
+}
+
+.seo-lp .plan-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.seo-lp .plan-chip {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #f7e3c1;
+  color: #6e420e;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.seo-lp .plan-chip[aria-pressed="true"] {
+  background: #0f2233;
+  color: #fff;
+}
+
+.seo-lp .plan-chip:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Phone: one row per day, the name in Caveat on the left. */
+.seo-lp .plan-week {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.seo-lp .plan-day {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1.5px #ead9bc;
+}
+
+.seo-lp .plan-day-name {
+  grid-row: span 2;
+  font: 700 24px / 1 var(--seo-hand);
+  color: var(--seo-hand-ink);
+}
+
+.seo-lp .plan-task {
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: var(--landing-ink-soft);
+}
+
+.seo-lp .plan-task.is-first {
+  font-weight: 900;
+  color: var(--landing-ink);
+}
+
+.seo-lp .plan-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1.5px dashed var(--landing-paper-line);
+}
+
+.seo-lp .plan-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 700;
+  color: var(--seo-quiet);
+}
+
+@media (min-width: 768px) {
+  /* The plan note is the hero's centrepiece: as wide as the scene, not the 232px default. */
+  .seo-lp .seo-hero-pinned:has(.plan-demo) {
+    width: auto;
+    margin: -36px 0 0;
+  }
+
+  .seo-lp .plan-fields {
+    grid-template-columns: repeat(3, minmax(0, auto));
+    justify-content: space-between;
+  }
+
+  .seo-lp .plan-week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .seo-lp .plan-day {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 8px 6px;
+  }
+
+  .seo-lp .plan-day-name {
+    grid-row: auto;
+    font-size: 22px;
+  }
+
+  .seo-lp .plan-task {
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+
+  .seo-lp .plan-task {
+    hyphens: auto;
+  }
+}

@@ -503,3 +503,30 @@
     grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr));
   }
 }
+
+.seo-notebook:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+/* Small helpers for the program pages' sample section: Caveat day cells and the teaser. */
+.seo-notebook td.is-day {
+  font: 700 26px / 1 var(--seo-hand);
+  color: var(--seo-hand-ink);
+}
+
+.seo-hand-line {
+  margin: 12px 0 0;
+  font: 700 24px / 1.15 var(--seo-hand);
+  color: var(--seo-hand-ink);
+}
+
+.seo-footnote {
+  max-width: 46rem;
+  margin: 16px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--seo-quiet);
+}

@@ -158,29 +158,43 @@ export function PostitSteps({ steps }: { steps: { title?: string; body: string }
 }
 
 /**
- * A table written on a notebook page: red margin, punched holes, blue lines. It scrolls sideways
+ * A table written on a notebook page: red margin, punched holes, blue lines. Pass `label` to name it; `handFirst` writes the first column in Caveat (days). It scrolls sideways
  * inside its own box on a phone. `markLast` ticks the last cell of every row (PuhuKoç's column).
  */
-export function NotebookTable({ head, rows, markLast = false }: { head: string[]; rows: string[][]; markLast?: boolean }) {
+export function NotebookTable({
+  head,
+  rows,
+  markLast = false,
+  handFirst = false,
+  label,
+}: {
+  head: string[];
+  rows: string[][];
+  markLast?: boolean;
+  handFirst?: boolean;
+  label?: string;
+}) {
+  // The box scrolls, so a keyboard user must be able to reach it, and it needs a name.
   return (
-    <div className="seo-notebook">
+    <div className="seo-notebook" tabIndex={0} role="region" aria-label={label}>
       <table>
         <thead>
           <tr>
-            {head.map((cell) => (
-              <th key={cell} scope="col">
+            {head.map((cell, i) => (
+              <th key={i} scope="col">
                 {cell}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.join("|")}>
+          {rows.map((row, r) => (
+            <tr key={r}>
               {row.map((cell, i) => {
                 const last = markLast && i === row.length - 1;
+                const className = last ? "is-ours" : handFirst && i === 0 ? "is-day" : undefined;
                 return (
-                  <td key={`${i}-${cell}`} className={last ? "is-ours" : undefined}>
+                  <td key={i} className={className}>
                     {last ? <HandTick /> : null}
                     {cell}
                   </td>

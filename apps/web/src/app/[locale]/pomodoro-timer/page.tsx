@@ -211,6 +211,7 @@ export default async function PomodoroTimerPage({ params }: PageProps) {
           head={[t("compare.col_feature"), t("compare.col_basic"), t("compare.col_puhu")]}
           rows={COMPARE_ROWS.map((row) => [t(`compare.row${row}_label`), t(`compare.row${row}_basic`), t(`compare.row${row}_puhu`)])}
           markLast
+          label={t("compare.title")}
         />
         <div className="seo-ctas">
           <SeoSignupCta source="pomodoro" location="table" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>

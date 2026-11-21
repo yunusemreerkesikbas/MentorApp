@@ -71,3 +71,67 @@ test.describe("pomodoro", () => {
     });
   });
 });
+
+test.describe("study programs", () => {
+  const programs = [
+    { name: "yks", path: "/yks-calisma-programi", h1: "YKS çalışma programı: hedefine göre haftanı kur", sample: "#ornek" },
+    { name: "tyt", path: "/tyt-calisma-programi", h1: "TYT çalışma programı: temeli haftaya yay", sample: "#ornek-tyt" },
+    { name: "lgs", path: "/lgs-calisma-programi", h1: "LGS çalışma programı: 8. sınıf haftanı sakin kur", sample: "#ornek" },
+  ];
+
+  for (const { name, path, h1, sample } of programs) {
+    test.describe(name, () => {
+      test.describe("first paint", () => {
+        test.use({ javaScriptEnabled: false });
+
+        test("paints the H1, the demo note and the plan room before hydration", async ({ page }) => {
+          await expectFirstPaint(page, { path, h1 });
+          await expect(page.locator('.seo-hero img[src*="room-plan"]')).toBeVisible();
+        });
+      });
+
+      test.describe("hydrated", () => {
+        test.beforeEach(async ({ page }) => {
+          await asVisitor(page);
+          await page.goto(path);
+        });
+
+        test("never scrolls sideways", async ({ page }) => {
+          await expectNoHorizontalScroll(page);
+        });
+
+        test("ships the FAQ as FAQPage JSON-LD", async ({ page }) => {
+          await expectFaqJsonLd(page);
+        });
+
+        test("keeps every note and sticker still under reduced motion", async ({ page }) => {
+          await expectStillUnderReducedMotion(page);
+        });
+
+        test("pins the plan demo as a paper note in the hero", async ({ page }) => {
+          await expect(page.locator(".seo-hero .seo-note #plan-demo")).toHaveCount(1);
+        });
+
+        test("changes the preview when a second chip is picked", async ({ page }) => {
+          const demo = page.locator("#plan-demo");
+          const chip = demo.getByRole("group").first().getByRole("button").nth(1);
+          const before = await demo.innerText();
+          // A click before hydration does nothing, so retry until the widget answers.
+          await expect(async () => {
+            await chip.click();
+            await expect(chip).toHaveAttribute("aria-pressed", "true", { timeout: 500 });
+          }).toPass();
+          expect(await demo.innerText()).not.toBe(before);
+        });
+
+        test("lists a seven-day sample week", async ({ page }) => {
+          await expect(page.locator(`${sample} tbody tr`)).toHaveCount(7);
+        });
+
+        test("has the parent note only on LGS", async ({ page }) => {
+          await expect(page.locator("#veli")).toHaveCount(name === "lgs" ? 1 : 0);
+        });
+      });
+    });
+  }
+});
