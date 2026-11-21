@@ -55,7 +55,7 @@ export async function expectFaqJsonLd(page: Page) {
 
 /**
  * Reduced motion: a mouse over a note starts no breeze (no SVG filter on it) and every Puhu
- * sticker stands still. The page reloads under the emulated media, because the flutter hook reads
+ * (the closing sticker, the desk scene's reading frames) stands still. The page reloads under the emulated media, because the flutter hook reads
  * the preference once, when it mounts.
  */
 export async function expectStillUnderReducedMotion(page: Page) {
@@ -67,7 +67,7 @@ export async function expectStillUnderReducedMotion(page: Page) {
   await page.waitForTimeout(300);
   expect(await note.evaluate((element) => getComputedStyle(element).filter)).toBe("none");
   const stickers = await page
-    .locator(".seo-puhu")
+    .locator(".seo-puhu, .lm-puhu img")
     .evaluateAll((elements) => elements.map((element) => getComputedStyle(element).animationName));
   for (const animationName of stickers) {
     expect(animationName).toBe("none");

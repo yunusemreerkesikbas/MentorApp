@@ -155,3 +155,69 @@ test.describe("study programs", () => {
     });
   }
 });
+
+test.describe("mistake notebook", () => {
+  const path = "/yanlis-defteri-uygulamasi";
+
+  test.describe("first paint", () => {
+    test.use({ javaScriptEnabled: false });
+
+    test("paints the H1, the demo note and the desk before hydration", async ({ page }) => {
+      await expectFirstPaint(page, { path, h1: "Yanlış defteri: sorularını kaydet, tekrar zamanı dön" });
+    });
+  });
+
+  test.describe("hydrated", () => {
+    test.beforeEach(async ({ page }) => {
+      await asVisitor(page);
+      await page.goto(path);
+    });
+
+    test("never scrolls sideways", async ({ page }) => {
+      await expectNoHorizontalScroll(page);
+    });
+
+    test("ships the FAQ as FAQPage JSON-LD", async ({ page }) => {
+      await expectFaqJsonLd(page);
+    });
+
+    test("keeps every note and sticker still under reduced motion", async ({ page }) => {
+      await expectStillUnderReducedMotion(page);
+      // The desk's Puhu is on the page, so the check above really covered his frames.
+      await expect(page.locator(".lm-puhu img")).toHaveCount(5);
+    });
+
+    test("shows the desk scene as one labelled picture in the hero", async ({ page }) => {
+      await expect(page.locator('.seo-hero [role="img"][aria-label]')).toBeVisible();
+    });
+
+    test("answers Çözdüm and Takıldım on the demo card", async ({ page }) => {
+      const demo = page.locator(".seo-hero-pinned");
+      const solved = demo.getByRole("button", { name: /Çözdüm/ });
+      const missed = demo.getByRole("button", { name: /Takıldım/ });
+      // A click before hydration does nothing, so retry until the widget answers.
+      await expect(async () => {
+        await solved.click();
+        await expect(demo.getByText(/Harika!/)).toBeVisible({ timeout: 500 });
+      }).toPass();
+      await missed.click();
+      await expect(demo.getByText(/Sorun değil!/)).toBeVisible();
+      await expect(demo.getByText(/Harika!/)).toHaveCount(0);
+    });
+
+    test("keeps the demo buttons at least 44px tall", async ({ page }) => {
+      for (const name of [/Çözdüm/, /Takıldım/]) {
+        const box = await page.locator(".seo-hero-pinned").getByRole("button", { name }).boundingBox();
+        expect(box!.height).toBeGreaterThanOrEqual(44);
+      }
+    });
+
+    test("has no 1 / 3 deck counter", async ({ page }) => {
+      await expect(page.getByText("1 / 3")).toHaveCount(0);
+    });
+
+    test("keeps the how-it-works anchor", async ({ page }) => {
+      await expect(page.locator("#nasil-calisir")).toHaveCount(1);
+    });
+  });
+});

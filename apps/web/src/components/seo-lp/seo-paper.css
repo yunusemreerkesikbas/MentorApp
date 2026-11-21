@@ -455,6 +455,13 @@
     margin: -72px 0 0 -24px;
   }
 
+  /* The review card needs more room than a one-line demo note, and hangs off the right corner
+     so it leaves the desk's notebook (left of centre) and its due note in view. */
+  .seo-hero-scene:has(.seo-desk) .seo-hero-pinned {
+    width: min(340px, 100%);
+    margin: -64px -16px 0 auto;
+  }
+
   .seo-notes {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 30px;
@@ -529,4 +536,42 @@
   font-weight: 700;
   font-style: italic;
   color: var(--seo-quiet);
+}
+
+/* ---- Mistake notebook hero: the landing's desk (seo-desk-scene.tsx) inside the scene frame ---- */
+.seo-desk .lm-frame {
+  margin-top: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The guide as a notebook page: a numbered list in the red-margin paper. */
+.seo-notebook-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: seo-step;
+}
+
+.seo-notebook-list li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 6px 0 6px 40px;
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 700;
+  color: var(--landing-ink-soft);
+  counter-increment: seo-step;
+}
+
+.seo-notebook-list li::before {
+  content: counter(seo-step);
+  position: absolute;
+  left: 0;
+  top: 50%;
+  translate: 0 -50%;
+  font: 700 28px / 1 var(--seo-hand);
+  color: var(--seo-hand-ink);
 }
