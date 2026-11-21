@@ -454,6 +454,14 @@
     "dawn": {
       "title": "Good morning! One day closer to your exam.",
       "body": "A small step today, another tomorrow. That is how you get to exam morning."
+    },
+    "footer": {
+      "tools": "Tools",
+      "programs": "Study programs",
+      "brand": "PuhuKoç",
+      "pomodoro": "Pomodoro timer",
+      "notebook": "Mistake notebook",
+      "nav_label": "Site links"
     }
   },
   "auth": {

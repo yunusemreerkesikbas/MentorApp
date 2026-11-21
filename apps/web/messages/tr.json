@@ -454,6 +454,14 @@
     "dawn": {
       "title": "Günaydın! Sınava bir gün daha yaklaştın.",
       "body": "Bugün küçük bir adım, yarın bir tane daha. Sınav sabahına böyle varılır."
+    },
+    "footer": {
+      "tools": "Araçlar",
+      "programs": "Programlar",
+      "brand": "PuhuKoç",
+      "pomodoro": "Pomodoro sayaç",
+      "notebook": "Yanlış defteri",
+      "nav_label": "Site bağlantıları"
     }
   },
   "auth": {
