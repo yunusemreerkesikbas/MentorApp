@@ -124,6 +124,26 @@ test.describe("study programs", () => {
           expect(await demo.innerText()).not.toBe(before);
         });
 
+        test("picks a demo chip from the keyboard", async ({ page }) => {
+          const chips = page.locator("#plan-demo").getByRole("group").first().getByRole("button");
+          const first = chips.nth(0);
+          const second = chips.nth(1);
+          // Retry until hydration: Tab from the first chip, then Enter on the second.
+          await expect(async () => {
+            await first.focus();
+            await page.keyboard.press("Tab");
+            await expect(second).toBeFocused({ timeout: 500 });
+            await page.keyboard.press("Enter");
+            await expect(second).toHaveAttribute("aria-pressed", "true", { timeout: 500 });
+          }).toPass();
+          await expect(first).toHaveAttribute("aria-pressed", "false");
+          // Space works too: step back with Shift+Tab and press it.
+          await page.keyboard.press("Shift+Tab");
+          await expect(first).toBeFocused();
+          await page.keyboard.press("Space");
+          await expect(first).toHaveAttribute("aria-pressed", "true");
+        });
+
         test("lists a seven-day sample week", async ({ page }) => {
           await expect(page.locator(`${sample} tbody tr`)).toHaveCount(7);
         });
