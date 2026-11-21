@@ -77,7 +77,7 @@ describe("product-led SEO LP metadata", () => {
   });
 
   it("aligns SEO LP copy, sample block titles and WebApplication schemas with invite-only pilot behavior", () => {
-    expect(trMessages.studyProgramLp.common.cta_save_plan).toBe("Bekleme listesine katıl");
+    expect(trMessages.studyProgramLp.common.cta_save_plan).toBe("Ücretsiz başla");
     expect(trMessages.studyProgramLp.common.demo_note).toContain("hesaba aktarılmaz");
     expect(trMessages.studyProgramLp.yks.sample_title).toBe(
       "Örnek çalışma blokları · Sayısal · dengeli TYT ve AYT",

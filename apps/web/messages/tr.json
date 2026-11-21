@@ -4878,9 +4878,9 @@
     "subhead": "Odanı seç, süreni kur, başla! Kayıt yok, bekleme yok: 25 dakika odak, 5 dakika mola, hepsi bu sayfada.",
     "proof": "Online sayaç girişsiz ve ücretsiz · Tam uygulama davetli pilotta (plan, seans ve masa ücretsiz katmanda, yapay zekâ koçun Puhu Premium’da)",
     "cta_start_timer": "Sayacı başlat",
-    "cta_signup": "Bekleme listesine katıl",
-    "cta_free_start": "Bekleme listesine katıl",
-    "cta_join_room": "Bekleme listesine katıl",
+    "cta_signup": "Ücretsiz başla",
+    "cta_free_start": "Ücretsiz başla",
+    "cta_join_room": "Ücretsiz başla",
     "widget": {
       "room_label": "Çalışma odası seç",
       "sound_label": "Ortam sesi",
@@ -4902,7 +4902,7 @@
       "reset": "Sıfırla",
       "done_title": "İlk adım tamam!",
       "done_body": "Seansın bitti. PuhuKoç şu an davetli pilotta; odak sürelerini haftalık planın ve serinle birlikte kullanmak için bekleme listesine katılabilirsin.",
-      "done_cta": "Bekleme listesine katıl",
+      "done_cta": "Ücretsiz başla",
       "done_again": "Yeni seans kur"
     },
     "how": {
@@ -4975,7 +4975,7 @@
     },
     "closing": {
       "title": "Bugün bir pomodoro ile başla!",
-      "body": "25 dakika yeter. Süreyi kur, odayı seç; tam çalışma alanı için davetli pilot bekleme listesinde yerini ayır."
+      "body": "25 dakika yeter. Süreyi kur, odayı seç, başla."
     },
     "scribble": "oda senin, süre senin!",
     "hero_note": {
@@ -4986,10 +4986,10 @@
   "studyProgramLp": {
     "common": {
       "proof": "PuhuKoç şu an davetli pilotta · Plan, odak seansı ve masa ücretsiz katmanda, yapay zekâ koçun Puhu Premium’da",
-      "cta_build": "Bekleme listesine katıl",
+      "cta_build": "Ücretsiz başla",
       "cta_sample": "Örnek bloklara bak",
-      "cta_free_start": "Bekleme listesine katıl",
-      "cta_save_plan": "Bekleme listesine katıl",
+      "cta_free_start": "Ücretsiz başla",
+      "cta_save_plan": "Ücretsiz başla",
       "demo_pill": "Örnek blok önizlemesi",
       "demo_scribble": "abrakadabra, örnek bloklar hazır!",
       "demo_field_label": "Alan",
@@ -5075,7 +5075,7 @@
       "q6": "Mobilde kurabilir miyim?",
       "a6": "Evet. PuhuKoç tarayıcıda çalışır; telefon ve bilgisayarda kaldığın yerden devam edersin.",
       "closing_title": "Bu haftanın programı için sıranı ayır!",
-      "closing_body": "Örnek blokları incele, davetli pilot bekleme listesine katıl veya pilot hesabın varsa hemen giriş yap."
+      "closing_body": "Örnek blokları incele, sonra kendi haftanı kur."
     },
     "tyt": {
       "meta_title": "TYT Çalışma Programı | Günlük Plan ve Tekrar · PuhuKoç",
@@ -5113,7 +5113,7 @@
       "q6": "Mobilde çalışır mı?",
       "a6": "Evet. Telefon ve bilgisayar tarayıcısında kaldığın yerden devam edersin.",
       "closing_title": "TYT planın için sıranı ayır!",
-      "closing_body": "Örnek blokları incele, davetli pilot bekleme listesine katıl veya pilot hesabın varsa giriş yap."
+      "closing_body": "Örnek blokları incele, sonra kendi haftanı kur."
     },
     "lgs": {
       "meta_title": "LGS Çalışma Programı | 8. Sınıf Haftalık Plan · PuhuKoç",
@@ -5155,7 +5155,7 @@
       "q6": "Ara tatil programı da var mı?",
       "a6": "Aynı araçta günlük süreyi tatil moduna göre artırırsın; ayrı bir mucize tatil paketi vaadi yoktur.",
       "closing_title": "LGS haftalık planın için sıranı ayır!",
-      "closing_body": "Örnek blokları incele, davetli pilot bekleme listesine katıl veya pilot hesabın varsa giriş yap. Işığın yanıyorsa yalnız değilsin."
+      "closing_body": "Örnek blokları incele, sonra kendi haftanı kur. Işığın yanıyorsa yalnız değilsin."
     }
   },
   "mistakeNotebookLp": {
@@ -5167,9 +5167,9 @@
     "h1": "Yanlış defteri: sorularını kaydet, tekrar zamanı dön",
     "subhead": "Takıldığın soru kaybolmasın! Fotoğrafını çek ya da yaz, defterine koy. Tekrar günü gelince soru yeniden önünde.",
     "proof": "PuhuKoç şu an davetli pilotta · Yanlış defteri ücretsiz hesapta başlangıç soru ve fotoğraf kotasıyla sunulur; sınırsız kullanım Premium’dadır",
-    "cta_primary": "Bekleme listesine katıl",
+    "cta_primary": "Ücretsiz başla",
     "cta_secondary": "Nasıl çalışır?",
-    "cta_discover": "Bekleme listesine katıl",
+    "cta_discover": "Ücretsiz başla",
     "what_pill": "Yanlış defteri nedir?",
     "what_title": "Takıldığın sorular kaybolmasın",
     "what_body": "Yanlış defteri, çözerken hata yaptığın veya tekrar görmek istediğin soruları bir arada tuttuğun çalışma aracıdır. Soruları derslerine ve konularına ayırıp daha sonra yeniden çözerek hangi konulara dönmek istediğini görebilirsin.",
@@ -5185,7 +5185,7 @@
       "btn_solved": "Çözdüm",
       "feedback_missed": "Sorun değil! Kart tekrar döngüsünde kalır ve 2 gün sonra yeniden destende karşına çıkar.",
       "feedback_solved": "Harika! Kart bir sonraki tekrar basamağına (2 → 7 → 21 gün) ilerler. Üç tekrarı da tamamladığında kart iyileşir.",
-      "cta": "Bekleme listesine katıl"
+      "cta": "Ücretsiz başla"
     },
     "how": {
       "pill": "Nasıl çalışır",
@@ -5238,7 +5238,7 @@
     },
     "closing": {
       "title": "Bir soruyla başla!",
-      "body": "Örnek tekrar kartını incele, davetli pilot bekleme listesine katıl veya pilot hesabın varsa giriş yap."
+      "body": "Örnek tekrar kartını incele, sonra kendi defterini başlat."
     },
     "scribble": "bu sefer çözersin!",
     "scene_aria": "Masada Yanlış Defterim ve kitap okuyan Puhu"
@@ -5253,7 +5253,7 @@
     "subhead": "Planın, odak seansın, yanlış defterin ve çalışma masan tek yerde. Arkadaşların da hemen yanında!",
     "proof": "PuhuKoç şu an davetli pilotta · Plan, seans, masa ve topluluk ücretsiz katmanda; yapay zekâ koçun Puhu ve derin analiz Premium’dadır",
     "definition": "PuhuKoç, sınava hazırlananlar için çalışma planı, odak seansı, başlangıç kotalı yanlış defteri ve arkadaşlarla çalışma masası sunan, şu an davetli pilotta olan web tabanlı bir uygulamadır. Yapay zekâ koç Puhu, Premium’da yer alır.",
-    "cta_primary": "Bekleme listesine katıl",
+    "cta_primary": "Ücretsiz başla",
     "cta_secondary": "Neler yapabilirim?",
     "features": {
       "pill": "Özellikler",
@@ -5316,7 +5316,7 @@
     },
     "closing": {
       "title": "Bugün küçük bir adımla başla!",
-      "body": "Davetli pilot bekleme listesine katıl veya pilot hesabın varsa giriş yap. Işığın yanıyorsa, yalnız değilsin."
+      "body": "Haftanı kur, odaklan, yanlışlarına dön. Işığın yanıyorsa, yalnız değilsin."
     },
     "scribble": "bir odaya dokun!",
     "definition_pill": "Kısaca PuhuKoç",
