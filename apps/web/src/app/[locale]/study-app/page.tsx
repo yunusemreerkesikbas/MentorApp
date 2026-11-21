@@ -8,7 +8,7 @@ import { SeoLpShell } from "@/components/seo-lp/seo-lp-shell";
 import { PaperNote, PostitSteps, SeoHero, TagLinks } from "@/components/seo-lp/seo-paper";
 import { SeoSignupCta } from "@/components/seo-lp/seo-signup-cta";
 import { setRequestLocale } from "@/i18n/locale";
-import { getPathname, Link } from "@/i18n/navigation";
+import { getPathname } from "@/i18n/navigation";
 import { siteUrl } from "@/lib/forum-public";
 import { buildWebApplicationStructuredData } from "@/lib/structured-data";
 import { LEDGE_ON_PAPER, PAGE_FRAME, PAPER_PILL, PAPER_TITLE } from "../_components/landing/landing-paper";
@@ -125,9 +125,6 @@ export default async function StudyAppLpPage({ params }: PageProps) {
         <SeoSignupCta source="study_app" location="closing" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
           {t("cta_primary")}
         </SeoSignupCta>
-        <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
-          {t("cta_login")}
-        </Link>
       </div>
     </section>
   );

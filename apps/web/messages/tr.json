@@ -4881,7 +4881,6 @@
     "cta_signup": "Bekleme listesine katıl",
     "cta_free_start": "Bekleme listesine katıl",
     "cta_join_room": "Bekleme listesine katıl",
-    "cta_login": "Pilot hesabım var · Giriş yap",
     "widget": {
       "room_label": "Çalışma odası seç",
       "sound_label": "Ortam sesi",
@@ -4991,7 +4990,6 @@
       "cta_sample": "Örnek bloklara bak",
       "cta_free_start": "Bekleme listesine katıl",
       "cta_save_plan": "Bekleme listesine katıl",
-      "cta_has_account": "Pilot hesabım var · Giriş yap",
       "demo_pill": "Örnek blok önizlemesi",
       "demo_scribble": "abrakadabra, örnek bloklar hazır!",
       "demo_field_label": "Alan",
@@ -5172,7 +5170,6 @@
     "cta_primary": "Bekleme listesine katıl",
     "cta_secondary": "Nasıl çalışır?",
     "cta_discover": "Bekleme listesine katıl",
-    "cta_login": "Pilot hesabım var · Giriş yap",
     "what_pill": "Yanlış defteri nedir?",
     "what_title": "Takıldığın sorular kaybolmasın",
     "what_body": "Yanlış defteri, çözerken hata yaptığın veya tekrar görmek istediğin soruları bir arada tuttuğun çalışma aracıdır. Soruları derslerine ve konularına ayırıp daha sonra yeniden çözerek hangi konulara dönmek istediğini görebilirsin.",
@@ -5258,7 +5255,6 @@
     "definition": "PuhuKoç, sınava hazırlananlar için çalışma planı, odak seansı, başlangıç kotalı yanlış defteri ve arkadaşlarla çalışma masası sunan, şu an davetli pilotta olan web tabanlı bir uygulamadır. Yapay zekâ koç Puhu, Premium’da yer alır.",
     "cta_primary": "Bekleme listesine katıl",
     "cta_secondary": "Neler yapabilirim?",
-    "cta_login": "Pilot hesabım var · Giriş yap",
     "features": {
       "pill": "Özellikler",
       "title": "Sınav yolunda ihtiyaç duydukların",

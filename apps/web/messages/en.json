@@ -4881,7 +4881,6 @@
     "cta_signup": "Join the waitlist",
     "cta_free_start": "Join the waitlist",
     "cta_join_room": "Join the waitlist",
-    "cta_login": "I have a pilot account · Sign in",
     "widget": {
       "room_label": "Choose study room",
       "sound_label": "Ambient sound",
@@ -4991,7 +4990,6 @@
       "cta_sample": "See sample blocks",
       "cta_free_start": "Join the waitlist",
       "cta_save_plan": "Join the waitlist",
-      "cta_has_account": "I have a pilot account · Sign in",
       "demo_pill": "Sample block preview",
       "demo_scribble": "abracadabra, sample blocks ready!",
       "demo_field_label": "Track",
@@ -5172,7 +5170,6 @@
     "cta_primary": "Join the waitlist",
     "cta_secondary": "How it works",
     "cta_discover": "Join the waitlist",
-    "cta_login": "I have a pilot account · Sign in",
     "what_pill": "What is a mistake notebook?",
     "what_title": "Keep the questions that tripped you up",
     "what_body": "A mistake notebook is a study tool where you keep questions you missed or want to revisit in one place. Organizing questions by subject and topic lets you solve them again later and see which topics need another look.",
@@ -5258,7 +5255,6 @@
     "definition": "PuhuKoç is a web-based study companion app currently in invite-only pilot, offering a weekly study plan, focus timer, mistake notebook with initial free quota, and shared study tables for exam candidates. Puhu, the AI coach, is available in Premium.",
     "cta_primary": "Join the waitlist",
     "cta_secondary": "What can I do?",
-    "cta_login": "I have a pilot account · Sign in",
     "features": {
       "pill": "Features",
       "title": "What you need on the road to your exam",
