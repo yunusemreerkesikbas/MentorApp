@@ -105,11 +105,12 @@ export function SceneFrame({ className, label, children }: { className?: string;
 
 /**
  * A taped paper note: plain, lined or grid paper, a tape colour and a tilt. `pin` holds it with a
- * red pin instead of tape. `name` is the Caveat label on top; `heading` sets the title's level
+ * red pin instead of tape. `name` is the Caveat label on top (`plate` adds the enamel door plate beside it); `heading` sets the title's level
  * where the note itself is a section (the default `h3` sits under a section's `h2`).
  */
 export function PaperNote({
   name,
+  plate,
   title,
   paper,
   tape = "#9cc7f0",
@@ -119,6 +120,7 @@ export function PaperNote({
   children,
 }: {
   name?: string;
+  plate?: string;
   title?: string;
   paper?: "lined" | "grid";
   tape?: string;
@@ -131,7 +133,12 @@ export function PaperNote({
   return (
     <article data-flutter="" className={paper ? `seo-note is-${paper}` : "seo-note"} style={style}>
       {pin ? <i className="seo-pin" aria-hidden="true" /> : <i className="seo-tape" aria-hidden="true" />}
-      {name ? <p className="seo-note-name">{name}</p> : null}
+      {name ? (
+        <p className="seo-note-name">
+          {name}
+          {plate ? <span className="seo-plate">{plate}</span> : null}
+        </p>
+      ) : null}
       {title ? <Heading className="seo-note-title">{title}</Heading> : null}
       <div className="seo-note-body">{children}</div>
     </article>

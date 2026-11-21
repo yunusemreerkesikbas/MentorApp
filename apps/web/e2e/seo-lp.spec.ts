@@ -221,3 +221,79 @@ test.describe("mistake notebook", () => {
     });
   });
 });
+
+test.describe("study app", () => {
+  const path = "/ders-calisma-uygulamasi";
+
+  test.describe("first paint", () => {
+    test.use({ javaScriptEnabled: false });
+
+    test("paints the H1, the default plan note and the facade before hydration", async ({ page }) => {
+      await expectFirstPaint(page, { path, h1: "Ders çalışma uygulaması: planın ve çalışma masan bir arada" });
+      await expect(page.getByRole("button", { name: "Plan", exact: true })).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator(".seo-hero-pinned").getByRole("heading", { name: "Haftanı planla" })).toBeVisible();
+    });
+  });
+
+  test.describe("hydrated", () => {
+    test.beforeEach(async ({ page }) => {
+      await asVisitor(page);
+      await page.goto(path);
+    });
+
+    test("never scrolls sideways", async ({ page }) => {
+      await expectNoHorizontalScroll(page);
+    });
+
+    test("ships the FAQ as FAQPage JSON-LD", async ({ page }) => {
+      await expectFaqJsonLd(page);
+    });
+
+    test("keeps every note and sticker still under reduced motion", async ({ page }) => {
+      await expectStillUnderReducedMotion(page);
+    });
+
+    test("selects Plan by default", async ({ page }) => {
+      await expect(page.getByRole("button", { name: "Plan", exact: true })).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByRole("button", { name: "Odak", exact: true })).toHaveAttribute("aria-pressed", "false");
+    });
+
+    test("shows Odak's note and its link from the keyboard", async ({ page }) => {
+      const plan = page.getByRole("button", { name: "Plan", exact: true });
+      const odak = page.getByRole("button", { name: "Odak", exact: true });
+      const note = page.locator(".seo-hero-pinned");
+      // Retry until hydration; Enter only ever selects, so a repeat cannot flip it back.
+      await expect(async () => {
+        await plan.focus();
+        await page.keyboard.press("Tab");
+        await expect(odak).toBeFocused({ timeout: 500 });
+        await page.keyboard.press("Enter");
+        await expect(odak).toHaveAttribute("aria-pressed", "true", { timeout: 500 });
+      }).toPass();
+      await expect(note.getByRole("heading", { name: "Odak seansı aç" })).toBeVisible();
+      await expect(note.getByRole("link", { name: "Ücretsiz online pomodoro sayaç" })).toHaveAttribute("href", "/pomodoro-sayac");
+      await expect(plan).toHaveAttribute("aria-pressed", "false");
+    });
+
+    test("announces the selected note politely", async ({ page }) => {
+      await expect(page.locator('.seo-hero-pinned[aria-live="polite"]')).toHaveCount(1);
+    });
+
+    test("keeps the tags at least 44px tall", async ({ page }) => {
+      for (const name of ["Puhu", "Defter", "Plan", "Odak", "Masa"]) {
+        const box = await page.getByRole("button", { name, exact: true }).boundingBox();
+        expect(box!.height).toBeGreaterThanOrEqual(44);
+        expect(box!.width).toBeGreaterThanOrEqual(44);
+      }
+    });
+
+    test("lists the five features as notes", async ({ page }) => {
+      await expect(page.locator("#ozellikler .seo-note")).toHaveCount(5);
+    });
+
+    test("keeps the anchors", async ({ page }) => {
+      await expect(page.locator("#nasil")).toHaveCount(1);
+      await expect(page.locator("#sss")).toHaveCount(1);
+    });
+  });
+});
