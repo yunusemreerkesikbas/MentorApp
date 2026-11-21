@@ -1,33 +1,28 @@
 import "../_components/landing/landing-focus.css";
+import "./_components/pomodoro-room.css";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
+import type { CSSProperties } from "react";
 import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
+import { SeoLpShell } from "@/components/seo-lp/seo-lp-shell";
+import { NotebookTable, PaperNote, PostitSteps, SceneFrame, SeoHero, TagLinks } from "@/components/seo-lp/seo-paper";
 import { SeoSignupCta } from "@/components/seo-lp/seo-signup-cta";
 import { setRequestLocale } from "@/i18n/locale";
 import { getPathname, Link } from "@/i18n/navigation";
-import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { siteUrl } from "@/lib/forum-public";
-import { jsonLdHtml } from "@/lib/json-ld";
 import { buildWebApplicationStructuredData } from "@/lib/structured-data";
 import { STUDY_ROOM_BACKDROP_SRC, STUDY_ROOM_THEME_IDS } from "@/lib/study-room-theme";
 import type { FocusRoomTheme } from "../_components/landing/focus-room";
-import { LandingFooter } from "../_components/landing/landing-footer";
-import { LandingNav } from "../_components/landing/landing-nav";
-import {
-  LEDGE_ON_PAPER,
-  PAGE_FRAME,
-  PAPER_PILL,
-  PAPER_TITLE,
-  PaperFaq,
-} from "../_components/landing/landing-paper";
-import { PublicPomodoroWidget } from "./_components/public-pomodoro-widget";
+import { LEDGE_ON_PAPER, PAGE_FRAME, PAPER_PILL, PAPER_TITLE } from "../_components/landing/landing-paper";
+import { SceneImg } from "../_components/landing/scene-img";
+import { PublicPomodoroWidget, type PublicPomodoroCopy } from "./_components/public-pomodoro-widget";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
 const FAQ_INDICES = [1, 2, 3, 4, 5] as const;
 const COMPARE_ROWS = [1, 2, 3, 4, 5, 6] as const;
+const PILL = `${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params;
@@ -60,14 +55,50 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+type Translate = Awaited<ReturnType<typeof getTranslations>>;
+
+function widgetCopy(t: Translate, tRoot: Translate): PublicPomodoroCopy {
+  return {
+    roomLabel: t("widget.room_label"),
+    soundLabel: t("widget.sound_label"),
+    preset25: t("widget.preset_25_5"),
+    preset50: t("widget.preset_50_10"),
+    presetCustom: t("widget.preset_custom"),
+    presetStopwatch: t("widget.preset_stopwatch"),
+    phaseFocus: t("widget.phase_focus"),
+    phaseBreak: t("widget.phase_break"),
+    unitMin: t("widget.unit_min"),
+    unitElapsed: t("widget.unit_elapsed"),
+    decreaseAria: t("widget.decrease_aria"),
+    increaseAria: t("widget.increase_aria"),
+    plainView: t("widget.plain_view"),
+    start: t("widget.start"),
+    pause: t("widget.pause"),
+    resume: t("widget.resume"),
+    finish: t("widget.finish"),
+    reset: t("widget.reset"),
+    doneTitle: t("widget.done_title"),
+    doneBody: t("widget.done_body"),
+    doneCta: t("widget.done_cta"),
+    doneAgain: t("widget.done_again"),
+    sounds: {
+      scene: tRoot("session_ambient.track_scene"),
+      library: tRoot("session_ambient.track_library"),
+      cafe: tRoot("session_ambient.track_cafe"),
+      home: tRoot("session_ambient.track_home"),
+      off: tRoot("session_ambient.track_off"),
+    },
+  };
+}
+
+/** "Odak odası" in the hero: the free timer in its room, with the ambient-sound note pinned under it. */
 export default async function PomodoroTimerPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const [t, tRoot, nonce, messages] = await Promise.all([
+  const [t, tRoot, nonce] = await Promise.all([
     getTranslations("pomodoroLp"),
     getTranslations(),
     headers().then((h) => h.get("x-nonce") ?? undefined),
-    getMessages(),
   ]);
 
   const origin = siteUrl();
@@ -86,233 +117,130 @@ export default async function PomodoroTimerPage({ params }: PageProps) {
     light: id === "HOME",
   }));
 
-  return (
-    <NextIntlClientProvider messages={pickMessages(messages, ROUTE_MESSAGE_SCOPES.landing)}>
-      <div className="landing-city-theme landing-day min-h-screen">
-        {locale === "tr" ? (
-          <script
-            nonce={nonce}
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: jsonLdHtml(webAppJsonLd) }}
-          />
-        ) : null}
-        <LandingNav variant="seo" />
-
-        <main className="landing-paper pt-24 lg:pt-28">
-          <section className={`${PAGE_FRAME} pb-12 pt-4 lg:pb-16`}>
-            <div className="max-w-3xl">
-              <p className={`${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`}>
-                {t("eyebrow")}
-              </p>
-              <h1 className="mt-3 text-3xl font-black tracking-[-0.015em] sm:text-4xl lg:text-5xl">
-                {t("h1")}
-              </h1>
-              <p className="mt-4 text-lg leading-relaxed text-[var(--landing-ink-soft)]">
-                {t("subhead")}
-              </p>
-              <p className="mt-3 text-sm font-extrabold text-[var(--landing-ink-soft)]">
-                {t("proof")}
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <a
-                  href="#timer"
-                  className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}
-                >
-                  {t("cta_start_timer")}
-                </a>
-                <SeoSignupCta
-                  source="pomodoro"
-                  location="hero"
-                  className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}
-                >
-                  {t("cta_signup")}
-                </SeoSignupCta>
-              </div>
-            </div>
-
-            <div className="lf-root mt-8">
-              <PublicPomodoroWidget
-                themes={themes}
-                copy={{
-                  roomLabel: t("widget.room_label"),
-                  soundLabel: t("widget.sound_label"),
-                  preset25: t("widget.preset_25_5"),
-                  preset50: t("widget.preset_50_10"),
-                  presetCustom: t("widget.preset_custom"),
-                  presetStopwatch: t("widget.preset_stopwatch"),
-                  phaseFocus: t("widget.phase_focus"),
-                  phaseBreak: t("widget.phase_break"),
-                  unitMin: t("widget.unit_min"),
-                  unitElapsed: t("widget.unit_elapsed"),
-                  decreaseAria: t("widget.decrease_aria"),
-                  increaseAria: t("widget.increase_aria"),
-                  plainView: t("widget.plain_view"),
-                  start: t("widget.start"),
-                  pause: t("widget.pause"),
-                  resume: t("widget.resume"),
-                  finish: t("widget.finish"),
-                  reset: t("widget.reset"),
-                  doneTitle: t("widget.done_title"),
-                  doneBody: t("widget.done_body"),
-                  doneCta: t("widget.done_cta"),
-                  doneAgain: t("widget.done_again"),
-                  sounds: {
-                    scene: tRoot("session_ambient.track_scene"),
-                    library: tRoot("session_ambient.track_library"),
-                    cafe: tRoot("session_ambient.track_cafe"),
-                    home: tRoot("session_ambient.track_home"),
-                    off: tRoot("session_ambient.track_off"),
-                  },
-                }}
-              />
-            </div>
-          </section>
-
-          <section id="nasil" aria-labelledby="pomodoro-how-title" className={`${PAGE_FRAME} scroll-mt-24 pt-12 lg:pt-20`}>
-            <div className="max-w-3xl">
-              <p className={`${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`}>
-                {t("how.pill")}
-              </p>
-              <h2 id="pomodoro-how-title" className={PAPER_TITLE}>
-                {t("how.title")}
-              </h2>
-              <p className="mt-4 rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-5 text-base leading-relaxed font-semibold text-[var(--landing-ink)]">
-                {t("how.answer_first")}
-              </p>
-            </div>
-            <ol className="mt-6 grid gap-4 sm:grid-cols-3">
-              {([1, 2, 3] as const).map((step) => (
-                <li
-                  key={step}
-                  className="rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-5"
-                >
-                  <span className="inline-flex size-8 items-center justify-center rounded-full bg-[var(--landing-pill)] text-sm font-black text-[var(--landing-pill-ink)]">
-                    {step}
-                  </span>
-                  <h3 className="mt-3 text-lg font-extrabold text-[var(--landing-ink)]">
-                    {t(`how.step${step}_title`)}
-                  </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-[var(--landing-ink-soft)]">
-                    {t(`how.step${step}_body`)}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          </section>
-
-          <section aria-labelledby="pomodoro-compare-title" className={`${PAGE_FRAME} pt-16 lg:pt-24`}>
-            <div className="max-w-3xl">
-              <p className={`${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`}>
-                {t("compare.pill")}
-              </p>
-              <h2 id="pomodoro-compare-title" className={PAPER_TITLE}>
-                {t("compare.title")}
-              </h2>
-              <p className="mt-3 text-lg leading-relaxed text-[var(--landing-ink-soft)]">
-                {t("compare.summary")}
-              </p>
-            </div>
-            <div className="mt-6 overflow-x-auto rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)]">
-              <table className="w-full min-w-[480px] border-collapse text-left text-sm sm:text-base">
-                <thead>
-                  <tr className="border-b border-[var(--landing-paper-line)] bg-[var(--landing-pill)]">
-                    <th className="px-4 py-3.5 font-extrabold text-[var(--landing-ink)]">{t("compare.col_feature")}</th>
-                    <th className="px-4 py-3.5 font-bold text-[var(--landing-ink-soft)]">{t("compare.col_basic")}</th>
-                    <th className="px-4 py-3.5 font-black text-[var(--landing-ink)]">{t("compare.col_puhu")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {COMPARE_ROWS.map((row) => (
-                    <tr key={row} className="border-b border-[var(--landing-paper-line)] last:border-b-0">
-                      <td className="px-4 py-3 font-semibold text-[var(--landing-ink)]">{t(`compare.row${row}_label`)}</td>
-                      <td className="px-4 py-3 text-[var(--landing-ink-soft)]">{t(`compare.row${row}_basic`)}</td>
-                      <td className="px-4 py-3 font-extrabold text-[var(--landing-ink)]">✓ {t(`compare.row${row}_puhu`)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-6">
-              <SeoSignupCta
-                source="pomodoro"
-                location="table"
-                className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}
-              >
-                {t("cta_free_start")}
-              </SeoSignupCta>
-            </div>
-          </section>
-
-          <section aria-labelledby="pomodoro-rooms-title" className={`${PAGE_FRAME} pt-16 lg:pt-24`}>
-            <div className="grid gap-8 lg:grid-cols-2">
-              <div className="rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-6 lg:p-8">
-                <p className={`${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`}>
-                  {t("rooms.pill")}
-                </p>
-                <h2 id="pomodoro-rooms-title" className="mt-3 text-2xl font-black text-[var(--landing-ink)]">
-                  {t("rooms.title")}
-                </h2>
-                <p className="mt-3 text-base leading-relaxed text-[var(--landing-ink-soft)]">
-                  {t("rooms.body")}
-                </p>
-              </div>
-              <div className="rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-6 lg:p-8">
-                <p className={`${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`}>
-                  {t("companion.pill")}
-                </p>
-                <h2 className="mt-3 text-2xl font-black text-[var(--landing-ink)]">
-                  {t("companion.title")}
-                </h2>
-                <p className="mt-3 text-base leading-relaxed text-[var(--landing-ink-soft)]">
-                  {t("companion.body")}
-                </p>
-                <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-extrabold underline underline-offset-4">
-                  <Link href="/">{t("companion.link_home")}</Link>
-                  <Link href="/study-app">{t("companion.link_study_app")}</Link>
-                  <Link href="/yks-study-program">{t("companion.link_yks")}</Link>
-                  <Link href="/tyt-study-program">{t("companion.link_tyt")}</Link>
-                  <Link href="/lgs-study-program">{t("companion.link_lgs")}</Link>
-                  <Link href="/mistake-notebook">{t("companion.link_notebook")}</Link>
-                  <Link href="/for-coaches">{t("companion.link_coaches")}</Link>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <PaperFaq
-            pill={t("faq.pill")}
-            title={t("faq.title")}
-            items={FAQ_INDICES.map((i) => ({ q: t(`faq.q${i}`), a: t(`faq.a${i}`) }))}
-            nonce={nonce}
-          />
-
-          <section aria-labelledby="pomodoro-closing-title" className={`${PAGE_FRAME} flex flex-col items-center pb-24 pt-16 text-center lg:pt-24`}>
-            <h2 id="pomodoro-closing-title" className={PAPER_TITLE}>
-              {t("closing.title")}
-            </h2>
-            <p className="mt-3 max-w-xl text-lg text-[var(--landing-ink-soft)]">
-              {t("closing.body")}
-            </p>
-            <div className="mt-7 flex w-full flex-wrap justify-center gap-3">
-              <a href="#timer" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
-                {t("cta_start_timer")}
-              </a>
-              <SeoSignupCta
-                source="pomodoro"
-                location="closing"
-                className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}
-              >
-                {t("cta_signup")}
-              </SeoSignupCta>
-              <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
-                {t("cta_login")}
-              </Link>
-            </div>
-          </section>
-        </main>
-
-        <LandingFooter />
+  const closing = (
+    <section aria-labelledby="pomodoro-closing-title" className={`${PAGE_FRAME} seo-closing`}>
+      <div className="seo-puhu" aria-hidden="true">
+        <SceneImg src="/visuals/landing/puhu-undecided.webp" width={400} height={400} loading="lazy" />
       </div>
-    </NextIntlClientProvider>
+      <h2 id="pomodoro-closing-title" className={PAPER_TITLE}>
+        {t("closing.title")}
+      </h2>
+      <p className="mt-3 max-w-xl text-lg text-[var(--landing-ink-soft)]">{t("closing.body")}</p>
+      <div className="mt-7 flex w-full flex-wrap justify-center gap-3">
+        <a href="#timer" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
+          {t("cta_start_timer")}
+        </a>
+        <SeoSignupCta source="pomodoro" location="closing" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
+          {t("cta_signup")}
+        </SeoSignupCta>
+        <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
+          {t("cta_login")}
+        </Link>
+      </div>
+    </section>
+  );
+
+  return (
+    <SeoLpShell
+      locale={locale}
+      nonce={nonce}
+      jsonLd={webAppJsonLd}
+      faq={{
+        pill: t("faq.pill"),
+        title: t("faq.title"),
+        items: FAQ_INDICES.map((i) => ({ q: t(`faq.q${i}`), a: t(`faq.a${i}`) })),
+      }}
+      closing={closing}
+    >
+      <SeoHero
+        pill={t("eyebrow")}
+        h1={t("h1")}
+        lead={t("subhead")}
+        proof={t("proof")}
+        ctas={
+          <>
+            <a href="#timer" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
+              {t("cta_start_timer")}
+            </a>
+            <SeoSignupCta source="pomodoro" location="hero" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
+              {t("cta_signup")}
+            </SeoSignupCta>
+          </>
+        }
+        scribble={t("scribble")}
+        scene={
+          <SceneFrame>
+            <div className="lf-root">
+              <PublicPomodoroWidget themes={themes} copy={widgetCopy(t, tRoot)} />
+            </div>
+          </SceneFrame>
+        }
+        pinned={
+          <PaperNote name={t("hero_note.name")} paper="grid" tape="#ffd15c" tilt="-3deg">
+            <p>{t("hero_note.body")}</p>
+          </PaperNote>
+        }
+      />
+
+      <section id="nasil" aria-labelledby="pomodoro-how-title" className={`${PAGE_FRAME} seo-sec scroll-mt-24`}>
+        <div className="seo-sec-head">
+          <p className={PILL}>{t("how.pill")}</p>
+          <h2 id="pomodoro-how-title" className={PAPER_TITLE}>
+            {t("how.title")}
+          </h2>
+        </div>
+        <div className="seo-answer">
+          <PaperNote paper="lined" tilt="-0.5deg">
+            <p>{t("how.answer_first")}</p>
+          </PaperNote>
+        </div>
+        <PostitSteps
+          steps={([1, 2, 3] as const).map((step) => ({ title: t(`how.step${step}_title`), body: t(`how.step${step}_body`) }))}
+        />
+      </section>
+
+      <section aria-labelledby="pomodoro-compare-title" className={`${PAGE_FRAME} seo-sec`}>
+        <div className="seo-sec-head">
+          <p className={PILL}>{t("compare.pill")}</p>
+          <h2 id="pomodoro-compare-title" className={PAPER_TITLE}>
+            {t("compare.title")}
+          </h2>
+          <p className="seo-sec-summary">{t("compare.summary")}</p>
+        </div>
+        <NotebookTable
+          head={[t("compare.col_feature"), t("compare.col_basic"), t("compare.col_puhu")]}
+          rows={COMPARE_ROWS.map((row) => [t(`compare.row${row}_label`), t(`compare.row${row}_basic`), t(`compare.row${row}_puhu`)])}
+          markLast
+          label={t("compare.title")}
+        />
+        <div className="seo-ctas">
+          <SeoSignupCta source="pomodoro" location="table" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
+            {t("cta_free_start")}
+          </SeoSignupCta>
+        </div>
+      </section>
+
+      <section className={`${PAGE_FRAME} seo-sec`}>
+        <div className="seo-notes" style={{ "--n": 2 } as CSSProperties}>
+          <PaperNote name={t("rooms.pill")} title={t("rooms.title")} heading="h2" paper="grid" tape="#a8d8b0" tilt="0.7deg">
+            <p>{t("rooms.body")}</p>
+          </PaperNote>
+          <PaperNote name={t("companion.pill")} title={t("companion.title")} heading="h2" tape="#f7b3a0">
+            <p>{t("companion.body")}</p>
+            <TagLinks
+              links={[
+                { href: "/", label: t("companion.link_home") },
+                { href: "/study-app", label: t("companion.link_study_app") },
+                { href: "/yks-study-program", label: t("companion.link_yks") },
+                { href: "/tyt-study-program", label: t("companion.link_tyt") },
+                { href: "/lgs-study-program", label: t("companion.link_lgs") },
+                { href: "/mistake-notebook", label: t("companion.link_notebook") },
+                { href: "/for-coaches", label: t("companion.link_coaches") },
+              ]}
+            />
+          </PaperNote>
+        </div>
+      </section>
+    </SeoLpShell>
   );
 }

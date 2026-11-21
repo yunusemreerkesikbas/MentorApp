@@ -1,29 +1,24 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
+import type { CSSProperties } from "react";
 import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
+import { SeoDeskScene } from "@/components/seo-lp/seo-desk-scene";
+import { SeoLpShell } from "@/components/seo-lp/seo-lp-shell";
+import { PaperNote, PostitSteps, SeoHero, TagLinks } from "@/components/seo-lp/seo-paper";
 import { SeoSignupCta } from "@/components/seo-lp/seo-signup-cta";
 import { setRequestLocale } from "@/i18n/locale";
 import { getPathname, Link } from "@/i18n/navigation";
-import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { siteUrl } from "@/lib/forum-public";
-import { jsonLdHtml } from "@/lib/json-ld";
 import { buildWebApplicationStructuredData } from "@/lib/structured-data";
-import { LandingFooter } from "../_components/landing/landing-footer";
-import { LandingNav } from "../_components/landing/landing-nav";
-import {
-  LEDGE_ON_PAPER,
-  PAGE_FRAME,
-  PAPER_PILL,
-  PAPER_TITLE,
-  PaperFaq,
-} from "../_components/landing/landing-paper";
+import { LEDGE_ON_PAPER, PAGE_FRAME, PAPER_PILL, PAPER_TITLE } from "../_components/landing/landing-paper";
+import { SceneImg } from "../_components/landing/scene-img";
 import { NotebookDemoWidget } from "./_components/notebook-demo-widget";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
 const FAQ_INDICES = [1, 2, 3, 4, 5, 6] as const;
+const PILL = `${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params;
@@ -56,13 +51,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+/** The hero is the landing's morning desk; the demo review card is pinned under it as a taped note. */
 export default async function MistakeNotebookLpPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const [t, nonce, messages] = await Promise.all([
+  // The desk's labels are the app's own words, the ones the landing's morning desk renders.
+  const [t, tRoot, nonce] = await Promise.all([
     getTranslations("mistakeNotebookLp"),
+    getTranslations(),
     headers().then((h) => h.get("x-nonce") ?? undefined),
-    getMessages(),
   ]);
 
   const origin = siteUrl();
@@ -74,53 +71,68 @@ export default async function MistakeNotebookLpPage({ params }: PageProps) {
     siteOrigin: origin,
   });
 
+  const closing = (
+    <section aria-labelledby="notebook-closing-title" className={`${PAGE_FRAME} seo-closing`}>
+      <div className="seo-puhu" aria-hidden="true">
+        <SceneImg src="/visuals/landing/puhu-undecided.webp" width={400} height={400} loading="lazy" />
+      </div>
+      <h2 id="notebook-closing-title" className={PAPER_TITLE}>
+        {t("closing.title")}
+      </h2>
+      <p className="mt-3 max-w-xl text-lg text-[var(--landing-ink-soft)]">{t("closing.body")}</p>
+      <div className="mt-7 flex w-full flex-wrap justify-center gap-3">
+        <SeoSignupCta source="notebook" location="closing" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
+          {t("cta_primary")}
+        </SeoSignupCta>
+        <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
+          {t("cta_login")}
+        </Link>
+      </div>
+    </section>
+  );
+
   return (
-    <NextIntlClientProvider messages={pickMessages(messages, ROUTE_MESSAGE_SCOPES.landing)}>
-      <div className="landing-city-theme landing-day min-h-screen">
-        {locale === "tr" ? (
-          <script
-            nonce={nonce}
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: jsonLdHtml(webAppJsonLd) }}
+    <SeoLpShell
+      locale={locale}
+      nonce={nonce}
+      jsonLd={webAppJsonLd}
+      faq={{
+        pill: t("faq.pill"),
+        title: t("faq.title"),
+        items: FAQ_INDICES.map((i) => ({ q: t(`faq.q${i}`), a: t(`faq.a${i}`) })),
+      }}
+      closing={closing}
+    >
+      <SeoHero
+        pill={t("eyebrow")}
+        h1={t("h1")}
+        lead={t("subhead")}
+        proof={t("proof")}
+        ctas={
+          <>
+            <SeoSignupCta source="notebook" location="hero" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
+              {t("cta_primary")}
+            </SeoSignupCta>
+            <a href="#nasil-calisir" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
+              {t("cta_secondary")}
+            </a>
+          </>
+        }
+        scribble={t("scribble")}
+        scene={
+          <SeoDeskScene
+            label={t("scene_aria")}
+            copy={{
+              notebook: tRoot("notebook.cover_title"),
+              pages: tRoot("notebooks.pages", { count: 11 }),
+              due: tRoot("notebooks.due", { count: 2 }),
+            }}
           />
-        ) : null}
-        <LandingNav variant="seo" />
-
-        <main className="landing-paper pt-24 lg:pt-28">
-          <section className={`${PAGE_FRAME} pb-10 pt-4 lg:pb-14`}>
-            <div className="max-w-3xl">
-              <p className={`${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`}>
-                {t("eyebrow")}
-              </p>
-              <h1 className="mt-3 text-3xl font-black tracking-[-0.015em] sm:text-4xl lg:text-5xl">
-                {t("h1")}
-              </h1>
-              <p className="mt-4 text-lg leading-relaxed text-[var(--landing-ink-soft)]">
-                {t("subhead")}
-              </p>
-              <p className="mt-3 text-sm font-extrabold text-[var(--landing-ink-soft)]">
-                {t("proof")}
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <SeoSignupCta
-                  source="notebook"
-                  location="hero"
-                  className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}
-                >
-                  {t("cta_primary")}
-                </SeoSignupCta>
-                <a
-                  href="#nasil-calisir"
-                  className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}
-                >
-                  {t("cta_secondary")}
-                </a>
-              </div>
-            </div>
-
+        }
+        pinned={
+          <PaperNote name={t("demo.pill")} paper="lined" tape="#f7b3a0" tilt="-2deg" still>
             <NotebookDemoWidget
               copy={{
-                pill: t("demo.pill"),
                 badge: t("demo.badge"),
                 subject: t("demo.subject"),
                 question: t("demo.question"),
@@ -134,144 +146,78 @@ export default async function MistakeNotebookLpPage({ params }: PageProps) {
                 cta: t("demo.cta"),
               }}
             />
-          </section>
+          </PaperNote>
+        }
+      />
 
-          <section aria-labelledby="notebook-what-title" className={`${PAGE_FRAME} pt-10 lg:pt-16`}>
-            <div className="max-w-3xl">
-              <p className={`${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`}>
-                {t("what_pill")}
-              </p>
-              <h2 id="notebook-what-title" className={PAPER_TITLE}>
-                {t("what_title")}
-              </h2>
-              <p className="mt-4 rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-5 text-base leading-relaxed font-semibold text-[var(--landing-ink)]">
-                {t("what_body")}
-              </p>
-            </div>
-          </section>
+      <section aria-labelledby="notebook-what-title" className={`${PAGE_FRAME} seo-sec`}>
+        <div className="seo-sec-head">
+          <p className={PILL}>{t("what_pill")}</p>
+          <h2 id="notebook-what-title" className={PAPER_TITLE}>
+            {t("what_title")}
+          </h2>
+        </div>
+        <div className="seo-answer">
+          <PaperNote paper="lined" tilt="-0.5deg">
+            <p>{t("what_body")}</p>
+          </PaperNote>
+        </div>
+      </section>
 
-          <section id="nasil-calisir" aria-labelledby="notebook-how-title" className={`${PAGE_FRAME} scroll-mt-24 pt-16 lg:pt-24`}>
-            <div className="max-w-3xl">
-              <p className={`${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`}>
-                {t("how.pill")}
-              </p>
-              <h2 id="notebook-how-title" className={PAPER_TITLE}>
-                {t("how.title")}
-              </h2>
-            </div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {([1, 2, 3] as const).map((step) => (
-                <article
-                  key={step}
-                  className="rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-5"
-                >
-                  <h3 className="text-lg font-extrabold text-[var(--landing-ink)]">
-                    {t(`how.step${step}_title`)}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--landing-ink-soft)]">
-                    {t(`how.step${step}_body`)}
-                  </p>
-                </article>
-              ))}
-            </div>
-            <div className="mt-6">
-              <SeoSignupCta
-                source="notebook"
-                location="how"
-                className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}
-              >
-                {t("cta_discover")}
-              </SeoSignupCta>
-            </div>
-          </section>
+      <section id="nasil-calisir" aria-labelledby="notebook-how-title" className={`${PAGE_FRAME} seo-sec scroll-mt-24`}>
+        <div className="seo-sec-head">
+          <p className={PILL}>{t("how.pill")}</p>
+          <h2 id="notebook-how-title" className={PAPER_TITLE}>
+            {t("how.title")}
+          </h2>
+        </div>
+        <PostitSteps
+          steps={([1, 2, 3] as const).map((step) => ({ title: t(`how.step${step}_title`), body: t(`how.step${step}_body`) }))}
+        />
+        <div className="mt-8">
+          <SeoSignupCta source="notebook" location="how" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
+            {t("cta_discover")}
+          </SeoSignupCta>
+        </div>
+      </section>
 
-          <section aria-labelledby="notebook-guide-title" className={`${PAGE_FRAME} pt-16 lg:pt-24`}>
-            <div className="max-w-3xl">
-              <p className={`${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`}>
-                {t("guide.pill")}
-              </p>
-              <h2 id="notebook-guide-title" className={PAPER_TITLE}>
-                {t("guide.title")}
-              </h2>
-              <ol className="mt-5 space-y-3 rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-6">
-                {([1, 2, 3, 4] as const).map((item) => (
-                  <li key={item} className="flex gap-3 text-base leading-relaxed text-[var(--landing-ink)]">
-                    <span className="inline-flex size-6 flex-none items-center justify-center rounded-full bg-[var(--landing-pill)] text-xs font-black text-[var(--landing-pill-ink)]">
-                      {item}
-                    </span>
-                    <span>{t(`guide.item${item}`)}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-4 text-base leading-relaxed text-[var(--landing-ink-soft)]">
-                {t("guide.outro")}
-              </p>
-            </div>
-          </section>
+      <section aria-labelledby="notebook-guide-title" className={`${PAGE_FRAME} seo-sec`}>
+        <div className="seo-sec-head">
+          <p className={PILL}>{t("guide.pill")}</p>
+          <h2 id="notebook-guide-title" className={PAPER_TITLE}>
+            {t("guide.title")}
+          </h2>
+        </div>
+        <div className="seo-notebook">
+          <ol className="seo-notebook-list">
+            {([1, 2, 3, 4] as const).map((item) => (
+              <li key={item}>{t(`guide.item${item}`)}</li>
+            ))}
+          </ol>
+        </div>
+        <p className="seo-sec-summary">{t("guide.outro")}</p>
+      </section>
 
-          <section aria-labelledby="notebook-ecosystem-title" className={`${PAGE_FRAME} pt-16 lg:pt-24`}>
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-6 lg:p-8">
-                <p className={`${PAPER_PILL} bg-[var(--landing-pill)] text-[var(--landing-pill-ink)]`}>
-                  {t("ecosystem.pill")}
-                </p>
-                <h2 id="notebook-ecosystem-title" className="mt-3 text-2xl font-black text-[var(--landing-ink)]">
-                  {t("ecosystem.title")}
-                </h2>
-                <p className="mt-3 text-base leading-relaxed text-[var(--landing-ink-soft)]">
-                  {t("ecosystem.body")}
-                </p>
-                <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-extrabold underline underline-offset-4">
-                  <Link href="/study-app">{t("ecosystem.link_study_app")}</Link>
-                  <Link href="/pomodoro-timer">{t("ecosystem.link_pomodoro")}</Link>
-                  <Link href="/yks-study-program">{t("ecosystem.link_yks")}</Link>
-                  <Link href="/tyt-study-program">{t("ecosystem.link_tyt")}</Link>
-                  <Link href="/lgs-study-program">{t("ecosystem.link_lgs")}</Link>
-                  <Link href="/knowledge">{t("ecosystem.link_blog")}</Link>
-                </div>
-              </div>
-              <div className="rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-6 lg:p-8">
-                <h2 className="text-2xl font-black text-[var(--landing-ink)]">
-                  {t("ecosystem.who_title")}
-                </h2>
-                <p className="mt-3 text-base leading-relaxed text-[var(--landing-ink-soft)]">
-                  {t("ecosystem.who_body")}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <PaperFaq
-            pill={t("faq.pill")}
-            title={t("faq.title")}
-            items={FAQ_INDICES.map((i) => ({ q: t(`faq.q${i}`), a: t(`faq.a${i}`) }))}
-            nonce={nonce}
-          />
-
-          <section aria-labelledby="notebook-closing-title" className={`${PAGE_FRAME} flex flex-col items-center pb-24 pt-16 text-center lg:pt-24`}>
-            <h2 id="notebook-closing-title" className={PAPER_TITLE}>
-              {t("closing.title")}
-            </h2>
-            <p className="mt-3 max-w-xl text-lg text-[var(--landing-ink-soft)]">
-              {t("closing.body")}
-            </p>
-            <div className="mt-7 flex w-full flex-wrap justify-center gap-3">
-              <SeoSignupCta
-                source="notebook"
-                location="closing"
-                className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}
-              >
-                {t("cta_primary")}
-              </SeoSignupCta>
-              <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
-                {t("cta_login")}
-              </Link>
-            </div>
-          </section>
-        </main>
-
-        <LandingFooter />
-      </div>
-    </NextIntlClientProvider>
+      <section aria-label={t("ecosystem.title")} className={`${PAGE_FRAME} seo-sec`}>
+        <div className="seo-notes" style={{ "--n": 2 } as CSSProperties}>
+          <PaperNote name={t("ecosystem.pill")} title={t("ecosystem.title")} heading="h2" tape="#a8d8b0" tilt="-0.5deg">
+            <p>{t("ecosystem.body")}</p>
+            <TagLinks
+              links={[
+                { href: "/study-app", label: t("ecosystem.link_study_app") },
+                { href: "/pomodoro-timer", label: t("ecosystem.link_pomodoro") },
+                { href: "/yks-study-program", label: t("ecosystem.link_yks") },
+                { href: "/tyt-study-program", label: t("ecosystem.link_tyt") },
+                { href: "/lgs-study-program", label: t("ecosystem.link_lgs") },
+                { href: "/knowledge", label: t("ecosystem.link_blog") },
+              ]}
+            />
+          </PaperNote>
+          <PaperNote name={t("ecosystem.who_name")} title={t("ecosystem.who_title")} heading="h2" paper="grid" tape="#cbb8f0" tilt="0.6deg">
+            <p>{t("ecosystem.who_body")}</p>
+          </PaperNote>
+        </div>
+      </section>
+    </SeoLpShell>
   );
 }

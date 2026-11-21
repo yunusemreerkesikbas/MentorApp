@@ -177,6 +177,7 @@ Atmospheric stages lock their own palette regardless of the user's light/dark to
   4. **Gece Yolculuğu (`#yolculuk`):** Quests card + 12-level lights + Coin wallet tab + interactive Night Desk Weekly Chest (`LandingChest`).
   5. **Premium Sheet (`#premium`):** Night skyline with `puhu-premium-flight-loop.mp4`, 7 clear student benefits, and lamp-yellow trial CTA.
   6. **Coach Band & FAQ:** Human coach invite (`/koclar`) and structured FAQ.
+- **SEO Pages (`/pomodoro-sayac`, `/yks-calisma-programi`, `/tyt-calisma-programi`, `/lgs-calisma-programi`, `/yanlis-defteri-uygulamasi`, `/ders-calisma-uygulamasi`):** Use the day paper kit (`components/seo-lp/seo-paper.*`: paper notes, tape, Caveat scribbles, ledge buttons) with one landing scene per page as the hero (pomodoro room, plan room, morning desk, dawn facade) and never the night palette. The H1 and lead paint without images; only the hero scene is high priority.
 
 ---
 

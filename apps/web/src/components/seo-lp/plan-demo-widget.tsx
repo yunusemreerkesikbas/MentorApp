@@ -1,5 +1,6 @@
 "use client";
 
+import "./plan-demo.css";
 import { useEffect, useState } from "react";
 import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
 import { trackSeoLpEvent } from "@/lib/analytics";
@@ -8,12 +9,12 @@ import { SeoSignupCta } from "./seo-signup-cta";
 import {
   buildDemoWeekPreview,
   type DemoConfig,
+  type DemoOption,
   type StudyProgramVariant,
 } from "./study-program-lp-presets";
 
 export interface PlanDemoWidgetCopy {
   pill: string;
-  scribble: string;
   firstGroupLabel: string;
   hoursLabel: string;
   focusLabel: string;
@@ -21,6 +22,42 @@ export interface PlanDemoWidgetCopy {
   saveCta: string;
 }
 
+/** One field of chips: paper pills, `on` in ink. */
+function ChipGroup({
+  label,
+  options,
+  value,
+  onPick,
+}: {
+  label: string;
+  options: DemoOption[];
+  value: string;
+  onPick: (id: string) => void;
+}) {
+  return (
+    <div className="plan-field">
+      <p className="plan-label">{label}</p>
+      <div className="plan-chips" role="group" aria-label={label}>
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={value === option.id}
+            onClick={() => onPick(option.id)}
+            className="plan-chip"
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The live plan demo. It sits inside a pinned `PaperNote` (the page titles the note), so it draws
+ * no card of its own.
+ */
 export function PlanDemoWidget({
   variant,
   config,
@@ -42,117 +79,28 @@ export function PlanDemoWidget({
   const week = buildDemoWeekPreview(variant, fieldId, hourId, focusId, config.days);
 
   return (
-    <div
-      id="plan-demo"
-      className="mt-8 rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--color-surface)] p-5 shadow-sm sm:p-7"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex min-h-7 items-center rounded-full bg-[var(--landing-pill)] px-3 text-xs font-extrabold text-[var(--landing-pill-ink)]">
-          {copy.pill}
-        </span>
-        <span
-          className="text-lg font-bold text-[var(--landing-ink-soft)]"
-          style={{ fontFamily: "var(--font-hand), cursive" }}
-        >
-          {copy.scribble}
-        </span>
+    <div id="plan-demo" className="plan-demo">
+      <span className="plan-pill">{copy.pill}</span>
+
+      <div className="plan-fields">
+        <ChipGroup label={copy.firstGroupLabel} options={config.fields} value={fieldId} onPick={setFieldId} />
+        <ChipGroup label={copy.hoursLabel} options={config.hours} value={hourId} onPick={setHourId} />
+        <ChipGroup label={copy.focusLabel} options={config.focuses} value={focusId} onPick={setFocusId} />
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-wider text-[var(--landing-ink-soft)]">
-            {copy.firstGroupLabel}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={copy.firstGroupLabel}>
-            {config.fields.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                aria-pressed={fieldId === option.id}
-                onClick={() => setFieldId(option.id)}
-                className={`min-h-9 cursor-pointer rounded-full border px-3 text-xs font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${
-                  fieldId === option.id
-                    ? "border-transparent bg-[var(--landing-ink)] text-[var(--landing-paper)]"
-                    : "border-[var(--landing-paper-line)] bg-transparent text-[var(--landing-ink)]"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-wider text-[var(--landing-ink-soft)]">
-            {copy.hoursLabel}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={copy.hoursLabel}>
-            {config.hours.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                aria-pressed={hourId === option.id}
-                onClick={() => setHourId(option.id)}
-                className={`min-h-9 cursor-pointer rounded-full border px-3 text-xs font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${
-                  hourId === option.id
-                    ? "border-transparent bg-[var(--landing-ink)] text-[var(--landing-paper)]"
-                    : "border-[var(--landing-paper-line)] bg-transparent text-[var(--landing-ink)]"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-wider text-[var(--landing-ink-soft)]">
-            {copy.focusLabel}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={copy.focusLabel}>
-            {config.focuses.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                aria-pressed={focusId === option.id}
-                onClick={() => setFocusId(option.id)}
-                className={`min-h-9 cursor-pointer rounded-full border px-3 text-xs font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${
-                  focusId === option.id
-                    ? "border-transparent bg-[var(--landing-ink)] text-[var(--landing-paper)]"
-                    : "border-[var(--landing-paper-line)] bg-transparent text-[var(--landing-ink)]"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-7">
+      <div className="plan-week">
         {week.map((item) => (
-          <div
-            key={item.day}
-            className="flex flex-col rounded-xl border border-[var(--landing-paper-line)] bg-[var(--landing-paper)] p-3"
-          >
-            <span className="text-xs font-black text-[var(--landing-ink)]">{item.day}</span>
-            <span className="mt-2 rounded-lg bg-[var(--color-surface)] px-2.5 py-1.5 text-xs font-bold text-[var(--landing-ink)]">
-              {item.tasks[0]}
-            </span>
-            <span className="mt-1.5 rounded-lg bg-[var(--color-surface)] px-2.5 py-1.5 text-xs font-semibold text-[var(--landing-ink-soft)]">
-              {item.tasks[1]}
-            </span>
+          <div key={item.day} className="plan-day">
+            <span className="plan-day-name">{item.day}</span>
+            <span className="plan-task is-first">{item.tasks[0]}</span>
+            <span className="plan-task">{item.tasks[1]}</span>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 flex flex-col items-start justify-between gap-4 border-t border-[var(--landing-paper-line)] pt-5 sm:flex-row sm:items-center">
-        <p className="text-xs font-semibold text-[var(--landing-ink-soft)]">{copy.note}</p>
-        <SeoSignupCta
-          source={variant}
-          location="demo"
-          className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}
-        >
+      <div className="plan-foot">
+        <p className="plan-note">{copy.note}</p>
+        <SeoSignupCta source={variant} location="demo" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
           {copy.saveCta}
         </SeoSignupCta>
       </div>

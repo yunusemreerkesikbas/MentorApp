@@ -31,6 +31,11 @@ const routeFiles = {
     clientReferenceManifest: "server/app/[locale]/page_client-reference-manifest.js",
     buildManifest: "server/app/[locale]/page/build-manifest.json",
   },
+  // The SEO pages share one shell; the pomodoro page is the heaviest client route (its live timer).
+  seoLp: {
+    clientReferenceManifest: "server/app/[locale]/pomodoro-timer/page_client-reference-manifest.js",
+    buildManifest: "server/app/[locale]/pomodoro-timer/page/build-manifest.json",
+  },
 };
 
 const limits = {
@@ -40,6 +45,8 @@ const limits = {
   dashboardTotalBytes: 1295 * 1024,
   landingRouteAttributableBytes: 400 * 1024,
   landingTotalBytes: 985 * 1024,
+  seoLpRouteAttributableBytes: 400 * 1024,
+  seoLpTotalBytes: 985 * 1024,
   faviconBytes: 10 * 1024,
   articleFontPreloadCount: 2,
   rootMessageBytes: 1024,
@@ -60,6 +67,8 @@ function renderSummary(report) {
     ["Dashboard total JS", kib(report.metrics.dashboardTotalBytes), "1295 KiB"],
     ["Landing route-attributable JS", kib(report.metrics.landingRouteAttributableBytes), "400 KiB"],
     ["Landing total JS", kib(report.metrics.landingTotalBytes), "985 KiB"],
+    ["SEO page route-attributable JS", kib(report.metrics.seoLpRouteAttributableBytes), "400 KiB"],
+    ["SEO page total JS", kib(report.metrics.seoLpTotalBytes), "985 KiB"],
     ["Tab icon", kib(report.metrics.faviconBytes), "10 KiB"],
     ["Article font preloads", String(report.metrics.articleFontPreloadCount), "2"],
     ["Root client messages", `${report.metrics.rootMessageBytes} B`, "1024 B"],
@@ -77,10 +86,11 @@ function renderSummary(report) {
 }
 
 async function main() {
-  const [article, dashboard, landing, messages, favicon] = await Promise.all([
+  const [article, dashboard, landing, seoLp, messages, favicon] = await Promise.all([
     measureRoute(nextDir, routeFiles.article),
     measureRoute(nextDir, routeFiles.dashboard),
     measureRoute(nextDir, routeFiles.landing),
+    measureRoute(nextDir, routeFiles.seoLp),
     measureMessageScopes({
       messagesDir: join(appDir, "messages"),
       scopesPath: join(appDir, "src", "i18n", "route-message-scopes.json"),
@@ -95,6 +105,8 @@ async function main() {
     dashboardTotalBytes: dashboard.totalBytes,
     landingRouteAttributableBytes: landing.routeAttributableBytes,
     landingTotalBytes: landing.totalBytes,
+    seoLpRouteAttributableBytes: seoLp.routeAttributableBytes,
+    seoLpTotalBytes: seoLp.totalBytes,
     faviconBytes: favicon.size,
     articleFontPreloadCount: article.fontPreloadCount,
     rootMessageBytes: messages.root.maxBytes,
@@ -105,7 +117,7 @@ async function main() {
   const report = {
     version: 1,
     generatedAt: new Date().toISOString(),
-    routes: { article, dashboard, landing },
+    routes: { article, dashboard, landing, seoLp },
     messages,
     metrics,
     limits,

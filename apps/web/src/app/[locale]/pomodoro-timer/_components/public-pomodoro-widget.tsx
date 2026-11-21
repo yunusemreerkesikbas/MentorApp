@@ -159,7 +159,7 @@ export function PublicPomodoroWidget({
 
   return (
     <div id="timer" className="lf-room scroll-mt-24" data-room={room}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="lf-toolbar flex flex-wrap items-center justify-between gap-3">
         <div className="lf-tabs" role="group" aria-label={copy.roomLabel}>
           {themes.map((item) => (
             <button
@@ -173,7 +173,7 @@ export function PublicPomodoroWidget({
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="lf-sounds flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={copy.soundLabel}>
             {SOUND_IDS.map((id) => (
               <button
@@ -216,7 +216,7 @@ export function PublicPomodoroWidget({
               alt=""
               fill
               priority={item.id === "LIBRARY"}
-              sizes="(min-width: 1152px) 1072px, 100vw"
+              sizes="(min-width: 768px) 528px, 100vw"
               className={`lf-backdrop${item.id === room ? " is-on" : ""}`}
             />
           ))}
@@ -230,7 +230,7 @@ export function PublicPomodoroWidget({
           </div>
 
           {state === "done" ? (
-            <div className="mx-auto my-6 flex max-w-md flex-col items-center rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--landing-paper)] p-6 text-center text-[var(--landing-ink)] shadow-lg">
+            <div className="lf-done mx-auto my-6 flex max-w-md flex-col items-center rounded-[var(--radius-card)] border border-[var(--landing-paper-line)] bg-[var(--landing-paper)] p-6 text-center text-[var(--landing-ink)] shadow-lg">
               <p className="text-xl font-black">{copy.doneTitle}</p>
               <p className="mt-2 text-sm leading-relaxed text-[var(--landing-ink-soft)]">{copy.doneBody}</p>
               <div className="mt-5 flex w-full flex-col gap-2.5">

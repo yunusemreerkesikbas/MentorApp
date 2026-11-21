@@ -1,0 +1,198 @@
+/*
+ * The pomodoro widget as the hero's scene (spec: "Odak odası", seo-paper.css frame). The widget's
+ * markup and behaviour stay as they are; this only rearranges it inside the frame:
+ *  - the room tabs float in the room, frosted glass that follows the room's light;
+ *  - the ambient sounds and the plain-view switch sit on a paper strip above the room;
+ *  - the dial's controls are glass chips, the minus and plus beside the dial;
+ *  - the room keeps a band of bare art at its bottom, where the pinned "ortam sesi" note
+ *    (SeoHero `pinned`, pulled up 28px on a phone and 72px from 768px) hangs over the corner
+ *    without covering a control.
+ * `lf-toolbar` is `display: contents`, so the tabs and the sounds are grid items of the room.
+ */
+.seo-hero .lf-room {
+  --seo-glass: rgba(24, 16, 10, 0.46);
+  --seo-glass-line: rgba(255, 255, 255, 0.26);
+  --seo-glass-ink: #ffffff;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "sounds" "room";
+}
+
+.seo-hero .lf-room:has(.lf-scene.is-light) {
+  --seo-glass: rgba(255, 255, 255, 0.66);
+  --seo-glass-line: rgba(255, 255, 255, 0.9);
+  --seo-glass-ink: #1d1a16;
+}
+
+.seo-hero .lf-toolbar {
+  display: contents;
+}
+
+/* ---- Room tabs, in the room ---- */
+.seo-hero .lf-tabs {
+  position: relative;
+  z-index: 1;
+  grid-area: room;
+  align-self: start;
+  justify-self: center;
+  gap: 4px;
+  margin: 12px 0 0;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--seo-glass);
+  box-shadow: inset 0 0 0 1px var(--seo-glass-line);
+  backdrop-filter: blur(10px);
+}
+
+.seo-hero .lf-tab {
+  flex: none;
+  padding: 0 16px;
+  background: transparent;
+  color: var(--seo-glass-ink);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.seo-hero .lf-tab.is-on {
+  background: #ffffff;
+  color: var(--lf-ink);
+}
+
+/* ---- The room ---- */
+.seo-hero .lf-scene {
+  grid-area: room;
+  /* A grid item with an aspect ratio sizes from its height floor unless its width is set. */
+  width: 100%;
+  margin: 0;
+  aspect-ratio: 4 / 5;
+  /* Tabs, bar, dial, presets and start (358px) plus the note's band. */
+  min-height: 414px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.seo-hero .lf-ui {
+  justify-content: center;
+  gap: 8px;
+  padding: 72px 14px 56px;
+}
+
+.seo-hero .lf-bar {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.seo-hero .lf-ring {
+  width: 140px;
+  height: 140px;
+  margin: 0;
+}
+
+/* Minus and plus sit either side of the dial's middle and take no height of their own. */
+.seo-hero .lf-steps {
+  justify-content: space-between;
+  width: 248px;
+  margin: -100px 0 48px;
+}
+
+.seo-hero .lf-steps button,
+.seo-hero .lf-presets button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 999px;
+  background: var(--lf-glass);
+  box-shadow: inset 0 0 0 1px var(--lf-line);
+  backdrop-filter: blur(10px);
+  font-weight: 800;
+}
+
+.seo-hero .lf-steps button {
+  width: 44px;
+  font-size: 22px;
+}
+
+.seo-hero .lf-presets {
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0;
+}
+
+.seo-hero .lf-presets button {
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.seo-hero .lf-presets button.is-on {
+  background: #ffffff;
+  color: var(--lf-ink);
+}
+
+.seo-hero .lf-start {
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 28px;
+}
+
+.seo-hero .lf-steps button:focus-visible,
+.seo-hero .lf-presets button:focus-visible,
+.seo-hero .lf-start:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* The finished card takes the bar's place, so it fits the room without clipping. */
+.seo-hero .lf-ui:has(.lf-done) .lf-bar {
+  display: none;
+}
+
+.seo-hero .lf-done {
+  margin: 0;
+  padding: 16px;
+}
+
+.seo-hero .lf-done > p:nth-child(2) {
+  font-size: 13px;
+}
+
+.seo-hero .lf-done > div {
+  margin-top: 12px;
+}
+
+/* ---- Sounds and plain view, on the paper strip above the room ---- */
+.seo-hero .lf-sounds {
+  grid-area: sounds;
+  justify-content: center;
+  padding: 12px;
+  background: var(--color-surface);
+}
+
+.seo-hero .lf-sounds > [role="group"] {
+  justify-content: center;
+}
+
+.seo-hero .lf-sounds button {
+  min-height: 44px;
+  padding: 0 10px;
+}
+
+/* From 768px the pinned note rises 72px into the room (plus its tape and tilt): a taller band. */
+@media (min-width: 768px) {
+  .seo-hero .lf-scene {
+    min-height: 450px;
+  }
+
+  .seo-hero .lf-ui {
+    padding-bottom: 92px;
+  }
+}
+
+/* The spec's 16:11 room. At today's widest frame (528px) the 450px floor above still governs. */
+@media (min-width: 1024px) {
+  .seo-hero .lf-scene {
+    aspect-ratio: 16 / 11;
+  }
+}
