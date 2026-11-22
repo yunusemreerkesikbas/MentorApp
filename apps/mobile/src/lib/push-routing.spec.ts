@@ -41,7 +41,7 @@ describe("push-routing helpers", () => {
     );
     assert.deepEqual(
       resolvePushNotificationDestination({ url: "/community/member/demo" }, false),
-      { pathname: "/(app)/(tabs)/community" },
+      { pathname: "/(app)/community-member", params: { username: "demo" } },
     );
     assert.equal(
       resolvePushNotificationDestination({ url: "https://evil.example.com" }, true),

@@ -1,0 +1,229 @@
+--- a/apps/web/src/lib/analytics.ts
++++ b/apps/web/src/lib/analytics.ts
+@@ -245,12 +245,16 @@
+   }
+ }
+ 
++export const queueGoogleTagCommand: NonNullable<Window["gtag"]> = function () {
++  // eslint-disable-next-line prefer-rest-params -- Google interprets arrays as method calls, not gtag commands.
++  window.dataLayer?.push(arguments);
++};
++
+ function trackEvent(event: string, params: object): void {
+   if (typeof window === "undefined") return;
+   if (window.localStorage.getItem(ANALYTICS_CONSENT_KEY) !== "accepted") return;
+   window.dataLayer = window.dataLayer ?? [];
+-  window.gtag =
+-    window.gtag ?? ((...args: unknown[]) => window.dataLayer?.push(args));
++  window.gtag = window.gtag ?? queueGoogleTagCommand;
+   window.gtag?.("event", event, params);
+ }
+ 
+--- a/apps/web/src/lib/analytics-consent.tsx
++++ b/apps/web/src/lib/analytics-consent.tsx
+@@ -2,7 +2,7 @@
+ 
+ import Script from "next/script";
+ import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+-import { ANALYTICS_CONSENT_KEY } from "./analytics";
++import { ANALYTICS_CONSENT_KEY, queueGoogleTagCommand } from "./analytics";
+ import { CookieConsentBanner } from "@/components/cookie-consent-banner";
+ 
+ type Consent = "accepted" | "rejected" | null;
+@@ -82,7 +82,7 @@
+   const initializeGa = () => {
+     if (!measurementId || consent !== "accepted") return;
+     window.dataLayer = window.dataLayer ?? [];
+-    window.gtag = (...args: unknown[]) => window.dataLayer?.push(args);
++    window.gtag = queueGoogleTagCommand;
+     window.gtag("js", new Date());
+     window.gtag("config", measurementId, { anonymize_ip: true });
+     window.dispatchEvent(new Event("mentor:analytics-ready"));
+--- a/apps/web/src/lib/analytics.spec.ts
++++ b/apps/web/src/lib/analytics.spec.ts
+@@ -31,7 +31,7 @@
+ 
+     trackArticleEvent("article_view", params);
+ 
+-    expect(dataLayer).toEqual([]);
++    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([]);
+   });
+ 
+   it("queues only the allowlisted article payload after consent", () => {
+@@ -47,7 +47,8 @@
+ 
+     trackArticleEvent("article_source_click", params);
+ 
+-    expect(dataLayer).toEqual([["event", "article_source_click", params]]);
++    expect(Object.prototype.toString.call(dataLayer[0])).toBe("[object Arguments]");
++    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([["event", "article_source_click", params]]);
+   });
+ });
+ 
+@@ -73,7 +74,7 @@
+       has_coach_evaluation: true,
+     });
+ 
+-    expect(dataLayer).toEqual([
++    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
+       [
+         "event",
+         "mentorship_weekly_report_finalize",
+@@ -106,7 +107,7 @@
+     trackProductEvent("sign_up", { method: "email" });
+     trackProductEvent("tutorial_begin", {});
+ 
+-    expect(dataLayer).toEqual([]);
++    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([]);
+   });
+ 
+   it("queues the minimal decision funnel after consent", () => {
+@@ -136,7 +137,7 @@
+       ],
+     });
+ 
+-    expect(dataLayer).toEqual([
++    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
+       ["event", "login", { method: "email" }],
+       ["event", "tutorial_complete", {}],
+       [
+@@ -231,7 +232,7 @@
+       intent: "NEXT_STEP",
+     });
+ 
+-    expect(dataLayer).toEqual([
++    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
+       [
+         "event",
+         "forum_thread_created",
+@@ -277,7 +278,7 @@
+     });
+     trackCoachEvent("coach_plan_adaptation_request", { source: "MOOD" });
+ 
+-    expect(dataLayer).toEqual([]);
++    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([]);
+   });
+ 
+   it("writes only allowlisted coach fields after consent", () => {
+@@ -353,7 +354,7 @@
+       operation: "FORGET",
+     });
+ 
+-    expect(dataLayer).toEqual([
++    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
+       [
+         "event",
+         "coach_hub_view",
+@@ -455,7 +456,7 @@
+       slide_kind: "weekly_best",
+     });
+ 
+-    expect(dataLayer).toEqual([
++    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
+       [
+         "event",
+         "weekly_recap_slide_view",
+--- a/apps/web/src/lib/analysis-analytics.spec.ts
++++ b/apps/web/src/lib/analysis-analytics.spec.ts
+@@ -8,6 +8,6 @@
+     vi.stubGlobal("window", { localStorage: { getItem: () => consent }, dataLayer });
+     const payload = { action: "plan" as const, focusSource: "PHOTO_SIGNAL" as const, cycleState: "signal" as const, net: 26.75, userId: "private", note: "private note" };
+     trackAnalysisAction(payload);
+-    expect(dataLayer).toEqual(consent ? [["event", "analysis_action", { action: "plan", focus_source: "PHOTO_SIGNAL", cycle_state: "signal" }]] : []);
++    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual(consent ? [["event", "analysis_action", { action: "plan", focus_source: "PHOTO_SIGNAL", cycle_state: "signal" }]] : []);
+   });
+ });
+--- a/apps/web/e2e/analytics-consent.spec.ts
++++ b/apps/web/e2e/analytics-consent.spec.ts
+@@ -142,7 +142,7 @@
+       .poll(() =>
+         page.evaluate(() =>
+           (window.dataLayer ?? []).map((entry) =>
+-            Array.isArray(entry) ? String(entry[0]) : "",
++            Object.prototype.toString.call(entry) === "[object Arguments]" ? String((entry as IArguments)[0]) : "",
+           ).filter((command) => command === "js" || command === "config"),
+         ),
+       )
+@@ -152,8 +152,8 @@
+         page.evaluate(() =>
+           (window.dataLayer ?? [])
+             .filter(
+-              (entry): entry is unknown[] =>
+-                Array.isArray(entry) && entry[0] === "event",
++              (entry): entry is IArguments =>
++                Object.prototype.toString.call(entry) === "[object Arguments]" && (entry as IArguments)[0] === "event",
+             )
+             .map((entry) => String(entry[1])),
+         ),
+--- a/docs/features/web-shell.md
++++ b/docs/features/web-shell.md
+@@ -61,6 +61,7 @@
+ 
+ ## 5. Geliştirmeler (Condensed Milestone Timeline)
+ 
++- **2026-11-18 Google tag command compatibility and marketing verification.** Consent initialization and event tracking now share Google's `Arguments` command format; plain arrays were ignored by the live tag. Consent remains required, existing event payloads are unchanged, and the browser test checks the provider format. Search Console's domain property was verified with a Cloudflare TXT record; the existing URL property, sitemap and GA4 association were checked. Enrich Labs received owner-approved read-only Search Console access with the URL property selected. Keep the verification TXT and HTML meta tag. The GA4 code fix still requires deployment and a live hit check; do not treat tag detection alone as working collection. Related: `apps/web/src/lib/analytics.ts`, `apps/web/src/lib/analytics-consent.tsx`, `apps/web/src/lib/analytics.spec.ts`, `apps/web/src/lib/analysis-analytics.spec.ts`, `apps/web/e2e/analytics-consent.spec.ts`, `docs/qa/2026-11-18-marketing-integrations.md`.
+ 
+ - **2026-11-12 Deferred weekly-story art.** The morning desk phone and its weekly recap note use the existing lazy AVIF/WebP picture for the nebula backdrop. The initial viewport can skip the artwork and the same crop loads as the visitor approaches the desk. Use the landing performance test to check both request timings. Related files include `morning-story.tsx`, `landing-morning.css`, and `landing-performance.spec.ts`.
+ 
+--- /dev/null
++++ b/docs/qa/2026-11-18-marketing-integrations.md
+@@ -0,0 +1,59 @@
++# Marketing integration verification
++
++Verified on 17–18 November 2026 (Europe/Istanbul) through the owner's Chrome session and Metricool MCP.
++
++## Provider state
++
++| Service | Observed result |
++| --- | --- |
++| Google Search Console URL property | `https://puhukoc.com/` revalidated automatically with the existing HTML meta tag under `puhukoc@gmail.com`. The property was originally added on 10 November. |
++| Google Search Console domain property | Added the missing root TXT record in Cloudflare, then observed Google's automatic ownership verification and opened the domain property successfully. |
++| Sitemap | Both property views show `https://puhukoc.com/sitemap.xml`, successful, last read 16 November, 15 discovered pages. No duplicate submission was needed. |
++| Search Console–GA4 association | Existing association confirmed: URL-prefix property, PuhuKoç Web stream `16310560629`, created by `puhukoc@gmail.com` on 11 November. |
++| GA4 | Property `563539205`, measurement ID `G-1D83FS710H`. Correct tag present on the live site after consent, but GA4 reports no data in the previous 48 hours; Tag Assistant detects the tag with no hits. Collection is **not verified working**. |
++| Enrich Labs Search Console | Owner approved `webmasters.readonly`; OAuth succeeded. Both properties are discovered; the verified URL property was selected and confirmed. |
++| Enrich Labs GA4 | Owner separately approved `analytics.readonly`; the integration shows Connected, one property, `puhukoc.com`, linking to property `563539205`. |
++| Metricool | MCP and Connections page agree: brand `puhukoc`, ID `7993018`, owner `puhukoc@gmail.com`, timezone `Europe/Istanbul`; Facebook PuhuKoç, professional Instagram `puhukoc`, personal TikTok `puhukoc` connected. |
++| Meta portfolio | Portfolio `1474142841585669` accessible as Puhu Koc with full control. Facebook page asset ID shown by Meta and Metricool is `1396869360184232`; the owner's supplied `61596535977277` does not match this current asset ID. No asset was replaced. |
++| Personal Meta invitation | `yunusemreyee64@gmail.com` is listed with full access but status **Invited**, no activity. Puhu Koc and Instagram puhukoc are active. The owner must accept using the invited identity. No new invitation was sent. |
++| Render | `puhu-pilot-web`, service `srv-dbnfgrp5efls73b6t2cg`, live and deployed from `master`; current live commit `0f0cb0ba6aa5063673e3b9e078ee6391fde55df8`. Production DNS points to this service. No deployment was triggered. |
++
++Cloudflare root TXT, TTL Auto (keep this record):
++
++```text
++google-site-verification=1FB-5830feik7AHk8KoiWqkd4rPdhqNIFNh3fYaDgqE
++```
++
++## GA4 correction prepared locally
++
++The consent initializer and event fallback passed plain arrays into `dataLayer`. Google's command protocol uses an `Arguments` object; arrays represent data-layer method calls instead. Both call sites now use `queueGoogleTagCommand`. Existing consent gates and allowlisted payloads remain intact.
++
++Reference: [Google data-layer documentation](https://developers.google.com/tag-platform/tag-manager/datalayer).
++
++Files:
++
++- `apps/web/src/lib/analytics.ts`
++- `apps/web/src/lib/analytics-consent.tsx`
++- `apps/web/src/lib/analytics.spec.ts`
++- `apps/web/src/lib/analysis-analytics.spec.ts`
++- `apps/web/e2e/analytics-consent.spec.ts`
++- `docs/features/web-shell.md`
++
++Validation:
++
++- Regression first failed: queued command was `[object Array]`, expected `[object Arguments]`.
++- Focused Vitest suites: **12 passed**.
++- Targeted ESLint for the five touched code/test files: passed.
++- Chrome consent browser tests against the local development server: **2 passed** (no Google script before consent/after refusal; single script and provider-compatible configuration/events after acceptance). Vendor script is stubbed in these tests.
++- App TypeScript check initially failed because the existing `apps/web/test-results/seo-upload-458b17f7/` scratch source tree was included. A separate compiler invocation excluding generated `test-results` inputs reported **0 diagnostics**; the tracked config was not changed.
++- Full CI, production build and post-deployment GA4 receipt were not run. This patch is not a production release.
++
++## Remaining completion checks
++
++1. Release only the GA4 correction through the repository's normal review/CI flow. There are unrelated pre-existing edits in the current working tree; do not publish them as part of this setup.
++2. Run full CI for the exact release tree, deploy the reviewed commit, accept analytics in a fresh live browser session, and verify a received `page_view` in Tag Assistant and GA4 Realtime. Tag detection alone is insufficient. Check refusal still suppresses collection.
++3. Confirm the invited personal identity becomes active in Meta after the owner accepts the email invitation.
++
++No paid plans, ads, new tracking vendors, account transfers, credential changes, or social posts were created. Instagram/TikTok registration emails were not established by these connection checks.
++
++Screenshots are in `artifacts/marketing-setup/`: `domain-verified.jpg`, `domain-sitemap.jpg`, `cloudflare-txt.jpg`, `enrich-search-console.jpg`, `enrich-ga4.jpg`, `meta-access.jpg`.

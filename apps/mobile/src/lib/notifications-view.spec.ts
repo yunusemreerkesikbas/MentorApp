@@ -86,6 +86,14 @@ describe("notifications-view helpers", () => {
     );
     assert.equal(resolveMobileNotificationDestination("/community/member/test?tab=achievements", true), null);
     assert.deepEqual(resolveMobileNotificationDestination("/community/member/test?tab=achievements", false), {
+      pathname: "/(app)/community-member",
+      params: { username: "test" },
+    });
+    assert.deepEqual(resolveMobileNotificationDestination("/community/question/q-123", false), {
+      pathname: "/(app)/community-thread",
+      params: { id: "q-123", kind: "question" },
+    });
+    assert.deepEqual(resolveMobileNotificationDestination("/topluluk", false), {
       pathname: "/(app)/(tabs)/community",
     });
     assert.equal(resolveMobileNotificationDestination("https://evil.example.com", true), null);

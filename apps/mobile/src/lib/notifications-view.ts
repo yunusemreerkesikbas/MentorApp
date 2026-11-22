@@ -118,5 +118,34 @@ export function resolveMobileNotificationDestination(
     }
   }
 
+  if (route === "/(app)/(tabs)/community" && !studentCoreOnly && linkUrl) {
+    const clean = linkUrl.trim().split("?")[0]?.split("#")[0] ?? "";
+    const withoutLocale = clean.replace(/^\/(tr|en)(?=\/|$)/, "");
+    const memberMatch = withoutLocale.match(/^\/(?:community|topluluk)\/member\/([^/]+)$/);
+    if (memberMatch?.[1]) {
+      return {
+        pathname: "/(app)/community-member",
+        params: { username: decodeURIComponent(memberMatch[1]) },
+      };
+    }
+    const questionMatch = withoutLocale.match(/^\/(?:community|topluluk)\/question\/([^/]+)$/);
+    if (questionMatch?.[1]) {
+      return {
+        pathname: "/(app)/community-thread",
+        params: { id: decodeURIComponent(questionMatch[1]), kind: "question" },
+      };
+    }
+    const messageMatch = withoutLocale.match(/^\/(?:community|topluluk)\/message\/([^/]+)$/);
+    if (messageMatch?.[1]) {
+      return {
+        pathname: "/(app)/community-thread",
+        params: { id: decodeURIComponent(messageMatch[1]), kind: "thread" },
+      };
+    }
+    if (withoutLocale === "/community/saved" || withoutLocale === "/topluluk/kaydedilenler") {
+      return { pathname: "/(app)/community-saved" };
+    }
+  }
+
   return { pathname: route };
 }
