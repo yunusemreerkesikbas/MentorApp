@@ -17,3 +17,8 @@ ad8e7ce5b553d687afeca04c9d8d9acfe2a2a6f9:apps/admin/Documentation/assets/Youtube
 ad8e7ce5b553d687afeca04c9d8d9acfe2a2a6f9:apps/admin/Documentation/assets/Youtube-Channels-Playlist/index.html:gcp-api-key:143
 ad8e7ce5b553d687afeca04c9d8d9acfe2a2a6f9:apps/admin/Documentation/assets/Youtube-Channels-Playlist/index.html:gcp-api-key:151
 ad8e7ce5b553d687afeca04c9d8d9acfe2a2a6f9:apps/admin/Documentation/js/main.js:gcp-api-key:756
+
+# Reviewed historical findings: a duration translation key, documentation text, and a local storage key.
+241d25c15966438bca9fe20abf20d210f1190c00:apps/mobile/src/components/community/community-composer-sheet.tsx:generic-api-key:17
+843a8b1531ffce19e02cd3f29e45876f747eb1b5:docs/features/identity.md:generic-api-key:52
+2e033bd7b2d2ca2e9768c0a0c01c902d61ac5d08:apps/mobile/src/stores/preferences.store.ts:generic-api-key:15
