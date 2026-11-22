@@ -66,6 +66,7 @@ export interface AuthContextValue {
   user: AuthUser | null;
   /** Re-run session restore after `unreachable`. */
   retryRestore: () => void;
+  refreshSession: () => Promise<AuthUser | null>;
   login: (input: LoginInput) => Promise<AuthUser>;
   signup: (input: SignupInput) => Promise<AuthUser>;
   logout: () => Promise<void>;
@@ -187,6 +188,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       retryRestore: () => {
         setStatus("loading");
         void silentRefreshRef.current();
+      },
+      refreshSession: async () => {
+        const session = await silentRefreshRef.current();
+        return session?.user ?? null;
       },
       login: async (input) => {
         const session = (await authControllerLogin(input)) as unknown as AuthSession;

@@ -6,6 +6,7 @@ import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   groupPlanEventsByDate,
+  isCoach,
   isCoachAssigned,
   isPastDate,
   parsePlanAdaptationQuery,
@@ -15,6 +16,7 @@ import {
   weekDates,
 } from "@mentor/core";
 import type { PlanEventDto, PlanTaskDto } from "@mentor/types";
+import { CoachPlanView } from "../../../components/mentorship/coach/coach-plan-view.js";
 import { ActionSheet } from "../../../components/panel/primitives.js";
 import { PlanCalendar, PlanCalendarBack, PlanCalendarFab } from "../../../components/plan/calendar/plan-calendar.js";
 import { usePlanCalendarData } from "../../../components/plan/calendar/use-plan-calendar-data.js";
@@ -45,8 +47,16 @@ import { useTranslations } from "../../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
 import { useToast } from "../../../providers/toast-provider.js";
 
-/** The Plan tab: the web's `PlanShell` at phone width, Liste, Timeline and Takvim. */
+/** The Plan tab: role-aware — CoachPlanView for human coaches, StudentPlanScreen for students. */
 export default function PlanScreen() {
+  const { user } = useAuth();
+  if (isCoach(user)) {
+    return <CoachPlanView />;
+  }
+  return <StudentPlanScreen />;
+}
+
+function StudentPlanScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();

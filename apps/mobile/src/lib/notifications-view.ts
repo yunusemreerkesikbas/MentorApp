@@ -100,6 +100,49 @@ export function resolveMobileNotificationDestination(
   linkUrl: string | null | undefined,
   studentCoreOnly: boolean,
 ): MobileNotificationDestination | null {
+  const clean = linkUrl?.trim().split("?")[0]?.split("#")[0] ?? "";
+  const withoutLocale = clean.replace(/^\/(tr|en)(?=\/|$)/, "") || "/";
+
+  if (!studentCoreOnly && clean.startsWith("/") && !clean.startsWith("//")) {
+    if (withoutLocale === "/my-coach" || withoutLocale === "/kocum") {
+      return { pathname: "/(app)/my-coach" };
+    }
+    const myWeeklyMatch = withoutLocale.match(
+      /^\/(?:my-coach|kocum)\/(?:weekly-reports|haftalik-raporlar)\/([^/]+)$/,
+    );
+    if (myWeeklyMatch?.[1]) {
+      return {
+        pathname: "/(app)/my-coach-weekly-report",
+        params: { reportId: decodeURIComponent(myWeeklyMatch[1]) },
+      };
+    }
+    const inviteMatch = withoutLocale.match(
+      /^\/(?:coach-invitation|kocluk-daveti)(?:\/([^/]+))?$/,
+    );
+    if (inviteMatch) {
+      return inviteMatch[1]
+        ? { pathname: "/(app)/my-coach", params: { code: decodeURIComponent(inviteMatch[1]) } }
+        : { pathname: "/(app)/my-coach" };
+    }
+    if (
+      withoutLocale === "/students/profile" ||
+      withoutLocale === "/ogrencilerim/profil" ||
+      withoutLocale === "/kocluk/profil" ||
+      withoutLocale === "/coach-profile"
+    ) {
+      return { pathname: "/(app)/(tabs)/students/profile" };
+    }
+    const studentMatch = withoutLocale.match(
+      /^\/(?:students|ogrencilerim|kocluk)\/([^/]+)$/,
+    );
+    if (studentMatch?.[1] && studentMatch[1] !== "profile" && studentMatch[1] !== "profil") {
+      return {
+        pathname: "/(app)/coach-student",
+        params: { studentId: decodeURIComponent(studentMatch[1]) },
+      };
+    }
+  }
+
   const route = resolveNotificationMobileRoute(linkUrl);
   if (!route) return null;
   if (studentCoreOnly && STUDENT_CORE_BLOCKED_ROUTES.has(route)) {

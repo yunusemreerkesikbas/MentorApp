@@ -15,6 +15,7 @@ import {
   buildCelebrationQueue,
   createRewardSync,
   didStreakCreditToday,
+  isCoach,
   isHeldChestReceipt,
   rewardPresentation,
 } from "@mentor/core";
@@ -70,7 +71,7 @@ export function CelebrationProvider({ children }: { children: ReactNode }) {
   const present = useRef({ toast, t });
   present.current = { toast, t };
 
-  const userId = user?.id ?? null;
+  const userId = user && !isCoach(user) ? user.id : null;
 
   // One run per signed-in account: `refresh` asks the server, `stop` silences a run that is
   // still in flight when the account changes.

@@ -1,34 +1,33 @@
 import { useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { CoachOverviewHeader } from "../../../components/mentorship/coach-overview-header.js";
-import { StudentReportPanel } from "../../../components/mentorship/student-report-panel.js";
+import { CoachCohortBriefCard } from "../../../components/mentorship/coach/coach-cohort-brief-card.js";
+import { CoachFollowupInboxCard } from "../../../components/mentorship/coach/coach-followup-inbox-card.js";
+import { CoachInviteSeatsCard } from "../../../components/mentorship/coach/coach-invite-seats-card.js";
 import {
-  AppText,
-  Card,
-  Chip,
-  Skeleton,
-  StateView,
-} from "../../../components/ui/index.js";
+  CoachRosterList,
+  type RosterFilterTab,
+} from "../../../components/mentorship/coach/coach-roster-list.js";
+import { AppText, Skeleton, StateView } from "../../../components/ui/index.js";
+import { tabBarClearance } from "../../../lib/layout.js";
 import {
   fetchCoachRegistrationState,
   fetchCohortBrief,
   fetchMentorshipOverview,
   fetchRoster,
 } from "../../../lib/mentorship-api.js";
-import { haptics } from "../../../lib/haptics.js";
+import { extractMentorshipError } from "../../../lib/mentorship-view.js";
 import { useTranslations } from "../../../providers/i18n-provider.js";
-import { tabBarClearance } from "../../../lib/layout.js";
 import { useThemeTokens } from "../../../providers/theme-provider.js";
 
 export default function CoachStudentsScreen() {
   const t = useTranslations("students");
+  const tCommon = useTranslations("common");
   const insets = useSafeAreaInsets();
   const { palette, space } = useThemeTokens();
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
-    null,
-  );
+  const [tab, setTab] = useState<RosterFilterTab>("ACTIVE");
+  const [inboxTick, setInboxTick] = useState(0);
 
   const overviewQuery = useQuery({
     queryKey: ["mentorship-overview"],
@@ -40,9 +39,15 @@ export default function CoachStudentsScreen() {
     queryFn: fetchCoachRegistrationState,
   });
 
-  const rosterQuery = useQuery({
-    queryKey: ["mentorship-roster"],
+  const activeQuery = useQuery({
+    queryKey: ["mentorship-roster", "ACTIVE"],
     queryFn: () => fetchRoster("ACTIVE"),
+  });
+
+  const endedQuery = useQuery({
+    queryKey: ["mentorship-roster", "ENDED"],
+    queryFn: () => fetchRoster("ENDED"),
+    enabled: tab === "ENDED",
   });
 
   const cohortBriefQuery = useQuery({
@@ -50,22 +55,24 @@ export default function CoachStudentsScreen() {
     queryFn: fetchCohortBrief,
   });
 
-  const isLoading = overviewQuery.isLoading && rosterQuery.isLoading;
+  const isLoading = overviewQuery.isLoading && activeQuery.isLoading;
   const isRefreshing =
     overviewQuery.isRefetching ||
-    rosterQuery.isRefetching ||
+    activeQuery.isRefetching ||
     cohortBriefQuery.isRefetching;
 
   const handleRefresh = () => {
+    setInboxTick((n) => n + 1);
     void Promise.all([
       overviewQuery.refetch(),
       regStateQuery.refetch(),
-      rosterQuery.refetch(),
+      activeQuery.refetch(),
       cohortBriefQuery.refetch(),
+      ...(tab === "ENDED" ? [endedQuery.refetch()] : []),
     ]);
   };
 
-  const students = rosterQuery.data ?? [];
+  const activeRows = activeQuery.data ?? [];
 
   return (
     <ScrollView
@@ -96,105 +103,39 @@ export default function CoachStudentsScreen() {
 
       {isLoading ? (
         <View style={{ gap: space.sm }}>
-          <Skeleton height={110} />
-          <Skeleton height={160} />
+          <Skeleton height={120} />
+          <Skeleton height={180} />
         </View>
+      ) : activeQuery.isError ? (
+        <StateView
+          title={tCommon("error_title")}
+          body={extractMentorshipError(activeQuery.error, tCommon("error_body"))}
+          actionLabel={tCommon("retry")}
+          onAction={() => void activeQuery.refetch()}
+          tone="error"
+        />
       ) : (
         <>
-          <CoachOverviewHeader
+          <CoachInviteSeatsCard
             overview={overviewQuery.data ?? null}
             registrationState={regStateQuery.data ?? null}
-            cohortBrief={cohortBriefQuery.data ?? null}
           />
-
-          {selectedStudentId ? (
-            <StudentReportPanel
-              studentId={selectedStudentId}
-              onClose={() => setSelectedStudentId(null)}
-            />
-          ) : null}
-
-          {students.length === 0 ? (
-            <StateView
-              title={t("empty_title")}
-              body={t("empty_body")}
-              tone="empty"
-            />
-          ) : (
-            <View style={{ gap: space.sm }}>
-              {students.map((row) => (
-                <Card key={row.linkId} style={{ gap: space.xs }}>
-                  <View style={styles.rowBetween}>
-                    <View>
-                      <AppText variant="cardTitle">
-                        {row.studentDisplayName}
-                      </AppText>
-                      {row.studentUsername ? (
-                        <AppText variant="caption" tone="secondary">
-                          @{row.studentUsername}
-                        </AppText>
-                      ) : null}
-                    </View>
-                    <Chip
-                      label={t("open_report_cta")}
-                      selected={selectedStudentId === row.studentId}
-                      onPress={() => {
-                        void haptics.selection();
-                        setSelectedStudentId(
-                          selectedStudentId === row.studentId
-                            ? null
-                            : row.studentId,
-                        );
-                      }}
-                    />
-                  </View>
-
-                  {row.riskFlags.length > 0 ? (
-                    <View style={styles.flagRow}>
-                      {row.riskFlags.map((flag) => (
-                        <Chip
-                          key={flag}
-                          label={t(`flag_${flag}` as "flag_INACTIVE")}
-                          selected={row.needsAttention}
-                        />
-                      ))}
-                    </View>
-                  ) : null}
-
-                  {row.metrics ? (
-                    <AppText variant="caption" tone="secondary" tabularNums>
-                      {t("focus_7d", { minutes: row.metrics.focusMinutes7d })} ·{" "}
-                      {t("streak_days", { days: row.metrics.currentStreak })}
-                      {row.metrics.planCompletionRate7d !== null
-                        ? ` · ${t("plan_completion_7d", {
-                            percent: Math.round(
-                              row.metrics.planCompletionRate7d * 100,
-                            ),
-                          })}`
-                        : ""}
-                      {row.metrics.latestMockNet !== null
-                        ? ` · ${t("latest_mock_net", {
-                            net: row.metrics.latestMockNet,
-                          })}`
-                        : ""}
-                    </AppText>
-                  ) : null}
-                </Card>
-              ))}
-            </View>
-          )}
+          <CoachFollowupInboxCard reloadSignal={inboxTick} />
+          <CoachCohortBriefCard
+            cohortBrief={cohortBriefQuery.data ?? null}
+            hasActiveStudents={activeRows.length > 0}
+          />
+          <CoachRosterList
+            tab={tab}
+            onTabChange={setTab}
+            activeRows={activeRows}
+            endedRows={endedQuery.data ?? []}
+            endedLoading={endedQuery.isLoading}
+            endedError={endedQuery.isError}
+            onRetryEnded={() => void endedQuery.refetch()}
+          />
         </>
       )}
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 8,
-  },
-  flagRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-});

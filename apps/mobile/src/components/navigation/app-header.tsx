@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 import { BellIcon } from "@solar-icons/react-native/linear/bell";
 import { UserIcon } from "@solar-icons/react-native/bold/user";
-import { greetingKeyForHour } from "@mentor/core";
+import { greetingKeyForHour, isCoach } from "@mentor/core";
 import { fetchEconomyBalance } from "../../lib/coaching-api.js";
 import { APP_HEADER_HEIGHT, mixHex } from "../../lib/layout.js";
 import { listNotifications } from "../../lib/notifications-api.js";
@@ -32,9 +32,12 @@ export function AppHeader() {
   const tPanel = useTranslations("panel");
   const premium = useIsPremium();
 
+  const coachRole = isCoach(user);
+
   const balanceQuery = useQuery({
     queryKey: ["economy", "balance"],
     queryFn: fetchEconomyBalance,
+    enabled: Boolean(user) && !coachRole,
   });
   const unreadQuery = useQuery({
     queryKey: ["notifications", "unread"],
@@ -103,7 +106,7 @@ export function AppHeader() {
         </View>
 
         <View style={styles.actions}>
-          {balance ? (
+          {!coachRole && balance ? (
             <View accessibilityLabel={t("earned_rights_label")} style={styles.pills}>
               <Pill
                 value={balance.coinConfirmed}

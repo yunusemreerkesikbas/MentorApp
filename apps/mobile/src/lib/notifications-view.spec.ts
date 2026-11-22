@@ -96,6 +96,20 @@ describe("notifications-view helpers", () => {
     assert.deepEqual(resolveMobileNotificationDestination("/topluluk", false), {
       pathname: "/(app)/(tabs)/community",
     });
+    assert.deepEqual(resolveMobileNotificationDestination("/tr/kocum", false), {
+      pathname: "/(app)/my-coach",
+    });
+    assert.deepEqual(
+      resolveMobileNotificationDestination("/my-coach/weekly-reports/rep-42", false),
+      { pathname: "/(app)/my-coach-weekly-report", params: { reportId: "rep-42" } },
+    );
+    assert.deepEqual(resolveMobileNotificationDestination("/students/stu-99", false), {
+      pathname: "/(app)/coach-student",
+      params: { studentId: "stu-99" },
+    });
+    assert.deepEqual(resolveMobileNotificationDestination("/students/profile", false), {
+      pathname: "/(app)/(tabs)/students/profile",
+    });
     assert.equal(resolveMobileNotificationDestination("https://evil.example.com", true), null);
   });
 });

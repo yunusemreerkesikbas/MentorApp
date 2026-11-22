@@ -1,12 +1,15 @@
 import { http } from "@mentor/api-client";
 import type {
   MentorshipApplicationDto,
+  MentorshipAssignmentSuggestionsDto,
   MentorshipBriefDto,
+  MentorshipBriefHistoryItemDto,
   MentorshipCoachOverviewDto,
   MentorshipCoachRegistrationStateDto,
   MentorshipCohortBriefDto,
   MentorshipInvitationPreviewDto,
   MentorshipInviteCodeDto,
+  MentorshipProgramTemplateDto,
   MentorshipRosterRowDto,
   MentorshipSharedDataDto,
   MentorshipStudentReportDto,
@@ -14,7 +17,28 @@ import type {
   Paginated,
   PlanTaskDto,
 } from "@mentor/types";
-import type { UpdateCoachProfileInput } from "@mentor/validation";
+import type {
+  RegisterCoachInput,
+  SaveMentorshipTemplateInput,
+  UpdateCoachProfileInput,
+} from "@mentor/validation";
+
+export interface MentorshipAssignmentDraft {
+  title: string;
+  subject?: string | null;
+  topic?: string | null;
+  taskDate?: string;
+  coachNote?: string | null;
+}
+
+export async function registerCoach(
+  input: RegisterCoachInput,
+): Promise<MentorshipApplicationDto> {
+  return (await http<MentorshipApplicationDto>("/v1/mentorship/coach-registration", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as MentorshipApplicationDto;
+}
 
 export async function fetchCoachRegistrationState(): Promise<MentorshipCoachRegistrationStateDto> {
   return (await http<MentorshipCoachRegistrationStateDto>(
@@ -25,13 +49,10 @@ export async function fetchCoachRegistrationState(): Promise<MentorshipCoachRegi
 export async function updateCoachProfile(
   input: UpdateCoachProfileInput,
 ): Promise<MentorshipApplicationDto> {
-  return (await http<MentorshipApplicationDto>(
-    "/v1/mentorship/coach-registration/mine",
-    {
-      method: "PUT",
-      body: JSON.stringify(input),
-    },
-  )) as MentorshipApplicationDto;
+  return (await http<MentorshipApplicationDto>("/v1/mentorship/coach-registration/mine", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })) as MentorshipApplicationDto;
 }
 
 export async function fetchMentorshipOverview(): Promise<MentorshipCoachOverviewDto> {
@@ -75,13 +96,7 @@ export async function setStudentAttention(
 
 export async function assignStudentTasks(
   studentId: string,
-  tasks: {
-    title: string;
-    subject?: string | null;
-    topic?: string | null;
-    taskDate?: string;
-    coachNote?: string | null;
-  }[],
+  tasks: MentorshipAssignmentDraft[],
 ): Promise<PlanTaskDto[]> {
   return (
     (await http<PlanTaskDto[]>(
@@ -92,6 +107,36 @@ export async function assignStudentTasks(
       },
     )) ?? []
   );
+}
+
+export async function fetchTemplates(): Promise<MentorshipProgramTemplateDto[]> {
+  return (
+    (await http<MentorshipProgramTemplateDto[]>("/v1/mentorship/templates")) ?? []
+  );
+}
+
+export async function saveTemplate(
+  input: SaveMentorshipTemplateInput,
+): Promise<MentorshipProgramTemplateDto> {
+  return (await http<MentorshipProgramTemplateDto>("/v1/mentorship/templates", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as MentorshipProgramTemplateDto;
+}
+
+export async function deleteTemplate(templateId: string): Promise<void> {
+  await http(`/v1/mentorship/templates/${encodeURIComponent(templateId)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function suggestAssignments(
+  studentId: string,
+): Promise<MentorshipAssignmentSuggestionsDto> {
+  return (await http<MentorshipAssignmentSuggestionsDto>(
+    `/v1/mentorship/students/${encodeURIComponent(studentId)}/assignment-suggestions`,
+    { method: "POST" },
+  )) as MentorshipAssignmentSuggestionsDto;
 }
 
 export async function setCoachNote(
@@ -111,6 +156,16 @@ export async function generateStudentBrief(
     `/v1/mentorship/students/${encodeURIComponent(studentId)}/brief`,
     { method: "POST" },
   )) as MentorshipBriefDto;
+}
+
+export async function fetchBriefHistory(
+  studentId: string,
+  page = 1,
+  pageSize = 5,
+): Promise<Paginated<MentorshipBriefHistoryItemDto>> {
+  return (await http<Paginated<MentorshipBriefHistoryItemDto>>(
+    `/v1/mentorship/students/${encodeURIComponent(studentId)}/brief-history?page=${page}&pageSize=${pageSize}`,
+  )) as Paginated<MentorshipBriefHistoryItemDto>;
 }
 
 export async function fetchCohortBrief(): Promise<MentorshipCohortBriefDto | null> {
@@ -137,29 +192,22 @@ export async function endStudentLink(studentId: string): Promise<void> {
 
 export async function fetchMyCoach(): Promise<MyCoachDto | null> {
   return (
-    ((await http<MyCoachDto>("/v1/mentorship/my-coach")) as
-      | MyCoachDto
-      | undefined) ?? null
+    ((await http<MyCoachDto>("/v1/mentorship/my-coach")) as MyCoachDto | undefined) ?? null
   );
 }
 
 export async function fetchSharedData(): Promise<MentorshipSharedDataDto | null> {
-  const res = await http<MentorshipSharedDataDto>(
-    "/v1/mentorship/my-coach/data",
-  );
+  const res = await http<MentorshipSharedDataDto>("/v1/mentorship/my-coach/data");
   return res && "examType" in res ? res : null;
 }
 
 export async function previewInvitation(
   code: string,
 ): Promise<MentorshipInvitationPreviewDto> {
-  return (await http<MentorshipInvitationPreviewDto>(
-    "/v1/mentorship/invitations/preview",
-    {
-      method: "POST",
-      body: JSON.stringify({ code: code.trim() }),
-    },
-  )) as MentorshipInvitationPreviewDto;
+  return (await http<MentorshipInvitationPreviewDto>("/v1/mentorship/invitations/preview", {
+    method: "POST",
+    body: JSON.stringify({ code: code.trim() }),
+  })) as MentorshipInvitationPreviewDto;
 }
 
 export async function acceptInvitation(code: string): Promise<MyCoachDto> {
