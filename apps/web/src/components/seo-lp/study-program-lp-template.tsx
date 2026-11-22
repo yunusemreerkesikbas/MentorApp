@@ -101,9 +101,6 @@ export async function StudyProgramLpTemplate({ variant, locale }: { variant: Stu
         <SeoSignupCta source={variant} location="closing" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
           {c("cta_build")}
         </SeoSignupCta>
-        <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
-          {c("cta_has_account")}
-        </Link>
       </div>
     </section>
   );

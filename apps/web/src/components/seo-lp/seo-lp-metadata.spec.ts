@@ -76,8 +76,8 @@ describe("product-led SEO LP metadata", () => {
     expect(kvkkTr.alternates?.canonical).toBe("https://puhukoc.com/yasal/kvkk-aydinlatma");
   });
 
-  it("aligns SEO LP copy, sample block titles and WebApplication schemas with invite-only pilot behavior", () => {
-    expect(trMessages.studyProgramLp.common.cta_save_plan).toBe("Bekleme listesine katıl");
+  it("aligns SEO LP copy, sample block titles and WebApplication schemas without invite-only gating wording", () => {
+    expect(trMessages.studyProgramLp.common.cta_save_plan).toBe("Ücretsiz başla");
     expect(trMessages.studyProgramLp.common.demo_note).toContain("hesaba aktarılmaz");
     expect(trMessages.studyProgramLp.yks.sample_title).toBe(
       "Örnek çalışma blokları · Sayısal · dengeli TYT ve AYT",
@@ -106,6 +106,6 @@ describe("product-led SEO LP metadata", () => {
       siteOrigin: "https://puhukoc.com",
     });
     expect(appSchema["@type"]).toBe("WebApplication");
-    expect(appSchema.description).toContain("davetli pilot");
+    expect(appSchema.description).not.toContain("pilot");
   });
 });

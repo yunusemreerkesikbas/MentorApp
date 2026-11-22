@@ -9,7 +9,7 @@ import { SeoLpShell } from "@/components/seo-lp/seo-lp-shell";
 import { NotebookTable, PaperNote, PostitSteps, SceneFrame, SeoHero, TagLinks } from "@/components/seo-lp/seo-paper";
 import { SeoSignupCta } from "@/components/seo-lp/seo-signup-cta";
 import { setRequestLocale } from "@/i18n/locale";
-import { getPathname, Link } from "@/i18n/navigation";
+import { getPathname } from "@/i18n/navigation";
 import { siteUrl } from "@/lib/forum-public";
 import { buildWebApplicationStructuredData } from "@/lib/structured-data";
 import { STUDY_ROOM_BACKDROP_SRC, STUDY_ROOM_THEME_IDS } from "@/lib/study-room-theme";
@@ -133,9 +133,6 @@ export default async function PomodoroTimerPage({ params }: PageProps) {
         <SeoSignupCta source="pomodoro" location="closing" className={`${LEDGE} ${LEDGE_FILLED} max-sm:w-full`}>
           {t("cta_signup")}
         </SeoSignupCta>
-        <Link href="/login" className={`${LEDGE} ${LEDGE_ON_PAPER} max-sm:w-full`}>
-          {t("cta_login")}
-        </Link>
       </div>
     </section>
   );
