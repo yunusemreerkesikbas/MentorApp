@@ -14,11 +14,11 @@ it("lists the 15 launch pieces in posting-plan order, then the 6 Premium pieces,
 });
 
 it("pins the feature reel at 8 s = 16 beats", () => {
-  expect(byId("IR1").video).toEqual({ fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 });
+  expect(byId("IR1").video).toMatchObject({ fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 });
 });
 
 it("pins the waitlist reel at 8 s = 16 beats", () => {
-  expect(byId("WR1").video).toEqual({ fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 });
+  expect(byId("WR1").video).toMatchObject({ fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 });
 });
 
 it("pins the promo film's timing", () => {
@@ -40,9 +40,9 @@ it("splits the carousel into one composition per card", () => {
 });
 
 it("pins the reel timings", () => {
-  expect(byId("R1").video).toEqual({ fps: 30, durationInFrames: 300, endCardFrom: 180, coverFrame: 120 });
-  expect(byId("R2").video).toEqual({ fps: 30, durationInFrames: 360, endCardFrom: 270, coverFrame: 210 });
-  expect(byId("R3").video).toEqual({ fps: 30, durationInFrames: 270, endCardFrom: 195, coverFrame: 120 });
+  expect(byId("R1").video).toMatchObject({ fps: 30, durationInFrames: 300, endCardFrom: 180, coverFrame: 120 });
+  expect(byId("R2").video).toMatchObject({ fps: 30, durationInFrames: 360, endCardFrom: 270, coverFrame: 210 });
+  expect(byId("R3").video).toMatchObject({ fps: 30, durationInFrames: 270, endCardFrom: 195, coverFrame: 120 });
 });
 
 it("holds every end card for 2 s on the beat grid, with the cover inside the video", () => {

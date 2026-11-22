@@ -21,7 +21,8 @@ export const SIZES: Record<Format, { width: number; height: number }> = {
   landscape: { width: 1200, height: 675 },
 };
 
-export type Video = { fps: 30; durationInFrames: number; endCardFrom: number; coverFrame: number };
+// music: the bed baked into the mp4 (Igloo for the everyday reels, Balkan brass for Premium).
+export type Video = { fps: 30; durationInFrames: number; endCardFrom: number; coverFrame: number; music?: "reelIgloo" | "reelBalkan" };
 
 export type Piece = { id: PieceId; format: Format; title: string; cards?: number; video?: Video };
 
@@ -39,9 +40,9 @@ export const PIECES: Piece[] = [
   { id: "S2", format: "story", title: "Gece çalışan tek kişi sen değilsin" },
   { id: "S3", format: "story", title: "Bugünün listesi" },
   { id: "S4", format: "story", title: "Hangi çalışma tipisin" },
-  { id: "R1", format: "reel", title: "POV reel", video: { fps: 30, durationInFrames: 300, endCardFrom: 180, coverFrame: 120 } },
-  { id: "R2", format: "reel", title: "Masa doluyor", video: { fps: 30, durationInFrames: 360, endCardFrom: 270, coverFrame: 210 } },
-  { id: "R3", format: "reel", title: "Rozet ritmi", video: { fps: 30, durationInFrames: 270, endCardFrom: 195, coverFrame: 120 } },
+  { id: "R1", format: "reel", title: "POV reel", video: { fps: 30, durationInFrames: 300, endCardFrom: 180, coverFrame: 120, music: "reelIgloo" } },
+  { id: "R2", format: "reel", title: "Masa doluyor", video: { fps: 30, durationInFrames: 360, endCardFrom: 270, coverFrame: 210, music: "reelIgloo" } },
+  { id: "R3", format: "reel", title: "Rozet ritmi", video: { fps: 30, durationInFrames: 270, endCardFrom: 195, coverFrame: 120, music: "reelIgloo" } },
   { id: "X1", format: "landscape", title: "X kartı" },
   { id: "L1", format: "landscape", title: "LinkedIn kartı" },
   // Premium (2026-11-08): 1 = Kahraman modu (cream), 2 = Gece uçuşu (night).
@@ -49,8 +50,8 @@ export const PIECES: Piece[] = [
   { id: "PF2", format: "feed", title: "Premium · Puhu'ya pelerin geldi" },
   { id: "PS1", format: "story", title: "Premium · Kahraman modu" },
   { id: "PS2", format: "story", title: "Premium · Puhu'ya pelerin geldi" },
-  { id: "PR1", format: "reel", title: "Premium · Kahraman modu", video: { fps: 30, durationInFrames: 270, endCardFrom: 210, coverFrame: 180 } },
-  { id: "PR2", format: "reel", title: "Premium · Gece uçuşu", video: { fps: 30, durationInFrames: 270, endCardFrom: 210, coverFrame: 180 } },
+  { id: "PR1", format: "reel", title: "Premium · Kahraman modu", video: { fps: 30, durationInFrames: 270, endCardFrom: 210, coverFrame: 180, music: "reelBalkan" } },
+  { id: "PR2", format: "reel", title: "Premium · Gece uçuşu", video: { fps: 30, durationInFrames: 270, endCardFrom: 210, coverFrame: 180, music: "reelBalkan" } },
   // Promo film (spec docs/plans/2026-11-08-promo-video-design.md): 62,5 s at 120 BPM (31 bars and one extra intro beat).
   { id: "T1", format: "reel", title: "Tanıtım · Ekrana dalış", video: { fps: 30, durationInFrames: 1875, endCardFrom: 1815, coverFrame: 490 } },
   { id: "T1P", format: "feed", title: "Tanıtım · Ekrana dalış (post 4:5)", video: { fps: 30, durationInFrames: 1875, endCardFrom: 1815, coverFrame: 490 } },
@@ -69,7 +70,7 @@ export const PIECES: Piece[] = [
   { id: "IS4", format: "story", title: "POV · hangi konudan başlasam" },
   { id: "IS5", format: "story", title: "POV · kütüphaneye gidince çalışırım" },
   { id: "IS6", format: "story", title: "POV · bu hafta hiçbir şey yapmadım" },
-  { id: "IR1", format: "reel", title: "İş başında · Koruma reel", video: { fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 } },
+  { id: "IR1", format: "reel", title: "İş başında · Koruma reel", video: { fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150, music: "reelIgloo" } },
   // "İşe yarar" carousels (spec docs/plans/2026-11-15-social-growth-strategy-design.md): saveable study tips, direction C.
   { id: "K1", format: "feed", title: "İşe yarar · Denemeden sonraki 20 dakika", cards: 5 },
   { id: "K2", format: "feed", title: "İşe yarar · Tutan bir haftalık plan", cards: 5 },
@@ -77,7 +78,7 @@ export const PIECES: Piece[] = [
   { id: "WS1", format: "story", title: "Yerini kap · Işık yandı" },
   { id: "WS2", format: "story", title: "Yerini kap · Açılınca ilk işin ne (anket)" },
   { id: "WS3", format: "story", title: "Yerini kap · Hepsi aynı masada" },
-  { id: "WR1", format: "reel", title: "Yerini kap · Işığı yak", video: { fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 } },
+  { id: "WR1", format: "reel", title: "Yerini kap · Işığı yak", video: { fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150, music: "reelIgloo" } },
 ];
 
 export const compositionIds = (p: Piece): string[] =>

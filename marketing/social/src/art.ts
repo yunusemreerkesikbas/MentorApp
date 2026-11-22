@@ -105,6 +105,9 @@ export const CLIPS = {
 // Audio under public/: T1's music, the Igloo cut (120 BPM, 62 s; source and bar map in the spec).
 export const SOUND = {
   t1Music: "audio/t1-music.mp3",
+  // Reel beds: the T1 120 BPM cuts (Pixabay Content License, no Content ID). Drop at 8,0 s in both.
+  reelIgloo: "audio/reel-igloo.mp3", // NickPanek "Dirty Igloo" (pixabay 318363)
+  reelBalkan: "audio/reel-balkan.mp3", // "Energetic Balkan Funk Brass" (pixabay 309553)
   // T1 effects, Pixabay Content License; sources in art-source.local/social/gen/sfx-sources.md.
   t1SfxPing: "sfx/ping.mp3",
   t1SfxWhoosh: "sfx/whoosh.mp3",
