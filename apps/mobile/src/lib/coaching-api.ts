@@ -232,11 +232,7 @@ export async function openWeeklyChest(
 }
 
 export async function fetchVision(): Promise<VisionDto | null> {
-  try {
-    return (await http<VisionDto | null>("/v1/coaching/vision")) ?? null;
-  } catch {
-    return null;
-  }
+  return (await http<VisionDto | null>("/v1/coaching/vision")) ?? null;
 }
 
 export async function upsertVision(

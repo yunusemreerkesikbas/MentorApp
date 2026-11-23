@@ -88,7 +88,7 @@ export class MistakeNotebookController {
     @CurrentUser() user: RequestUser,
     @Body() dto: NotebookImageUploadUrlDto,
   ): Promise<NotebookImageUploadUrlResponse> {
-    return this.notebook.createUploadUrl(user.id, user.sessionId, dto.contentType, user.roles);
+    return this.notebook.createUploadUrl(user.id, user.sessionId, dto.contentType, user.roles, dto.purpose);
   }
 
   @Post("entries")

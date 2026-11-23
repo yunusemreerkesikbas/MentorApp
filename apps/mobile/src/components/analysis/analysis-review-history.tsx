@@ -3,14 +3,14 @@ import { CheckCircleIcon } from "@solar-icons/react-native/bold/check-circle";
 import { RestartIcon } from "@solar-icons/react-native/bold/restart";
 import { AltArrowRightIcon } from "@solar-icons/react-native/linear/alt-arrow-right";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { fetchNotebookReviewHistory } from "../../lib/analysis-api.js";
+import { fetchNotebookReviewHistory, type MistakeScope } from "../../lib/analysis-api.js";
 import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 import { PanelCard, PanelCardTitle } from "../panel/primitives.js";
 import { AppText, Skeleton } from "../ui/index.js";
 import { AnalysisLink } from "./analysis-link.js";
 
-export function AnalysisReviewHistory({ examId, onEntry }: { examId: string; onEntry: (id: string) => void }) {
+export function AnalysisReviewHistory({ examId, onEntry }: { examId: string; onEntry: (id: string, scope: MistakeScope) => void }) {
   const { locale } = useLocale();
   const t = useTranslations("analysisReview");
   const tHistory = useTranslations("analysisHistory");
@@ -45,7 +45,7 @@ export function AnalysisReviewHistory({ examId, onEntry }: { examId: string; onE
           item.nextReviewAt ? t("next_short", { date: date.format(new Date(item.nextReviewAt)) }) : null,
         ].filter(Boolean).join(" · ");
         return (
-          <Pressable key={item.id} accessibilityRole="button" onPress={() => onEntry(item.entryId)}
+          <Pressable key={item.id} accessibilityRole="button" onPress={() => onEntry(item.entryId, { subjectRef: item.subjectRef ?? undefined, topicRef: item.topicRef ?? undefined })}
             style={[styles.row, { minHeight: touchTargets.comfortable, borderColor: palette.border, paddingVertical: space.sm, gap: space.sm }]}>
             <Icon size={22} color={item.solved ? palette.success : palette.secondary} />
             <View style={{ flex: 1, minWidth: 0 }}>

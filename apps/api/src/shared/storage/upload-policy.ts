@@ -19,7 +19,8 @@ export function uploadPolicy(key: string, ownerId: string, contentType: string):
   const parts = key.split("/");
   const prefix = parts[0]!;
   const filename = parts.at(-1)!;
-  if (!/^[0-9a-f-]{36}\.[a-z0-9]+$/i.test(filename)) throw invalid();
+  const objectName = prefix === "notebook" ? filename.replace(/^page-/, "") : filename;
+  if (!/^[0-9a-f-]{36}\.[a-z0-9]+$/i.test(objectName)) throw invalid();
   const extension = filename.split(".").pop()!;
   if (prefix === "content") {
     if (parts.length !== 4 || parts[1] !== "articles" || !["cover", "body", "gallery"].includes(parts[2]!) || !images[contentType]?.includes(extension)) throw invalid();

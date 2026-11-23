@@ -30,5 +30,6 @@ export function resolveMobileEnv(raw: Record<string, string | undefined> = proce
 }
 
 export function getApiBaseUrl(): string {
-  return resolveMobileEnv().EXPO_PUBLIC_API_URL;
+  // Expo inlines public variables only when referenced with static property access.
+  return resolveMobileEnv({ EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL }).EXPO_PUBLIC_API_URL;
 }

@@ -33,6 +33,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "expo-splash-screen",
       "expo-font",
       "expo-notifications",
+      ["expo-image-picker", {
+        photosPermission: "Defterine veya hedef panona ekleyeceğin fotoğrafı seç.",
+        cameraPermission: "Defterine veya hedef panona eklemek için fotoğraf çek.",
+        microphonePermission: false,
+      }],
     ],
     experiments: {
       typedRoutes: false,

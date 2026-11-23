@@ -70,6 +70,25 @@ describe("notifications-view helpers", () => {
     assert.equal(formatNotificationTime("2026-10-31T21:00:00.000Z", "en", labels, now), "1 November 2026");
   });
 
+  it("opens localized desk, page, review, and collage links with their context", () => {
+    const open = (url: string) => resolveMobileNotificationDestination(url, false);
+    assert.deepEqual(open("/tr/defterlerim"), { pathname: "/(app)/notebooks" });
+    assert.deepEqual(open("/en/notebooks/book-1?page=4#photo"), {
+      pathname: "/(app)/notebook", params: { notebookId: "book-1", page: "4" },
+    });
+    assert.deepEqual(open("/tr/yanlis-defteri?review=focus&entryId=e2&topicRef=geometri"), {
+      pathname: "/(app)/notebook", params: { review: "focus", entry: "e2", topicRef: "geometri" },
+    });
+    assert.deepEqual(open("/en/notebook?review=focus&revisit=true&days=30"), {
+      pathname: "/(app)/notebook", params: { review: "focus", revisit: "true", days: "30" },
+    });
+    assert.deepEqual(open("/hedef"), { pathname: "/(app)/vision-board" });
+    assert.deepEqual(open("/tr/hedef/pano"), { pathname: "/(app)/vision-board/board" });
+    assert.deepEqual(open("/en/vision-board/board"), { pathname: "/(app)/vision-board/board" });
+    assert.equal(open("/vision-board/simulation"), null);
+    assert.equal(open("//outside.example/notebooks"), null);
+  });
+
   it("resolves student-core safe destinations and extracts knowledge slugs", () => {
     assert.deepEqual(resolveMobileNotificationDestination("/plan", true), {
       pathname: "/(app)/(tabs)/plan",

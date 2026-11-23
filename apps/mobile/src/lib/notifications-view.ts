@@ -104,6 +104,21 @@ export function resolveMobileNotificationDestination(
   const withoutLocale = clean.replace(/^\/(tr|en)(?=\/|$)/, "") || "/";
 
   if (!studentCoreOnly && clean.startsWith("/") && !clean.startsWith("//")) {
+    const canonical = withoutLocale.replace(/\/$/, "");
+    if (canonical === "/vision-board" || canonical === "/hedef") return { pathname: "/(app)/vision-board" };
+    if (canonical === "/vision-board/board" || canonical === "/hedef/pano") return { pathname: "/(app)/vision-board/board" };
+    if (canonical === "/notebooks" || canonical === "/defterlerim") return { pathname: "/(app)/notebooks" };
+    const custom = canonical.match(/^\/(?:notebooks|defterlerim)\/([a-z0-9-]+)$/i);
+    if (custom || ["/notebook", "/defter", "/yanlis-defteri"].includes(canonical)) {
+      const params: Record<string, string> = {};
+      const query = new URLSearchParams(linkUrl?.split("#")[0]?.split("?")[1]);
+      for (const key of ["page", "entry", "entryId", "review", "panel", "examId", "mockExam", "mockExamId", "subjectRef", "topicRef", "errorType", "status", "revisit", "days"]) {
+        const value = query.get(key);
+        if (value) params[key === "entryId" ? "entry" : key === "mockExam" ? "mockExamId" : key] = value;
+      }
+      if (custom?.[1]) params.notebookId = custom[1];
+      return { pathname: "/(app)/notebook", ...(Object.keys(params).length ? { params } : {}) };
+    }
     if (withoutLocale === "/my-coach" || withoutLocale === "/kocum") {
       return { pathname: "/(app)/my-coach" };
     }

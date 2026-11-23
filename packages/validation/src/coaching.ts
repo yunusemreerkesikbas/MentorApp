@@ -866,6 +866,7 @@ export const NOTEBOOK_NOTE_MAX_LENGTH = 500;
 
 export const notebookImageUploadUrlSchema = z.object({
   contentType: z.enum(NOTEBOOK_IMAGE_MIMES),
+  purpose: z.literal("page").optional(),
 });
 export type NotebookImageUploadUrlInput = z.infer<
   typeof notebookImageUploadUrlSchema
@@ -879,6 +880,10 @@ const notebookEntryItemSchema = z.object({
 
 const notebookPageItemSchema = z.discriminatedUnion("kind", [
   notebookEntryItemSchema,
+  boardImageItemSchema.extend({
+    storageKey: z.string().regex(/^notebook\/[0-9a-f-]{36}\/page-[0-9a-f-]{36}\.(jpg|jpeg|png|webp)$/i, "invalid_storage_key"),
+    frame: z.literal("none"),
+  }),
   boardTextItemSchema,
   boardStickerItemSchema,
 ]);

@@ -196,7 +196,8 @@ export default function DashboardScreen() {
                 }
               />
             ) : null}
-            <GoalCard vision={visionQuery.data ?? null} />
+            <GoalCard vision={visionQuery.data ?? null} onOpenGoal={() => router.push("/(app)/vision-board")}
+              onOpenBoard={() => router.push("/(app)/vision-board/board")} onOpenDesk={() => router.push("/(app)/notebooks")} />
             {balance ? (
               <JourneyCard level={balance.level} freezeTokens={panel.streak.freezeTokens} />
             ) : null}

@@ -1,6 +1,10 @@
+import { notebooksEn } from "./notebooks-en.ts";
+import { visionEn } from "./vision-en.ts";
 import type { TranslationCatalog } from "./tr.ts";
 
 export const enMessages: TranslationCatalog = {
+  notebooks: notebooksEn,
+  visionBoard: visionEn,
   common: {
     loading: "Loading…",
     retry: "Try again",

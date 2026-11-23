@@ -1192,6 +1192,7 @@ export interface NotebookEntryItem extends VisionBoardItemBase {
 /** Stickers and text are the vision board's, verbatim — same shapes, same editor hooks. */
 export type NotebookPageItem =
   | NotebookEntryItem
+  | VisionBoardImageItem
   | VisionBoardTextItem
   | VisionBoardStickerItem;
 

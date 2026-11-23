@@ -1,3 +1,5 @@
+import { uploadPolicy } from "../../../shared/storage/upload-policy";
+import { notebookPageDocSchema } from "@mentor/validation";
 import { NotebookReviewRepository } from "../infrastructure/notebook-review.repository";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NotebookEntryViewService } from "./notebook-entry-view.service";
@@ -421,6 +423,31 @@ describe("MistakeNotebookService", () => {
   });
 
   describe("putPage", () => {
+    it("round-trips a private custom page photo without persisting its read grant", async () => {
+      const book = await ctx.repo.findNotebook();
+      vi.spyOn(ctx.repo, "findNotebook").mockResolvedValue({ ...book, kind: "CUSTOM" });
+      const actor = { userId: USER, sessionId: SESSION };
+      const upload = await ctx.service.createUploadUrl(USER, SESSION, "image/png", [], "page");
+      expect(uploadPolicy(upload.key, USER, "image/png").purpose).toBe("notebook");
+      const image = {
+        id: ITEM, kind: "image", frame: "none", storageKey: upload.key, url: "client-supplied",
+        x: 10, y: 20, width: 100, height: 100, rotation: 0, opacity: 1, z: 1,
+      };
+      const doc = notebookPageDocSchema.parse({ version: 1, paper: "ruled", items: [image] });
+      expect(doc.items[0]).not.toHaveProperty("url");
+      const saved = await ctx.service.putNotebookPage(USER, NOTEBOOK, 0, doc, [], actor);
+      expect(saved.doc.items[0]).toMatchObject({ storageKey: upload.key, url: expect.stringContaining("private.test") });
+      expect(ctx.repo.pages.get(0)).toEqual(doc);
+      expect(await ctx.service.getNotebookPage(USER, NOTEBOOK, 0, actor)).toEqual(saved);
+      expect(notebookPageDocSchema.parse(saved.doc)).toEqual(doc);
+
+      const foreign = notebookPageDocSchema.parse({
+        ...doc, items: [{ ...image, storageKey: upload.key.replace(USER, OTHER) }],
+      });
+      await expect(ctx.service.putNotebookPage(USER, NOTEBOOK, 0, foreign, [], actor)).rejects.toThrow();
+      expect(ctx.repo.pages.get(0)).toEqual(doc);
+    });
+
     it("refuses a document referencing an entry the caller does not own", async () => {
       ctx.repo.entries.set(ENTRY, makeEntryRow({ userId: OTHER }));
 

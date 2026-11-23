@@ -1,14 +1,9 @@
-import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SnowflakeIcon } from "@solar-icons/react-native/bold/snowflake";
 import { HourglassIcon } from "@solar-icons/react-native/linear/hourglass";
-import type { CommunityLevelView, CountdownDto, VisionDto } from "@mentor/types";
-import { upsertVision } from "../../lib/coaching-api.js";
-import { haptics } from "../../lib/haptics.js";
+import type { CommunityLevelView, CountdownDto } from "@mentor/types";
 import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
-import { Button, TextField } from "../ui/index.js";
 import { AppText } from "../ui/text.js";
 import { PanelCard, PanelCardTitle, ProgressLine } from "./primitives.js";
 
@@ -58,70 +53,7 @@ export function CountdownCard({
   );
 }
 
-/** "Hedefin": the goal the road is for, editable in place. */
-export function GoalCard({ vision }: { vision: VisionDto | null }) {
-  const t = useTranslations("panel");
-  const queryClient = useQueryClient();
-  const { palette } = useThemeTokens();
-  const [draft, setDraft] = useState<string | null>(null);
-
-  const save = useMutation({
-    mutationFn: (goalTitle: string) =>
-      // Only the title changes here; the rest of the saved goal travels back unchanged.
-      upsertVision({
-        goalTitle,
-        targetCity: vision?.targetCity ?? null,
-        motivation: vision?.motivation ?? null,
-      }),
-    onSuccess: async () => {
-      haptics.success();
-      setDraft(null);
-      await queryClient.invalidateQueries({ queryKey: ["coaching", "vision"] });
-    },
-  });
-
-  return (
-    <PanelCard style={styles.goal}>
-      <PanelCardTitle>{t("goal_title")}</PanelCardTitle>
-      {draft !== null ? (
-        <>
-          <TextField
-            label={t("goal_title")}
-            placeholder={t("goal_placeholder")}
-            value={draft}
-            onChangeText={setDraft}
-            maxLength={120}
-            errorMessage={save.isError ? save.error.message : null}
-          />
-          <Button
-            label={t("goal_save")}
-            onPress={() => save.mutate(draft.trim())}
-            disabled={draft.trim().length === 0}
-            loading={save.isPending}
-          />
-        </>
-      ) : vision ? (
-        <>
-          <AppText style={styles.goalText}>{vision.goalTitle}</AppText>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setDraft(vision.goalTitle)}
-            style={styles.textAction}
-          >
-            <AppText style={[styles.textActionLabel, { color: palette.main }]}>
-              {t("goal_edit")}
-            </AppText>
-          </Pressable>
-        </>
-      ) : (
-        <>
-          <AppText style={[styles.goalEmpty, { color: palette.secondary }]}>{t("goal_empty")}</AppText>
-          <Button label={t("goal_set_cta")} onPress={() => setDraft("")} variant="secondary" />
-        </>
-      )}
-    </PanelCard>
-  );
-}
+export { GoalCard } from "../vision-board/panel-goal-card.js";
 
 type LevelNameKey = `level_${CommunityLevelView["key"]}`;
 
@@ -211,30 +143,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontWeight: "500",
-  },
-  goal: {
-    gap: 12,
-  },
-  goalText: {
-    fontSize: 15,
-    lineHeight: 21,
-    fontWeight: "700",
-  },
-  goalEmpty: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: "500",
-  },
-  textAction: {
-    alignSelf: "flex-start",
-    minHeight: 44,
-    justifyContent: "center",
-  },
-  textActionLabel: {
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: "500",
-    textDecorationLine: "underline",
   },
   journey: {
     gap: 12,

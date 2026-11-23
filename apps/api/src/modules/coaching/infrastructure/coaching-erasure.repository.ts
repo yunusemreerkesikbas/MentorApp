@@ -14,6 +14,7 @@ import {
   studySessions,
   visionBoards,
 } from "../../../database/schema";
+import { notebookPageImageKeys } from "./notebook-page-images";
 import { acquireUserPlanLock } from "./plan-task.repository";
 
 /** `plan_tasks.title` is NOT NULL — scrubbed to a neutral placeholder rather than nulled. */
@@ -90,7 +91,8 @@ export class CoachingErasureRepository {
       await tx
         .delete(mistakeNotebookEntries)
         .where(eq(mistakeNotebookEntries.userId, userId));
-      // Pages cascade from the collection root.
+      // Collect page media before the collection cascade removes their documents.
+      const pageImageKeys = await notebookPageImageKeys(tx, userId);
       await tx.delete(notebooks).where(eq(notebooks.userId, userId));
 
       // Wholly personal — drop the row.
@@ -127,6 +129,7 @@ export class CoachingErasureRepository {
           ...photos.map((p) => p.storageKey),
           ...boardImageKeys,
           ...notebookImageKeys,
+          ...pageImageKeys,
         ],
       };
     });

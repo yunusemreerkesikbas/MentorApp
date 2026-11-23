@@ -5,6 +5,7 @@ import type {
   ExamTopicDto,
   MockExamDto,
   NotebookEntryDto,
+  NotebookEntryStatus,
   NotebookReviewSummary,
   NotebookReviewHistoryItem,
   NotebookErrorType,
@@ -97,10 +98,11 @@ export async function createAnalysisFocusPlanTask(
   })) as PlanTaskDto;
 }
 
-export type MistakeScope = { subjectRef?: string; topicRef?: string; mockExamId?: string; errorType?: NotebookErrorType };
+export type MistakeScope = { subjectRef?: string; topicRef?: string; mockExamId?: string; errorType?: NotebookErrorType; status?: NotebookEntryStatus; revisit?: "true"; days?: string };
 
-export function fetchNotebookEntries(examId: string, scope: MistakeScope, page: number, due = false) {
-  const qs = new URLSearchParams({ examId, page: String(page), pageSize: "15" });
+export function fetchNotebookEntries(examId: string | undefined, scope: MistakeScope, page: number, due = false) {
+  const qs = new URLSearchParams({ page: String(page), pageSize: "15" });
+  if (examId) qs.set("examId", examId);
   for (const [key, value] of Object.entries(scope)) {
     if (value) qs.set(key, value);
   }

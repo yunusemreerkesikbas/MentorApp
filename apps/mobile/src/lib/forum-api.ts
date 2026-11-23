@@ -1,4 +1,5 @@
 import { ApiClientError, http } from "@mentor/api-client";
+import type { AttachmentInput } from "@mentor/validation";
 import type {
   AnswerView,
   CommentView,
@@ -86,6 +87,7 @@ export async function postZoneThread(input: {
   title?: string;
   tagIds?: string[];
   poll?: ForumPollInput;
+  attachments?: AttachmentInput[];
 }): Promise<ThreadView> {
   return (await http<ThreadView>(
     `/v1/forum/zones/${encodeURIComponent(input.zoneId)}/threads`,
@@ -96,6 +98,7 @@ export async function postZoneThread(input: {
         ...(input.title?.trim() ? { title: input.title.trim() } : {}),
         ...(input.tagIds?.length ? { tagIds: input.tagIds } : {}),
         ...(input.poll ? { poll: input.poll } : {}),
+        ...(input.attachments?.length ? { attachments: input.attachments } : {}),
       }),
     },
   )) as ThreadView;
