@@ -32,6 +32,8 @@ const SMALL_OK = new Set<ArtKey>([
   "t1CareerIsletme", "t1CareerSosyal", "t1CareerSanat", "t1CareerFen", "t1CareerMimarlik",
   "t1DeskPuhuLeft", "t1DeskPuhuRight", "t1DeskPuhuBlink", "t1DeskPuhuPeek",
   "t1ChestOpen",
+  // DRH: the app's weekly recap shapes (decor, not mascot), shown at the app's own 2.5x size.
+  "d2Floral", "d2LavenderShape", "d2RedPixel", "d2GreenShape", "d2Graphics",
 ]);
 
 const sources = (d: string): string[] =>

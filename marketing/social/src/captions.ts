@@ -184,6 +184,31 @@ export const CAPTIONS: Partial<Record<PieceId, Caption>> = {
     tags: SERIES_TAGS,
     ad: { headline: "25 dakika kapıda Puhu var", button: AD_BUTTON },
   },
+  // Feature ads, wave 2 reels. The music is in the file, so the same reel runs as a launch ad: headlines from the wave 2 paid twins.
+  DRP: {
+    text: "Hedefini duvara as! 📌\nPanonu kur, kilit ekranın yap. Telefonu her açışında hedefin karşında: puhukoc.com",
+    alt: "Krem duvarda \"HEDEFİNİ DUVARA AS!\" yazısı ve boş bir mantar pano. Kampüs, kod, Konya ve mezuniyet fotoğrafları vuruşla panoya iğneleniyor, ortaya \"HEDEFİM: Bilgisayar Mühendisi, Konya\" kartı düşüyor. Kamera telefona giriyor: pano kilit ekranı olmuş, saat 07:30. Sonda PuhuKoç logosu ve puhukoc.com.",
+    tags: SERIES_TAGS,
+    ad: { headline: "Hedefini kilit ekranına taşı", button: "Şimdi Yükle" },
+  },
+  DRK: {
+    text: "Sen hangi Puhu'sun? 🦉\nAlanını seç, Puhu o kıyafete bürünsün. Seninki hangisi, yorumlara yaz! puhukoc.com",
+    alt: "Sarı zeminde \"SEN HANGİ PUHU’SUN?\" yazısı. Ortadaki Puhu her vuruşta kıyafet değiştiriyor: Sağlık, Mühendislik, Yazılım, Hukuk, Eğitim, İşletme, İletişim, Sanat, Fen ve Mimarlık. Sonunda kesik çizgili boş yuva: \"SENİNKİ? yorumlara yaz!\" Sonda PuhuKoç logosu ve puhukoc.com.",
+    tags: SERIES_TAGS,
+    ad: { headline: "Puhu'n senin alanını giysin", button: "Şimdi Yükle" },
+  },
+  DRH: {
+    text: "Hafta bitti, hikâyen hazır! ✨\nKaç gün buradaydın, kaç dakika odaklandın, en çok hangi ders parladı? Sonunda bir de lakap: puhukoc.com",
+    alt: "Uygulamadaki haftalık hikâye gibi dokunarak geçen slaytlar. Mercan zeminde sunucu Puhu: \"Haftan hazır, hadi bir bakalım!\" Sonra \"312 dakika tam odak\". Lavanta zeminde \"Bu hafta 5 gün buradaydın!\" Ardından \"HAFTANIN YILDIZI: Matematik\" ve kozmik girdapta dalgıç Puhu ile \"Bu haftaki lakabın: Odak Makinesi\". Sonda siyah zeminde PuhuKoç logosu ve puhukoc.com.",
+    tags: SERIES_TAGS,
+    ad: { headline: "Haftanın hikâyesi hazır", button: "Şimdi Yükle" },
+  },
+  DRY: {
+    text: "Yanlış mı yaptın? Deftere yapıştır! 📒\nSoruyu fotoğrafla, deftere koy. Tekrar günü gelince karşına çıkar: puhukoc.com",
+    alt: "Krem zeminde \"YANLIŞ MI YAPTIN?\" yazısı. Matematik defter sayfasına \"3x − 5 = 2x + 4 ise x kaçtır?\" sorusu bantlanıyor, kırmızı kalemle \"işlem hatası!\" yazılıyor. \"TEKRAR GÜNÜ GELDİ!\" yazısıyla mavi tekrar günü etiketi dönüyor. Sonra yeşil \"ÇÖZDÜM\" damgası çarpıyor, \"DEFTERE YAPIŞTIR!\" yazısı geliyor. Sonda PuhuKoç logosu ve puhukoc.com.",
+    tags: SERIES_TAGS,
+    ad: { headline: "Yanlış soruların tek defterde", button: "Şimdi Yükle" },
+  },
 };
 
 // caption.txt: post text, hashtags, the alt text for Instagram's accessibility field, then the paid fields.

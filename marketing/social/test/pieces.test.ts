@@ -4,16 +4,29 @@ import { BEAT, compositionIds, EXPORT_PROPS, guideVisible, PIECES, SIZES, STUDIO
 
 const byId = (id: PieceId) => PIECES.find((p) => p.id === id)!;
 
-it("lists the 15 launch pieces in posting-plan order, then the 6 Premium pieces, T1, then the feature ads", () => {
+it("lists the 15 launch pieces in posting-plan order, then the 6 Premium pieces, T1, then the feature ads (wave 1, then the wave 2 reels)", () => {
   expect(PIECES.map((p) => p.id)).toEqual([
     "F1", "F2", "F3", "F4", "F5", "F6", "S1", "S2", "S3", "S4", "R1", "R2", "R3", "X1", "L1",
     "PF1", "PF2", "PS1", "PS2", "PR1", "PR2", "T1",
     "IF1", "IF2", "IF3", "IF4", "IF5", "IF6", "IS1", "IS2", "IS3", "IS4", "IS5", "IS6", "IR1",
+    "DRP", "DRK", "DRH", "DRY",
   ]);
 });
 
 it("pins the feature reel at 8 s = 16 beats", () => {
   expect(byId("IR1").video).toEqual({ fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 });
+});
+
+it("pins the wave 2 reels: DRP, DRK at 8 s like IR1; DRH, DRY at 12 s = 24 beats", () => {
+  for (const id of ["DRP", "DRK"] as const) {
+    expect(byId(id).video, id).toEqual({ fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 });
+  }
+  for (const id of ["DRH", "DRY"] as const) {
+    expect(byId(id).video, id).toEqual({ fps: 30, durationInFrames: 360, endCardFrom: 300, coverFrame: 240 });
+  }
+  for (const id of ["DRP", "DRK", "DRH", "DRY"] as const) {
+    expect(byId(id).format, id).toBe("reel");
+  }
 });
 
 it("pins the promo film's timing", () => {

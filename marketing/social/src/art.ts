@@ -70,6 +70,27 @@ export const ART = {
   // app with mocked demo data ("Deniz", no real user). Raw captures in art-source.local/social/promo/screens.
   t1ScreenPlan: "art/t1/screen-plan.png",
   t1ScreenDeneme: "art/t1/screen-deneme.png",
+  // Feature ads wave 2 (2026-11-23): flat career stickers (800 px, from apps/web/public/mascot/career) and the
+  // weekly recap shapes (apps/web/public/visuals/weekly-recap-2023), as webp.
+  d2Saglik: "art/d2/career-saglik.webp",
+  d2Muhendislik: "art/d2/career-muhendislik.webp",
+  d2Yazilim: "art/d2/career-yazilim.webp",
+  d2Hukuk: "art/d2/career-hukuk_kamu.webp",
+  d2Egitim: "art/d2/career-egitim.webp",
+  d2Isletme: "art/d2/career-isletme.webp",
+  d2Sosyal: "art/d2/career-sosyal_iletisim.webp",
+  d2Sanat: "art/d2/career-sanat_tasarim.webp",
+  d2Fen: "art/d2/career-fen.webp",
+  d2Mimarlik: "art/d2/career-mimarlik.webp",
+  d2Floral: "art/d2/recap-floral.webp",
+  d2SilverWiggle: "art/d2/recap-silver-wiggle.webp",
+  d2WorldMap: "art/d2/recap-world-map.webp",
+  d2LavenderShape: "art/d2/recap-lavender-shape.webp",
+  d2RedPixel: "art/d2/recap-red-pixel.webp",
+  d2GreenShape: "art/d2/recap-green-shape.webp",
+  d2GreenWiggle: "art/d2/recap-green-wiggle.webp",
+  d2Graphics: "art/d2/recap-graphics.webp",
+  d2LavenderPixel: "art/d2/recap-lavender-pixel.webp",
 } as const;
 
 export type ArtKey = keyof typeof ART;
@@ -116,6 +137,11 @@ export const SOUND = {
   t1SfxFlick: "sfx/flick.mp3",
   t1SfxSnap: "sfx/snap.mp3",
   t1SfxSwitch: "sfx/switch.mp3",
+  // Wave 2 reel music (Pixabay Content License, NickPanek, who claims no Content ID): 8,5 s cuts (12,5 s for DRH, DRY) from each track's
+  // drop, stretched to 120 BPM without a pitch change, first beat on frame 0. Sources in art-source.local/social/gen/music-wave2.
+  d2MusicBalkan: "audio/d2/drk-balkan-funk.mp3", // "Energetic Balkan Funk Brass Instrumental" (309553), 117 BPM, from 115,12 s
+  d2MusicDubai: "audio/d2/drh-hopeful-dubai.mp3", // "Hopeful Dubai Techno & Uplifting Melodic Trance" (497228), 142 BPM, from 27,07 s
+  d2MusicRetro: "audio/d2/dry-retro-8bit.mp3", // "Retro 8-Bit Chiptune Action…" (499059), 133,3 BPM, from 135,20 s
 } as const;
 
 // Poses a reel end card may use: whole body, transparent on every edge (p2/p3 are cropped peeks).
