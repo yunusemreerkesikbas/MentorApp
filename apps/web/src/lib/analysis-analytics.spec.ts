@@ -8,6 +8,6 @@ describe("analysis action privacy", () => {
     vi.stubGlobal("window", { localStorage: { getItem: () => consent }, dataLayer });
     const payload = { action: "plan" as const, focusSource: "PHOTO_SIGNAL" as const, cycleState: "signal" as const, net: 26.75, userId: "private", note: "private note" };
     trackAnalysisAction(payload);
-    expect(dataLayer).toEqual(consent ? [["event", "analysis_action", { action: "plan", focus_source: "PHOTO_SIGNAL", cycle_state: "signal" }]] : []);
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual(consent ? [["event", "analysis_action", { action: "plan", focus_source: "PHOTO_SIGNAL", cycle_state: "signal" }]] : []);
   });
 });

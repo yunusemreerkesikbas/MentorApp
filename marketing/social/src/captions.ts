@@ -37,10 +37,10 @@ export const CAPTIONS: Partial<Record<PieceId, Caption>> = {
   F4: {
     text: "Puhu'yla bir gün nasıl geçer? Kaydır, gör. 👉\nSabah plan hazır, öğlen masa dolu, akşam haftalık özetin seni bekliyor. Çok yakında puhukoc.com'da.",
     alt: [
-      "Mavi zeminde \"Puhu'yla bir gün\" etiketi ve kocaman \"Sabah\" yazısı. \"Puhu günün planını hazırlar. Sen sadece başla.\" Yanında eğik duran telefonda \"Bugün\" listesi ve üç görev, köşede gülen bir Puhu.",
-      "Kocaman \"Öğlen\" yazısı. \"Masada 4 kişi. Kimse yalnız çalışmıyor.\" Telefonun ekranından dört Puhu'nun birlikte çalıştığı masa taşıyor, altında odak sayacı.",
-      "Kocaman \"Akşam\" yazısı. \"Haftalık özetin hazır. Bu haftaki lakabın: Gizli Kahraman.\" Telefonda haftalık toplam odak süresi, günlük çubuklar ve sarı \"Gizli Kahraman\" kartı; köşede şaşkınlıkla gözlerini açmış bir Puhu.",
-      "Kocaman \"İstersen\" yazısı. \"Gerçek bir koç da masana katılır.\" Telefonda koçtan gelen \"Bu hafta harika gidiyorsun.\" mesajı ve \"Teşekkürler!\" cevabı; alt köşeden göz kırpan bir Puhu.",
+      "Mavi zeminde \"Puhu'yla bir gün\" etiketi ve kocaman \"Sabah\" yazısı. \"Puhu günün planını hazırlar. Sen sadece başla.\" Yanında eğik duran telefonda uygulamanın ana ekranı: \"Bugün 3 adım var\" yazısı, biri bitmiş üç adımlık yol ve \"40 paragraf çöz\" düğmesi; köşede gülen bir Puhu.",
+      "Kocaman \"Öğlen\" yazısı. \"Masada 4 kişi. Kimse yalnız çalışmıyor.\" Telefonda \"YKS masası\": ahşap masanın çevresinde dört öğrenci, her birinin dersi ve süresi yazıyor.",
+      "Kocaman \"Akşam\" yazısı. \"Haftalık özetin hazır. Bu haftaki lakabın: Gizli Kahraman.\" Yanında eğik duran altın çerçeveli lakap kartı: uzay temalı Puhu, altında \"Bu haftaki lakabın: Gizli Kahraman\" ve \"Sessiz çalıştın ama her adımın sayıldı!\"; köşede şaşkınlıkla gözlerini açmış bir Puhu.",
+      "Kocaman \"İstersen\" yazısı. \"Gerçek bir koç da masana katılır.\" Telefonda \"Koçum\" ekranı: koç Ayşe Demir'in \"Bu hafta harika gidiyorsun.\" notu ve öğrencinin koçuna yazdığı not; alt köşeden göz kırpan bir Puhu.",
       "Kocaman sarı \"Yerini kap!\" yazısı, altında puhukoc.com ve @puhukoc. Hakem Puhu yandan fırlayıp düdük çalarak adresi gösteriyor. Köşede \"ÇOK YAKINDA\" etiketi.",
     ],
   },
@@ -144,13 +144,13 @@ export const CAPTIONS: Partial<Record<PieceId, Caption>> = {
   },
   IS1: {
     text: "POV: \"bir bildirime bakıp çıkacağım\" dedin. 🙃\nSeansı başlat, kapıda Puhu var: puhukoc.com",
-    alt: "Mavi zeminde \"POV: Bir bildirime bakıp çıkacağım dedin.\" yazısı. Elini yüzüne kapatmış Puhu'nun konuşma balonunda \"Kanka, 40 dakika oldu.\" yazıyor. Alttaki kartta \"Seans hazır!\" başlığı ve 25:00 odak seansı satırı.",
+    alt: "Mavi zeminde \"POV: Bir bildirime bakıp çıkacağım dedin.\" yazısı. Elini yüzüne kapatmış Puhu'nun konuşma balonunda \"Kanka, 40 dakika oldu.\" yazıyor. Altta uygulamanın seans masası sarı zamanlayıcı halkasının içinde, halka 25:00'a kurulu.",
     tags: SERIES_TAGS,
     ad: { headline: "Seansı başlat, kapıda Puhu var", button: AD_BUTTON },
   },
   IS2: {
     text: "POV: \"pazartesi başlıyorum\" dedin, bugün pazartesi. 😌\nHaftan hazır, Puhu kurdu bile: puhukoc.com",
-    alt: "Mavi zeminde \"POV: Pazartesi başlıyorum dedin.\" yazısı. Puhu gözlüğünün üzerinden şüpheyle bakıyor; konuşma balonunda \"Kanka, bugün pazartesi.\" yazıyor. Alttaki \"Haftan hazır!\" kartında pazartesi Paragraf, salı Problemler, çarşamba Geometri.",
+    alt: "Mavi zeminde \"POV: Pazartesi başlıyorum dedin.\" yazısı. Puhu telefonun arkasından, gözlüğünün üzerinden şüpheyle bakıyor; konuşma balonunda \"Kanka, bugün pazartesi.\" yazıyor. Telefonda uygulamanın plan ekranı: pazartesi seçili, görevlerde Paragraf soruları 25 dk.",
     tags: SERIES_TAGS,
     ad: { headline: "Haftan hazır, Puhu kurdu bile", button: AD_BUTTON },
   },
@@ -162,13 +162,13 @@ export const CAPTIONS: Partial<Record<PieceId, Caption>> = {
   },
   IS4: {
     text: "POV: \"hangi konudan başlasam?\" dedin. 🤔\nDenemeni gir, sıradaki konun hazır: puhukoc.com",
-    alt: "Mavi zeminde \"POV: Hangi konudan başlasam? dedin.\" yazısı. Hava durumu spikeri Puhu çubuğuyla gösteriyor; konuşma balonunda \"Kanka, sıradaki Geometri.\" yazıyor. Alttaki \"Deneme analizi\" kartında Geometri sıradaki, Problemler tekrar ister, Paragraf yerinde.",
+    alt: "Mavi zeminde \"POV: Hangi konudan başlasam? dedin.\" yazısı. Hava durumu spikeri Puhu çubuğuyla telefonu gösteriyor; konuşma balonunda \"Kanka, sıradaki Geometri.\" yazıyor. Telefonda uygulamanın deneme sonucu: 48 net, +6, Yeni rekor; yanında \"Sıradaki: Geometri\" çıkartması.",
     tags: SERIES_TAGS,
     ad: { headline: "Sıradaki konun hazır", button: AD_BUTTON },
   },
   IS5: {
     text: "POV: \"kütüphaneye gidince çalışırım\" dedin. 📚\nKütüphane cebinde, masada 4 kişi var: puhukoc.com",
-    alt: "Mavi zeminde \"POV: Kütüphaneye gidince çalışırım dedin.\" yazısı. Hakem Puhu düdük çalıyor; konuşma balonunda \"Kanka, kütüphane cebinde.\" yazıyor. Altta lamba ışığında dört Puhu'nun birlikte çalıştığı büyük bir masa ve \"Masada 4 kişi\" etiketi.",
+    alt: "Mavi zeminde \"POV: Kütüphaneye gidince çalışırım dedin.\" yazısı. Hakem Puhu düdük çalıyor; konuşma balonunda \"Kanka, kütüphane cebinde.\" yazıyor. Altta lamba ışığında dört Puhu'nun birlikte çalıştığı büyük bir masa.",
     tags: SERIES_TAGS,
     ad: { headline: "Kütüphane cebinde, masan hazır", button: AD_BUTTON },
   },
@@ -209,7 +209,47 @@ export const CAPTIONS: Partial<Record<PieceId, Caption>> = {
     tags: SERIES_TAGS,
     ad: { headline: "Yanlış soruların tek defterde", button: "Şimdi Yükle" },
   },
+  K1: {
+    text: "Deneme bitti, asıl iş şimdi başlıyor. 📝\nBu dört adımı kaydet, sıradaki denemeden sonra aç.",
+    alt: [
+      "Krem renkli noktalı defter sayfasında \"Denemeden sonraki 20 dakika.\" başlığı ve \"Neti asıl burada artırırsın.\" cümlesi. El yazısıyla \"kaydet, lazım olacak.\" notu, alt köşeden göz kırpan bir Puhu.",
+      "1. adım: \"Yanlışları üçe ayır.\" Altında \"Bilmiyordum. İşlem hatası yaptım. Süre yetmedi.\" yazıyor, köşede elini yüzüne kapatmış Puhu çıkartması.",
+      "2. adım: \"Her yanlışa tek cümle yaz.\" Altında \"Neden yanlış yaptım? Cevap bir cümleyi geçmesin.\" yazıyor, köşede şaşkın Puhu çıkartması.",
+      "3. adım: \"Bilmediklerini haftana koy.\" Altında \"En çok yanlış çıkan iki konu, haftanın ilk işi.\" yazıyor, köşede gece takkeli Puhu çıkartması.",
+      "4. adım: \"Bir hafta sonra tekrar çöz.\" Altında \"Aynı sorular, kitap kapalı. Çözüyorsan konu senin.\" yazıyor. El yazısıyla \"Puhu’da bunun adı Yanlış Defterim.\" notu, el sallayan Puhu, PuhuKoç logosu ve puhukoc.com.",
+    ],
+    tags: SERIES_TAGS,
+  },
+  K2: {
+    text: "Pazar akşamı 10 dakika ayır, hafta kendini toplasın. 🗓️\nKaydet, pazar günü lazım olacak.",
+    alt: [
+      "Krem renkli noktalı defter sayfasında \"Tutan bir haftalık plan.\" başlığı ve \"4 adım, 10 dakika.\" cümlesi. El yazısıyla \"pazar akşamı yap.\" notu, alt köşeden göz kırpan bir Puhu.",
+      "1. adım: \"Önce sabitleri yaz.\" Altında \"Okul, kurs, yemek, uyku. Kalanı senin çalışma alanın.\" yazıyor, köşede elini yüzüne kapatmış Puhu çıkartması.",
+      "2. adım: \"Güne en çok 3 ana iş.\" Altında \"Dördüncüyü yazarsan üçü de yarım kalır.\" yazıyor, köşede şaşkın Puhu çıkartması.",
+      "3. adım: \"Her güne 20 dakika tekrar.\" Altında \"Dünün yanlışları, bugünün ilk işi.\" yazıyor, köşede gece takkeli Puhu çıkartması.",
+      "4. adım: \"Bir günü boş bırak.\" Altında \"Aksayan işler oraya kayar, plan bozulmaz.\" yazıyor. El yazısıyla \"üşenirsen Puhu kursun.\" notu, el sallayan Puhu, PuhuKoç logosu ve puhukoc.com.",
+    ],
+    tags: SERIES_TAGS,
+  },
+  WS1: {
+    text: "Işık yandı, Puhu bekliyor. 🔦\nYerini kap: puhukoc.com",
+    alt: "Gece vakti aydınlık bir pencerede, elinde fenerle sevinçle zıplayan Puhu. Altında \"Işık yandı. Yerin hazır!\" yazısı.",
+  },
+  WS2: {
+    text: "Açılınca ilk işin ne olacak? Ankete bas. 👀",
+    alt: "Mavi zeminde \"Açılınca ilk işin ne?\" sorusu. Papyonlu Puhu kanatlarını açmış bekliyor, el yazısıyla \"ankete bas, Puhu sayıyor.\" notu var.",
+  },
+  WS3: {
+    text: "KPSS, YKS, LGS, ALES, DGS: hepsi aynı masada. 🪑\nBir sandalye de sana: puhukoc.com",
+    alt: "Krem renkli noktalı zeminde \"Hepsi aynı masada. Bir sandalye de sana.\" yazısı ve üstünde KPSS, YKS, LGS, ALES, DGS satırı. Altında dört Puhu'nun birlikte çalıştığı masa.",
+  },
+  WR1: {
+    text: "Bir pencere hâlâ karanlık: seninki. 🌙\nIşığı yak, yerin hazır: puhukoc.com",
+    alt: "Karanlık bir pencere ve \"Bir pencere hâlâ karanlık.\" yazısı. Işık yanıyor: pencerede elinde fenerle zıplayan Puhu görünüyor, \"Işığı yak. Yerin hazır!\" yazısı damgalanıyor. Sonda el sallayan Puhu, PuhuKoç logosu ve puhukoc.com.",
+  },
 };
+CAPTIONS.T1P = CAPTIONS.T1; // the post cut of the same film
+
 
 // caption.txt: post text, hashtags, the alt text for Instagram's accessibility field, then the paid fields.
 export function formatCaption(c: Caption): string {

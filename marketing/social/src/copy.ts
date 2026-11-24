@@ -42,6 +42,9 @@ const FORECAST = {
   row3: "Paragraf", row3Meta: "yerinde",
 };
 
+// "İşe yarar" carousels: what every card shares.
+const TIP = { tag: "İŞE YARAR", footer: "puhukoc.com · @puhukoc" };
+
 // Every visible string, per piece. Edit copy here and re-render.
 export const COPY: Partial<Record<PieceId, Record<string, string>>> = {
   F1: {
@@ -136,6 +139,7 @@ export const COPY: Partial<Record<PieceId, Record<string, string>>> = {
     s3TotalLabel: "toplam odak",
     s3NickLabel: "Bu haftaki lakabın",
     s3Nick: "Gizli Kahraman",
+    s3NickMsg: "Sessiz çalıştın ama her adımın sayıldı!", // app: TITLE_FOCUS_TRAVELER_MESSAGE
     s4Title: "Koçum",
     s4From: "Koçun",
     s4Message: "Bu hafta harika gidiyorsun.",
@@ -386,23 +390,17 @@ export const COPY: Partial<Record<PieceId, Record<string, string>>> = {
     quote1: "“Bir bildirime",
     quote2: "bakıp çıkacağım”",
     kanka2: "40 dakika oldu.",
-    cardTitle: "Seans hazır!",
-    cardChip: "Puhu kapıda",
-    row1Tag: "25:00",
-    row1: "Odak seansı",
-    row2Tag: "Sonra",
-    row2: "Mola hazır", // app
+    dial: "25:00",
     altPuhu: "Puhu çıkartması elini yüzüne kapatmış",
+    altMasa: "Seans masası sarı zamanlayıcı halkasının içinde, 25:00'a kurulu",
   },
   IS2: {
     ...POV,
     quote1: "“Pazartesi",
     quote2: "başlıyorum”",
     kanka2: "bugün pazartesi.",
-    cardTitle: "Haftan hazır!",
-    cardChip: "Puhu kurdu",
-    ...WEEK,
-    altPuhu: "Puhu kartın üstünden, gözlüğünün üzerinden şüpheyle bakıyor",
+    altPuhu: "Puhu telefonun arkasından, gözlüğünün üzerinden şüpheyle bakıyor",
+    altScreen: "Uygulamanın plan ekranı: pazartesi seçili, görevlerde Paragraf soruları 25 dk ve Problemler 40 dk",
   },
   IS3: {
     ...POV,
@@ -420,10 +418,9 @@ export const COPY: Partial<Record<PieceId, Record<string, string>>> = {
     quote1: "“Hangi konudan",
     quote2: "başlasam?”",
     kanka2: "sıradaki Geometri.",
-    cardTitle: "Deneme analizi",
-    cardChip: "Sıradaki: Geometri", // app
-    ...FORECAST,
-    altPuhu: "Hava durumu spikeri Puhu çubuğuyla kartı gösteriyor",
+    next: "Sıradaki: Geometri", // app
+    altPuhu: "Hava durumu spikeri Puhu çubuğuyla telefonu gösteriyor",
+    altScreen: "Uygulamanın deneme sonucu ekranı: Net seyrin 48 net, geçen denemeye göre +6, Yeni rekor",
   },
   IS5: {
     ...POV,
@@ -497,5 +494,60 @@ export const COPY: Partial<Record<PieceId, Record<string, string>>> = {
     note: "işlem hatası!",
     review: "TEKRAR GÜNÜ",
     stamp: "ÇÖZDÜM",
+  },
+  K1: {
+    ...TIP,
+    c1Head: "Denemeden sonraki 20 dakika.",
+    c1Body: "Neti asıl burada artırırsın.",
+    c1Note: "kaydet, lazım olacak.",
+    c2Head: "Yanlışları üçe ayır.",
+    c2Body: "Bilmiyordum. İşlem hatası yaptım. Süre yetmedi.",
+    c3Head: "Her yanlışa tek cümle yaz.",
+    c3Body: "Neden yanlış yaptım? Cevap bir cümleyi geçmesin.",
+    c4Head: "Bilmediklerini haftana koy.",
+    c4Body: "En çok yanlış çıkan iki konu, haftanın ilk işi.",
+    c5Head: "Bir hafta sonra tekrar çöz.",
+    c5Body: "Aynı sorular, kitap kapalı. Çözüyorsan konu senin.",
+    c5Note: "Puhu’da bunun adı Yanlış Defterim.",
+  },
+  K2: {
+    ...TIP,
+    c1Head: "Tutan bir haftalık plan.",
+    c1Body: "4 adım, 10 dakika.",
+    c1Note: "pazar akşamı yap.",
+    c2Head: "Önce sabitleri yaz.",
+    c2Body: "Okul, kurs, yemek, uyku. Kalanı senin çalışma alanın.",
+    c3Head: "Güne en çok 3 ana iş.",
+    c3Body: "Dördüncüyü yazarsan üçü de yarım kalır.",
+    c4Head: "Her güne 20 dakika tekrar.",
+    c4Body: "Dünün yanlışları, bugünün ilk işi.",
+    c5Head: "Bir günü boş bırak.",
+    c5Body: "Aksayan işler oraya kayar, plan bozulmaz.",
+    c5Note: "üşenirsen Puhu kursun.",
+  },
+  WS1: {
+    head: "Işık yandı.",
+    punch: "Yerin hazır!",
+    altPuhu: "Elinde fenerle pencerede sevinçle zıplayan Puhu",
+  },
+  WS2: {
+    head: "Açılınca",
+    punch: "ilk işin ne?",
+    hint: "ankete bas, Puhu sayıyor.",
+    pollGuide: "Anket çıkartması buraya",
+    altPuhu: "Papyonlu Puhu kanatlarını iki yana açmış, heyecanla bekliyor",
+  },
+  WS3: {
+    exams: "KPSS · YKS · LGS · ALES · DGS",
+    head: "Hepsi aynı masada.",
+    punch: "Bir sandalye de sana.",
+    altMasa: "Dört Puhu aynı masada birlikte ders çalışıyor",
+  },
+  WR1: {
+    hook1: "Bir pencere",
+    hook2: "hâlâ karanlık.",
+    head: "Işığı yak.",
+    punch: "Yerin hazır!",
+    altPuhu: "Elinde fenerle pencerede sevinçle zıplayan Puhu",
   },
 };

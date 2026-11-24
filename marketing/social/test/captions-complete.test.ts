@@ -7,7 +7,7 @@ it("has a short caption and alt text for every piece", () => {
     const c = CAPTIONS[p.id];
     expect(c, p.id).toBeDefined();
     expect(c!.text.split("\n").filter(Boolean).length, p.id).toBeLessThanOrEqual(3);
-    if (p.id === "F4") expect(c!.alt, p.id).toHaveLength(5);
+    if (p.cards) expect(c!.alt, p.id).toHaveLength(p.cards);
     else expect(typeof c!.alt === "string" && c!.alt.length > 0, p.id).toBe(true);
   }
 });

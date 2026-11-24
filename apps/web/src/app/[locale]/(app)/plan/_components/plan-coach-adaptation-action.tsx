@@ -32,7 +32,13 @@ import { fetchCoinPlanBrief, fetchSavedPlanPreview } from "@/lib/plan-previews";
 import { refreshEconomySnapshot } from "@/lib/economy-store";
 import { PlanCoinSheet } from "./plan-coin-sheet";
 import { COIN_SHEET_ERRORS, planAccessView } from "./plan-coin-view";
-import { newQuote, usePlanCoinFlow } from "./use-plan-coin-flow";
+import {
+  keepsCoinQuote,
+  newQuote,
+  usePlanCoinFlow,
+  wizardCoinQuote,
+  type PlanCoinQuote,
+} from "./use-plan-coin-flow";
 
 interface PlanCoachAdaptationActionProps {
   knownWeek: PlanAdaptationKnownWeek;
@@ -67,6 +73,8 @@ export const PlanCoachAdaptationAction = forwardRef<
   const { view: subscriptionView, refresh: refreshSubscription } =
     useSubscription();
   const coin = usePlanCoinFlow();
+  /** The last Coin request the wizard sent; its retry with the same answers reuses the id. */
+  const lastQuote = useRef<PlanCoinQuote | null>(null);
   const closeWizard = useCallback(() => {
     wizardLock.current = false;
     setWizardOpen(false);
@@ -94,10 +102,12 @@ export const PlanCoachAdaptationAction = forwardRef<
       openPaywall({ sourceFeature: "plan.ai" });
     },
     onReady: (preview, input) => {
+      lastQuote.current = null;
       closeWizard();
       void openPreview(preview, input);
     },
     onError: (error, paid) => {
+      if (!keepsCoinQuote(error)) lastQuote.current = null;
       const message = readCoachError(error, tCommon("error_unknown"));
       if (!(paid && error instanceof ApiClientError && COIN_SHEET_ERRORS.has(error.body.code)))
         return report(message);
@@ -143,6 +153,8 @@ export const PlanCoachAdaptationAction = forwardRef<
   /** `paid` is the Coin price confirmed in the sheet; null on the included path. */
   function openWizard(paid: number | null) {
     wizardLock.current = true;
+    // A new confirm in the sheet is a new purchase, even for answers sent before.
+    lastQuote.current = null;
     coin.setPaid(paid);
     // The wizard opens at once; the coach's reading lands in it when ready, and a failed read
     // leaves today's defaults.
@@ -160,7 +172,9 @@ export const PlanCoachAdaptationAction = forwardRef<
     if (offer?.cost == null) return;
     if (!sheet.pending) return openWizard(offer.cost);
     coin.setPaid(offer.cost);
-    void generatePreview(sheet.pending.input, sheet.pending.progress, newQuote(sheet.pending, offer.cost));
+    const quote = newQuote(sheet.pending, offer.cost);
+    lastQuote.current = quote;
+    void generatePreview(sheet.pending.input, sheet.pending.progress, quote);
   }
 
   async function open(input: CoachPlanAdaptationInput) {
@@ -243,8 +257,10 @@ export const PlanCoachAdaptationAction = forwardRef<
           onComplete={(input, progress) => {
             if (busyRef.current) return;
             // The wizard stays open underneath, so a failed request finds the answers still there.
-            void generatePreview(input, progress,
-              coin.paid === null ? undefined : newQuote({ input, progress }, coin.paid));
+            const quote =
+              coin.paid === null ? undefined : wizardCoinQuote(lastQuote.current, { input, progress }, coin.paid);
+            lastQuote.current = quote ?? null;
+            void generatePreview(input, progress, quote);
           }}
         />
       ) : null}

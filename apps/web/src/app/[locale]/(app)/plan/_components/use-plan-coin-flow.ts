@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ApiClientError } from "@mentor/api-client";
 import type { PlanPreviewAccessDto } from "@mentor/types";
 import type { CoachPlanAdaptationInput } from "@mentor/validation";
 import { fetchPlanPreviewAccess } from "@/lib/plan-previews";
@@ -29,6 +30,25 @@ export const newQuote = (
   { input, progress }: NonNullable<PlanCoinSheetState["pending"]>,
   cost: number,
 ): PlanCoinQuote => ({ input, progress, cost, requestId: crypto.randomUUID(), resume: false });
+
+/**
+ * What the wizard's last button sends. The same answers at the same price go out under the last
+ * request's id, so a retry after Vazgeç or a lost answer is one request: the server answers a repeat
+ * with the draft it is making or has made, and takes no second Coin. Mirrors the phone's
+ * `wizardCoinQuote` (apps/mobile/src/lib/plan-puhu.ts).
+ */
+export function wizardCoinQuote(
+  last: PlanCoinQuote | null,
+  pending: NonNullable<PlanCoinSheetState["pending"]>,
+  cost: number,
+): PlanCoinQuote {
+  const same = last && !last.resume && last.cost === cost && JSON.stringify(last.input) === JSON.stringify(pending.input);
+  return same ? { ...last, progress: pending.progress } : newQuote(pending, cost);
+}
+
+/** A failed Coin request may go again under its id only when the server gave no verdict on it yet. */
+export const keepsCoinQuote = (error: unknown): boolean =>
+  !(error instanceof ApiClientError) || error.body.code === "AI_PLAN_REQUEST_PROCESSING";
 
 export function usePlanCoinFlow() {
   const [offer, setOffer] = useState<PlanPreviewAccessDto | null>(null);

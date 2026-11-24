@@ -59,10 +59,20 @@ test("landing indekslenir; welcome ve private yüzeyler noindex direktifini gös
     "/masaya-katil",
     "/cerez-tercihleri",
     "/panel",
+    "/topluluk/uyeler/panel",
   ]) {
     const html = await (await request.get(path)).text();
     expect(html, `${path} robots metadata`).toMatch(
       /<meta name="robots" content="noindex, nofollow"/i,
     );
   }
+});
+
+test("the public community renders anonymous HTML at its canonical address", async ({ request }) => {
+  const response = await request.get("/topluluk", { headers: { "user-agent": "Googlebot" } });
+  expect(response.status()).toBe(200);
+  expect(new URL(response.url()).pathname).toBe("/topluluk");
+  const html = await response.text();
+  expect(html).toMatch(/<link rel="canonical" href="https?:\/\/[^/]+\/topluluk"/i);
+  expect(html).toMatch(/<h1[^>]*>Topluluk<\/h1>/i);
 });

@@ -56,10 +56,11 @@ test("opening avoids below-fold media and selects viewport city sources", async 
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
   await page.goto("/");
+  await expect(page.locator(".lc-stars")).toHaveAttribute("fetchpriority", "high");
   await expect(page.locator(".lc-root")).toHaveAttribute("data-ready", "");
   await expect(page.locator(".lj-coin")).toBeAttached();
   await page.waitForTimeout(700);
-  expect(requests.filter((url) => /coin\.json|dotlottie-player\.wasm|desk-chest-closed/.test(url))).toEqual([]);
+  expect(requests.filter((url) => /coin\.json|dotlottie-player\.wasm|desk-chest-closed|desk-recap-nebula/.test(url))).toEqual([]);
 
   const mobile = testInfo.project.name.startsWith("mobile");
   for (const layer of ["far", "mid", "front"]) {
@@ -70,6 +71,14 @@ test("opening avoids below-fold media and selects viewport city sources", async 
   // Close-up detail stays full resolution on both viewports.
   await expect.poll(() => page.locator('.lc-art[src$="city-facade.webp"]').evaluate((img: HTMLImageElement) => img.currentSrc))
     .toContain("city-facade.avif");
+});
+
+test("weekly story art loads as the visitor reaches the morning section", async ({ page }) => {
+  await page.goto("/");
+  const nebula = page.locator(".lm-phone img[src$='desk-recap-nebula.webp']");
+  await expect(nebula).toHaveAttribute("loading", "lazy");
+  await page.locator(".lm-phone").scrollIntoViewIfNeeded();
+  await expect.poll(() => nebula.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
 });
 
 test("coin animation starts near its section", async ({ page }) => {
@@ -93,3 +102,23 @@ test("reduced motion keeps the coin still without downloading its player", async
   expect(requests.filter((url) => /coin\.json|dotlottie-player\.wasm/.test(url))).toEqual([]);
   await expect(page.locator(".lj-coin canvas")).toHaveCount(0);
 });
+
+// Spec: H1 and lead paint without images; mobile LCP stays under 2.5 s. Run on a production build.
+for (const path of ["/pomodoro-sayac", "/ders-calisma-uygulamasi"]) {
+  test(`${path} paints its largest content within 2.5 s on a phone`, async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.startsWith("mobile"), "mobile LCP budget");
+    await page.addInitScript(() => {
+      (window as unknown as { __lcp: number }).__lcp = 0;
+      new PerformanceObserver((list) => {
+        const last = list.getEntries().at(-1);
+        if (last) (window as unknown as { __lcp: number }).__lcp = last.startTime;
+      }).observe({ type: "largest-contentful-paint", buffered: true });
+    });
+    await page.goto(path, { waitUntil: "load" });
+    await page.waitForTimeout(1000);
+    const lcp = await page.evaluate(() => (window as unknown as { __lcp: number }).__lcp);
+    console.log(`LCP ${path}: ${Math.round(lcp)} ms`);
+    expect(lcp).toBeGreaterThan(0);
+    expect(lcp).toBeLessThan(2500);
+  });
+}

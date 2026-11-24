@@ -72,7 +72,7 @@ export default function LoginPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <form method="post" onSubmit={onSubmit} className="flex flex-col gap-4">
       <SectionHeading as="h1" className="items-center text-center">
         {translate("title")}
       </SectionHeading>

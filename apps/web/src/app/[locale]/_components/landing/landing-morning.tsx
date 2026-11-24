@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { HungDeskBoard } from "./desk-board";
 import { MorningPicker, type MorningItem } from "./morning-picker";
 import { MorningScene, type MorningSceneCopy } from "./morning-scene";
@@ -148,6 +149,20 @@ export async function LandingMorning() {
           {d("title")}
         </h2>
         <p className="mt-3 text-lg leading-relaxed text-[var(--landing-ink-soft)]">{d("lead")}</p>
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+          <Link
+            href="/mistake-notebook"
+            className="inline-flex min-h-11 items-center text-base font-extrabold text-[var(--landing-ink)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            {d("explore_notebook")} →
+          </Link>
+          <Link
+            href="/study-app"
+            className="inline-flex min-h-11 items-center text-base font-extrabold text-[var(--landing-ink)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            {d("explore_study_app")} →
+          </Link>
+        </div>
       </div>
       <MorningPicker scene={<MorningScene copy={scene} />} items={items} />
     </section>

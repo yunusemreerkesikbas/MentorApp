@@ -19,7 +19,7 @@
 
 ## 2. Core Subsystems & Current Rules
 
-### 2.1 Discovery Hub, Feed & Search (`/topluluk`, `/v1/forum/{hub,feed,trends,search}`)
+### 2.1 Discovery Hub, Feed & Search (`/topluluk/uyeler/panel`, `/v1/forum/{hub,feed,trends,search}`)
 - **Hub (`GET /v1/forum/hub`):** Returns featured thread, activity blend, exam-scoped trending tags (`/v1/forum/trends`), top supporters, and open room suggestions.
 - **Unified Feed (`GET /v1/forum/feed`):** Supports `scope=relevant|following`, `sort=trending|recent|top` (empty first `trending` page falls back to `recent` via `effectiveSort`), `contentType=posts|questions`, and `unanswered=true` (others' unanswered Q&A).
 - **Grouped Search (`GET /v1/forum/search?q=`):** Turkish `to_tsvector` GIN search returning threads, Q&A questions, public zones, tags, and public-safe member profiles (max 5 each).
@@ -53,7 +53,8 @@
 | `POST /v1/forum/polls/:pollId/votes` | Cast single immutable poll vote |
 | `GET /v1/forum/tags`, `POST /v1/forum/tag-suggestions` | Active curated tags and student tag suggestions |
 | `POST\|GET /v1/forum/reports*`, `POST /v1/forum/reports/:id/resolve` | Submit and resolve content reports (`HIDE` / `DISMISS`) |
-| `GET /v1/forum/public/questions{,/:id}` | Public SEO Q&A index and detail (`@Public`) |
+| `GET /v1/forum/public/discovery` | Selected anonymous Q&A directory and sitemap source (`@Public`) |
+| `GET /v1/forum/public/questions{,/:id}` | Existing anonymous Q&A references and direct detail (`@Public`) |
 | `GET\|POST\|PATCH\|PUT\|DELETE /v1/admin/forum/{tags,tag-suggestions,featured-thread}` | Admin curated tags, tag suggestion review, and featured thread |
 
 ---
@@ -61,6 +62,10 @@
 ## 4. Geliştirmeler (Condensed Milestone Timeline)
 
 - **2026-11-21 — Phase 1 Mobile Forum Web-Parity (`apps/mobile`, Android QA):** Set `STUDENT_CORE_ONLY = false`, added `/community/{member,question,message,saved}` notification routes (`notifications-view.ts`), built `forum-api.ts` + `community-view.ts` and modular Forum screens/components (`community-hub-view.tsx`, `community-feed-view.tsx`, `forum-zones-view.tsx`, `feed-post-card.tsx`, `community-reply-card.tsx`, `forum-poll-card.tsx`, `community-composer-sheet.tsx`, `moderation-sheets.tsx`, `(app)/community-{thread,search,saved}.tsx`). Supports Discovery Hub, ranked/filtered/following infinite feeds, room join/leave/sort, Q&A question/answer/accept/helpful-vote, polls, positive reactions, bookmarks, moderation reporting/deletion (author-aware fallback when `/v1/forum/threads/:id` omits `capabilities`), Puhu coach-bridge handoff, and grouped search. Verified on `Puhu_Pixel` (`411 dp TR Light` and `360 dp EN Dark`, including `< 390 dp` hero action stacking). Gotcha: `ForumQaService.getQuestion` does not populate `capabilities` on `question`/`answers`, so mobile derives author delete ownership via `user?.id === authorId` (`canModerate`/server policy remains enforced by backend).
+- **2026-11-19 Automatic public QA discovery and substantive unanswered question indexation.** When `forum.discovery_question_ids` is empty (the default), `ForumPublicService` now automatically discovers and indexes up to 50 recent eligible `PUBLIC` + `QA` questions on `/topluluk`, `/forum/soru/[id]`, and `/sitemap.xml` without requiring manual admin UUID entry (an explicit `forum.discovery_question_ids` list still acts as a manual filter when set). Unanswered `PUBLIC` + `QA` questions with a substantive title ($\ge 10$ trimmed characters) and body ($\ge 20$ trimmed characters) are also immediately public and indexable (`answers: []`) while omitting `contentRevision` so contextual ads never serve on zero-answer pages; short 1-word test stubs remain excluded until answered. Related files: `apps/api/src/modules/forum/application/forum-public.service{,.spec}.ts`, `apps/api/src/modules/forum/infrastructure/forum-thread.repository.ts`, `apps/web/src/app/[locale]/forum/question/[id]/page.tsx`.
+
+- **2026-11-12 Anonymous community directory.** `/topluluk` explains the upcoming forum while it is closed. With `forum.enabled` on, an admin can set up to 50 comma-separated, moderation-reviewed UUIDs in `forum.discovery_question_ids`. Selected, eligible questions appear by exam in the directory and in the Turkish sitemap. With no eligible questions, the directory returns `noindex`. Removing a selection removes the question from discovery and changes its existing detail to `noindex`. An archived or private area, a removed question, or a question without visible answers is excluded by the existing eligibility rules. The setting selects IDs, so review edited content before keeping it in the directory. The signed-in Turkish hub is `/topluluk/uyeler/panel`. Related files include `forum-public.service.ts`, `forum-thread.repository.ts`, `[locale]/discover-community/page.tsx`, and `sitemap.ts`.
+
 - **2026-10-25..26 — Content-Revision Verified Ad Snapshots:** Added deterministic SHA-256 `contentRevision` and `adContext` snapshot services for public Q&A, community Q&A, announcements, and discovery overview (`AdsModule` integration).
 - **2026-10-08..10 — RLS Author Cards (`withAuthorCards`), Room Management UI & A11y Pass:** Fixed non-superuser RLS author name resolution across all 13 read paths, redesigned `/topluluk/[slug]/yonetim` (`members-card.tsx`, `reports-card.tsx`), and hardened mobile/screen-reader accessibility.
 - **2026-08-08..16 — Community Hub Editorial Redesign, Reaction Details & Tag Suggestions:** Shipped Discovery V2 layout, paginated emoji reactor lists, and moderated student tag suggestions.

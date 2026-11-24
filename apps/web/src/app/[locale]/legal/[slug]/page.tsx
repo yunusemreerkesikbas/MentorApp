@@ -22,10 +22,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Unapproved text must not be indexed; the EN rendering is a courtesy translation, so it stays
   // out of the index too (same rule the knowledge pages already apply).
   const noindex = doc.status !== "FINAL" || locale === "en";
+  const title = `${content.title} | PuhuKoç`;
+  const description = content.description;
+  const ogImage = `${siteUrl()}/img/brand/puhukoc-og-${locale === "en" ? "en" : "tr"}.png`;
   return {
-    title: `${content.title} | PuhuKoç`,
+    title,
+    description,
     alternates: { canonical },
     robots: noindex ? { index: false, follow: true } : undefined,
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      siteName: "PuhuKoç",
+      locale: locale === "en" ? "en_US" : "tr_TR",
+      type: "website",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: "PuhuKoç" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
   };
 }
 

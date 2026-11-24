@@ -453,15 +453,23 @@
 .lm-slide.is-code {
   padding-top: calc(46 * var(--u));
   background-color: #141833;
-  background-position: 50% 40%;
-  background-size: cover;
   color: #ffffff;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.lm-code-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 40%;
 }
 
 .lm-slide.is-code::before {
   content: "";
   position: absolute;
+  z-index: 1;
   inset: 0 0 auto;
   height: 35%;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.6), transparent);
@@ -470,6 +478,7 @@
 .lm-slide.is-code small,
 .lm-slide.is-code b {
   position: relative;
+  z-index: 1;
 }
 
 .lm-slide.is-code small {
@@ -1064,13 +1073,12 @@
   padding: 22px 8px 10px 20px;
   rotate: 7deg;
   background-color: #141833;
-  background-position: 50% 40%;
-  background-size: cover;
   color: #ffffff;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
 }
 
 .lm-fan-card.is-code em {
+  z-index: 1;
   font-size: 9px;
   font-style: normal;
   font-weight: 800;
@@ -1080,6 +1088,7 @@
 }
 
 .lm-fan-card.is-code span {
+  z-index: 1;
   font-size: 16px;
   line-height: 1.1;
   font-weight: 1000;

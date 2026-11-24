@@ -8,6 +8,7 @@ import type {
   CoachEvidenceType,
   CoachActionType,
   CoachActionStatus,
+  StudyRoomTheme,
 } from "@mentor/types";
 import type { ForumCoachIntent } from "@mentor/types";
 import type { WeeklyRecapSlideKind } from "./weekly-recap";
@@ -30,16 +31,40 @@ export interface ArticleAnalyticsParams {
 type WebVitalName = "CLS" | "FCP" | "INP" | "LCP" | "TTFB";
 type WebVitalRating = "good" | "needs-improvement" | "poor";
 
+export type SeoLpSlug = "pomodoro" | "yks" | "tyt" | "lgs" | "notebook" | "study_app";
+
+export type WaitlistCtaLocation =
+  | "nav"
+  | "hero"
+  | "demo"
+  | "table"
+  | "timer_done"
+  | "closing"
+  | "parent"
+  | "how"
+  | "features"
+  | "dawn"
+  | "coach_band";
+
 export interface ProductAnalyticsParams {
-  login: { method: "email" };
+  login: { method: "email" | "google" };
   /**
    * `intent` splits the coach funnel from the student one (APP-089). Coaches drop off at a
    * different step (their profile, not a study goal), so a single undifferentiated sign_up count
    * would average two funnels that fail for unrelated reasons.
    */
-  sign_up: { method: "email"; intent?: "student" | "coach" };
-  /** Waitlist join: the acquisition conversion while signup is invite-only. Never carries the address. */
-  generate_lead: { lead_source: "waitlist"; intent: "student" | "coach" };
+  sign_up: { method: "email" | "google"; intent?: "student" | "coach"; lp_source?: SeoLpSlug };
+  /** Waitlist CTA click before form submission while signup is invite-only. Never carries PII. */
+  waitlist_cta_click: {
+    intent: "student" | "coach";
+    lp_source?: SeoLpSlug;
+    location?: WaitlistCtaLocation;
+  };
+  /** Server-verified waitlist join while signup is invite-only. Never carries the address. */
+  waitlist_signup: {
+    intent: "student" | "coach";
+    lp_source?: SeoLpSlug;
+  };
   tutorial_begin: Record<string, never>;
   tutorial_complete: Record<string, never>;
   begin_checkout: {
@@ -53,6 +78,10 @@ export interface ProductAnalyticsParams {
       quantity: 1;
     }>;
   };
+  purchase: {
+    currency: "TRY";
+    surface: "checkout_result";
+  };
   web_vital: {
     metric_name: WebVitalName;
     metric_value: number;
@@ -61,6 +90,24 @@ export interface ProductAnalyticsParams {
   };
 }
 export type ProductAnalyticsEvent = keyof ProductAnalyticsParams;
+
+export interface SeoLpAnalyticsParams {
+  pomodoro_start: {
+    preset: "25_5" | "50_10" | "custom" | "stopwatch";
+    room: StudyRoomTheme;
+  };
+  pomodoro_complete: {
+    preset: "25_5" | "50_10" | "custom" | "stopwatch";
+    room: StudyRoomTheme;
+  };
+  plan_demo_view: {
+    lp: "yks" | "tyt" | "lgs";
+  };
+  notebook_demo_view: {
+    page_type: "mistake_notebook";
+  };
+}
+export type SeoLpAnalyticsEvent = keyof SeoLpAnalyticsParams;
 
 const WEB_VITAL_NAMES = new Set<WebVitalName>([
   "CLS",
@@ -245,12 +292,16 @@ declare global {
   }
 }
 
+export const queueGoogleTagCommand: NonNullable<Window["gtag"]> = function () {
+  // eslint-disable-next-line prefer-rest-params -- Google interprets arrays as method calls, not gtag commands.
+  window.dataLayer?.push(arguments);
+};
+
 function trackEvent(event: string, params: object): void {
   if (typeof window === "undefined") return;
   if (window.localStorage.getItem(ANALYTICS_CONSENT_KEY) !== "accepted") return;
   window.dataLayer = window.dataLayer ?? [];
-  window.gtag =
-    window.gtag ?? ((...args: unknown[]) => window.dataLayer?.push(args));
+  window.gtag = window.gtag ?? queueGoogleTagCommand;
   window.gtag?.("event", event, params);
 }
 
@@ -277,6 +328,14 @@ export function trackArticleEvent(
 export function trackProductEvent<Event extends ProductAnalyticsEvent>(
   event: Event,
   params: ProductAnalyticsParams[Event],
+): void {
+  trackEvent(event, params);
+}
+
+/** Consent-gated product-led SEO landing page events (Pomodoro, YKS, TYT, LGS). */
+export function trackSeoLpEvent<Event extends SeoLpAnalyticsEvent>(
+  event: Event,
+  params: SeoLpAnalyticsParams[Event],
 ): void {
   trackEvent(event, params);
 }

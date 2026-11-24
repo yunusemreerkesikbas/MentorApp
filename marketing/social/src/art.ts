@@ -1,3 +1,11 @@
+// Real app screens (F4 phones), captured 2026-11-17 from a demo account.
+export const SCREENS = {
+  today: "screens/F4-1.png",
+  masa: "screens/F4-2.png",
+  recap: "screens/F4-3.png",
+  koc: "screens/F4-4.png",
+};
+
 // Art paths under public/, used with staticFile().
 export const ART = {
   p1: "art/p1-referee-whistle.png",
@@ -66,6 +74,8 @@ export const ART = {
   t1CharFocus: "art/t1/char-nebula-diver.png",
   t1CharStreak: "art/t1/char-time-bender.png",
   t1CharBrave: "art/t1/char-phoenix-pilot.png",
+  // Gizli Kahraman (FOCUS_TRAVELER) art, copied from apps/web/public/img/character/nova-traveler.png.
+  t1CharHidden: "art/t1/char-nova-traveler.png",
   // Real app screens for frame 08 (1134x2466, 378x822 @3x): /plan and the deneme result on /analiz, local web
   // app with mocked demo data ("Deniz", no real user). Raw captures in art-source.local/social/promo/screens.
   t1ScreenPlan: "art/t1/screen-plan.png",
@@ -116,6 +126,9 @@ export const CLIPS = {
 // Audio under public/: T1's music, the Igloo cut (120 BPM, 62 s; source and bar map in the spec).
 export const SOUND = {
   t1Music: "audio/t1-music.mp3",
+  // Reel beds: the T1 120 BPM cuts (Pixabay Content License, no Content ID). Drop at 8,0 s in both.
+  reelIgloo: "audio/reel-igloo.mp3", // NickPanek "Dirty Igloo" (pixabay 318363)
+  reelBalkan: "audio/reel-balkan.mp3", // "Energetic Balkan Funk Brass" (pixabay 309553)
   // T1 effects, Pixabay Content License; sources in art-source.local/social/gen/sfx-sources.md.
   t1SfxPing: "sfx/ping.mp3",
   t1SfxWhoosh: "sfx/whoosh.mp3",

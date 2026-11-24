@@ -70,3 +70,10 @@ it("puts each end-card Puhu's body on the logo's axis", async () => {
     expect(Math.abs((axis - 0.5) * shown + (END_CARD_SHIFT[key] ?? 0)), key).toBeLessThanOrEqual(12);
   }
 });
+
+it("finds the real app screens F4 shows inside the phone", async () => {
+  const { SCREENS } = await import("../src/art");
+  const missing = Object.values(SCREENS ?? {}).filter((p) => !existsSync(join("public", p)));
+  expect(Object.keys(SCREENS ?? {})).toHaveLength(4);
+  expect(missing).toEqual([]);
+});

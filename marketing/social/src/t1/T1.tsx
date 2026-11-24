@@ -1,5 +1,5 @@
 import { Audio } from "@remotion/media";
-import { Sequence, staticFile, Track } from "remotion";
+import { Sequence, staticFile, Track, useCurrentFrame } from "remotion";
 import { SOUND } from "../art";
 import { C } from "../brand";
 import { Frame } from "../components/Frame";
@@ -22,6 +22,7 @@ import { S14 } from "./scenes/S14";
 import { S15 } from "./scenes/S15";
 import { S16 } from "./scenes/S16";
 import { S17 } from "./scenes/S17";
+import { postTop } from "./post";
 import { CUES, cueFrame, levelGain, MUSIC_VOLUME, SFX } from "./sfx";
 import { sceneOf, type SceneId } from "./timeline";
 
@@ -32,6 +33,26 @@ const at = (id: SceneId) => ({ from: sceneOf(id).from, durationInFrames: sceneOf
 export function T1({ safe }: PieceProps) {
   return (
     <Frame format="reel" background={C.blue} safe={safe}>
+      <Film />
+    </Frame>
+  );
+}
+
+// The 4:5 post: the same 1920 px film behind a 1350 px window that each scene places (post.ts).
+export function T1P({ safe }: PieceProps) {
+  const frame = useCurrentFrame();
+  return (
+    <Frame format="feed" background={C.blue} safe={safe}>
+      <div style={{ position: "absolute", left: 0, top: -postTop(frame), width: 1080, height: 1920 }}>
+        <Film />
+      </div>
+    </Frame>
+  );
+}
+
+function Film() {
+  return (
+    <>
       <Track name="Sahneler">
         <Sequence name="01 · Kanca" {...at("01")}><S01 /></Sequence>
         <Sequence name="02 · Bildirim" {...at("02")}><S02 /></Sequence>
@@ -65,6 +86,6 @@ export function T1({ safe }: PieceProps) {
         ))}
       </Sequence>
       <Audio name="Müzik" src={staticFile(SOUND.t1Music)} volume={MUSIC_VOLUME} />
-    </Frame>
+    </>
   );
 }

@@ -2,7 +2,7 @@
 
 import Script from "next/script";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { ANALYTICS_CONSENT_KEY } from "./analytics";
+import { ANALYTICS_CONSENT_KEY, queueGoogleTagCommand } from "./analytics";
 import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 
 type Consent = "accepted" | "rejected" | null;
@@ -82,7 +82,7 @@ export function AnalyticsConsentProvider({ children, nonce }: { children: ReactN
   const initializeGa = () => {
     if (!measurementId || consent !== "accepted") return;
     window.dataLayer = window.dataLayer ?? [];
-    window.gtag = (...args: unknown[]) => window.dataLayer?.push(args);
+    window.gtag = queueGoogleTagCommand;
     window.gtag("js", new Date());
     window.gtag("config", measurementId, { anonymize_ip: true });
     window.dispatchEvent(new Event("mentor:analytics-ready"));

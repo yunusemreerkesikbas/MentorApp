@@ -396,6 +396,17 @@ export const CONFIG_CATALOG = {
     false,
     "Gate for the forum/community module (zones, threads, moderation).",
   ),
+  "forum.discovery_question_ids": {
+    category: ConfigCategory.FORUM,
+    type: ConfigValueType.STRING,
+    schema: z.string().max(2000).refine((value) => {
+      const ids = value.trim() ? value.split(",").map((id) => id.trim()) : [];
+      return ids.length <= 50 && ids.every((id) => z.string().uuid().safeParse(id).success);
+    }, "Enter up to 50 comma-separated question UUIDs"),
+    default: "",
+    sensitive: false,
+    description: "Moderator-selected question IDs for the public directory and indexing, separated by commas.",
+  },
   "community.achievements.enabled": flag(
     false,
     "Expose permanent achievements, celebrations, and achievement notifications.",

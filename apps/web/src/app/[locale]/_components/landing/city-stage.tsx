@@ -243,7 +243,7 @@ export function CityStage({
         <div className="lc-stage">
           <div className="lc-scene" aria-hidden="true">
             <div className="lc-sky" />
-            <img className="lc-stars" src="/visuals/landing/stars.svg" alt="" />
+            <img className="lc-stars" src="/visuals/landing/stars.svg" alt="" fetchPriority="high" />
             <div className="lc-moon" />
             <div className="lc-sun" />
             <div className="lc-layer">
@@ -256,7 +256,7 @@ export function CityStage({
               <CityArt art={FACADE} layer={2} priority />
               {WINDOWS.filter((w) => w.room === "puhu").map((w) => (
                 <div key={w.room} className="lc-win" data-stop={w.stop} style={{ left: w.left, top: w.top, width: w.width, height: w.height }}>
-                  <SceneImg className="lc-room-art is-cover" src={`/visuals/landing/room-${w.room}.webp`} />
+                  <SceneImg className="lc-room-art is-cover" src={`/visuals/landing/room-${w.room}.webp`} fetchPriority="low" />
                 </div>
               ))}
               {/* CSS backgrounds rather than image tags: nothing here loads until a pick shows it (city-stage.css). */}

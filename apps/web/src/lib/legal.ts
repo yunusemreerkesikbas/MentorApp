@@ -28,6 +28,7 @@ export type LegalStatus = "DRAFT" | "FINAL";
 
 export interface LegalDocContent {
   title: string;
+  description: string;
   /** Markdown. Rendered by the shared ArticleMarkdown (no raw HTML). */
   body: string;
 }
@@ -317,10 +318,14 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
     updatedAt: "2026-10-31",
     tr: {
       title: "KVKK Aydınlatma Metni",
+      description:
+        "PuhuKoç 6698 sayılı KVKK aydınlatma metni: işlenen kişisel veriler, işleme amaçları, yurt dışı hizmet sağlayıcı aktarımları, saklama süreleri ve ilgili kişi hakları.",
       body: LEGAL_COPY.kvkk.tr,
     },
     en: {
       title: "Personal Data Protection Notice",
+      description:
+        "PuhuKoç Personal Data Protection Notice under Turkish Law No. 6698 (KVKK): categories of personal data processed, purposes, service provider transfers, retention and data subject rights.",
       body: LEGAL_COPY.kvkk.en,
     },
   },
@@ -331,10 +336,14 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
     updatedAt: "2026-10-31",
     tr: {
       title: "Gizlilik Politikası",
+      description:
+        "PuhuKoç gizlilik politikası: hesap, çalışma verisi, çerez tercihleri, yapay zekâ koç özetleri ve veri güvenliği uygulamaları.",
       body: LEGAL_COPY.privacy.tr,
     },
     en: {
       title: "Privacy Policy",
+      description:
+        "PuhuKoç privacy policy: account and study data handling, cookie preferences, AI coach summary safeguards and security practices.",
       body: LEGAL_COPY.privacy.en,
     },
   },
@@ -345,10 +354,14 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
     updatedAt: "2026-10-28",
     tr: {
       title: "Kullanım Koşulları",
+      description:
+        "PuhuKoç kullanım koşulları: üyelik, davetli pilot erişimi, topluluk kuralları, yapay zekâ koç sınırları ve fikri mülkiyet hükümleri.",
       body: LEGAL_COPY.terms.tr,
     },
     en: {
       title: "Terms of Use",
+      description:
+        "PuhuKoç terms of use: account eligibility, invite-only pilot access, community standards, AI coach boundaries and intellectual property.",
       body: LEGAL_COPY.terms.en,
     },
   },
@@ -359,10 +372,14 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
     updatedAt: "2026-10-28",
     tr: {
       title: "Mesafeli Satış Sözleşmesi",
+      description:
+        "PuhuKoç dijital abonelik hizmetlerine ilişkin mesafeli satış sözleşmesi, taraflar, ifa ve yenileme hükümleri.",
       body: LEGAL_COPY.distance.tr,
     },
     en: {
       title: "Distance Sales Agreement",
+      description:
+        "PuhuKoç distance sales agreement for digital subscription services, parties, performance and renewal terms.",
       body: LEGAL_COPY.distance.en,
     },
   },
@@ -373,10 +390,14 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
     updatedAt: "2026-10-28",
     tr: {
       title: "Ön Bilgilendirme Formu",
+      description:
+        "PuhuKoç abonelik ve dijital hizmet satın alımı öncesi temel nitelikler, bedel, yenileme ve cayma hakkı ön bilgilendirme formu.",
       body: LEGAL_COPY.preInfo.tr,
     },
     en: {
       title: "Pre-Sale Information Form",
+      description:
+        "PuhuKoç pre-sale information form covering digital subscription features, pricing, renewal and withdrawal terms.",
       body: LEGAL_COPY.preInfo.en,
     },
   },
@@ -387,10 +408,14 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
     updatedAt: "2026-10-28",
     tr: {
       title: "İade ve Cayma Hakkı",
+      description:
+        "PuhuKoç abonelik iptali, 14 günlük cayma süresi, dijital hizmet istisnası ve bedel iadesi koşulları.",
       body: LEGAL_COPY.refund.tr,
     },
     en: {
       title: "Refunds and Right of Withdrawal",
+      description:
+        "PuhuKoç subscription cancellation, 14-day withdrawal notice, digital-service exception and refund rules.",
       body: LEGAL_COPY.refund.en,
     },
   },

@@ -27,8 +27,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title,
     description,
-    // Only the Turkish page is indexed; EN canonicalizes to TR (content is Turkish).
-    robots: { index: locale === "tr", follow: true },
+    // Only selected Turkish pages are indexed. EN canonicalizes to TR because the content is Turkish.
+    robots: { index: locale === "tr" && q.discoverable === true, follow: true },
     alternates: { canonical },
     openGraph: {
       title,
@@ -54,9 +54,10 @@ export default async function PublicQuestionPage({ params }: PageProps) {
   const q = await fetchPublicQuestion(id);
   if (!q) notFound();
 
-  const t = await getTranslations("community");
-  const tAuth = await getTranslations("article");
-  const tAds = await getTranslations("ads");
+  const [t, tAuth, tAds, tDiscovery] = await Promise.all([
+    getTranslations("community"), getTranslations("article"),
+    getTranslations("ads"), getTranslations("communityDiscovery"),
+  ]);
   const jsonLd = buildQuestionStructuredData({
     question: q,
     canonical: questionUrl(id),
@@ -92,6 +93,9 @@ export default async function PublicQuestionPage({ params }: PageProps) {
       </header>
 
       <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8 lg:py-10">
+        <Link href="/discover-community" className="mb-4 inline-flex min-h-11 items-center font-semibold text-[var(--color-main)] underline">
+          {tDiscovery("title")}
+        </Link>
         <article>
           <h1
             className="text-2xl font-bold lg:text-3xl"
@@ -110,25 +114,34 @@ export default async function PublicQuestionPage({ params }: PageProps) {
         >
           {t("answers_title")}
         </h2>
-        <div className="flex flex-col gap-4">
-          {q.answers.map((a) => (
-            <div
-              key={a.id}
-              id={`answer-${a.id}`}
-              className="rounded-[var(--radius-card)] border border-white p-6"
-              style={{ backgroundColor: a.isAccepted ? "#ffffff" : "rgba(255,255,255,0.5)", boxShadow: "var(--shadow-card)" }}
-            >
-              {a.isAccepted ? (
-                <p className="mb-2 text-sm font-semibold" style={{ color: "var(--color-progress)" }}>
-                  ✓ {t("accepted")}
+        {q.answers.length === 0 ? (
+          <p className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-base text-[var(--color-secondary)]">
+            {tDiscovery("no_answers_yet")}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {q.answers.map((a) => (
+              <div
+                key={a.id}
+                id={`answer-${a.id}`}
+                className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
+                style={{ boxShadow: "var(--shadow-card)" }}
+              >
+                {a.isAccepted ? (
+                  <p className="mb-2 text-sm font-semibold" style={{ color: "var(--color-progress)" }}>
+                    ✓ {t("accepted")}
+                  </p>
+                ) : null}
+                <p className="whitespace-pre-wrap text-base" style={{ color: "var(--color-main)" }}>
+                  {a.body}
                 </p>
-              ) : null}
-              <p className="whitespace-pre-wrap text-base" style={{ color: "var(--color-main)" }}>
-                {a.body}
-              </p>
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <Link href={{ pathname: "/community/question/[threadId]", params: { threadId: q.id } }} className="mt-5 inline-flex min-h-11 items-center font-extrabold text-[var(--color-main)] underline">
+          {tDiscovery("join_question")}
+        </Link>
         {q.contentRevision ? (
           <NextIntlClientProvider messages={{ ads: { label: tAds("label") } }}>
             <DeferredContextualAdSlot

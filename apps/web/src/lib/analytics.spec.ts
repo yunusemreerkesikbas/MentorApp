@@ -7,6 +7,7 @@ import {
   trackCommunityEvent,
   trackMentorshipWeeklyReportEvent,
   trackProductEvent,
+  trackSeoLpEvent,
   trackWeeklyRecapEvent,
 } from "./analytics";
 
@@ -31,7 +32,7 @@ describe("article analytics", () => {
 
     trackArticleEvent("article_view", params);
 
-    expect(dataLayer).toEqual([]);
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([]);
   });
 
   it("queues only the allowlisted article payload after consent", () => {
@@ -47,7 +48,8 @@ describe("article analytics", () => {
 
     trackArticleEvent("article_source_click", params);
 
-    expect(dataLayer).toEqual([["event", "article_source_click", params]]);
+    expect(Object.prototype.toString.call(dataLayer[0])).toBe("[object Arguments]");
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([["event", "article_source_click", params]]);
   });
 });
 
@@ -73,7 +75,7 @@ describe("mentorship weekly report analytics", () => {
       has_coach_evaluation: true,
     });
 
-    expect(dataLayer).toEqual([
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
       [
         "event",
         "mentorship_weekly_report_finalize",
@@ -106,7 +108,7 @@ describe("product analytics", () => {
     trackProductEvent("sign_up", { method: "email" });
     trackProductEvent("tutorial_begin", {});
 
-    expect(dataLayer).toEqual([]);
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([]);
   });
 
   it("queues the minimal decision funnel after consent", () => {
@@ -136,7 +138,7 @@ describe("product analytics", () => {
       ],
     });
 
-    expect(dataLayer).toEqual([
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
       ["event", "login", { method: "email" }],
       ["event", "tutorial_complete", {}],
       [
@@ -195,6 +197,64 @@ describe("product analytics", () => {
       }),
     ).toBeNull();
   });
+
+  it("queues product-led SEO landing page events and purchase completion after consent", () => {
+    const dataLayer: unknown[] = [];
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: vi.fn((key: string) =>
+          key === ANALYTICS_CONSENT_KEY ? "accepted" : null,
+        ),
+      },
+      dataLayer,
+    });
+
+    trackSeoLpEvent("pomodoro_start", { preset: "25_5", room: "LIBRARY" });
+    trackSeoLpEvent("pomodoro_complete", { preset: "25_5", room: "LIBRARY" });
+    trackSeoLpEvent("plan_demo_view", { lp: "yks" });
+    trackSeoLpEvent("notebook_demo_view", { page_type: "mistake_notebook" });
+    trackProductEvent("waitlist_cta_click", {
+      intent: "student",
+      lp_source: "pomodoro",
+      location: "timer_done",
+    });
+    trackProductEvent("waitlist_signup", {
+      intent: "student",
+      lp_source: "pomodoro",
+    });
+    trackProductEvent("sign_up", {
+      method: "email",
+      intent: "student",
+      lp_source: "yks",
+    });
+    trackProductEvent("purchase", { currency: "TRY", surface: "checkout_result" });
+
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
+      ["event", "pomodoro_start", { preset: "25_5", room: "LIBRARY" }],
+      ["event", "pomodoro_complete", { preset: "25_5", room: "LIBRARY" }],
+      ["event", "plan_demo_view", { lp: "yks" }],
+      ["event", "notebook_demo_view", { page_type: "mistake_notebook" }],
+      [
+        "event",
+        "waitlist_cta_click",
+        { intent: "student", lp_source: "pomodoro", location: "timer_done" },
+      ],
+      [
+        "event",
+        "waitlist_signup",
+        { intent: "student", lp_source: "pomodoro" },
+      ],
+      [
+        "event",
+        "sign_up",
+        { method: "email", intent: "student", lp_source: "yks" },
+      ],
+      ["event", "purchase", { currency: "TRY", surface: "checkout_result" }],
+    ]);
+    expect(JSON.stringify(dataLayer)).not.toMatch(
+      /userId|name|question|photo|image|body|content|@/i,
+    );
+  });
 });
 
 describe("community analytics", () => {
@@ -231,7 +291,7 @@ describe("community analytics", () => {
       intent: "NEXT_STEP",
     });
 
-    expect(dataLayer).toEqual([
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
       [
         "event",
         "forum_thread_created",
@@ -277,7 +337,7 @@ describe("coach analytics", () => {
     });
     trackCoachEvent("coach_plan_adaptation_request", { source: "MOOD" });
 
-    expect(dataLayer).toEqual([]);
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([]);
   });
 
   it("writes only allowlisted coach fields after consent", () => {
@@ -353,7 +413,7 @@ describe("coach analytics", () => {
       operation: "FORGET",
     });
 
-    expect(dataLayer).toEqual([
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
       [
         "event",
         "coach_hub_view",
@@ -455,7 +515,7 @@ describe("weekly recap analytics", () => {
       slide_kind: "weekly_best",
     });
 
-    expect(dataLayer).toEqual([
+    expect(dataLayer.map((entry) => Array.from(entry as IArguments))).toEqual([
       [
         "event",
         "weekly_recap_slide_view",
