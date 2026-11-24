@@ -56,7 +56,8 @@ export const DR_CUES: Record<DrId, DrCue[]> = {
 // are pre-cut clips. `gain` evens each track's loudness with T1's (measured RMS: T1 −12,9 dB).
 export type DrMusic = { sound: SoundKey; from: number; gain: number };
 export const DR_MUSIC: Record<DrId, DrMusic> = {
-  DRP: { sound: "t1Music", from: sceneOf("06").from, gain: 1 },
+  // T1 was re-timed (62,5 s), so scene 06 no longer starts on a bar: snap down to the bar grid (60 frames).
+  DRP: { sound: "t1Music", from: Math.floor(sceneOf("06").from / 60) * 60, gain: 1 },
   DRK: { sound: "d2MusicBalkan", from: 0, gain: 1.46 }, // −16,2 dB
   DRH: { sound: "d2MusicDubai", from: 0, gain: 1.23 }, // −14,7 dB
   DRY: { sound: "d2MusicRetro", from: 0, gain: 1.55 }, // −16,7 dB

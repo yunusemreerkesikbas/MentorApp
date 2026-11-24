@@ -9,8 +9,8 @@ it("lists the 15 launch pieces in posting-plan order, then the 6 Premium pieces,
     "F1", "F2", "F3", "F4", "F5", "F6", "S1", "S2", "S3", "S4", "R1", "R2", "R3", "X1", "L1",
     "PF1", "PF2", "PS1", "PS2", "PR1", "PR2", "T1", "T1P",
     "IF1", "IF2", "IF3", "IF4", "IF5", "IF6", "IS1", "IS2", "IS3", "IS4", "IS5", "IS6", "IR1",
-    "DRP", "DRK", "DRH", "DRY",
     "K1", "K2", "WS1", "WS2", "WS3", "WR1",
+    "DRP", "DRK", "DRH", "DRY",
   ]);
 });
 
