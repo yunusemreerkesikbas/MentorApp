@@ -1,7 +1,7 @@
 /**
  * Turns province boundaries into static SVG path strings for the goal map.
  *
- *   apps/web/data/tr-provinces.geo.json  ──▶  src/components/turkey-map/paths.generated.ts
+ *   apps/web/data/tr-provinces.geo.json  ──▶  ../../packages/core/src/turkey-provinces.ts
  *
  * Run with `pnpm --filter @mentor/web build:map` and commit the output. NOT part of `next build`:
  * the boundaries change about never, and this keeps d3-geo out of the runtime bundle entirely —
@@ -22,7 +22,7 @@ const CITIES = resolve(
   HERE,
   "../../api/src/modules/content/seed/cities.seed.json",
 );
-const OUTPUT = resolve(HERE, "../src/components/turkey-map/paths.generated.ts");
+const OUTPUT = resolve(HERE, "../../../packages/core/src/turkey-provinces.ts");
 
 const WIDTH = 1000;
 const HEIGHT = 420;

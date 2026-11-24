@@ -15,36 +15,57 @@
     "clean": "rimraf .expo .turbo dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
+    "@expo-google-fonts/caveat": "^0.4.2",
+    "@expo-google-fonts/nunito": "^0.4.2",
+    "@expo/metro-runtime": "~58.0.17",
     "@mentor/api-client": "workspace:*",
     "@mentor/core": "workspace:*",
     "@mentor/types": "workspace:*",
     "@mentor/ui": "workspace:*",
     "@mentor/validation": "workspace:*",
+    "@solar-icons/react-native": "^2.5.0",
     "@tanstack/react-query": "^5.66.0",
-    "expo": "~53.0.0",
-    "expo-constants": "~17.1.0",
-    "expo-haptics": "~14.1.0",
-    "expo-image": "~2.1.0",
-    "expo-linking": "~7.1.0",
-    "expo-router": "~5.0.0",
-    "expo-secure-store": "~14.2.0",
-    "expo-splash-screen": "~0.30.0",
-    "expo-status-bar": "~2.2.0",
-    "react": "19.2.8",
-    "react-native": "0.79.2",
-    "react-native-gesture-handler": "~2.24.0",
-    "react-native-reanimated": "~3.17.4",
-    "react-native-safe-area-context": "~5.3.0",
-    "react-native-screens": "~4.10.0",
+    "expo": "~58.0.24",
+    "expo-constants": "~58.0.16",
+    "expo-file-system": "~58.0.14",
+    "expo-font": "~58.0.12",
+    "expo-haptics": "~58.0.8",
+    "expo-image": "~58.0.18",
+    "expo-image-picker": "~58.0.10",
+    "expo-linking": "~58.0.17",
+    "expo-notifications": "~58.1.9",
+    "expo-router": "~58.0.31",
+    "expo-secure-store": "~58.0.3",
+    "expo-sharing": "~58.0.23",
+    "expo-splash-screen": "~58.0.14",
+    "expo-status-bar": "~58.0.5",
+    "expo-video": "~58.0.14",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-gesture-handler": "~3.3.0",
+    "react-native-reanimated": "~4.7.1",
+    "react-native-safe-area-context": "~5.11.1",
+    "react-native-screens": "~4.30.1",
+    "react-native-svg": "15.16.0",
+    "react-native-view-shot": "6.1.1",
+    "react-native-worklets": "0.13.0",
     "zod": "^4.6.7",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@mentor/config": "workspace:*",
     "@types/node": "^22.19.20",
-    "@types/react": "^19",
+    "@types/react": "^19.3.0",
     "eslint": "^9.17.0",
+    "expo-mcp": "~0.2.4",
     "rimraf": "^6.0.1",
     "typescript": "^5.6.3"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "typescript"
+      ]
+    }
   }
 }

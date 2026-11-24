@@ -5,7 +5,8 @@ import { ThrottlerStorage } from "@nestjs/throttler";
 import cookieParser from "cookie-parser";
 import { Pool } from "pg";
 import request from "./browser-request";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { STORAGE_PORT, type StoragePort } from "../src/shared/ports/storage.port";
 import { UserRole } from "@mentor/types";
 
 const RUN = Date.now();
@@ -20,6 +21,8 @@ const REDACTED = "[silinmiş içerik]";
 describe("account erasure (e2e)", () => {
   let app: INestApplication;
   let pool: Pool;
+  const removedObjects: string[] = [];
+  const pagePhotoKey = (userId: string) => `notebook/${userId}/page-11111111-1111-4111-8111-111111111111.png`;
   let tokenA = "";
   let idA = ""; // the erased user
   let idB = ""; // the neighbour whose data must survive
@@ -79,6 +82,13 @@ describe("account erasure (e2e)", () => {
     app.use(cookieParser());
     await app.init();
 
+    const storage = moduleRef.get<StoragePort>(STORAGE_PORT);
+    const deleteObject = storage.deleteObject.bind(storage);
+    vi.spyOn(storage, "deleteObject").mockImplementation(async (key) => {
+      removedObjects.push(key);
+      await deleteObject(key);
+    });
+
     // --- Actors ------------------------------------------------------------
     const a = await signup("a", `eru${RUN.toString(36)}a`);
     const b = await signup("b", `eru${RUN.toString(36)}b`);
@@ -137,6 +147,12 @@ describe("account erasure (e2e)", () => {
         .set(auth)
         .send({ doc: { version: 1, paper: "ruled", items: [], ink: [] } })
         .expect(200);
+      // Seed media after save so this erasure fixture is independent of the current free photo allowance.
+      const storageKey = pagePhotoKey(label === "A" ? idA : idB);
+      await svc((c) => c.query(
+        "update notebook_pages set doc=jsonb_set(doc, '{items}', $1::jsonb) where notebook_id=$2 and page_index=0",
+        [JSON.stringify([{ kind: "image", storageKey }]), notebook.body.id],
+      ));
     }
 
     // --- AI trace (SQL seed — the chat API is premium/coin-gated) -----------
@@ -312,6 +328,8 @@ describe("account erasure (e2e)", () => {
   });
 
   it("coaching: owned notebooks and their pages are erased by cascade", async () => {
+    expect(removedObjects).toContain(pagePhotoKey(idA));
+    expect(removedObjects).not.toContain(pagePhotoKey(idB));
     expect(await countRows("notebooks", "user_id=$1", [idA])).toBe(0);
     expect(await countRows("notebook_pages", "user_id=$1", [idA])).toBe(0);
     expect(await countRows("notebooks", "user_id=$1", [idB])).toBeGreaterThan(0);

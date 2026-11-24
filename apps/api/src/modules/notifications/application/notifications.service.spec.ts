@@ -17,6 +17,7 @@ function setup(
     findByUserIdService: vi
       .fn()
       .mockResolvedValue("preferences" in options ? options.preferences : { pushEnabled: true }),
+    getOrCreate: vi.fn().mockResolvedValue({ emailEnabled: true, pushEnabled: true, campaignsEnabled: true }),
   };
   const userNotifs = {
     create: vi.fn().mockResolvedValue(options.created === false ? null : { id: "n-1" }),
@@ -28,6 +29,11 @@ function setup(
     })),
   };
   const queue = { enqueue: vi.fn().mockResolvedValue({ jobId: "job-1" }) };
+  const registry = { get: vi.fn().mockResolvedValue(5) };
+  const mobileTokens = {
+    upsertWithinLimit: vi.fn().mockResolvedValue({ id: "mp-1" }),
+    deleteByToken: vi.fn().mockResolvedValue(undefined),
+  };
   const service = new NotificationsService(
     db as never,
     {} as never,
@@ -36,11 +42,12 @@ function setup(
     {} as never,
     copy as never,
     { pushRealtimeEvent: vi.fn() } as never,
-    {} as never,
+    registry as never,
     {} as never,
     queue as never,
+    mobileTokens as never,
   );
-  return { service, preferences, queue };
+  return { service, preferences, queue, mobileTokens, tx };
 }
 
 describe("NotificationsService push channel", () => {
@@ -113,5 +120,22 @@ describe("NotificationsService push channel", () => {
 
     expect(preferences.findByUserIdService).not.toHaveBeenCalled();
     expect(queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it("registers and unregisters mobile push tokens with preference initialization", async () => {
+    const { service, mobileTokens, preferences, tx } = setup();
+    const token = "ExponentPushToken[abcdefghijklmnopqrstuv]";
+
+    await service.registerMobilePushToken(STUDENT, { token, platform: "android" });
+    expect(mobileTokens.upsertWithinLimit).toHaveBeenCalledWith(
+      tx,
+      STUDENT,
+      { token, platform: "android" },
+      5,
+    );
+    expect(preferences.getOrCreate).toHaveBeenCalledWith(tx, STUDENT);
+
+    await service.unregisterMobilePushToken(STUDENT, token);
+    expect(mobileTokens.deleteByToken).toHaveBeenCalledWith(tx, STUDENT, token);
   });
 });

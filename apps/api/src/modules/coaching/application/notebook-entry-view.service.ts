@@ -84,7 +84,7 @@ export class NotebookEntryViewService {
       ),
     );
   }
-  private async photoUrl(
+  async photoUrl(
     key: string | null,
     actor?: StorageReadActor,
   ): Promise<string | null> {

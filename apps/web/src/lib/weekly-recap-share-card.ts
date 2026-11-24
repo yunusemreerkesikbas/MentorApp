@@ -1,5 +1,9 @@
 import { appFontFamily } from "@/lib/app-font";
+import { buildWeeklyRecapShareCardRows, type WeeklyRecapShareCardRow, type WeeklyRecapShareCardRowCopy } from "@mentor/core";
 import type { WeeklyRecapShareCardModel } from "./weekly-recap";
+
+// The rows are shared with mobile's final-slide preview; this file draws them on a canvas.
+export { buildWeeklyRecapShareCardRows, type WeeklyRecapShareCardRow, type WeeklyRecapShareCardRowCopy };
 
 export const WEEKLY_RECAP_SHARE_CARD_DIMENSIONS = {
   width: 1080,
@@ -13,20 +17,6 @@ interface WeeklyRecapShareCardRect {
   height: number;
 }
 
-export interface WeeklyRecapShareCardRowCopy {
-  focus: string;
-  activeDays: string;
-  sessions: string;
-  completedTasks: string;
-  longestSession: string;
-  longestRun: string;
-  topSubject: string;
-  minutes: (count: number) => string;
-  days: (count: number) => string;
-  count: (count: number) => string;
-  subject: (name: string, minutes: number) => string;
-}
-
 export interface WeeklyRecapShareCardCopy extends WeeklyRecapShareCardRowCopy {
   title: string;
   weeklyTitleLabel: string;
@@ -34,67 +24,7 @@ export interface WeeklyRecapShareCardCopy extends WeeklyRecapShareCardRowCopy {
   signature: string;
 }
 
-export interface WeeklyRecapShareCardRow {
-  label: string;
-  value: string;
-}
-
 const PUHU_PROUD_SRC = "/mascot/puhu/puhu-proud.png";
-
-export function buildWeeklyRecapShareCardRows(
-  model: WeeklyRecapShareCardModel,
-  copy: WeeklyRecapShareCardRowCopy,
-): WeeklyRecapShareCardRow[] {
-  const rows: WeeklyRecapShareCardRow[] = [];
-
-  if (model.focusMinutes > 0) {
-    rows.push({
-      label: copy.focus,
-      value: copy.minutes(model.focusMinutes),
-    });
-  }
-  if (model.activeDays > 0) {
-    rows.push({
-      label: copy.activeDays,
-      value: copy.count(model.activeDays),
-    });
-  }
-  if (model.qualifyingSessionCount > 0) {
-    rows.push({
-      label: copy.sessions,
-      value: copy.count(model.qualifyingSessionCount),
-    });
-  }
-  if (model.completedTaskCount > 0) {
-    rows.push({
-      label: copy.completedTasks,
-      value: copy.count(model.completedTaskCount),
-    });
-  }
-  if (model.longestSessionMinutes > 0) {
-    rows.push({
-      label: copy.longestSession,
-      value: copy.minutes(model.longestSessionMinutes),
-    });
-  }
-  if (model.longestActiveRun > 0) {
-    rows.push({
-      label: copy.longestRun,
-      value: copy.days(model.longestActiveRun),
-    });
-  }
-  if (model.topSubject) {
-    rows.push({
-      label: copy.topSubject,
-      value: copy.subject(
-        model.topSubject.subjectName,
-        model.topSubject.focusMinutes,
-      ),
-    });
-  }
-
-  return rows;
-}
 
 export async function renderWeeklyRecapShareCard(
   model: WeeklyRecapShareCardModel,

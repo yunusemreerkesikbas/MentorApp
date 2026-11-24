@@ -4,7 +4,12 @@ import { forwardRef, useEffect, useId, useImperativeHandle, useState } from "rea
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { CheckBox, Skeleton, TextAreaField, TextField, skeletonStaggerStyle } from "@mentor/ui";
-import { studyDurationMinutesSchema } from "@mentor/validation";
+import {
+  endTimeAfterStart,
+  planTaskDraftError,
+  planTaskFormValues,
+  plusOneHour,
+} from "@mentor/core";
 import { SESSION_FOCUS_MINUTES_MIN, SESSION_FOCUS_MINUTES_MAX, SESSION_FOCUS_MINUTES_STEP } from "@mentor/types";
 import { FormError } from "@/components/form";
 import {
@@ -14,7 +19,6 @@ import {
 import { useExamSubjectTaxonomy } from "@/lib/use-exam-subject-taxonomy";
 import { PlanSubjectPicker } from "./plan-subject-picker";
 import { PlanTimeField } from "./plan-time-field";
-import { canonicalHm } from "./plan-time";
 import { Link } from "@/i18n/navigation";
 import { loadAnalysisPlanFocus, validAnalysisTaskDate, type AnalysisFocusRefs } from "@/lib/analysis-plan-focus";
 
@@ -45,12 +49,6 @@ interface PlanAddTaskFormProps {
   lockedFocus?: { subjectName: string; topicName?: string };
   initialTaskDate?: string;
   analysisFocus?: AnalysisFocusRefs;
-}
-
-/** Default block length when the user turns off "all day" without picking an end. */
-function plusOneHour(start: string): string {
-  const [h, m] = start.split(":").map(Number);
-  return `${String(Math.min(23, (h ?? 0) + 1)).padStart(2, "0")}:${String(m ?? 0).padStart(2, "0")}`;
 }
 
 export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskFormProps>(
@@ -101,15 +99,13 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
     }, [examId, subjectRef, topicRef, t]);
     const displayFocus = analysisFocus ? verifiedFocus : lockedFocus;
 
+    const draft = { title, subject, allDay, startTime, endTime, description, duration };
+
     useImperativeHandle(ref, () => ({
       getValues: () => ({
         ...(taskDate && { taskDate }),
-        title,
-        durationMinutes: duration === "" ? null : Number(duration),
+        ...planTaskFormValues(draft),
         subject: displayFocus?.subjectName ?? subject,
-        startTime: allDay ? null : (canonicalHm(startTime) ?? startTime),
-        endTime: allDay || !endTime.trim() ? null : (canonicalHm(endTime) ?? endTime),
-        description: description.trim() ? description.trim() : null,
       }),
       validate: () => {
         if (analysisFocus && (!verifiedFocus || focusChanged)) return false;
@@ -118,21 +114,10 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
           setError(t("analysis_date_required"));
           return false;
         }
-        if (duration !== "" && !studyDurationMinutesSchema.safeParse(Number(duration)).success) {
-          setError(t("duration_invalid"));
+        const draftError = planTaskDraftError(draft);
+        if (draftError) {
+          setError(t(draftError));
           return false;
-        }
-        if (!title.trim()) {
-          setError(t("task_required"));
-          return false;
-        }
-        if (!allDay) {
-          const start = canonicalHm(startTime);
-          const end = endTime.trim() ? canonicalHm(endTime) : null;
-          if (!start || (endTime.trim() && !end) || (end && end <= start)) {
-            setError(t("time_invalid"));
-            return false;
-          }
         }
         setError(null);
         return true;
@@ -218,9 +203,7 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
                   required
                   onChange={(next) => {
                     setStartTime(next);
-                    const start = canonicalHm(next);
-                    const end = canonicalHm(endTime);
-                    if (start && end && end <= start) setEndTime(plusOneHour(start));
+                    setEndTime(endTimeAfterStart(next, endTime));
                     if (error) setError(null);
                   }}
                 />

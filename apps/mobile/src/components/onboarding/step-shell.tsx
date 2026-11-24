@@ -191,6 +191,8 @@ export interface PlayOptionCardProps {
   badge?: string;
   selected: boolean;
   disabled?: boolean;
+  /** One of several picks (a checkbox to a screen reader), not one of a set. */
+  multiple?: boolean;
   onPress: () => void;
 }
 
@@ -200,13 +202,14 @@ export function PlayOptionCard({
   badge,
   selected,
   disabled = false,
+  multiple = false,
   onPress,
 }: PlayOptionCardProps) {
   const { palette, radii, space } = useThemeTokens();
 
   return (
     <Pressable
-      accessibilityRole="radio"
+      accessibilityRole={multiple ? "checkbox" : "radio"}
       accessibilityState={{ checked: selected, disabled }}
       disabled={disabled}
       onPress={() => {

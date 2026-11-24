@@ -5,19 +5,16 @@ import {
   type StudyRoomJoinFailure,
 } from "@mentor/core";
 import type {
-  CommentView,
+  AchievementCollectionDto,
   CommunitySummary,
   LeaderboardView,
   LeaderboardWindow,
-  Paginated,
+  PublicProfile,
   StudyRoomDetailDto,
   StudyRoomDto,
   StudyRoomTheme,
-  ThreadDetail,
-  ThreadFeed,
-  ThreadView,
-  ZoneView,
 } from "@mentor/types";
+import { fetchTodayPanel } from "./coaching-api.js";
 
 export async function listStudyRooms(): Promise<StudyRoomDto[]> {
   return (await http<StudyRoomDto[]>("/v1/study-rooms")) ?? [];
@@ -71,69 +68,8 @@ export async function closeStudyRoom(id: string): Promise<void> {
   });
 }
 
-export async function listForumZones(): Promise<ZoneView[]> {
-  const page = await http<Paginated<ZoneView>>("/v1/forum/zones?pageSize=50");
-  return page?.items ?? [];
-}
-
-export async function listZoneThreads(zoneId: string): Promise<ThreadView[]> {
-  const feed = await http<ThreadFeed>(
-    `/v1/forum/zones/${encodeURIComponent(zoneId)}/threads?limit=25`,
-  );
-  return feed?.items ?? [];
-}
-
-export async function postZoneThread(input: {
-  zoneId: string;
-  body: string;
-  title?: string;
-}): Promise<ThreadView> {
-  return (await http<ThreadView>(
-    `/v1/forum/zones/${encodeURIComponent(input.zoneId)}/threads`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        body: input.body.trim(),
-        ...(input.title?.trim() ? { title: input.title.trim() } : {}),
-      }),
-    },
-  )) as ThreadView;
-}
-
-export async function getThreadDetail(threadId: string): Promise<ThreadDetail> {
-  return (await http<ThreadDetail>(
-    `/v1/forum/threads/${encodeURIComponent(threadId)}/detail`,
-  )) as ThreadDetail;
-}
-
-export async function postThreadComment(input: {
-  threadId: string;
-  body: string;
-}): Promise<CommentView> {
-  return (await http<CommentView>(
-    `/v1/forum/threads/${encodeURIComponent(input.threadId)}/comments`,
-    {
-      method: "POST",
-      body: JSON.stringify({ body: input.body.trim() }),
-    },
-  )) as CommentView;
-}
-
-export async function toggleThreadReaction(input: {
-  threadId: string;
-  emoji: string;
-  active: boolean;
-}): Promise<void> {
-  await http(`/v1/forum/threads/${encodeURIComponent(input.threadId)}/reactions`, {
-    method: input.active ? "DELETE" : "PUT",
-    body: JSON.stringify({ emoji: input.emoji }),
-  });
-}
-
 export async function fetchCommunitySummary(): Promise<CommunitySummary> {
-  return (await http<CommunitySummary>(
-    "/v1/community/summary",
-  )) as CommunitySummary;
+  return (await http<CommunitySummary>("/v1/community/summary")) as CommunitySummary;
 }
 
 export async function fetchCommunityLeaderboard(
@@ -142,4 +78,41 @@ export async function fetchCommunityLeaderboard(
   return (await http<LeaderboardView>(
     `/v1/community/leaderboard?window=${window}`,
   )) as LeaderboardView;
+}
+
+export async function fetchPublicProfile(username: string): Promise<PublicProfile> {
+  return (await http<PublicProfile>(
+    `/v1/community/profile/${encodeURIComponent(username)}`,
+  )) as PublicProfile;
+}
+
+export async function fetchProfileAchievements(
+  username: string,
+): Promise<AchievementCollectionDto> {
+  return (await http<AchievementCollectionDto>(
+    `/v1/community/profile/${encodeURIComponent(username)}/achievements`,
+  )) as AchievementCollectionDto;
+}
+
+export async function followUser(username: string): Promise<void> {
+  await http<void>(`/v1/users/${encodeURIComponent(username)}/follow`, {
+    method: "PUT",
+  });
+}
+
+export async function unfollowUser(username: string): Promise<void> {
+  await http<void>(`/v1/users/${encodeURIComponent(username)}/follow`, {
+    method: "DELETE",
+  });
+}
+
+/** Live study count from `/v1/coaching/today` (same source as web community hub). */
+export async function fetchFocusingNow(): Promise<number | null> {
+  try {
+    const today = await fetchTodayPanel();
+    const count = today.focusingNow;
+    return typeof count === "number" && count > 0 ? count : null;
+  } catch {
+    return null;
+  }
 }

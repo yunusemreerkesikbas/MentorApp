@@ -1,5 +1,4 @@
-import type { EconomyLedgerEntryView, WeeklyChestSummary, WeeklyChestView } from "@mentor/types";
-import { WEEKLY_CHEST_REASON } from "@/lib/weekly-chest";
+import type { WeeklyChestSummary, WeeklyChestView } from "@mentor/types";
 
 /** One lamp per target day on the chest's brass strip; the first `current` are lit. */
 export function chestLamps(view: Pick<WeeklyChestView, "current" | "target">): boolean[] {
@@ -45,9 +44,5 @@ export function cannotOpenToday(view: WeeklyChestView): boolean {
   return todayActive || view.current + 1 < view.target;
 }
 
-/** The chest's own Coin receipt waits for the scene; one older than two weeks can no longer open. */
-const HELD_RECEIPT_MS = 14 * 24 * 60 * 60 * 1000;
-
-export function isHeldChestReceipt(entry: Pick<EconomyLedgerEntryView, "reason" | "createdAt">, now: number): boolean {
-  return entry.reason === WEEKLY_CHEST_REASON && now - Date.parse(entry.createdAt) < HELD_RECEIPT_MS;
-}
+/** The chest's own Coin receipt waits for the scene: shared with the mobile app. */
+export { isHeldChestReceipt } from "@mentor/core";

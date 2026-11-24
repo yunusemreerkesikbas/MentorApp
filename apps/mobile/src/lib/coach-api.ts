@@ -136,9 +136,11 @@ export async function updateCoachProfilePreferences(
 
 export async function listCoachMemories(): Promise<CoachMemoryFactDto[]> {
   try {
-    return (await http<CoachMemoryFactDto[]>(
+    // The endpoint is paginated; the card only needs the first page's rows.
+    const page = (await http<Paginated<CoachMemoryFactDto>>(
       "/v1/coach/memories",
-    )) as CoachMemoryFactDto[];
+    )) as Paginated<CoachMemoryFactDto>;
+    return page.items;
   } catch {
     return [];
   }

@@ -10,7 +10,8 @@ export type PieceId =
   | "IS1" | "IS2" | "IS3" | "IS4" | "IS5" | "IS6"
   | "IR1"
   | "K1" | "K2"
-  | "WS1" | "WS2" | "WS3" | "WR1";
+  | "WS1" | "WS2" | "WS3" | "WR1"
+  | "DRP" | "DRK" | "DRH" | "DRY";
 
 export type Format = "feed" | "story" | "reel" | "landscape";
 
@@ -79,6 +80,12 @@ export const PIECES: Piece[] = [
   { id: "WS2", format: "story", title: "Yerini kap · Açılınca ilk işin ne (anket)" },
   { id: "WS3", format: "story", title: "Yerini kap · Hepsi aynı masada" },
   { id: "WR1", format: "reel", title: "Yerini kap · Işığı yak", video: { fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150, music: "reelIgloo" } },
+  // Feature ads, wave 2 "Kendi dünyası" (spec docs/plans/2026-11-23-feature-ads-wave2-design.md): the posts and
+  // carousels are canvas exports; only these four reels live here (DRP, DRK 8 s; DRH, DRY 12 s so each step stays on screen long enough to read, owner 2026-11-23). P hedef panosu, K kariyer, H haftalık hikâye, Y Yanlış Defterim.
+  { id: "DRP", format: "reel", title: "Kendi dünyası · Hedef panosu reel", video: { fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 } },
+  { id: "DRK", format: "reel", title: "Kendi dünyası · Kariyer Puhu'ları reel", video: { fps: 30, durationInFrames: 240, endCardFrom: 180, coverFrame: 150 } },
+  { id: "DRH", format: "reel", title: "Kendi dünyası · Haftalık hikâye reel", video: { fps: 30, durationInFrames: 360, endCardFrom: 300, coverFrame: 240 } },
+  { id: "DRY", format: "reel", title: "Kendi dünyası · Yanlış Defterim reel", video: { fps: 30, durationInFrames: 360, endCardFrom: 300, coverFrame: 240 } },
 ];
 
 export const compositionIds = (p: Piece): string[] =>

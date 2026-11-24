@@ -8,6 +8,14 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
+    "./turkey-provinces": {
+      "types": "./dist/turkey-provinces.d.ts",
+      "default": "./dist/turkey-provinces.js"
+    },
+    "./board-*": {
+      "types": "./dist/board-*.d.ts",
+      "default": "./dist/board-*.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
@@ -22,7 +30,8 @@
     "clean": "rimraf dist .turbo tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@mentor/types": "workspace:*"
+    "@mentor/types": "workspace:*",
+    "@mentor/validation": "workspace:*"
   },
   "devDependencies": {
     "@mentor/config": "workspace:*",

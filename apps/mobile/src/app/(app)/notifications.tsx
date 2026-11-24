@@ -1,303 +1,278 @@
 import { useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { resolveNotificationMobileRoute } from "@mentor/core";
-import type { NotificationCategory, UserNotificationDto } from "@mentor/types";
+import { ApiClientError } from "@mentor/api-client";
+import type { UserNotificationDto } from "@mentor/types";
+import { NotificationChannelsCard } from "../../components/notifications/notification-channels-card.js";
+import { NotificationRow } from "../../components/notifications/notification-row.js";
 import {
-  AppText,
-  Button,
-  Card,
-  Chip,
-  ScreenLoadingSkeleton,
-  StateView,
-} from "../../components/ui/index.js";
+  NotificationsEmpty,
+  NotificationsHeader,
+  type NotificationInboxTab,
+} from "../../components/notifications/notifications-chrome.js";
+import { NotificationsSkeleton } from "../../components/notifications/notifications-skeleton.js";
+import { ActionSheet, type SheetAction } from "../../components/panel/primitives.js";
+import { AppText, Button, StateView } from "../../components/ui/index.js";
 import { haptics } from "../../lib/haptics.js";
 import {
   deleteNotification,
-  fetchNotificationPreferences,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
-  updateNotificationPreferences,
+  markNotificationUnread,
 } from "../../lib/notifications-api.js";
+import {
+  flattenNotificationGroups,
+  resolveMobileNotificationDestination,
+  type NotificationListRow,
+  type NotificationRecencyGroup,
+} from "../../lib/notifications-view.js";
+import { STUDENT_CORE_ONLY } from "../../lib/release-scope.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
+import { useToast } from "../../providers/toast-provider.js";
 
-const CATEGORIES: ("ALL" | NotificationCategory)[] = [
-  "ALL",
-  "COACH",
-  "PLAN",
-  "FORUM",
-  "ACHIEVEMENT",
-  "MENTORSHIP",
-  "SYSTEM",
-];
+const GROUP_LABEL_KEY: Record<
+  NotificationRecencyGroup,
+  "group_today" | "group_week" | "group_earlier"
+> = {
+  today: "group_today",
+  week: "group_week",
+  earlier: "group_earlier",
+};
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { palette, radii, space } = useThemeTokens();
+  const toast = useToast();
+  const { palette, space } = useThemeTokens();
   const t = useTranslations("notifications");
   const tCommon = useTranslations("common");
 
-  const [selectedCategory, setSelectedCategory] = useState<
-    "ALL" | NotificationCategory
-  >("ALL");
+  const [activeTab, setActiveTab] = useState<NotificationInboxTab>("ALL");
+  const [actionItem, setActionItem] = useState<UserNotificationDto | null>(null);
 
-  const categoryFilter =
-    selectedCategory === "ALL" ? undefined : selectedCategory;
-
-  const listQuery = useQuery({
-    queryKey: ["notifications", "list", selectedCategory],
-    queryFn: () => listNotifications(categoryFilter, 1),
+  const listQuery = useInfiniteQuery({
+    queryKey: ["notifications", "inbox"],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => listNotifications(undefined, pageParam),
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.hasMore ? allPages.length + 1 : undefined,
   });
 
-  const prefsQuery = useQuery({
-    queryKey: ["notifications", "preferences"],
-    queryFn: fetchNotificationPreferences,
-  });
-
-  const invalidateList = async () => {
+  const invalidateInbox = async () => {
     await queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
 
+  const showErrorToast = (err: unknown) => {
+    haptics.error();
+    toast.show(err instanceof ApiClientError ? err.message : tCommon("error_body"));
+  };
+
   const markAllMutation = useMutation({
-    mutationFn: () => markAllNotificationsRead(),
+    mutationFn: markAllNotificationsRead,
     onSuccess: async () => {
       haptics.success();
-      await invalidateList();
+      await invalidateInbox();
     },
+    onError: showErrorToast,
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: (id: string) => markNotificationRead(id),
+    onSuccess: async () => {
+      haptics.selection();
+      await invalidateInbox();
+    },
+    onError: showErrorToast,
+  });
+
+  const markUnreadMutation = useMutation({
+    mutationFn: (id: string) => markNotificationUnread(id),
+    onSuccess: async () => {
+      haptics.selection();
+      await invalidateInbox();
+    },
+    onError: showErrorToast,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteNotification(id),
     onSuccess: async () => {
       haptics.lightImpact();
-      await invalidateList();
+      await invalidateInbox();
     },
+    onError: showErrorToast,
   });
 
-  const prefMutation = useMutation({
-    mutationFn: updateNotificationPreferences,
-    onSuccess: async () => {
-      haptics.selection();
-      await queryClient.invalidateQueries({
-        queryKey: ["notifications", "preferences"],
-      });
-    },
-  });
+  const pages = listQuery.data?.pages ?? [];
+  const allItems = pages.flatMap((page) => page.items);
+  const unreadCount = pages[0]?.unreadCount ?? 0;
+  const visibleItems =
+    activeTab === "ALL"
+      ? allItems
+      : allItems.filter((item) => item.readAt === null);
+
+  const rows: NotificationListRow[] =
+    listQuery.isLoading || listQuery.isError
+      ? []
+      : flattenNotificationGroups(visibleItems);
 
   const handleOpenNotification = async (item: UserNotificationDto) => {
     haptics.selection();
     if (!item.readAt) {
       try {
         await markNotificationRead(item.id);
-        await invalidateList();
+        await invalidateInbox();
       } catch {
-        // Non-blocking if already marked read
+        // Non-blocking if already marked read or temporarily offline.
       }
     }
-    const targetRoute = resolveNotificationMobileRoute(item.linkUrl);
-    if (targetRoute) {
-      router.push(targetRoute as never);
+    const dest = resolveMobileNotificationDestination(
+      item.linkUrl,
+      STUDENT_CORE_ONLY,
+    );
+    if (!dest) return;
+    if (dest.pathname.startsWith("/(app)/(tabs)/")) {
+      router.navigate(dest as never);
+    } else {
+      router.push(dest as never);
     }
   };
 
-  const items = listQuery.data?.items ?? [];
-  const unreadCount = listQuery.data?.unreadCount ?? 0;
-  const prefs = prefsQuery.data;
+  const sheetActions: SheetAction[] = actionItem
+    ? [
+        {
+          label: actionItem.readAt ? t("mark_unread_cta") : t("mark_read_cta"),
+          onPress: () => {
+            if (actionItem.readAt) {
+              markUnreadMutation.mutate(actionItem.id);
+            } else {
+              markReadMutation.mutate(actionItem.id);
+            }
+          },
+        },
+        {
+          label: t("delete_cta"),
+          tone: "danger",
+          onPress: () => deleteMutation.mutate(actionItem.id),
+        },
+      ]
+    : [];
 
   return (
-    <FlatList
-      data={items}
-      keyExtractor={(item) => item.id}
-      style={{ flex: 1, backgroundColor: palette.bg }}
-      contentInsetAdjustmentBehavior="automatic"
-      refreshControl={
-        <RefreshControl
-          refreshing={listQuery.isRefetching}
-          onRefresh={() => void invalidateList()}
-          tintColor={palette.accent}
-        />
-      }
-      contentContainerStyle={{
-        paddingTop: insets.top + space.lg,
-        paddingBottom: space.xl,
-        paddingHorizontal: space.lg,
-        gap: space.sm,
-      }}
-      ListHeaderComponent={
-        <View style={{ gap: space.lg, marginBottom: space.sm }}>
-          <View style={styles.headerRow}>
-            <View style={{ flex: 1, gap: 4 }}>
-              <AppText variant="title">{t("title")}</AppText>
-              <AppText variant="caption" tone="secondary">
-                {t("subtitle")}
-              </AppText>
-            </View>
-            <Chip label={t("back_cta")} onPress={() => router.back()} />
-          </View>
+    <View style={[styles.screen, { backgroundColor: palette.bg }]}>
+      <NotificationsHeader
+        unreadCount={unreadCount}
+        activeTab={activeTab}
+        markingAll={markAllMutation.isPending}
+        onBack={() => router.back()}
+        onMarkAllRead={() => markAllMutation.mutate()}
+        onTabChange={setActiveTab}
+      />
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8 }}
-          >
-            {CATEGORIES.map((cat) => (
-              <Chip
-                key={cat}
-                label={t(`cat_${cat}` as never)}
-                selected={selectedCategory === cat}
-                onPress={() => {
-                  haptics.selection();
-                  setSelectedCategory(cat);
-                }}
-              />
-            ))}
-          </ScrollView>
-
-          {unreadCount > 0 ? (
-            <Button
-              label={t("mark_all_read_cta")}
-              variant="secondary"
-              loading={markAllMutation.isPending}
-              onPress={() => markAllMutation.mutate()}
-            />
-          ) : null}
-        </View>
-      }
-      ListEmptyComponent={
-        listQuery.isLoading ? (
-          <ScreenLoadingSkeleton />
-        ) : listQuery.isError ? (
-          <StateView
-            title={tCommon("error_title")}
-            body={tCommon("error_body")}
-            actionLabel={tCommon("retry")}
-            onAction={() => void listQuery.refetch()}
-            tone="error"
+      <FlatList
+        data={rows}
+        keyExtractor={(row) => row.key}
+        style={styles.list}
+        refreshControl={
+          <RefreshControl
+            refreshing={listQuery.isRefetching && !listQuery.isFetchingNextPage}
+            onRefresh={() => void invalidateInbox()}
+            tintColor={palette.accent}
           />
-        ) : (
-          <Card style={{ gap: 6 }}>
-            <AppText variant="cardTitle">{t("empty_title")}</AppText>
-            <AppText variant="body" tone="secondary">
-              {t("empty_body")}
-            </AppText>
-          </Card>
-        )
-      }
-      renderItem={({ item }) => {
-        const isUnread = !item.readAt;
-        const targetRoute = resolveNotificationMobileRoute(item.linkUrl);
-        return (
-          <Pressable
-            onPress={() => void handleOpenNotification(item)}
-            style={{
-              padding: space.md,
-              borderRadius: radii.inner,
-              borderWidth: 1,
-              borderColor: isUnread ? palette.accent : palette.border,
-              backgroundColor: isUnread
-                ? palette.surfaceHover
-                : palette.surface,
-              gap: 8,
-            }}
-          >
-            <View style={styles.rowBetween}>
-              <Chip label={t(`cat_${item.category}` as never)} />
-              <AppText variant="micro" tone="muted">
-                {item.createdAt.slice(0, 10)}
-              </AppText>
-            </View>
-
-            <AppText variant="cardTitle">{item.title}</AppText>
-            <AppText variant="body" tone="secondary">
-              {item.body}
-            </AppText>
-
-            <View style={styles.rowBetween}>
-              {targetRoute ? (
-                <AppText variant="caption" tone="accent">
-                  {t("open_link_cta")} →
+        }
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + space["2xl"],
+        }}
+        renderItem={({ item: row }) => {
+          if (row.kind === "header") {
+            return (
+              <View
+                style={[
+                  styles.sectionHeader,
+                  { backgroundColor: palette.surface },
+                ]}
+              >
+                <AppText style={[styles.sectionTitle, { color: palette.secondary }]}>
+                  {t(GROUP_LABEL_KEY[row.group])}
                 </AppText>
-              ) : (
-                <View />
-              )}
-              <Chip
-                label={t("delete_cta")}
-                onPress={() => deleteMutation.mutate(item.id)}
-              />
-            </View>
-          </Pressable>
-        );
-      }}
-      ListFooterComponent={
-        prefs ? (
-          <Card style={{ gap: space.sm, marginTop: space.md }}>
-            <AppText variant="sectionHeading">{t("prefs_title")}</AppText>
+              </View>
+            );
+          }
 
-            <View style={styles.rowBetween}>
-              <AppText variant="body">{t("pref_push")}</AppText>
-              <Chip
-                label={prefs.pushEnabled ? t("pref_on") : t("pref_off")}
-                selected={prefs.pushEnabled}
-                onPress={() =>
-                  prefMutation.mutate({ pushEnabled: !prefs.pushEnabled })
-                }
+          return (
+            <NotificationRow
+              item={row.item}
+              onPress={() => void handleOpenNotification(row.item)}
+              onOpenActions={() => {
+                haptics.selection();
+                setActionItem(row.item);
+              }}
+            />
+          );
+        }}
+        ListEmptyComponent={
+          listQuery.isLoading ? (
+            <View style={{ backgroundColor: palette.surface }}>
+              <NotificationsSkeleton />
+            </View>
+          ) : listQuery.isError ? (
+            <View style={{ padding: space.xl }}>
+              <StateView
+                title={tCommon("error_title")}
+                body={tCommon("error_body")}
+                actionLabel={tCommon("retry")}
+                onAction={() => void listQuery.refetch()}
+                tone="error"
               />
             </View>
+          ) : (
+            <NotificationsEmpty unreadTab={activeTab === "UNREAD"} />
+          )
+        }
+        ListFooterComponent={
+          <View style={{ paddingHorizontal: space.xl, paddingTop: space.xl, gap: space.lg }}>
+            {listQuery.hasNextPage ? (
+              <Button
+                label={t("load_more")}
+                variant="secondary"
+                loading={listQuery.isFetchingNextPage}
+                onPress={() => void listQuery.fetchNextPage()}
+              />
+            ) : null}
+            <NotificationChannelsCard />
+          </View>
+        }
+      />
 
-            <View style={styles.rowBetween}>
-              <AppText variant="body">{t("pref_email")}</AppText>
-              <Chip
-                label={prefs.emailEnabled ? t("pref_on") : t("pref_off")}
-                selected={prefs.emailEnabled}
-                onPress={() =>
-                  prefMutation.mutate({ emailEnabled: !prefs.emailEnabled })
-                }
-              />
-            </View>
-
-            <View style={styles.rowBetween}>
-              <AppText variant="body">{t("pref_campaigns")}</AppText>
-              <Chip
-                label={prefs.campaignsEnabled ? t("pref_on") : t("pref_off")}
-                selected={prefs.campaignsEnabled}
-                onPress={() =>
-                  prefMutation.mutate({
-                    campaignsEnabled: !prefs.campaignsEnabled,
-                  })
-                }
-              />
-            </View>
-          </Card>
-        ) : null
-      }
-    />
+      <ActionSheet
+        title={actionItem?.title ?? null}
+        actions={sheetActions}
+        onClose={() => setActionItem(null)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
+  screen: {
+    flex: 1,
   },
-  rowBetween: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
+  list: {
+    flex: 1,
+  },
+  sectionHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 6,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "800",
   },
 });

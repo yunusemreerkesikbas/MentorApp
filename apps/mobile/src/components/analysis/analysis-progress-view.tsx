@@ -1,357 +1,174 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { useMutation } from "@tanstack/react-query";
+import { AltArrowDownIcon } from "@solar-icons/react-native/linear/alt-arrow-down";
+import { AltArrowUpIcon } from "@solar-icons/react-native/linear/alt-arrow-up";
+import { ArrowRightDownIcon } from "@solar-icons/react-native/linear/arrow-right-down";
+import { ArrowRightUpIcon } from "@solar-icons/react-native/linear/arrow-right-up";
+import { InfoCircleIcon } from "@solar-icons/react-native/linear/info-circle";
+import { MenuDotsIcon } from "@solar-icons/react-native/linear/menu-dots";
 import { formatTrendDate } from "@mentor/core";
-import type {
-  CoachingAnalysisDto,
-  MockExamDto,
-} from "@mentor/types";
-import { ApiClientError } from "@mentor/api-client";
-import {
-  createAnalysisFocusPlanTask,
-  deleteMockExam,
-} from "../../lib/analysis-api.js";
+import type { CoachingAnalysisDto, MockExamDto } from "@mentor/types";
+import { deleteMockExam } from "../../lib/analysis-api.js";
 import { haptics } from "../../lib/haptics.js";
 import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
-import { AppText, Button, Card, Chip, StateView } from "../ui/index.js";
+import { ActionSheet, PanelCard, PanelCardTitle, ProgressLine } from "../panel/primitives.js";
+import { AppText, Chip, Skeleton } from "../ui/index.js";
+import { AnalysisLink } from "./analysis-link.js";
 
-export interface AnalysisProgressViewProps {
-  examId: string;
-  analysis: CoachingAnalysisDto | null;
-  mockExams: MockExamDto[];
-  onOpenEntryTab: () => void;
-  onOpenCoachForExam: (mockExam: MockExamDto) => void;
-  onRefresh: () => void;
+export function AnalysisSubjectsCard({ analysis }: { analysis: CoachingAnalysisDto }) {
+  const t = useTranslations("analysisSubjects");
+  const tCommon = useTranslations("common");
+  const { palette, space, touchTargets } = useThemeTokens();
+  if (analysis.subjects.length === 0) return null;
+
+  return (
+    <PanelCard style={{ gap: space.md }}>
+      <View style={styles.spread}>
+        <PanelCardTitle>{t("title")}</PanelCardTitle>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("caption")}
+          onPress={() => Alert.alert(t("caption"), t("info"), [{ text: tCommon("close") }])}
+          style={[styles.inline, { minHeight: touchTargets.min, gap: space.xs }]}>
+          <AppText variant="caption" tone="secondary" numberOfLines={1}>{t("caption")}</AppText>
+          <InfoCircleIcon size={15} color={palette.secondary} />
+        </Pressable>
+      </View>
+      {analysis.subjects.map((subject) => {
+        const delta = Number(subject.netDelta ?? 0);
+        const DeltaIcon = delta > 0 ? ArrowRightUpIcon : ArrowRightDownIcon;
+        const percent = subject.normalizedAveragePercent == null ? null : Math.round(Number(subject.normalizedAveragePercent));
+        return (
+          <View key={subject.subjectRef} style={{ gap: space.sm }}>
+            <View style={[styles.inline, { gap: space.sm }]}>
+              <View style={[styles.inline, { flex: 1, flexWrap: "wrap", gap: space.xs }]}>
+                <AppText variant="caption" style={styles.bold}>{subject.subjectName}</AppText>
+                {subject.subjectRef === analysis.nextFocus?.subjectRef ? <Chip label={t("focus")} /> : null}
+              </View>
+              {Math.abs(delta) >= 0.05 ? (
+                <View style={styles.inline} accessible accessibilityLabel={`${t("trend_aria")}: ${subject.netDelta}`}>
+                  <DeltaIcon size={14} color={delta > 0 ? palette.success : palette.secondary} />
+                  <AppText variant="caption" tone={delta > 0 ? "success" : "secondary"} tabularNums>
+                    {delta > 0 ? "+" : ""}{subject.netDelta}
+                  </AppText>
+                </View>
+              ) : null}
+              <AppText variant="caption" tabularNums style={styles.bold}>
+                {subject.averageNet}
+                {subject.questionCount != null ? <AppText variant="caption" tone="secondary"> / {subject.questionCount}</AppText> : null}
+              </AppText>
+            </View>
+            {percent != null ? <ProgressLine value={percent} max={100}
+              label={t("bar_label", { subject: subject.subjectName, percent })} /> : null}
+          </View>
+        );
+      })}
+    </PanelCard>
+  );
 }
 
-export function AnalysisProgressView({
-  examId,
-  analysis,
-  mockExams,
-  onOpenEntryTab,
-  onOpenCoachForExam,
-  onRefresh,
-}: AnalysisProgressViewProps) {
+export function AnalysisHistoryCard({
+  items, loading, error, hasMore, onMore, onRefresh, onCoach, onMistakes, onEdit,
+}: {
+  items: MockExamDto[];
+  loading: boolean;
+  error: boolean;
+  hasMore: boolean;
+  onMore: () => void;
+  onRefresh: () => Promise<void>;
+  onCoach: (id: string, seed: string) => void;
+  onMistakes: (id: string) => void;
+  onEdit: (item: MockExamDto) => void;
+}) {
+  const t = useTranslations("analysisHistory");
+  const tAnalysis = useTranslations("analysis");
+  const tCommon = useTranslations("common");
   const { locale } = useLocale();
-  const t = useTranslations("analysis");
-  const { palette, radii, space } = useThemeTokens();
-  const [addingFocus, setAddingFocus] = useState(false);
-  const [focusAdded, setFocusAdded] = useState(false);
-  const [focusError, setFocusError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  if (!analysis || (mockExams.length === 0 && analysis.subjects.length === 0)) {
-    return (
-      <StateView
-        title={t("empty_title")}
-        body={t("empty_body")}
-        actionLabel={t("add_mock_cta")}
-        onAction={onOpenEntryTab}
-        tone="empty"
-      />
-    );
-  }
-
-  const latestExamId =
-    analysis.ghost?.latest.id ?? mockExams[0]?.id ?? null;
-
-  const handleAddFocusToPlan = async () => {
-    const focus = analysis.nextFocus;
-    if (!focus || !latestExamId || addingFocus) return;
-    setAddingFocus(true);
-    setFocusError(null);
-    try {
-      await createAnalysisFocusPlanTask({
-        examId,
-        baselineMockExamId: latestExamId,
-        expectedSubjectRef: focus.subjectRef,
-        expectedTopicRef: focus.topicRef ?? null,
-        title: focus.suggestedTaskTitle,
-      });
+  const { palette, radii, space, touchTargets } = useThemeTokens();
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [menu, setMenu] = useState<MockExamDto | null>(null);
+  const deletion = useMutation({
+    mutationFn: deleteMockExam,
+    onSuccess: async () => {
+      setExpanded(null);
       haptics.success();
-      setFocusAdded(true);
-      onRefresh();
-    } catch (err) {
-      setFocusError(
-        err instanceof ApiClientError || err instanceof Error
-          ? err.message
-          : t("focus_add_plan_cta"),
-      );
-    } finally {
-      setAddingFocus(false);
-    }
-  };
-
-  const handleDeleteExam = async (id: string) => {
-    if (deletingId) return;
-    setDeletingId(id);
-    try {
-      await deleteMockExam(id);
-      haptics.selection();
-      onRefresh();
-    } finally {
-      setDeletingId(null);
-    }
+      await onRefresh();
+    },
+    onError: (cause) => Alert.alert(tCommon("error_title"), cause instanceof Error ? cause.message : tCommon("error_body")),
+  });
+  const confirmDelete = (item: MockExamDto) => {
+    if (deletion.isPending) return;
+    Alert.alert(t("delete_confirm_title"), t("delete_confirm_message", {
+      name: item.publisherName ?? item.examName, date: formatTrendDate(item.takenAt, locale),
+    }), [
+      { text: t("delete_confirm_no"), style: "cancel" },
+      { text: t("delete_confirm_yes"), style: "destructive", onPress: () => deletion.mutate(item.id) },
+    ], { cancelable: true });
   };
 
   return (
-    <View style={{ gap: space.lg }}>
-      {/* Personal Record & Ghost ("Geçmiş-Ben") Card */}
-      {analysis.ghost ? (
-        <Card style={{ gap: space.md }}>
-          <View style={styles.headerRow}>
-            <AppText variant="cardTitle">{t("ghost_title")}</AppText>
-            {analysis.ghost.isNewRecord ? (
-              <Chip label={t("ghost_new_record")} tone="success" />
+    <PanelCard style={{ gap: space.sm }}>
+      <View style={styles.spread}>
+        <PanelCardTitle>{t("title")}</PanelCardTitle>
+        {items.length ? <AppText variant="caption" tone="secondary">{t(items.length === 1 ? "count_one" : "count", { count: items.length })}</AppText> : null}
+      </View>
+      {items.length === 0 && !error ? loading ? <Skeleton height={44} /> : (
+        <AppText tone="secondary">{t("empty")}</AppText>
+      ) : null}
+      {items.map((item, index) => {
+        const opened = expanded === item.id;
+        const date = formatTrendDate(item.takenAt, locale);
+        const name = item.publisherName ?? item.examName;
+        const Arrow = opened ? AltArrowUpIcon : AltArrowDownIcon;
+        return (
+          <View key={item.id} style={{ borderTopWidth: index > 0 ? StyleSheet.hairlineWidth : 0, borderColor: palette.border }}>
+            <Pressable accessibilityRole="button" accessibilityState={{ expanded: opened }} onPress={() => setExpanded(opened ? null : item.id)}
+              style={[styles.inline, { minHeight: touchTargets.comfortable, gap: space.sm, paddingVertical: space.sm }]}>
+              <View style={{ flex: 1 }}>
+                <AppText variant="caption" style={styles.bold}>{name}</AppText>
+                <AppText variant="micro" tone="secondary">{date}</AppText>
+              </View>
+              <AppText variant="caption" tabularNums style={styles.bold}>{tAnalysis("net_suffix", { net: item.totalNet })}</AppText>
+              <Arrow size={18} color={palette.secondary} />
+            </Pressable>
+            {opened ? (
+              <View style={{ backgroundColor: palette.surfaceAlt, borderRadius: radii.inner, padding: space.md, gap: space.sm }}>
+                {item.subjects.filter((subject) => subject.correct || subject.wrong || subject.blank).map((subject) => (
+                  <View key={subject.subjectRef} style={[styles.spread, { gap: space.sm }]}>
+                    <View style={{ flex: 1 }}>
+                      <AppText variant="caption" style={styles.bold}>{subject.subjectName}</AppText>
+                      <AppText variant="micro" tone="secondary">{t("row_counts", { correct: subject.correct, wrong: subject.wrong, blank: subject.blank })}</AppText>
+                    </View>
+                    <AppText variant="caption" tabularNums>{tAnalysis("net_suffix", { net: subject.net })}</AppText>
+                  </View>
+                ))}
+                <View style={styles.spread}>
+                  <AnalysisLink label={t("open_mistakes")} onPress={() => onMistakes(item.id)} style={{ flex: 1 }} />
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("more_actions")} onPress={() => setMenu(item)}
+                    style={{ minWidth: touchTargets.min, minHeight: touchTargets.min, alignItems: "center", justifyContent: "center" }}>
+                    <MenuDotsIcon size={22} color={palette.secondary} />
+                  </Pressable>
+                </View>
+                <AnalysisLink label={tAnalysis("ask_puhu_cta")}
+                  onPress={() => onCoach(item.id, t("coach_seed", { date, exam: name }))} />
+              </View>
             ) : null}
           </View>
-
-          <AppText variant="title" tabularNums>
-            {t("net_suffix", { net: analysis.ghost.latest.totalNet })}
-          </AppText>
-
-          <AppText variant="body" tone="main">
-            {analysis.ghost.headline}
-          </AppText>
-
-          <View style={styles.chipRow}>
-            <Chip
-              label={t("ghost_prev_delta", {
-                delta: analysis.ghost.previousDelta,
-              })}
-              tone={analysis.ghost.beatPrevious ? "success" : "default"}
-            />
-            <Chip
-              label={t("ghost_best_delta", {
-                delta: analysis.ghost.recordDelta,
-              })}
-              tone={analysis.ghost.isNewRecord ? "success" : "default"}
-            />
-          </View>
-
-          {analysis.ghost.aiNarration ? (
-            <AppText variant="caption" tone="coach">
-              {analysis.ghost.aiNarration}
-            </AppText>
-          ) : null}
-        </Card>
-      ) : analysis.personalRecordNet ? (
-        <Card style={{ gap: space.xs }}>
-          <AppText variant="caption" tone="secondary">
-            {t("personal_record_label")}
-          </AppText>
-          <AppText variant="title" tabularNums>
-            {t("net_suffix", { net: analysis.personalRecordNet })}
-          </AppText>
-        </Card>
-      ) : null}
-
-      {/* Next Study Focus Card */}
-      {analysis.nextFocus ? (
-        <Card variant="coach" style={{ gap: space.md }}>
-          <View style={styles.headerRow}>
-            <AppText variant="cardTitle">{t("focus_title")}</AppText>
-            <Chip
-              label={
-                analysis.nextFocus.topicName
-                  ? `${analysis.nextFocus.subjectName} · ${analysis.nextFocus.topicName}`
-                  : analysis.nextFocus.subjectName
-              }
-              tone="coach"
-            />
-          </View>
-          <AppText variant="body" tone="main">
-            {analysis.nextFocus.message}
-          </AppText>
-          <AppText variant="caption" tone="secondary">
-            {analysis.nextFocus.trendMessage}
-          </AppText>
-
-          {focusError ? (
-            <AppText variant="caption" tone="danger">
-              {focusError}
-            </AppText>
-          ) : null}
-
-          {focusAdded ? (
-            <AppText variant="caption" tone="success">
-              {t("focus_added_plan")}
-            </AppText>
-          ) : latestExamId ? (
-            <Button
-              label={t("focus_add_plan_cta")}
-              onPress={() => void handleAddFocusToPlan()}
-              disabled={addingFocus}
-              variant="primary"
-            />
-          ) : null}
-        </Card>
-      ) : null}
-
-      {/* Subject Strengths Card */}
-      {analysis.subjects.length > 0 ? (
-        <Card style={{ gap: space.md }}>
-          <AppText variant="cardTitle">{t("subjects_title")}</AppText>
-          <View style={{ gap: space.sm }}>
-            {analysis.subjects.map((sub) => (
-              <View
-                key={sub.subjectRef}
-                style={[
-                  styles.rowCard,
-                  {
-                    backgroundColor: palette.surfaceAlt,
-                    borderColor: palette.border,
-                    borderRadius: radii.inner,
-                    padding: space.md,
-                  },
-                ]}
-              >
-                <View style={{ flex: 1, gap: 2 }}>
-                  <AppText variant="body">{sub.subjectName}</AppText>
-                  <AppText variant="micro" tone="muted" tabularNums>
-                    {t("subject_avg", {
-                      net: sub.averageNet,
-                      count: sub.attemptCount,
-                    })}
-                  </AppText>
-                </View>
-                {sub.netDelta ? (
-                  <Chip
-                    label={`${sub.netDelta} net`}
-                    tone={sub.netDelta.startsWith("-") ? "warning" : "success"}
-                  />
-                ) : (
-                  <Chip
-                    label={t("net_suffix", { net: sub.averageNet })}
-                    tone="default"
-                  />
-                )}
-              </View>
-            ))}
-          </View>
-        </Card>
-      ) : null}
-
-      {/* Recent Mock Exams List */}
-      {mockExams.length > 0 ? (
-        <Card style={{ gap: space.md }}>
-          <AppText variant="cardTitle">{t("history_title")}</AppText>
-          <View style={{ gap: space.sm }}>
-            {mockExams.map((item) => (
-              <View
-                key={item.id}
-                style={[
-                  styles.examCard,
-                  {
-                    backgroundColor: palette.surfaceAlt,
-                    borderColor: palette.border,
-                    borderRadius: radii.inner,
-                    padding: space.md,
-                    gap: space.sm,
-                  },
-                ]}
-              >
-                <View style={styles.headerRow}>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <AppText variant="body">
-                      {item.publisherName ?? item.examName}
-                    </AppText>
-                    <AppText variant="micro" tone="muted">
-                      {formatTrendDate(item.takenAt, locale)}
-                    </AppText>
-                  </View>
-                  <Chip
-                    label={t("net_suffix", { net: item.totalNet })}
-                    tone="success"
-                  />
-                </View>
-
-                <View style={styles.actionsRow}>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => {
-                      haptics.selection();
-                      onOpenCoachForExam(item);
-                    }}
-                    style={[
-                      styles.actionPill,
-                      {
-                        backgroundColor: palette.ctaPlayBg,
-                        borderColor: palette.ctaPlayEdge,
-                        borderRadius: radii.pill,
-                        paddingHorizontal: space.md,
-                        paddingVertical: space.xs + 2,
-                      },
-                    ]}
-                  >
-                    <AppText
-                      variant="caption"
-                      style={{ color: palette.ctaPlayInk }}
-                    >
-                      {t("ask_puhu_cta")}
-                    </AppText>
-                  </Pressable>
-
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={deletingId === item.id}
-                    onPress={() => void handleDeleteExam(item.id)}
-                    style={[
-                      styles.actionPill,
-                      {
-                        backgroundColor: palette.surface,
-                        borderColor: palette.border,
-                        borderRadius: radii.pill,
-                        paddingHorizontal: space.md,
-                        paddingVertical: space.xs + 2,
-                      },
-                    ]}
-                  >
-                    <AppText variant="caption" tone="danger">
-                      {t("delete_mock_cta")}
-                    </AppText>
-                  </Pressable>
-                </View>
-              </View>
-            ))}
-          </View>
-        </Card>
-      ) : null}
-    </View>
+        );
+      })}
+      {error ? <AnalysisLink label={tCommon("retry")} onPress={() => void onRefresh()} /> : null}
+      {hasMore ? <AnalysisLink label={t("load_more")} onPress={onMore} /> : null}
+      <ActionSheet title={menu ? menu.publisherName ?? menu.examName : null} onClose={() => setMenu(null)}
+        actions={menu ? [
+          { label: t("edit"), onPress: () => onEdit(menu) },
+          { label: t("delete"), tone: "danger", onPress: () => confirmDelete(menu) },
+        ] : []} />
+    </PanelCard>
   );
 }
 
 const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  rowCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    gap: 8,
-  },
-  examCard: {
-    borderWidth: 1,
-  },
-  actionsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 8,
-  },
-  actionPill: {
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  inline: { flexDirection: "row", alignItems: "center" },
+  spread: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  bold: { fontWeight: "800" },
 });

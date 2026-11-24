@@ -34,6 +34,26 @@ export const pushUnsubscribeSchema = z.object({
 });
 export type PushUnsubscribeInput = z.infer<typeof pushUnsubscribeSchema>;
 
+export const EXPO_PUSH_TOKEN_RE = /^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_=-]{8,256}\]$/;
+
+export const mobilePushTokenSchema = z
+  .string()
+  .trim()
+  .regex(EXPO_PUSH_TOKEN_RE, "Invalid Expo push token.");
+
+export const mobilePushPlatformSchema = z.enum(["ios", "android"]);
+
+export const mobilePushRegisterSchema = z.object({
+  token: mobilePushTokenSchema,
+  platform: mobilePushPlatformSchema,
+});
+export type MobilePushRegisterInput = z.infer<typeof mobilePushRegisterSchema>;
+
+export const mobilePushUnregisterSchema = z.object({
+  token: mobilePushTokenSchema,
+});
+export type MobilePushUnregisterInput = z.infer<typeof mobilePushUnregisterSchema>;
+
 export const updateNotificationPreferencesSchema = z
   .object({
     emailEnabled: z.boolean().optional(),

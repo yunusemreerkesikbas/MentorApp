@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import { useMutation } from "@tanstack/react-query";
 import type { StudySessionDto } from "@mentor/types";
 import { haptics } from "../../lib/haptics.js";
 import { scheduleSessionReturnReminder } from "../../lib/notifications-api.js";
@@ -32,19 +33,11 @@ export function SessionDoneCard({
   const [struggleNote, setStruggleNote] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
   const [saved, setSaved] = useState<boolean>(false);
-  const [reminderScheduled, setReminderScheduled] = useState<boolean>(false);
-
-  const handleScheduleReminder = async () => {
-    if (reminderScheduled) return;
-    haptics.selection();
-    try {
-      await scheduleSessionReturnReminder();
-      setReminderScheduled(true);
-      haptics.success();
-    } catch {
-      // Best-effort opt-in reminder
-    }
-  };
+  const reminder = useMutation({
+    mutationFn: () => scheduleSessionReturnReminder(session?.subject),
+    onSuccess: haptics.success,
+    onError: haptics.error,
+  });
 
   const minutes = Math.max(
     1,
@@ -143,15 +136,24 @@ export function SessionDoneCard({
         </AppText>
       )}
 
-      {reminderScheduled ? (
-        <AppText variant="caption" tone="success">
+      {reminder.isSuccess ? (
+        <AppText variant="caption" tone="success" accessibilityLiveRegion="polite">
           {t("return_reminder_scheduled")}
         </AppText>
       ) : (
-        <Chip
-          label={t("return_reminder_cta")}
-          onPress={() => void handleScheduleReminder()}
-        />
+        <View style={{ gap: space.xs }}>
+          <Button
+            label={t("return_reminder_cta")}
+            variant="secondary"
+            loading={reminder.isPending}
+            onPress={() => reminder.mutate()}
+          />
+          {reminder.isError ? (
+            <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
+              {t("return_reminder_error")}
+            </AppText>
+          ) : null}
+        </View>
       )}
 
       <Button

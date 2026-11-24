@@ -9,27 +9,66 @@ import {
   type ReactNode,
 } from "react";
 import * as SecureStore from "expo-secure-store";
+import { useQueryClient } from "@tanstack/react-query";
 import type { AuthSession, AuthUser } from "@mentor/types";
 import type { LoginInput, SignupInput } from "@mentor/validation";
 import {
+  ApiClientError,
   authControllerLogin,
   authControllerLogout,
   authControllerRefresh,
   authControllerSignup,
   configureApiClient,
 } from "@mentor/api-client";
+import { mobileMediaImageSource, type MobileMediaImageSource } from "../lib/media-image-source.js";
 import { getApiBaseUrl } from "../lib/env.js";
+import { unregisterCachedPushToken } from "../lib/push-notifications.js";
 import {
   createSecureTokenStore,
   getCachedRefreshToken,
 } from "../lib/secure-token.js";
 import { useLocale } from "./i18n-provider.js";
 
-export type AuthStatus = "loading" | "authenticated" | "anonymous";
+/** `unreachable`: a stored session exists but the API could not be reached to restore it. */
+export type AuthStatus = "loading" | "authenticated" | "anonymous" | "unreachable";
+
+const RESTORE_TIMEOUT_MS = 12_000;
+const RETRY_AFTER_NETWORK_ERROR_MS = 30_000;
+
+/** fetch has no timeout of its own; without one a silent server keeps the cold-start skeleton up forever. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timeout")), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+/** Only the server rejecting the token ends a session; throttling and dropped connections do not. */
+function isSessionRejected(error: unknown): boolean {
+  return (
+    error instanceof ApiClientError &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    error.status !== 429
+  );
+}
 
 export interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
+  mediaImageSource: (url: string | null | undefined) => MobileMediaImageSource | undefined;
+  /** Re-run session restore after `unreachable`. */
+  retryRestore: () => void;
+  refreshSession: () => Promise<AuthUser | null>;
   login: (input: LoginInput) => Promise<AuthUser>;
   signup: (input: SignupInput) => Promise<AuthUser>;
   logout: () => Promise<void>;
@@ -45,8 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const accessTokenRef = useRef<string | null>(null);
   const refreshInFlightRef = useRef<Promise<AuthSession | null> | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const silentRefreshRef = useRef<() => void>(() => {});
+  const silentRefreshRef = useRef<() => Promise<AuthSession | null>>(async () => null);
   const { locale } = useLocale();
+  const queryClient = useQueryClient();
   const localeRef = useRef(locale);
   localeRef.current = locale;
 
@@ -58,6 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       getAccessToken: () => accessTokenRef.current,
       getRefreshToken: () => getCachedRefreshToken(),
       getLocale: () => localeRef.current,
+      // The refresh timer does not run in the background; this catches the requests on return.
+      refreshAccessToken: async () => (await silentRefreshRef.current()) !== null,
     });
   }, []);
 
@@ -65,9 +107,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     accessTokenRef.current = null;
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     await secureTokenStore.clearRefreshToken();
+    // Everything cached belongs to the account that just left; the next one must not see it.
+    queryClient.clear();
     setUser(null);
     setStatus("anonymous");
-  }, []);
+  }, [queryClient]);
 
   const applySession = useCallback(async (session: AuthSession) => {
     accessTokenRef.current = session.accessToken;
@@ -78,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("authenticated");
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     refreshTimerRef.current = setTimeout(
-      () => silentRefreshRef.current(),
+      () => void silentRefreshRef.current(),
       Math.max((session.expiresIn - 60) * 1000, 30_000),
     );
   }, []);
@@ -92,11 +136,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await clearSession();
           return null;
         }
-        const session = (await authControllerRefresh()) as unknown as AuthSession;
+        const session = (await withTimeout(
+          authControllerRefresh(),
+          RESTORE_TIMEOUT_MS,
+        )) as unknown as AuthSession;
         await applySession(session);
         return session;
-      } catch {
-        await clearSession();
+      } catch (error) {
+        if (isSessionRejected(error)) {
+          await clearSession();
+          return null;
+        }
+        // Network trouble: keep the stored token. Signed-in users stay where they are and we
+        // try again shortly; a cold start shows a retry screen instead of logging them out.
+        if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+        if (accessTokenRef.current) {
+          refreshTimerRef.current = setTimeout(
+            () => void silentRefreshRef.current(),
+            RETRY_AFTER_NETWORK_ERROR_MS,
+          );
+        } else {
+          setStatus("unreachable");
+        }
         return null;
       } finally {
         refreshInFlightRef.current = null;
@@ -107,9 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applySession, clearSession]);
 
   useEffect(() => {
-    silentRefreshRef.current = () => {
-      void silentRefresh();
-    };
+    silentRefreshRef.current = silentRefresh;
   }, [silentRefresh]);
 
   useEffect(() => {
@@ -128,18 +187,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       user,
+      mediaImageSource: (url) => mobileMediaImageSource(url, getApiBaseUrl(), accessTokenRef.current),
+      retryRestore: () => {
+        setStatus("loading");
+        void silentRefreshRef.current();
+      },
+      refreshSession: async () => {
+        const session = await silentRefreshRef.current();
+        return session?.user ?? null;
+      },
       login: async (input) => {
         const session = (await authControllerLogin(input)) as unknown as AuthSession;
+        queryClient.clear();
         await applySession(session);
         return session.user;
       },
       signup: async (input) => {
         const session = (await authControllerSignup(input)) as unknown as AuthSession;
+        queryClient.clear();
         await applySession(session);
         return session.user;
       },
       logout: async () => {
         try {
+          await unregisterCachedPushToken().catch(() => {});
           await authControllerLogout();
         } finally {
           await clearSession();
@@ -147,7 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       setUserFromServer,
     }),
-    [status, user, applySession, clearSession, setUserFromServer],
+    [status, user, applySession, clearSession, queryClient, setUserFromServer],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

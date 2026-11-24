@@ -1,6 +1,16 @@
 import { Redirect, Stack, usePathname } from "expo-router";
-import { COACH_HOME, hasCompletedOnboarding, isCoach, isStudentOnlyPath } from "@mentor/core";
+import {
+  COACH_HOME,
+  hasCompletedOnboarding,
+  isCoach,
+  isNavActive,
+  isStudentOnlyPath,
+} from "@mentor/core";
+import { STUDENT_CORE_ONLY } from "../../lib/release-scope.js";
 import { useAuth } from "../../providers/auth-provider.js";
+import { CelebrationProvider } from "../../providers/celebration-provider.js";
+import { PushNotificationsProvider } from "../../providers/push-notifications-provider.js";
+import { ToastProvider } from "../../providers/toast-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 
 /**
@@ -22,16 +32,27 @@ export default function AuthenticatedAppLayout() {
     return <Redirect href="/(onboarding)" />;
   }
 
-  if (isCoach(user) && isStudentOnlyPath(pathname)) {
+  if (isCoach(user) && (isStudentOnlyPath(pathname) || isNavActive(pathname, "/weekly-recap"))) {
     return <Redirect href={COACH_HOME as never} />;
   }
 
+  // Notification deep links can still point at community; keep them inside the student core.
+  if (STUDENT_CORE_ONLY && isNavActive(pathname, "/community")) {
+    return <Redirect href={"/(app)/(tabs)/dashboard" as never} />;
+  }
+
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: palette.bg },
-      }}
-    />
+    <ToastProvider>
+      <PushNotificationsProvider>
+        <CelebrationProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: palette.bg },
+            }}
+          />
+        </CelebrationProvider>
+      </PushNotificationsProvider>
+    </ToastProvider>
   );
 }

@@ -5,7 +5,7 @@ import {
 } from "@mentor/api-client";
 
 /** Ledger reason of the chest's Coin; its receipt waits for the opening scene, not the coin modal. */
-export const WEEKLY_CHEST_REASON = "quest.weekly.effort-allowance";
+export { WEEKLY_CHEST_REASON } from "@mentor/core";
 
 export function fetchWeeklyChest(): Promise<WeeklyChestView> {
   return economyControllerWeeklyChestView() as Promise<WeeklyChestView>;

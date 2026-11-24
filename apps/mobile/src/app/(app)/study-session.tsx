@@ -36,6 +36,7 @@ export default function StudySessionScreen() {
     subject?: string;
     minutes?: string;
     preset?: string;
+    roomId?: string;
   }>();
   const { palette, radii, space, touchTargets } = useThemeTokens();
   const t = useTranslations("session");
@@ -64,6 +65,7 @@ export default function StudySessionScreen() {
     minutesParam: params.minutes ?? null,
     subject,
     planTaskId: params.taskId ?? null,
+    roomId: params.roomId ?? null,
     onSessionCompleted: invalidateAfterSession,
   });
 
@@ -101,7 +103,7 @@ export default function StudySessionScreen() {
           hitSlop={8}
           onPress={() => {
             haptics.selection();
-            router.back();
+            router.dismissTo("/(app)/(tabs)/dashboard");
           }}
           style={[
             styles.backBtn,

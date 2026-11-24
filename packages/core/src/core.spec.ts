@@ -38,6 +38,7 @@ import {
   emptyScores,
   groupTopicsBySubjectName,
   paperSubjects,
+  recordedMockExamRows,
   validateSubjectCounts,
   withScore,
   classifyStudyRoomJoinErrorCode,
@@ -235,6 +236,22 @@ describe("@mentor/core shared domain helpers", () => {
     ]);
     assert.deepEqual(grouped.subjects, ["Türkçe"]);
     assert.deepEqual(grouped.topicsBySubject.get("Türkçe"), ["Paragraf"]);
+  });
+
+  it("submits only recorded mock exam subjects, including a section left entirely blank", () => {
+    const sections = ["turkce", "tarih", "biyoloji", "matematik"].map((slug) => ({
+      id: slug, slug, name: slug, questionCount: 40, sortOrder: 1,
+    }));
+    const scores = emptyScores(sections);
+    scores.turkce = { correct: "20", wrong: "8", blank: "12", blankManual: false };
+    scores.tarih = { correct: "0", wrong: "0", blank: "40", blankManual: false };
+    scores.biyoloji = { correct: "0", wrong: "0", blank: "0", blankManual: true };
+
+    assert.deepEqual(recordedMockExamRows(sections, scores), [
+      { subjectRef: "turkce", correct: 20, wrong: 8, blank: 12 },
+      { subjectRef: "tarih", correct: 0, wrong: 0, blank: 40 },
+    ]);
+    assert.deepEqual(recordedMockExamRows(sections, emptyScores(sections)), []);
   });
 
   it("classifies study room join error codes and normalizes invite codes", () => {

@@ -3,10 +3,19 @@
  * The same subject always lands on the same swatch, so a month grid reads as subject grouping
  * instead of decoration. Tasks without a subject get the neutral swatch.
  *
- * Every swatch is an existing `@mentor/ui` accent token (DESIGN.md §2.3) — no new hex here.
+ * The hash and the swatch order live in `@mentor/core` (shared with mobile). This file paints
+ * them as CSS: every swatch is an existing `@mentor/ui` accent token (DESIGN.md §2.3) — no new hex.
  * Chips render a tinted background + a solid left bar and keep `--color-main` text, so body copy
  * stays ≥4.5:1 and color is never the only carrier of meaning (the subject name is always shown).
  */
+
+import {
+  PLAN_EVENT_NEUTRAL_SWATCH,
+  PLAN_EVENT_SWATCHES,
+  planEventSwatch,
+  type PlanEventSwatch,
+  type PlanEventSwatchToken,
+} from "@mentor/core";
 
 export interface PlanEventColor {
   /** Chip / block background (tinted, low alpha). */
@@ -15,47 +24,30 @@ export interface PlanEventColor {
   bar: string;
 }
 
-function swatch(token: string, tintPercent: number): PlanEventColor {
+const CSS_TOKEN: Record<PlanEventSwatchToken, string> = {
+  progress: "--color-progress",
+  chip: "--color-chip",
+  thumbViolet: "--color-thumb-violet",
+  success: "--color-success",
+  star: "--color-star",
+  secondary: "--color-secondary",
+};
+
+function toCss({ token, tint }: PlanEventSwatch): PlanEventColor {
+  const cssVar = CSS_TOKEN[token];
   return {
-    bar: `var(${token})`,
-    bg: `color-mix(in srgb, var(${token}) ${tintPercent}%, transparent)`,
+    bar: `var(${cssVar})`,
+    bg: `color-mix(in srgb, var(${cssVar}) ${tint}%, transparent)`,
   };
 }
 
-/**
- * Fixed order — the index is the hash bucket, so reordering re-colors everyone's calendar.
- *
- * A cool blue→violet→orchid ramp plus one warm and one green. Coral (`--color-streak`) is
- * deliberately absent: at chip size it reads as an error state, and DESIGN.md reserves that hue
- * for the streak flame. Tint percentages are per-swatch so the fills land at a similar lightness.
- */
-const PALETTE: PlanEventColor[] = [
-  swatch("--color-progress", 18), // blue
-  swatch("--color-chip", 24), // violet
-  swatch("--color-thumb-violet", 26), // orchid
-  swatch("--color-success", 13), // green
-  swatch("--color-star", 26), // amber
-];
-
-const NEUTRAL = swatch("--color-secondary", 12);
-
-/**
- * FNV-1a, stable across sessions and devices. Not the classic `hash * 31 + c` fold: 31 ≡ 1 (mod 5),
- * so that one collapses to `sum(charCodes) % 5` and buckets most KPSS subjects onto one swatch.
- */
-function hashSubject(subject: string): number {
-  let hash = 2166136261;
-  for (let i = 0; i < subject.length; i++) {
-    hash ^= subject.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash ^ (hash >>> 16)) >>> 0;
-}
+/** Same order and instances as the core swatches, so a bucket always returns the same object. */
+const PALETTE: PlanEventColor[] = PLAN_EVENT_SWATCHES.map(toCss);
+const NEUTRAL = toCss(PLAN_EVENT_NEUTRAL_SWATCH);
 
 export function planEventColor(subject: string | null | undefined): PlanEventColor {
-  const key = subject?.trim();
-  if (!key) return NEUTRAL;
-  return PALETTE[hashSubject(key) % PALETTE.length]!;
+  const swatch = planEventSwatch(subject);
+  return swatch === PLAN_EVENT_NEUTRAL_SWATCH ? NEUTRAL : PALETTE[PLAN_EVENT_SWATCHES.indexOf(swatch)]!;
 }
 
 export { NEUTRAL as planEventNeutralColor, PALETTE as planEventPalette };

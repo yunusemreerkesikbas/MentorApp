@@ -6,6 +6,9 @@ import { mockExamSubjects, mockExams } from "../../../database/schema";
 export type MockExamRow = typeof mockExams.$inferSelect;
 export type MockExamSubjectRow = typeof mockExamSubjects.$inferSelect;
 
+/** Older clients supplied zero counts for subjects the student did not enter. */
+export const mockExamSubjectHasCounts = sql`${mockExamSubjects.correct} + ${mockExamSubjects.wrong} + ${mockExamSubjects.blank} > 0`;
+
 export interface NewMockExamSubject {
   subjectRef: string;
   correct: number;
@@ -116,7 +119,7 @@ export class MockExamRepository {
 
     await tx
       .delete(mockExamSubjects)
-      .where(eq(mockExamSubjects.mockExamId, id));
+      .where(and(eq(mockExamSubjects.mockExamId, id), mockExamSubjectHasCounts));
     const subjects = await tx
       .insert(mockExamSubjects)
       .values(data.subjects.map((subject) => ({ ...subject, mockExamId: id })))
@@ -184,7 +187,7 @@ export class MockExamRepository {
     const rows = await db
       .select()
       .from(mockExamSubjects)
-      .where(inArray(mockExamSubjects.mockExamId, mockExamIds));
+      .where(and(inArray(mockExamSubjects.mockExamId, mockExamIds), mockExamSubjectHasCounts));
     const map = new Map<string, MockExamSubjectRow[]>();
     for (const row of rows) {
       const list = map.get(row.mockExamId) ?? [];
@@ -274,7 +277,7 @@ export class MockExamRepository {
       })
       .from(mockExamSubjects)
       .innerJoin(mockExams, eq(mockExamSubjects.mockExamId, mockExams.id))
-      .where(userExamScope(userId, examId))
+      .where(and(userExamScope(userId, examId), mockExamSubjectHasCounts))
       .groupBy(mockExamSubjects.subjectRef)
       .orderBy(desc(sql`AVG(${mockExamSubjects.net}::numeric)`));
     return rows.map((r) => ({
@@ -306,6 +309,7 @@ export class MockExamRepository {
         and(
           eq(mockExams.userId, userId),
           eq(mockExams.examId, examId),
+          mockExamSubjectHasCounts,
           gt(mockExams.createdAt, afterCreatedAt),
           sql`(${mockExams.takenAt} at time zone 'UTC')::date > ${afterTakenAt.toISOString().slice(0, 10)}::date`,
         ),

@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
-import type { NotebookLimitsDto } from "@mentor/types";
+import type { NotebookLimitsDto, NotebookPageDoc } from "@mentor/types";
 import { NOTEBOOK_MAX_PAGES } from "@mentor/validation";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -102,9 +102,20 @@ export class NotebookQuotaService {
   /** An exact saved page remains editable after a later reduction of the allowance. */
   async assertCanSavePage(
     tx: DatabaseTx, userId: string, notebookId: string, pageIndex: number,
-    policy: NotebookQuotaPolicy,
+    policy: NotebookQuotaPolicy, imageCount = 0,
   ): Promise<void> {
-    if (policy.isPremium || pageIndex < policy.pagesLimit) return;
+    if (policy.isPremium) return;
+    await this.notebook.lockQuotaUsage(tx, userId);
+    if (imageCount > 0) {
+      const previous = await this.notebook.findPage(tx, userId, notebookId, pageIndex);
+      const previousDoc = previous?.doc as Partial<NotebookPageDoc> | undefined;
+      const added = imageCount - (previousDoc?.items?.filter((item) => item.kind === "image").length ?? 0);
+      if (added > 0) {
+        const usage = await this.notebook.countUserQuotaUsage(tx, userId);
+        this.assertPhotoLimit(policy, usage.photoCount, added);
+      }
+    }
+    if (pageIndex < policy.pagesLimit) return;
     if (await this.notebook.findPage(tx, userId, notebookId, pageIndex)) return;
     throw new DomainError(ErrorCode.COACHING_NOTEBOOK_PAGE_LIMIT_EXCEEDED,
       HttpStatus.FORBIDDEN, { limit: policy.pagesLimit });

@@ -4,7 +4,7 @@
 
 ## Architecture & Shared Core
 
-- **Framework:** Expo SDK 53 + React Native 0.79 + Expo Router (`src/app`, file-based routing).
+- **Framework:** Expo SDK 58 + React Native 0.88 + Expo Router (`src/app`, file-based routing).
 - **Single API (`/v1`):** **Never** add Expo Router API routes (`+api.ts`). All data flows from the NestJS monolith via `@mentor/api-client`.
 - **Shared Monorepo Packages:**
   - `@mentor/types` — 5-exam catalog (`KPSS · YKS · LGS · ALES · DGS`), DTOs, enums.

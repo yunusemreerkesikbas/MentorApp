@@ -12,7 +12,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     orientation: "portrait",
     scheme: "puhukoc",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
     ios: {
       supportsTablet: false,
       bundleIdentifier: isProd ? "com.puhukoc.app" : `com.puhukoc.app.${appEnv}`,
@@ -22,7 +21,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       package: isProd ? "com.puhukoc.app" : `com.puhukoc.app.${appEnv}`,
-      edgeToEdgeEnabled: true,
     },
     plugins: [
       [
@@ -32,6 +30,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       "expo-secure-store",
+      "expo-splash-screen",
+      "expo-font",
+      "expo-notifications",
+      ["expo-image-picker", {
+        photosPermission: "Defterine veya hedef panona ekleyeceğin fotoğrafı seç.",
+        cameraPermission: "Defterine veya hedef panona eklemek için fotoğraf çek.",
+        microphonePermission: false,
+      }],
     ],
     experiments: {
       typedRoutes: false,
@@ -39,6 +45,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       appEnv,
       apiUrl: process.env["EXPO_PUBLIC_API_URL"] ?? "http://localhost:3001",
+      ...(process.env["EXPO_PUBLIC_EAS_PROJECT_ID"]
+        ? { eas: { projectId: process.env["EXPO_PUBLIC_EAS_PROJECT_ID"] } }
+        : {}),
     },
   };
 };

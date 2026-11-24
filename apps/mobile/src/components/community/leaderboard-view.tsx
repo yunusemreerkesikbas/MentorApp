@@ -1,141 +1,222 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { ApiClientError } from "@mentor/api-client";
+import type { CommunityBadgeId, LeaderboardWindow } from "@mentor/types";
+import { CupStarIcon } from "@solar-icons/react-native/linear/cup-star";
 import { useQuery } from "@tanstack/react-query";
-import type { CommunitySummary, LeaderboardWindow } from "@mentor/types";
-import { fetchCommunityLeaderboard } from "../../lib/community-api.js";
-import { haptics } from "../../lib/haptics.js";
+import {
+  fetchCommunityLeaderboard,
+  fetchCommunitySummary,
+} from "../../lib/community-api.js";
+import { formatLeagueResetParts } from "../../lib/community-view.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
-import { AppText, Card, Chip } from "../ui/index.js";
+import { PanelCard } from "../panel/primitives.js";
+import {
+  AppText,
+  Chip,
+  ScreenLoadingSkeleton,
+  SlidingTabs,
+  StateView,
+} from "../ui/index.js";
+import { CommunityAvatar } from "./community-avatar.js";
 
-export interface LeaderboardViewProps {
-  summary: CommunitySummary | null;
+function badgeLabelKey(id: CommunityBadgeId) {
+  if (id === "marathon") return "badge_marathon" as const;
+  if (id === "night_owl") return "badge_night_owl" as const;
+  if (id === "motivator") return "badge_motivator" as const;
+  return "badge_newcomer" as const;
 }
 
-const WINDOWS: LeaderboardWindow[] = ["weekly", "today", "all_time"];
-
-export function LeaderboardSectionView({ summary }: LeaderboardViewProps) {
+export function LeaderboardView() {
+  const { palette, radii } = useThemeTokens();
   const t = useTranslations("community");
-  const { palette, radii, space } = useThemeTokens();
-  const [window, setWindow] = useState<LeaderboardWindow>("weekly");
+  const [windowKey, setWindowKey] = useState<LeaderboardWindow>("weekly");
+  const [now, setNow] = useState(() => new Date());
 
-  const boardQuery = useQuery({
-    queryKey: ["community-leaderboard", window],
-    queryFn: () => fetchCommunityLeaderboard(window),
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const leaderboardQuery = useQuery({
+    queryKey: ["community", "leaderboard", windowKey],
+    queryFn: () => fetchCommunityLeaderboard(windowKey),
   });
 
-  const board = boardQuery.data ?? summary?.leaderboard ?? null;
+  const summaryQuery = useQuery({
+    queryKey: ["community", "summary"],
+    queryFn: fetchCommunitySummary,
+    staleTime: 60_000,
+  });
+
+  const resetLabel = useMemo(() => {
+    const parts = formatLeagueResetParts(windowKey, now);
+    if (!parts) return null;
+    if (parts.days === 0 && parts.hours === 0 && parts.minutes === 0) {
+      return t("rank_reset_soon");
+    }
+    const time =
+      parts.days > 0
+        ? t("rank_reset_dh", { days: parts.days, hours: parts.hours })
+        : t("rank_reset_hm", { hours: parts.hours, minutes: parts.minutes });
+    return t("rank_reset", { time });
+  }, [now, t, windowKey]);
+
+  const data = leaderboardQuery.data;
+  const summary = summaryQuery.data;
 
   return (
-    <View style={{ gap: space.md }}>
-      <Card style={{ gap: space.sm }}>
-        <AppText variant="sectionHeading">{t("league_title")}</AppText>
+    <View style={styles.root}>
+      <PanelCard style={styles.heroCard}>
+        <View style={styles.heroHeader}>
+          <CupStarIcon size={24} color={palette.playSelectedInk} strokeWidth={1.75} />
+          <AppText variant="cardTitle" style={{ flex: 1 }}>
+            {t("league_title")}
+          </AppText>
+        </View>
         <AppText variant="body" tone="secondary">
           {t("league_subtitle")}
         </AppText>
-        <View style={styles.chipRow}>
-          {WINDOWS.map((item) => (
-            <Chip
-              key={item}
-              label={t(`window_${item}` as "window_weekly")}
-              selected={window === item}
-              onPress={() => {
-                void haptics.selection();
-                setWindow(item);
-              }}
-            />
-          ))}
-        </View>
-      </Card>
-
-      {board?.me ? (
-        <Card
-          style={{
-            gap: space.xs,
-            borderColor: palette.accent,
-            backgroundColor: palette.surfaceAlt,
-          }}
-        >
-          <View style={styles.rowBetween}>
-            <AppText variant="cardTitle" tone="accent">
-              #{board.me.rank} · {t("your_rank_title")}
-            </AppText>
-            <AppText variant="cardTitle" tone="accent" tabularNums>
-              {t("xp_label", { xp: board.me.xp })}
-            </AppText>
-          </View>
-          {board.me.movement === "up" ? (
-            <AppText variant="caption" tone="success">
-              {t("movement_up")}
-            </AppText>
-          ) : board.me.movement === "new" ? (
-            <AppText variant="caption" tone="accent">
-              {t("movement_new")}
-            </AppText>
-          ) : null}
-        </Card>
-      ) : null}
-
-      <Card style={{ gap: space.sm }}>
-        {board ? (
-          <AppText variant="caption" tone="secondary">
-            {t("participants_count", { count: board.totalParticipants })}
+        {resetLabel ? (
+          <AppText variant="caption" style={{ color: palette.playSelectedInk, fontWeight: "700" }}>
+            {resetLabel}
           </AppText>
         ) : null}
+      </PanelCard>
 
-        {!board || board.items.length === 0 ? (
-          <AppText variant="body" tone="secondary">
-            {t("league_empty")}
+      <SlidingTabs
+        variant="pill"
+        compact
+        accessibilityLabel={t("league_title")}
+        value={windowKey}
+        onChange={setWindowKey}
+        items={[
+          { id: "today", label: t("window_today") },
+          { id: "weekly", label: t("window_weekly") },
+          { id: "all_time", label: t("window_all_time") },
+        ]}
+      />
+
+      {summary && summary.badges.length > 0 ? (
+        <PanelCard style={styles.badgesCard}>
+          <AppText variant="micro" tone="muted">
+            {t("badges_title")}
           </AppText>
-        ) : (
-          <View style={{ gap: space.xs }}>
-            {board.items.map((entry) => (
+          <View style={styles.chipsWrap}>
+            {summary.badges.map((badge) => (
+              <Chip key={badge} label={t(badgeLabelKey(badge))} tone="coach" />
+            ))}
+          </View>
+        </PanelCard>
+      ) : null}
+
+      {leaderboardQuery.isLoading ? (
+        <ScreenLoadingSkeleton />
+      ) : leaderboardQuery.isError ? (
+        <StateView
+          tone="error"
+          title={t("error_title")}
+          body={
+            leaderboardQuery.error instanceof ApiClientError
+              ? leaderboardQuery.error.message
+              : t("league_empty")
+          }
+          actionLabel={t("retry")}
+          onAction={() => void leaderboardQuery.refetch()}
+        />
+      ) : !data || data.items.length === 0 ? (
+        <StateView title={t("league_title")} body={t("league_empty")} />
+      ) : (
+        <View style={styles.list}>
+          {data.me ? (
+            <PanelCard
+              style={[
+                styles.meCard,
+                { borderColor: palette.ctaPlayEdge, backgroundColor: palette.playSelected },
+              ]}
+            >
+              <View style={styles.meTop}>
+                <AppText style={{ color: palette.playSelectedInk, fontWeight: "800" }}>
+                  {t("rank_you_standing", { rank: data.me.rank })}
+                </AppText>
+                <AppText tabularNums style={{ color: palette.playSelectedInk, fontWeight: "800" }}>
+                  {t("xp_label", { xp: data.me.xp })}
+                </AppText>
+              </View>
+              <AppText variant="caption" style={{ color: palette.playSelectedInk }}>
+                {t("rank_percentile")}
+              </AppText>
+            </PanelCard>
+          ) : null}
+
+          <AppText variant="caption" tone="secondary" tabularNums>
+            {t("participants_count", { count: data.totalParticipants })}
+          </AppText>
+
+          {data.items.map((entry) => {
+            const movementChip =
+              entry.movement === "up"
+                ? { label: t("movement_up"), tone: "success" as const }
+                : entry.movement === "new"
+                  ? { label: t("movement_new"), tone: "coach" as const }
+                  : entry.movement === "down"
+                    ? { label: t("movement_down"), tone: "default" as const }
+                    : entry.movement === "same"
+                      ? { label: t("movement_same"), tone: "default" as const }
+                      : null;
+
+            return (
               <View
                 key={entry.userId}
                 style={[
-                  styles.entryRow,
+                  styles.row,
                   {
-                    padding: space.sm,
-                    borderRadius: radii.card,
-                    backgroundColor: entry.isMe
-                      ? palette.surfaceHover
-                      : palette.surfaceAlt,
-                    borderColor: entry.isMe ? palette.accent : palette.border,
+                    backgroundColor: entry.isMe ? palette.playSelected : palette.surface,
+                    borderColor: entry.isMe ? palette.ctaPlayEdge : palette.border,
+                    borderRadius: radii.inner,
                   },
                 ]}
               >
-                <View style={styles.row}>
-                  <AppText variant="cardTitle" tabularNums style={styles.rank}>
-                    #{entry.rank}
+                <AppText tabularNums style={[styles.rankNum, entry.isMe && { color: palette.playSelectedInk }]}>
+                  {`#${entry.rank}`}
+                </AppText>
+                <CommunityAvatar name={entry.displayName} avatarUrl={entry.avatarUrl} size={34} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <AppText numberOfLines={1} style={{ fontWeight: entry.isMe ? "800" : "700" }}>
+                    {entry.displayName}
                   </AppText>
-                  <AppText variant="cardTitle">{entry.displayName}</AppText>
                 </View>
-                <AppText variant="body" tone="accent" tabularNums>
+                {movementChip ? <Chip label={movementChip.label} tone={movementChip.tone} /> : null}
+                <AppText tabularNums style={{ fontWeight: "800" }}>
                   {t("xp_label", { xp: entry.xp })}
                 </AppText>
               </View>
-            ))}
-          </View>
-        )}
-      </Card>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 8,
-  },
-  row: { flexDirection: "row", alignItems: "center", gap: 10 },
-  entryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  root: { gap: 12 },
+  heroCard: { gap: 6 },
+  heroHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  badgesCard: { gap: 8 },
+  chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  list: { gap: 8 },
+  meCard: { gap: 4 },
+  meTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  row: {
+    minHeight: 54,
     borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
-  rank: { minWidth: 32 },
+  rankNum: { width: 32, fontWeight: "800", fontSize: 14 },
 });

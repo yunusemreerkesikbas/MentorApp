@@ -128,6 +128,22 @@ export function subjectTotal(scores: SubjectScores): number {
   );
 }
 
+export function recordedMockExamRows(
+  sections: readonly ExamSubjectDto[],
+  scores: Readonly<Record<string, SubjectScores>>,
+) {
+  return sections.flatMap(({ slug }) => {
+    const row = scores[slug];
+    if (!row || subjectTotal(row) === 0) return [];
+    return [{
+      subjectRef: slug,
+      correct: Number(row.correct),
+      wrong: Number(row.wrong),
+      blank: Number(row.blank),
+    }];
+  });
+}
+
 export function validateSubjectCounts(
   subjects: ExamSubjectDto[],
   scores: Record<string, SubjectScores>,

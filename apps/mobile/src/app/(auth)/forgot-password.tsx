@@ -1,18 +1,14 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiClientError, authControllerForgotPassword } from "@mentor/api-client";
 import { forgotPasswordSchema } from "@mentor/validation";
-import { Button, Card, TextField, AppText } from "../../components/ui/index.js";
+import { AuthFormScreen } from "../../components/auth/auth-form-screen.js";
+import { Button, TextField, AppText } from "../../components/ui/index.js";
 import { haptics } from "../../lib/haptics.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
-import { useThemeTokens } from "../../providers/theme-provider.js";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { palette, space } = useThemeTokens();
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
 
@@ -46,74 +42,28 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      style={{ flex: 1, backgroundColor: palette.bg }}
-      contentContainerStyle={[
-        styles.container,
-        {
-          paddingTop: insets.top + space.xl,
-          paddingBottom: insets.bottom + space.xl,
-          paddingHorizontal: space.lg,
-          gap: space.lg,
-        },
-      ]}
-    >
-      <View style={{ gap: space.xs }}>
-        <AppText variant="title">{t("forgot_title")}</AppText>
-        <AppText variant="body" tone="secondary">
-          {t("forgot_subtitle")}
-        </AppText>
-      </View>
-
-      <Card style={{ gap: space.md }}>
-        {sent ? (
-          <View style={{ gap: space.md }}>
-            <AppText variant="body" tone="success">
-              {t("forgot_success")}
-            </AppText>
-            <Button
-              label={t("login_link")}
-              onPress={() => router.replace("/(auth)/login" as never)}
-              variant="primary"
-            />
-          </View>
-        ) : (
-          <>
-            <TextField
-              label={t("email_label")}
-              placeholder={t("email_placeholder")}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              errorMessage={errorMessage}
-            />
-            <Button
-              label={t("forgot_submit")}
-              loading={submitting}
-              onPress={() => {
-                void handleSubmit();
-              }}
-              variant="primary"
-            />
-          </>
-        )}
-      </Card>
-
-      <Button
-        label={t("login_link")}
-        onPress={() => router.back()}
-        variant="secondary"
-      />
-    </ScrollView>
+    <AuthFormScreen title={t("forgot_title")} subtitle={t("forgot_subtitle")}
+      back={{ label: t("login_link"), onPress: () => {
+        if (router.canGoBack()) router.back();
+        else router.replace("/(auth)/login");
+      } }}>
+      {sent ? (
+        <AppText tone="success" accessibilityLiveRegion="polite">{t("forgot_success")}</AppText>
+      ) : (
+        <>
+          <TextField
+            label={t("email_label")}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            errorMessage={errorMessage}
+          />
+          <Button label={t("forgot_submit")} loading={submitting} onPress={() => void handleSubmit()} />
+        </>
+      )}
+    </AuthFormScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-  },
-});

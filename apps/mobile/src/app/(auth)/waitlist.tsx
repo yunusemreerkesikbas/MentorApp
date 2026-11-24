@@ -6,6 +6,7 @@ import { isWaitlistEmail } from "@mentor/core";
 import { ApiClientError, authControllerJoinWaitlist } from "@mentor/api-client";
 import { Button, Card, Chip, TextField, AppText } from "../../components/ui/index.js";
 import { haptics } from "../../lib/haptics.js";
+import { STUDENT_CORE_ONLY } from "../../lib/release-scope.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 
@@ -17,7 +18,7 @@ export default function WaitlistScreen() {
   const t = useTranslations("waitlist");
 
   const [role, setRole] = useState<"student" | "coach">(
-    params.role === "coach" ? "coach" : "student",
+    !STUDENT_CORE_ONLY && params.role === "coach" ? "coach" : "student",
   );
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -67,18 +68,20 @@ export default function WaitlistScreen() {
       ]}
     >
       <View style={{ gap: space.sm }}>
-        <View style={styles.chipRow}>
-          <Chip
-            label={t("role_student")}
-            selected={!isCoachRole}
-            onPress={() => setRole("student")}
-          />
-          <Chip
-            label={t("role_coach")}
-            selected={isCoachRole}
-            onPress={() => setRole("coach")}
-          />
-        </View>
+        {STUDENT_CORE_ONLY ? null : (
+          <View style={styles.chipRow}>
+            <Chip
+              label={t("role_student")}
+              selected={!isCoachRole}
+              onPress={() => setRole("student")}
+            />
+            <Chip
+              label={t("role_coach")}
+              selected={isCoachRole}
+              onPress={() => setRole("coach")}
+            />
+          </View>
+        )}
         <AppText variant="caption" tone="accent">
           {joined ? t("badge_success") : t("badge_idle")}
         </AppText>

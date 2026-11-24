@@ -192,6 +192,12 @@ export function CoachProfileStep({
       haptics.success();
       onSaved();
     } catch (err) {
+      // A retry after a lost response: the first try already made them a coach, so the step is done.
+      if (err instanceof ApiClientError && err.body.code === "MENTORSHIP_ALREADY_COACH") {
+        haptics.success();
+        onSaved();
+        return;
+      }
       haptics.error();
       setErrorMessage(
         err instanceof ApiClientError ? err.body.message : t("save_error"),
@@ -272,6 +278,7 @@ export function ProfileStep({
   const tCommon = useTranslations("common");
   const { setUserFromServer } = useAuth();
   const [username, setUsername] = useState(user.username ?? "");
+  const [usernameBlurred, setUsernameBlurred] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -324,10 +331,12 @@ export function ProfileStep({
           setUsername(val.toLowerCase());
           setErrorMessage(null);
         }}
+        onBlur={() => setUsernameBlurred(true)}
         autoCapitalize="none"
         autoCorrect={false}
         maxLength={24}
         hint={t("username_hint")}
+        errorMessage={usernameBlurred && !parsed.success ? t("username_invalid") : null}
       />
     </OnboardingStepShell>
   );

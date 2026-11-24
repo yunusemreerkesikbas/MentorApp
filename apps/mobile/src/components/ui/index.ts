@@ -4,4 +4,6 @@ export * from "./card.js";
 export * from "./chip.js";
 export * from "./text-field.js";
 export * from "./skeleton.js";
+export * from "./sliding-tabs.js";
 export * from "./state-view.js";
+export * from "./confirm-dialog.js";

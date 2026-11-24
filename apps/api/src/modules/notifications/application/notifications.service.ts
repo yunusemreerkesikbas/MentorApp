@@ -9,6 +9,7 @@ import { withServiceContext, withUserContext } from "../../../database/rls";
 import { notificationCategorySchema } from "@mentor/validation";
 import { I18nContext, I18nService } from "nestjs-i18n";
 import type {
+  MobilePushTokenInput,
   NotificationCategory,
   NotificationListDto,
   NotificationPreferencesDto,
@@ -23,6 +24,7 @@ export { REALTIME_QUEUE_TTL_MS } from "./notification-stream.service";
 import type { NotificationCopyKey } from "../domain/notification-copy";
 import { JobName } from "../domain/notifications.constants";
 import { NotificationsCopyService } from "./notifications-copy.service";
+import { MobilePushTokenRepository } from "../infrastructure/mobile-push-token.repository";
 import { NotificationPreferencesRepository } from "../infrastructure/notification-preferences.repository";
 import { PushSubscriptionRepository } from "../infrastructure/push-subscription.repository";
 import {
@@ -44,6 +46,7 @@ export class NotificationsService {
     private readonly registry: ConfigRegistryService,
     private readonly endpoints: PushEndpointPolicy,
     @Inject(JOB_QUEUE_PORT) private readonly queue: JobQueuePort,
+    private readonly mobileTokens: MobilePushTokenRepository,
   ) {}
 
   createStreamToken(userId: string, sessionId: string): string {
@@ -81,6 +84,20 @@ export class NotificationsService {
   async unsubscribePush(userId: string, endpoint: string): Promise<void> {
     await withUserContext(this.db, { userId }, async (tx) => {
       await this.pushSubs.deleteByEndpoint(tx, userId, endpoint);
+    });
+  }
+
+  async registerMobilePushToken(userId: string, input: MobilePushTokenInput): Promise<void> {
+    const maxSubscriptions = (await this.registry.get("notifications.push.max_subscriptions")) as number;
+    await withUserContext(this.db, { userId }, async (tx) => {
+      await this.mobileTokens.upsertWithinLimit(tx, userId, input, maxSubscriptions);
+      await this.preferences.getOrCreate(tx, userId);
+    });
+  }
+
+  async unregisterMobilePushToken(userId: string, token: string): Promise<void> {
+    await withUserContext(this.db, { userId }, async (tx) => {
+      await this.mobileTokens.deleteByToken(tx, userId, token);
     });
   }
 

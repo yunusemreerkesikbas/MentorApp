@@ -27,6 +27,7 @@ export interface UseMobileSessionTimerOptions {
   minutesParam?: string | null;
   subject?: string | null;
   planTaskId?: string | null;
+  roomId?: string | null;
   onSessionCompleted?: (session: StudySessionDto) => void;
 }
 
@@ -38,6 +39,7 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
     minutesParam,
     subject = null,
     planTaskId = null,
+    roomId = null,
     onSessionCompleted,
   } = options;
 
@@ -104,6 +106,7 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
         focusMinutes: preset === "custom" ? focusMinutes : undefined,
         subject: subject?.trim() || null,
         planTaskId: planTaskId || undefined,
+        ...(roomId?.trim() ? { roomId: roomId.trim() } : {}),
       });
       setSession(created);
       sessionRef.current = created;

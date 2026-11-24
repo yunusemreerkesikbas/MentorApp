@@ -17,6 +17,7 @@ async function makeSetup(opts?: {
     customNotebookCount?: number;
   };
   existingPages?: Set<number>;
+  existingPhotoCount?: number;
   flags?: Partial<{
     "coaching.notebook.photo.free_enabled": boolean;
     "coaching.notebook.photo.free_limit": number;
@@ -44,7 +45,7 @@ async function makeSetup(opts?: {
       _userId: string,
       _nbId: string,
       pageIndex: number,
-    ) => (existingPages.has(pageIndex) ? { pageIndex } : undefined),
+    ) => (existingPages.has(pageIndex) ? { pageIndex, doc: { items: Array.from({ length: opts?.existingPhotoCount ?? 0 }, () => ({ kind: "image" })) } } : undefined),
   };
 
   const defaults = {
@@ -156,6 +157,16 @@ describe("NotebookQuotaService", () => {
     await expect(
       service.assertCanCreateEntry(FAKE_TX, USER_ID, 2, policy),
     ).rejects.toMatchObject({
+      code: ErrorCode.COACHING_NOTEBOOK_PHOTO_LIMIT_EXCEEDED,
+    });
+  });
+
+  it("allows editing a saved image at quota and rejects another image", async () => {
+    const { service, policy } = await makeSetup({
+      usage: { photoCount: 5 }, existingPages: new Set([0]), existingPhotoCount: 1,
+    });
+    await expect(service.assertCanSavePage(FAKE_TX, USER_ID, NOTEBOOK_ID, 0, policy, 1)).resolves.toBeUndefined();
+    await expect(service.assertCanSavePage(FAKE_TX, USER_ID, NOTEBOOK_ID, 0, policy, 2)).rejects.toMatchObject({
       code: ErrorCode.COACHING_NOTEBOOK_PHOTO_LIMIT_EXCEEDED,
     });
   });

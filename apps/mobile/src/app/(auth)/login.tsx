@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   hasCompletedOnboarding,
   isWaitlistOn,
@@ -10,7 +9,8 @@ import {
 } from "@mentor/core";
 import { ApiClientError } from "@mentor/api-client";
 import { loginSchema } from "@mentor/validation";
-import { Button, Card, TextField, AppText } from "../../components/ui/index.js";
+import { AuthFormLink, AuthFormScreen, type AuthFormPose } from "../../components/auth/auth-form-screen.js";
+import { Button, TextField, AppText } from "../../components/ui/index.js";
 import { haptics } from "../../lib/haptics.js";
 import { useAppAvailability } from "../../providers/availability-provider.js";
 import { useAuth } from "../../providers/auth-provider.js";
@@ -19,13 +19,13 @@ import { useThemeTokens } from "../../providers/theme-provider.js";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { login } = useAuth();
   const { availability } = useAppAvailability();
-  const { palette, space } = useThemeTokens();
+  const { space } = useThemeTokens();
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
 
+  const [pose, setPose] = useState<AuthFormPose>("rest");
   const emailRef = useRef("");
   const passwordRef = useRef("");
   const [submitting, setSubmitting] = useState(false);
@@ -72,105 +72,42 @@ export default function LoginScreen() {
     : "/(auth)/signup";
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      style={{ flex: 1, backgroundColor: palette.bg }}
-      contentContainerStyle={[
-        styles.container,
-        {
-          paddingTop: insets.top + space.xl,
-          paddingBottom: insets.bottom + space.xl,
-          paddingHorizontal: space.lg,
-          gap: space.lg,
-        },
-      ]}
-    >
-      <View style={{ gap: space.xs }}>
-        <AppText variant="title">{t("login_title")}</AppText>
-        <AppText variant="body" tone="secondary">
-          {t("login_subtitle")}
-        </AppText>
-      </View>
-
-      <Card style={{ gap: space.md }}>
-        <TextField
-          label={t("email_label")}
-          placeholder={t("email_placeholder")}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          onChangeText={(val) => {
-            emailRef.current = val;
-          }}
-        />
-        <TextField
-          label={t("password_label")}
-          placeholder={t("password_placeholder")}
-          secureTextEntry
-          autoCapitalize="none"
-          onChangeText={(val) => {
-            passwordRef.current = val;
-          }}
-          errorMessage={errorMessage}
-        />
-
-        <Pressable
-          accessibilityRole="link"
-          hitSlop={8}
-          onPress={() => router.push("/(auth)/forgot-password" as never)}
-          style={styles.forgotLink}
-        >
-          <AppText variant="caption" tone="accent">
-            {t("forgot_link")}
-          </AppText>
-        </Pressable>
-
-        <Button
-          label={t("login_submit")}
-          loading={submitting}
-          onPress={() => {
-            void handleSubmit();
-          }}
-          variant="primary"
-        />
-      </Card>
-
-      <View style={styles.footerRow}>
-        <AppText variant="caption" tone="secondary">
-          {t("register_prompt")}{" "}
-        </AppText>
-        <Pressable
-          accessibilityRole="link"
-          hitSlop={8}
-          onPress={() => router.push(signupHref as never)}
-        >
-          <AppText variant="caption" tone="accent">
-            {t("register_link")}
-          </AppText>
-        </Pressable>
-      </View>
-
-      <Button
-        label={t("back_welcome")}
-        onPress={() => router.back()}
-        variant="secondary"
+    <AuthFormScreen title={t("login_title")} pose={pose}>
+      <TextField
+        label={t("email_label")}
+        keyboardType="email-address"
+        autoComplete="email"
+        autoCapitalize="none"
+        autoCorrect={false}
+        onFocus={() => setPose("lookDown")}
+        onBlur={() => setPose("rest")}
+        onChangeText={(value) => { emailRef.current = value; }}
       />
-    </ScrollView>
+      <TextField
+        label={t("password_label")}
+        secureTextEntry
+        autoComplete="current-password"
+        autoCapitalize="none"
+        onFocus={() => setPose("cover")}
+        onBlur={() => setPose("rest")}
+        onChangeText={(value) => { passwordRef.current = value; }}
+        errorMessage={errorMessage}
+      />
+      <View style={{ alignSelf: "flex-end" }}>
+        <AuthFormLink label={t("forgot_link")} onPress={() => router.push("/(auth)/forgot-password")} />
+      </View>
+      <Button label={t("login_submit")} loading={submitting} onPress={() => void handleSubmit()} />
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", columnGap: space.xs }}>
+        <AppText tone="secondary">{t("register_prompt")}</AppText>
+        <AuthFormLink label={t("register_link")} onPress={() => router.push(signupHref)} />
+      </View>
+      <View style={{ alignSelf: "center" }}>
+        <AuthFormLink label={t("back_welcome")} onPress={() => {
+          if (router.canGoBack()) router.back();
+          else router.replace("/(auth)/welcome");
+        }} />
+      </View>
+    </AuthFormScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-  },
-  forgotLink: {
-    alignSelf: "flex-end",
-  },
-  footerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-  },
-});

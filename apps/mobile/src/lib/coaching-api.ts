@@ -7,6 +7,8 @@ import type {
   MoodCheckinDto,
   NotebookSlotView,
   Paginated,
+  PlanEventDto,
+  PlanTaskCalendarDto,
   PlanTaskDto,
   QuestProgressView,
   RedeemInviteResult,
@@ -15,11 +17,18 @@ import type {
   TodayPanelResponse,
   VisionDto,
   WeeklyChestView,
+  WeeklyRecapArchiveItemDto,
+  WeeklyRecapOfferDto,
+  WeeklyRecapReportDto,
+  WeeklyReportFollowUpDto,
+  WeeklyReviewCompletionDto,
   WeeklyReviewDto,
 } from "@mentor/types";
 import type {
   CreateMoodCheckinInput,
   CreatePlanTaskInput,
+  CreateWeeklyReportTaskInput,
+  OpenWeeklyRecapInput,
   SessionFeedbackInput,
   StartStudySessionInput,
   UpdatePlanTaskInput,
@@ -30,6 +39,7 @@ import {
   coachingControllerGetToday,
   coachingControllerUpsertMood,
   economyControllerQuestsList,
+  getPlanEventControllerListEventsUrl,
   getPlanTaskControllerListUrl,
   getStudySessionControllerListUrl,
   http,
@@ -39,6 +49,9 @@ import {
   studySessionControllerFinalize,
   studySessionControllerRecordFeedback,
   studySessionControllerStart,
+  weeklyRecapControllerArchive,
+  weeklyRecapControllerCreateTask,
+  weeklyRecapControllerTracking,
 } from "@mentor/api-client";
 
 const MAX_PAGE_SIZE = 100;
@@ -105,6 +118,30 @@ export async function listPlanTasksForRange(
   const rest = await Promise.all(
     Array.from({ length: pageCount - 1 }, (_, i) =>
       http<Paginated<PlanTaskDto>>(pageUrl(i + 2)) as Promise<Paginated<PlanTaskDto>>,
+    ),
+  );
+  return [...first.items, ...rest.flatMap((page) => page.items)];
+}
+
+/** Days in an inclusive range that hold at least one task (the date sheet's dots). */
+export async function listPlanTaskCalendarDates(from: string, to: string): Promise<string[]> {
+  const url = `${getPlanTaskControllerListUrl()}/calendar?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+  return ((await http<PlanTaskCalendarDto>(url)) as PlanTaskCalendarDto).dates;
+}
+
+/**
+ * The events a student takes part in over an inclusive range: meetings their coach set up with
+ * them. Same paging as the web's `lib/plan-events.ts`.
+ */
+export async function listPlanEventsForRange(from: string, to: string): Promise<PlanEventDto[]> {
+  const pageUrl = (page: number) =>
+    `${getPlanEventControllerListEventsUrl()}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&page=${page}&pageSize=${MAX_PAGE_SIZE}`;
+  const first = (await http<Paginated<PlanEventDto>>(pageUrl(1))) as Paginated<PlanEventDto>;
+  const pageCount = Math.ceil(first.total / MAX_PAGE_SIZE);
+  if (pageCount <= 1) return first.items;
+  const rest = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, i) =>
+      http<Paginated<PlanEventDto>>(pageUrl(i + 2)) as Promise<Paginated<PlanEventDto>>,
     ),
   );
   return [...first.items, ...rest.flatMap((page) => page.items)];
@@ -195,11 +232,7 @@ export async function openWeeklyChest(
 }
 
 export async function fetchVision(): Promise<VisionDto | null> {
-  try {
-    return (await http<VisionDto | null>("/v1/coaching/vision")) ?? null;
-  } catch {
-    return null;
-  }
+  return (await http<VisionDto | null>("/v1/coaching/vision")) ?? null;
 }
 
 export async function upsertVision(
@@ -271,12 +304,58 @@ export async function purchaseNotebookSlot(input: {
   })) as NotebookSlotView;
 }
 
-export async function fetchWeeklyReview(): Promise<WeeklyReviewDto | null> {
-  try {
-    return (await http<WeeklyReviewDto>(
-      "/v1/coaching/weekly-review",
-    )) as WeeklyReviewDto;
-  } catch {
-    return null;
-  }
+/* ------------------------------ weekly recap ------------------------------ */
+
+/** Last completed week's review; the free path when recap access is off (`offer.enabled` false). */
+export async function fetchWeeklyReview(examId: string): Promise<WeeklyReviewDto> {
+  return (await http<WeeklyReviewDto>(
+    `/v1/coaching/weekly-review?examId=${encodeURIComponent(examId)}`,
+  )) as WeeklyReviewDto;
+}
+
+/** The story was watched to its end; feeds quests and rewards (one per week on the server). */
+export async function completeWeeklyReview(
+  examId: string,
+  weekStart: string,
+): Promise<WeeklyReviewCompletionDto> {
+  return (await http<WeeklyReviewCompletionDto>("/v1/coaching/weekly-review/completion", {
+    method: "PUT",
+    body: JSON.stringify({ examId, weekStart }),
+  })) as WeeklyReviewCompletionDto;
+}
+
+export async function fetchWeeklyRecapOffer(
+  examId: string,
+  weekStart?: string,
+): Promise<WeeklyRecapOfferDto> {
+  const query = new URLSearchParams({ examId, ...(weekStart ? { weekStart } : {}) });
+  return (await http<WeeklyRecapOfferDto>(
+    `/v1/coach/weekly-recaps/access?${query.toString()}`,
+  )) as WeeklyRecapOfferDto;
+}
+
+export async function openWeeklyRecap(input: OpenWeeklyRecapInput): Promise<WeeklyRecapReportDto> {
+  return (await http<WeeklyRecapReportDto>("/v1/coach/weekly-recaps", {
+    method: "POST",
+    headers: { "Idempotency-Key": input.clientRequestId },
+    body: JSON.stringify(input),
+  })) as WeeklyRecapReportDto;
+}
+
+export async function fetchWeeklyRecapArchive(page: number): Promise<Paginated<WeeklyRecapArchiveItemDto>> {
+  return await weeklyRecapControllerArchive({ page, pageSize: 10 }) as Paginated<WeeklyRecapArchiveItemDto>;
+}
+
+export async function fetchOwnedWeeklyRecap(id: string): Promise<WeeklyRecapReportDto> {
+  return (await http<WeeklyRecapReportDto>(
+    `/v1/coach/weekly-recaps/${encodeURIComponent(id)}`,
+  )) as WeeklyRecapReportDto;
+}
+
+export async function fetchWeeklyReportFollowUp(id: string): Promise<WeeklyReportFollowUpDto> {
+  return await weeklyRecapControllerTracking(id) as unknown as WeeklyReportFollowUpDto;
+}
+
+export async function createWeeklyReportTask(id: string, input: CreateWeeklyReportTaskInput): Promise<PlanTaskDto> {
+  return await weeklyRecapControllerCreateTask(id, input) as unknown as PlanTaskDto;
 }

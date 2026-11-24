@@ -1,259 +1,341 @@
-import { useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FORUM_REACTION_EMOJIS, type ZoneView } from "@mentor/types";
+import { useEffect, useMemo, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { ApiClientError } from "@mentor/api-client";
+import type { ZoneType, ZoneView } from "@mentor/types";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  getThreadDetail,
-  listZoneThreads,
-  postThreadComment,
-  postZoneThread,
-  toggleThreadReaction,
-} from "../../lib/community-api.js";
+  groupZonesByMembership,
+  threadViewToPostModel,
+  type CommunityPostModel,
+} from "../../lib/community-view.js";
+import {
+  getZoneFeed,
+  isForumDisabled,
+  joinZone,
+  leaveZone,
+  listForumZones,
+  type ThreadSort,
+} from "../../lib/forum-api.js";
 import { haptics } from "../../lib/haptics.js";
+import { useAppAvailability } from "../../providers/availability-provider.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
-import { useThemeTokens } from "../../providers/theme-provider.js";
-import { AppText, Button, Card, Chip, TextField } from "../ui/index.js";
+import { useToast } from "../../providers/toast-provider.js";
+import { LedgeButton, PanelCard } from "../panel/primitives.js";
+import {
+  AppText,
+  Button,
+  Chip,
+  ConfirmDialog,
+  ScreenLoadingSkeleton,
+  SlidingTabs,
+  StateView,
+} from "../ui/index.js";
+import type { ComposerMode } from "./community-composer-sheet.js";
+import { FeedPostCard } from "./feed-post-card.js";
 
-export interface ForumZonesViewProps {
-  zones: ZoneView[];
+function zoneTypeLabelKey(type: ZoneType): "type_announcement" | "type_qa" | "type_chat" {
+  if (type === "ANNOUNCEMENT") return "type_announcement";
+  if (type === "QA") return "type_qa";
+  return "type_chat";
 }
 
-export function ForumZonesView({ zones }: ForumZonesViewProps) {
-  const t = useTranslations("community");
-  const { palette, radii, space } = useThemeTokens();
+export function ForumZonesView({
+  initialSlug,
+  onClearInitialSlug,
+  onCompose,
+  onOpenThread,
+  onOpenMember,
+}: {
+  initialSlug?: string | null;
+  onClearInitialSlug?: () => void;
+  onCompose: (mode: ComposerMode, zoneId: string) => void;
+  onOpenThread: (post: CommunityPostModel) => void;
+  onOpenMember: (username: string) => void;
+}) {
   const queryClient = useQueryClient();
+  const { availability } = useAppAvailability();
+  const t = useTranslations("community");
+  const tCommon = useTranslations("common");
+  const toast = useToast();
 
-  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(
-    zones[0]?.id ?? null,
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(initialSlug ?? null);
+  const [sort, setSort] = useState<ThreadSort>("recent");
+  const [membershipBusy, setMembershipBusy] = useState(false);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    if (initialSlug) {
+      setSelectedSlug(initialSlug);
+      onClearInitialSlug?.();
+    }
+  }, [initialSlug, onClearInitialSlug]);
+
+  const zonesQuery = useQuery({
+    queryKey: ["forum", "zones"],
+    queryFn: listForumZones,
+    enabled: availability.forum,
+  });
+
+  const grouped = useMemo(
+    () => groupZonesByMembership(zonesQuery.data ?? []),
+    [zonesQuery.data],
   );
-  const [threadTitle, setThreadTitle] = useState("");
-  const [threadBody, setThreadBody] = useState("");
-  const [expandedThreadId, setExpandedThreadId] = useState<string | null>(null);
-  const [commentDraft, setCommentDraft] = useState("");
 
-  const activeZone =
-    zones.find((z) => z.id === selectedZoneId) ?? zones[0] ?? null;
+  const orderedZones = useMemo(
+    () => [...grouped.mine, ...grouped.others],
+    [grouped.mine, grouped.others],
+  );
 
-  const threadsQuery = useQuery({
-    queryKey: ["forum-threads", activeZone?.id],
-    queryFn: () => listZoneThreads(activeZone!.id),
-    enabled: Boolean(activeZone?.id),
+  const activeZone: ZoneView | null = useMemo(() => {
+    if (orderedZones.length === 0) return null;
+    return orderedZones.find((z) => z.slug === selectedSlug) ?? orderedZones[0]!;
+  }, [orderedZones, selectedSlug]);
+
+  const feedQuery = useInfiniteQuery({
+    queryKey: ["forum", "zone-feed", activeZone?.slug ?? "", sort],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => getZoneFeed(activeZone!.slug, sort, pageParam),
+    getNextPageParam: (last) => last.feed.nextCursor ?? undefined,
+    enabled: Boolean(activeZone) && availability.forum,
   });
 
-  const detailQuery = useQuery({
-    queryKey: ["forum-thread-detail", expandedThreadId],
-    queryFn: () => getThreadDetail(expandedThreadId!),
-    enabled: Boolean(expandedThreadId),
-  });
+  const posts = useMemo(() => {
+    if (!activeZone || !feedQuery.data) return [];
+    const zoneRef = {
+      id: activeZone.id,
+      title: activeZone.title,
+      slug: activeZone.slug,
+      type: activeZone.type,
+    };
+    return feedQuery.data.pages.flatMap((page) =>
+      page.feed.items.map((thread) => threadViewToPostModel(thread, zoneRef)),
+    );
+  }, [activeZone, feedQuery.data]);
 
-  const postThreadMutation = useMutation({
-    mutationFn: () =>
-      postZoneThread({
-        zoneId: activeZone!.id,
-        body: threadBody,
-        title: threadTitle,
-      }),
-    onSuccess: () => {
-      void haptics.success();
-      setThreadTitle("");
-      setThreadBody("");
-      void queryClient.invalidateQueries({
-        queryKey: ["forum-threads", activeZone?.id],
-      });
-    },
-  });
+  async function handleJoin() {
+    if (!activeZone || membershipBusy) return;
+    setMembershipBusy(true);
+    haptics.selection();
+    try {
+      await joinZone(activeZone.id);
+      await queryClient.invalidateQueries({ queryKey: ["forum"] });
+    } catch (err) {
+      toast.show(err instanceof ApiClientError ? err.message : t("error_title"));
+    } finally {
+      setMembershipBusy(false);
+    }
+  }
 
-  const reactMutation = useMutation({
-    mutationFn: (input: { threadId: string; emoji: string; active: boolean }) =>
-      toggleThreadReaction(input),
-    onSuccess: () => {
-      void haptics.selection();
-      void queryClient.invalidateQueries({
-        queryKey: ["forum-threads", activeZone?.id],
-      });
-    },
-  });
+  async function handleLeaveConfirm() {
+    if (!activeZone || membershipBusy) return;
+    setMembershipBusy(true);
+    try {
+      await leaveZone(activeZone.id);
+      setLeaveConfirmOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["forum"] });
+    } catch (err) {
+      toast.show(err instanceof ApiClientError ? err.message : t("error_title"));
+    } finally {
+      setMembershipBusy(false);
+    }
+  }
 
-  const postCommentMutation = useMutation({
-    mutationFn: () =>
-      postThreadComment({
-        threadId: expandedThreadId!,
-        body: commentDraft,
-      }),
-    onSuccess: () => {
-      void haptics.success();
-      setCommentDraft("");
-      void Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["forum-thread-detail", expandedThreadId],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["forum-threads", activeZone?.id],
-        }),
-      ]);
-    },
-  });
+  if (!availability.forum || isForumDisabled(zonesQuery.error)) {
+    return <StateView title={t("soon_title")} body={t("soon_desc")} />;
+  }
 
-  if (!activeZone) {
+  if (zonesQuery.isLoading) {
+    return <ScreenLoadingSkeleton />;
+  }
+
+  if (zonesQuery.isError) {
     return (
-      <Card style={{ gap: space.sm }}>
-        <AppText variant="body" tone="secondary">
-          {t("zones_empty")}
-        </AppText>
-      </Card>
+      <StateView
+        tone="error"
+        title={t("error_title")}
+        body={zonesQuery.error instanceof ApiClientError ? zonesQuery.error.message : t("zones_empty")}
+        actionLabel={t("retry")}
+        onAction={() => void zonesQuery.refetch()}
+      />
     );
   }
 
-  const threads = threadsQuery.data ?? [];
+  if (orderedZones.length === 0 || !activeZone) {
+    return <StateView title={t("zones_title")} body={t("zones_empty")} />;
+  }
+
+  const isMember = activeZone.myStatus === "ACTIVE";
+  const canPost = isMember && activeZone.type !== "ANNOUNCEMENT";
 
   return (
-    <View style={{ gap: space.md }}>
-      <Card style={{ gap: space.sm }}>
-        <AppText variant="sectionHeading">{t("zones_title")}</AppText>
-        <View style={styles.chipRow}>
-          {zones.map((zone) => (
-            <Chip
-              key={zone.id}
-              label={`${zone.emoji ? `${zone.emoji} ` : ""}${zone.title}`}
-              selected={zone.id === activeZone.id}
-              onPress={() => {
-                void haptics.selection();
-                setSelectedZoneId(zone.id);
-                setExpandedThreadId(null);
-              }}
-            />
-          ))}
+    <View style={styles.root}>
+      {grouped.mine.length > 0 ? (
+        <View style={styles.groupWrap}>
+          <AppText variant="micro" tone="muted">
+            {t("group_mine")}
+          </AppText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+            {grouped.mine.map((zone) => (
+              <Chip
+                key={zone.id}
+                label={zone.title}
+                selected={zone.id === activeZone.id}
+                onPress={() => setSelectedSlug(zone.slug)}
+              />
+            ))}
+          </ScrollView>
         </View>
-      </Card>
-
-      {activeZone.type !== "ANNOUNCEMENT" ? (
-        <Card style={{ gap: space.sm }}>
-          <AppText variant="sectionHeading">{t("new_thread_title")}</AppText>
-          {activeZone.type === "QA" ? (
-            <TextField
-              label={t("thread_title_label")}
-              value={threadTitle}
-              onChangeText={setThreadTitle}
-              placeholder={t("thread_title_placeholder")}
-            />
-          ) : null}
-          <TextField
-            label={t("thread_body_label")}
-            value={threadBody}
-            onChangeText={setThreadBody}
-            placeholder={t("thread_body_placeholder")}
-            multiline
-          />
-          <Button
-            label={t("post_thread_cta")}
-            disabled={!threadBody.trim()}
-            loading={postThreadMutation.isPending}
-            onPress={() => postThreadMutation.mutate()}
-          />
-        </Card>
       ) : null}
 
-      <View style={{ gap: space.sm }}>
-        {threads.length === 0 ? (
-          <Card style={{ gap: space.sm }}>
-            <AppText variant="body" tone="secondary">
-              {t("threads_empty")}
-            </AppText>
-          </Card>
+      {grouped.others.length > 0 ? (
+        <View style={styles.groupWrap}>
+          <AppText variant="micro" tone="muted">
+            {t("group_others")}
+          </AppText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+            {grouped.others.map((zone) => (
+              <Chip
+                key={zone.id}
+                label={zone.title}
+                selected={zone.id === activeZone.id}
+                onPress={() => setSelectedSlug(zone.slug)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
+
+      <PanelCard style={styles.zoneCard}>
+        <View style={styles.zoneTopRow}>
+          <Chip label={t(zoneTypeLabelKey(activeZone.type))} />
+          <AppText variant="caption" tone="muted" tabularNums>
+            {`${t("members_count", { count: activeZone.memberCount })} · ${t("messages_count", { count: activeZone.threadCount })}`}
+          </AppText>
+        </View>
+
+        <AppText variant="title">{activeZone.title}</AppText>
+        {activeZone.description ? (
+          <AppText variant="body" tone="secondary">
+            {activeZone.description}
+          </AppText>
+        ) : null}
+
+        {isMember ? (
+          <View style={styles.memberActions}>
+            {canPost ? (
+              <View style={styles.composeFlex}>
+                <LedgeButton
+                  accessibilityLabel={activeZone.type === "QA" ? t("hub_ask") : t("hub_share")}
+                  onPress={() => onCompose(activeZone.type === "QA" ? "QA" : "CHAT", activeZone.id)}
+                >
+                  {(ink) => (
+                    <AppText style={[styles.ledgeText, { color: ink }]} numberOfLines={1}>
+                      {activeZone.type === "QA" ? t("hub_ask") : t("hub_share")}
+                    </AppText>
+                  )}
+                </LedgeButton>
+              </View>
+            ) : null}
+            <Button
+              label={t("leave_zone_cta")}
+              onPress={() => setLeaveConfirmOpen(true)}
+              loading={membershipBusy}
+              variant="secondary"
+            />
+          </View>
         ) : (
-          threads.map((thread) => {
-            const expanded = expandedThreadId === thread.id;
-            return (
-              <Card key={thread.id} style={{ gap: space.sm }}>
-                <View style={styles.rowBetween}>
-                  <AppText variant="caption" tone="accent">
-                    {thread.authorName}
-                    {thread.authorUsername ? ` (@${thread.authorUsername})` : ""}
-                  </AppText>
-                  <Chip
-                    label={`💬 ${thread.commentCount}`}
-                    selected={expanded}
-                    onPress={() =>
-                      setExpandedThreadId(expanded ? null : thread.id)
-                    }
-                  />
-                </View>
-                {thread.title ? (
-                  <AppText variant="cardTitle">{thread.title}</AppText>
-                ) : null}
-                <AppText variant="body">{thread.body}</AppText>
-
-                <View style={styles.chipRow}>
-                  {FORUM_REACTION_EMOJIS.map((emoji) => {
-                    const count = thread.reactionCounts[emoji] ?? 0;
-                    const active = thread.myReactions.includes(emoji);
-                    return (
-                      <Chip
-                        key={emoji}
-                        label={`${emoji}${count > 0 ? ` ${count}` : ""}`}
-                        selected={active}
-                        onPress={() =>
-                          reactMutation.mutate({
-                            threadId: thread.id,
-                            emoji,
-                            active,
-                          })
-                        }
-                      />
-                    );
-                  })}
-                </View>
-
-                {expanded ? (
-                  <View
-                    style={{
-                      padding: space.sm,
-                      borderRadius: radii.card,
-                      borderWidth: 1,
-                      backgroundColor: palette.surfaceAlt,
-                      borderColor: palette.border,
-                      gap: space.sm,
-                    }}
-                  >
-                    <AppText variant="cardTitle">{t("comments_title")}</AppText>
-                    {(detailQuery.data?.comments ?? []).map((comment) => (
-                      <View key={comment.id} style={{ gap: 2 }}>
-                        <AppText variant="caption" tone="accent">
-                          {comment.authorName}
-                        </AppText>
-                        <AppText variant="body">{comment.body}</AppText>
-                      </View>
-                    ))}
-                    <TextField
-                      label={t("comment_placeholder")}
-                      value={commentDraft}
-                      onChangeText={setCommentDraft}
-                      placeholder={t("comment_placeholder")}
-                    />
-                    <Button
-                      label={t("post_comment_cta")}
-                      variant="secondary"
-                      disabled={!commentDraft.trim()}
-                      loading={postCommentMutation.isPending}
-                      onPress={() => postCommentMutation.mutate()}
-                    />
-                  </View>
-                ) : null}
-              </Card>
-            );
-          })
+          <View style={styles.joinBox}>
+            <AppText variant="caption" tone="secondary">
+              {t("zone_join_hint")}
+            </AppText>
+            <LedgeButton accessibilityLabel={t("join_zone_cta")} onPress={() => void handleJoin()}>
+              {(ink) => (
+                <AppText style={[styles.ledgeText, { color: ink }]} numberOfLines={1}>
+                  {t("join_zone_cta")}
+                </AppText>
+              )}
+            </LedgeButton>
+          </View>
         )}
-      </View>
+      </PanelCard>
+
+      <SlidingTabs
+        variant="pill"
+        accessibilityLabel={t("zones_title")}
+        value={sort}
+        onChange={setSort}
+        items={[
+          { id: "recent", label: t("sort_recent") },
+          { id: "popular", label: t("sort_popular") },
+        ]}
+      />
+
+      {feedQuery.isLoading ? (
+        <ScreenLoadingSkeleton />
+      ) : feedQuery.isError ? (
+        <StateView
+          tone="error"
+          title={t("error_title")}
+          body={feedQuery.error instanceof ApiClientError ? feedQuery.error.message : t("threads_empty")}
+          actionLabel={t("retry")}
+          onAction={() => void feedQuery.refetch()}
+        />
+      ) : posts.length === 0 ? (
+        <StateView
+          title={activeZone.title}
+          body={t("threads_empty")}
+          actionLabel={canPost ? t("post_thread_cta") : undefined}
+          onAction={
+            canPost
+              ? () => onCompose(activeZone.type === "QA" ? "QA" : "CHAT", activeZone.id)
+              : undefined
+          }
+        />
+      ) : (
+        <View style={styles.feedList}>
+          {posts.map((post) => (
+            <FeedPostCard
+              key={post.id}
+              post={post}
+              showZone={false}
+              onOpenThread={onOpenThread}
+              onOpenMember={onOpenMember}
+            />
+          ))}
+          {feedQuery.hasNextPage ? (
+            <Button
+              label={t("load_more")}
+              loading={feedQuery.isFetchingNextPage}
+              onPress={() => void feedQuery.fetchNextPage()}
+              variant="secondary"
+            />
+          ) : null}
+        </View>
+      )}
+
+      <ConfirmDialog
+        visible={leaveConfirmOpen}
+        title={t("leave_zone_confirm_title")}
+        message={t("leave_zone_confirm_body")}
+        confirmLabel={t("leave_zone_cta")}
+        cancelLabel={tCommon("cancel")}
+        destructive
+        onCancel={() => setLeaveConfirmOpen(false)}
+        onConfirm={() => void handleLeaveConfirm()}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 8,
-  },
+  root: { gap: 12 },
+  groupWrap: { gap: 6 },
+  chipsRow: { gap: 8, paddingVertical: 2 },
+  zoneCard: { gap: 10 },
+  zoneTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  memberActions: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 2 },
+  composeFlex: { flex: 1 },
+  joinBox: { gap: 8, marginTop: 2 },
+  ledgeText: { fontSize: 15, fontWeight: "800" },
+  feedList: { gap: 12 },
 });

@@ -56,3 +56,11 @@ it("never uses CSS textTransform (uppercase breaks Turkish İ)", () => {
   const hits = files("src").filter((f) => /textTransform/.test(readFileSync(f, "utf8")));
   expect(hits).toEqual([]);
 });
+
+it("keeps the wave 2 reels free of price and limit words", () => {
+  const text = (["DRP", "DRK", "DRH", "DRY"] as const)
+    .flatMap((id) => [...Object.values(COPY[id] ?? {}), CAPTIONS[id]?.text ?? "", String(CAPTIONS[id]?.alt ?? "")])
+    .join(" ")
+    .toLocaleLowerCase("tr");
+  for (const word of ["ücretsiz", "sınırsız", "bedava"]) expect(text, word).not.toContain(word);
+});

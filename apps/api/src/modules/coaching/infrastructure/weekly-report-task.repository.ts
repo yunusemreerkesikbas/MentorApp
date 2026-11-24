@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, eq, gt, lt } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { mockExams, mockExamSubjects, planTasks } from "../../../database/schema";
+import { mockExamSubjectHasCounts } from "./mock-exam.repository";
 
 @Injectable()
 export class WeeklyReportTaskRepository {
@@ -14,7 +15,7 @@ export class WeeklyReportTaskRepository {
     return (await tx.select({ net: mockExamSubjects.net, takenAt: mockExams.takenAt })
       .from(mockExams).innerJoin(mockExamSubjects, eq(mockExamSubjects.mockExamId, mockExams.id))
       .where(and(eq(mockExams.userId, userId), eq(mockExams.examId, examId),
-        eq(mockExamSubjects.subjectRef, subjectRef), gt(mockExams.createdAt, after),
+        eq(mockExamSubjects.subjectRef, subjectRef), mockExamSubjectHasCounts, gt(mockExams.createdAt, after),
         gt(mockExams.takenAt, after), lt(mockExams.takenAt, before), lt(mockExams.createdAt, before)))
       .orderBy(asc(mockExams.takenAt), asc(mockExams.createdAt), asc(mockExams.id)).limit(1))[0];
   }

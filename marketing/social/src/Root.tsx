@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import { Composition, Still } from "remotion";
 import { compositionIds, PIECES, SIZES, STUDIO_PROPS, type PieceId, type PieceProps } from "./pieces";
+import { DRH, DRK, DRP, DRY } from "./pieces/DR";
 import { F1 } from "./pieces/F1";
 import { F2 } from "./pieces/F2";
 import { F3 } from "./pieces/F3";
@@ -32,7 +33,7 @@ import { T1, T1P } from "./t1/T1";
 import { ReelMusic } from "./components/ReelMusic";
 
 // Pieces that have a component so far. Missing ids are skipped by Studio and the render script.
-export const COMPONENTS: Partial<Record<PieceId, FC<PieceProps>>> = { F1, F2, F3, F4, F5, F6, S1, S2, S3, S4, R1, R2, R3, X1, L1, PF1, PF2, PS1, PS2, PR1, PR2, T1, T1P, IF1, IF2, IF3, IF4, IF5, IF6, IS1, IS2, IS3, IS4, IS5, IS6, IR1, K1, K2, WS1, WS2, WS3, WR1 };
+export const COMPONENTS: Partial<Record<PieceId, FC<PieceProps>>> = { F1, F2, F3, F4, F5, F6, S1, S2, S3, S4, R1, R2, R3, X1, L1, PF1, PF2, PS1, PS2, PR1, PR2, T1, T1P, IF1, IF2, IF3, IF4, IF5, IF6, IS1, IS2, IS3, IS4, IS5, IS6, IR1, K1, K2, WS1, WS2, WS3, WR1, DRP, DRK, DRH, DRY };
 
 export function Root() {
   return (

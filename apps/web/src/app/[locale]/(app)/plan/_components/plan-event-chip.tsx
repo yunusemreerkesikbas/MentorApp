@@ -9,13 +9,9 @@ import { formatTimeRange } from "./plan-utils";
 /** Stage-light state driven by the subject legend: no highlight, under the light, or faded back. */
 export type PlanEventSpotlight = "off" | "lit" | "dimmed";
 
-/** Per-chip ramp-up step; capped so a busy month still finishes the sweep quickly. */
-export const SPOTLIGHT_STEP_MS = 25;
-export const SPOTLIGHT_MAX_DELAY_MS = 400;
-
-export function spotlightDelay(litIndex: number): number {
-  return Math.min(litIndex * SPOTLIGHT_STEP_MS, SPOTLIGHT_MAX_DELAY_MS);
-}
+/** Per-chip ramp-up step, capped so a busy month still finishes the sweep quickly. Moved to
+ * `@mentor/core` (shared with the mobile Ay board); re-exported so web imports stay put. */
+export { SPOTLIGHT_MAX_DELAY_MS, SPOTLIGHT_STEP_MS, spotlightDelay } from "@mentor/core";
 
 export type PlanEventHoverHandler<T> = (
   item: PlanCalendarItem<T>,

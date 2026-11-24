@@ -1,68 +1,76 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Keyboard, Pressable, StyleSheet, View } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  APP_NAV_ITEMS,
   getMobileTabItemsForRole,
   isElevatedNavHref,
   isNavActive,
-  type AppNavIconId,
 } from "@mentor/core";
 import { haptics } from "../../lib/haptics.js";
+import {
+  cardShadow,
+  TAB_BAR_HEIGHT,
+  TAB_BAR_SIDE_INSET,
+  tabBarBottom,
+} from "../../lib/layout.js";
+import { STUDENT_CORE_ONLY } from "../../lib/release-scope.js";
 import { useAuth } from "../../providers/auth-provider.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
-import { AppText } from "../ui/text.js";
+import { NavIcon } from "./nav-icon.js";
 
-const GLYPH_MAP: Record<AppNavIconId, string> = {
-  home: "⌂",
-  plan: "▤",
-  coach: "◉",
-  analysis: "↗",
-  notebook: "❐",
-  community: "◈",
-  students: "✦",
-  coachProfile: "◎",
-  settings: "⚙",
-};
+const ITEM_SIZE = 44;
+/** The web hangs the raised circle 12dp above the pill's top edge (`-top-3`). */
+const ELEVATED_OVERHANG = 12;
 
 /**
- * Role-aware bottom tab bar (`DESIGN.md` §4 & §6):
- * - Consumes `getMobileTabItemsForRole` from `@mentor/core` so Student and Coach roles
- *   automatically receive their 5-item pill with the raised center companion/workspace action.
- * - Minimum 44x44pt touch target, safe-area inset aware, haptic selection feedback.
+ * The web's phone tab bar (`MobileTabBar` in `apps/web/src/components/app-nav.tsx`): a floating
+ * pill of bare Solar icons, the active one in a soft `play-selected` circle, and the role's home
+ * action lifted out of the middle. Icon-only by the owner's choice; every tab keeps its name as
+ * the accessibility label.
  */
 export function RoleTabBar() {
   const { user } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { palette, radii, space, touchTargets, ledge } = useThemeTokens();
+  const { palette, radii } = useThemeTokens();
   const tNav = useTranslations("nav");
+  const keyboardOpen = useKeyboardOpen();
 
-  const items = getMobileTabItemsForRole(user?.roles);
+  // With the keyboard up the bar would ride on top of it and cover the field being typed in.
+  if (keyboardOpen) return null;
+
+  const roleItems = getMobileTabItemsForRole(user?.roles);
+  // Student core: Settings takes the hidden Community slot, so the pill stays at five.
+  const items = STUDENT_CORE_ONLY
+    ? roleItems.flatMap((item) =>
+        item.href === "/community"
+          ? APP_NAV_ITEMS.filter((nav) => nav.href === "/settings")
+          : [item],
+      )
+    : roleItems;
 
   return (
     <View
+      pointerEvents="box-none"
       style={[
-        styles.wrapper,
-        {
-          paddingBottom: Math.max(insets.bottom, space.sm),
-          paddingHorizontal: space.md,
-          paddingTop: space.xs,
-          backgroundColor: palette.bg,
-          borderTopColor: palette.border,
-        },
+        styles.anchor,
+        { left: TAB_BAR_SIDE_INSET, right: TAB_BAR_SIDE_INSET, bottom: tabBarBottom(insets.bottom) },
       ]}
     >
       <View
+        accessibilityRole="tablist"
         style={[
-          styles.pillContainer,
+          styles.pill,
+          cardShadow,
           {
-            backgroundColor: palette.surface,
+            height: TAB_BAR_HEIGHT,
+            borderRadius: radii.pill,
             borderColor: palette.border,
-            borderRadius: radii.card,
-            minHeight: touchTargets.tabBarHeight,
-            paddingHorizontal: space.xs,
+            backgroundColor: palette.surface,
           },
         ]}
       >
@@ -70,6 +78,11 @@ export function RoleTabBar() {
           const active = isNavActive(pathname, item.href);
           const elevated = isElevatedNavHref(item.href);
           const label = tNav(item.labelKey as Parameters<typeof tNav>[0]);
+          const ink = active
+            ? palette.playSelectedInk
+            : elevated
+              ? palette.main
+              : palette.secondary;
 
           return (
             <Pressable
@@ -80,56 +93,29 @@ export function RoleTabBar() {
               onPress={() => {
                 if (active) return;
                 haptics.selection();
+                if (router.canDismiss()) {
+                  router.dismissAll();
+                }
                 router.replace(item.href as never);
               }}
-              style={[
-                styles.tabButton,
-                {
-                  minHeight: touchTargets.comfortable,
-                },
-              ]}
+              style={styles.tab}
             >
               <View
+                // Remounted on selection: Android keeps a square background when a rounded view's
+                // fill changes from transparent to a colour in place.
+                key={active ? "active" : "rest"}
                 style={[
-                  elevated ? styles.elevatedPill : styles.standardPill,
+                  styles.well,
                   elevated
-                    ? {
-                        backgroundColor: active ? palette.ctaPlayBg : palette.surfaceAlt,
-                        borderColor: active ? palette.ctaPlayEdge : palette.border,
-                        borderBottomWidth: ledge.secondaryBottomWidth,
-                        borderRadius: radii.pill,
-                      }
-                    : {
-                        backgroundColor: active ? palette.surfaceAlt : "transparent",
-                        borderRadius: radii.inner,
-                      },
+                    ? [
+                        styles.elevated,
+                        cardShadow,
+                        { backgroundColor: active ? palette.playSelected : palette.bg },
+                      ]
+                    : { backgroundColor: active ? palette.playSelected : "transparent" },
                 ]}
               >
-                <AppText
-                  variant="cardTitle"
-                  style={{
-                    color: elevated && active
-                      ? palette.ctaPlayInk
-                      : active
-                        ? palette.main
-                        : palette.secondary,
-                  }}
-                >
-                  {GLYPH_MAP[item.icon]}
-                </AppText>
-                <AppText
-                  variant="micro"
-                  numberOfLines={1}
-                  style={{
-                    color: elevated && active
-                      ? palette.ctaPlayInk
-                      : active
-                        ? palette.main
-                        : palette.muted,
-                  }}
-                >
-                  {label}
-                </AppText>
+                <NavIcon icon={item.icon} active={active} color={ink} size={elevated ? 20 : 22} />
               </View>
             </Pressable>
           );
@@ -139,38 +125,44 @@ export function RoleTabBar() {
   );
 }
 
+export function useKeyboardOpen(): boolean {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () => setOpen(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return open;
+}
+
 const styles = StyleSheet.create({
-  wrapper: {
-    borderTopWidth: 1,
+  anchor: {
+    position: "absolute",
   },
-  pillContainer: {
+  pill: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     borderWidth: 1,
-    borderCurve: "continuous",
+    paddingHorizontal: 6,
   },
-  tabButton: {
+  tab: {
     flex: 1,
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
   },
-  standardPill: {
+  well: {
+    width: ITEM_SIZE,
+    height: ITEM_SIZE,
+    borderRadius: ITEM_SIZE / 2,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    gap: 2,
-    borderCurve: "continuous",
   },
-  elevatedPill: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    gap: 2,
-    transform: [{ translateY: -4 }],
-    borderCurve: "continuous",
+  // In a centred row a negative top margin moves the box by half its value, hence the doubling.
+  elevated: {
+    marginTop: -2 * ((TAB_BAR_HEIGHT - ITEM_SIZE) / 2 + ELEVATED_OVERHANG),
   },
 });

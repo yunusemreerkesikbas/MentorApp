@@ -1,4 +1,5 @@
 import { StyleSheet, TextInput, View, type TextInputProps } from "react-native";
+import { fontFamilyFor } from "../../lib/fonts.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 import { AppText } from "./text.js";
 
@@ -42,6 +43,7 @@ export function TextField({
             borderColor: hasError ? palette.danger : palette.border,
             color: palette.main,
             fontSize: typeScale.body.fontSize,
+            fontFamily: fontFamilyFor(typeScale.body.fontWeight),
           },
           style,
         ]}

@@ -19,9 +19,6 @@ overrides:
   qs: 6.16.0
   sharp: 0.35.5
   source-map-js: 1.2.2
-patchedDependencies:
-  metro@0.82.5: patches/metro@0.82.5.patch
-
 auditConfig:
   ignoreGhsas:
     # braces <=3.0.3 stack-exhaustion DoS. No patched 3.0.4 is published on npm yet.
