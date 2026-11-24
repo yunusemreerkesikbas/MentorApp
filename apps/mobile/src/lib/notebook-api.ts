@@ -15,18 +15,22 @@ export async function getBook(id?: string): Promise<NotebookSummaryDto> {
 }
 export const createBook = (input: CreateNotebookInput) => http<NotebookDto>(desk, { method: "POST", body: JSON.stringify(input) });
 export const updateBook = (id: string, input: UpdateNotebookInput) => http<NotebookDto>(bookPath(id), { method: "PATCH", body: JSON.stringify(input) });
+export const deleteBook = (id: string) => http<void>(bookPath(id), { method: "DELETE" });
 export const getContents = (id?: string) => http<NotebookContentsDto>(bookPath(id) + "/contents");
 export const getPage = (page: number, id?: string) => http<NotebookPageDto>(bookPath(id) + "/pages/" + page);
 export const putPage = (page: number, doc: NotebookPageDoc, id?: string) => http<NotebookPageDto>(bookPath(id) + "/pages/" + page, { method: "PUT", body: JSON.stringify({ doc }) });
 const notebookImageUri = (url: string) => new URL(url, getApiBaseUrl()).toString();
 
-export async function uploadPagePhoto(source: "camera" | "gallery") {
+export const uploadPagePhoto = (source: "camera" | "gallery") => uploadNotebookPhoto(source, "page");
+
+/** A page layer passes `purpose: "page"`; an entry's question or solution photo passes none, as on the web. */
+export async function uploadNotebookPhoto(source: "camera" | "gallery", purpose?: "page") {
   const photo = await pickDevicePhoto(source);
   if (!photo) return null;
   if (!NOTEBOOK_IMAGE_MIMES.some((mime) => mime === photo.mimeType)) throw new Error("unsupported_image");
   if (devicePhotoSize(photo) > NOTEBOOK_IMAGE_MAX_BYTES) throw new Error("photo_too_large");
   const ticket = await http<NotebookImageUploadUrlDto>(mistake + "/entries/image-upload-url", {
-    method: "POST", body: JSON.stringify({ contentType: photo.mimeType, purpose: "page" }),
+    method: "POST", body: JSON.stringify({ contentType: photo.mimeType, purpose }),
   });
   if (!(await putDevicePhoto(notebookImageUri(ticket.uploadUrl), photo))) throw new Error("photo_upload_failed");
   return { ...photo, key: ticket.key };

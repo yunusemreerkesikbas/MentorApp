@@ -16,6 +16,7 @@ import { NotebookFan } from "../notebooks/notebook-fan.js";
 import { NotebookLightbox } from "../notebooks/notebook-canvas.js";
 import { useAuth } from "../../providers/auth-provider.js";
 import { AnalysisLink } from "./analysis-link.js";
+import { EntryPhotoField, NotebookEntryEditForm, type StagedPhoto } from "./mistake-entry-forms.js";
 
 export type NotebookSheetState = {
   scope: MistakeScope;
@@ -45,6 +46,7 @@ export function MistakeNotebookView({ examId, addExamId, subjects, initial, onCl
   const [focus, setFocus] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState(initial.entryId ?? null);
   const [revealed, setRevealed] = useState<string | null>(null);
   const request = useRef<{ id: string; solved: boolean; reviewId: string } | null>(null);
@@ -79,8 +81,8 @@ export function MistakeNotebookView({ examId, addExamId, subjects, initial, onCl
 
   const active = selected ? details.data : reviewing ? items.find(e => e.id === focus) : null;
   const shownTitle = reviewing ? tMistakes("cta_review")
-    : selected ? tReview("entry_title") : adding ? t("add_mistake_title") : tMistakes("open_notebook");
-  const showIndex = () => { setSelected(null); setReviewing(false); setAdding(false); setFocus(null); };
+    : selected ? editing ? t("entry_edit") : tReview("entry_title") : adding ? t("add_mistake_title") : tMistakes("open_notebook");
+  const showIndex = () => { setSelected(null); setReviewing(false); setAdding(false); setEditing(false); setFocus(null); };
   const answer = (entry: NotebookEntryDto, solved: boolean) => {
     if (review.isPending) return;
     if (request.current?.id !== entry.id || request.current?.solved !== solved) {
@@ -100,6 +102,10 @@ export function MistakeNotebookView({ examId, addExamId, subjects, initial, onCl
           <AppText tone="secondary">{tCommon("error_body")}</AppText>
           <AnalysisLink label={tCommon("retry")} onPress={() => void state.refetch()} />
         </>
+      ) : active && editing && selected ? (
+        <NotebookEntryEditForm entry={active} subjects={subjects}
+          onSaved={async () => { await Promise.all([details.refetch(), onRefresh()]); setEditing(false); }}
+          onDeleted={async () => { await onRefresh(); showIndex(); }} onBack={() => setEditing(false)} />
       ) : active ? (
         <>
           <NotebookEntryBody entry={active} openPhoto={setPhoto} />
@@ -118,6 +124,7 @@ export function MistakeNotebookView({ examId, addExamId, subjects, initial, onCl
           ) : (
             <View style={{ gap: space.sm }}>
               {active.status === "ACTIVE" ? <Button label={tMistakes("cta_review")} onPress={() => setReviewing(true)} /> : null}
+              {selected ? <Button variant="secondary" label={t("entry_edit")} onPress={() => setEditing(true)} /> : null}
               <AnalysisLink label={tReview("back_index")} onPress={showIndex} />
             </View>
           )}
@@ -182,11 +189,15 @@ function NotebookAddForm({ examId, subjects, scope, onBack, onSaved }: {
   const [subject, setSubject] = useState(scope.subjectRef ?? subjects[0]?.slug ?? null);
   const [reason, setReason] = useState<NotebookErrorType>(scope.errorType ?? "UNKNOWN_TOPIC");
   const [note, setNote] = useState("");
+  const [photo, setPhoto] = useState<StagedPhoto | null>(null);
+  const [solutionPhoto, setSolutionPhoto] = useState<StagedPhoto | null>(null);
+  const [solutionNote, setSolutionNote] = useState("");
   const save = useMutation({
     mutationFn: () => createNotebookEntry({
       examId, mockExamId: scope.mockExamId, source: "OWN", subjectRef: subject,
       topicRef: subject === scope.subjectRef ? scope.topicRef : undefined,
-      errorType: reason, note: note.trim() || null,
+      errorType: reason, note: note.trim() || null, storageKey: photo?.key ?? null,
+      solutionStorageKey: solutionPhoto?.key ?? null, solutionNote: solutionNote.trim() || null,
     }),
     onSuccess: async () => { haptics.success(); await onSaved(); },
   });
@@ -205,7 +216,10 @@ function NotebookAddForm({ examId, subjects, scope, onBack, onSaved }: {
           <Chip label={t(`error_${key}`)} key={key} selected={reason === key} onPress={() => setReason(key)} />
         ))}
       </View>
+      <EntryPhotoField label={t("entry_photo_label")} photo={photo} onChange={setPhoto} disabled={save.isPending} />
       <TextField label={t("mistake_note_label")} placeholder={t("mistake_note_placeholder")} value={note} onChangeText={setNote} />
+      <EntryPhotoField label={t("entry_solution_photo_label")} photo={solutionPhoto} onChange={setSolutionPhoto} disabled={save.isPending} />
+      <TextField label={t("entry_solution_note_label")} value={solutionNote} onChangeText={setSolutionNote} />
       {save.isError ? <AppText tone="danger">{save.error instanceof Error ? save.error.message : tCommon("error_body")}</AppText> : null}
       <Button label={t("save_mistake_cta")} loading={save.isPending} onPress={() => { if (!save.isPending) save.mutate(); }} />
       <AnalysisLink label={tReview("back_index")} onPress={onBack} />

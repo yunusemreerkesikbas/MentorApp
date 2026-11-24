@@ -16,6 +16,7 @@ import type {
   CreateAnalysisPlanTaskInput,
   CreateMockExamInput,
   CreateNotebookEntryInput,
+  UpdateNotebookEntryInput,
   UpdateMockExamInput,
 } from "@mentor/validation";
 import {
@@ -143,6 +144,11 @@ export async function reviewNotebookEntry(
     },
   )) as NotebookEntryDto;
 }
+
+export const updateNotebookEntry = (id: string, patch: UpdateNotebookEntryInput) =>
+  http<NotebookEntryDto>(`/v1/coaching/notebook/entries/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+
+export const deleteNotebookEntry = (id: string) => http<void>(`/v1/coaching/notebook/entries/${id}`, { method: "DELETE" });
 
 export function fetchNotebookEntry(id: string) {
   return http<NotebookEntryDto>(`/v1/coaching/notebook/entries/${id}`);

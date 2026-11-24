@@ -51,5 +51,10 @@ export const notebooksEn = {
   "done": "Finish drawing",
   "remove": "Remove text",
   "subject": "Subject",
+  "delete": "Delete notebook",
+  "deleteTitle": "Delete {title}?",
+  "deleteBody": "The notebook and all its pages will be deleted. This can't be undone.",
+  "deleteError": "The notebook couldn't be deleted right now. You can try again in a moment.",
+  "cancel": "Cancel",
   "all": "All subjects"
 } as const;
