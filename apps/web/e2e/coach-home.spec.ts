@@ -286,7 +286,7 @@ test.describe("koçun kendi dünyası", () => {
   test("hesap ekranları açık kalır", async ({ page }) => {
     // Blocking these would be a bug: Koç Pro is bought on /abonelik, and a coach locked out of
     // /ayarlar cannot change their password or delete their account.
-    for (const path of ["/ayarlar", "/topluluk"]) {
+    for (const path of ["/ayarlar", "/topluluk/uyeler/panel"]) {
       await page.goto(path);
       await expect(page, path).not.toHaveURL(/\/kocluk$/);
     }

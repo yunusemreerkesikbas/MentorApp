@@ -16,7 +16,7 @@ for (const locale of ["tr", "en"] as const) {
     await page.goto(home);
     await expect(page.getByTestId("today-path-card")).toBeVisible();
     await expect(page.getByRole("button", { name: copy.panel.premium_greeting_nudge })).toHaveCount(0);
-    await expect(page.locator('a[href="/topluluk"], a[href="/en/community"], a[href="/koc"], a[href="/en/coach"]')).toHaveCount(0);
+    await expect(page.locator('a[href="/topluluk/uyeler/panel"], a[href="/en/community"], a[href="/koc"], a[href="/en/coach"]')).toHaveCount(0);
     await page.getByTestId("mood-option-2").click();
     await expect(page.getByTestId("mood-option-2")).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("button", { name: copy.mood.coach_speech_cta, exact: true }).click();
@@ -79,7 +79,7 @@ for (const locale of ["tr", "en"] as const) {
     await expect(page.getByRole("heading", { name: fixture.user.displayName, exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /followers|following|takipçi|takip$/i })).toHaveCount(0);
     await page.screenshot({ path: info.outputPath("own-profile.png"), fullPage: true });
-    for (const path of english ? ["/en/community", "/en/community/member/other", "/en/coach", "/en/my-coach", "/en/join-room?kod=OLD", "/en/invite/OLD"] : ["/topluluk", "/topluluk/uye/other", "/koc", "/kocum", "/masaya-katil?kod=OLD", "/davet/OLD"]) {
+    for (const path of english ? ["/en/community", "/en/community/member/other", "/en/coach", "/en/my-coach", "/en/join-room?kod=OLD", "/en/invite/OLD"] : ["/topluluk/uyeler/panel", "/topluluk/uye/other", "/koc", "/kocum", "/masaya-katil?kod=OLD", "/davet/OLD"]) {
       await page.goto(path);
       await expect(page.getByRole("heading", { name: closedTitle, exact: true })).toBeVisible();
     }

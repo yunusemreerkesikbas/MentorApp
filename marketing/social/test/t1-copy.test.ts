@@ -12,7 +12,7 @@ it("keeps ÇOK YAKINDA, PREMIUM and reward numbers out of T1", () => {
   expect(strings.filter((s) => /XP/.test(s))).toEqual(["+5 XP"]);
 });
 
-it("closes T1 on the end card at 1800 with the five exams in place of the pill", () => {
+it("closes T1 on the end card at 1815 with the five exams in place of the pill", () => {
   expect(sceneOf("17").from + EVENTS["17"].endCard!).toBe(PIECES.find((p) => p.id === "T1")!.video!.endCardFrom);
   const s17 = readFileSync("src/t1/scenes/S17.tsx", "utf8");
   expect(s17).toMatch(/<EndCard[^>]*\btag=\{EXAMS\}/);

@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BellIcon } from "@solar-icons/react-native/linear/bell";
 import { isCoach } from "@mentor/core";
+import { http } from "@mentor/api-client";
 import { FormSheet, PanelCard, PanelCardTitle } from "../../../components/panel/primitives.js";
 import { ExamSwitcherCard } from "../../../components/settings/exam-switcher-card.js";
 import { FriendInviteCard } from "../../../components/settings/friend-invite-card.js";
@@ -12,6 +13,9 @@ import { PhoneVerificationCard } from "../../../components/settings/phone-verifi
 import { SettingsIdentity } from "../../../components/settings/settings-identity.js";
 import { SettingsRow } from "../../../components/settings/settings-row.js";
 import { AppText, Chip } from "../../../components/ui/index.js";
+import { ConfirmDialog } from "../../../components/ui/confirm-dialog.js";
+import { errorText } from "../../../lib/plan-view.js";
+import { useToast } from "../../../providers/toast-provider.js";
 import { useAuth } from "../../../providers/auth-provider.js";
 import { useLocale, useTranslations } from "../../../providers/i18n-provider.js";
 import { tabBarClearance } from "../../../lib/layout.js";
@@ -29,6 +33,25 @@ export default function SettingsScreen() {
   const t = useTranslations("settings");
   const tCommon = useTranslations("common");
   const [sheet, setSheet] = useState<"theme" | "language" | null>(null);
+  const toast = useToast();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Store rule (Play + App Store): in-app account deletion. Same call and copy as the web's
+  // account-links-card; the server revokes every session, so logout only clears the local one.
+  async function deleteAccount() {
+    setDeleteOpen(false);
+    setDeleting(true);
+    try {
+      await http<void>("/v1/account", { method: "DELETE" });
+    } catch (error) {
+      setDeleting(false);
+      toast.show(errorText(error, t("delete_account_error")));
+      return;
+    }
+    await logout().catch(() => undefined);
+    router.replace("/(auth)/welcome" as never);
+  }
 
   return (
     <ScrollView
@@ -67,8 +90,21 @@ export default function SettingsScreen() {
           <SettingsRow label={t("logout_cta")} danger onPress={() => {
             void logout().then(() => router.replace("/(auth)/welcome" as never));
           }} />
+          <SettingsRow label={deleting ? t("delete_account_deleting") : t("delete_account_cta")} danger
+            onPress={() => { if (!deleting) setDeleteOpen(true); }} />
         </PanelCard>
       ) : null}
+
+      <ConfirmDialog
+        visible={deleteOpen}
+        title={t("delete_account_title")}
+        message={t("delete_account_body")}
+        confirmLabel={t("delete_account_confirm")}
+        cancelLabel={t("delete_account_cancel")}
+        destructive
+        onConfirm={() => void deleteAccount()}
+        onCancel={() => setDeleteOpen(false)}
+      />
 
       {sheet ? (
         <FormSheet visible title={t(`${sheet}_label`)} closeLabel={tCommon("close")} onClose={() => setSheet(null)}>

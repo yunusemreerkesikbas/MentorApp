@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { EXAM_TYPES } from "@mentor/types";
 import { getPathname } from "@/i18n/navigation";
-import { fetchPublicQuestionRefs, questionUrl, siteUrl } from "@/lib/forum-public";
+import { communityDiscoveryUrl, fetchDiscoveryQuestions, questionUrl, siteUrl } from "@/lib/forum-public";
 import { blogUrl } from "@/lib/blog-url";
 import { fetchInfoArticlesByFamily, infoArticleUrl } from "@/lib/content-api";
 import { publishedLegalDocs } from "@/lib/legal";
@@ -9,10 +9,40 @@ import { publishedLegalDocs } from "@/lib/legal";
 /** Sitemap: canonical public content only. Best-effort if the API is down. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
-    // The landing and the coach page, Turkish only: their English copies are noindex.
+    // The landing, the coach page, and product-led SEO landing pages, Turkish only: their English copies are noindex.
     { url: `${siteUrl()}/`, changeFrequency: "weekly", priority: 1 },
     {
       url: `${siteUrl()}${getPathname({ locale: "tr", href: "/for-coaches" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/pomodoro-timer" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/yks-study-program" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/tyt-study-program" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/lgs-study-program" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/mistake-notebook" })}`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/study-app" })}`,
       changeFrequency: "monthly",
       priority: 0.8,
     },
@@ -33,12 +63,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
   try {
     const [questions, ...articlePages] = await Promise.allSettled([
-      fetchPublicQuestionRefs(),
+      fetchDiscoveryQuestions(),
       ...EXAM_TYPES.map((family) =>
         fetchInfoArticlesByFamily(family, 1, 100, { revalidate: 3600 }),
       ),
     ]);
-    for (const r of questions.status === "fulfilled" ? questions.value : []) {
+    const selected = questions.status === "fulfilled" ? questions.value : [];
+    if (selected.length > 0) {
+      entries.push({ url: communityDiscoveryUrl(), changeFrequency: "weekly", priority: 0.7 });
+    }
+    for (const r of selected) {
       entries.push({
         url: questionUrl(r.id),
         lastModified: new Date(r.updatedAt),

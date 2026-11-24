@@ -32,6 +32,8 @@ const SMALL_OK = new Set<ArtKey>([
   "t1CareerIsletme", "t1CareerSosyal", "t1CareerSanat", "t1CareerFen", "t1CareerMimarlik",
   "t1DeskPuhuLeft", "t1DeskPuhuRight", "t1DeskPuhuBlink", "t1DeskPuhuPeek",
   "t1ChestOpen",
+  // DRH: the app's weekly recap shapes (decor, not mascot), shown at the app's own 2.5x size.
+  "d2Floral", "d2LavenderShape", "d2RedPixel", "d2GreenShape", "d2Graphics",
 ]);
 
 const sources = (d: string): string[] =>
@@ -67,4 +69,11 @@ it("puts each end-card Puhu's body on the logo's axis", async () => {
     const shown = 660 * Math.min(1, w / h); // objectFit contain in a 660 x 660 box
     expect(Math.abs((axis - 0.5) * shown + (END_CARD_SHIFT[key] ?? 0)), key).toBeLessThanOrEqual(12);
   }
+});
+
+it("finds the real app screens F4 shows inside the phone", async () => {
+  const { SCREENS } = await import("../src/art");
+  const missing = Object.values(SCREENS ?? {}).filter((p) => !existsSync(join("public", p)));
+  expect(Object.keys(SCREENS ?? {})).toHaveLength(4);
+  expect(missing).toEqual([]);
 });

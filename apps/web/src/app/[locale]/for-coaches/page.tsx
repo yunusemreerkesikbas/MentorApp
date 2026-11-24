@@ -25,12 +25,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("coaches");
+  const title = t("meta_title");
+  const description = t("meta_description");
+  const canonical = `${siteUrl()}${getPathname({ locale: "tr", href: "/for-coaches" })}`;
+  const ogImage = `${siteUrl()}/img/brand/puhukoc-og-${locale === "en" ? "en" : "tr"}.png`;
   return {
-    title: t("meta_title"),
-    description: t("meta_description"),
+    title,
+    description,
     // Turkish is canonical, as on the landing; the English copy stays out of the index.
-    alternates: { canonical: `${siteUrl()}${getPathname({ locale: "tr", href: "/for-coaches" })}` },
+    alternates: { canonical },
     robots: locale === "en" ? { index: false, follow: true } : undefined,
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      siteName: "PuhuKoç",
+      locale: locale === "en" ? "en_US" : "tr_TR",
+      type: "website",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: "PuhuKoç" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
   };
 }
 

@@ -22,7 +22,23 @@ export interface MorningSceneCopy {
   story: StoryCopy;
 }
 
-const PUHU_FRAMES = ["left", "right", "blink", "foot-left", "foot-right"] as const;
+export const PUHU_FRAMES = ["left", "right", "blink", "foot-left", "foot-right"] as const;
+
+/** The navy "Yanlış Defterim" with its "Bugün 2 tekrar" sticky note: the landing's desk and the SEO page's share it. */
+export function DeskMistakeNotebook({ title, pages, due }: { title: string; pages: string; due: string }) {
+  return (
+    <div className="lm-at lm-book is-navy" style={at(230, 268, 160, 210)}>
+      <i className="lm-book-tab is-blue" />
+      <i className="lm-book-tab is-green" />
+      <span className="lm-book-label">
+        <b className="is-print">{title}</b>
+        <small>{pages}</small>
+      </span>
+      <span className="lm-book-sticky">{due}</span>
+      <i className="lm-book-ribbon" />
+    </div>
+  );
+}
 
 export function MorningScene({ copy }: { copy: MorningSceneCopy }) {
   return (
@@ -60,16 +76,7 @@ export function MorningScene({ copy }: { copy: MorningSceneCopy }) {
         <span className="lm-parcel-tag">{copy.newNotebook}</span>
       </div>
 
-      <div className="lm-at lm-book is-navy" style={at(230, 268, 160, 210)}>
-        <i className="lm-book-tab is-blue" />
-        <i className="lm-book-tab is-green" />
-        <span className="lm-book-label">
-          <b className="is-print">{copy.mistakeTitle}</b>
-          <small>{copy.mistakePages}</small>
-        </span>
-        <span className="lm-book-sticky">{copy.due}</span>
-        <i className="lm-book-ribbon" />
-      </div>
+      <DeskMistakeNotebook title={copy.mistakeTitle} pages={copy.mistakePages} due={copy.due} />
 
       <div className="lm-at lm-book is-grey" style={at(420, 282, 146, 196)}>
         <span className="lm-book-tape">{copy.mathTape}</span>

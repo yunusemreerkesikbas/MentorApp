@@ -5,7 +5,9 @@ import { getTranslations } from "next-intl/server";
 import { PublicFooter } from "@/components/public-footer";
 import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 import { setRequestLocale } from "@/i18n/locale";
+import { Link } from "@/i18n/navigation";
 import { blogUrl, parseBlogQuery } from "@/lib/blog-url";
+import { siteUrl } from "@/lib/forum-public";
 import { BlogHeader } from "./_components/blog-header";
 import { BlogShell } from "./_components/blog-shell";
 import { BLOG_MEMBER_BOOTSTRAP_SCRIPT } from "./_components/blog-ui";
@@ -24,11 +26,30 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   setRequestLocale(locale);
   const t = await getTranslations("knowledge");
   const { family } = parseBlogQuery(raw);
+  const title = family === "KPSS" ? t("meta_title") : t("meta_title_family", { family });
+  const description = t("meta_description");
+  const canonical = blogUrl(family);
+  const ogImage = `${siteUrl()}/img/brand/puhukoc-og-${locale === "en" ? "en" : "tr"}.png`;
   return {
-    title: family === "KPSS" ? t("meta_title") : t("meta_title_family", { family }),
-    description: t("meta_description"),
-    alternates: { canonical: blogUrl(family) },
+    title,
+    description,
+    alternates: { canonical },
     robots: locale === "en" ? { index: false, follow: true } : undefined,
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      siteName: "PuhuKoç",
+      locale: locale === "en" ? "en_US" : "tr_TR",
+      type: "website",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: "PuhuKoç" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
   };
 }
 
@@ -37,7 +58,9 @@ export default async function BlogPage({ params, searchParams }: PageProps) {
   const [{ locale }, raw] = await Promise.all([params, searchParams]);
   setRequestLocale(locale);
   const query = parseBlogQuery(raw);
-  const [chrome, requestHeaders] = await Promise.all([getTranslations("article"), headers()]);
+  const [chrome, discovery, requestHeaders] = await Promise.all([
+    getTranslations("article"), getTranslations("communityDiscovery"), headers(),
+  ]);
 
   return (
     <>
@@ -50,6 +73,9 @@ export default async function BlogPage({ params, searchParams }: PageProps) {
           <div className={PANEL_GRID_CLASS}>
             <div className="flex min-w-0 flex-col gap-5">
               <BlogHeader query={query} />
+              <Link href="/discover-community" className="inline-flex min-h-11 items-center self-start font-semibold underline">
+                {discovery("title")}
+              </Link>
               <Suspense
                 key={`${query.family}-${query.category}-${query.page}`}
                 fallback={<PostsSkeleton />}

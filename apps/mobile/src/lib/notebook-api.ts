@@ -2,7 +2,7 @@ import { http } from "@mentor/api-client";
 import type { CreateNotebookInput, NotebookContentsDto, NotebookDto, NotebookImageUploadUrlDto, NotebookOverviewDto, NotebookPageDoc, NotebookPageDto, NotebookSummaryDto, Paginated, UpdateNotebookInput } from "@mentor/types";
 import { NOTEBOOK_IMAGE_MAX_BYTES, NOTEBOOK_IMAGE_MIMES } from "@mentor/validation";
 import { getApiBaseUrl } from "./env.js";
-import { pickDevicePhoto } from "./device-photo.js";
+import { devicePhotoSize, pickDevicePhoto, putDevicePhoto } from "./device-photo.js";
 
 const desk = "/v1/coaching/notebooks";
 const mistake = "/v1/coaching/notebook";
@@ -24,12 +24,10 @@ export async function uploadPagePhoto(source: "camera" | "gallery") {
   const photo = await pickDevicePhoto(source);
   if (!photo) return null;
   if (!NOTEBOOK_IMAGE_MIMES.some((mime) => mime === photo.mimeType)) throw new Error("unsupported_image");
-  const blob = await (await fetch(photo.uri)).blob();
-  if (blob.size > NOTEBOOK_IMAGE_MAX_BYTES) throw new Error("photo_too_large");
+  if (devicePhotoSize(photo) > NOTEBOOK_IMAGE_MAX_BYTES) throw new Error("photo_too_large");
   const ticket = await http<NotebookImageUploadUrlDto>(mistake + "/entries/image-upload-url", {
     method: "POST", body: JSON.stringify({ contentType: photo.mimeType, purpose: "page" }),
   });
-  const uploaded = await fetch(notebookImageUri(ticket.uploadUrl), { method: "PUT", headers: { "Content-Type": photo.mimeType }, body: blob });
-  if (!uploaded.ok) throw new Error("photo_upload_failed");
+  if (!(await putDevicePhoto(notebookImageUri(ticket.uploadUrl), photo))) throw new Error("photo_upload_failed");
   return { ...photo, key: ticket.key };
 }

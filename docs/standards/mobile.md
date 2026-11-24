@@ -41,6 +41,13 @@
   `SceneShell` stage (`src/components/celebrations/`) built on `Animated` with the native driver, a haptic
   where the web plays a sound. The queue rules are shared code in `@mentor/core`, never re-implemented.
 
+## Local mobile tooling
+
+- **Expo MCP** uses [Expo's OAuth server](https://docs.expo.dev/mcp/) for SDK documentation and EAS build and workflow inspection. Use the [official Expo plugin](https://docs.expo.dev/skills/) for the bundled Expo skills and MCP, or register `https://mcp.expo.dev/mcp` directly. Choose one registration per client.
+- **Local Expo tools** require the `expo-mcp` dev dependency in `apps/mobile`. Sign in to the Expo CLI with the same account as the MCP connection. From the repository root in PowerShell, start Metro with `$env:EXPO_UNSTABLE_MCP_SERVER = "1"; pnpm --filter @mentor/mobile dev`. Reconnect the MCP client after starting or stopping Metro.
+- **RevenueCat MCP** uses [RevenueCat OAuth](https://www.revenuecat.com/docs/tools/mcp/setup) for the APP-142 release worktree's product, offering and entitlement checks. Use the RevenueCat AI Toolkit or register `https://mcp.revenuecat.ai/mcp` directly. Use Firebase's plugin for Firebase project inspection and the EAS credentials workflow for Android FCM v1 setup. Keep provider credentials in their respective account settings.
+- **Android device QA** uses [Maestro CLI and its MCP server](https://docs.maestro.dev/get-started/maestro-mcp). Start the Android emulator and confirm that `adb devices -l` lists it before using `maestro mcp`. On Windows, use the Android SDK `platform-tools` path when ADB is missing from PATH.
+
 ## Geliştirmeler (timeline)
 
 - **2026-11-23 | APP-142 Phase 3.** The dashboard links to the notebook desk and goal board. Analysis and notifications open the matching notebook or review scope. The page editor uses the shared notebook document, while the collage uses the shared board coordinates, templates, palette and sticker assets. Camera permission is requested at capture. Private media binds reads to the signed-in session. Save errors leave the draft available for retry. See `apps/mobile/src/components/notebooks/` and `apps/mobile/src/components/vision-board/`.

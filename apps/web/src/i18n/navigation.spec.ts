@@ -10,6 +10,13 @@ describe("localized pathname contract", () => {
     // The AI coach chat, whose TR segment (/koc) is deliberately NOT the human coach's (/kocluk).
     expect(getPathname({ locale: "tr", href: "/coach/chat" })).toBe("/koc/sohbet");
     expect(getPathname({ locale: "en", href: "/coach/chat" })).toBe("/en/coach/chat");
+    expect(getPathname({ locale: "tr", href: "/pomodoro-timer" })).toBe("/pomodoro-sayac");
+    expect(getPathname({ locale: "en", href: "/pomodoro-timer" })).toBe("/en/pomodoro-timer");
+    expect(getPathname({ locale: "tr", href: "/yks-study-program" })).toBe("/yks-calisma-programi");
+    expect(getPathname({ locale: "tr", href: "/tyt-study-program" })).toBe("/tyt-calisma-programi");
+    expect(getPathname({ locale: "tr", href: "/lgs-study-program" })).toBe("/lgs-calisma-programi");
+    expect(getPathname({ locale: "tr", href: "/mistake-notebook" })).toBe("/yanlis-defteri-uygulamasi");
+    expect(getPathname({ locale: "tr", href: "/study-app" })).toBe("/ders-calisma-uygulamasi");
     expect(
       getPathname({
         locale: "tr",

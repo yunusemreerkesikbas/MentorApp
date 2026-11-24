@@ -1,6 +1,6 @@
 import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
-import type { PublicQuestionRef, PublicQuestionView } from "@mentor/types";
+import type { PublicDiscoveryQuestion, PublicQuestionRef, PublicQuestionView } from "@mentor/types";
 import { Public } from "../../../common/auth/public.decorator";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -13,7 +13,12 @@ import { ForumPublicService } from "../application/forum-public.service";
 export class ForumPublicController {
   constructor(private readonly publicForum: ForumPublicService) {}
 
-  /** Sitemap source: indexable QA question refs (id + updatedAt). */
+  @Get("discovery")
+  discovery(): Promise<PublicDiscoveryQuestion[]> {
+    return this.publicForum.listDiscoveryQuestions();
+  }
+
+  /** Eligible QA refs for existing API consumers. Search discovery uses the selected directory. */
   @Get("questions")
   questions(@Query("limit") limit?: string): Promise<PublicQuestionRef[]> {
     const parsed = Number(limit);

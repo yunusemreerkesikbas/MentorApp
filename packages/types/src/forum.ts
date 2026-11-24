@@ -560,7 +560,7 @@ export interface CommentDetail {
   zoneId: string;
 }
 
-/** Public (anonymous, SEO) QA shapes — no authorId/PII. Only indexable QA questions are exposed. */
+/** Anonymous QA shapes without author identity fields. */
 export interface PublicAnswerView {
   id: string;
   body: string;
@@ -569,6 +569,8 @@ export interface PublicAnswerView {
 }
 
 export interface PublicQuestionView {
+  /** Selected for the directory and search indexing. Additive for older clients. */
+  discoverable?: boolean;
   /** Opaque snapshot version, required for reviewed ad inventory. Additive for older clients. */
   contentRevision?: string;
   examType?: import("./index.js").ExamType | null;
@@ -579,10 +581,15 @@ export interface PublicQuestionView {
   answers: PublicAnswerView[];
 }
 
-/** Sitemap entry for an indexable QA question. */
+/** ID and modification date of an eligible public question. */
 export interface PublicQuestionRef {
   id: string;
   updatedAt: string;
+}
+
+export interface PublicDiscoveryQuestion extends PublicQuestionRef {
+  title: string;
+  examType: import("./index.js").ExamType | null;
 }
 
 /** Moderation (slice 5) — what can be reported. */

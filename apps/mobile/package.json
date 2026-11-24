@@ -27,6 +27,7 @@
     "@tanstack/react-query": "^5.66.0",
     "expo": "~58.0.24",
     "expo-constants": "~58.0.16",
+    "expo-file-system": "~58.0.14",
     "expo-font": "~58.0.12",
     "expo-haptics": "~58.0.8",
     "expo-image": "~58.0.18",
@@ -56,6 +57,7 @@
     "@types/node": "^22.19.20",
     "@types/react": "^19.3.0",
     "eslint": "^9.17.0",
+    "expo-mcp": "~0.2.4",
     "rimraf": "^6.0.1",
     "typescript": "^5.6.3"
   },

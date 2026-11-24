@@ -13,6 +13,28 @@ export const routing = defineRouting({
     "/welcome": { tr: "/hosgeldin", en: "/welcome" },
     /** The public page for coaches ("Sabah turu"). Not `/koc` (the AI chat) nor `/koc-ol` (signed-in switch). */
     "/for-coaches": { tr: "/koclar", en: "/coaches" },
+    /** Product-led SEO landing pages (TR canonical, EN courtesy noindex). */
+    "/pomodoro-timer": { tr: "/pomodoro-sayac", en: "/pomodoro-timer" },
+    "/yks-study-program": {
+      tr: "/yks-calisma-programi",
+      en: "/yks-study-program",
+    },
+    "/tyt-study-program": {
+      tr: "/tyt-calisma-programi",
+      en: "/tyt-study-program",
+    },
+    "/lgs-study-program": {
+      tr: "/lgs-calisma-programi",
+      en: "/lgs-study-program",
+    },
+    "/mistake-notebook": {
+      tr: "/yanlis-defteri-uygulamasi",
+      en: "/mistake-notebook",
+    },
+    "/study-app": {
+      tr: "/ders-calisma-uygulamasi",
+      en: "/study-app",
+    },
     "/login": { tr: "/giris", en: "/login" },
     "/signup": { tr: "/kayit", en: "/signup" },
     "/verify-email": { tr: "/eposta-dogrula", en: "/verify-email" },
@@ -118,7 +140,8 @@ export const routing = defineRouting({
       tr: "/hedef/simulasyon",
       en: "/vision-board/simulation",
     },
-    "/community": { tr: "/topluluk", en: "/community" },
+    "/discover-community": { tr: "/topluluk", en: "/discover-community" },
+    "/community": { tr: "/topluluk/uyeler/panel", en: "/community" },
     "/community/feed": { tr: "/topluluk/akis", en: "/community/feed" },
     "/community/saved": {
       tr: "/topluluk/kayitli",

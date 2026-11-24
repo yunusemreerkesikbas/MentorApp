@@ -1,3 +1,4 @@
+import { File } from "expo-file-system";
 import * as Picker from "expo-image-picker";
 
 export type DevicePhoto = { uri: string; mimeType: string; width: number; height: number };
@@ -19,4 +20,12 @@ export async function pickDevicePhoto(source: "camera" | "gallery"): Promise<Dev
     throw new Error("format");
   }
   return { uri: asset.uri, mimeType: asset.mimeType, width: asset.width, height: asset.height };
+}
+
+export const devicePhotoSize = (photo: DevicePhoto) => new File(photo.uri).size;
+
+/** RN's fetch sends a `fetch(uri).blob()` body as garbage on Android, so the file goes up natively. */
+export async function putDevicePhoto(url: string, photo: DevicePhoto): Promise<boolean> {
+  const { status } = await new File(photo.uri).upload(url, { httpMethod: "PUT", headers: { "Content-Type": photo.mimeType } });
+  return status >= 200 && status < 300;
 }

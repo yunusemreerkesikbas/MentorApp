@@ -73,7 +73,40 @@
         "kind": "PENALTY",
         "divisor": 4
       },
-      "events": []
+      "events": [
+        {
+          "type": "EXAM_DATE",
+          "eventAt": "2027-06-19T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-24T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_START",
+          "eventAt": "2027-02-04T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-24T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "APPLICATION_END",
+          "eventAt": "2027-03-02T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-24T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        },
+        {
+          "type": "RESULT_DATE",
+          "eventAt": "2027-07-21T00:00:00.000Z",
+          "source": "ÖSYM 2027 Sınav Takvimi",
+          "sourceUrl": "https://dokuman.osym.gov.tr/web/2026/10/osym-2027-yili-sinav-takvimi-7d09wi-28090734.pdf",
+          "verifiedAt": "2026-11-24T00:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        }
+      ]
     },
     {
       "slug": "lgs-2026",

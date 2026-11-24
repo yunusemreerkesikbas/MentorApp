@@ -484,7 +484,7 @@ test("VB-21 görsel paylaşılabilecek oda yoksa adım Topluluk'a yönlendirir",
   await expect(sheet.getByText("Henüz bir odada değilsin.")).toBeVisible();
   await expect(sheet.getByRole("link", { name: "Topluluğa git" })).toHaveAttribute(
     "href",
-    /\/(topluluk|community)$/,
+    /\/(topluluk\/uyeler\/panel|community)$/,
   );
   await expect(sheet.getByLabel("Notun")).toHaveCount(0);
 });

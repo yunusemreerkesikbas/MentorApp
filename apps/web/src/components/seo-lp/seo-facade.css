@@ -1,0 +1,140 @@
+/*
+ * The study app hero (facade-tags.tsx): the landing's apartment facade at dawn, with paper tags
+ * hung on its windows. Tag positions are percentages of the facade box (canvas Uygulama board).
+ * Rules are namespaced by the `.seo-` prefix (the tags under `.seo-dawn`, the scene frame). No animation here: the only motion is a hover lift.
+ */
+.seo-scene.seo-dawn {
+  aspect-ratio: 4 / 5;
+  background: linear-gradient(180deg, #b9d8f3 0%, #d9e6f2 38%, #ffe0c2 66%, #ffc9a0 100%);
+}
+
+.seo-dawn-sun {
+  position: absolute;
+  right: 6%;
+  bottom: 56%;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff3c4 0 45%, rgba(255, 226, 150, 0.55) 46% 62%, transparent 63%);
+}
+
+.seo-dawn-far {
+  position: absolute;
+  left: -20%;
+  bottom: -4%;
+  width: 140%;
+  opacity: 0.92;
+}
+
+.seo-dawn-far img,
+.seo-facade img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.seo-facade {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 78%;
+  aspect-ratio: 1024 / 1536;
+  translate: -50% 0;
+}
+
+.seo-facade img {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+
+.seo-wtag {
+  position: absolute;
+  z-index: 1;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The string the tag hangs from. */
+.seo-wtag::before {
+  content: "";
+  width: 2px;
+  height: 12px;
+  background: #8a6a3a;
+}
+
+.seo-wtag span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 4px 4px 8px 8px;
+  background: #fffdf6;
+  color: #0f2233;
+  font-size: 12px;
+  font-weight: 900;
+  rotate: var(--r, -3deg);
+  box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.6);
+  transition: transform 0.15s;
+}
+
+.seo-wtag:hover span {
+  transform: translateY(-2px);
+}
+
+.seo-wtag[aria-pressed="true"] span {
+  background: #ffd15c;
+}
+
+.seo-wtag:focus-visible {
+  outline: none;
+}
+
+.seo-wtag:focus-visible span {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .seo-scene.seo-dawn {
+    aspect-ratio: 16 / 12;
+  }
+
+  .seo-dawn-sun {
+    right: 16%;
+    bottom: 44%;
+    width: 120px;
+    height: 120px;
+  }
+
+  .seo-facade {
+    left: 7%;
+    width: 46%;
+    translate: none;
+  }
+
+  .seo-wtag span {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seo-wtag span {
+    transition: none;
+  }
+
+  .seo-wtag:hover span {
+    transform: none;
+  }
+}

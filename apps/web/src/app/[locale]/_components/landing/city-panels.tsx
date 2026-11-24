@@ -181,6 +181,11 @@ export async function cityStageContent(): Promise<{
             {t("plan.step4")}<br />{t("plan.step4_time")}
           </div>
         </div>
+        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs font-extrabold underline underline-offset-2">
+          <Link href="/yks-study-program">{t("plan.explore_yks")}</Link>
+          <Link href="/tyt-study-program">{t("plan.explore_tyt")}</Link>
+          <Link href="/lgs-study-program">{t("plan.explore_lgs")}</Link>
+        </div>
       </div>
     </Note>,
     <Note key="desk" plateLabel={plate(6)} name={t("desk.name")} title={t("desk.title")} body={t("desk.body")} scribble={t("desk.scribble")} paper="lined" tilt=".9deg" tape="#a8d8b0">

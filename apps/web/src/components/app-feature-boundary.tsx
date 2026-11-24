@@ -16,6 +16,8 @@ export function AppFeatureBoundary({ children }: { children: ReactNode }) {
   // Read the actual address: next-intl's navigation hook can return /member/[username].
   const pathname = usePathname();
   const t = useTranslations("availability");
+  // The exact Turkish directory owns its preview. Nested member routes still use the forum gate.
+  if (pathname === "/topluluk" || pathname === "/topluluk/") return children;
   const memberPath = /\/(?:community\/member|topluluk\/uye)\//.test(pathname);
   if (status === "loading" && memberPath && !availability?.social) {
     return <main aria-busy="true" className="flex min-h-dvh items-center justify-center p-6"><p role="status">{t("loading")}</p></main>;

@@ -729,19 +729,6 @@
 }
 
 /*
- * The cookie card (`cookie-consent-banner.tsx`) publishes its height while open. On a phone the
- * bottom sheet rises above it (24px = the card's own 16px offset + a gap) and rounds all corners;
- * on a desktop the card moves to the bottom right, away from the notes on the left.
- */
-.lc-panel {
-  bottom: calc(var(--consent-banner-height, -24px) + 24px);
-}
-
-:root[style*="--consent-banner-height"] .lc-sheet {
-  border-radius: var(--play-sheet-radius);
-}
-
-/*
  * Here the card is one more paper note from the scene: cream paper, a strip of washi tape, the
  * scene's ink. It re-points the surface tokens, so its buttons follow the paper and it never
  * follows html.dark.
@@ -773,6 +760,12 @@ body:has(.lc-root) .cookie-consent-banner {
 @media (max-width: 1023px) {
   .lc-note[data-flutter] {
     --flutter-amp: 0;
+  }
+
+  /* Keep the consent card out of the hero sheet's fixed bottom position. */
+  body:has(.lc-root) .cookie-consent-banner {
+    top: 5.75rem;
+    bottom: auto;
   }
 }
 

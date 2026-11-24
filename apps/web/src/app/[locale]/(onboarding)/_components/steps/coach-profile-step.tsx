@@ -72,6 +72,11 @@ export function CoachProfileStep({
       });
       onSaved();
     } catch (err) {
+      // A retry after a lost response: the first try already made them a coach, so the step is done.
+      if (err instanceof ApiClientError && err.body.code === "MENTORSHIP_ALREADY_COACH") {
+        onSaved();
+        return;
+      }
       // The contact-detail refusal lands here with its own localized message, so showing the API's
       // words beats inventing a second explanation of the same rule.
       setError(err instanceof ApiClientError ? err.body.message : t("save_error"));

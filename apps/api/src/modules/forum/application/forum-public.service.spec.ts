@@ -6,12 +6,60 @@ function setup() {
   const thread = { id: "question", title: "Question", body: "Question body", examType: "LGS", updatedAt: now, zoneUpdatedAt: now, createdAt: now };
   const answer = { id: "answer", body: "Answer body", isAccepted: false, updatedAt: now, createdAt: now };
   const posts = { listPublicAnswers: vi.fn(async () => [answer]) };
-  const threads = { findPublicQuestion: vi.fn(async () => thread) };
-  const config = { get: vi.fn(async () => true) };
+  const threads = { findPublicQuestion: vi.fn(async () => thread), listDiscoveryQuestions: vi.fn(async (_ids: string[]) => [thread]) };
+  const config = { get: vi.fn(async (key: string): Promise<boolean | string> => key === "forum.enabled" ? true : "") };
   return { service: new ForumPublicService(threads as never, posts as never, config as never), thread, answer, posts, threads, config };
 }
 
 describe("public QA content revisions", () => {
+  it("automatically discovers and indexes eligible questions when discovery_question_ids is empty, and respects explicit admin IDs when set", async () => {
+    const { service, config, threads } = setup();
+    expect(await service.listDiscoveryQuestions()).toEqual([
+      { id: "question", title: "Question", examType: "LGS", updatedAt: "2026-10-01T00:00:00.000Z" },
+    ]);
+    expect((await service.getQuestion("question"))?.discoverable).toBe(true);
+    expect(threads.listDiscoveryQuestions).toHaveBeenCalledWith(undefined);
+
+    config.get.mockImplementation(async (key) => key === "forum.enabled" ? true : "other-id");
+    expect((await service.getQuestion("question"))?.discoverable).toBe(false);
+
+    config.get.mockImplementation(async (key) => key === "forum.enabled" ? true : "question");
+    expect((await service.getQuestion("question"))?.discoverable).toBe(true);
+    expect(await service.listDiscoveryQuestions()).toEqual([
+      { id: "question", title: "Question", examType: "LGS", updatedAt: "2026-10-01T00:00:00.000Z" },
+    ]);
+    expect(threads.listDiscoveryQuestions).toHaveBeenLastCalledWith(["question"]);
+  });
+
+  it("allows substantive unanswered questions without generating an ad contentRevision, while rejecting short unanswered stubs", async () => {
+    const { service, thread, posts } = setup();
+    posts.listPublicAnswers.mockResolvedValue([]);
+
+    // Short stub ("Question" / "Question body") with 0 answers is rejected
+    expect(await service.getQuestion("question")).toBeNull();
+
+    // Substantive question (title >= 10 chars, body >= 20 chars) with 0 answers is public & indexable
+    thread.title = "KPSS Tarih tekrar düzeni nasıl kurulmalı?";
+    thread.body = "Tarih konularını çalıştıktan iki hafta sonra unutuyorum, nasıl bir tekrar planı önerirsiniz?";
+    const unanswered = await service.getQuestion("question");
+    expect(unanswered).toMatchObject({
+      id: "question",
+      discoverable: true,
+      answers: [],
+    });
+    expect(unanswered?.contentRevision).toBeUndefined();
+  });
+
+  it("keeps the directory empty when moderation excludes the question or the forum is disabled", async () => {
+    const { service, threads, config } = setup();
+    config.get.mockImplementation(async (key) => key === "forum.enabled" ? true : "question");
+    threads.listDiscoveryQuestions.mockResolvedValue([]);
+    expect(await service.listDiscoveryQuestions()).toEqual([]);
+    config.get.mockImplementation(async (key) => key === "forum.enabled" ? false : "question");
+    threads.listDiscoveryQuestions.mockClear();
+    expect(await service.listDiscoveryQuestions()).toEqual([]);
+    expect(threads.listDiscoveryQuestions).not.toHaveBeenCalled();
+  });
   it("returns no author identity and a stable opaque snapshot", async () => {
     const { service } = setup();
     const first = await service.getQuestion("question");

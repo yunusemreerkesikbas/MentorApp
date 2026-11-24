@@ -5,7 +5,7 @@ const questionId = "11111111-1111-4111-8111-111111111111";
 const question = {
   id: questionId, title: "Çalışma düzenimi nasıl sürdürebilirim?",
   body: "Her gün küçük bir adımla ilerlemek istiyorum.",
-  createdAt: "2026-10-01T00:00:00Z", contentRevision: "a".repeat(64), examType: "LGS",
+  createdAt: "2026-10-01T00:00:00Z", contentRevision: "a".repeat(64), examType: "LGS", discoverable: true,
   answers: [{ id: "22222222-2222-4222-8222-222222222222", body: "Küçük ve sürdürülebilir bir hedefle başlayabilirsin.", isAccepted: true, createdAt: "2026-10-01T01:00:00Z" }],
 };
 const server = createServer((req, res) => {
@@ -19,9 +19,13 @@ const server = createServer((req, res) => {
     }));
     return;
   }
+  if (req.url === "/v1/forum/public/discovery") {
+    res.end(JSON.stringify([{ id: question.id, title: question.title, examType: question.examType, updatedAt: question.createdAt }]));
+    return;
+  }
   if (req.url === `/v1/forum/public/questions/${questionId}`) { res.end(JSON.stringify(question)); return; }
   if (req.url === "/v1/forum/public/questions/44444444-4444-4444-8444-444444444444") {
-    res.end(JSON.stringify({ ...question, id: "44444444-4444-4444-8444-444444444444", body: `${question.body}\n`.repeat(100) })); return;
+    res.end(JSON.stringify({ ...question, id: "44444444-4444-4444-8444-444444444444", discoverable: false, body: `${question.body}\n`.repeat(100) })); return;
   }
   res.statusCode = 404;
   res.end(JSON.stringify({ code: "NOT_FOUND" }));
