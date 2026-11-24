@@ -1,3 +1,5 @@
+import { IS_PUBLIC_KEY } from "../../common/auth/public.decorator";
+import { MediaController } from "./media.controller";
 import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
@@ -24,6 +26,30 @@ describe("bounded media reads", () => {
     expect(f.tokens.validateSession).toHaveBeenCalledWith(f.actor.sessionId,f.actor.userId);
     expect(f.raw.readObject).toHaveBeenCalledWith(f.key,3);
     expect(f.tokens.validateSession.mock.invocationCallOrder[0]).toBeLessThan(f.raw.readObject.mock.invocationCallOrder[0]!);
+  });
+  it("protects both mobile verbs with the global JWT guard and preserves the browser routes", () => {
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, MediaController)).toBeUndefined();
+    for (const handler of [MediaController.prototype.headMobilePrivate, MediaController.prototype.readMobilePrivate]) {
+      expect(Reflect.getMetadata(IS_PUBLIC_KEY, handler)).toBeUndefined();
+    }
+    for (const handler of [MediaController.prototype.headPrivate, MediaController.prototype.readPrivate]) {
+      expect(Reflect.getMetadata(IS_PUBLIC_KEY, handler)).toBe(true);
+    }
+  });
+  it("allows a bearer principal only for its exact grant session", async () => {
+    const f = fixture();
+    const grant = f.grants.issue(f.key, f.actor, 300);
+    const actor = { id: f.actor.userId, sessionId: f.actor.sessionId };
+    for (const other of [{ ...actor, id: randomUUID() }, { ...actor, sessionId: randomUUID() }]) {
+      await expect(f.media.headAuthenticated(grant, other)).rejects.toMatchObject({ httpStatus: 401 });
+      await expect(f.media.readAuthenticated(grant, other)).rejects.toMatchObject({ httpStatus: 401 });
+    }
+    await expect(f.media.readAuthenticated("invalid", actor)).rejects.toMatchObject({ httpStatus: 401 });
+    expect(f.repository.manifest).not.toHaveBeenCalled();
+    expect(f.raw.readObject).not.toHaveBeenCalled();
+    await expect(f.media.headAuthenticated(grant, actor)).resolves.toMatchObject({ size: 3 });
+    expect(f.raw.readObject).not.toHaveBeenCalled();
+    await expect(f.media.readAuthenticated(grant, actor)).resolves.toMatchObject({ bytes: Buffer.from("png") });
   });
   it("refuses a revoked session without consulting the provider", async () => {
     const f = fixture(); f.tokens.validateSession.mockRejectedValue(new UnauthorizedError());

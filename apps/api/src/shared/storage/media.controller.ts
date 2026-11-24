@@ -11,6 +11,7 @@ import {
 } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
 import type { Request, Response } from "express";
+import { CurrentUser, type RequestUser } from "../../common/auth/current-user";
 import { Public } from "../../common/auth/public.decorator";
 import {
   NotFoundError,
@@ -20,11 +21,26 @@ import { MediaReadService } from "./media-read.service";
 import { MEDIA_SESSION_COOKIE } from "./media-session-proof";
 
 @ApiExcludeController()
-@Public()
 @Controller("storage/media")
 export class MediaController {
   constructor(private readonly media: MediaReadService) {}
 
+  @Head("mobile-private")
+  async headMobilePrivate(@Query("grant") grant: unknown, @CurrentUser() actor: RequestUser, @Res() res: Response) {
+    privacy(res);
+    const metadata = await this.media.headAuthenticated(privateGrant(grant), actor);
+    res.type(metadata.contentType).setHeader("Content-Length", metadata.size);
+    res.end();
+  }
+
+  @Get("mobile-private")
+  async readMobilePrivate(@Query("grant") grant: unknown, @CurrentUser() actor: RequestUser, @Res() res: Response) {
+    privacy(res);
+    const result = await this.media.readAuthenticated(privateGrant(grant), actor);
+    res.type(result.contentType).send(result.bytes);
+  }
+
+  @Public()
   @Head("private")
   async headPrivate(@Query("grant") grant: unknown, @Req() req: Request, @Res() res: Response) {
     privacy(res);
@@ -32,6 +48,7 @@ export class MediaController {
     res.type(metadata.contentType).setHeader("Content-Length", metadata.size);
     res.end();
   }
+  @Public()
   @Head("public/*key")
   async headPublic(
     @Param("key") key: string[],
@@ -43,12 +60,14 @@ export class MediaController {
     res.type(metadata.contentType).setHeader("Content-Length", metadata.size);
     res.end();
   }
+  @Public()
   @Get("private")
   async readPrivate(@Query("grant") grant: unknown, @Req() req: Request, @Res() res: Response) {
     privacy(res);
     const result = await this.media.readPrivate(privateGrant(grant), req.cookies?.[MEDIA_SESSION_COOKIE]);
     res.type(result.contentType).send(result.bytes);
   }
+  @Public()
   @Get("public/*key")
   async readPublic(
     @Param("key") key: string[],
@@ -59,6 +78,7 @@ export class MediaController {
     const result = await this.media.readPublic(publicKey(key, req));
     res.type(result.contentType).send(result.bytes);
   }
+  @Public()
   @All(["private", "public/*key"])
   unsupported(@Res() res: Response): never {
     privacy(res);

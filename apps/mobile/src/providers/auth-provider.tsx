@@ -20,6 +20,7 @@ import {
   authControllerSignup,
   configureApiClient,
 } from "@mentor/api-client";
+import { mobileMediaImageSource, type MobileMediaImageSource } from "../lib/media-image-source.js";
 import { getApiBaseUrl } from "../lib/env.js";
 import { unregisterCachedPushToken } from "../lib/push-notifications.js";
 import {
@@ -64,6 +65,7 @@ function isSessionRejected(error: unknown): boolean {
 export interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
+  mediaImageSource: (url: string | null | undefined) => MobileMediaImageSource | undefined;
   /** Re-run session restore after `unreachable`. */
   retryRestore: () => void;
   refreshSession: () => Promise<AuthUser | null>;
@@ -185,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       user,
+      mediaImageSource: (url) => mobileMediaImageSource(url, getApiBaseUrl(), accessTokenRef.current),
       retryRestore: () => {
         setStatus("loading");
         void silentRefreshRef.current();

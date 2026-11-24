@@ -16,7 +16,7 @@ export function AnalysisMistakesView({ examId, analysis, onOpen, onEntry }: {
   examId: string;
   analysis: CoachingAnalysisDto;
   onOpen: (scope: MistakeScope, reviewing: boolean) => void;
-  onEntry: (entryId: string) => void;
+  onEntry: (entryId: string, scope: MistakeScope) => void;
 }) {
   const t = useTranslations("analysisMistakes");
   const tAnalysis = useTranslations("analysis");

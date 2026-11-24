@@ -43,6 +43,11 @@
 
 ## Geliştirmeler (timeline)
 
+- **2026-11-23 | APP-142 Phase 3.** The dashboard links to the notebook desk and goal board. Analysis and notifications open the matching notebook or review scope. The page editor uses the shared notebook document, while the collage uses the shared board coordinates, templates, palette and sticker assets. Camera permission is requested at capture. Private media binds reads to the signed-in session. Save errors leave the draft available for retry. See `apps/mobile/src/components/notebooks/` and `apps/mobile/src/components/vision-board/`.
+  - **Android QA pending.** Expo produced an Android bundle. The `Puhu_Pixel` session could not start because ADB failed to initialize and the execution environment denied local connections. The remaining 411 dp TR Light and 360 dp EN Dark runs cover notebook photo save and reopen, the review fan, board save and reopen, community sharing, offline retry and Android Back.
+
+- **2026-11-22 | APP-142 Phase 3 scope decision.** Mobile Vision Board parity covers the goal screen (`/vision-board`) and collage editor (`/vision-board/board`). The 3D campus tour and Street View on the web simulation route (`/vision-board/simulation`) are web-only. No native or WebView port is planned.
+
 - **2026-11-22 — Faz 2: Mobile Human Coach Workspace & Student `İnsan Koçum` Web Parity (`apps/mobile`):**
   - **What was done:** Delivered mobile web parity for Student `İnsan Koçum` (`/(app)/my-coach`, `/(app)/my-coach-weekly-report`, `/(app)/coach-application`, `MyCoachCard` entry) and Human Coach Workspace (`(tabs)/students` seats/invite/actionable follow-up inbox/cohort brief/roster, `/(app)/coach-student` 4-tab Overview/Homework/Follow-ups/Weekly view with templates and AI drafts, role-aware `(tabs)/plan` `CoachPlanView` with batch homework and meetings, unified `CoachProfileView` on `(tabs)/students/profile` & `(tabs)/coach-profile`). Added `refreshSession` (`auth-provider.tsx`), `mentorship-{followups,weekly-reports,plan}-api.ts`, `mentorship-view.ts` pure helpers + tests, notification routing updates (`notifications-view.ts`), and coach guards in `AppHeader` (hide student Coin/XP pills) and `CelebrationProvider` (skip student level/reward/streak scenes for coaches).
   - **Usage:** `pnpm --config.verify-deps-before-run=false --filter @mentor/mobile test | typecheck | lint`.

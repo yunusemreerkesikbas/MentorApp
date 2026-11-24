@@ -45,6 +45,19 @@ const base: Parameters<typeof notebookPageReducer>[0] = {
 };
 
 describe("notebookPageReducer", () => {
+  it("preserves a private mobile photo through web load, movement and undo", () => {
+    const photo: NotebookPageItem = {
+      ...sticker, kind: "image", frame: "none",
+      storageKey: "notebook/user/page-file.png", url: "/v1/storage/media/read/grant",
+    };
+    const loaded = notebookPageReducer(base, { type: "replace", doc: { ...doc, items: [photo] } });
+    const moved = notebookPageReducer(notebookPageReducer(loaded, { type: "checkpoint" }), {
+      type: "patch", id: photo.id, patch: { x: 24 },
+    });
+    expect(moved.doc.items).toEqual([{ ...photo, x: 24 }]);
+    expect(notebookPageReducer(moved, { type: "undo" }).doc.items).toEqual([photo]);
+  });
+
   it("does not make a page load undoable — opening a page is not an edit", () => {
     const state = notebookPageReducer(
       { ...base, past: [doc], dirty: true },

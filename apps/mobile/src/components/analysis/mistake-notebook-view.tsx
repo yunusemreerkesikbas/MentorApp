@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Image } from "expo-image";
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { NOTEBOOK_ERROR_TYPES, type ExamSubjectDto, type NotebookEntryDto, type NotebookErrorType } from "@mentor/types";
@@ -12,21 +12,27 @@ import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 import { FormSheet, PanelCard, PanelCardTitle } from "../panel/primitives.js";
 import { AppText, Button, Chip, Skeleton, TextField } from "../ui/index.js";
+import { NotebookFan } from "../notebooks/notebook-fan.js";
+import { NotebookLightbox } from "../notebooks/notebook-canvas.js";
+import { useAuth } from "../../providers/auth-provider.js";
 import { AnalysisLink } from "./analysis-link.js";
 
 export type NotebookSheetState = {
   scope: MistakeScope;
   reviewing: boolean;
   entryId?: string;
+  focusReview?: boolean;
 };
 
-export function MistakeNotebookView({ examId, subjects, initial, onClose, onRefresh }: {
-  examId: string;
+export function MistakeNotebookView({ examId, addExamId, subjects, initial, onClose, onRefresh }: {
+  examId?: string;
+  addExamId?: string;
   subjects: ExamSubjectDto[];
   initial: NotebookSheetState;
   onClose: () => void;
   onRefresh: () => Promise<void>;
 }) {
+  const { mediaImageSource } = useAuth();
   const t = useTranslations("analysis");
   const tMistakes = useTranslations("analysisMistakes");
   const tHistory = useTranslations("analysisHistory");
@@ -34,15 +40,20 @@ export function MistakeNotebookView({ examId, subjects, initial, onClose, onRefr
   const tCommon = useTranslations("common");
   const { space } = useThemeTokens();
   const [reviewing, setReviewing] = useState(initial.reviewing);
+  const [early, setEarly] = useState(false);
+  const [completed, setCompleted] = useState<string[]>([]);
+  const [focus, setFocus] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [selected, setSelected] = useState(initial.entryId ?? null);
   const [revealed, setRevealed] = useState<string | null>(null);
   const request = useRef<{ id: string; solved: boolean; reviewId: string } | null>(null);
 
   const entries = useInfiniteQuery({
-    queryKey: ["notebook", "entries", examId, initial.scope, reviewing],
+    queryKey: ["notebook", "entries", examId, initial.scope, reviewing, early],
     initialPageParam: 1,
-    queryFn: ({ pageParam }) => fetchNotebookEntries(examId, initial.scope, pageParam, reviewing),
+    queryFn: ({ pageParam }) => fetchNotebookEntries(examId, { ...initial.scope, status: initial.scope.status ?? (reviewing ? "ACTIVE" : undefined) },
+      pageParam, reviewing && !early && !initial.scope.revisit),
     getNextPageParam: ({ page, pageSize, total }) => page * pageSize < total ? page + 1 : undefined,
     enabled: !selected && !adding,
   });
@@ -51,22 +62,25 @@ export function MistakeNotebookView({ examId, subjects, initial, onClose, onRefr
     queryFn: () => fetchNotebookEntry(selected!),
     enabled: Boolean(selected),
   });
-  const items = entries.data?.pages.flatMap((page) => page.items) ?? [];
+  const allItems = entries.data?.pages.flatMap((page) => page.items) ?? [];
+  const items = reviewing ? allItems.filter(item => !completed.includes(item.id)) : allItems;
   const review = useMutation({
     mutationFn: ({ id, solved, reviewId }: NonNullable<typeof request.current>) => reviewNotebookEntry(id, solved, reviewId),
-    onSuccess: async () => {
+    onSuccess: async entry => {
+      setCompleted(old => [...old, entry.id]);
       haptics.success();
       request.current = null;
       await onRefresh();
       setRevealed(null);
+      setFocus(null);
       if (selected) setReviewing(false);
     },
   });
 
-  const active = selected ? details.data : reviewing ? items[0] : null;
+  const active = selected ? details.data : reviewing ? items.find(e => e.id === focus) : null;
   const shownTitle = reviewing ? tMistakes("cta_review")
     : selected ? tReview("entry_title") : adding ? t("add_mistake_title") : tMistakes("open_notebook");
-  const showIndex = () => { setSelected(null); setReviewing(false); setAdding(false); };
+  const showIndex = () => { setSelected(null); setReviewing(false); setAdding(false); setFocus(null); };
   const answer = (entry: NotebookEntryDto, solved: boolean) => {
     if (review.isPending) return;
     if (request.current?.id !== entry.id || request.current?.solved !== solved) {
@@ -78,8 +92,8 @@ export function MistakeNotebookView({ examId, subjects, initial, onClose, onRefr
 
   return (
     <FormSheet visible title={shownTitle} closeLabel={tCommon("close")} onClose={onClose} closeDisabled={review.isPending}>
-      {adding ? (
-        <NotebookAddForm examId={examId} subjects={subjects} scope={initial.scope}
+      {adding && addExamId ? (
+        <NotebookAddForm examId={addExamId} subjects={subjects} scope={initial.scope}
           onBack={showIndex} onSaved={async () => { await onRefresh(); showIndex(); }} />
       ) : state.isPending ? <Skeleton height={84} /> : state.isError ? (
         <>
@@ -88,14 +102,14 @@ export function MistakeNotebookView({ examId, subjects, initial, onClose, onRefr
         </>
       ) : active ? (
         <>
-          <NotebookEntryBody entry={active} />
+          <NotebookEntryBody entry={active} openPhoto={setPhoto} />
           {active.solutionUrl || active.solutionNote ? revealed === active.id || !reviewing ? (
             <View style={{ gap: space.sm }}>
-              {active.solutionUrl ? <Image source={active.solutionUrl} contentFit="contain" style={{ height: 180 }} /> : null}
+              {active.solutionUrl ? <Pressable accessibilityRole="imagebutton" accessibilityLabel={tReview("show_solution")} onPress={() => setPhoto(active.solutionUrl!)}><Image cachePolicy="none" source={mediaImageSource(active.solutionUrl)} contentFit="contain" style={{ height: 180 }} /></Pressable> : null}
               {active.solutionNote ? <AppText tone="secondary">{active.solutionNote}</AppText> : null}
             </View>
           ) : <AnalysisLink label={tReview("show_solution")} onPress={() => setRevealed(active.id)} /> : null}
-          {reviewing ? (
+          {reviewing && active.status === "ACTIVE" ? (
             <View style={{ gap: space.sm }}>
               <Button label={t("review_solved_cta")} disabled={review.isPending} onPress={() => answer(active, true)} />
               <Button label={t("review_unsolved_cta")} variant="secondary" disabled={review.isPending} onPress={() => answer(active, false)} />
@@ -108,14 +122,18 @@ export function MistakeNotebookView({ examId, subjects, initial, onClose, onRefr
             </View>
           )}
         </>
+      ) : reviewing && items.length ? (
+        <NotebookFan entries={items} open={setFocus} />
       ) : reviewing ? (
         <>
           <AppText tone="secondary">{t("due_empty")}</AppText>
+          {entries.hasNextPage && <Button label={tHistory("load_more")} loading={entries.isFetchingNextPage} onPress={() => void entries.fetchNextPage()} />}
+          {initial.focusReview && !early && !initial.scope.revisit && <Button label={tReview("early")} onPress={() => setEarly(true)} />}
           <AnalysisLink label={tMistakes("open_notebook")} onPress={showIndex} />
         </>
       ) : (
         <>
-          <Button label={t("add_mistake_title")} onPress={() => setAdding(true)} />
+          <Button label={t("add_mistake_title")} disabled={!addExamId} onPress={() => setAdding(true)} />
           {!items.length ? <AppText tone="secondary">{tReview("index_empty")}</AppText> : null}
           {items.map((entry) => (
             <PanelCard key={entry.id}>
@@ -130,18 +148,20 @@ export function MistakeNotebookView({ examId, subjects, initial, onClose, onRefr
           ) : null}
         </>
       )}
+      {photo && <NotebookLightbox uri={photo} close={() => setPhoto(null)} />}
     </FormSheet>
   );
 }
 
-function NotebookEntryBody({ entry }: { entry: NotebookEntryDto }) {
+function NotebookEntryBody({ entry, openPhoto }: { entry: NotebookEntryDto; openPhoto: (uri: string) => void }) {
+  const { mediaImageSource } = useAuth();
   const t = useTranslations("analysis");
   const { space } = useThemeTokens();
   return (
     <PanelCard style={{ gap: space.sm }}>
       <PanelCardTitle>{[entry.subjectName, entry.topicName].filter(Boolean).join(" · ") || t("mistake_subject_label")}</PanelCardTitle>
       <AppText variant="caption" tone="secondary">{t(`error_${entry.errorType}`)}</AppText>
-      {entry.url ? <Image source={entry.url} contentFit="contain" style={{ height: 220 }} /> : null}
+      {entry.url ? <Pressable accessibilityRole="imagebutton" accessibilityLabel={t("mistake_subject_label")} onPress={() => openPhoto(entry.url!)}><Image cachePolicy="none" source={mediaImageSource(entry.url)} contentFit="contain" style={{ height: 220 }} /></Pressable> : null}
       {entry.note ? <AppText>{entry.note}</AppText> : null}
     </PanelCard>
   );
@@ -154,6 +174,7 @@ function NotebookAddForm({ examId, subjects, scope, onBack, onSaved }: {
   onBack: () => void;
   onSaved: () => Promise<void>;
 }) {
+
   const t = useTranslations("analysis");
   const tReview = useTranslations("analysisReview");
   const tCommon = useTranslations("common");

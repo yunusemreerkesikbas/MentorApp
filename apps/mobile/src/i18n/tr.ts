@@ -1,3 +1,5 @@
+import { notebooksTr } from "./notebooks-tr.ts";
+import { visionTr } from "./vision-tr.ts";
 /**
  * Turkish mobile copy catalog — adheres strictly to `docs/copy/voice.md`:
  * - Puhu register (chrome, welcome, quests, community, waitlist): lively, max one `!` per sentence, zero guilt.
@@ -5,6 +7,8 @@
  * - Naming: AI coach is "Puhu" ("yapay zekâ", never "AI"); human coach is "koç". No em dash (—).
  */
 export const trMessages = {
+  notebooks: notebooksTr,
+  visionBoard: visionTr,
   common: {
     loading: "Yükleniyor…",
     retry: "Yeniden dene",

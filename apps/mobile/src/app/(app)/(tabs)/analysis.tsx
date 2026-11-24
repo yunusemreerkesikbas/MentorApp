@@ -12,7 +12,7 @@ import { AnalysisMistakesView } from "../../../components/analysis/analysis-mist
 import { AnalysisNetCard } from "../../../components/analysis/analysis-net-card.js";
 import { AnalysisHistoryCard, AnalysisSubjectsCard } from "../../../components/analysis/analysis-progress-view.js";
 import { AnalysisSavedCard } from "../../../components/analysis/analysis-saved-card.js";
-import { MistakeNotebookView, type NotebookSheetState } from "../../../components/analysis/mistake-notebook-view.js";
+
 import { MockExamEntryView } from "../../../components/analysis/mock-exam-entry-view.js";
 import { FormSheet, PanelCard, PanelCardTitle } from "../../../components/panel/primitives.js";
 import { AppText, ScreenLoadingSkeleton, StateView } from "../../../components/ui/index.js";
@@ -41,7 +41,7 @@ export default function AnalysisScreen() {
   const [activeTab, setActiveTab] = useState<AnalysisTab>(() => parseAnalysisTab(params.tab));
   const [saved, setSaved] = useState<MockExamDto | null>(null);
   const [editing, setEditing] = useState<MockExamDto | null>(null);
-  const [notebook, setNotebook] = useState<NotebookSheetState | null>(null);
+
   const returnTab = useRef<AnalysisViewTab>(activeTab === "mistakes" ? "mistakes" : "progress");
   const scrollRef = useRef<ScrollViewInstance>(null);
   const scrollToTop = () => scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -110,7 +110,10 @@ export default function AnalysisScreen() {
       params: { contextMockExamId: mockExamId, seed },
     });
   };
-  const openNotebook = (scope: MistakeScope, reviewing: boolean) => setNotebook({ scope, reviewing });
+  const openNotebook = (scope: MistakeScope, reviewing: boolean, entry?: string) => router.push({
+    pathname: "/(app)/notebook" as never,
+    params: { ...scope, ...(examId && { examId }), panel: "index", ...(reviewing && { review: "focus", from: activeTab }), ...(entry && { entryId: entry }) },
+  });
   const openExamMistakes = (mockExamId: string) => openNotebook({ mockExamId }, false);
   const isLoading = taxonomyQuery.isPending || (Boolean(examId) && analysisQuery.isPending && activeTab !== "entry");
 
@@ -181,7 +184,7 @@ export default function AnalysisScreen() {
         )
       ) : analysis && activeTab === "mistakes" ? (
         <AnalysisMistakesView examId={taxonomy.exam.id} analysis={analysis} onOpen={openNotebook}
-          onEntry={(entryId) => setNotebook({ scope: {}, reviewing: false, entryId })} />
+          onEntry={(entryId, scope) => openNotebook(scope, true, entryId)} />
       ) : analysis ? (
         <>
           <AnalysisFocusCard key={`focus-${taxonomy.exam.id}`} examId={taxonomy.exam.id} analysis={analysis}
@@ -195,10 +198,6 @@ export default function AnalysisScreen() {
         <AnalysisHistoryCard key={`history-${examId}`} items={items} loading={history.isPending} error={history.isError}
           hasMore={history.hasNextPage && !history.isFetchingNextPage} onMore={() => void history.fetchNextPage()}
           onRefresh={refreshAll} onCoach={openCoach} onMistakes={openExamMistakes} onEdit={setEditing} />
-      ) : null}
-      {notebook && taxonomy ? (
-        <MistakeNotebookView examId={taxonomy.exam.id} subjects={taxonomy.subjects}
-          initial={notebook} onClose={() => setNotebook(null)} onRefresh={refreshAll} />
       ) : null}
       {editing && taxonomy ? (
         <FormSheet visible title={tHistory("edit_title")} closeLabel={tCommon("close")} onClose={() => setEditing(null)}>

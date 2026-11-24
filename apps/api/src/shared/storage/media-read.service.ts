@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
 import { DomainError, NotFoundError, UnauthorizedError } from "../../common/errors/domain-error";
+import type { RequestUser } from "../../common/auth/current-user";
 import { ErrorCode } from "../../common/errors/error-code";
 import { TokenService } from "../../modules/identity/application/token.service";
 import {
@@ -35,6 +36,16 @@ export class MediaReadService {
   }
   async readPrivate(token: string, proof: unknown) {
     return this.read(await this.headPrivate(token, proof));
+  }
+  async readAuthenticated(token: string, actor: Pick<RequestUser, "id" | "sessionId">) {
+    return this.read(await this.headAuthenticated(token, actor));
+  }
+  /** JwtAuthGuard has already checked the bearer and the live session. Bind both claims to the grant. */
+  async headAuthenticated(token: string, actor: Pick<RequestUser, "id" | "sessionId">): Promise<MediaMetadata> {
+    this.assertBounded();
+    const grant = this.grants.verify(token);
+    if (grant.userId !== actor.id || grant.sessionId !== actor.sessionId) throw new UnauthorizedError();
+    return this.metadata(grant.key);
   }
   async headPublic(key: string): Promise<MediaMetadata> {
     this.assertBounded();

@@ -353,7 +353,7 @@ export class MistakeNotebookService {
         };
       },
     );
-    return { pageIndex, doc, entries: await this.entryViews.toDtos(userId, entries, readActor) };
+    return { pageIndex, doc: await this.pageWithImages(userId, doc, readActor), entries: await this.entryViews.toDtos(userId, entries, readActor) };
   }
 
   /** The system notebook's contents page. */
@@ -456,6 +456,8 @@ export class MistakeNotebookService {
   ): Promise<NotebookPageDto> {
     assertPageIndex(pageIndex);
     const policy = await this.quota?.resolvePolicy(userId, rolesHint);
+    const images = doc.items.filter((item) => item.kind === "image");
+    for (const image of images) this.assertOwnStorageKey(userId, image.storageKey);
     const entryIds = doc.items.flatMap((item) =>
       item.kind === "entry" ? [item.entryId] : [],
     );
@@ -469,6 +471,7 @@ export class MistakeNotebookService {
         notebookId,
         pageIndex,
         policy!,
+        images.length,
       );
       if (book.kind === "CUSTOM" && entryIds.length > 0) {
         throw new ValidationFailedError({
@@ -485,9 +488,19 @@ export class MistakeNotebookService {
 
     return {
       pageIndex,
-      doc: doc as NotebookPageDoc,
+      doc: await this.pageWithImages(userId, doc, readActor),
       entries: await this.entryViews.toDtos(userId, entries, readActor),
     };
+  }
+
+  private async pageWithImages(userId: string, doc: NotebookPageDoc, actor?: StorageReadActor): Promise<NotebookPageDoc> {
+    const items = await Promise.all(doc.items.map(async (item) => {
+      if (item.kind !== "image") return item;
+      this.assertOwnStorageKey(userId, item.storageKey);
+      const url = await this.entryViews.photoUrl(item.storageKey, actor);
+      return { ...item, url: url ?? undefined };
+    }));
+    return { ...doc, items };
   }
 
   private async assertNotebookSubject(
@@ -854,6 +867,7 @@ export class MistakeNotebookService {
     sessionId: string,
     contentType: (typeof NOTEBOOK_IMAGE_MIMES)[number],
     rolesHint?: string[],
+    purpose?: "page",
   ): Promise<NotebookImageUploadUrlDto> {
     if (this.quota) {
       const policy = await this.quota.resolvePolicy(userId, rolesHint);
@@ -861,7 +875,7 @@ export class MistakeNotebookService {
         this.quota!.assertCanUploadPhoto(tx, userId, 1, policy),
       );
     }
-    const key = `${NOTEBOOK_PREFIX}${userId}/${randomUUID()}.${EXTENSIONS[contentType]}`;
+    const key = `${NOTEBOOK_PREFIX}${userId}/${purpose === "page" ? "page-" : ""}${randomUUID()}.${EXTENSIONS[contentType]}`;
     const result = await this.storage.createUploadUrl({ key, contentType, ownerId: userId, sessionId });
     return {
       uploadUrl: result.url,

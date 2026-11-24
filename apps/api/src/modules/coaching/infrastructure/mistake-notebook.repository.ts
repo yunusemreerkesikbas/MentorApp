@@ -1,3 +1,4 @@
+import { notebookPageImageKeys } from "./notebook-page-images";
 import { notebookReviewWindow } from "../domain/notebook-review-window";
 import { Injectable } from "@nestjs/common";
 import {
@@ -608,7 +609,7 @@ export class MistakeNotebookRepository {
     tx: DatabaseTx,
     userId: string,
   ): Promise<{ entryCount: number; photoCount: number; customNotebookCount: number }> {
-    const [[entries], [customs]] = await Promise.all([
+    const [[entries], [customs], [pageImages]] = await Promise.all([
       tx
         .select({
           entryCount: sql<number>`count(*)::int`,
@@ -627,10 +628,13 @@ export class MistakeNotebookRepository {
             eq(notebookTable.kind, "CUSTOM"),
           ),
         ),
+      tx.select({
+        count: sql<number>`coalesce(sum(jsonb_array_length(jsonb_path_query_array(${notebookPages.doc}, '$.items[*] ? (@.kind == "image")'))), 0)::int`,
+      }).from(notebookPages).where(eq(notebookPages.userId, userId)),
     ]);
     return {
       entryCount: entries?.entryCount ?? 0,
-      photoCount: entries?.photoCount ?? 0,
+      photoCount: (entries?.photoCount ?? 0) + (pageImages?.count ?? 0),
       customNotebookCount: customs?.customNotebookCount ?? 0,
     };
   }
@@ -885,16 +889,7 @@ export class MistakeNotebookRepository {
       .orderBy(desc(sql`count(*)`));
   }
 
-  /**
-   * Every photo key referenced by any notebook entry, across all users — the orphan sweep's input.
-   *
-   * Entries own their keys as columns, so unlike the vision board this needs no jsonb unfolding.
-   *
-   * BOTH photo columns have to be here. The sweep deletes every object under `notebook/` that this
-   * method does not name, so a column missing from this select is a column whose photos vanish once
-   * the grace period passes. `solution_storage_key` shares the prefix, and was added later than
-   * `storage_key` — that is exactly how one gets left out.
-   */
+  /** The private-media sweep retains entry attachments and independent page photos. */
   async listAllReferencedImageKeys(tx: DatabaseTx): Promise<string[]> {
     const rows = await tx
       .select({
@@ -908,6 +903,7 @@ export class MistakeNotebookRepository {
           isNotNull(mistakeNotebookEntries.solutionStorageKey),
         ),
       );
-    return rows.flatMap(notebookEntryImageKeys);
+    const pageKeys = await notebookPageImageKeys(tx);
+    return [...rows.flatMap(notebookEntryImageKeys), ...pageKeys];
   }
 }
