@@ -7,14 +7,19 @@ import {
   redeemFriendInvite,
 } from "../../lib/coaching-api.js";
 import { haptics } from "../../lib/haptics.js";
-import { useTranslations } from "../../providers/i18n-provider.js";
+import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 import { AppText, Button, Card, Chip, TextField } from "../ui/index.js";
+
+/** The web's invite landing (`/davet/<code>`, `/en/invite/<code>`): it works with or without the app. */
+const inviteLink = (code: string, locale: string) =>
+  `https://puhukoc.com${locale === "en" ? "/en/invite/" : "/davet/"}${encodeURIComponent(code)}`;
 
 export function FriendInviteCard() {
   const queryClient = useQueryClient();
   const { palette, radii, space } = useThemeTokens();
   const t = useTranslations("settings");
+  const { locale } = useLocale();
 
   const [codeInput, setCodeInput] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -49,7 +54,7 @@ export function FriendInviteCard() {
     haptics.selection();
     try {
       await Share.share({
-        message: `PuhuKoç davet kodum: ${card.code}`,
+        message: t("friend_invite_share_message", { link: inviteLink(card.code, locale) }),
       });
     } catch {
       // User dismissed share sheet
