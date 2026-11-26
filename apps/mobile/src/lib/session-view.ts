@@ -213,6 +213,14 @@ export type ResumeResolution =
   | { kind: "done" }
   | { kind: "discard" };
 
+/**
+ * Whether the account signed in now may restore this record. A record of another account, or one
+ * written before records carried an owner, never comes back (a failed sign-out delete leaks nothing).
+ */
+export function isOwnRecord(record: ActiveSessionRecord, owner: string | null): boolean {
+  return owner !== null && record.userId === owner;
+}
+
 export function readActiveSessionRecord(raw: string | null): ActiveSessionRecord | null {
   if (!raw) return null;
   try {

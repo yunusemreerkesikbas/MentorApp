@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { SESSION_ACTUAL_SECONDS_MAX } from "@mentor/types";
 import {
+  isOwnRecord,
   readActiveSessionRecord,
   readAmbientPreference,
   resolveSessionResume,
@@ -62,7 +63,7 @@ export interface SessionResume { record: ActiveSessionRecord; resolution: Resume
 export function loadSessionResume(): SessionResume | null {
   const record = readActiveSessionRecord(read(ACTIVE_KEY));
   if (!record) return null;
-  if (!owner || record.userId !== owner) {
+  if (!isOwnRecord(record, owner)) {
     void clearActiveSession();
     return null;
   }
