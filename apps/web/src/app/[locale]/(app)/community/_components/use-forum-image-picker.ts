@@ -98,16 +98,19 @@ export function useForumImagePicker() {
     });
   };
 
-  /** Upload everything that still needs uploading, and pass through what does not. */
-  const uploadAll = (): Promise<AttachmentInput[]> =>
-    Promise.all(
-      items.map((p) => {
-        if (p.kind === "ready") return Promise.resolve(p.attachment);
-        return p.kind === "image"
-          ? uploadForumImage(p.file)
-          : uploadForumFile(p.file);
-      }),
-    );
+  /**
+   * Upload everything that still needs uploading, and pass through what does not. One at a time:
+   * the API issues one live upload ticket per user (`storage.upload.active_per_user`), so a second
+   * ticket minted in parallel is refused with `upload_limit`.
+   */
+  const uploadAll = async (): Promise<AttachmentInput[]> => {
+    const done: AttachmentInput[] = [];
+    for (const p of items) {
+      if (p.kind === "ready") done.push(p.attachment);
+      else done.push(await (p.kind === "image" ? uploadForumImage(p.file) : uploadForumFile(p.file)));
+    }
+    return done;
+  };
 
   const reset = () => {
     items.forEach((p) => {
