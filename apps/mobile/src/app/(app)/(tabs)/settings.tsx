@@ -56,7 +56,7 @@ export default function SettingsScreen() {
         <StateView tone="error" title={t("load_error")}
           body={meQuery.error instanceof ApiClientError ? meQuery.error.body.message : tCommon("error_body")}
           actionLabel={tCommon("retry")} onAction={() => void meQuery.refetch()} />
-      ) : !user || (!meQuery.data && !meQuery.isError) ? (
+      ) : !user ? (
         <SettingsSkeleton coach={coach} />
       ) : (
         <>

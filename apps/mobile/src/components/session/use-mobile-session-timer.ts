@@ -20,6 +20,7 @@ import {
 } from "../../lib/coaching-api.js";
 import { haptics } from "../../lib/haptics.js";
 import { clearActiveSession, saveActiveSession, type SessionResume } from "../../lib/session-store.js";
+import { isFinalizeSettled } from "../../lib/session-view.js";
 
 export type MobileSessionPhase = "idle" | "focus" | "break" | "done";
 
@@ -138,6 +139,13 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
       setPhase("done");
       onSessionCompleted?.(updated);
     } catch (err) {
+      if (err instanceof ApiClientError && isFinalizeSettled(err.body.code)) {
+        // A lost reply to an earlier try: the server has it, so "Başla" must not stay blocked.
+        pendingFinalizeRef.current = null;
+        void clearActiveSession();
+        setPhase("idle");
+        return;
+      }
       setErrorMessage(err instanceof Error ? err.message : "Seans kaydedilemedi.");
     } finally {
       setBusy(false);
@@ -322,7 +330,7 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
         subject: subject?.trim() || null, planTaskId, planTaskTitle, roomId, session: active,
         focusElapsed: focusElapsedRef.current, savedAt: Date.now(),
       });
-    } else if (phase === "done" || (phase === "idle" && kept?.resolution.kind !== "finalize-expired")) {
+    } else if (phase === "done" || (phase === "idle" && !pendingFinalizeRef.current)) {
       void clearActiveSession();
     }
     // Only transitions write; the rest are read as they stand at that moment.

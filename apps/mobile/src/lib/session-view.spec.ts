@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  isFinalizeSettled,
   isOwnRecord,
   pickSessionResume,
   readActiveSessionRecord,
@@ -163,13 +164,20 @@ describe("kept running session", () => {
     const leftover = JSON.stringify({ ...base, userId: "u1" });
     const now = 1_000_000 + 60_000;
     assert.equal(pickSessionResume(leftover, "u2", now, MAX), "clear");
-    assert.equal(pickSessionResume(leftover, null, now, MAX), "clear");
+    // A cold start before sign-in settles keeps the record instead of deleting it.
+    assert.equal(pickSessionResume(leftover, null, now, MAX), null);
     assert.equal(pickSessionResume(JSON.stringify(base), "u2", now, MAX), "clear");
     assert.deepEqual(pickSessionResume(leftover, "u1", now, MAX), {
       record: { ...base, userId: "u1" },
       resolution: { kind: "resume-focus", secondsLeft: 24 * 60 },
     });
     assert.equal(pickSessionResume(null, "u1", now, MAX), null);
+  });
+
+  it("treats a close-out the server already took as done, other errors as retryable", () => {
+    assert.equal(isFinalizeSettled("COACHING_SESSION_ALREADY_CLOSED"), true);
+    assert.equal(isFinalizeSettled("NETWORK_ERROR"), false);
+    assert.equal(isFinalizeSettled(undefined), false);
   });
 
   it("credits an expired focus up to its end, and drops old records", () => {

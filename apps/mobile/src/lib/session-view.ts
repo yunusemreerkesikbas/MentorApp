@@ -246,6 +246,7 @@ export function readActiveSessionRecord(raw: string | null): ActiveSessionRecord
 /**
  * The stored active-session record a session screen may pick up: `null` when there is none,
  * `"clear"` when it must be dropped (another account's, done or too old), else the resume.
+ * With no signed-in owner yet nothing is restored and nothing is dropped.
  * A record a failed sign-out or deletion left behind belongs to that account and is never restored.
  */
 export function pickSessionResume(
@@ -253,6 +254,8 @@ export function pickSessionResume(
 ): { record: ActiveSessionRecord; resolution: ResumeResolution } | "clear" | null {
   const record = readActiveSessionRecord(raw);
   if (!record) return null;
+  // Before sign-in settles there is no owner yet: keep the record (it may be this account's).
+  if (owner === null) return null;
   if (!isOwnRecord(record, owner)) return "clear";
   const resolution = resolveSessionResume(record, now, maxAgeMs);
   return resolution.kind === "done" || resolution.kind === "discard" ? "clear" : { record, resolution };
@@ -271,4 +274,12 @@ export function resolveSessionResume(record: ActiveSessionRecord, now: number, m
   // Focus ran out while away: credit up to the focus end, nothing after it.
   const advance = frozen ? 0 : Math.max(0, Math.round((Math.min(now, record.phaseEndsAt) - record.savedAt) / 1000));
   return { kind: "finalize-expired", creditSeconds: Math.min(record.focusMinutes * 60, Math.max(0, Math.round(record.focusElapsed) + advance)) };
+}
+
+/**
+ * A kept session's close-out failed with this API error code: true when the server already closed
+ * it (a lost reply to an earlier try), so the pending close-out is done and must not block "Başla".
+ */
+export function isFinalizeSettled(code: string | undefined): boolean {
+  return code === "COACHING_SESSION_ALREADY_CLOSED";
 }

@@ -117,7 +117,8 @@ function RoomScene({ room, onLeft }: { room: StudyRoomDetailDto; onLeft: () => v
       void queryClient.invalidateQueries({ queryKey: ["study-rooms", "list"] });
     } catch {
       if (request !== themeRequest.current) return;
-      queryClient.setQueryData(key, room);
+      // Roll back to the server's theme, not this render's copy (it may hold an unsaved older tap).
+      void queryClient.invalidateQueries({ queryKey: key });
       toast.show(t("error_title"));
     }
   };
