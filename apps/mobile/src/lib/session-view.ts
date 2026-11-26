@@ -243,6 +243,21 @@ export function readActiveSessionRecord(raw: string | null): ActiveSessionRecord
 }
 
 /** The web's `resolveResume`: what a freshly opened session screen does with a kept record. */
+/**
+ * The stored active-session record a session screen may pick up: `null` when there is none,
+ * `"clear"` when it must be dropped (another account's, done or too old), else the resume.
+ * A record a failed sign-out or deletion left behind belongs to that account and is never restored.
+ */
+export function pickSessionResume(
+  raw: string | null, owner: string | null, now: number, maxAgeMs: number,
+): { record: ActiveSessionRecord; resolution: ResumeResolution } | "clear" | null {
+  const record = readActiveSessionRecord(raw);
+  if (!record) return null;
+  if (!isOwnRecord(record, owner)) return "clear";
+  const resolution = resolveSessionResume(record, now, maxAgeMs);
+  return resolution.kind === "done" || resolution.kind === "discard" ? "clear" : { record, resolution };
+}
+
 export function resolveSessionResume(record: ActiveSessionRecord, now: number, maxAgeMs: number): ResumeResolution {
   if (now - record.savedAt > maxAgeMs) return { kind: "discard" };
   if (record.preset === "stopwatch") {

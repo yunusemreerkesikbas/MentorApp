@@ -1,10 +1,8 @@
 import * as SecureStore from "expo-secure-store";
 import { SESSION_ACTUAL_SECONDS_MAX } from "@mentor/types";
 import {
-  isOwnRecord,
-  readActiveSessionRecord,
+  pickSessionResume,
   readAmbientPreference,
-  resolveSessionResume,
   type ActiveSessionRecord,
   type ResumeResolution,
   readSessionScene,
@@ -61,16 +59,7 @@ export interface SessionResume { record: ActiveSessionRecord; resolution: Resume
 
 /** What a freshly opened session screen picks up; spent records (done, too old) are dropped here. */
 export function loadSessionResume(): SessionResume | null {
-  const record = readActiveSessionRecord(read(ACTIVE_KEY));
-  if (!record) return null;
-  if (!isOwnRecord(record, owner)) {
-    void clearActiveSession();
-    return null;
-  }
-  const resolution = resolveSessionResume(record, Date.now(), SESSION_ACTUAL_SECONDS_MAX * 1000);
-  if (resolution.kind === "done" || resolution.kind === "discard") {
-    void clearActiveSession();
-    return null;
-  }
-  return { record, resolution };
+  const picked = pickSessionResume(read(ACTIVE_KEY), owner, Date.now(), SESSION_ACTUAL_SECONDS_MAX * 1000);
+  if (picked === "clear") void clearActiveSession();
+  return picked === "clear" ? null : picked;
 }

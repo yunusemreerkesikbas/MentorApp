@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   isOwnRecord,
+  pickSessionResume,
   readActiveSessionRecord,
   resolveSessionResume,
   type ActiveSessionRecord,
@@ -156,6 +157,19 @@ describe("kept running session", () => {
     assert.equal(isOwnRecord(base, "u1"), false);
     // The owner survives a write and read round trip.
     assert.equal(isOwnRecord(readActiveSessionRecord(JSON.stringify(own))!, "u1"), true);
+  });
+
+  it("never restores a record a failed sign-out or deletion left behind for the next account", () => {
+    const leftover = JSON.stringify({ ...base, userId: "u1" });
+    const now = 1_000_000 + 60_000;
+    assert.equal(pickSessionResume(leftover, "u2", now, MAX), "clear");
+    assert.equal(pickSessionResume(leftover, null, now, MAX), "clear");
+    assert.equal(pickSessionResume(JSON.stringify(base), "u2", now, MAX), "clear");
+    assert.deepEqual(pickSessionResume(leftover, "u1", now, MAX), {
+      record: { ...base, userId: "u1" },
+      resolution: { kind: "resume-focus", secondsLeft: 24 * 60 },
+    });
+    assert.equal(pickSessionResume(null, "u1", now, MAX), null);
   });
 
   it("credits an expired focus up to its end, and drops old records", () => {
