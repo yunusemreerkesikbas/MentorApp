@@ -27,9 +27,12 @@ export function QuestsSheet({
   quests,
   onClose,
   onGo,
+  onRetry,
 }: {
   visible: boolean;
   quests: QuestProgressView[];
+  /** Set when loading failed, so an empty list reads as an error with a retry, not as "no quests". */
+  onRetry?: () => void;
   onClose: () => void;
   onGo: (destination: QuestDestination) => void;
 }) {
@@ -59,6 +62,14 @@ export function QuestsSheet({
         {t("quests_sheet_title")}
       </AppText>
       <ScrollView style={{ maxHeight: height * 0.62 }} contentContainerStyle={styles.list}>
+        {onRetry && sections.length === 0 ? (
+          <View style={styles.section}>
+            <AppText variant="caption" tone="danger" accessibilityRole="alert">{t("quests_load_error")}</AppText>
+            <Pressable accessibilityRole="button" onPress={onRetry} hitSlop={8} style={{ minHeight: 44, justifyContent: "center" }}>
+              <AppText style={{ fontWeight: "800" }}>{t("retry")}</AppText>
+            </Pressable>
+          </View>
+        ) : null}
         {sections.map((section) => (
           <View key={section.label} style={styles.section}>
             <SectionLabel>{t(section.label)}</SectionLabel>

@@ -30,6 +30,7 @@ export function AccountCard({ user }: { user: AuthUser }) {
   const [examSheet, setExamSheet] = useState<"type" | ExamType | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [savingExam, setSavingExam] = useState(false);
   const signupOpen = useQuery({
     queryKey: ["coach-signup", "status"],
     queryFn: async () => ((await http<{ open?: boolean }>("/v1/auth/coach-signup/status")) as { open?: boolean }).open === true,
@@ -43,6 +44,8 @@ export function AccountCard({ user }: { user: AuthUser }) {
   const joined = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(new Date(user.createdAt));
 
   async function saveExam(examType: ExamType, examVariant: ExamVariant | null) {
+    if (savingExam) return;
+    setSavingExam(true);
     try {
       setUserFromServer((await usersControllerUpdateMe({ examType, examVariant })) as unknown as AuthUser);
       haptics.success();
@@ -50,6 +53,8 @@ export function AccountCard({ user }: { user: AuthUser }) {
     } catch (err) {
       haptics.error();
       toast.show(err instanceof ApiClientError ? err.body.message : t("exam_save_error"));
+    } finally {
+      setSavingExam(false);
     }
   }
 
@@ -70,7 +75,7 @@ export function AccountCard({ user }: { user: AuthUser }) {
 
   return (
     <SettingsCard title={t("account_section")}>
-      <SettingsRow label={t(coach ? "exam_row_coach" : "exam_row")} description={examSummary} onPress={() => setExamSheet("type")} />
+      <SettingsRow label={t(coach ? "exam_row_coach" : "exam_row")} description={examSummary} onPress={savingExam ? undefined : () => setExamSheet("type")} />
       <SettingsRow label={t("member_since")} description={joined} />
       {availability.humanCoaching && !coach ? (
         <SettingsRow label={t("my_coach")} onPress={() => router.push("/(app)/my-coach" as never)} />

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ApiClientError } from "@mentor/api-client";
 import { ExamType, NOTEBOOK_COVER_COLORS, NOTEBOOK_COVER_MATERIALS, NOTEBOOK_COVER_TITLE_MAX_LENGTH, type NotebookCoverStyle, type NotebookSummaryDto } from "@mentor/types";
 import { fetchExamTaxonomy } from "../../lib/analysis-api.js";
 import { createBook, deleteBook, updateBook } from "../../lib/notebook-api.js";
@@ -46,10 +47,10 @@ export function NotebookCoverForm({ book, close }: { book?: NotebookSummaryDto; 
       <><AppText>{t("subject")}</AppText><View style={row}><Chip label={t("all")} selected={!subject} onPress={() => setSubject(null)} />
         {taxonomy.data.subjects.map(s => <Chip key={s.slug} label={s.name} selected={subject === s.slug} onPress={() => setSubject(s.slug)} />)}</View></> : null}
     {save.isError ? <AppText tone="danger">{save.error.message || t("error")}</AppText> : null}
-    <Button label={t("save")} disabled={!name.trim() && book?.kind !== "MISTAKE"} loading={save.isPending} onPress={() => save.mutate()} />
+    <Button label={t("save")} loading={save.isPending} disabled={remove.isPending || (!name.trim() && book?.kind !== "MISTAKE")} onPress={() => save.mutate()} />
     {book?.kind === "CUSTOM" ? <>
       <Button variant="danger" label={t("delete")} loading={remove.isPending} disabled={busy} onPress={() => setConfirming(true)} />
-      {remove.isError ? <AppText tone="danger">{t("deleteError")}</AppText> : null}
+      {remove.isError ? <AppText tone="danger">{remove.error instanceof ApiClientError ? remove.error.body.message : t("deleteError")}</AppText> : null}
       <ConfirmDialog visible={confirming} destructive title={t("deleteTitle", { title: book.title ?? t("name") })} message={t("deleteBody")}
         confirmLabel={t("delete")} cancelLabel={t("cancel")}
         onCancel={() => setConfirming(false)} onConfirm={() => { setConfirming(false); remove.mutate(); }} />

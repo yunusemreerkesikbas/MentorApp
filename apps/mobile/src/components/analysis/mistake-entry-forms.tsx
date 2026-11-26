@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View } from "react-native";
 import { Image } from "expo-image";
 import { useMutation } from "@tanstack/react-query";
@@ -21,11 +21,13 @@ const apiMessage = (err: unknown) => err instanceof ApiClientError ? err.body.me
  * picked, like the web, so the entry itself only ever carries the stored key. The photo limit and the
  * Premium gate come back as the API's own localized message.
  */
-export function EntryPhotoField({ label, photo, onChange, disabled }: {
+export function EntryPhotoField({ label, photo, onChange, disabled, onUploadingChange }: {
   label: string;
   photo: StagedPhoto | null;
   onChange: (photo: StagedPhoto | null) => void;
   disabled?: boolean;
+  /** Lets the form hold Kaydet (and the other photo field) while this upload runs. */
+  onUploadingChange?: (uploading: boolean) => void;
 }) {
   const t = useTranslations("analysis");
   const { space } = useThemeTokens();
@@ -34,6 +36,7 @@ export function EntryPhotoField({ label, photo, onChange, disabled }: {
     onSuccess: (image) => { if (image) onChange({ key: image.key, uri: image.uri }); },
   });
   const pick = (source: "camera" | "gallery") => { if (!disabled && !upload.isPending) upload.mutate(source); };
+  useEffect(() => { onUploadingChange?.(upload.isPending); }, [upload.isPending, onUploadingChange]);
   return (
     <View style={{ gap: space.sm }}>
       <AppText variant="caption" tone="secondary">{label}</AppText>

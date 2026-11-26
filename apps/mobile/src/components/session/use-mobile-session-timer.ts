@@ -74,7 +74,8 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
     : keptRun?.kind === "resume-focus" && keptRecord ? keptRecord.focusMinutes * 60 - keptRun.secondsLeft : 0;
   const [focusElapsed, setFocusElapsed] = useState<number>(keptElapsed);
   const [isPaused, setIsPaused] = useState<boolean>(Boolean(keptRun && keptRecord?.isPaused));
-  const [busy, setBusy] = useState<boolean>(false);
+  // Busy while a session that ran out off-screen is being closed, so `start` cannot race it.
+  const [busy, setBusy] = useState<boolean>(kept?.resolution.kind === "finalize-expired");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [session, setSession] = useState<StudySessionDto | null>(keptRecord?.session ?? null);
 
@@ -301,9 +302,10 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
   useEffect(() => {
     if (kept?.resolution.kind !== "finalize-expired") return;
     const credit = kept.resolution.creditSeconds;
-    clearActiveSession();
     void finalizeStudySession(kept.record.sessionId, { status: "COMPLETED", actualFocusSeconds: credit })
       .then((updated) => {
+        // The record goes only once the server has the session; a failure keeps it for the next open.
+        clearActiveSession();
         setSession(updated);
         sessionRef.current = updated;
         focusElapsedRef.current = updated.actualFocusSeconds;
@@ -311,7 +313,10 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
         setPhase("done");
         onSessionCompleted?.(updated);
       })
-      .catch(() => undefined);
+      .catch((err: unknown) => {
+        setErrorMessage(err instanceof Error ? err.message : "Seans kaydedilemedi.");
+      })
+      .finally(() => setBusy(false));
     // Once, on mount.
   }, []);
 

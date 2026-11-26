@@ -37,8 +37,8 @@ export function SessionBuddyCard() {
     refetchInterval: (query) => (query.state.data?.active ? 60_000 : false),
   });
 
-  // An API error degrades silently: the card just disappears.
-  if (buddy.isError) return null;
+  // A failed first load degrades silently (the card just disappears); a failed refetch keeps what was shown.
+  if (buddy.isError && !buddy.data) return null;
   if (buddy.isPending) {
     return (
       <StageCard title={t("buddy_title")}>
@@ -144,6 +144,15 @@ function Suggestions({ busy, onRequest }: { busy: boolean; onRequest: (username:
   const suggestions = useQuery({ queryKey: ["buddy", "suggestions"], queryFn: getBuddySuggestions });
 
   if (suggestions.isPending) return <Skeleton width="100%" height={44} />;
+  // A failed load is not "no suggestions": say so and let the student try again.
+  if (suggestions.isError && !suggestions.data) {
+    return (
+      <View style={styles.row}>
+        <AppText style={[styles.grow, { color: look.inkSoft, fontWeight: "600" }]}>{t("buddy_action_error_title")}</AppText>
+        <QuietLink label={t("retry")} disabled={suggestions.isFetching} onPress={() => void suggestions.refetch()} />
+      </View>
+    );
+  }
   const list = suggestions.data ?? [];
   if (list.length === 0) {
     return (

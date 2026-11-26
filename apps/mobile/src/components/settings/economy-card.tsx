@@ -40,7 +40,8 @@ export function EconomyCard() {
         <SettingsRow label={t("earned_invite")} onPress={() => setSheet("invite")} />
       </SettingsCard>
       {sheet === "balance" ? <BalanceSheet onClose={() => setSheet(null)} /> : null}
-      <QuestsSheet visible={sheet === "quests"} quests={questsQuery.data ?? []} onClose={() => setSheet(null)} onGo={goFromQuest} />
+      <QuestsSheet visible={sheet === "quests"} quests={questsQuery.data ?? []} onClose={() => setSheet(null)} onGo={goFromQuest}
+        onRetry={questsQuery.isError && !questsQuery.data ? () => void questsQuery.refetch() : undefined} />
       {sheet === "invite" ? (
         <FormSheet visible title={t("earned_invite")} closeLabel={t("earned_close")} onClose={() => setSheet(null)}>
           <FriendInviteCard />

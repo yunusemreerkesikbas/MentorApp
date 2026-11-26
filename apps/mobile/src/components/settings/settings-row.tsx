@@ -18,14 +18,12 @@ export function SettingsRow({ label, description, detail, icon, trailing, onPres
   chevron?: boolean;
 }) {
   const { palette, radii, space, touchTargets } = useThemeTokens();
-  return (
-    <Pressable accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={label}
-      accessibilityHint={description ?? detail} onPress={onPress} disabled={!onPress}
-      style={({ pressed }) => ({
-        minHeight: touchTargets.comfortable, paddingHorizontal: space.sm, paddingVertical: space.xs,
-        flexDirection: "row", alignItems: "center", gap: space.sm, borderRadius: radii.inner,
-        backgroundColor: pressed ? palette.surfaceAlt : undefined,
-      })}>
+  const row = {
+    minHeight: touchTargets.comfortable, paddingHorizontal: space.sm, paddingVertical: space.xs,
+    flexDirection: "row", alignItems: "center", gap: space.sm, borderRadius: radii.inner,
+  } as const;
+  const content = (
+    <>
       {icon}
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <AppText variant="body" tone={danger ? "danger" : "main"} style={{ fontWeight: "700" }}>{label}</AppText>
@@ -34,6 +32,15 @@ export function SettingsRow({ label, description, detail, icon, trailing, onPres
       {detail ? <AppText variant="caption" tone="secondary" style={{ maxWidth: "54%", textAlign: "right" }}>{detail}</AppText> : null}
       {trailing}
       {chevron ? <AltArrowRightIcon size={16} color={palette.muted} /> : null}
+    </>
+  );
+  // A row without an action is a plain View, so a control in `trailing` (language, theme) keeps its
+  // own screen-reader focus instead of being folded into one accessible parent.
+  if (!onPress) return <View style={row}>{content}</View>;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={description ?? detail}
+      onPress={onPress} style={({ pressed }) => [row, { backgroundColor: pressed ? palette.surfaceAlt : undefined }]}>
+      {content}
     </Pressable>
   );
 }

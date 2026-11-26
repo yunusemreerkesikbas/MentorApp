@@ -38,7 +38,8 @@ export default function StudySessionScreen() {
   }>();
   // A session still running from an earlier visit wins over the route (web: `readRestorableRecord`).
   const [resume] = useState(loadSessionResume);
-  const kept = resume?.record;
+  // Only the restored session itself inherits its task, room and subject; "Yeni seans" drops them.
+  const [kept, setKept] = useState(() => resume?.record ?? null);
   const params = kept
     ? { ...routeParams, taskId: kept.planTaskId ?? undefined, taskTitle: kept.planTaskTitle ?? undefined, roomId: kept.roomId ?? undefined, subject: kept.subject ?? undefined }
     : routeParams;
@@ -72,7 +73,7 @@ export default function StudySessionScreen() {
   return (
     <SessionStage phase={timer.phase} theme={scene.plain ? null : scene.theme}>
       <SessionBody
-        timer={timer}
+        timer={{ ...timer, reset: () => { setKept(null); timer.reset(); } }}
         params={params}
         subject={subject}
         onSubjectChange={setSubject}

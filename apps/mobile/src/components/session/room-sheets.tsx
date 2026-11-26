@@ -119,7 +119,7 @@ export function RoomJoinSheet({ onClose, onJoined }: { onClose: () => void; onJo
       await queryClient.invalidateQueries({ queryKey: ["study-rooms"] });
       onJoined(room.id);
     } catch (err) {
-      setError(t(`join_failed_${mapStudyRoomJoinError(err)}`));
+      setError(errorText(err, t(`join_failed_${mapStudyRoomJoinError(err)}`)));
     } finally {
       setBusy(false);
     }

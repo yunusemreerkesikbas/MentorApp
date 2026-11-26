@@ -23,6 +23,7 @@ import {
 import { mobileMediaImageSource, type MobileMediaImageSource } from "../lib/media-image-source.js";
 import { getApiBaseUrl } from "../lib/env.js";
 import { unregisterCachedPushToken } from "../lib/push-notifications.js";
+import { clearActiveSession } from "../lib/session-store.js";
 import {
   createSecureTokenStore,
   getCachedRefreshToken,
@@ -109,6 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await secureTokenStore.clearRefreshToken();
     // Everything cached belongs to the account that just left; the next one must not see it.
     queryClient.clear();
+    // A running session kept for "come back to it" is this account's too.
+    clearActiveSession();
     setUser(null);
     setStatus("anonymous");
   }, [queryClient]);
@@ -179,9 +182,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [silentRefresh]);
 
   const setUserFromServer = useCallback((next: AuthUser) => {
+    // Settings re-seeds the user from this query; a stale copy would undo the save.
+    queryClient.setQueryData(["users", "me"], next);
     setUser(next);
     setStatus("authenticated");
-  }, []);
+  }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

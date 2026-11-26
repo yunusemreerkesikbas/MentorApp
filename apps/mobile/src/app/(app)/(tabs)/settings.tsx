@@ -52,11 +52,11 @@ export default function SettingsScreen() {
         gap: space.xl,
       }}
     >
-      {meQuery.isError && !meQuery.data ? (
+      {meQuery.isError && !meQuery.data && !user ? (
         <StateView tone="error" title={t("load_error")}
           body={meQuery.error instanceof ApiClientError ? meQuery.error.body.message : tCommon("error_body")}
           actionLabel={tCommon("retry")} onAction={() => void meQuery.refetch()} />
-      ) : !meQuery.data || !user ? (
+      ) : !user || (!meQuery.data && !meQuery.isError) ? (
         <SettingsSkeleton coach={coach} />
       ) : (
         <>

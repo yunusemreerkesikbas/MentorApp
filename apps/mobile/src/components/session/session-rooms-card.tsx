@@ -32,7 +32,8 @@ export function SessionRoomsCard() {
     refetchInterval: 30_000,
   });
 
-  if (!availability.studyRooms || rooms.isError) return null;
+  // A failed refetch keeps the cached list (and an open sheet); only a first-load failure hides the card.
+  if (!availability.studyRooms || (rooms.isError && !rooms.data)) return null;
 
   const open = (id: string) => {
     setSheet(null);

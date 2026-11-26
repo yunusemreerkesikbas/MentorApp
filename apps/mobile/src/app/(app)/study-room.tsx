@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -102,15 +102,21 @@ function RoomScene({ room, onLeft }: { room: StudyRoomDetailDto; onLeft: () => v
   const seatedHere = room.seats.some((s) => s.userId === user?.id && s.isSeated);
   const canInvite = owner && Boolean(room.inviteCode);
 
+  const themeRequest = useRef(0);
   const changeTheme = async (delta: 1 | -1) => {
     haptics.selection();
+    // Fast taps race: a late reply or rollback from an older tap must not undo a newer choice.
+    const request = ++themeRequest.current;
     const theme = stepRoomTheme(room.theme, delta);
     const key = ["study-rooms", "detail", room.id];
     queryClient.setQueryData(key, { ...room, theme });
     try {
-      queryClient.setQueryData(key, await updateStudyRoom(room.id, { theme }));
+      const saved = await updateStudyRoom(room.id, { theme });
+      if (request !== themeRequest.current) return;
+      queryClient.setQueryData(key, saved);
       void queryClient.invalidateQueries({ queryKey: ["study-rooms", "list"] });
     } catch {
+      if (request !== themeRequest.current) return;
       queryClient.setQueryData(key, room);
       toast.show(t("error_title"));
     }

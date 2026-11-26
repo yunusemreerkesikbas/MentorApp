@@ -109,7 +109,7 @@ export function AppSupportCard() {
   const t = useTranslations("settings");
   const router = useRouter();
   const { locale, setLocale } = useLocale();
-  const { mode, setThemePreference } = useThemeTokens();
+  const { preference, setThemePreference } = useThemeTokens();
 
   return (
     <SettingsCard title={t("support_title")}>
@@ -118,9 +118,14 @@ export function AppSupportCard() {
           items={[{ id: "tr", label: "TR" }, { id: "en", label: "EN" }]} style={{ width: 112 }} />
       )} />
       <SettingsRow label={t("support_theme")} chevron={false} trailing={(
-        <SlidingTabs compact accessibilityLabel={t("support_theme")} value={mode} onChange={setThemePreference}
-          items={[{ id: "light", label: t("support_theme_light") }, { id: "dark", label: t("support_theme_dark") }]}
-          style={{ width: 132 }} />
+        <SlidingTabs compact accessibilityLabel={t("support_theme")} value={preference} onChange={setThemePreference}
+          items={[
+            { id: "light", label: t("support_theme_light") },
+            { id: "dark", label: t("support_theme_dark") },
+            // Mobile keeps "follow the phone" (the web has two); it is the app's default.
+            { id: "system", label: t("support_theme_system") },
+          ]}
+          style={{ width: 192 }} />
       )} />
       <SettingsRow label={t("support_recommend")} chevron={false}
         onPress={() => void Share.share({ message: `${t("support_share_text")} ${SITE_URL}` }).catch(() => undefined)} />

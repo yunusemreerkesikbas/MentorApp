@@ -26,7 +26,7 @@ export function SettingsIdentity({ user, onEdit }: { user: AuthUser; onEdit: () 
   const premium = useIsPremium();
   const router = useRouter();
   const toast = useToast();
-  const { palette, radii, space } = useThemeTokens();
+  const { palette, radii, space, touchTargets } = useThemeTokens();
   const [sending, setSending] = useState(false);
 
   async function resendVerification() {
@@ -91,7 +91,7 @@ export function SettingsIdentity({ user, onEdit }: { user: AuthUser; onEdit: () 
           <Pressable accessibilityRole="button" accessibilityLabel={t("verify_email_cta")} disabled={sending}
             onPress={() => void resendVerification()} hitSlop={8}
             style={({ pressed }) => ({
-              minHeight: 28, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10,
+              minHeight: touchTargets.min, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10,
               borderRadius: radii.pill, opacity: sending ? 0.6 : 1,
               backgroundColor: mixHex(palette.star, palette.surface, pressed ? 0.34 : 0.22),
             })}>

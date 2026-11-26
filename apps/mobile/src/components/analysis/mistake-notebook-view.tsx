@@ -192,6 +192,10 @@ function NotebookAddForm({ examId, subjects, scope, onBack, onSaved }: {
   const [photo, setPhoto] = useState<StagedPhoto | null>(null);
   const [solutionPhoto, setSolutionPhoto] = useState<StagedPhoto | null>(null);
   const [solutionNote, setSolutionNote] = useState("");
+  // One photo at a time: the API keeps one live upload ticket per user, and Kaydet waits for it.
+  const [uploadingQuestion, setUploadingQuestion] = useState(false);
+  const [uploadingSolution, setUploadingSolution] = useState(false);
+  const uploading = uploadingQuestion || uploadingSolution;
   const save = useMutation({
     mutationFn: () => createNotebookEntry({
       examId, mockExamId: scope.mockExamId, source: "OWN", subjectRef: subject,
@@ -216,12 +220,15 @@ function NotebookAddForm({ examId, subjects, scope, onBack, onSaved }: {
           <Chip label={t(`error_${key}`)} key={key} selected={reason === key} onPress={() => setReason(key)} />
         ))}
       </View>
-      <EntryPhotoField label={t("entry_photo_label")} photo={photo} onChange={setPhoto} disabled={save.isPending} />
+      <EntryPhotoField label={t("entry_photo_label")} photo={photo} onChange={setPhoto}
+        disabled={save.isPending || uploadingSolution} onUploadingChange={setUploadingQuestion} />
       <TextField label={t("mistake_note_label")} placeholder={t("mistake_note_placeholder")} value={note} onChangeText={setNote} />
-      <EntryPhotoField label={t("entry_solution_photo_label")} photo={solutionPhoto} onChange={setSolutionPhoto} disabled={save.isPending} />
+      <EntryPhotoField label={t("entry_solution_photo_label")} photo={solutionPhoto} onChange={setSolutionPhoto}
+        disabled={save.isPending || uploadingQuestion} onUploadingChange={setUploadingSolution} />
       <TextField label={t("entry_solution_note_label")} value={solutionNote} onChangeText={setSolutionNote} />
       {save.isError ? <AppText tone="danger">{save.error instanceof Error ? save.error.message : tCommon("error_body")}</AppText> : null}
-      <Button label={t("save_mistake_cta")} loading={save.isPending} onPress={() => { if (!save.isPending) save.mutate(); }} />
+      <Button label={t("save_mistake_cta")} loading={save.isPending} disabled={uploading}
+        onPress={() => { if (!save.isPending && !uploading) save.mutate(); }} />
       <AnalysisLink label={tReview("back_index")} onPress={onBack} />
     </View>
   );

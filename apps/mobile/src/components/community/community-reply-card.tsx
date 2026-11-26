@@ -112,7 +112,7 @@ export function CommunityReplyCard({
     setPickerOpen(false);
     try {
       await togglePostReaction({ postId: item.id, emoji, active });
-      void queryClient.invalidateQueries({ queryKey: ["forum", "detail", threadId] });
+      void queryClient.invalidateQueries({ queryKey: ["forum"] });
     } catch (err) {
       setCounts(prevCounts);
       setMyReactions(prevMine);
@@ -128,7 +128,7 @@ export function CommunityReplyCard({
     setHelpfulCount((v) => Math.max(0, v + (next ? 1 : -1)));
     try {
       await setHelpfulVote(ModerationTargetType.POST, item.id, next);
-      void queryClient.invalidateQueries({ queryKey: ["forum", "detail", threadId] });
+      void queryClient.invalidateQueries({ queryKey: ["forum"] });
     } catch (err) {
       setMyHelpful(!next);
       setHelpfulCount((v) => Math.max(0, v + (next ? -1 : 1)));
