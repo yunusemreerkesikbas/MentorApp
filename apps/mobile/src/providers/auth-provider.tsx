@@ -23,7 +23,7 @@ import {
 import { mobileMediaImageSource, type MobileMediaImageSource } from "../lib/media-image-source.js";
 import { getApiBaseUrl } from "../lib/env.js";
 import { unregisterCachedPushToken } from "../lib/push-notifications.js";
-import { clearActiveSession } from "../lib/session-store.js";
+import { clearActiveSession, setActiveSessionOwner } from "../lib/session-store.js";
 import {
   createSecureTokenStore,
   getCachedRefreshToken,
@@ -111,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Everything cached belongs to the account that just left; the next one must not see it.
     queryClient.clear();
     // A running session kept for "come back to it" is this account's too; gone before anyone else signs in.
+    setActiveSessionOwner(null);
     await clearActiveSession();
     setUser(null);
     setStatus("anonymous");
@@ -118,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const applySession = useCallback(async (session: AuthSession) => {
     accessTokenRef.current = session.accessToken;
+    setActiveSessionOwner(session.user.id);
     if (session.refreshToken) {
       await secureTokenStore.setRefreshToken(session.refreshToken);
     }

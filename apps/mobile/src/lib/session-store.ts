@@ -47,7 +47,13 @@ export const loadSessionScene = (): SessionScene => readSessionScene(read(SCENE_
 export const saveSessionScene = (scene: SessionScene) => write(SCENE_KEY, scene);
 export const loadAmbientPreference = (): AmbientPreference => readAmbientPreference(read(AMBIENT_KEY));
 export const saveAmbientPreference = (preference: AmbientPreference) => write(AMBIENT_KEY, preference);
-export const saveActiveSession = (record: ActiveSessionRecord) => write(ACTIVE_KEY, record);
+// The signed-in account, set by the auth provider. The record is stamped with it, so even when a
+// sign-out delete fails, the next account on the phone never restores someone else's session.
+let owner: string | null = null;
+export const setActiveSessionOwner = (userId: string | null) => { owner = userId; };
+export const saveActiveSession = (record: ActiveSessionRecord) => {
+  if (owner) write(ACTIVE_KEY, { ...record, userId: owner });
+};
 export const clearActiveSession = () => remove(ACTIVE_KEY);
 
 export interface SessionResume { record: ActiveSessionRecord; resolution: ResumeResolution }
@@ -56,6 +62,10 @@ export interface SessionResume { record: ActiveSessionRecord; resolution: Resume
 export function loadSessionResume(): SessionResume | null {
   const record = readActiveSessionRecord(read(ACTIVE_KEY));
   if (!record) return null;
+  if (!owner || record.userId !== owner) {
+    void clearActiveSession();
+    return null;
+  }
   const resolution = resolveSessionResume(record, Date.now(), SESSION_ACTUAL_SECONDS_MAX * 1000);
   if (resolution.kind === "done" || resolution.kind === "discard") {
     void clearActiveSession();

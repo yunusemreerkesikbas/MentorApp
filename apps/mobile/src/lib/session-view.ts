@@ -201,6 +201,8 @@ export interface ActiveSessionRecord {
   focusElapsed: number;
   /** Epoch ms of the last write. */
   savedAt: number;
+  /** Mobile only: the signed-in account that ran it; a record of anyone else is never restored. */
+  userId?: string;
 }
 
 export type ResumeResolution =
