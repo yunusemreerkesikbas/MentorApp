@@ -783,6 +783,7 @@ export class ForumThreadService {
     // Notify the parent comment's author about the reply (self-reply skipped in the listener).
     this.events.emit(ForumEventTopic.COMMENT_REPLIED, {
       parentPostId: postId,
+      replyPostId: post.id,
       recipientId: parent.authorId,
       actorId: actor.id,
     });

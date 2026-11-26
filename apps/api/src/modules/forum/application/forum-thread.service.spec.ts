@@ -418,6 +418,7 @@ describe("ForumThreadService", () => {
     });
     expect(events.emit).toHaveBeenCalledWith("forum.comment.replied", {
       parentPostId: "parent-post",
+      replyPostId: expect.any(String),
       recipientId: "u1",
       actorId: "u1",
     });
