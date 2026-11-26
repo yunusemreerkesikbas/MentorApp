@@ -200,6 +200,14 @@ export function resolveMobileNotificationDestination(
         params: { id: decodeURIComponent(messageMatch[1]), kind: "thread" },
       };
     }
+    const commentMatch = withoutLocale.match(/^\/(?:community\/comment|topluluk\/yorum)\/([^/]+)$/);
+    if (commentMatch?.[1]) {
+      const highlight = linkUrl.match(/[?&]highlight=([^&#]+)/)?.[1];
+      return {
+        pathname: "/(app)/community-comment",
+        params: { id: decodeURIComponent(commentMatch[1]), ...(highlight ? { highlight: decodeURIComponent(highlight) } : {}) },
+      };
+    }
     if (withoutLocale === "/community/saved" || withoutLocale === "/topluluk/kaydedilenler") {
       return { pathname: "/(app)/community-saved" };
     }

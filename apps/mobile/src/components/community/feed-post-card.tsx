@@ -19,6 +19,7 @@ import { useThemeTokens } from "../../providers/theme-provider.js";
 import { useToast } from "../../providers/toast-provider.js";
 import { ActionSheet, PanelCard, type SheetAction } from "../panel/primitives.js";
 import { AppText, Chip } from "../ui/index.js";
+import { AttachmentGallery } from "./attachment-gallery.js";
 import { CommunityAvatar } from "./community-avatar.js";
 import { ForumPollCard } from "./forum-poll-card.js";
 import { DeleteForumConfirmDialog, ReportReasonSheet, type ReportTarget } from "./moderation-sheets.js";
@@ -218,6 +219,8 @@ export function FeedPostCard({
           {post.body}
         </AppText>
       </Pressable>
+
+      <AttachmentGallery attachments={post.attachments} compactSingle={excerptLines > 0} />
 
       {post.tags.length > 0 ? (
         <View style={styles.tagsRow}>

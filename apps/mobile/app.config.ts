@@ -33,6 +33,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "expo-splash-screen",
       "expo-font",
       "expo-notifications",
+      "expo-web-browser",
+      // Playback only (session room sounds): no microphone prompt, no RECORD_AUDIO.
+      ["expo-audio", { microphonePermission: false, recordAudioAndroid: false }],
       ["expo-image-picker", {
         photosPermission: "Defterine veya hedef panona ekleyeceğin fotoğrafı seç.",
         cameraPermission: "Defterine veya hedef panona eklemek için fotoğraf çek.",

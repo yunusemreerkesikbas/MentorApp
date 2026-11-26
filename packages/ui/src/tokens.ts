@@ -267,6 +267,8 @@ export const sceneThemes = {
       inkSoft: "#CDB99F",
       accent: "#2E7D54",
       live: "#6BC49A",
+      /** The room photo's veil (web `--room-veil`); the session screen scales it per phase. */
+      veil: "rgba(36, 27, 20, 0.95)",
     },
     CAFE: {
       groundFrom: "#2A1F1A",
@@ -276,6 +278,7 @@ export const sceneThemes = {
       inkSoft: "#C2AC9C",
       accent: "#E8A87C",
       live: "#6BC49A",
+      veil: "rgba(23, 17, 16, 0.95)",
     },
     HOME: {
       groundFrom: "#F3EFF9",
@@ -285,6 +288,8 @@ export const sceneThemes = {
       inkSoft: "#5E5476",
       accent: "#55ACEE",
       live: "#2E7D54",
+      /** Half the dark rooms' strength: a bright room with dark ink would wash out. */
+      veil: "rgba(227, 218, 241, 0.5)",
     },
   },
   planCoachNight: {

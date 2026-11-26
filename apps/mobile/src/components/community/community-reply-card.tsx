@@ -10,6 +10,7 @@ import {
 import { BookmarkIcon as BookmarkSolidIcon } from "@solar-icons/react-native/bold/bookmark";
 import { CheckCircleIcon } from "@solar-icons/react-native/bold/check-circle";
 import { BookmarkIcon as BookmarkLinearIcon } from "@solar-icons/react-native/linear/bookmark";
+import { ChatRoundIcon } from "@solar-icons/react-native/linear/chat-round";
 import { LikeIcon } from "@solar-icons/react-native/linear/like";
 import { MenuDotsIcon } from "@solar-icons/react-native/linear/menu-dots";
 import { SmileCircleIcon } from "@solar-icons/react-native/linear/smile-circle";
@@ -29,6 +30,7 @@ import { useThemeTokens } from "../../providers/theme-provider.js";
 import { useToast } from "../../providers/toast-provider.js";
 import { ActionSheet, PanelCard, type SheetAction } from "../panel/primitives.js";
 import { AppText, Button, Chip } from "../ui/index.js";
+import { AttachmentGallery } from "./attachment-gallery.js";
 import { CommunityAvatar } from "./community-avatar.js";
 import {
   DeleteForumConfirmDialog,
@@ -44,10 +46,15 @@ export function CommunityReplyCard({
   reply,
   threadId,
   onOpenMember,
+  onOpenReplies,
+  highlighted = false,
 }: {
   reply: ReplyItem;
   threadId: string;
   onOpenMember: (username: string) => void;
+  /** Comments only: opens the comment detail (its replies and the reply bar). */
+  onOpenReplies?: () => void;
+  highlighted?: boolean;
 }) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -186,7 +193,7 @@ export function CommunityReplyCard({
   );
 
   return (
-    <PanelCard style={[styles.card, isAccepted && { borderColor: palette.success }]}>
+    <PanelCard style={[styles.card, isAccepted && { borderColor: palette.success }, highlighted && { borderColor: palette.ctaPlayEdge, borderWidth: 2 }]}>
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
@@ -217,6 +224,7 @@ export function CommunityReplyCard({
       </View>
 
       <AppText variant="body">{item.body}</AppText>
+      <AttachmentGallery attachments={item.attachments ?? []} />
 
       {pickerOpen && isComment ? (
         <View style={[styles.pickerRow, { backgroundColor: palette.surfaceAlt, borderColor: palette.border, borderRadius: radii.pill }]}>
@@ -262,6 +270,16 @@ export function CommunityReplyCard({
               </AppText>
             </Pressable>
           )}
+
+          {reply.kind === "comment" && onOpenReplies ? (
+            <Pressable accessibilityRole="button" accessibilityLabel={t("reply")} onPress={onOpenReplies}
+              style={[styles.pillBtn, { borderRadius: radii.pill, borderColor: palette.border, backgroundColor: palette.surfaceAlt }]}>
+              <ChatRoundIcon size={16} color={palette.secondary} strokeWidth={1.75} />
+              <AppText variant="caption" tabularNums>
+                {reply.item.replyCount > 0 ? String(reply.item.replyCount) : t("reply")}
+              </AppText>
+            </Pressable>
+          ) : null}
 
           {reply.kind === "answer" && reply.canAccept && !isAccepted ? (
             <Button label={t("accept")} loading={busy} onPress={() => void handleAccept()} variant="secondary" />

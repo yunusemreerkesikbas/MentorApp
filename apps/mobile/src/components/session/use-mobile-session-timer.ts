@@ -19,6 +19,7 @@ import {
   startStudySession,
 } from "../../lib/coaching-api.js";
 import { haptics } from "../../lib/haptics.js";
+import { clearActiveSession, saveActiveSession, type SessionResume } from "../../lib/session-store.js";
 
 export type MobileSessionPhase = "idle" | "focus" | "break" | "done";
 
@@ -28,6 +29,9 @@ export interface UseMobileSessionTimerOptions {
   subject?: string | null;
   planTaskId?: string | null;
   roomId?: string | null;
+  planTaskTitle?: string | null;
+  /** A session kept from an earlier visit to the screen (`loadSessionResume`). */
+  resume?: SessionResume | null;
   onSessionCompleted?: (session: StudySessionDto) => void;
 }
 
@@ -40,32 +44,49 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
     subject = null,
     planTaskId = null,
     roomId = null,
+    planTaskTitle = null,
+    resume = null,
     onSessionCompleted,
   } = options;
+  // Read once: the first render opens straight into the kept session.
+  const [kept] = useState(() => resume);
+  const keptRecord = kept?.record;
+  const r = kept?.resolution;
+  const keptRun = r?.kind === "resume-focus" || r?.kind === "resume-break" || r?.kind === "resume-stopwatch" ? r : null;
 
   const [preset, setPreset] = useState<SessionPresetId>(() =>
-    parseInitialPreset(presetParam, minutesParam),
+    keptRecord?.preset ?? parseInitialPreset(presetParam, minutesParam),
   );
   const [focusMinutes, setFocusMinutesState] = useState<number>(() =>
-    parseInitialMinutes(presetParam, minutesParam),
+    keptRecord?.focusMinutes ?? parseInitialMinutes(presetParam, minutesParam),
   );
   const [breakMinutes, setBreakMinutesState] = useState<number>(() =>
-    parseInitialBreakMinutes(presetParam, minutesParam),
+    keptRecord?.breakMinutes ?? parseInitialBreakMinutes(presetParam, minutesParam),
   );
-  const [phase, setPhase] = useState<MobileSessionPhase>("idle");
-  const [secondsLeft, setSecondsLeft] = useState<number>(0);
-  const [focusElapsed, setFocusElapsed] = useState<number>(0);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [phase, setPhase] = useState<MobileSessionPhase>(
+    keptRun ? (keptRun.kind === "resume-break" ? "break" : "focus") : "idle",
+  );
+  const [secondsLeft, setSecondsLeft] = useState<number>(
+    keptRun && keptRun.kind !== "resume-stopwatch" ? keptRun.secondsLeft : 0,
+  );
+  const keptElapsed = keptRun?.kind === "resume-stopwatch"
+    ? keptRun.elapsedSeconds
+    : keptRun?.kind === "resume-focus" && keptRecord ? keptRecord.focusMinutes * 60 - keptRun.secondsLeft : 0;
+  const [focusElapsed, setFocusElapsed] = useState<number>(keptElapsed);
+  const [isPaused, setIsPaused] = useState<boolean>(Boolean(keptRun && keptRecord?.isPaused));
   const [busy, setBusy] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [session, setSession] = useState<StudySessionDto | null>(null);
+  const [session, setSession] = useState<StudySessionDto | null>(keptRecord?.session ?? null);
 
-  const phaseEndsAtRef = useRef<number>(0);
-  const stopwatchStartedAtRef = useRef<number>(0);
-  const pausedAtRef = useRef<number>(0);
-  const focusElapsedRef = useRef<number>(0);
+  // A kept countdown keeps its absolute end (frozen at `pausedAt` while paused, which is what
+  // `togglePause` shifts on resume); a kept stopwatch restarts from its elapsed seconds.
+  const keptBase = keptRecord?.isPaused && keptRecord.pausedAt !== null ? keptRecord.pausedAt : Date.now();
+  const phaseEndsAtRef = useRef<number>(keptRun ? keptRecord!.phaseEndsAt : 0);
+  const stopwatchStartedAtRef = useRef<number>(keptRun ? keptBase - keptElapsed * 1000 : 0);
+  const pausedAtRef = useRef<number>(keptRun && keptRecord?.isPaused ? keptBase : 0);
+  const focusElapsedRef = useRef<number>(keptElapsed);
   const advancingRef = useRef<boolean>(false);
-  const sessionRef = useRef<StudySessionDto | null>(null);
+  const sessionRef = useRef<StudySessionDto | null>(keptRecord?.session ?? null);
 
   const isStopwatch = preset === "stopwatch";
 
@@ -258,6 +279,41 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
       sub.remove();
     };
   }, [isPaused, phase, syncClock]);
+
+  // Keep the running session across leaving the screen (the web's `mentor.session.active`). Written
+  // on every phase or pause change; between those the clock math needs nothing new.
+  useEffect(() => {
+    const active = sessionRef.current;
+    if ((phase === "focus" || phase === "break") && active) {
+      saveActiveSession({
+        sessionId: active.id, phase, phaseEndsAt: phaseEndsAtRef.current, isPaused,
+        pausedAt: isPaused ? pausedAtRef.current : null, focusMinutes, breakMinutes, preset,
+        subject: subject?.trim() || null, planTaskId, planTaskTitle, roomId, session: active,
+        focusElapsed: focusElapsedRef.current, savedAt: Date.now(),
+      });
+    } else if (phase === "done" || (phase === "idle" && kept?.resolution.kind !== "finalize-expired")) {
+      clearActiveSession();
+    }
+    // Only transitions write; the rest are read as they stand at that moment.
+  }, [phase, isPaused, session]);
+
+  // Focus ran out while the screen was closed: credit it up to the focus end and show the result.
+  useEffect(() => {
+    if (kept?.resolution.kind !== "finalize-expired") return;
+    const credit = kept.resolution.creditSeconds;
+    clearActiveSession();
+    void finalizeStudySession(kept.record.sessionId, { status: "COMPLETED", actualFocusSeconds: credit })
+      .then((updated) => {
+        setSession(updated);
+        sessionRef.current = updated;
+        focusElapsedRef.current = updated.actualFocusSeconds;
+        setFocusElapsed(updated.actualFocusSeconds);
+        setPhase("done");
+        onSessionCompleted?.(updated);
+      })
+      .catch(() => undefined);
+    // Once, on mount.
+  }, []);
 
   const skipBreak = useCallback(() => {
     haptics.selection();

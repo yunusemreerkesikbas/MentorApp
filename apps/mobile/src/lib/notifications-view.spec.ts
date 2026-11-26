@@ -87,6 +87,10 @@ describe("notifications-view helpers", () => {
     assert.deepEqual(open("/en/vision-board/board"), { pathname: "/(app)/vision-board/board" });
     assert.equal(open("/vision-board/simulation"), null);
     assert.equal(open("//outside.example/notebooks"), null);
+    assert.deepEqual(open("/community/comment/c1?highlight=r2"), {
+      pathname: "/(app)/community-comment", params: { id: "c1", highlight: "r2" },
+    });
+    assert.deepEqual(open("/tr/topluluk/yorum/c1"), { pathname: "/(app)/community-comment", params: { id: "c1" } });
   });
 
   it("resolves student-core safe destinations and extracts knowledge slugs", () => {

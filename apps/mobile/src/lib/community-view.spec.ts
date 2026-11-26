@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ZoneView } from "@mentor/types";
 import {
+  checkForumPhoto,
   deriveQuestionStatus,
+  formatBytes,
   formatLeagueResetParts,
   groupZonesByMembership,
   nextLeagueReset,
@@ -74,5 +76,14 @@ describe("community-view helpers", () => {
       grouped.others.map((z) => z.id),
       ["2", "3"],
     );
+  });
+
+  it("checks a picked forum photo against count, type and size", () => {
+    assert.equal(checkForumPhoto("image/jpeg", 1000, 0), null);
+    assert.equal(checkForumPhoto("image/jpeg", 1000, 4), "too_many");
+    assert.equal(checkForumPhoto("image/heic", 1000, 0), "unsupported");
+    assert.equal(checkForumPhoto("image/png", 5 * 1024 * 1024 + 1, 0), "too_large");
+    assert.equal(formatBytes(2_500_000), "2.4 MB");
+    assert.equal(formatBytes(2048), "2 KB");
   });
 });
