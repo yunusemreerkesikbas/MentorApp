@@ -110,8 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await secureTokenStore.clearRefreshToken();
     // Everything cached belongs to the account that just left; the next one must not see it.
     queryClient.clear();
-    // A running session kept for "come back to it" is this account's too.
-    clearActiveSession();
+    // A running session kept for "come back to it" is this account's too; gone before anyone else signs in.
+    await clearActiveSession();
     setUser(null);
     setStatus("anonymous");
   }, [queryClient]);

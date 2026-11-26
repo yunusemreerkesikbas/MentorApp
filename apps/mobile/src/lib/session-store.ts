@@ -27,9 +27,9 @@ function read(key: string): string | null {
   }
 }
 
-function remove(key: string): void {
+async function remove(key: string): Promise<void> {
   try {
-    void SecureStore.deleteItemAsync(key);
+    await SecureStore.deleteItemAsync(key);
   } catch {
     // Worst case the next open sees a stale record and resolves it to done or discard.
   }
@@ -58,7 +58,7 @@ export function loadSessionResume(): SessionResume | null {
   if (!record) return null;
   const resolution = resolveSessionResume(record, Date.now(), SESSION_ACTUAL_SECONDS_MAX * 1000);
   if (resolution.kind === "done" || resolution.kind === "discard") {
-    clearActiveSession();
+    void clearActiveSession();
     return null;
   }
   return { record, resolution };

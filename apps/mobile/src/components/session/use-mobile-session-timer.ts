@@ -77,6 +77,8 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
   // Busy while a session that ran out off-screen is being closed, so `start` cannot race it.
   const [busy, setBusy] = useState<boolean>(kept?.resolution.kind === "finalize-expired");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const pendingFinalizeRef = useRef(kept?.resolution.kind === "finalize-expired"
+    ? { sessionId: kept.record.sessionId, creditSeconds: kept.resolution.creditSeconds } : null);
   const [session, setSession] = useState<StudySessionDto | null>(keptRecord?.session ?? null);
 
   // A kept countdown keeps its absolute end (frozen at `pausedAt` while paused, which is what
@@ -118,8 +120,36 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
     setBreakMinutesState(CUSTOM_BREAK_MINUTES);
   }, []);
 
+  // Focus ran out while the screen was closed: credit it up to the focus end and show the result.
+  // The record goes only once the server has the session, so a new session never overwrites it.
+  const finalizeKept = useCallback(async () => {
+    const pending = pendingFinalizeRef.current;
+    if (!pending) return;
+    setBusy(true);
+    setErrorMessage(null);
+    try {
+      const updated = await finalizeStudySession(pending.sessionId, { status: "COMPLETED", actualFocusSeconds: pending.creditSeconds });
+      pendingFinalizeRef.current = null;
+      void clearActiveSession();
+      setSession(updated);
+      sessionRef.current = updated;
+      focusElapsedRef.current = updated.actualFocusSeconds;
+      setFocusElapsed(updated.actualFocusSeconds);
+      setPhase("done");
+      onSessionCompleted?.(updated);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Seans kaydedilemedi.");
+    } finally {
+      setBusy(false);
+    }
+  }, [onSessionCompleted]);
+
   const start = useCallback(async () => {
     if (busy) return false;
+    if (pendingFinalizeRef.current) {
+      await finalizeKept();
+      return false;
+    }
     setBusy(true);
     setErrorMessage(null);
     try {
@@ -155,7 +185,7 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
     } finally {
       setBusy(false);
     }
-  }, [busy, focusMinutes, planTaskId, preset, subject]);
+  }, [busy, finalizeKept, focusMinutes, planTaskId, preset, roomId, subject]);
 
   const togglePause = useCallback(() => {
     const now = Date.now();
@@ -293,30 +323,14 @@ export function useMobileSessionTimer(options: UseMobileSessionTimerOptions) {
         focusElapsed: focusElapsedRef.current, savedAt: Date.now(),
       });
     } else if (phase === "done" || (phase === "idle" && kept?.resolution.kind !== "finalize-expired")) {
-      clearActiveSession();
+      void clearActiveSession();
     }
     // Only transitions write; the rest are read as they stand at that moment.
   }, [phase, isPaused, session]);
 
-  // Focus ran out while the screen was closed: credit it up to the focus end and show the result.
+  // Once, on mount (below); a failed try is retried by the next "Başla" instead of starting over it.
   useEffect(() => {
-    if (kept?.resolution.kind !== "finalize-expired") return;
-    const credit = kept.resolution.creditSeconds;
-    void finalizeStudySession(kept.record.sessionId, { status: "COMPLETED", actualFocusSeconds: credit })
-      .then((updated) => {
-        // The record goes only once the server has the session; a failure keeps it for the next open.
-        clearActiveSession();
-        setSession(updated);
-        sessionRef.current = updated;
-        focusElapsedRef.current = updated.actualFocusSeconds;
-        setFocusElapsed(updated.actualFocusSeconds);
-        setPhase("done");
-        onSessionCompleted?.(updated);
-      })
-      .catch((err: unknown) => {
-        setErrorMessage(err instanceof Error ? err.message : "Seans kaydedilemedi.");
-      })
-      .finally(() => setBusy(false));
+    if (pendingFinalizeRef.current) void finalizeKept();
     // Once, on mount.
   }, []);
 

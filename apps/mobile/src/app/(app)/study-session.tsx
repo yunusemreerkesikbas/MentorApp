@@ -38,10 +38,11 @@ export default function StudySessionScreen() {
   }>();
   // A session still running from an earlier visit wins over the route (web: `readRestorableRecord`).
   const [resume] = useState(loadSessionResume);
-  // Only the restored session itself inherits its task, room and subject; "Yeni seans" drops them.
-  const [kept, setKept] = useState(() => resume?.record ?? null);
-  const params = kept
-    ? { ...routeParams, taskId: kept.planTaskId ?? undefined, taskTitle: kept.planTaskTitle ?? undefined, roomId: kept.roomId ?? undefined, subject: kept.subject ?? undefined }
+  // Only the first session takes the restored (or route) task, room and subject; "Yeni seans" is a plain one.
+  const [fresh, setFresh] = useState(false);
+  const kept = resume?.record;
+  const params: typeof routeParams = fresh ? {}
+    : kept ? { ...routeParams, taskId: kept.planTaskId ?? undefined, taskTitle: kept.planTaskTitle ?? undefined, roomId: kept.roomId ?? undefined, subject: kept.subject ?? undefined }
     : routeParams;
   const queryClient = useQueryClient();
   const [subject, setSubject] = useState<string | null>(params.subject?.trim() || null);
@@ -73,7 +74,7 @@ export default function StudySessionScreen() {
   return (
     <SessionStage phase={timer.phase} theme={scene.plain ? null : scene.theme}>
       <SessionBody
-        timer={{ ...timer, reset: () => { setKept(null); timer.reset(); } }}
+        timer={{ ...timer, reset: () => { setFresh(true); setSubject(null); timer.reset(); } }}
         params={params}
         subject={subject}
         onSubjectChange={setSubject}

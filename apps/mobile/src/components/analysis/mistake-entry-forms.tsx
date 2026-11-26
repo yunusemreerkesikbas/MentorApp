@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { View } from "react-native";
 import { Image } from "expo-image";
 import { useMutation } from "@tanstack/react-query";
@@ -34,9 +34,14 @@ export function EntryPhotoField({ label, photo, onChange, disabled, onUploadingC
   const upload = useMutation({
     mutationFn: (source: "camera" | "gallery") => uploadNotebookPhoto(source),
     onSuccess: (image) => { if (image) onChange({ key: image.key, uri: image.uri }); },
+    onSettled: () => onUploadingChange?.(false),
   });
-  const pick = (source: "camera" | "gallery") => { if (!disabled && !upload.isPending) upload.mutate(source); };
-  useEffect(() => { onUploadingChange?.(upload.isPending); }, [upload.isPending, onUploadingChange]);
+  // The form is told in the same tap, before the picker opens, so Kaydet can never slip in between.
+  const pick = (source: "camera" | "gallery") => {
+    if (disabled || upload.isPending) return;
+    onUploadingChange?.(true);
+    upload.mutate(source);
+  };
   return (
     <View style={{ gap: space.sm }}>
       <AppText variant="caption" tone="secondary">{label}</AppText>
