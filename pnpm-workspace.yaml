@@ -5,6 +5,7 @@ overrides:
   body-parser: 2.4.0
   brace-expansion@1: 1.1.20
   brace-expansion@2: 2.1.6
+  brace-expansion@5: 5.1.0
   browserslist: 4.28.9
   fast-uri@3: 3.1.7
   follow-redirects: 1.16.2
@@ -25,6 +26,11 @@ auditConfig:
     # Only reached via nestjs-i18n > chokidar, which watches files in local development only
     # (apps/api/src/i18n/i18n.module.ts). Remove once braces 3.0.4 ships.
     - GHSA-vfj7-8cjw-p6xm
+    # zod <4.6.6 memory exhaustion on oversized constrained collections. The only zod 3 in the tree
+    # is 3.25.76 under expo > @expo/cli > expo-mcp (and @expo/mcp-tunnel, zod-to-json-schema): the
+    # Expo CLI's local MCP dev tool, never in the app bundle, and it needs zod 3, which has no patch.
+    # Remove once expo-mcp moves to zod >=4.6.6.
+    - GHSA-mrhx-c7xc-m3w5
 allowBuilds:
   "@nestjs/core": true
   '@parcel/watcher': true
