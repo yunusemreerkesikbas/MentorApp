@@ -135,6 +135,12 @@ export interface ThemePalette {
   /** Hairlines and empty tracks on play surfaces (`--play-line`, `--play-track`). */
   readonly playLine: string;
   readonly playTrack: string;
+  /** Icon wells behind play choices (`--play-well-*`). */
+  readonly playWellBlue: string;
+  readonly playWellPeri: string;
+  readonly playWellViolet: string;
+  readonly playWellCoral: string;
+  readonly playWellPink: string;
   /** The streak flame's warm core, also the weekly chest's gold (`--color-streak-core`). */
   readonly streakCore: string;
   readonly accent: string;
@@ -192,6 +198,11 @@ export const lightThemeTokens: ThemePalette = {
   progressTrack: "#C3D9FD",
   playLine: "#E7E7E7",
   playTrack: "#F0EDEC",
+  playWellBlue: "#C3D9FD",
+  playWellPeri: "#D6DBFD",
+  playWellViolet: "#ECE3FF",
+  playWellCoral: "#FFE8E2",
+  playWellPink: "#F3DDF6",
   streakCore: "#FFD15C",
   dangerEdge: "#8A1B12",
   dangerInk: "#FFFFFF",
@@ -238,6 +249,11 @@ export const darkThemeTokens: ThemePalette = {
   progressTrack: "#2C3D56",
   playLine: "#2E3541",
   playTrack: "#242833",
+  playWellBlue: "#242833",
+  playWellPeri: "#2A2F45",
+  playWellViolet: "#332C47",
+  playWellCoral: "#3A2A28",
+  playWellPink: "#3A2A3F",
   streakCore: "#FFD15C",
   dangerEdge: "#B85A52",
   dangerInk: "#12141A",

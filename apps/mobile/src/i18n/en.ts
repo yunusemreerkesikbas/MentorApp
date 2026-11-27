@@ -1,9 +1,11 @@
 import { notebooksEn } from "./notebooks-en.ts";
+import { onboardingPlayEn } from "./onboarding-play-en.ts";
 import { visionEn } from "./vision-en.ts";
 import type { TranslationCatalog } from "./tr.ts";
 
 export const enMessages: TranslationCatalog = {
   notebooks: notebooksEn,
+  play: onboardingPlayEn,
   visionBoard: visionEn,
   common: {
     loading: "Loading…",

@@ -5,13 +5,13 @@ import { useRouter } from "expo-router";
 import { UserIcon } from "@solar-icons/react-native/bold/user";
 import { GalleryAddIcon } from "@solar-icons/react-native/bold/gallery-add";
 import { TrashBinTrashIcon } from "@solar-icons/react-native/linear/trash-bin-trash";
-import { ApiClientError, http, usersControllerUpdateMe } from "@mentor/api-client";
-import type { AuthUser, AvatarUploadUrlDto } from "@mentor/types";
+import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
+import type { AuthUser } from "@mentor/types";
 import { updateMeSchema } from "@mentor/validation";
 import { cardShadow } from "../../lib/layout.js";
-import { devicePhotoSize, pickDevicePhoto, putDevicePhoto, type DevicePhoto } from "../../lib/device-photo.js";
+import { AVATAR_MAX_BYTES, AVATAR_TYPES, AvatarUploadError, uploadAvatar } from "../../lib/avatar-upload.js";
+import { devicePhotoSize, pickDevicePhoto, type DevicePhoto } from "../../lib/device-photo.js";
 import { haptics } from "../../lib/haptics.js";
-import { getApiBaseUrl } from "../../lib/env.js";
 import { useAuth } from "../../providers/auth-provider.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
@@ -19,8 +19,6 @@ import { useToast } from "../../providers/toast-provider.js";
 import { FormSheet } from "../panel/primitives.js";
 import { AppText, Button, TextField } from "../ui/index.js";
 
-const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
-const AVATAR_TYPES = new Set(["image/jpeg", "image/png"]);
 const BIO_MAX = 200;
 
 const isReauthRequired = (err: unknown) =>
@@ -88,13 +86,11 @@ export function ProfileEditSheet({ user, onClose }: { user: AuthUser; onClose: (
     try {
       let payload = parsed.data;
       if (photo) {
-        const upload = (await http<AvatarUploadUrlDto>("/v1/users/me/avatar-upload-url", {
-          method: "POST",
-          body: JSON.stringify({ contentType: photo.mimeType }),
-        })) as AvatarUploadUrlDto;
-        if (devicePhotoSize(photo) > upload.maxBytes) throw new Error(t("edit_avatar_too_big"));
-        if (!(await putDevicePhoto(new URL(upload.uploadUrl, getApiBaseUrl()).toString(), photo))) throw new Error(t("edit_avatar_upload_error"));
-        payload = { ...payload, avatarStorageKey: upload.key };
+        const key = await uploadAvatar(photo).catch((err: unknown) => {
+          if (!(err instanceof AvatarUploadError)) throw err;
+          throw new Error(t(err.reason === "too_big" ? "edit_avatar_too_big" : "edit_avatar_upload_error"));
+        });
+        payload = { ...payload, avatarStorageKey: key };
       }
       const updated = (await usersControllerUpdateMe(payload)) as unknown as AuthUser;
       if (emailChanged) {

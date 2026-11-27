@@ -28,6 +28,7 @@ import {
   createSecureTokenStore,
   getCachedRefreshToken,
 } from "../lib/secure-token.js";
+import { markWelcomeSeen } from "../lib/welcome-seen.js";
 import { useLocale } from "./i18n-provider.js";
 
 /** `unreachable`: a stored session exists but the API could not be reached to restore it. */
@@ -120,6 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const applySession = useCallback(async (session: AuthSession) => {
     accessTokenRef.current = session.accessToken;
     setActiveSessionOwner(session.user.id);
+    // Someone who has signed in has met the app: after a sign-out the welcome opens on its last slide.
+    markWelcomeSeen();
     if (session.refreshToken) {
       await secureTokenStore.setRefreshToken(session.refreshToken);
     }

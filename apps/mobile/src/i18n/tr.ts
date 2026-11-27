@@ -1,4 +1,5 @@
 import { notebooksTr } from "./notebooks-tr.ts";
+import { onboardingPlayTr } from "./onboarding-play-tr.ts";
 import { visionTr } from "./vision-tr.ts";
 /**
  * Turkish mobile copy catalog — adheres strictly to `docs/copy/voice.md`:
@@ -8,6 +9,7 @@ import { visionTr } from "./vision-tr.ts";
  */
 export const trMessages = {
   notebooks: notebooksTr,
+  play: onboardingPlayTr,
   visionBoard: visionTr,
   common: {
     loading: "Yükleniyor…",
