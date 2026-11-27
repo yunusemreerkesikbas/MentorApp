@@ -1,8 +1,10 @@
 "use client";
 
 import { useId } from "react";
+import { useLocale } from "next-intl";
 import { ResponsiveLine } from "@nivo/line";
 import type { DotsItemSymbolProps } from "@nivo/core";
+import { formatNet } from "@mentor/core";
 
 export interface StatLineChartPoint {
   /** Unique per point (an id, not a label): two exams on one day must stay two points. */
@@ -70,6 +72,7 @@ export function StatLineChart({
   marker,
   tableCaption,
 }: StatLineChartProps) {
+  const locale = useLocale();
   const points = data[0]?.data ?? [];
   const lastIndex = points.length - 1;
   // Unique per instance — a shared literal id would collide when multiple charts render on
@@ -96,7 +99,7 @@ export function StatLineChart({
           xScale={{ type: "point" }}
           enableCrosshair={false}
           yScale={{ type: "linear", min: "auto", max: "auto", nice: true }}
-          yFormat=" >-.2f"
+          yFormat={(value) => formatNet(Number(value), locale)}
           curve="monotoneX"
           colors={[color]}
           lineWidth={2.5}
@@ -176,7 +179,7 @@ export function StatLineChart({
                 <tr key={point.x}>
                   <th scope="row">{describeX(point.x)}</th>
                   <td>
-                    {point.y.toFixed(2)}
+                    {formatNet(point.y, locale)}
                     {valueSuffix}
                   </td>
                 </tr>

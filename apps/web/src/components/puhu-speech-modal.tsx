@@ -25,8 +25,8 @@ export interface PuhuSpeechModalProps {
   isLoading?: boolean;
   /** Loading text displayed while waiting for AI / data */
   loadingText?: string;
-  /** Badge chip label above text (e.g. "Koçun Notu") */
-  badgeText?: string;
+  /** Localized badge label above the response */
+  badgeText: string;
   /** Optional icon in the badge */
   badgeIcon?: ReactNode;
   /** Action button label (e.g. "Anladım"). If undefined, bottom button is omitted */
@@ -47,7 +47,7 @@ export function PuhuSpeechModal({
   text,
   isLoading = false,
   loadingText = "Puhu düşünüyor…",
-  badgeText = "Koçun Notu",
+  badgeText,
   badgeIcon,
   actionLabel,
   onAction,

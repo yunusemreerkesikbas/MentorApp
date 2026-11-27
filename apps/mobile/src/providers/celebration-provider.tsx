@@ -190,8 +190,8 @@ export function CelebrationProvider({ children }: { children: ReactNode }) {
     }
   }, [busy, current]);
 
-  // A focus session and the weekly story play to the end undisturbed; leaving them refreshes.
-  const hold = pathname.includes("study-session") || pathname.includes("weekly-recap");
+  // The notebook can open its index sheet while a mock exam achievement is still arriving.
+  const hold = pathname.includes("study-session") || pathname.includes("weekly-recap") || pathname === "/notebook";
 
   // One scene at a time. The streak answers the action the student just took, so it goes first;
   // but a scene already on screen is never swapped for one that arrived later.

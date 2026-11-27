@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Keyboard, Pressable, StyleSheet, View } from "react-native";
+import { useCallback, useState } from "react";
+import { BackHandler, Keyboard, Pressable, StyleSheet, View } from "react-native";
+import { useFocusEffect } from "expo-router";
 import { CalendarIcon } from "@solar-icons/react-native/linear/calendar";
 import { useMutation } from "@tanstack/react-query";
 import {
@@ -12,17 +13,18 @@ import { haptics } from "../../lib/haptics.js";
 import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 import { PanelCard, PanelCardTitle } from "../panel/primitives.js";
-import { AppText, Button, TextField } from "../ui/index.js";
+import { AppText, Button, ConfirmDialog, TextField } from "../ui/index.js";
 import { AnalysisDateSheet } from "./analysis-date-sheet.js";
 import { AnalysisLink } from "./analysis-link.js";
 
-export function MockExamEntryView({ exam, subjects, onSaved, prior, edit, onCancel }: {
+export function MockExamEntryView({ exam, subjects, onSaved, prior, edit, onCancel, onBack }: {
   exam: ExamSummaryDto;
   subjects: ExamSubjectDto[];
   onSaved: (mock: MockExamDto) => void;
   prior?: MockExamDto;
   edit?: MockExamDto;
   onCancel?: () => void;
+  onBack?: () => void;
 }) {
   const { locale } = useLocale();
   const t = useTranslations("analysisEntry");
@@ -34,10 +36,15 @@ export function MockExamEntryView({ exam, subjects, onSaved, prior, edit, onCanc
   const [publisherName, setPublisherName] = useState(edit?.publisherName ?? "");
   const [date, setDate] = useState(edit?.takenAt.slice(0, 10) ?? todayIso());
   const [dateOpen, setDateOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const dateLabel = formatDateLabel(date, locale, "", { alwaysFull: true });
   const [scores, setScores] = useState(() => edit ? scoresFromMockExam(subjects, edit.subjects) : emptyScores(subjects));
   const rows = recordedMockExamRows(sections, scores);
   const overflowSlug = validateSubjectCounts(sections, scores);
+  const overflow = sections.find((subject) => subject.slug === overflowSlug);
+  const hasDraft = publisherName !== "" || date !== todayIso() || Object.values(scores).some(
+    ({ correct, wrong, blank }) => correct !== "" || wrong !== "" || blank !== "",
+  );
   const questionCount = sections.reduce((total, subject) => total + (subject.questionCount ?? 0), 0);
   const save = useMutation({
     mutationFn: () => {
@@ -54,6 +61,17 @@ export function MockExamEntryView({ exam, subjects, onSaved, prior, edit, onCanc
       onSaved(item);
     },
   });
+  useFocusEffect(useCallback(() => {
+    if (!onBack) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!save.isPending) {
+        if (hasDraft) setConfirming(true);
+        else onBack();
+      }
+      return true;
+    });
+    return () => subscription.remove();
+  }, [hasDraft, onBack, save.isPending]));
   const setField = (subject: ExamSubjectDto, field: "correct" | "wrong" | "blank", value: string) => {
     setScores((previous) => {
       const row = previous[subject.slug];
@@ -125,10 +143,20 @@ export function MockExamEntryView({ exam, subjects, onSaved, prior, edit, onCanc
           {save.error instanceof Error ? save.error.message : tCommon("error_body")}
         </AppText>
       ) : null}
+      {overflow || rows.length === 0 ? (
+        <AppText accessibilityLiveRegion="polite" variant="caption" tone={overflow ? "danger" : "secondary"}>
+          {overflow ? t("validation_over_count", {
+            subject: overflow.name, total: subjectTotal(scores[overflow.slug]!), max: overflow.questionCount ?? 0,
+          }) : t("save_empty_hint")}
+        </AppText>
+      ) : null}
       <Button label={edit ? tHistory("save_edit") : t("save")} onPress={() => {
         if (!save.isPending && !overflowSlug && rows.length) save.mutate();
       }} disabled={Boolean(overflowSlug) || rows.length === 0} loading={save.isPending} />
       {onCancel ? <AnalysisLink label={tHistory("cancel_edit")} onPress={onCancel} /> : null}
+      {onBack ? <ConfirmDialog visible={confirming} title={t("discard_title")} message={t("discard_body")}
+        confirmLabel={t("discard_confirm")} cancelLabel={t("discard_cancel")} destructive
+        onConfirm={onBack} onCancel={() => setConfirming(false)} /> : null}
     </PanelCard>
   );
 }

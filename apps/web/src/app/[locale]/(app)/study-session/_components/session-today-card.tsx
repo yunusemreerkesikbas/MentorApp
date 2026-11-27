@@ -5,6 +5,7 @@ import { History, Minus, PenLine, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { FocusGoalDto, StudySessionDto } from "@mentor/types";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
+import { roundFocusMinutes } from "@mentor/core";
 import { Button, DigitPopIn, Skeleton, SkeletonGroup, SuccessCheck } from "@mentor/ui";
 import {
   PANEL_CARD_TITLE,
@@ -110,7 +111,7 @@ export function SessionTodayCard({
   // the platform's minimum, and a segment beside "0 / 120 dk" would contradict the number.
   const completed = sessions
     .filter((s) => s.status === "COMPLETED" && s.countsAsFocusSession !== false)
-    .map((s) => ({ id: s.id, minutes: Math.max(1, Math.round(s.actualFocusSeconds / 60)) }))
+    .map((s) => ({ id: s.id, minutes: Math.max(1, roundFocusMinutes(s.actualFocusSeconds)) }))
     .reverse();
   const abandoned = sessions.filter((s) => s.status === "ABANDONED").length;
   // The session just finished, if it is in today's list: the bar grows from before it to now.

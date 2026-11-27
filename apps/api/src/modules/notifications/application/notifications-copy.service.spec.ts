@@ -117,11 +117,22 @@ describe("NotificationsCopyService", () => {
           lang,
         );
         expect(copy.body).toContain("Deneme");
-        expect(copy.body).toContain("2026-09-10");
+        expect(copy.body).toContain(lang === "tr" ? "10 Eylül 2026" : "10 September 2026");
         expect(copy.body).not.toMatch(/\{eventTime\}|null|undefined/i);
       }
     },
   );
+
+  it("localizes the date in stored plan reminder copy and retains its wall-clock time", () => {
+    const copy = realCopyService().resolveStored({
+      title: "Plan reminder",
+      body: "2026-09-10 at 20:00",
+      data: { templateKey: NotificationCopyKey.PLAN_EVENT_REMINDER, args: {
+        eventTitle: "Deneme", eventDate: "2026-09-10", eventTime: "20:00",
+      } },
+    }, "tr");
+    expect(copy.body).toContain("10 Eylül 2026 saat 20:00");
+  });
 
   it.each(["tr", "en"])(
     "resolves the invite notifications from the real %s catalog in the Puhu voice",

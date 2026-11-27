@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { Image } from "expo-image";
 import { AltArrowRightIcon } from "@solar-icons/react-native/linear/alt-arrow-right";
 import type { MoodCheckinDto } from "@mentor/types";
+import { lightThemeTokens } from "@mentor/ui/tokens";
 import { ApiClientError } from "@mentor/api-client";
 import { moodArt } from "../../lib/art.js";
 import { upsertMoodCheckin } from "../../lib/coaching-api.js";
@@ -37,7 +38,8 @@ export function MoodRow({
 }) {
   const t = useTranslations("panel");
   const tCommon = useTranslations("common");
-  const { palette } = useThemeTokens();
+  const { mode, palette, space } = useThemeTokens();
+  const compact = useWindowDimensions().width <= 380;
   const premium = useIsPremium();
   const celebrations = useCelebrations();
   const [saved, setSaved] = useState<MoodCheckinDto | null>(null);
@@ -85,7 +87,8 @@ export function MoodRow({
   return (
     <View style={styles.stack}>
       <View
-        style={[styles.row, { backgroundColor: palette.surface, borderColor: palette.playLine }]}
+        style={[styles.row, { backgroundColor: palette.surface, borderColor: palette.playLine },
+          compact && { flexDirection: "column", gap: space.xs, paddingHorizontal: space.sm }]}
       >
         <AppText style={styles.title}>{t("mood_title")}</AppText>
         <View accessibilityRole="radiogroup" style={styles.options}>
@@ -103,10 +106,12 @@ export function MoodRow({
                   styles.option,
                   selected
                     ? { backgroundColor: palette.playSelected, borderColor: palette.ctaPlayBg }
-                    : { borderColor: "transparent", opacity: mood === null ? 1 : 0.6 },
+                    : { borderColor: "transparent", opacity: mood === null || mode === "dark" ? 1 : 0.6 },
                 ]}
               >
-                <Image source={moodArt[value]} style={styles.face} contentFit="contain" />
+                <Image source={moodArt[value]} style={[styles.face,
+                  mode === "dark" && { backgroundColor: lightThemeTokens.surface, borderRadius: 14 }]}
+                  contentFit="contain" />
               </Pressable>
             );
           })}

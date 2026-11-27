@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { formatNet } from "@mentor/core";
 import { MENTORSHIP_COACH_NOTE_MAX } from "@mentor/validation";
 import type {
   MentorshipBriefDto,
@@ -29,6 +30,7 @@ export function CoachStudentOverviewTab({
   const t = useTranslations("students");
   const tCommon = useTranslations("common");
   const { locale } = useLocale();
+  const compact = useWindowDimensions().width <= 480;
   const toast = useToast();
   const queryClient = useQueryClient();
   const { palette, radii, space } = useThemeTokens();
@@ -198,20 +200,20 @@ export function CoachStudentOverviewTab({
             {t("student_brief_hint")}
           </AppText>
         )}
-        <View style={styles.briefActions}>
+        <View style={[styles.briefActions, compact && styles.briefActionsCompact]}>
           <Button
             label={t("generate_student_brief_cta")}
             variant="secondary"
             loading={briefMutation.isPending}
             onPress={() => briefMutation.mutate()}
-            style={{ flex: 1 }}
+            style={compact ? undefined : styles.briefAction}
           />
           <Button
             label={t("brief_history_open")}
             variant="secondary"
             loading={historyBusy}
             onPress={() => void loadHistory()}
-            style={{ flex: 1 }}
+            style={compact ? undefined : styles.briefAction}
           />
         </View>
         {history ? (
@@ -254,7 +256,7 @@ export function CoachStudentOverviewTab({
                   {mock.examName ?? "-"} · {formatDisplayDate(mock.takenAt, locale)}
                 </AppText>
                 <AppText variant="cardTitle" tabularNums>
-                  {mock.totalNet}
+                  {formatNet(mock.totalNet, locale)}
                 </AppText>
               </View>
             ))}
@@ -269,7 +271,7 @@ export function CoachStudentOverviewTab({
                       {sub.subjectName}
                     </AppText>
                     <AppText variant="caption" tone="secondary" tabularNums>
-                      {sub.correct}D / {sub.wrong}Y · {sub.net} net
+                      {sub.correct}D / {sub.wrong}Y · {formatNet(sub.net, locale)} net
                     </AppText>
                   </View>
                 ))}
@@ -381,6 +383,8 @@ const styles = StyleSheet.create({
   bar: { flex: 1, minWidth: 2 },
   quoteBox: { padding: 12, gap: 4 },
   briefActions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  briefActionsCompact: { flexDirection: "column" },
+  briefAction: { flex: 1 },
   lineBetween: {
     flexDirection: "row",
     alignItems: "center",

@@ -371,7 +371,7 @@
       "scribble": "hi, I'm Puhu!"
     },
     "coach": {
-      "name": "Coach",
+      "name": "Puhu",
       "title": "Rough day? Write to Puhu.",
       "body": "Puhu is your AI coach. It answers knowing your plan and your past sessions. Together you pick one small step you can take today.",
       "scribble": "pick a feeling, try it!",
@@ -1090,6 +1090,7 @@
     "coach_chip": "Puhu",
     "coach_speech_title": "Puhu's Note",
     "coach_speech_cta": "Got it",
+    "coach_speech_badge": "Puhu's Note",
     "coach_close_aria": "Close",
     "premium_nudge": "However you feel, I'm here"
   },
@@ -1173,8 +1174,8 @@
       "load_older": "Load older messages",
       "remaining_hint": "Messages left today: {count}",
       "remaining_hint_zero": "You're out of messages for today. See you tomorrow.",
-      "premium_quota_full": "You've used your coach chat allowance. You can still open past chats.",
-      "premium_quota_retry": "You've used your coach chat allowance. You can ask for a new reply from {time}."
+      "premium_quota_full": "You've used your Puhu chat allowance. You can still open past chats.",
+      "premium_quota_retry": "You've used your Puhu chat allowance. You can ask for a new reply from {time}."
     }
   },
   "profile": {
@@ -2711,7 +2712,7 @@
     "add_subtitle": "Photo and label are optional; the real question is why you missed it.",
     "add_photo": "Take or choose a photo",
     "add_photo_optional": "You can add it without a photo.",
-    "add_error_type_legend": "Why did you miss it?",
+    "add_error_type_legend": "Error type",
     "add_subject_label": "Subject",
     "add_subject_none": "Skip",
     "add_note_label": "Note (optional)",

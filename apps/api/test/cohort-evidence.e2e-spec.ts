@@ -87,7 +87,7 @@ describe("cohort evidence (e2e)", () => {
     await asService(async (client) => {
       for (const [startedAt, seconds] of [
         [`${day}T20:30:00Z`, 1500],
-        [`${day}T21:30:00Z`, 600],
+        [`${day}T21:30:00Z`, 640],
       ] as const) {
         await client.query(
           `insert into study_sessions (user_id, started_at, ended_at, preset, actual_focus_seconds, status)
@@ -100,11 +100,13 @@ describe("cohort evidence (e2e)", () => {
     const service = app.get(CohortEvidenceService);
     const snapshot = (await service.listCohortSnapshots([studentId], now)).get(studentId)!;
     expect(snapshot.dailyFocusMinutes14d).toHaveLength(14);
-    expect(snapshot.dailyFocusMinutes14d.slice(-4)).toEqual([25, 10, 0, 0]);
+    expect(snapshot.dailyFocusMinutes14d.slice(-4)).toEqual([25, 11, 0, 0]);
+    expect(snapshot.focusMinutes7d).toBe(36);
 
     const report = await service.getStudentReport(studentId, now);
     expect(report.dailyFocusMinutes28d).toHaveLength(28);
-    expect(report.dailyFocusMinutes28d.slice(-4)).toEqual([25, 10, 0, 0]);
+    expect(report.dailyFocusMinutes28d.slice(-4)).toEqual([25, 11, 0, 0]);
+    expect(report.activity.focusMinutes7d).toBe(36);
   });
 
   it("rates the plan only up to today, so an assigned future week cannot sink it", async () => {
@@ -132,9 +134,7 @@ describe("cohort evidence (e2e)", () => {
     expect(report.planCompletionRate7d).toBe(0.5);
   });
 
-  it("does not count today's pending task as missed, so planning a week cannot flag the student", async () => {
-    // The coach plans on the day the week starts: today's task is still ahead of the student. A
-    // task done today counts, on both sides.
+  it("counts today's pending and completed tasks in the completion rate", async () => {
     await asService((client) =>
       client.query(
         `insert into plan_tasks (user_id, task_date, title, status)
@@ -145,7 +145,7 @@ describe("cohort evidence (e2e)", () => {
 
     const service = app.get(CohortEvidenceService);
     const snapshot = (await service.listCohortSnapshots([studentId], now)).get(studentId)!;
-    expect(snapshot.planCompletionRate7d).toBe(0.5);
+    expect(snapshot.planCompletionRate7d).toBeCloseTo(1 / 3);
 
     await asService((client) =>
       client.query(
@@ -155,7 +155,7 @@ describe("cohort evidence (e2e)", () => {
       ),
     );
     const next = (await service.listCohortSnapshots([studentId], now)).get(studentId)!;
-    expect(next.planCompletionRate7d).toBeCloseTo(2 / 3);
+    expect(next.planCompletionRate7d).toBe(0.5);
   });
 
   it("derives the streak from activity and purchased freezes, past a stale streak_state", async () => {

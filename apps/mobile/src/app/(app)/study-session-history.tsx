@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { AltArrowLeftIcon } from "@solar-icons/react-native/linear/alt-arrow-left";
 import { Image } from "expo-image";
+import { roundFocusMinutes } from "@mentor/core";
 import { PanelCard } from "../../components/panel/primitives.js";
 import { AppText, Button, Chip, Skeleton, StateView } from "../../components/ui/index.js";
 import { art } from "../../lib/art.js";
@@ -117,7 +118,7 @@ export default function StudySessionHistoryScreen() {
                       </View>
                       <View style={{ alignItems: "flex-end", gap: 2 }}>
                         <AppText tabularNums style={{ fontWeight: "800" }}>
-                          {t("minutes_value", { minutes: Math.max(1, Math.round(item.actualFocusSeconds / 60)) })}
+                          {t("minutes_value", { minutes: roundFocusMinutes(item.actualFocusSeconds) })}
                         </AppText>
                         <AppText variant="caption" tone={abandoned ? "secondary" : "success"}>
                           {abandoned ? t("history_abandoned") : t("history_completed")}

@@ -42,18 +42,18 @@ function repoFake() {
       {
         userId: ids[0]!,
         sessions: sinceDate < "2026-08-20" ? 20 : 5,
-        focusMinutes: sinceDate < "2026-08-20" ? 900 : 240,
+        focusSeconds: (sinceDate < "2026-08-20" ? 900 : 240) * 60,
         struggleNote: LEAK,
         aiReflection: LEAK,
         sessionMood: 1,
       },
     ],
-    dailyFocusMinutes: async (ids: string[], sinceDate: string) => {
+    dailyFocusSeconds: async (ids: string[], sinceDate: string) => {
       dailySinceCalls.push(sinceDate);
       return [
-        { userId: ids[0]!, day: "2026-08-28", focusMinutes: 20 },
-        { userId: ids[0]!, day: "2026-09-05", focusMinutes: 90 },
-        { userId: ids[0]!, day: "2026-09-10", focusMinutes: 45 },
+        { userId: ids[0]!, day: "2026-08-28", focusSeconds: 20 * 60 },
+        { userId: ids[0]!, day: "2026-09-05", focusSeconds: 90 * 60 },
+        { userId: ids[0]!, day: "2026-09-10", focusSeconds: 45 * 60 },
       ];
     },
     activityWindow: async (ids: string[], sinceDate: string) => [
@@ -221,9 +221,9 @@ describe("CohortEvidenceService", () => {
       dailySinceCalls = [];
       const repo = {
         ...repoFake(),
-        dailyFocusMinutes: async (ids: string[], sinceDate: string) => {
+        dailyFocusSeconds: async (ids: string[], sinceDate: string) => {
           dailySinceCalls.push(sinceDate);
-          return [{ userId: ids[0]!, day: "2026-09-11", focusMinutes: 30 }];
+          return [{ userId: ids[0]!, day: "2026-09-11", focusSeconds: 30 * 60 }];
         },
       };
       const late = new Date("2026-09-10T22:30:00.000Z");
@@ -273,7 +273,7 @@ describe("CohortEvidenceService", () => {
       });
       expect(snapshot).not.toHaveProperty("currentStreak");
       expect(snapshot).not.toHaveProperty("dailyFocusMinutes14d");
-      expect(Object.keys(calls)).not.toContain("dailyFocusMinutes");
+      expect(Object.keys(calls)).not.toContain("dailyFocusSeconds");
       expect(Object.keys(calls)).not.toContain("activeDatesSince");
       expect(Object.keys(calls)).not.toContain("purchasedFreezeDatesSince");
     });

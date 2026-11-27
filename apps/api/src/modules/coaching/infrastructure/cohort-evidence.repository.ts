@@ -52,20 +52,19 @@ export class CohortEvidenceRepository {
   }
 
   /**
-   * Completed-session totals from the start of `sinceDate`, an Europe/Istanbul day, per student:
-   * the same cut the activity strip draws, so a 7-day total is the sum of the strip's last 7 days.
+   * Completed-session totals from the start of `sinceDate`, a Europe/Istanbul day, per student.
    */
   sessionTotalsSince(
     studentIds: string[],
     sinceDate: string,
-  ): Promise<{ userId: string; sessions: number; focusMinutes: number }[]> {
+  ): Promise<{ userId: string; sessions: number; focusSeconds: number }[]> {
     if (studentIds.length === 0) return Promise.resolve([]);
     return withServiceContext(this.db, (tx) =>
       tx
         .select({
           userId: studySessions.userId,
           sessions: sql<number>`count(*)::int`,
-          focusMinutes: sql<number>`(coalesce(sum(${studySessions.actualFocusSeconds}), 0) / 60)::int`,
+          focusSeconds: sql<number>`coalesce(sum(${studySessions.actualFocusSeconds}), 0)::int`,
         })
         .from(studySessions)
         .where(
@@ -80,16 +79,16 @@ export class CohortEvidenceRepository {
   }
 
   /**
-   * Completed-session minutes per student per Europe/Istanbul day, from `sinceDate` (an Istanbul
+   * Completed-session seconds per student per Europe/Istanbul day, from `sinceDate` (an Istanbul
    * day) on, each on the Istanbul day it started. The day is cut in Istanbul, not UTC: a session
    * started at 00:30 belongs to the day the student lived it, which is the day the coach's strip
    * draws it on. Text, not `date`, so the
    * driver cannot turn the day into a UTC midnight.
    */
-  dailyFocusMinutes(
+  dailyFocusSeconds(
     studentIds: string[],
     sinceDate: string,
-  ): Promise<{ userId: string; day: string; focusMinutes: number }[]> {
+  ): Promise<{ userId: string; day: string; focusSeconds: number }[]> {
     if (studentIds.length === 0) return Promise.resolve([]);
     const day = sql<string>`to_char(${studySessions.startedAt} at time zone 'Europe/Istanbul', 'YYYY-MM-DD')`;
     return withServiceContext(this.db, (tx) =>
@@ -97,7 +96,7 @@ export class CohortEvidenceRepository {
         .select({
           userId: studySessions.userId,
           day,
-          focusMinutes: sql<number>`(coalesce(sum(${studySessions.actualFocusSeconds}), 0) / 60)::int`,
+          focusSeconds: sql<number>`coalesce(sum(${studySessions.actualFocusSeconds}), 0)::int`,
         })
         .from(studySessions)
         .where(
@@ -228,10 +227,8 @@ export class CohortEvidenceRepository {
 
   /**
    * Planned vs done from `sinceDate` through `untilDate` (today). Counts only — titles come from
-   * {@link planTaskRows}. The upper bound matters: a week the coach assigned ahead is planned but
-   * not yet due, and counting it would read as a student falling behind on days still to come.
-   * For the same reason a task dated today counts only once it is done: the day is not over, and a
-   * coach planning the week on its first day must not flag the student with it.
+   * {@link planTaskRows}. Counts every task through today. The upper bound keeps future days
+   * outside the seven-day progress measure.
    */
   planTotalsSince(
     studentIds: string[],
@@ -243,7 +240,7 @@ export class CohortEvidenceRepository {
       tx
         .select({
           userId: planTasks.userId,
-          total: sql<number>`count(*) filter (where ${planTasks.taskDate} < ${untilDate} or ${planTasks.status} = 'DONE')::int`,
+          total: sql<number>`count(*)::int`,
           done: sql<number>`count(*) filter (where ${planTasks.status} = 'DONE')::int`,
         })
         .from(planTasks)

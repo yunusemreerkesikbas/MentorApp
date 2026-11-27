@@ -11,9 +11,8 @@ export interface ApiClientConfig {
   /** Returns the SecureStore refresh token on mobile for `/v1/auth/refresh` and `/v1/auth/logout`. */
   getRefreshToken?: () => string | null;
   /**
-   * Renews the session after a 401 `AUTH_TOKEN_EXPIRED`; resolves true once a new access token is
-   * in place, and the request is sent once more. Mobile needs it: timers stop while the app is in
-   * the background, so the first requests after it returns can carry an expired token.
+   * Renews an expired session before replaying its request. On mobile it also checks whether a
+   * plain authenticated 401 means the session was revoked, without replaying that operation.
    */
   refreshAccessToken?: () => Promise<boolean>;
 }
@@ -82,10 +81,16 @@ export async function httpRaw(url: string, init?: RequestInit): Promise<Response
   const res = await send(url, init, sentToken);
   if (res.status !== 401 || !sentToken || !config.refreshAccessToken) return res;
   const body: unknown = await res.clone().json().catch(() => undefined);
-  if ((body as Partial<ApiError> | undefined)?.code !== "AUTH_TOKEN_EXPIRED") return res;
+  const code = (body as Partial<ApiError> | undefined)?.code;
+  const current = config.getAccessToken?.() ?? null;
+  if (code !== "AUTH_TOKEN_EXPIRED") {
+    if (config.clientPlatform === "mobile" && code === "UNAUTHORIZED" && current === sentToken && !url.startsWith("/v1/auth/")) {
+      await config.refreshAccessToken();
+    }
+    return res;
+  }
   // The auth guard rejected it before any handler ran, so resending (even a POST) is safe.
   // Another request's refresh may have landed while this one was in flight: then just resend.
-  const current = config.getAccessToken?.() ?? null;
   const renewed = (current !== null && current !== sentToken) || (await config.refreshAccessToken());
   return renewed ? send(url, init, config.getAccessToken?.() ?? null) : res;
 }

@@ -83,4 +83,27 @@ describe("http on an expired access token", () => {
     assert.equal(refreshes, 0);
     assert.equal(sent.length, 2);
   });
+
+  it("checks a revoked mobile session without replaying the failed operation", async () => {
+    let refreshes = 0;
+    configureApiClient({
+      baseUrl: "", clientPlatform: "mobile", getAccessToken: () => token,
+      refreshAccessToken: async () => { refreshes += 1; token = null; return false; },
+    });
+    replies = [json(401, { code: "UNAUTHORIZED", message: "no" })];
+    await assert.rejects(http("/v1/notifications/read-all", { method: "PATCH" }));
+    assert.equal(refreshes, 1);
+    assert.deepEqual(sent, ["Bearer old"]);
+  });
+
+  it("does not attempt another refresh when mobile auth itself rejects a session", async () => {
+    let refreshes = 0;
+    configureApiClient({
+      baseUrl: "", clientPlatform: "mobile", getAccessToken: () => token,
+      refreshAccessToken: async () => { refreshes += 1; return false; },
+    });
+    replies = [json(401, { code: "UNAUTHORIZED", message: "no" })];
+    await assert.rejects(http("/v1/auth/refresh", { method: "POST" }));
+    assert.equal(refreshes, 0);
+  });
 });

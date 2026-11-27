@@ -7,7 +7,7 @@ import { ArrowRightDownIcon } from "@solar-icons/react-native/linear/arrow-right
 import { ArrowRightUpIcon } from "@solar-icons/react-native/linear/arrow-right-up";
 import { InfoCircleIcon } from "@solar-icons/react-native/linear/info-circle";
 import { MenuDotsIcon } from "@solar-icons/react-native/linear/menu-dots";
-import { formatTrendDate } from "@mentor/core";
+import { formatNet, formatTrendDate } from "@mentor/core";
 import type { CoachingAnalysisDto, MockExamDto } from "@mentor/types";
 import { deleteMockExam } from "../../lib/analysis-api.js";
 import { haptics } from "../../lib/haptics.js";
@@ -18,6 +18,7 @@ import { AppText, Chip, Skeleton } from "../ui/index.js";
 import { AnalysisLink } from "./analysis-link.js";
 
 export function AnalysisSubjectsCard({ analysis }: { analysis: CoachingAnalysisDto }) {
+  const { locale } = useLocale();
   const t = useTranslations("analysisSubjects");
   const tCommon = useTranslations("common");
   const { palette, space, touchTargets } = useThemeTokens();
@@ -46,15 +47,15 @@ export function AnalysisSubjectsCard({ analysis }: { analysis: CoachingAnalysisD
                 {subject.subjectRef === analysis.nextFocus?.subjectRef ? <Chip label={t("focus")} /> : null}
               </View>
               {Math.abs(delta) >= 0.05 ? (
-                <View style={styles.inline} accessible accessibilityLabel={`${t("trend_aria")}: ${subject.netDelta}`}>
+                <View style={styles.inline} accessible accessibilityLabel={`${t("trend_aria")}: ${formatNet(delta, locale)}`}>
                   <DeltaIcon size={14} color={delta > 0 ? palette.success : palette.secondary} />
                   <AppText variant="caption" tone={delta > 0 ? "success" : "secondary"} tabularNums>
-                    {delta > 0 ? "+" : ""}{subject.netDelta}
+                    {delta > 0 ? "+" : ""}{formatNet(delta, locale)}
                   </AppText>
                 </View>
               ) : null}
               <AppText variant="caption" tabularNums style={styles.bold}>
-                {subject.averageNet}
+                {formatNet(subject.averageNet, locale)}
                 {subject.questionCount != null ? <AppText variant="caption" tone="secondary"> / {subject.questionCount}</AppText> : null}
               </AppText>
             </View>
@@ -128,7 +129,7 @@ export function AnalysisHistoryCard({
                 <AppText variant="caption" style={styles.bold}>{name}</AppText>
                 <AppText variant="micro" tone="secondary">{date}</AppText>
               </View>
-              <AppText variant="caption" tabularNums style={styles.bold}>{tAnalysis("net_suffix", { net: item.totalNet })}</AppText>
+              <AppText variant="caption" tabularNums style={styles.bold}>{tAnalysis("net_suffix", { net: formatNet(item.totalNet, locale) })}</AppText>
               <Arrow size={18} color={palette.secondary} />
             </Pressable>
             {opened ? (
@@ -139,7 +140,7 @@ export function AnalysisHistoryCard({
                       <AppText variant="caption" style={styles.bold}>{subject.subjectName}</AppText>
                       <AppText variant="micro" tone="secondary">{t("row_counts", { correct: subject.correct, wrong: subject.wrong, blank: subject.blank })}</AppText>
                     </View>
-                    <AppText variant="caption" tabularNums>{tAnalysis("net_suffix", { net: subject.net })}</AppText>
+                    <AppText variant="caption" tabularNums>{tAnalysis("net_suffix", { net: formatNet(subject.net, locale) })}</AppText>
                   </View>
                 ))}
                 <View style={styles.spread}>

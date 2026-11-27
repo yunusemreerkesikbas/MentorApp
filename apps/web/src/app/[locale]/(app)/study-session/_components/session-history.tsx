@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { roundFocusMinutes } from "@mentor/core";
 import type { StudySessionDto } from "@mentor/types";
 import { Skeleton, skeletonStaggerStyle } from "@mentor/ui";
 import {
@@ -268,7 +269,7 @@ export function SessionHistory({ variant = "liquid" }: SessionHistoryProps = {})
                         index={i}
                         compact
                         minutesLabel={t("minutes_value", {
-                          minutes: Math.round(s.actualFocusSeconds / 60),
+                          minutes: roundFocusMinutes(s.actualFocusSeconds),
                         })}
                         statusLabel={
                           abandoned ? t("history_abandoned") : t("history_completed")

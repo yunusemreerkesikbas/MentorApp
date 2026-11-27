@@ -357,7 +357,7 @@ test("Premium quota keeps history and restores a rejected draft", async ({ page 
       createdAt: "2026-11-01T10:00:00.000Z",
     }],
   });
-  const refusal = "Koç sohbeti hakkın doldu. Eski sohbetlerini açabilirsin.";
+  const refusal = "Puhu'yla sohbet hakkın doldu. Eski sohbetlerini açabilirsin.";
   await page.route(`${coachApiBase}/coach/chat/stream`, (route) =>
     route.request().method() === "OPTIONS"
       ? json(route, null, 204)
@@ -365,7 +365,7 @@ test("Premium quota keeps history and restores a rejected draft", async ({ page 
   );
   await page.goto(`/koc/sohbet?c=${conversationId}`);
   await expect(page.getByText("Eski yanıt burada.")).toBeVisible();
-  await expect(page.getByText(/Koç sohbeti hakkın doldu.*20 Kas/)).toBeVisible();
+  await expect(page.getByText(/Puhu'yla sohbet hakkın doldu.*20 Kas/)).toBeVisible();
   const input = page.locator("#coach-input");
   await input.fill("Yeni çalışma taslağım");
   await input.press("Enter");

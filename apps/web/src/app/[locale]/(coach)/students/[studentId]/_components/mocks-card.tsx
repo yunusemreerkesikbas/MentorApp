@@ -8,7 +8,7 @@ import { Skeleton } from "@mentor/ui";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 import { firstName } from "@/lib/greeting";
 import { drawOrder } from "@/components/mentorship/coach-motion";
-import { formatNet } from "../../../_components/mentorship-format";
+import { formatNet } from "@mentor/core";
 
 // Nivo is the heaviest thing on the page, and the chart sits below the fold everywhere.
 const StatLineChart = dynamic(
@@ -30,7 +30,7 @@ export function MocksCard({ report }: { report: MentorshipStudentReportDto }) {
   const format = useFormatter();
   const mocks = report.mockTrend;
   const latest = mocks[0];
-  const net = (value: number) => formatNet(value, locale) ?? "";
+  const net = (value: number) => formatNet(value, locale);
 
   if (!latest) {
     return (

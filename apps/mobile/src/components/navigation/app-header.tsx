@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -27,7 +27,8 @@ export function AppHeader() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
-  const { palette } = useThemeTokens();
+  const { palette, space } = useThemeTokens();
+  const compact = useWindowDimensions().width <= 380;
   const t = useTranslations("nav");
   const tPanel = useTranslations("panel");
   const premium = useIsPremium();
@@ -57,7 +58,7 @@ export function AppHeader() {
         },
       ]}
     >
-      <View style={styles.row}>
+      <View style={[styles.row, compact && { gap: space.sm, paddingHorizontal: space.sm }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("profile_link")}
@@ -77,7 +78,7 @@ export function AppHeader() {
         </Pressable>
 
         <View style={styles.identity}>
-          <AppText variant="sectionHeading" numberOfLines={1} style={styles.greeting}>
+          <AppText variant="sectionHeading" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={styles.greeting}>
             {t(greetingKeyForHour())}
           </AppText>
           {user ? (
@@ -107,7 +108,7 @@ export function AppHeader() {
 
         <View style={styles.actions}>
           {!coachRole && balance ? (
-            <View accessibilityLabel={t("earned_rights_label")} style={styles.pills}>
+            <View accessibilityLabel={t("earned_rights_label")} style={[styles.pills, compact && { flexDirection: "column", alignItems: "flex-end", gap: 2 }]}>
               <Pill
                 value={balance.coinConfirmed}
                 background={mixHex(palette.progressTrack, palette.surface, 0.4)}

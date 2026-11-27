@@ -53,16 +53,11 @@ export default function AnalysisScreen() {
     scrollToTop();
   };
 
-  useFocusEffect(useCallback(() => {
-    if (activeTab !== "entry") return;
-    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      setActiveTab(returnTab.current);
-      setSaved(null);
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
-      return true;
-    });
-    return () => subscription.remove();
-  }, [activeTab]));
+  const exitEntry = useCallback(() => {
+    setActiveTab(returnTab.current);
+    setSaved(null);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, []);
 
   const examType = user?.examType ?? ExamType.YKS;
   const examVariant = user?.examVariant ?? null;
@@ -72,6 +67,15 @@ export default function AnalysisScreen() {
   });
   const taxonomy = taxonomyQuery.data;
   const examId = taxonomy?.exam.id;
+  const hasEntryForm = Boolean(examId && saved?.examId !== examId);
+  useFocusEffect(useCallback(() => {
+    if (activeTab !== "entry" || hasEntryForm) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      exitEntry();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [activeTab, exitEntry, hasEntryForm]));
 
   const analysisQuery = useQuery({
     queryKey: ["coaching", "analysis", examId, locale],
@@ -175,6 +179,7 @@ export default function AnalysisScreen() {
             exam={taxonomy.exam}
             subjects={taxonomy.subjects}
             prior={items[0]}
+            onBack={exitEntry}
             onSaved={(item) => {
               setSaved(item);
               scrollToTop();
