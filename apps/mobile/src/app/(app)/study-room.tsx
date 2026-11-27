@@ -111,6 +111,8 @@ function RoomScene({ room, onLeft }: { room: StudyRoomDetailDto; onLeft: () => v
     requests.pending += 1;
     const theme = stepRoomTheme(room.theme, delta);
     const key = ["study-rooms", "detail", room.id];
+    // A rollback refetch still in flight would land an older theme over this tap.
+    await queryClient.cancelQueries({ queryKey: key });
     queryClient.setQueryData(key, { ...room, theme });
     try {
       const saved = await updateStudyRoom(room.id, { theme });

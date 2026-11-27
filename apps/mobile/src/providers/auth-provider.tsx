@@ -184,7 +184,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [silentRefresh]);
 
   const setUserFromServer = useCallback((next: AuthUser) => {
-    // Settings re-seeds the user from this query; a stale copy would undo the save.
+    // Settings re-seeds the user from this query; a stale copy (or a fetch still in flight) would undo the save.
+    void queryClient.cancelQueries({ queryKey: ["users", "me"] });
     queryClient.setQueryData(["users", "me"], next);
     setUser(next);
     setStatus("authenticated");
