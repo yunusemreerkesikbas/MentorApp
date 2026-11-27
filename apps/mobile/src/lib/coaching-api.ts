@@ -206,12 +206,19 @@ export async function recordSessionFeedback(
   );
 }
 
-export async function listRecentStudySessions(
-  pageSize = 5,
-): Promise<StudySessionDto[]> {
-  const url = `${getStudySessionControllerListUrl()}?page=1&pageSize=${pageSize}`;
-  const res = (await http<Paginated<StudySessionDto>>(url)) as Paginated<StudySessionDto>;
-  return res.items;
+/** The web's `listStudySessions`: a page of finished sessions, optionally by subject and date window. */
+export async function listStudySessions(
+  page: number,
+  pageSize: number,
+  filter: { subject?: string; from?: string; to?: string } = {},
+): Promise<Paginated<StudySessionDto>> {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (filter.subject?.trim()) params.set("subject", filter.subject.trim());
+  if (filter.from) params.set("from", filter.from);
+  if (filter.to) params.set("to", filter.to);
+  return (await http<Paginated<StudySessionDto>>(
+    `${getStudySessionControllerListUrl()}?${params.toString()}`,
+  )) as Paginated<StudySessionDto>;
 }
 
 export async function fetchWeeklyChest(): Promise<WeeklyChestView | null> {

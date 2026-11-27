@@ -23,10 +23,12 @@ import {
 import { mobileMediaImageSource, type MobileMediaImageSource } from "../lib/media-image-source.js";
 import { getApiBaseUrl } from "../lib/env.js";
 import { unregisterCachedPushToken } from "../lib/push-notifications.js";
+import { clearActiveSession, setActiveSessionOwner } from "../lib/session-store.js";
 import {
   createSecureTokenStore,
   getCachedRefreshToken,
 } from "../lib/secure-token.js";
+import { markWelcomeSeen } from "../lib/welcome-seen.js";
 import { useLocale } from "./i18n-provider.js";
 
 /** `unreachable`: a stored session exists but the API could not be reached to restore it. */
@@ -109,12 +111,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await secureTokenStore.clearRefreshToken();
     // Everything cached belongs to the account that just left; the next one must not see it.
     queryClient.clear();
+    // A running session kept for "come back to it" is this account's too; gone before anyone else signs in.
+    setActiveSessionOwner(null);
+    await clearActiveSession();
     setUser(null);
     setStatus("anonymous");
   }, [queryClient]);
 
   const applySession = useCallback(async (session: AuthSession) => {
     accessTokenRef.current = session.accessToken;
+    setActiveSessionOwner(session.user.id);
+    // Someone who has signed in has met the app: after a sign-out the welcome opens on its last slide.
+    markWelcomeSeen();
     if (session.refreshToken) {
       await secureTokenStore.setRefreshToken(session.refreshToken);
     }
@@ -179,9 +187,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [silentRefresh]);
 
   const setUserFromServer = useCallback((next: AuthUser) => {
+    // Settings re-seeds the user from this query; a stale copy (or a fetch still in flight) would undo the save.
+    void queryClient.cancelQueries({ queryKey: ["users", "me"] });
+    queryClient.setQueryData(["users", "me"], next);
     setUser(next);
     setStatus("authenticated");
-  }, []);
+  }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

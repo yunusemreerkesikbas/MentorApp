@@ -1,4 +1,6 @@
+import { FORUM_IMAGE_MAX_BYTES, FORUM_IMAGE_MIMES, FORUM_MAX_ATTACHMENTS } from "@mentor/types";
 import type {
+  Attachment,
   ForumFeedItem,
   ForumPollView,
   ForumTagView,
@@ -77,6 +79,7 @@ export interface CommunityPostModel {
   };
   title: string | null;
   body: string;
+  attachments: Attachment[];
   poll: ForumPollView | null;
   status: ThreadStatus;
   acceptedPostId: string | null;
@@ -100,6 +103,7 @@ export function feedItemToPostModel(item: ForumFeedItem): CommunityPostModel {
     author: item.author,
     title: item.title,
     body: item.body,
+    attachments: item.attachments ?? [],
     poll: item.poll,
     status: item.status,
     acceptedPostId: item.acceptedPostId,
@@ -132,6 +136,7 @@ export function threadViewToPostModel(
     },
     title: thread.title,
     body: thread.body,
+    attachments: thread.attachments ?? [],
     poll: thread.poll,
     status: thread.status,
     acceptedPostId: thread.acceptedPostId,
@@ -147,4 +152,20 @@ export function threadViewToPostModel(
     canDelete: Boolean(thread.capabilities?.canDelete),
     createdAt: thread.createdAt,
   };
+}
+
+export type AttachError = "too_many" | "unsupported" | "too_large";
+
+/** Why a picked photo cannot join `count` already picked ones, or null. Images only on mobile (owner, 2026-11-26). */
+export function checkForumPhoto(mimeType: string, sizeBytes: number, count: number): AttachError | null {
+  if (count >= FORUM_MAX_ATTACHMENTS) return "too_many";
+  if (!(FORUM_IMAGE_MIMES as readonly string[]).includes(mimeType)) return "unsupported";
+  if (sizeBytes > FORUM_IMAGE_MAX_BYTES) return "too_large";
+  return null;
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

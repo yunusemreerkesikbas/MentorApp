@@ -17,3 +17,11 @@ describe("signup legal documents", () => {
     assert.equal(signupLegalUrl("terms", "en"), "https://puhukoc.com/en/legal/kullanim-kosullari");
   });
 });
+
+describe("settings legal footer", () => {
+  it("lists the web's six documents in its order", async () => {
+    const { LEGAL_DOCUMENTS } = await import("./signup-legal.ts");
+    assert.deepEqual(LEGAL_DOCUMENTS, ["kvkk", "privacy", "terms", "distance_sales", "pre_info", "refund"]);
+    assert.equal(signupLegalUrl("refund", "tr"), "https://puhukoc.com/yasal/iade-ve-cayma-hakki");
+  });
+});

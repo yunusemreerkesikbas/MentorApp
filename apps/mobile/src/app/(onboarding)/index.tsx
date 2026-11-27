@@ -9,22 +9,15 @@ import {
   type OnboardingStep,
 } from "@mentor/core";
 import { UserRole, type ExamType } from "@mentor/types";
-import {
-  ExamStep,
-  IntroStep,
-  KpssLevelStep,
-} from "../../components/onboarding/exam-steps.js";
-import {
-  CoachProfileStep,
-  CompleteStep,
-  DailyGoalStep,
-  ProfileStep,
-  type ReadySummary,
-} from "../../components/onboarding/goal-profile-steps.js";
-import {
-  FieldStep,
-  WhyStep,
-} from "../../components/onboarding/vision-steps.js";
+import { CoachProfileStep } from "../../components/onboarding/coach-profile-step.js";
+import { DailyGoalStep } from "../../components/onboarding/daily-goal-step.js";
+import { ProfileStep } from "../../components/onboarding/profile-step.js";
+import { ExamStep } from "../../components/onboarding/exam-step.js";
+import { IntroStep } from "../../components/onboarding/intro-step.js";
+import { KpssLevelStep } from "../../components/onboarding/kpss-level-step.js";
+import { CompleteStep, type ReadySummary } from "../../components/onboarding/complete-step.js";
+import { FieldStep } from "../../components/onboarding/field-step.js";
+import { WhyStep } from "../../components/onboarding/why-step.js";
 import { useAuth } from "../../providers/auth-provider.js";
 import { usePreferencesStore } from "../../stores/preferences.store.js";
 
@@ -49,8 +42,10 @@ export default function OnboardingWizardScreen() {
   );
   const [visionWritten, setVisionWritten] = useState(false);
   const [summary, setSummary] = useState<ReadySummary>({
-    dailyGoalMinutes: user?.dailyFocusGoalMinutes ?? null,
+    // Only what this run chose: a skipped goal step shows no goal row from an old value.
+    dailyGoalMinutes: null,
     careerGroup: user?.careerGroup ?? null,
+    reminder: false,
   });
 
   if (!user) {
@@ -139,9 +134,13 @@ export default function OnboardingWizardScreen() {
           user={user}
           progress={progress}
           onBack={() => back("dailyGoal")}
-          onSkip={() => go("dailyGoal")}
-          onSaved={(dailyGoalMinutes) => {
-            setSummary((cur) => ({ ...cur, dailyGoalMinutes }));
+          onSkip={() => {
+            // Skipping after a save (back from profile) still drops the row: it shows what they chose to keep.
+            setSummary((cur) => ({ ...cur, dailyGoalMinutes: null }));
+            go("dailyGoal");
+          }}
+          onSaved={(dailyGoalMinutes, reminder) => {
+            setSummary((cur) => ({ ...cur, dailyGoalMinutes, reminder }));
             go("dailyGoal");
           }}
         />

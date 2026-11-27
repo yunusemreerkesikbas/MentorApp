@@ -1,5 +1,6 @@
 import { File } from "expo-file-system";
 import * as Picker from "expo-image-picker";
+import { photoMimeType } from "./photo-mime.js";
 
 export type DevicePhoto = { uri: string; mimeType: string; width: number; height: number };
 
@@ -16,10 +17,9 @@ export async function pickDevicePhoto(source: "camera" | "gallery"): Promise<Dev
     : await Picker.launchImageLibraryAsync(options);
   if (result.canceled) return null;
   const asset = result.assets[0];
-  if (!asset?.mimeType || !["image/jpeg", "image/png", "image/webp"].includes(asset.mimeType)) {
-    throw new Error("format");
-  }
-  return { uri: asset.uri, mimeType: asset.mimeType, width: asset.width, height: asset.height };
+  const mimeType = asset ? photoMimeType(asset.mimeType, asset.uri) : null;
+  if (!asset || !mimeType) throw new Error("format");
+  return { uri: asset.uri, mimeType, width: asset.width, height: asset.height };
 }
 
 export const devicePhotoSize = (photo: DevicePhoto) => new File(photo.uri).size;

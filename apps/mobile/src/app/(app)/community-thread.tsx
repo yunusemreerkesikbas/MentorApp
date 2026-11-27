@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -6,22 +6,22 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiClientError } from "@mentor/api-client";
 import type { ForumCoachIntent, ZoneView } from "@mentor/types";
+import type { AttachmentInput } from "@mentor/validation";
 import { AltArrowLeftIcon } from "@solar-icons/react-native/linear/alt-arrow-left";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CommunityReplyCard } from "../../components/community/community-reply-card.js";
+import { ReplyBar } from "../../components/community/reply-bar.js";
 import { FeedPostCard } from "../../components/community/feed-post-card.js";
 import { PanelCard } from "../../components/panel/primitives.js";
 import { AppText, Button, ScreenLoadingSkeleton, StateView } from "../../components/ui/index.js";
 import { art } from "../../lib/art.js";
 import { threadViewToPostModel } from "../../lib/community-view.js";
-import { fontFamilyFor } from "../../lib/fonts.js";
 import {
   getQuestion,
   getThreadDetail,
@@ -29,11 +29,9 @@ import {
   postQuestionAnswer,
   postThreadComment,
 } from "../../lib/forum-api.js";
-import { haptics } from "../../lib/haptics.js";
 import { useAuth } from "../../providers/auth-provider.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
-import { useToast } from "../../providers/toast-provider.js";
 
 function bridgeLabelKey(intent: ForumCoachIntent) {
   if (intent === "PLAN") return "coach_bridge_PLAN" as const;
@@ -48,14 +46,11 @@ export default function CommunityThreadScreen() {
   const queryClient = useQueryClient();
   const { id, kind } = useLocalSearchParams<{ id?: string; kind?: string }>();
   const { user } = useAuth();
-  const { palette, radii, space, typeScale } = useThemeTokens();
+  const { palette, space } = useThemeTokens();
   const t = useTranslations("community");
-  const toast = useToast();
 
   const threadId = typeof id === "string" ? id.trim() : "";
   const isQuestion = kind === "question";
-  const [replyText, setReplyText] = useState("");
-  const [sending, setSending] = useState(false);
 
   const zonesQuery = useQuery({
     queryKey: ["forum", "zones"],
@@ -97,21 +92,10 @@ export default function CommunityThreadScreen() {
     [thread, zoneRef],
   );
 
-  async function handleReply() {
-    const trimmed = replyText.trim();
-    if (!trimmed || !threadId || sending) return;
-    setSending(true);
-    try {
-      if (isQuestion) await postQuestionAnswer({ threadId, body: trimmed });
-      else await postThreadComment({ threadId, body: trimmed });
-      haptics.success();
-      setReplyText("");
-      await queryClient.invalidateQueries({ queryKey: ["forum"] });
-    } catch (err) {
-      toast.show(err instanceof ApiClientError ? err.message : t("composer_error"));
-    } finally {
-      setSending(false);
-    }
+  async function handleReply(body: string, attachments: AttachmentInput[]) {
+    if (isQuestion) await postQuestionAnswer({ threadId, body, attachments });
+    else await postThreadComment({ threadId, body, attachments });
+    await queryClient.invalidateQueries({ queryKey: ["forum"] });
   }
 
   const canAcceptBase = Boolean(
@@ -177,7 +161,7 @@ export default function CommunityThreadScreen() {
           <>
             <FeedPostCard
               post={postModel}
-              excerptLines={undefined}
+              excerptLines={0}
               onOpenThread={() => undefined}
               onOpenMember={(username) =>
                 router.push({ pathname: "/(app)/community-member", params: { username } })
@@ -253,6 +237,7 @@ export default function CommunityThreadScreen() {
                   key={comment.id}
                   reply={{ kind: "comment", item: comment }}
                   threadId={threadId}
+                  onOpenReplies={() => router.push({ pathname: "/(app)/community-comment", params: { id: comment.id } })}
                   onOpenMember={(username) =>
                     router.push({ pathname: "/(app)/community-member", params: { username } })
                   }
@@ -264,44 +249,11 @@ export default function CommunityThreadScreen() {
       </ScrollView>
 
       {postModel ? (
-        <View
-          style={[
-            styles.replyBar,
-            {
-              backgroundColor: palette.surface,
-              borderTopColor: palette.playLine,
-              paddingBottom: Math.max(10, insets.bottom),
-            },
-          ]}
-        >
-          <TextInput
-            accessibilityLabel={isQuestion ? t("answer_placeholder") : t("comment_placeholder")}
-            placeholder={isQuestion ? t("answer_placeholder") : t("comment_placeholder")}
-            placeholderTextColor={palette.muted}
-            value={replyText}
-            onChangeText={setReplyText}
-            multiline
-            maxLength={4000}
-            style={[
-              styles.replyInput,
-              {
-                backgroundColor: palette.surfaceAlt,
-                borderColor: palette.border,
-                borderRadius: radii.inner,
-                color: palette.main,
-                fontSize: typeScale.body.fontSize,
-                fontFamily: fontFamilyFor(typeScale.body.fontWeight),
-              },
-            ]}
-          />
-          <Button
-            label={t("post_comment_cta")}
-            onPress={() => void handleReply()}
-            loading={sending}
-            disabled={!replyText.trim()}
-            variant="primary"
-          />
-        </View>
+        <ReplyBar
+          placeholder={isQuestion ? t("answer_placeholder") : t("comment_placeholder")}
+          submitLabel={t("post_comment_cta")}
+          onSubmit={handleReply}
+        />
       ) : null}
     </KeyboardAvoidingView>
   );
@@ -318,20 +270,4 @@ const styles = StyleSheet.create({
   bridgeCard: { gap: 10 },
   bridgeTop: { flexDirection: "row", alignItems: "center", gap: 10 },
   bridgeMascot: { width: 40, height: 40 },
-  replyBar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
-  },
-  replyInput: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 110,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
 });

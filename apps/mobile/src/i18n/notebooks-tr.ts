@@ -51,5 +51,10 @@ export const notebooksTr = {
   "done": "Çizimi bitir",
   "remove": "Yazıyı kaldır",
   "subject": "Ders",
+  "delete": "Defteri sil",
+  "deleteTitle": "{title} silinsin mi?",
+  "deleteBody": "Defter ve içindeki sayfalar silinecek. Bu işlem geri alınamaz.",
+  "deleteError": "Defter şu anda silinemedi. Biraz sonra yeniden deneyebilirsin.",
+  "cancel": "Vazgeç",
   "all": "Tüm dersler"
 } as const;

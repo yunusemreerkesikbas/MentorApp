@@ -33,12 +33,12 @@ describe("ForumEventsListener", () => {
   });
 
   it("notifies the parent comment author on a reply", async () => {
-    await listener.onCommentReplied({ parentPostId: "p1", recipientId: "author", actorId: "replier" });
+    await listener.onCommentReplied({ parentPostId: "p1", replyPostId: "r1", recipientId: "author", actorId: "replier" });
     expect(notifications.createFromTemplate).toHaveBeenCalledWith(
       "author",
       "FORUM",
       expect.any(String),
-      "/community/comment/p1",
+      "/community/comment/p1?highlight=r1",
     );
   });
 

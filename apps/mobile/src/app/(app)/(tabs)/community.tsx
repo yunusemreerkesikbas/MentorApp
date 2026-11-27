@@ -13,8 +13,9 @@ import { CommunityFeedView } from "../../../components/community/community-feed-
 import { CommunityHubView } from "../../../components/community/community-hub-view.js";
 import { ForumZonesView } from "../../../components/community/forum-zones-view.js";
 import { LeaderboardView } from "../../../components/community/leaderboard-view.js";
-import { StudyRoomsView } from "../../../components/community/study-rooms-view.js";
-import { AppText, SlidingTabs } from "../../../components/ui/index.js";
+import { SessionRoomsCard } from "../../../components/session/session-rooms-card.js";
+import { SessionStage } from "../../../components/session/session-stage.js";
+import { AppText, SlidingTabs, StateView } from "../../../components/ui/index.js";
 import type { CommunityPostModel } from "../../../lib/community-view.js";
 import { listForumZones } from "../../../lib/forum-api.js";
 import { haptics } from "../../../lib/haptics.js";
@@ -229,7 +230,9 @@ export default function CommunityScreen() {
           />
         ) : null}
 
-        {tab === "rooms" ? <StudyRoomsView onOpenMember={handleOpenMember} /> : null}
+        {tab === "rooms" ? (availability.studyRooms ? (
+          <SessionStage phase="idle" theme={null}><SessionRoomsCard /></SessionStage>
+        ) : <StateView title={t("soon_title")} body={t("soon_desc")} />) : null}
 
         {tab === "league" ? <LeaderboardView /> : null}
       </ScrollView>

@@ -135,6 +135,12 @@ export interface ThemePalette {
   /** Hairlines and empty tracks on play surfaces (`--play-line`, `--play-track`). */
   readonly playLine: string;
   readonly playTrack: string;
+  /** Icon wells behind play choices (`--play-well-*`). */
+  readonly playWellBlue: string;
+  readonly playWellPeri: string;
+  readonly playWellViolet: string;
+  readonly playWellCoral: string;
+  readonly playWellPink: string;
   /** The streak flame's warm core, also the weekly chest's gold (`--color-streak-core`). */
   readonly streakCore: string;
   readonly accent: string;
@@ -192,6 +198,11 @@ export const lightThemeTokens: ThemePalette = {
   progressTrack: "#C3D9FD",
   playLine: "#E7E7E7",
   playTrack: "#F0EDEC",
+  playWellBlue: "#C3D9FD",
+  playWellPeri: "#D6DBFD",
+  playWellViolet: "#ECE3FF",
+  playWellCoral: "#FFE8E2",
+  playWellPink: "#F3DDF6",
   streakCore: "#FFD15C",
   dangerEdge: "#8A1B12",
   dangerInk: "#FFFFFF",
@@ -238,6 +249,11 @@ export const darkThemeTokens: ThemePalette = {
   progressTrack: "#2C3D56",
   playLine: "#2E3541",
   playTrack: "#242833",
+  playWellBlue: "#242833",
+  playWellPeri: "#2A2F45",
+  playWellViolet: "#332C47",
+  playWellCoral: "#3A2A28",
+  playWellPink: "#3A2A3F",
   streakCore: "#FFD15C",
   dangerEdge: "#B85A52",
   dangerInk: "#12141A",
@@ -267,6 +283,8 @@ export const sceneThemes = {
       inkSoft: "#CDB99F",
       accent: "#2E7D54",
       live: "#6BC49A",
+      /** The room photo's veil (web `--room-veil`); the session screen scales it per phase. */
+      veil: "rgba(36, 27, 20, 0.95)",
     },
     CAFE: {
       groundFrom: "#2A1F1A",
@@ -276,6 +294,7 @@ export const sceneThemes = {
       inkSoft: "#C2AC9C",
       accent: "#E8A87C",
       live: "#6BC49A",
+      veil: "rgba(23, 17, 16, 0.95)",
     },
     HOME: {
       groundFrom: "#F3EFF9",
@@ -285,6 +304,8 @@ export const sceneThemes = {
       inkSoft: "#5E5476",
       accent: "#55ACEE",
       live: "#2E7D54",
+      /** Half the dark rooms' strength: a bright room with dark ink would wash out. */
+      veil: "rgba(227, 218, 241, 0.5)",
     },
   },
   planCoachNight: {

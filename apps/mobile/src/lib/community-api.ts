@@ -49,6 +49,16 @@ export function mapStudyRoomJoinError(err: unknown): StudyRoomJoinFailure {
   return classifyStudyRoomJoinErrorCode(code);
 }
 
+export async function updateStudyRoom(
+  id: string,
+  patch: { name?: string; theme?: StudyRoomTheme; capacity?: number },
+): Promise<StudyRoomDetailDto> {
+  return (await http<StudyRoomDetailDto>(`/v1/study-rooms/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  })) as StudyRoomDetailDto;
+}
+
 export async function rotateStudyRoomCode(id: string): Promise<StudyRoomDetailDto> {
   return (await http<StudyRoomDetailDto>(
     `/v1/study-rooms/${encodeURIComponent(id)}/code`,

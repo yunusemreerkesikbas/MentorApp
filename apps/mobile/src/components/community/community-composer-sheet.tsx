@@ -10,6 +10,7 @@ import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 import { FormSheet } from "../panel/primitives.js";
 import { AppText, Button, Chip, TextField } from "../ui/index.js";
+import { AttachButton, AttachmentStrip, useForumAttachments } from "./attachment-picker.js";
 
 export type ComposerMode = "CHAT" | "QA";
 
@@ -50,6 +51,7 @@ export function CommunityComposerSheet({
   const [pollDurationMinutes, setPollDurationMinutes] = useState<number>(1440);
   const [submitting, setSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const picker = useForumAttachments();
 
   const tagsQuery = useQuery({
     queryKey: ["forum", "tags"],
@@ -72,6 +74,7 @@ export function CommunityComposerSheet({
     setPollOptions(["", ""]);
     setPollDurationMinutes(1440);
     setErrorText(null);
+    picker.reset();
   }, [initialMode, visible]);
 
   useEffect(() => {
@@ -126,8 +129,17 @@ export function CommunityComposerSheet({
 
     setSubmitting(true);
     setErrorText(null);
+    let attachments;
+    try {
+      attachments = pollPayload ? [] : await picker.uploadAll();
+    } catch {
+      picker.setError(t("attach_failed"));
+      setSubmitting(false);
+      return;
+    }
     try {
       const created = await postZoneThread({
+        attachments,
         zoneId,
         body: trimmedBody,
         ...(mode === "QA" ? { title: trimmedTitle } : {}),
@@ -231,6 +243,13 @@ export function CommunityComposerSheet({
         maxLength={4000}
       />
 
+      {pollOpen ? null : (
+        <View style={styles.attachRow}>
+          <AttachButton picker={picker} disabled={submitting} />
+          <View style={{ flex: 1 }}><AttachmentStrip picker={picker} disabled={submitting} /></View>
+        </View>
+      )}
+
       {tagsQuery.data && tagsQuery.data.length > 0 ? (
         <View style={styles.section}>
           <AppText variant="caption" tone="secondary">
@@ -306,6 +325,7 @@ export function CommunityComposerSheet({
 
 const styles = StyleSheet.create({
   footerWrap: { gap: 8 },
+  attachRow: { flexDirection: "row", alignItems: "center", gap: 4, marginLeft: -10 },
   section: { gap: 6 },
   rowWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   bodyInput: { minHeight: 108, paddingTop: 12, textAlignVertical: "top" },

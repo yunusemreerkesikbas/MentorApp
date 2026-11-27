@@ -51,7 +51,7 @@ export class ForumEventsListener {
 
   @OnEvent(ForumEventTopic.COMMENT_REPLIED)
   async onCommentReplied(e: CommentReplied): Promise<void> {
-    await this.notify(e.recipientId, e.actorId, NotificationCopyKey.COMMENT_REPLIED, `/community/comment/${e.parentPostId}`);
+    await this.notify(e.recipientId, e.actorId, NotificationCopyKey.COMMENT_REPLIED, `/community/comment/${e.parentPostId}?highlight=${e.replyPostId}`);
   }
 
   @OnEvent(ForumEventTopic.ANSWER_ACCEPTED)

@@ -2,6 +2,7 @@ import { ApiClientError, http } from "@mentor/api-client";
 import type { AttachmentInput } from "@mentor/validation";
 import type {
   AnswerView,
+  CommentDetail,
   CommentView,
   ForumActivityFeed,
   ForumCoachBridgeView,
@@ -123,24 +124,44 @@ export async function getThreadDetail(threadId: string): Promise<ThreadDetail> {
   )) as ThreadDetail;
 }
 
+const replyBody = (body: string, attachments?: AttachmentInput[]) =>
+  JSON.stringify({ body: body.trim(), ...(attachments?.length ? { attachments } : {}) });
+
 export async function postThreadComment(input: {
   threadId: string;
   body: string;
+  attachments?: AttachmentInput[];
 }): Promise<CommentView> {
   return (await http<CommentView>(
     `/v1/forum/threads/${encodeURIComponent(input.threadId)}/comments`,
-    { method: "POST", body: JSON.stringify({ body: input.body.trim() }) },
+    { method: "POST", body: replyBody(input.body, input.attachments) },
   )) as CommentView;
 }
 
 export async function postQuestionAnswer(input: {
   threadId: string;
   body: string;
+  attachments?: AttachmentInput[];
 }): Promise<AnswerView> {
   return (await http<AnswerView>(
     `/v1/forum/threads/${encodeURIComponent(input.threadId)}/answers`,
-    { method: "POST", body: JSON.stringify({ body: input.body.trim() }) },
+    { method: "POST", body: replyBody(input.body, input.attachments) },
   )) as AnswerView;
+}
+
+export async function getCommentDetail(postId: string): Promise<CommentDetail> {
+  return (await http<CommentDetail>(`/v1/forum/posts/${encodeURIComponent(postId)}`)) as CommentDetail;
+}
+
+export async function postCommentReply(input: {
+  postId: string;
+  body: string;
+  attachments?: AttachmentInput[];
+}): Promise<CommentView> {
+  return (await http<CommentView>(
+    `/v1/forum/posts/${encodeURIComponent(input.postId)}/replies`,
+    { method: "POST", body: replyBody(input.body, input.attachments) },
+  )) as CommentView;
 }
 
 export async function acceptQuestionAnswer(threadId: string, postId: string): Promise<void> {

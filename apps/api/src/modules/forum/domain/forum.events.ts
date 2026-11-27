@@ -62,6 +62,8 @@ export interface ThreadCommented {
 /** A reply landed on a comment. `recipientId` = the parent comment's author. */
 export interface CommentReplied {
   parentPostId: string;
+  /** The new reply, framed when the notification opens the parent comment. */
+  replyPostId: string;
   recipientId: string;
   actorId: string;
 }
