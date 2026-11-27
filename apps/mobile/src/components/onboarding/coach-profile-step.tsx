@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { ApiClientError, http } from "@mentor/api-client";
 import type { MentorshipApplicationDto } from "@mentor/types";
 import { haptics } from "../../lib/haptics.js";
+import { updateCoachProfile } from "../../lib/mentorship-api.js";
 import { useTranslations } from "../../providers/i18n-provider.js";
 import { useThemeTokens } from "../../providers/theme-provider.js";
 import { AppText, Button, TextField } from "../ui/index.js";
@@ -48,12 +49,19 @@ export function CoachProfileStep({
       });
       haptics.success();
       onSaved();
-    } catch (err) {
-      // A retry after a lost response: the first try already made them a coach, so the step is done.
+    } catch (first) {
+      let err = first;
+      // Already a coach (a retry after a lost response, or an earlier sign-up): what they typed now
+      // still lands on that profile before the step completes.
       if (err instanceof ApiClientError && err.body.code === "MENTORSHIP_ALREADY_COACH") {
-        haptics.success();
-        onSaved();
-        return;
+        try {
+          await updateCoachProfile({ headline: headline.trim(), bio: bio.trim() });
+          haptics.success();
+          onSaved();
+          return;
+        } catch (update) {
+          err = update;
+        }
       }
       haptics.error();
       setErrorMessage(err instanceof ApiClientError ? err.body.message : t("coach_profile_save_error"));
