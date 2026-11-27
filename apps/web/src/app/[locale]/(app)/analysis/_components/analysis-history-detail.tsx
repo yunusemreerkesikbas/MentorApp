@@ -6,6 +6,7 @@ import { Pen2Icon as Pencil } from "@solar-icons/react/linear/pen-2";
 import { TrashBinTrashIcon as Trash2 } from "@solar-icons/react/linear/trash-bin-trash";
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatNet } from "@mentor/core";
 import type { ExamSubjectDto, MockExamDto, MockExamSubjectDto } from "@mentor/types";
 import { Skeleton } from "@mentor/ui";
 import { FormError } from "@/components/form";
@@ -233,6 +234,7 @@ function LegendDot({ fill, label }: { fill: string; label: string }) {
 
 /** One subject as a part-to-whole bar; the counts sit beside it, so colour is never the only cue. */
 function SubjectRow({ subject }: { subject: MockExamSubjectDto }) {
+  const locale = useLocale();
   const t = useTranslations("analysis.history");
   const parts = [
     { count: subject.correct, fill: "bg-[var(--chart-correct)]" },
@@ -257,7 +259,7 @@ function SubjectRow({ subject }: { subject: MockExamSubjectDto }) {
           })}
         </span>
         <span className="w-12 text-right text-caption font-black tabular-nums text-[var(--color-main)]">
-          {subject.net}
+          {formatNet(subject.net, locale)}
         </span>
       </div>
       <div className="flex h-1.5 gap-0.5" aria-hidden>

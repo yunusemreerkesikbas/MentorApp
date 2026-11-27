@@ -7,7 +7,7 @@ import { GalleryAddIcon } from "@solar-icons/react-native/bold/gallery-add";
 import { TrashBinTrashIcon } from "@solar-icons/react-native/linear/trash-bin-trash";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import type { AuthUser } from "@mentor/types";
-import { updateMeSchema } from "@mentor/validation";
+import { updateMeSchema, usernameSchema } from "@mentor/validation";
 import { cardShadow } from "../../lib/layout.js";
 import { AVATAR_MAX_BYTES, AVATAR_TYPES, AvatarUploadError, uploadAvatar } from "../../lib/avatar-upload.js";
 import { devicePhotoSize, pickDevicePhoto, type DevicePhoto } from "../../lib/device-photo.js";
@@ -27,6 +27,7 @@ const isReauthRequired = (err: unknown) =>
 /** The web's `ProfileEditForm` in the same titled sheet: avatar, name, username, about, website, email. */
 export function ProfileEditSheet({ user, onClose }: { user: AuthUser; onClose: () => void }) {
   const t = useTranslations("settings");
+  const tOnboarding = useTranslations("onboarding");
   const router = useRouter();
   const toast = useToast();
   const { setUserFromServer, logout } = useAuth();
@@ -42,6 +43,8 @@ export function ProfileEditSheet({ user, onClose }: { user: AuthUser; onClose: (
   const [saving, setSaving] = useState(false);
 
   const previewUrl = photo ? photo.uri : removeAvatar ? null : user.avatarUrl;
+  const trimmedUsername = username.trim();
+  const usernameInvalid = Boolean(trimmedUsername || user.username) && !usernameSchema.safeParse(trimmedUsername).success;
 
   async function choosePhoto() {
     try {
@@ -65,7 +68,7 @@ export function ProfileEditSheet({ user, onClose }: { user: AuthUser; onClose: (
   }
 
   async function save() {
-    const trimmedUsername = username.trim();
+    if (usernameInvalid) return;
     const trimmedEmail = email.trim().toLowerCase();
     const emailChanged = trimmedEmail !== user.email.toLowerCase();
     const parsed = updateMeSchema.safeParse({
@@ -118,7 +121,7 @@ export function ProfileEditSheet({ user, onClose }: { user: AuthUser; onClose: (
       footer={(
         <View style={{ flexDirection: "row", gap: space.sm, padding: space.lg }}>
           <View style={{ flex: 1 }}><Button label={t("edit_cancel")} variant="secondary" disabled={saving} onPress={onClose} /></View>
-          <View style={{ flex: 1 }}><Button label={t("edit_save")} loading={saving} onPress={() => void save()} /></View>
+          <View style={{ flex: 1 }}><Button label={t("edit_save")} disabled={usernameInvalid} loading={saving} onPress={() => void save()} /></View>
         </View>
       )}>
       <View style={{ gap: space.md }}>
@@ -149,7 +152,8 @@ export function ProfileEditSheet({ user, onClose }: { user: AuthUser; onClose: (
         </View>
         <TextField label={t("edit_name_label")} value={displayName} onChangeText={setDisplayName} autoComplete="name" maxLength={64} />
         <TextField label={t("edit_username_label")} value={username} onChangeText={setUsername}
-          autoCapitalize="none" autoCorrect={false} autoComplete="username" />
+          autoCapitalize="none" autoCorrect={false} autoComplete="username"
+          errorMessage={usernameInvalid ? tOnboarding("username_invalid") : undefined} />
         <TextField label={t("edit_bio_label")} placeholder={t("edit_bio_placeholder")} value={bio} onChangeText={setBio}
           multiline maxLength={BIO_MAX} textAlignVertical="top" style={{ minHeight: 96, paddingTop: space.sm }}
           hint={t("edit_bio_count", { count: bio.length })} />

@@ -246,6 +246,34 @@ test("a late export cannot allocate a preview after its window closes", async ({
     ),
   ).toBe(0);
 });
+test("notebook displays and enlarges a page photo without storage CORS headers", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await mockNotebookMedia(page, true);
+  await page.route(BOARD_PHOTO_URL, (route) => route.fulfill({
+    contentType: "image/png",
+    body: ONE_PIXEL_PNG,
+  }));
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await page.getByRole("button", { name: "Sonraki", exact: true }).click();
+  const photo = page.locator('[data-notebook-item="88888888-8888-4888-8888-888888888888"] img');
+  await expect(photo).toHaveJSProperty("naturalWidth", 1);
+  await expect(photo).not.toHaveAttribute("crossorigin", /.+/);
+  const enlarge = page.getByRole("button", { name: "Fotoğrafı büyüt", exact: true });
+  await expect(async () => {
+    await photo.click();
+    await expect(enlarge).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 8000 });
+  await enlarge.click();
+  const dialog = page.getByRole("dialog", { name: "Fotoğrafı büyüt" });
+  await expect(dialog.locator("img")).toHaveJSProperty("naturalWidth", 1);
+  await dialog.getByRole("button", { name: "Kapat", exact: true }).click({ timeout: 4000 });
+  await expect(dialog).toBeHidden();
+  await enlarge.click();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+});
+
 test("notebook page and lightbox preserve the entry after photo refusal", async ({
   page,
 }, info) => {

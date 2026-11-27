@@ -5,6 +5,7 @@ import { ArrowRightDownIcon as ArrowDownRight } from "@solar-icons/react/linear/
 import { ArrowRightUpIcon as ArrowUpRight } from "@solar-icons/react/linear/arrow-right-up";
 import { StarIcon as Star } from "@solar-icons/react/bold/star";
 import { useLocale, useTranslations } from "next-intl";
+import { formatNet } from "@mentor/core";
 import type { CoachingAnalysisDto } from "@mentor/types";
 import { Skeleton } from "@mentor/ui";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
@@ -51,10 +52,10 @@ export function NetTrendCard({ analysis }: { analysis: CoachingAnalysisDto }) {
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
           <span
             data-testid="analysis-latest-net"
-            aria-label={tSummary("last_net", { net: latest.totalNet })}
+            aria-label={tSummary("last_net", { net: formatNet(latest.totalNet, locale) })}
             className="text-display font-black leading-none tabular-nums text-[var(--color-main)]"
           >
-            {latest.totalNet}
+            {formatNet(latest.totalNet, locale)}
           </span>
           <span aria-hidden className="text-body-sm font-extrabold text-[var(--color-secondary)]">
             {t("unit")}
@@ -63,7 +64,7 @@ export function NetTrendCard({ analysis }: { analysis: CoachingAnalysisDto }) {
             <>
               <span
                 data-testid="analysis-net-delta"
-                aria-label={tSummary("delta", { delta: ghost.previousDelta })}
+                aria-label={tSummary("delta", { delta: formatNet(ghost.previousDelta, locale) })}
                 className={`inline-flex items-center gap-0.5 text-body-sm font-extrabold tabular-nums ${delta > 0 ? "text-[var(--color-success)]" : "text-[var(--color-secondary)]"}`}
               >
                 {delta > 0 ? (
@@ -71,7 +72,7 @@ export function NetTrendCard({ analysis }: { analysis: CoachingAnalysisDto }) {
                 ) : delta < 0 ? (
                   <ArrowDownRight size={16} className="size-4" strokeWidth={1.75} aria-hidden />
                 ) : null}
-                {ghost.previousDelta}
+                {formatNet(ghost.previousDelta, locale)}
               </span>
               <span className="text-caption text-[var(--color-secondary)]">
                 {t("delta_caption")}
@@ -88,7 +89,7 @@ export function NetTrendCard({ analysis }: { analysis: CoachingAnalysisDto }) {
           ) : record ? (
             <span className="text-caption font-bold text-[var(--color-secondary)]">
               {t.rich("record", {
-                value: record,
+                value: formatNet(record, locale),
                 b: (chunks) => (
                   <strong className="font-extrabold tabular-nums text-[var(--color-main)]">
                     {chunks}

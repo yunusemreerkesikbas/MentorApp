@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { roundFocusMinutes } from "@mentor/core";
 import type { StudySessionDto } from "@mentor/types";
 import { Chip } from "@mentor/ui";
 
@@ -36,7 +37,7 @@ export function SessionHistoryRow({
   });
   const emoji = session.sessionMood ? EFFORT_EMOJI[session.sessionMood] : null;
   const abandoned = session.status === "ABANDONED";
-  const minutes = Math.round(session.actualFocusSeconds / 60);
+  const minutes = roundFocusMinutes(session.actualFocusSeconds);
   const subject = session.subject?.trim() ?? "";
 
   if (compact) {

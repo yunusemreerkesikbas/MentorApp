@@ -371,7 +371,7 @@
       "scribble": "selam, ben Puhu!"
     },
     "coach": {
-      "name": "Koç",
+      "name": "Puhu",
       "title": "Zor bir gün mü? Puhu’ya yaz.",
       "body": "Puhu, yapay zekâ koçun. Planını ve geçmiş seanslarını bilerek cevap verir. Bugün atabileceğin küçük bir adımı beraber seçersiniz.",
       "scribble": "bir his seç, dene!",
@@ -1090,6 +1090,7 @@
     "coach_chip": "Puhu",
     "coach_speech_title": "Puhu'nun Notu",
     "coach_speech_cta": "Anladım",
+    "coach_speech_badge": "Puhu'nun Notu",
     "coach_close_aria": "Kapat",
     "premium_nudge": "Nasıl hissediyorsan, buradayım"
   },
@@ -1173,8 +1174,8 @@
       "load_older": "Daha eski mesajları yükle",
       "remaining_hint": "Kalan mesaj hakkın: {count}",
       "remaining_hint_zero": "Bugünlük mesaj hakkın doldu. Yarın devam.",
-      "premium_quota_full": "Koç sohbeti hakkın doldu. Eski sohbetlerini açabilirsin.",
-      "premium_quota_retry": "Koç sohbeti hakkın doldu. {time} itibarıyla yeniden yazabilirsin."
+      "premium_quota_full": "Puhu'yla sohbet hakkın doldu. Eski sohbetlerini açabilirsin.",
+      "premium_quota_retry": "Puhu'yla sohbet hakkın doldu. {time} itibarıyla yeniden yazabilirsin."
     }
   },
   "profile": {
@@ -2711,7 +2712,7 @@
     "add_subtitle": "Fotoğraf ve etiket isteğe bağlı; asıl soru neden kaçırdığın.",
     "add_photo": "Fotoğraf çek veya seç",
     "add_photo_optional": "İstersen fotoğrafsız da ekleyebilirsin.",
-    "add_error_type_legend": "Neden kaçırdın?",
+    "add_error_type_legend": "Hata türü",
     "add_subject_label": "Ders",
     "add_subject_none": "Seçme",
     "add_note_label": "Not (isteğe bağlı)",
@@ -2846,6 +2847,7 @@
     "edit_note_label": "Not metni",
     "text_panel_empty": "Bir not seç, yazı tipi ve boyutunu buradan düzenleyebilirsin.",
     "card_preview_aria": "Fotoğrafı büyüt: {type}",
+    "photo_preview": "Fotoğrafı büyüt",
     "card_preview_close": "Kapat",
     "save": "Kaydet",
     "unsaved": "Kaydedilmedi",
@@ -2927,7 +2929,7 @@
     "input_placeholder": "Ne varsa yaz. Buradayım.",
     "send": "Gönder",
     "disclaimer": "Puhu bir yapay zekâ koç; resmî sınav tarihi/süreç bilgisi vermez. Bunlar için Blog'daki doğrulanmış yazılara bak.",
-    "privacy_notice": "Mesajların yanıt oluşturmak için yurt dışındaki AI sağlayıcısına gönderilir. E-posta, telefon, kimlik ve ödeme bilgileri otomatik maskelenir. Yine de bu bilgileri yazmaman en güvenlisi.",
+    "privacy_notice": "Mesajların yanıt oluşturmak için yurt dışındaki yapay zekâ sağlayıcısına gönderilir. E-posta, telefon, kimlik ve ödeme bilgileri otomatik maskelenir. Yine de bu bilgileri yazmaman en güvenlisi.",
     "privacy_link": "Gizlilik ayrıntıları",
     "transcript_label": "Puhu sohbeti",
     "empty_prompt": "Puhu dinliyor. Plan, kaygı, bugünün adımı. Ne varsa.",

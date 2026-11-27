@@ -635,7 +635,7 @@ export function NotebookReviewPanel({
 
         {/* Rendered inside the dialog so its Escape and backdrop belong to this screen, not to the
             notebook page underneath — the deck stays exactly where it was when it closes. */}
-        <NotebookImageLightbox entry={zoomed} onClose={() => setZoomed(null)} />
+        <NotebookImageLightbox photo={zoomed} onClose={() => setZoomed(null)} />
       </motion.div>
     </AnimatePresence>,
     document.body,

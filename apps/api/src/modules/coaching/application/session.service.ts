@@ -1,5 +1,6 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { roundFocusMinutes } from "@mentor/core";
 import { SESSION_ACTUAL_SECONDS_MAX, type Paginated, type StudySessionDto } from "@mentor/types";
 import type {
   ListStudySessionsQuery,
@@ -136,7 +137,7 @@ export class SessionService {
       }
       return {
         count7d: raw.count7d,
-        focusMinutes7d: Math.round(raw.focusSeconds7d / 60),
+        focusMinutes7d: roundFocusMinutes(raw.focusSeconds7d),
         subjects,
         lastStruggleNote,
       };
@@ -167,7 +168,7 @@ export class SessionService {
   async getTodayFocusMinutes(userId: string): Promise<number> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const seconds = await this.sessions.sumCompletedFocusSecondsOnDate(tx, userId, todayIso());
-      return Math.round(seconds / 60);
+      return roundFocusMinutes(seconds);
     });
   }
 
@@ -195,18 +196,18 @@ export class SessionService {
     return {
       todayFocusMinutes,
       sessions7d: rhythm.sessions7d,
-      focusMinutes7d: Math.round(rhythm.focusSeconds7d / 60),
+      focusMinutes7d: roundFocusMinutes(rhythm.focusSeconds7d),
       activeDays7d: rhythm.activeDays7d,
-      averageSessionMinutes7d: Math.round(rhythm.averageFocusSeconds7d / 60),
+      averageSessionMinutes7d: roundFocusMinutes(rhythm.averageFocusSeconds7d),
       sessions28d: rhythm.sessions28d,
-      focusMinutes28d: Math.round(rhythm.focusSeconds28d / 60),
+      focusMinutes28d: roundFocusMinutes(rhythm.focusSeconds28d),
       activeDays28d: rhythm.activeDays28d,
-      averageSessionMinutes28d: Math.round(rhythm.averageFocusSeconds28d / 60),
+      averageSessionMinutes28d: roundFocusMinutes(rhythm.averageFocusSeconds28d),
       dominantTimeBand: rhythm.dominantTimeBand,
       lastActiveAt: rhythm.lastActiveAt?.toISOString() ?? null,
       weekdayActivity28d: rhythm.weekdayActivity28d.map(({ focusSeconds, ...day }) => ({
         ...day,
-        focusMinutes: Math.round(focusSeconds / 60),
+        focusMinutes: roundFocusMinutes(focusSeconds),
       })),
     };
   }

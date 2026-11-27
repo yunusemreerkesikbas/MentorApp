@@ -83,7 +83,7 @@ function frameStyle(frame: VisionImageFrame): CSSProperties {
   }
 }
 
-function ImageItemView({ item }: { item: VisionBoardImageItem }) {
+function ImageItemView({ item, imageCors }: { item: VisionBoardImageItem; imageCors: boolean }) {
   return (
     <div
       style={{
@@ -114,8 +114,8 @@ function ImageItemView({ item }: { item: VisionBoardImageItem }) {
         src={item.url ? boardImageSrc(item.url) : null}
         alt=""
         fill
-          retryable
-        crossOrigin={item.url ? boardImageCorsMode(item.url) : undefined}
+        retryable
+        crossOrigin={imageCors && item.url ? boardImageCorsMode(item.url) : undefined}
         loading="lazy"
         draggable={false}
         className="object-cover"
@@ -172,8 +172,8 @@ function TextItemView({ item }: { item: VisionBoardTextItem }) {
   );
 }
 
-export function BoardItemView({ item }: { item: VisionBoardItem }) {
-  if (item.kind === "image") return <ImageItemView item={item} />;
+export function BoardItemView({ item, imageCors = true }: { item: VisionBoardItem; imageCors?: boolean }) {
+  if (item.kind === "image") return <ImageItemView item={item} imageCors={imageCors} />;
   if (item.kind === "text") return <TextItemView item={item} />;
   const art = STICKER_ART[item.asset];
   return art.kind === "image" ? (

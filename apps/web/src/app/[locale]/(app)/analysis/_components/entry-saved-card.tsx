@@ -3,6 +3,7 @@
 import { ArrowDownRight, ArrowUpRight, ChevronRight, NotebookPen, Star } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatNet } from "@mentor/core";
 import type { CoachingAnalysisDto } from "@mentor/types";
 import { CompanionBubble } from "@/components/panel/companion-bubble";
 import {
@@ -98,7 +99,7 @@ export function EntrySavedCard({
             data-testid="analysis-saved-net"
             className="text-display font-black leading-none tabular-nums text-[var(--color-main)]"
           >
-            {saved.totalNet}
+            {formatNet(saved.totalNet, locale)}
           </span>
           <span className="text-body-sm font-extrabold text-[var(--color-secondary)]">
             {tNet("unit")}
@@ -113,7 +114,7 @@ export function EntrySavedCard({
                 ) : delta < 0 ? (
                   <ArrowDownRight className="size-4" strokeWidth={2.6} aria-hidden />
                 ) : null}
-                {ghost.previousDelta}
+                {formatNet(ghost.previousDelta, locale)}
               </span>
               <span className="text-caption text-[var(--color-secondary)]">
                 {tNet("delta_caption")}
@@ -126,7 +127,7 @@ export function EntrySavedCard({
               ) : analysis?.personalRecordNet ? (
                 <span className="text-caption font-bold text-[var(--color-secondary)]">
                   {tNet.rich("record", {
-                    value: analysis.personalRecordNet,
+                    value: formatNet(analysis.personalRecordNet, locale),
                     b: (chunks) => (
                       <strong className="font-extrabold tabular-nums text-[var(--color-main)]">
                         {chunks}
@@ -157,7 +158,7 @@ export function EntrySavedCard({
                   <span
                     className={`min-w-14 text-right text-caption font-extrabold tabular-nums ${moved > 0 ? UP : FLAT_OR_DOWN}`}
                   >
-                    {subject.delta ?? ""}
+                    {subject.delta != null ? formatNet(subject.delta, locale) : ""}
                   </span>
                 </li>
               );

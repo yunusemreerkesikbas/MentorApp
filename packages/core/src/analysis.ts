@@ -9,6 +9,15 @@ export type AnalysisTab = "entry" | "progress" | "mistakes";
 /** The two views the tabs switch between; `entry` is the form, opened from "Deneme ekle". */
 export type AnalysisViewTab = Exclude<AnalysisTab, "entry">;
 
+/** Net values arrive as decimal strings or numbers. Keep the sign on server-formatted deltas. */
+export function formatNet(net: number | string, locale: string): string {
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    signDisplay: typeof net === "string" && net.startsWith("+") ? "always" : "auto",
+  }).format(Number(net));
+}
+
 export interface SubjectScores {
   correct: string;
   wrong: string;

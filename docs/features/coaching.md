@@ -94,6 +94,14 @@
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-28 — Notebook page photo preview (V-002).** Web notebook pages display signed photos without requiring storage CORS headers. Select a photo and choose **Enlarge photo**, or double-click it. The preview uses the existing signed URL and the notebook lightbox. Vision Board export still requests CORS so it can read canvas pixels. See `notebook-page-stage.tsx`, `notebook-image-lightbox.tsx` and `bounded-media.spec.ts`.
+
+- **2026-11-27 — Mobile collage labels.** Goal text scales within its collage layer when there is little vertical space. Stored coordinates and typography settings are preserved. See `apps/mobile/src/components/vision-board/board-item.tsx`.
+
+- **2026-11-27 — Analysis entry parity.** Android asks before discarding a new mock exam draft with the system Back button. The form explains a disabled save beside the button. Web and Android display scores with the shared `@mentor/core` `formatNet`, including `28,00` in Turkish. Android queues reward scenes while the notebook is open so its index sheet can be used uninterrupted. See the mobile analysis screen and celebration provider and the web analysis components.
+
+- **2026-11-27 — Mistake entry field label.** When adding or editing a mistake, the optional reason is labeled “Hata türü” in Turkish. Existing entries retain their selected values. See the web message catalogs and mobile `src/i18n/{tr,en}.ts`.
+
 - **2026-11-23 | APP-142 notebook navigation.** Android Back in the page editor returns to Contents and asks before discarding unsaved edits. Localized notifications preserve the mistake-review window and revisit filter. Notebook page links use the shared zero-based page limit. See `notebook-page-editor.tsx`, `notifications-view.ts` and `notebooks-view.ts` under `apps/mobile/src/`.
 
 - **2026-11-23 | APP-142 Phase 3 mobile study surfaces.** Open My Notebooks from the dashboard to create or edit a cover, open Contents and edit a page, or review mistakes in the fan. Analysis and localized notification links carry the selected exam, topic, or entry. The dashboard's Vision Board card opens the goal and the collage. Use a template or edit layers directly, save a draft or publish it to the dashboard, and share a rendered image with a joined community room. Both editors accept camera or gallery photos. See `apps/mobile/src/components/notebooks/`, `apps/mobile/src/components/vision-board/` and `apps/mobile/src/lib/notifications-view.ts`.

@@ -4,6 +4,7 @@ import { AltArrowDownIcon as ChevronDown } from "@solar-icons/react/linear/alt-a
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
+import { formatNet } from "@mentor/core";
 import type { ExamSubjectDto } from "@mentor/types";
 import { Skeleton, SkeletonGroup, skeletonStaggerStyle } from "@mentor/ui";
 import { FormError } from "@/components/form";
@@ -148,9 +149,9 @@ export function AnalysisHistoryCard({
                     aria-hidden
                     className="text-body-sm font-extrabold tabular-nums text-[var(--color-main)]"
                   >
-                    {item.totalNet}
+                    {formatNet(item.totalNet, locale)}
                   </span>
-                  <span className="sr-only">{t("net", { net: item.totalNet })}</span>
+                  <span className="sr-only">{t("net", { net: formatNet(item.totalNet, locale) })}</span>
                   <ChevronDown
                     size={18}
                     className={`size-[18px] shrink-0 text-[var(--color-secondary)] transition-transform duration-200 motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`}

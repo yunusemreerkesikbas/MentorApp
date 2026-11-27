@@ -28,9 +28,17 @@ export class NotificationsCopyService {
     lang?: string,
   ): NotificationCopy {
     const locale = resolveLang(lang);
+    const eventDate = typeof args.eventDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.eventDate)
+      ? new Date(`${args.eventDate}T00:00:00Z`)
+      : null;
+    const localizedArgs = templateKey.startsWith("planEvent") && eventDate && !Number.isNaN(eventDate.getTime())
+      ? { ...args, eventDate: eventDate.toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR", {
+          day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+        }) }
+      : args;
     return {
-      title: this.translate(`notifications.inApp.${templateKey}.title`, args, locale),
-      body: this.translate(`notifications.inApp.${templateKey}.body`, args, locale),
+      title: this.translate(`notifications.inApp.${templateKey}.title`, localizedArgs, locale),
+      body: this.translate(`notifications.inApp.${templateKey}.body`, localizedArgs, locale),
     };
   }
 

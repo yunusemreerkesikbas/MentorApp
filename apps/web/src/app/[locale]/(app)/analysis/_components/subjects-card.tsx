@@ -2,7 +2,8 @@
 
 import { ArrowRightDownIcon as ArrowDownRight } from "@solar-icons/react/linear/arrow-right-down";
 import { ArrowRightUpIcon as ArrowUpRight } from "@solar-icons/react/linear/arrow-right-up";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatNet } from "@mentor/core";
 import type { CoachingAnalysisDto } from "@mentor/types";
 import { Chip } from "@mentor/ui";
 import { InfoTooltip } from "@/components/info-tooltip";
@@ -17,6 +18,7 @@ const STEADY = 0.05;
  * normalized percent), with where the last four exams went against it. Replaces the tile grid.
  */
 export function SubjectsCard({ analysis }: { analysis: CoachingAnalysisDto }) {
+  const locale = useLocale();
   const t = useTranslations("analysis.subjects_card");
   if (analysis.subjects.length === 0) return null;
   const focusRef = analysis.nextFocus?.subjectRef ?? null;
@@ -35,7 +37,7 @@ export function SubjectsCard({ analysis }: { analysis: CoachingAnalysisDto }) {
       <ul className="flex flex-col gap-4">
         {analysis.subjects.map((subject) => {
           const delta = subject.netDelta != null ? Number(subject.netDelta) : 0;
-          const signed = delta > 0 ? `+${subject.netDelta}` : subject.netDelta;
+          const signed = `${delta > 0 ? "+" : ""}${formatNet(delta, locale)}`;
           const percent =
             subject.normalizedAveragePercent != null
               ? Math.round(Number(subject.normalizedAveragePercent))
@@ -63,7 +65,7 @@ export function SubjectsCard({ analysis }: { analysis: CoachingAnalysisDto }) {
                   </span>
                 ) : null}
                 <span className="shrink-0 whitespace-nowrap text-body-sm font-extrabold tabular-nums text-[var(--color-main)]">
-                  {subject.averageNet}
+                  {formatNet(subject.averageNet, locale)}
                   {subject.questionCount != null ? (
                     <span className="text-caption font-bold text-[var(--color-secondary)]">
                       {" "}

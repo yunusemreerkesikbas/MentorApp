@@ -281,6 +281,7 @@ function PanelContent() {
         onClose={moodCheckin.closeSpeechModal}
         isLoading={moodCheckin.speechLoading}
         loadingText={moodT("coach_thinking")}
+        badgeText={moodT("coach_speech_badge")}
         text={moodCheckin.speechText}
         actionLabel={moodT("coach_speech_cta")}
         closeAriaLabel={moodT("coach_close_aria")}

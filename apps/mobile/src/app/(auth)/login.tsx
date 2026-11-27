@@ -32,6 +32,7 @@ export default function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async () => {
+    if (submitting) return;
     setErrorMessage(null);
     const parsed = loginSchema.safeParse({
       email: emailRef.current.trim(),
@@ -88,6 +89,8 @@ export default function LoginScreen() {
         secureTextEntry
         autoComplete="current-password"
         autoCapitalize="none"
+        returnKeyType="go"
+        onSubmitEditing={() => void handleSubmit()}
         onFocus={() => setPose("cover")}
         onBlur={() => setPose("rest")}
         onChangeText={(value) => { passwordRef.current = value; }}

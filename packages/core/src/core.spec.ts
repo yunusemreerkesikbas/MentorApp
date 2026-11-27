@@ -33,9 +33,11 @@ import {
   weekDates,
   weekStart,
   formatTimerDisplay,
+  roundFocusMinutes,
   parseInitialMinutes,
   parseInitialPreset,
   emptyScores,
+  formatNet,
   groupTopicsBySubjectName,
   paperSubjects,
   recordedMockExamRows,
@@ -201,6 +203,19 @@ describe("@mentor/core shared domain helpers", () => {
     assert.equal(formatTimerDisplay(1505), "25:05");
     assert.equal(parseInitialMinutes("50_10", null), 50);
     assert.equal(parseInitialPreset(null, "45"), "custom");
+  });
+
+  it("formats mock exam scores and signed deltas with two locale-specific decimals", () => {
+    assert.equal(formatNet("28.00", "tr"), "28,00");
+    assert.equal(formatNet(28, "en"), "28.00");
+    assert.equal(formatNet("+2.5", "tr"), "+2,50");
+    assert.equal(formatNet(-0.25, "tr"), "-0,25");
+  });
+
+  it("rounds focus seconds once after summing them", () => {
+    assert.equal(roundFocusMinutes(100), 2);
+    assert.equal(roundFocusMinutes(29), 0);
+    assert.equal(roundFocusMinutes(30), 1);
   });
 
   it("auto-computes mock exam subject blanks, validates question counts, and groups topics", () => {

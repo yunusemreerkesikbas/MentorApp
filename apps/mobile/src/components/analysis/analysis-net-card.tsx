@@ -4,7 +4,7 @@ import Svg, { Circle, Line, Polygon, Polyline, Text as SvgText } from "react-nat
 import { ArrowRightDownIcon } from "@solar-icons/react-native/linear/arrow-right-down";
 import { ArrowRightUpIcon } from "@solar-icons/react-native/linear/arrow-right-up";
 import { StarIcon } from "@solar-icons/react-native/bold/star";
-import { formatShortDate, trendForSparkline } from "@mentor/core";
+import { formatNet, formatShortDate, trendForSparkline } from "@mentor/core";
 import type { CoachingAnalysisDto, MockExamTrendPointDto } from "@mentor/types";
 import { mixHex } from "../../lib/layout.js";
 import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
@@ -14,6 +14,7 @@ import { AppText } from "../ui/index.js";
 import { AnalysisLink } from "./analysis-link.js";
 
 export function AnalysisNetCard({ analysis }: { analysis: CoachingAnalysisDto }) {
+  const { locale } = useLocale();
   const t = useTranslations("analysisNet");
   const { palette, radii, space } = useThemeTokens();
   const points = trendForSparkline(analysis.trend);
@@ -31,12 +32,12 @@ export function AnalysisNetCard({ analysis }: { analysis: CoachingAnalysisDto })
         <AppText variant="caption" tone="secondary">{t(points.length === 1 ? "count_one" : "count", { count: points.length })}</AppText>
       </View>
       <View style={[styles.inline, { flexWrap: "wrap", gap: space.sm }]}>
-        <AppText variant="display" tabularNums style={styles.heavy}>{latest.totalNet}</AppText>
+        <AppText variant="display" tabularNums style={styles.heavy}>{formatNet(latest.totalNet, locale)}</AppText>
         <AppText variant="caption" tone="secondary" style={styles.bold}>{t("unit")}</AppText>
         {ghost ? <>
           <View style={styles.inline}>
             {delta !== 0 ? <DeltaIcon size={16} color={delta > 0 ? palette.success : palette.secondary} /> : null}
-            <AppText variant="caption" tabularNums tone={delta > 0 ? "success" : "secondary"} style={styles.bold}>{ghost.previousDelta}</AppText>
+            <AppText variant="caption" tabularNums tone={delta > 0 ? "success" : "secondary"} style={styles.bold}>{formatNet(ghost.previousDelta, locale)}</AppText>
           </View>
           <AppText variant="caption" tone="secondary">{t("delta_caption")}</AppText>
         </> : null}
@@ -51,7 +52,7 @@ export function AnalysisNetCard({ analysis }: { analysis: CoachingAnalysisDto })
           <AppText variant="caption" style={[styles.bold, { flexShrink: 1 }]}>{t("new_record")}</AppText>
         </View>
       ) : ghost && analysis.personalRecordNet ? (
-        <AppText variant="caption" tone="secondary">{t("record", { value: analysis.personalRecordNet })}</AppText>
+        <AppText variant="caption" tone="secondary">{t("record", { value: formatNet(analysis.personalRecordNet, locale) })}</AppText>
       ) : null}
       {points.length > 1 ? <NetChart points={points} record={analysis.personalRecordNet} /> : (
         <AppText variant="caption" tone="secondary">{t("first")}</AppText>
@@ -126,7 +127,7 @@ function NetChart({ points, record }: { points: MockExamTrendPointDto[]; record:
           {points.map((point) => (
             <View key={point.id} style={[styles.spread, { paddingVertical: space.xs }]}>
               <AppText variant="caption" tone="secondary">{formatShortDate(point.takenAt, locale)}</AppText>
-              <AppText variant="caption" tabularNums>{point.totalNet} {t("unit")}</AppText>
+              <AppText variant="caption" tabularNums>{formatNet(point.totalNet, locale)} {t("unit")}</AppText>
             </View>
           ))}
           <AnalysisLink label={tCommon("close")} onPress={() => setShowValues(false)} />

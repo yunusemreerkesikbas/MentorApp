@@ -95,6 +95,10 @@ PuhuKoç's core trust boundaries:
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-27 — Seven-day progress parity.** The coach rollup rounds total focus seconds to the nearest minute, matching student session history. Plan completion counts all tasks through the current Istanbul date, including pending tasks today. Future tasks stay outside the window. The updated rate also feeds the coach’s plan risk signal. See `cohort-evidence.service.ts`, `cohort-evidence.repository.ts`, and the shared core helpers.
+
+- **2026-11-27 — Phone-width student reports.** Open a student’s overview to generate or view previous briefs. The brief actions stack on phones so the full labels fit. See `coach-student-overview-tab.tsx`.
+
 - **2026-11-22 — Faz 2: Mobile Human Coach Workspace & Student `İnsan Koçum` Web Parity (`apps/mobile`):**
   - *What was done:* Brought mobile mentorship to web parity across Student (`/(app)/my-coach`, `/(app)/my-coach-weekly-report`, `/(app)/coach-application`, updated `MyCoachCard`) and Human Coach (`(tabs)/students`, `/(app)/coach-student`, role-aware `(tabs)/plan` `CoachPlanView`, unified `CoachProfileView` on `(tabs)/students/profile` & `(tabs)/coach-profile`) with separated platform-verified vs coach-declared claim badges, student shared follow-ups + live shared-data mirror + shareable weekly evaluation reports, coach 4-tab student detail (overview/28-day heatmap, template/AI-draft homework planning, private+shared follow-ups, weekly brief/finalize/share), coach calendar batch tasks/meetings, notification deep-link routing (`/my-coach`, `/kocum`, `/my-coach/weekly-reports/:id`, `/coach-invitation`, `/students/profile`, `/students/:studentId`), `AppHeader` hiding Coin/XP for coaches, and `CelebrationProvider` suppressing student celebration modals for coaches.
   - *Usage:* `pnpm --config.verify-deps-before-run=false --filter @mentor/mobile test | typecheck | lint`. Students open `İnsan Koçum` from Settings or notifications; coaches land on the 5-tab `COACH_NAV` shell (`/plan`, `/community`, `/students`, `/students/profile`, `/settings`).

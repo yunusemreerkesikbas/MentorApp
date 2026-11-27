@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { planCompletionRate, roundFocusMinutes } from "@mentor/core";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import type {
   CohortStudentSnapshot,
@@ -78,7 +79,7 @@ export class CohortEvidenceService {
     const dailySince = addDays(todayInIstanbul(now), -(ROSTER_DAILY_DAYS - 1));
     const [triage, daily, streaks] = await Promise.all([
       this.listTriageSnapshots(studentIds, now),
-      this.repo.dailyFocusMinutes(studentIds, dailySince),
+      this.repo.dailyFocusSeconds(studentIds, dailySince),
       // The student's own UTC day, so coach and student see the same streak.
       this.currentStreaks(studentIds, todayIso(now)),
     ]);
@@ -135,12 +136,11 @@ export class CohortEvidenceService {
       result.set(studentId, {
         studentId,
         lastActiveDate: activityBy.get(studentId)?.lastActiveDate ?? null,
-        focusMinutes7d: sessionBy.get(studentId)?.focusMinutes ?? 0,
+        focusMinutes7d: roundFocusMinutes(sessionBy.get(studentId)?.focusSeconds ?? 0),
         sessions7d: sessionBy.get(studentId)?.sessions ?? 0,
         activeDays7d: activityBy.get(studentId)?.activeDays ?? 0,
         // No plan is not 0% completion — a student who planned nothing has not failed anything.
-        planCompletionRate7d:
-          plan && plan.total > 0 ? plan.done / plan.total : null,
+        planCompletionRate7d: plan ? planCompletionRate(plan.done, plan.total) : null,
         latestMockNet: mock ? Number(mock.totalNet) : null,
         latestMockAt: mock ? mock.takenAt.toISOString() : null,
         previousMockNetAvg:
@@ -190,7 +190,7 @@ export class CohortEvidenceService {
     ] = await Promise.all([
       this.repo.sessionTotalsSince(ids, since7),
       this.repo.sessionTotalsSince(ids, since28),
-      this.repo.dailyFocusMinutes(ids, dailySince),
+      this.repo.dailyFocusSeconds(ids, dailySince),
       this.repo.activityWindow(ids, since7, minFocusSeconds),
       this.repo.activityWindow(ids, since28, minFocusSeconds),
       this.repo.streaks(ids),
@@ -223,10 +223,10 @@ export class CohortEvidenceService {
         // `streak_state` only remembers the longest run as of the student's last own read.
         longestStreak: Math.max(streaks[0]?.longestStreak ?? 0, currentStreak),
         sessions7d: sessions7[0]?.sessions ?? 0,
-        focusMinutes7d: sessions7[0]?.focusMinutes ?? 0,
+        focusMinutes7d: roundFocusMinutes(sessions7[0]?.focusSeconds ?? 0),
         activeDays7d: activity7[0]?.activeDays ?? 0,
         sessions28d: sessions28[0]?.sessions ?? 0,
-        focusMinutes28d: sessions28[0]?.focusMinutes ?? 0,
+        focusMinutes28d: roundFocusMinutes(sessions28[0]?.focusSeconds ?? 0),
         activeDays28d: activity28[0]?.activeDays ?? 0,
       },
       dailyFocusMinutes28d: series(
@@ -234,8 +234,7 @@ export class CohortEvidenceService {
         dailySince,
         REPORT_LONG_WINDOW_DAYS,
       ),
-      planCompletionRate7d:
-        plan && plan.total > 0 ? plan.done / plan.total : null,
+      planCompletionRate7d: plan ? planCompletionRate(plan.done, plan.total) : null,
       mockTrend: mockTrend.map((row) => ({
         takenAt: row.takenAt.toISOString(),
         totalNet: Number(row.totalNet),
@@ -327,12 +326,12 @@ function datesBy(
 }
 
 function minutesByDay(
-  rows: { userId: string; day: string; focusMinutes: number }[],
+  rows: { userId: string; day: string; focusSeconds: number }[],
 ): Map<string, Map<IsoDate, number>> {
   const result = new Map<string, Map<IsoDate, number>>();
   for (const row of rows) {
     const days = result.get(row.userId) ?? new Map<IsoDate, number>();
-    days.set(row.day, row.focusMinutes);
+    days.set(row.day, roundFocusMinutes(row.focusSeconds));
     result.set(row.userId, days);
   }
   return result;

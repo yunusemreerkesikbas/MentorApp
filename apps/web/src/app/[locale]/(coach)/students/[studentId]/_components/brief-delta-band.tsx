@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { formatNet } from "@mentor/core";
 import type {
   MentorshipBriefDeltaDto,
   MentorshipBriefMetricChangeDto,
@@ -11,7 +12,6 @@ import {
   formatCount,
   formatDate,
   formatMood,
-  formatNet,
   formatRate,
 } from "../../../_components/mentorship-format";
 
@@ -118,7 +118,7 @@ function MetricRow({
   push("active_days", delta.activeDays7d, count);
   push("focus", delta.focusMinutes7d, count);
   push("sessions", delta.sessions7d, count);
-  push("net", delta.net, (value) => formatNet(value, locale) ?? "");
+  push("net", delta.net, (value) => formatNet(value, locale));
   push("mood", delta.moodMean, (value) => formatMood(value, locale) ?? "");
 
   if (delta.mocksSince > 0) {

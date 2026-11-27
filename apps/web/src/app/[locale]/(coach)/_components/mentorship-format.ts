@@ -34,12 +34,6 @@ export function formatRate(rate: number | null, locale: string): string | null {
   }).format(rate);
 }
 
-/** Nets carry two decimals in the DB but read better trimmed when they are whole. */
-export function formatNet(net: number | null, locale: string): string | null {
-  if (net === null) return null;
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(net);
-}
-
 export function formatMood(level: number | null, locale: string): string | null {
   if (level === null) return null;
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(level);

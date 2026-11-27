@@ -29,6 +29,7 @@ export function ProfileStep({
   onSaved: () => void;
 }) {
   const t = useTranslations("play");
+  const tOnboarding = useTranslations("onboarding");
   const { setUserFromServer } = useAuth();
   const { palette, space } = useThemeTokens();
   const [username, setUsername] = useState(user.username ?? "");
@@ -151,7 +152,7 @@ export function ProfileStep({
           autoComplete="username"
           maxLength={24}
           hint={t("profile_username_hint")}
-          errorMessage={usernameError}
+          errorMessage={usernameError ?? (username.length > 0 && !parsed.success ? tOnboarding("username_invalid") : undefined)}
         />
       </View>
     </PlayStepLayout>

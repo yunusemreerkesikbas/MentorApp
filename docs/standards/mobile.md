@@ -435,3 +435,8 @@
   - **Usage:** `pnpm --filter @mentor/mobile dev | typecheck | lint | test`. Configure `EXPO_PUBLIC_API_URL` for physical device testing.
   - **Gotchas:** Never import `@mentor/ui` root in `apps/mobile` (it depends on `react-dom` and `framer-motion`); always import `@mentor/ui/tokens`. Never create `+api.ts` routes in `apps/mobile/src/app`.
   - **Related files:** `packages/core/src/*`, `packages/ui/src/tokens.ts`, `packages/api-client/src/http.ts`, `apps/api/src/modules/identity/presentation/auth.controller.ts`, `apps/mobile/*`.
+
+- **2026-11-27 — Android parity polish (`APP-142`):** System Back returns from student tabs to Panel before exiting. Unsaved mock exam results prompt before discarding, and disabled save explains the reason. Notebook sheets take precedence over queued reward scenes. Net and focus minute formatting use shared core rules. Profile fields show localized username validation and the keyboard can submit sign-in.
+  - **Usage:** Verify on 360 dp with both themes. Open a weekly chest on web, then return to Android. Sign out on web to check that Android stays signed in. Delete a disposable account on web to check that the next Android request returns to Welcome.
+  - **Gotchas:** Android can download DOCX, but opening contents requires an installed viewer. A general authenticated 401 checks the mobile refresh token without replaying the rejected operation.
+  - **Related files:** `apps/mobile/src/app/(app)/(tabs)/{_layout,analysis}.tsx`, `apps/mobile/src/components/{analysis,navigation,onboarding,settings,vision-board}`, `packages/core/src/{analysis,session,plan-dates}.ts`, `packages/api-client/src/http.ts`.

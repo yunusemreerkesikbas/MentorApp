@@ -71,6 +71,11 @@ export function parseInitialSelectedPresetId(
         : "25_5";
 }
 
+/** Round the total elapsed focus to the nearest display minute. */
+export function roundFocusMinutes(seconds: number): number {
+  return Math.round(seconds / 60);
+}
+
 /** Formats seconds into `MM:SS` tabular display string. */
 export function formatTimerDisplay(totalSeconds: number): string {
   const safe = Math.max(0, Math.floor(totalSeconds));

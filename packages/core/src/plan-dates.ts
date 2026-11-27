@@ -175,6 +175,10 @@ export function formatTimeRange(
   return endTime ? `${startTime} – ${endTime}` : startTime;
 }
 
+export function planCompletionRate(done: number, total: number): number | null {
+  return total > 0 ? done / total : null;
+}
+
 export function taskStats(tasks: { status: string }[]): {
   done: number;
   total: number;
@@ -182,7 +186,7 @@ export function taskStats(tasks: { status: string }[]): {
 } {
   const total = tasks.length;
   const done = tasks.filter((t) => t.status === "DONE").length;
-  const percent = total === 0 ? 0 : Math.round((done / total) * 100);
+  const percent = Math.round((planCompletionRate(done, total) ?? 0) * 100);
   return { done, total, percent };
 }
 
@@ -199,7 +203,7 @@ export function weekCompletionStats(
     done += stats.done;
     total += stats.total;
   }
-  const percent = total === 0 ? 0 : Math.round((done / total) * 100);
+  const percent = Math.round((planCompletionRate(done, total) ?? 0) * 100);
   return { done, total, percent };
 }
 

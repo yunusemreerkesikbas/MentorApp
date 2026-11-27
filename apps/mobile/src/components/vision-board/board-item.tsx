@@ -54,21 +54,22 @@ function boardFont(item: VisionBoardTextItem): TextStyle {
 
 function TextArt({ item, scale }: { item: VisionBoardTextItem; scale: number }) {
   const bg = item.background;
+  const padding = (bg?.padding ?? 0) * scale;
   return (
     <View style={{
       flex: 1, justifyContent: "center",
       alignItems: item.align === "left" ? "flex-start" : item.align === "right" ? "flex-end" : "center",
     }}>
-      <View style={{ maxWidth: "100%", paddingHorizontal: (bg?.padding ?? 0) * scale,
-        paddingVertical: (bg?.padding ?? 0) * scale * 0.6 }}>
+      <View style={{ maxWidth: "100%", maxHeight: "100%", paddingHorizontal: padding,
+        paddingVertical: padding * 0.6 }}>
         {bg && <View style={[StyleSheet.absoluteFill, {
           backgroundColor: bg.color, opacity: bg.opacity, borderRadius: bg.radius * scale,
         }]} />}
-        <Text allowFontScaling={false} style={{
+        <Text allowFontScaling={false} adjustsFontSizeToFit style={{
           ...boardFont(item), fontStyle: item.italic ? "italic" : "normal",
           fontSize: item.size * scale, color: item.color, textAlign: item.align,
           lineHeight: item.size * item.lineHeight * scale, letterSpacing: item.letterSpacing * scale,
-          includeFontPadding: false,
+          includeFontPadding: false, maxHeight: Math.max(1, item.height * scale - padding * 1.2),
         }}>{item.text}</Text>
       </View>
     </View>
