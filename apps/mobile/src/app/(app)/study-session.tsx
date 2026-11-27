@@ -24,10 +24,18 @@ import { AppText } from "../../components/ui/index.js";
 import { fetchTodayPanel } from "../../lib/coaching-api.js";
 import { haptics } from "../../lib/haptics.js";
 import { loadSessionResume, loadSessionScene, saveSessionScene } from "../../lib/session-store.js";
+import { useAuth } from "../../providers/auth-provider.js";
 import { useAppAvailability } from "../../providers/availability-provider.js";
 import { useLocale, useTranslations } from "../../providers/i18n-provider.js";
 
 export default function StudySessionScreen() {
+  const { user } = useAuth();
+  // The kept session is stamped with its account: read it, and let the timer clear it, only once
+  // the account is known (a cold-start deep link can mount this before auth settles).
+  return user ? <StudySessionView /> : null;
+}
+
+function StudySessionView() {
   const routeParams = useLocalSearchParams<{
     taskId?: string;
     taskTitle?: string;

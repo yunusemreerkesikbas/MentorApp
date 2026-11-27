@@ -102,24 +102,31 @@ function RoomScene({ room, onLeft }: { room: StudyRoomDetailDto; onLeft: () => v
   const seatedHere = room.seats.some((s) => s.userId === user?.id && s.isSeated);
   const canInvite = owner && Boolean(room.inviteCode);
 
-  const themeRequest = useRef(0);
+  const themeRequests = useRef({ latest: 0, pending: 0, failed: false });
   const changeTheme = async (delta: 1 | -1) => {
     haptics.selection();
-    // Fast taps race: a late reply or rollback from an older tap must not undo a newer choice.
-    const request = ++themeRequest.current;
+    // Fast taps race: a late reply from an older tap must not undo a newer choice.
+    const requests = themeRequests.current;
+    const request = ++requests.latest;
+    requests.pending += 1;
     const theme = stepRoomTheme(room.theme, delta);
     const key = ["study-rooms", "detail", room.id];
     queryClient.setQueryData(key, { ...room, theme });
     try {
       const saved = await updateStudyRoom(room.id, { theme });
-      if (request !== themeRequest.current) return;
-      queryClient.setQueryData(key, saved);
+      if (request === requests.latest) queryClient.setQueryData(key, saved);
       void queryClient.invalidateQueries({ queryKey: ["study-rooms", "list"] });
     } catch {
-      if (request !== themeRequest.current) return;
-      // Roll back to the server's theme, not this render's copy (it may hold an unsaved older tap).
-      void queryClient.invalidateQueries({ queryKey: key });
-      toast.show(t("error_title"));
+      requests.failed = true;
+      if (request === requests.latest) toast.show(t("error_title"));
+    } finally {
+      requests.pending -= 1;
+      // After a failure, roll back to what the server holds once every tap has landed, so an
+      // older tap that saved late is not hidden behind a refetch that ran before it.
+      if (requests.pending === 0 && requests.failed) {
+        requests.failed = false;
+        void queryClient.invalidateQueries({ queryKey: key });
+      }
     }
   };
 
