@@ -16,6 +16,7 @@ import {
   StickyNote,
   Trash2,
   Undo2,
+  ZoomIn,
 } from "lucide-react";
 import {
   AnimatePresence,
@@ -31,6 +32,7 @@ import type {
   NotebookEntryDto,
   NotebookOverviewDto,
   NotebookPageDto,
+  VisionBoardImageItem,
   VisionBoardTextItem,
 } from "@mentor/types";
 import { NOTEBOOK_PAGE_CANVAS, type NotebookPageItem } from "@mentor/types";
@@ -209,7 +211,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     id: string;
     side: Side;
   } | null>(null);
-  const [previewEntry, setPreviewEntry] = useState<NotebookEntryDto | null>(
+  const [previewPhoto, setPreviewPhoto] = useState<NotebookEntryDto | VisionBoardImageItem | null>(
     null,
   );
   /**
@@ -915,14 +917,15 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     [leftMeta, rightMeta],
   );
 
-  /**
-   * The "study this card" button the selection overlay draws under a selected entry.
-   *
-   * Double-clicking the card has always opened it, and nobody has ever found that. Only entry
-   * items get one — a sticker or a note has nothing to review.
-   */
-  const studyActionFor = useCallback(
+  const selectionActionFor = useCallback(
     (side: Side, item: NotebookPageItem) => {
+      if (item.kind === "image" && item.url) {
+        return {
+          label: t("photo_preview"),
+          icon: <ZoomIn aria-hidden size={13} />,
+          onClick: () => setPreviewPhoto(item),
+        };
+      }
       const entry = entryForItem(side, item);
       if (!entry) return undefined;
       return {
@@ -936,6 +939,10 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
 
   const handleItemDoubleClick = useCallback(
     (side: Side, item: NotebookPageItem) => {
+      if (item.kind === "image" && item.url) {
+        setPreviewPhoto(item);
+        return;
+      }
       if (item.kind === "entry") {
         const meta = side === "left" ? leftMeta : rightMeta;
         const found = meta?.entries.find((entry) => entry.id === item.entryId);
@@ -1722,8 +1729,8 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
       ) : null}
 
       <NotebookImageLightbox
-        entry={previewEntry}
-        onClose={() => setPreviewEntry(null)}
+        photo={previewPhoto}
+        onClose={() => setPreviewPhoto(null)}
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col gap-2">
@@ -2142,7 +2149,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                 onItemDoubleClick={(item) =>
                                   handleItemDoubleClick(mobileSide, item)
                                 }
-                                onPreviewImage={setPreviewEntry}
+                                onPreviewImage={setPreviewPhoto}
                                 onPointerMove={mobileStage.onPointerMove}
                                 onPointerUp={mobileStage.onPointerUp}
                                 renderOverlay={(item) =>
@@ -2173,7 +2180,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                       )}
                                       resizeLabel={t("edit_resize")}
                                       rotateLabel={t("edit_rotate")}
-                                      action={studyActionFor(mobileSide, item)}
+                                      action={selectionActionFor(mobileSide, item)}
                                     />
                                   )
                                 }
@@ -2265,7 +2272,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                   onItemDoubleClick={(item) =>
                                     handleItemDoubleClick("left", item)
                                   }
-                                  onPreviewImage={setPreviewEntry}
+                                  onPreviewImage={setPreviewPhoto}
                                   onPointerMove={leftStage.onPointerMove}
                                   onPointerUp={leftStage.onPointerUp}
                                   renderOverlay={(item) =>
@@ -2296,7 +2303,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                         )}
                                         resizeLabel={t("edit_resize")}
                                         rotateLabel={t("edit_rotate")}
-                                        action={studyActionFor("left", item)}
+                                        action={selectionActionFor("left", item)}
                                       />
                                     )
                                   }
@@ -2364,7 +2371,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                   onItemDoubleClick={(item) =>
                                     handleItemDoubleClick("right", item)
                                   }
-                                  onPreviewImage={setPreviewEntry}
+                                  onPreviewImage={setPreviewPhoto}
                                   onPointerMove={rightStage.onPointerMove}
                                   onPointerUp={rightStage.onPointerUp}
                                   renderOverlay={(item) =>
@@ -2395,7 +2402,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                         )}
                                         resizeLabel={t("edit_resize")}
                                         rotateLabel={t("edit_rotate")}
-                                        action={studyActionFor("right", item)}
+                                        action={selectionActionFor("right", item)}
                                       />
                                     )
                                   }

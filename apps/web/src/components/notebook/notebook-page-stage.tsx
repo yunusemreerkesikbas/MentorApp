@@ -96,7 +96,8 @@ const StageItem = memo(function StageItem({
           <NotebookEntryCard entry={entry} due={due} selected={selected} onPreview={onPreviewImage} />
         ) : null
       ) : (
-        <BoardItemView item={item} />
+        // Displayed photos do not need CORS. Private signed reads may omit CORS headers.
+        <BoardItemView item={item} imageCors={false} />
       )}
       {overlay}
     </div>

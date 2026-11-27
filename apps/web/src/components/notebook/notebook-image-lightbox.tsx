@@ -1,72 +1,58 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { MediaImage as Image } from "@/components/media-image";
 import { X } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { NotebookEntryDto } from "@mentor/types";
+import type { NotebookEntryDto, VisionBoardImageItem } from "@mentor/types";
+import { boardImageSrc } from "@/components/vision-board/board-export-layout";
 
 /**
- * Full-size preview for a mistake's photo. One image, no carousel — every card holds exactly one
- * photo, so the community gallery's swipe/arrow machinery would be solving a problem this screen
- * does not have.
+ * Full-size preview for a mistake photo or a loose notebook page photo.
  */
 export function NotebookImageLightbox({
-  entry,
+  photo,
   onClose,
 }: {
-  entry: NotebookEntryDto | null;
+  photo: NotebookEntryDto | VisionBoardImageItem | null;
   onClose: () => void;
 }) {
   const t = useTranslations("notebook");
-  const reduceMotion = useReducedMotion();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const visible = Boolean(photo?.storageKey || photo?.url);
 
-  useEffect(() => {
-    if (!entry) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [entry, onClose]);
+  useLayoutEffect(() => {
+    const node = dialog.current;
+    if (visible && node && !node.open) node.showModal();
+  }, [visible]);
+
+  if (!photo || !visible) return null;
 
   return (
-    <AnimatePresence>
-      {entry && (entry.storageKey || entry.url) ? (
-        <motion.div
-          key="notebook-lightbox"
-          initial={reduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0 : 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
-          onClick={onClose}
-          role="dialog"
-          aria-modal="true"
-          aria-label={t(`error_type.${entry.errorType}`)}
-        >
-          <button
-            type="button"
-            aria-label={t("card_preview_close")}
-            onClick={(event) => {
-              event.stopPropagation();
-              onClose();
-            }}
-            className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-white"
-            style={{ background: "rgba(255,255,255,0.15)" }}
-          >
-            <X aria-hidden size={20} />
-          </button>
+    <dialog
+      ref={dialog}
+      aria-label={"errorType" in photo ? t(`error_type.${photo.errorType}`) : t("photo_preview")}
+      className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none items-center justify-center border-0 bg-black p-4 open:flex"
+      onClose={(event) => {
+        event.stopPropagation();
+        onClose();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) dialog.current?.close();
+      }}
+    >
+      <button
+        type="button"
+        aria-label={t("card_preview_close")}
+        onClick={() => dialog.current?.close()}
+        className="absolute right-4 top-4 z-10 grid size-11 place-items-center rounded-full bg-white/15 text-white focus-visible:outline-2 focus-visible:outline-white"
+      >
+        <X aria-hidden size={20} />
+      </button>
 
-          <div
-            className="relative h-[85vh] w-full max-w-3xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Image src={entry.url} alt="" fill className="object-contain" retryable />
-          </div>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+      <div className="relative h-[85dvh] w-full max-w-3xl">
+        <Image src={photo.url ? boardImageSrc(photo.url) : null} alt="" fill className="object-contain" retryable />
+      </div>
+    </dialog>
   );
 }

@@ -2847,6 +2847,7 @@
     "edit_note_label": "Not metni",
     "text_panel_empty": "Bir not seç, yazı tipi ve boyutunu buradan düzenleyebilirsin.",
     "card_preview_aria": "Fotoğrafı büyüt: {type}",
+    "photo_preview": "Fotoğrafı büyüt",
     "card_preview_close": "Kapat",
     "save": "Kaydet",
     "unsaved": "Kaydedilmedi",

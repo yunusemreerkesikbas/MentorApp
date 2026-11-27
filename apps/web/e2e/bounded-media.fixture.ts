@@ -3,6 +3,7 @@ import type { NotebookEntryDto, NotebookPageDto } from "@mentor/types";
 import type { Page } from "@playwright/test";
 import {
   BOARD_PHOTO_URL,
+  boardPhoto,
   boardUser,
   mockBoardApi,
 } from "./vision-board-editor.fixture";
@@ -33,7 +34,7 @@ export const mediaEntry: NotebookEntryDto = {
 };
 
 /** Local browser data only; the gateway/session/SQL behavior has its own actual HTTP suite. */
-export async function mockNotebookMedia(page: Page) {
+export async function mockNotebookMedia(page: Page, includeLoosePhoto = false) {
   await mockBoardApi(page, { photo: "missing" });
   const saved: unknown[] = [];
   const book = {
@@ -65,6 +66,7 @@ export async function mockNotebookMedia(page: Page) {
         opacity: 1,
         z: 1,
       },
+      ...(includeLoosePhoto ? [{ ...boardPhoto, id: "88888888-8888-4888-8888-888888888888", x: 250, y: 480 }] : []),
     ],
   };
   await page.route(

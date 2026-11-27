@@ -2847,6 +2847,7 @@
     "edit_note_label": "Note text",
     "text_panel_empty": "Select a note to edit its font, size and colour here.",
     "card_preview_aria": "Enlarge photo: {type}",
+    "photo_preview": "Enlarge photo",
     "card_preview_close": "Close",
     "save": "Save",
     "unsaved": "Unsaved",

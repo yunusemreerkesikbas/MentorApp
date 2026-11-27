@@ -94,6 +94,8 @@
 
 ## 5. Geliştirmeler (Condensed Milestone Timeline)
 
+- **2026-11-28 — Notebook page photo preview (V-002).** Web notebook pages display signed photos without requiring storage CORS headers. Select a photo and choose **Enlarge photo**, or double-click it. The preview uses the existing signed URL and the notebook lightbox. Vision Board export still requests CORS so it can read canvas pixels. See `notebook-page-stage.tsx`, `notebook-image-lightbox.tsx` and `bounded-media.spec.ts`.
+
 - **2026-11-27 — Mobile collage labels.** Goal text scales within its collage layer when there is little vertical space. Stored coordinates and typography settings are preserved. See `apps/mobile/src/components/vision-board/board-item.tsx`.
 
 - **2026-11-27 — Analysis entry parity.** Android asks before discarding a new mock exam draft with the system Back button. The form explains a disabled save beside the button. Web and Android display scores with the shared `@mentor/core` `formatNet`, including `28,00` in Turkish. Android queues reward scenes while the notebook is open so its index sheet can be used uninterrupted. See the mobile analysis screen and celebration provider and the web analysis components.
