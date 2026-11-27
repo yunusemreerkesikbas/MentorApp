@@ -491,6 +491,9 @@ for (const latest of [true, false]) {
           },
     });
     await gotoAnalysis(page, "/analiz?tab=entry");
+    // Kaydet waits for at least one recorded score.
+    const math = page.getByRole("group", { name: /Matematik/ });
+    await math.getByLabel("Doğru", { exact: true }).fill("14");
     await page.getByRole("button", { name: "Kaydet" }).click();
 
     const saved = page.getByTestId("analysis-saved");
